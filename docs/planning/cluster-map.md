@@ -14,7 +14,7 @@ This document maps the 7 Polaris implementation clusters, their Linear IDs, and 
 | Cluster 2 | POL-3 | Polaris CLI / config / ignore foundation | POL-2 |
 | Cluster 3 | POL-4 | Polaris map — index / backfill / update / validate | POL-3 |
 | Cluster 4 | POL-5 | Polaris loop — checkpoint / resume / boundary enforcement | POL-4 |
-| Cluster 5 | POL-6 | Polaris finalize — atomic delivery sequence | POL-4 (loop), POL-4/3 (map) |
+| Cluster 5 | POL-6 | Polaris finalize — atomic delivery sequence | POL-5 (loop), POL-4 (map) |
 | Cluster 6 | POL-7 | EVO skill integration — evo-run and evo-analyze | POL-5, POL-6 |
 | Cluster 7 | POL-8 | Adoption — git-fit atlas and guide | POL-4 only |
 
@@ -24,9 +24,9 @@ This document maps the 7 Polaris implementation clusters, their Linear IDs, and 
 POL-2 (Cluster 1: Bootstrap)
   └── POL-3 (Cluster 2: CLI/config/ignore)
         └── POL-4 (Cluster 3: Map)
-              ├── POL-5 (Cluster 4: Loop)
-              │     └── POL-7 (Cluster 6: EVO integration)
-              └── POL-6 (Cluster 5: Finalize)
+              └── POL-5 (Cluster 4: Loop)
+                    ├── POL-6 (Cluster 5: Finalize)
+                    │     └── POL-7 (Cluster 6: EVO integration)
                     └── POL-7 (Cluster 6: EVO integration)
 
 POL-8 (Cluster 7: Adoption) ← POL-4 only
