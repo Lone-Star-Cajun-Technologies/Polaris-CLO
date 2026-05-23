@@ -1,0 +1,7 @@
+{"event":"run-start","run_id":"evo-run-cli-config-2026-05-22-002","timestamp":"2026-05-22T23:49:00Z","parent_issue_id":"POL-3"}
+{"event":"step-start","run_id":"evo-run-cli-config-2026-05-22-002","timestamp":"2026-05-22T23:49:00Z","step_id":"01-load-cluster"}
+{"event":"step-complete","run_id":"evo-run-cli-config-2026-05-22-002","timestamp":"2026-05-22T23:49:00Z","step_id":"01-load-cluster"}
+{"event":"step-start","run_id":"evo-run-cli-config-2026-05-22-002","timestamp":"2026-05-22T23:49:00Z","step_id":"02-select-child"}
+{"event":"child-selected","run_id":"evo-run-cli-config-2026-05-22-002","timestamp":"2026-05-22T23:49:00Z","child_id":"POL-14","child_title":"[C2.1] Scaffold Polaris Node.js/TypeScript package (polaris --version)"}
+{"event":"step-complete","run_id":"evo-run-cli-config-2026-05-22-002","timestamp":"2026-05-22T23:49:00Z","step_id":"02-select-child"}
+{"event":"step-start","run_id":"evo-run-cli-config-2026-05-22-002","timestamp":"2026-05-22T23:49:00Z","step_id":"03-execute-child"}
