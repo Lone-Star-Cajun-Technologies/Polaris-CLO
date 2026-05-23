@@ -3,6 +3,7 @@ import { resolve, relative, join } from "node:path";
 import { execFileSync } from "node:child_process";
 import { Command } from "commander";
 import { loadConfig } from "../config/loader.js";
+import { runMapUpdate } from "./update.js";
 import { parsePolarisIgnore } from "../ignore/parser.js";
 import { SECRET_PATTERNS } from "../ignore/defaults.js";
 import { inferRoute } from "./inference.js";
@@ -181,6 +182,20 @@ export function createMapCommand(): Command {
     .option("-v, --verbose", "Show per-file classification")
     .action((options: { repoRoot: string; dryRun?: boolean; verbose?: boolean }) => {
       runMapIndex(options.repoRoot, options.dryRun ?? false, options.verbose ?? false);
+    });
+
+  map
+    .command("update")
+    .description("Incremental changed-file mapping")
+    .option("-r, --repo-root <path>", "Repository root", process.cwd())
+    .option("--changed [files...]", "Changed files (omit to detect from git diff)")
+    .option("--from-commit <sha>", "Start commit for diff (default: HEAD~1)")
+    .option("--to-commit <sha>", "End commit for diff (default: HEAD)")
+    .action((options: { repoRoot: string; changed?: string[]; fromCommit?: string; toCommit?: string }) => {
+      const files = Array.isArray(options.changed) ? options.changed : [];
+      const { hasNeedsReview } = runMapUpdate(options.repoRoot, files, options.fromCommit, options.toCommit);
+      const onLowConfidence = loadConfig(options.repoRoot).map.onLowConfidence ?? "warn";
+      if (hasNeedsReview && onLowConfidence === "fail") process.exit(1);
     });
 
   return map;
