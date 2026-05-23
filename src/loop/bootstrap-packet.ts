@@ -23,6 +23,7 @@ export interface BootstrapPacket {
   };
   current_state_sha: string;
   resume_instructions: string;
+  boundary_enforcement?: string;
 }
 
 function getCurrentBranch(repoRoot: string): string {

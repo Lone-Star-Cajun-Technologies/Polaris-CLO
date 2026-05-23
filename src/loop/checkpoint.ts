@@ -13,9 +13,11 @@ export interface LoopState {
   run_id: string;
   cluster_id: string;
   skill?: string;
+  session_type?: "analyze" | "implement" | string;
   active_child: string;
   completed_children: string[];
   open_children: string[];
+  open_children_meta?: Record<string, { type?: string }>;
   step_cursor: string;
   context_budget: {
     children_completed: number;
@@ -69,9 +71,25 @@ export function writeStateAtomic(stateFile: string, state: LoopState): string {
   return createHash("sha256").update(content).digest("hex");
 }
 
+export interface BoundaryEvent {
+  event: "analyze-impl-boundary-enforced";
+  run_id: string;
+  stopped_before: string | null;
+  reason: string;
+  timestamp: string;
+}
+
 export function appendCheckpointEvent(
   telemetryFile: string,
   event: CheckpointEvent,
+): void {
+  mkdirSync(dirname(telemetryFile), { recursive: true });
+  appendFileSync(telemetryFile, JSON.stringify(event) + "\n", "utf-8");
+}
+
+export function appendBoundaryEvent(
+  telemetryFile: string,
+  event: BoundaryEvent,
 ): void {
   mkdirSync(dirname(telemetryFile), { recursive: true });
   appendFileSync(telemetryFile, JSON.stringify(event) + "\n", "utf-8");

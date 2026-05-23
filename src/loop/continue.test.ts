@@ -238,4 +238,107 @@ describe("runLoopContinue", () => {
     exitSpy.mockRestore();
     stderrSpy.mockRestore();
   });
+
+  it("sets boundary_enforcement in packet when analyze→implement boundary fires", () => {
+    const state = {
+      schema_version: "1.0",
+      run_id: "pol-5-session-1",
+      cluster_id: "POL-5",
+      active_child: "POL-23",
+      session_type: "analyze",
+      completed_children: [],
+      open_children: ["POL-24"],
+      open_children_meta: { "POL-24": { type: "implement" } },
+      step_cursor: "03-execute-child",
+      context_budget: { children_completed: 0, max_children_per_session: 3 },
+      status: "running",
+      next_open_child: "POL-24",
+    };
+    const stateFile = writeState(testDir, state);
+
+    const logs: string[] = [];
+    const origLog = console.log;
+    console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
+    try {
+      runLoopContinue({ stateFile, repoRoot: testDir });
+    } finally {
+      console.log = origLog;
+    }
+
+    const packet = JSON.parse(logs.join("\n"));
+    expect(packet.boundary_enforcement).toContain("analyze-session-ended");
+  });
+
+  it("emits boundary JSONL event to telemetry when boundary fires", () => {
+    const state = {
+      schema_version: "1.0",
+      run_id: "pol-5-session-1",
+      cluster_id: "POL-5",
+      active_child: "POL-23",
+      session_type: "analyze",
+      completed_children: [],
+      open_children: ["POL-24"],
+      open_children_meta: { "POL-24": { type: "implement" } },
+      step_cursor: "03-execute-child",
+      context_budget: { children_completed: 0, max_children_per_session: 3 },
+      status: "running",
+      next_open_child: "POL-24",
+      artifact_dir: join(testDir, ".taskchain_artifacts", "bootstrap-run"),
+    };
+    const stateFile = writeState(testDir, state);
+
+    const origLog = console.log;
+    console.log = () => {};
+    try {
+      runLoopContinue({ stateFile, repoRoot: testDir });
+    } finally {
+      console.log = origLog;
+    }
+
+    const telemetryFile = join(
+      testDir,
+      ".taskchain_artifacts",
+      "bootstrap-run",
+      "runs",
+      "pol-5-session-1",
+      "telemetry.jsonl",
+    );
+    const lines = readFileSync(telemetryFile, "utf-8")
+      .trim()
+      .split("\n")
+      .map((l) => JSON.parse(l));
+    const boundaryEvent = lines.find((e) => e.event === "analyze-impl-boundary-enforced");
+    expect(boundaryEvent).toBeTruthy();
+    expect(boundaryEvent.stopped_before).toBe("POL-24");
+  });
+
+  it("does NOT set boundary_enforcement when both are implement type", () => {
+    const state = {
+      schema_version: "1.0",
+      run_id: "pol-5-session-1",
+      cluster_id: "POL-5",
+      active_child: "POL-23",
+      session_type: "implement",
+      completed_children: [],
+      open_children: ["POL-24"],
+      open_children_meta: { "POL-24": { type: "implement" } },
+      step_cursor: "03-execute-child",
+      context_budget: { children_completed: 0, max_children_per_session: 3 },
+      status: "running",
+      next_open_child: "POL-24",
+    };
+    const stateFile = writeState(testDir, state);
+
+    const logs: string[] = [];
+    const origLog = console.log;
+    console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
+    try {
+      runLoopContinue({ stateFile, repoRoot: testDir });
+    } finally {
+      console.log = origLog;
+    }
+
+    const packet = JSON.parse(logs.join("\n"));
+    expect(packet.boundary_enforcement).toBeUndefined();
+  });
 });

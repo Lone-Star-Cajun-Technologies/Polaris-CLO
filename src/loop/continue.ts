@@ -1,16 +1,36 @@
 import { join, resolve } from "node:path";
+import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import {
   readState,
   validateState,
   writeStateAtomic,
   appendCheckpointEvent,
+  appendBoundaryEvent,
+  type LoopState,
 } from "./checkpoint.js";
 import { buildBootstrapPacket, writeBootstrapPacket } from "./bootstrap-packet.js";
 
 export interface ContinueOptions {
   stateFile: string;
   repoRoot: string;
+}
+
+function readSessionTypeFile(repoRoot: string): string | undefined {
+  try {
+    return readFileSync(join(repoRoot, ".polaris", "session-type"), "utf-8").trim();
+  } catch {
+    return undefined;
+  }
+}
+
+function getNextChildType(state: LoopState, nextChild: string | null): string | undefined {
+  if (!nextChild) return undefined;
+  return state.open_children_meta?.[nextChild]?.type;
+}
+
+function isAnalyzeImplBoundary(sessionType: string | undefined, nextChildType: string | undefined): boolean {
+  return sessionType === "analyze" && nextChildType === "implement";
 }
 
 export function runLoopContinue(options: ContinueOptions): void {
@@ -37,6 +57,13 @@ export function runLoopContinue(options: ContinueOptions): void {
   const state = rawState as ReturnType<typeof readState>;
   const completedChild = state.active_child;
   const nextChild = state.open_children[0] ?? null;
+
+  // Determine session type (state field takes precedence, file is secondary signal)
+  const sessionTypeFile = readSessionTypeFile(repoRoot);
+  const sessionType = state.session_type ?? sessionTypeFile;
+  if (sessionTypeFile && !state.session_type) {
+    console.warn(`Warning: session_type not in state; using .polaris/session-type file: ${sessionTypeFile}`);
+  }
 
   // Update state: mark active_child as completed
   const updatedState = {
@@ -81,8 +108,26 @@ export function runLoopContinue(options: ContinueOptions): void {
     );
   }
 
+  // Step 4: Analyze→implementation boundary check
+  const nextChildType = getNextChildType(state, nextChild);
+  const boundaryTriggered = isAnalyzeImplBoundary(sessionType, nextChildType);
+
+  if (boundaryTriggered) {
+    appendBoundaryEvent(telemetryFile, {
+      event: "analyze-impl-boundary-enforced",
+      run_id: state.run_id,
+      stopped_before: nextChild,
+      reason: "analyze session cannot auto-continue into implementation",
+      timestamp: new Date().toISOString(),
+    });
+  }
+
   // Steps 4-5: Generate and write bootstrap packet
   const packet = buildBootstrapPacket(updatedState, stateFile, sha, repoRoot, completedChild);
+  if (boundaryTriggered) {
+    packet.boundary_enforcement =
+      "analyze-session-ended; implementation requires fresh session with explicit impl scope";
+  }
   const bootstrapDir = join(repoRoot, ".polaris", "bootstrap");
   const packetPath = writeBootstrapPacket(packet, bootstrapDir);
 
