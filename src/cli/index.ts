@@ -3,6 +3,7 @@ import { Command } from "commander";
 import { getVersion } from "./version.js";
 import { loadConfig, PolarisConfigError } from "../config/loader.js";
 import { createMapCommand } from "../map/index.js";
+import { createLoopCommand } from "../loop/index.js";
 
 const program = new Command();
 
@@ -33,5 +34,6 @@ program
   );
 
 program.addCommand(createMapCommand());
+program.addCommand(createLoopCommand());
 
 program.parse();
