@@ -4,6 +4,7 @@ import { execFileSync } from "node:child_process";
 import { Command } from "commander";
 import { loadConfig } from "../config/loader.js";
 import { runMapUpdate } from "./update.js";
+import { runMapValidate } from "./validate.js";
 import { parsePolarisIgnore } from "../ignore/parser.js";
 import { SECRET_PATTERNS } from "../ignore/defaults.js";
 import { inferRoute } from "./inference.js";
@@ -196,6 +197,21 @@ export function createMapCommand(): Command {
       const { hasNeedsReview } = runMapUpdate(options.repoRoot, files, options.fromCommit, options.toCommit);
       const onLowConfidence = loadConfig(options.repoRoot).map.onLowConfidence ?? "warn";
       if (hasNeedsReview && onLowConfidence === "fail") process.exit(1);
+    });
+
+  map
+    .command("validate")
+    .description("Atlas integrity check and needs-review reporting")
+    .option("-r, --repo-root <path>", "Repository root", process.cwd())
+    .option("--stale-threshold <days>", "Days before an entry is considered stale", "30")
+    .option("--fix <path>", "Show and optionally fix entry for a specific file")
+    .action((options: { repoRoot: string; staleThreshold: string; fix?: string }) => {
+      const { hasError } = runMapValidate(
+        options.repoRoot,
+        parseInt(options.staleThreshold, 10),
+        options.fix,
+      );
+      if (hasError) process.exit(1);
     });
 
   return map;
