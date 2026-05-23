@@ -4,19 +4,19 @@
   "cluster_id": "POL-7",
   "skill": "bootstrap-run",
   "session_type": "analyze",
-  "active_child": "POL-33",
-  "completed_children": ["POL-31", "POL-32"],
+  "active_child": "",
+  "completed_children": ["POL-31", "POL-32", "POL-33"],
   "open_children": ["POL-34", "POL-35"],
   "open_children_meta": {
     "POL-34": { "type": "implement" },
     "POL-35": { "type": "implement" }
   },
-  "step_cursor": "03-execute-child",
+  "step_cursor": "checkpoint",
   "context_budget": {
-    "children_completed": 2,
+    "children_completed": 3,
     "max_children_per_session": 3
   },
-  "status": "running",
-  "last_commit": "4ecf22b",
+  "status": "stopped-budget",
+  "last_commit": "3ad61ba",
   "next_open_child": "POL-34"
 }
