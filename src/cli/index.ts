@@ -5,6 +5,7 @@ import { loadConfig, PolarisConfigError } from "../config/loader.js";
 import { createMapCommand } from "../map/index.js";
 import { createLoopCommand } from "../loop/index.js";
 import { createFinalizeCommand } from "../finalize/index.js";
+import { createDocsCommand } from "../docs/index.js";
 
 const program = new Command();
 
@@ -37,5 +38,6 @@ program
 program.addCommand(createMapCommand());
 program.addCommand(createLoopCommand());
 program.addCommand(createFinalizeCommand());
+program.addCommand(createDocsCommand());
 
 program.parse();
