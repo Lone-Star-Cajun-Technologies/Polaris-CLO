@@ -19,6 +19,13 @@ PID_FILE="${STATE_DIR}/server.pid"
 if [[ -f "$PID_FILE" ]]; then
   pid=$(cat "$PID_FILE")
 
+  # Validate PID is a positive integer before using it
+  if ! [[ "$pid" =~ ^[1-9][0-9]*$ ]]; then
+    echo '{"error": "invalid pid file contents"}'
+    rm -f "$PID_FILE"
+    exit 1
+  fi
+
   # Try to stop gracefully, fallback to force if still alive
   kill "$pid" 2>/dev/null || true
 

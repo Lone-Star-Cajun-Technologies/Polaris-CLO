@@ -56,7 +56,7 @@ def main():
         return
 
     # Glob mode: repo_root/tests/caveman-compress/
-    tests_dir = Path(__file__).parent.parent.parent / "tests" / "caveman-compress"
+    tests_dir = Path(__file__).resolve().parents[4] / "tests" / "caveman-compress"
     if not tests_dir.exists():
         print(f"❌ Tests dir not found: {tests_dir}")
         sys.exit(1)

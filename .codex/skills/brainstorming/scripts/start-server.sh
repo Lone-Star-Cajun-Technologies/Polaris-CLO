@@ -93,11 +93,13 @@ mkdir -p "${SESSION_DIR}/content" "$STATE_DIR"
 # Kill any existing server
 if [[ -f "$PID_FILE" ]]; then
   old_pid=$(cat "$PID_FILE")
-  kill "$old_pid" 2>/dev/null
+  if [[ "$old_pid" =~ ^[1-9][0-9]*$ ]]; then
+    kill "$old_pid" 2>/dev/null || true
+  fi
   rm -f "$PID_FILE"
 fi
 
-cd "$SCRIPT_DIR"
+cd "$SCRIPT_DIR" || { echo '{"error":"Failed to change directory to script path"}'; exit 1; }
 
 # Resolve the harness PID (grandparent of this script).
 # $PPID is the ephemeral shell the harness spawned to run us — it dies

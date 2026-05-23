@@ -57,11 +57,13 @@ required_fields:
 
           baseline:
             type: number
+            nullable: true
             default: null
             description: "Filled automatically during Phase 1 baseline measurement. Do not set manually."
 
           target:
             type: number
+            nullable: true
             default: null
             description: "Optional target value. Loop stops when this is reached."
             example: 4.2
@@ -139,6 +141,7 @@ required_fields:
             description: "Total number of output items to sample for judge evaluation per experiment"
           stratification:
             type: array
+            nullable: true
             default: null
             description: "Stratified sampling buckets. If null, uses uniform random sampling."
             items:
@@ -156,6 +159,7 @@ required_fields:
             description: "Number of singleton items to sample for false-negative evaluation"
           singleton_rubric:
             type: string
+            nullable: true
             default: null
             description: "Rubric for evaluating sampled singletons. Required if singleton_sample > 0."
           sample_seed:
@@ -282,6 +286,7 @@ optional_fields:
         description: "Maximum experiments to run in parallel. Capped at 6 for worktree backend. 8+ only valid for Codex backend."
       codex_security:
         type: enum
+        nullable: true
         values:
           - full-auto                                # --full-auto (workspace write)
           - yolo                                     # --dangerously-bypass-approvals-and-sandbox
@@ -295,6 +300,7 @@ optional_fields:
     optional_children:
       port_strategy:
         type: enum
+        nullable: true
         values:
           - parameterized  # use env var for port
           - none           # no port parameterization needed
@@ -302,10 +308,12 @@ optional_fields:
         description: "If null, auto-detected during Phase 1 parallelism probe"
       port_env_var:
         type: string
+        nullable: true
         default: null
         description: "Environment variable name for port parameterization (e.g., EVAL_PORT)"
       port_base:
         type: integer
+        nullable: true
         default: null
         description: "Base port number. Each experiment gets port_base + experiment_index."
       shared_files:

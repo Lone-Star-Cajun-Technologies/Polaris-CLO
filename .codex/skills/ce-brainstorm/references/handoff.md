@@ -21,14 +21,14 @@ If `Resolve Before Planning` contains any items:
 
 In both preambles below, the "Pick a number or describe what you want." hint applies only in numbered-list mode. When using the blocking tool, omit that line and pass the remaining stem as the question.
 
-**Path format:** Use absolute paths for chat-output file references — relative paths are not auto-linked as clickable in most terminals.
+**Path format:** Use repo-relative paths for file references in generated documents (canonical format, e.g., `docs/requirements/feature.md`). Absolute paths may optionally be included as a secondary reference for clickable terminal links.
 
 **Preamble when no blocking questions remain:**
 
 ```
 Brainstorm complete.
 
-Requirements doc: <absolute path to requirements doc>  # omit line if no doc was created
+Requirements doc: <repo-relative path to requirements doc>  # omit line if no doc was created
 
 What would you like to do next? (Pick a number or describe what you want.)
 ```

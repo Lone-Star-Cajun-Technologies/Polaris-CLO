@@ -73,6 +73,10 @@ def detect_file_type(filepath: Path) -> str:
     if ext in SKIP_EXTENSIONS:
         return "code" if ext not in {".json", ".yaml", ".yml", ".toml", ".ini", ".cfg", ".env"} else "config"
 
+    # Known extensionless config/build files
+    if filepath.name.lower() in {"makefile", "dockerfile", ".env"}:
+        return "config"
+
     # Extensionless files (like CLAUDE.md, TODO) — check content
     if not ext:
         try:

@@ -19,12 +19,10 @@
           "severity",
           "file",
           "line",
-          "why_it_matters",
           "autofix_class",
           "owner",
           "requires_verification",
           "confidence",
-          "evidence",
           "pre_existing"
         ],
         "properties": {

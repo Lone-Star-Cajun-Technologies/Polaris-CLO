@@ -206,6 +206,9 @@ create_worktree() {
       esac
       rm -rf -- "${canonical_dst_path:?}"
       cp -R "$src" "$dst"
+    else
+      echo -e "${RED}Error: Shared path not found: $shared_file${NC}" >&2
+      return 1
     fi
   done
 

@@ -7,6 +7,7 @@ const path = require('path');
 
 const OPCODES = { TEXT: 0x01, CLOSE: 0x08, PING: 0x09, PONG: 0x0A };
 const WS_MAGIC = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
+const MAX_FRAME_BYTES = 1 * 1024 * 1024; // 1 MB safety cap
 
 function computeAcceptKey(clientKey) {
   return crypto.createHash('sha1').update(clientKey + WS_MAGIC).digest('base64');
@@ -57,6 +58,10 @@ function decodeFrame(buffer) {
     offset = 10;
   }
 
+  if (payloadLen > MAX_FRAME_BYTES) {
+    throw new Error('Frame too large');
+  }
+
   const maskOffset = offset;
   const dataOffset = offset + 4;
   const totalLen = dataOffset + payloadLen;
@@ -99,7 +104,13 @@ h1 { color: #333; } p { color: #666; }</style>
 <p>Waiting for the agent to push a screen...</p></body></html>`;
 
 const frameTemplate = fs.readFileSync(path.join(__dirname, 'frame-template.html'), 'utf-8');
-const helperScript = fs.readFileSync(path.join(__dirname, 'helper.js'), 'utf-8');
+let helperScript;
+try {
+  helperScript = fs.readFileSync(path.join(__dirname, 'helper.js'), 'utf-8');
+} catch (e) {
+  console.error('Warning: helper.js not found, interactive features disabled:', e.message);
+  helperScript = '/* helper.js not found — interactive features disabled */';
+}
 const helperInjection = '<script>\n' + helperScript + '\n</script>';
 
 // ========== Helper Functions ==========
@@ -308,6 +319,11 @@ function startServer() {
     );
     watcher.close();
     clearInterval(lifecycleCheck);
+    for (const socket of clients) {
+      try { socket.end(); } catch (e) {}
+      try { socket.destroy(); } catch (e) {}
+    }
+    clients.clear();
     server.close(() => process.exit(0));
   }
 

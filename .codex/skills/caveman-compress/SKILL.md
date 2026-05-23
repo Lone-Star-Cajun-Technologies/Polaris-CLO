@@ -23,7 +23,7 @@ Compress natural language files (CLAUDE.md, todos, preferences) into caveman-spe
 
 2. Run:
 
-cd caveman-compress && python3 -m scripts <absolute_filepath>
+cd .codex/skills/caveman-compress && python3 -m scripts <absolute_filepath>
 
 3. The CLI will:
 - detect file type (no tokens)

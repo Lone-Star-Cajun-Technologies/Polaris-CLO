@@ -95,8 +95,9 @@ def count_bullets(text):
 
 
 def extract_inline_codes(text):
-    text_without_fences = re.sub(r"^```[\s\S]*?^```", "", text, flags=re.MULTILINE)
-    text_without_fences = re.sub(r"^~~~[\s\S]*?^~~~", "", text_without_fences, flags=re.MULTILINE)
+    text_without_fences = text
+    for block in extract_code_blocks(text):
+        text_without_fences = text_without_fences.replace(block, "", 1)
     return re.findall(r"`([^`]+)`", text_without_fences)
 
 

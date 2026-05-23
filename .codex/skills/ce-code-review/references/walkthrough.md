@@ -207,7 +207,7 @@ Every terminal path of Interactive mode emits the same completion report structu
 
 ### Minimum required fields (per R12)
 
-- **Per-finding entries:** for every finding the flow touched, a line with — at minimum — title, severity, the action taken (Applied / Deferred / Skipped / Acknowledged), the tracker URL or in-session task reference for Deferred entries, and a one-line reason for Skipped entries (grounded in the finding's confidence or the one-line `why_it_matters` snippet).
+- **Per-finding entries:** for every finding the flow touched, a line with — at minimum — title, severity, the action taken (Applied / Deferred / Skipped / Acknowledged), the tracker URL for Deferred entries when ticket filing succeeds, and a one-line reason for Skipped entries (grounded in the finding's confidence or the one-line `why_it_matters` snippet).
 - **Summary counts by action:** totals per bucket (e.g., `4 applied, 2 deferred, 2 skipped`).
 - **Failures called out explicitly:** any fix application that failed, any ticket creation that failed (with the reason returned by the tracker). Failures are surfaced above the per-finding list so they are not missed.
 - **End-of-review verdict:** the existing Stage 6 verdict (Ready to merge / Ready with fixes / Not ready), computed from the residual state after all actions complete.
