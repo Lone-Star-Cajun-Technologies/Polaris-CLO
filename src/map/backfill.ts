@@ -111,14 +111,14 @@ export function runMapBackfill(
     const scanDir = resolve(repoRoot, scanRoot);
 
     for (const filePath of walkDir(scanDir, repoRoot, ig)) {
-      if (processedFiles.has(filePath)) continue;
-      processedFiles.add(filePath);
-
       // Apply --domain filter: only process files under sourceRoot/domain/
       if (domainFilter !== undefined) {
         const domainPrefix = `${scanRoot}/${domainFilter}/`;
         if (!filePath.startsWith(domainPrefix)) continue;
       }
+
+      if (processedFiles.has(filePath)) continue;
+      processedFiles.add(filePath);
 
       // Security check — never process secret files
       if (isSecretFile(filePath)) {
