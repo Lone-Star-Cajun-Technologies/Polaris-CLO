@@ -243,6 +243,73 @@ The orchestration layer is stable. Only the dispatch mechanism is parameterized.
 
 ---
 
+## Session Context Contract (Token Budget Design)
+
+This is the primary design constraint. Violating it causes token burn to compound across the loop.
+
+### Parent / Orchestrator Session — stays lean for the entire loop
+
+The parent session must never accumulate:
+- Child implementation details
+- Test output or lint output
+- File diffs or code written by workers
+- Full Linear issue bodies
+- Sub-agent conversation transcripts
+
+The parent session only ever holds:
+- The current `current-state.json` snapshot (small, structured)
+- The worker's return summary for the just-completed child
+- Loop control logic (next child selection, stop/continue decision)
+
+**If the parent session grows, the design is wrong.**
+
+### Worker Session — does all heavy work in isolation
+
+Each worker session:
+- Receives a compact bootstrap prompt: child ID + path to `current-state.json`
+- Reads what it needs (issue body, source files, atlas) independently
+- Implements, validates, commits, updates state file, emits telemetry
+- Returns ONE small summary to the parent: `{child_id, status, commit, validation}`
+- Its full context is discarded when it exits — this is intentional
+
+The worker's context window can be large. That cost is bounded per child and does not compound.
+
+### Loop Completion Summary
+
+When all children are done, the worker for the final child (or a dedicated summary step) produces a small loop summary:
+
+```json
+{
+  "cluster_id": "POL-42",
+  "children_completed": ["POL-43", "POL-44", "POL-45"],
+  "final_commit": "abc1234",
+  "status": "all-children-complete",
+  "next_action": "polaris-run on POL-42 --deliver"
+}
+```
+
+This is what the parent session reads. Not transcripts. Not diffs.
+
+### Contract Enforcement
+
+The execution adapter enforces this boundary structurally:
+
+- **`terminal-cli`**: OS process boundary — worker transcript is printed to terminal, not fed back to parent session. Parent only reads `current-state.json` after process exits.
+- **`agent-subtask`**: Agent tool's return value must be the small summary only. The sub-agent must be prompted to return a compact result, not a full report. Parent does not read the sub-agent's full output.
+- **`ci`**: Job output goes to CI logs. Parent reads state file from artifact store.
+
+### Why This Matters
+
+In a 10-child cluster, if the parent accumulates each child's full implementation context:
+- Session 1: baseline
+- Session 10: 10× context, likely approaching limits, quality degrading
+
+With the contract enforced:
+- Every session tick: ~same small context
+- Cost per child is bounded by the worker session, not compounding in the parent
+
+---
+
 ## Open Questions
 
 1. **How does `agent-subtask` mode handle worktree conflicts?** Two children touching the same file need sequential dispatch even in subtask mode.
