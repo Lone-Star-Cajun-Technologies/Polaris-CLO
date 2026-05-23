@@ -2,6 +2,7 @@ import { Command } from "commander";
 import { join } from "node:path";
 import { runLoopContinue } from "./continue.js";
 import { runLoopResume } from "./resume.js";
+import { runLoopStatus } from "./status.js";
 
 export function createLoopCommand(): Command {
   const loop = new Command("loop").description("Polaris loop commands");
@@ -30,6 +31,20 @@ export function createLoopCommand(): Command {
     .option("--state-file <path>", "Override path to current-state.json")
     .action((runId: string | undefined, options: { repoRoot: string; stateFile?: string }) => {
       runLoopResume({ runId, repoRoot: options.repoRoot, stateFile: options.stateFile });
+    });
+
+  loop
+    .command("status")
+    .description("Print current loop run state summary")
+    .option("-r, --repo-root <path>", "Repository root", process.cwd())
+    .option("--state-file <path>", "Override path to current-state.json")
+    .option("--json", "Emit JSON output instead of human-readable text")
+    .action((options: { repoRoot: string; stateFile?: string; json?: boolean }) => {
+      runLoopStatus({
+        repoRoot: options.repoRoot,
+        stateFile: options.stateFile,
+        json: options.json,
+      });
     });
 
   return loop;
