@@ -336,12 +336,13 @@
     "taskchain": "polaris-docs",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-05-23T17:01:56.848Z",
+    "last_updated": "2026-05-23T17:28:42.729Z",
     "updated_by": "polaris-map-update",
     "tags": [
       "docs",
       "entry-point"
-    ]
+    ],
+    "instructionFile": "POLARIS.md"
   },
   "src/docs/seed-instructions.test.ts": {
     "domain": "docs",
@@ -457,5 +458,32 @@
       "map"
     ],
     "instructionFile": "src/map/POLARIS.md"
+  },
+  "src/docs/ingest.test.ts": {
+    "domain": "docs",
+    "route": "src/docs",
+    "taskchain": "polaris-docs",
+    "confidence": 0.9500000000000001,
+    "classification": "indexed",
+    "last_updated": "2026-05-23T17:28:42.729Z",
+    "updated_by": "polaris-map-update",
+    "tags": [
+      "docs",
+      "test"
+    ],
+    "instructionFile": "POLARIS.md"
+  },
+  "src/docs/ingest.ts": {
+    "domain": "docs",
+    "route": "src/docs",
+    "taskchain": "polaris-docs",
+    "confidence": 0.9500000000000001,
+    "classification": "indexed",
+    "last_updated": "2026-05-23T17:28:42.729Z",
+    "updated_by": "polaris-map-update",
+    "tags": [
+      "docs"
+    ],
+    "instructionFile": "POLARIS.md"
   }
 }
