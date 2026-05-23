@@ -10,11 +10,11 @@ description: Route map for polaris-run — step order, continuation rules, Polar
 ```text
 01-orient-cluster
 02-prepare-branch
-03-select-child          ← loops back here after 07 decides CONTINUE
+03-select-child
 04-execute-child
 05-validate-child
 06-commit-and-update-linear
-07-decide-continuation   → CONTINUE: go to 03 | STOP: report and halt | DELIVER: go to 08
+07-decide-continuation   → STOP (always after one child) | DELIVER: go to 08
 08-final-delivery        ← reached when all children Done and delivery requested
 ```
 
@@ -22,10 +22,12 @@ description: Route map for polaris-run — step order, continuation rules, Polar
 
 After step 07 evaluates the session:
 
-- **CONTINUE**: return to step 03 within the same session. Re-fetch the child list. Select the next open child.
-- **STOP (token/context risk)**: halt when any budget threshold is met. Report completed child, commit hash, next open child ID, and resume command: `polaris loop resume`.
+- **STOP (child-complete)**: always halt after one child completes. Report completed child, commit hash, next open child ID, and resume command. The user starts a new session and runs polaris-run again to pick up the next child.
 - **STOP (blocked)**: halt immediately on blocker. Report unblock condition.
-- **DELIVER**: proceed to step 08 only when all children are Done and the user explicitly requests delivery.
+- **STOP (all-done, awaiting delivery)**: all children Done but delivery not yet requested. Report branch and last commit. Provide delivery command: `Use polaris-run on <PARENT-ID>. Finalize delivery.`
+- **DELIVER**: proceed to step 08 only when all children are Done and the user explicitly requests delivery in this session invocation.
+
+There is no CONTINUE. Every completed child ends the session.
 
 ## Polaris runtime integration
 
@@ -45,9 +47,9 @@ Track in `.taskchain_artifacts/polaris-run/current-state.json` under `context_bu
 
 | Counter | Meaning | Stop threshold |
 |---------|---------|----------------|
-| `children_completed` | Children fully Done this session | ≥ 4 → STOP |
-| `files_touched_total` | Total files changed this session | > 50 → STOP |
-| `last_child_files_touched` | Files changed by last child | > 20 → STOP |
+| `children_completed` | Children fully Done this session | ≥ 1 → STOP |
+| `files_touched_total` | Total files changed this session | > 50 → STOP (safety) |
+| `last_child_files_touched` | Files changed by last child | > 20 → STOP (safety) |
 
 ## Run ID format
 

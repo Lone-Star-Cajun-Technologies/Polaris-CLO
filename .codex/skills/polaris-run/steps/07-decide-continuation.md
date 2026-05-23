@@ -1,13 +1,13 @@
 ---
 name: polaris-run-step-07-decide-continuation
-description: Run polaris loop continue to checkpoint state and generate the bootstrap packet, then route to CONTINUE, STOP, or DELIVER based on its output and budget state.
+description: Run polaris loop continue to checkpoint state and generate the bootstrap packet, then route to STOP or DELIVER. One child per session — always STOP after a child completes.
 ---
 
 # Step 07 — Decide continuation
 
 ## Purpose
 
-Checkpoint session state via the Polaris runtime, then determine the correct next action.
+Checkpoint session state via the Polaris runtime. One child completes per session — always halt and provide a resume command so the next session starts fresh.
 
 ## Scope declarations
 
@@ -22,10 +22,10 @@ allowed_routes:
 expected_evidence:
   - polaris loop continue executed
   - bootstrap packet emitted
-  - CONTINUE, STOP, or DELIVER decision recorded
+  - STOP or DELIVER decision recorded
 stop_rules:
   - polaris loop continue exits non-zero (excluding expected boundary event)
-  - budget threshold reached
+  - child just completed (always)
   - all children Done but delivery not yet requested
 ```
 
@@ -37,36 +37,23 @@ stop_rules:
    ```
    This checkpoints `.polaris/runs/current-state.json`, emits a `loop-checkpoint` JSONL event, runs `polaris map update --changed` (idempotent), checks the analyze→implement boundary, and writes a bootstrap packet to `.polaris/bootstrap/`.
 
-2. Evaluate the output to determine the continuation decision:
+2. Evaluate the output to determine the decision:
 
-### CONTINUE
+### STOP (child-complete) — default after every child
 
-Proceed if ALL hold:
-- `polaris loop continue` exits 0 with no `boundary_enforcement` field.
-- `context_budget.children_completed < 4`
-- `context_budget.files_touched_total ≤ 50`
-- `context_budget.last_child_files_touched ≤ 20`
-- Open children remain.
+After any child completes, always halt:
+- Report: last completed child ID, commit hash, next open child ID and title.
+- Provide resume instruction: start a new session and run `polaris-run on <PARENT-ID>`.
+- Do not push. Do not create a PR.
 
-→ Return to step 03.
+This is the normal case. There is no CONTINUE.
 
 ### STOP (boundary_enforcement)
 
 Halt if `polaris loop continue` output contains a `boundary_enforcement` field:
-- Report: last completed child ID, commit hash, offending resource counts from the boundary_enforcement field.
-- Provide resume command: `polaris loop resume`.
+- Report: last completed child ID, commit hash, offending resource counts.
+- Provide resume instruction: start a new session and run `polaris-run on <PARENT-ID>`.
 - Do not push. Do not create a PR.
-
-### STOP (token/context risk)
-
-Halt if ANY budget threshold is met:
-- `context_budget.children_completed ≥ 4`
-- `context_budget.files_touched_total > 50`
-- `context_budget.last_child_files_touched > 20`
-
-Report: last completed child ID, commit hash, next open child ID and title.
-Provide resume command: `polaris loop resume`.
-Do not push. Do not create a PR.
 
 ### STOP (all-done, awaiting delivery)
 
@@ -85,10 +72,10 @@ Proceed to step 08 only if:
 ## Artifact update
 
 Update `.taskchain_artifacts/polaris-run/current-state.json`:
-- `status: <continuing | stopped | delivering>`
+- `status: stopped`
 - `current_step_id: 07-decide-continuation`
 - `updated_at: <timestamp>`
 
 ## Next step
 
-03-select-child (CONTINUE), halted (STOP), or 08-final-delivery (DELIVER)
+halted (STOP) or 08-final-delivery (DELIVER)
