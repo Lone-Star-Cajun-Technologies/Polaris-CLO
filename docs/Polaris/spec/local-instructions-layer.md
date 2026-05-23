@@ -143,7 +143,7 @@ Cover directories that agents edit most frequently:
 
 When an agent starts work on a directory that lacks `POLARIS.md`, Polaris can optionally generate a draft:
 
-```
+```shell
 polaris docs seed-instructions src/ignore
 ```
 
@@ -183,7 +183,7 @@ Polaris detects potential staleness by checking whether a directory's `POLARIS.m
 
 | Signal | Severity | Description |
 |---|---|---|
-| `POLARIS.md` not updated when ≥3 files in its directory changed | warn | Likely stale — may not reflect new additions |
+| `POLARIS.md` not updated when ≥3 files in its directory changed within the current commit/PR (as determined by SCM commit history, i.e., files modified in the same commit or PR diff) | warn | Likely stale — may not reflect new additions |
 | File types or patterns appeared that are not mentioned | warn | New responsibilities may be undocumented |
 | Route ownership changed in sidecar atlas | warn | Linked routes may now be wrong |
 | A file listed in "Read before editing" was moved/deleted | error | Broken link in instructions |
@@ -193,12 +193,12 @@ Polaris detects potential staleness by checking whether a directory's `POLARIS.m
 
 Proposed command that runs staleness checks and reports:
 
-```
+```shell
 polaris docs validate-instructions [--path <dir>] [--fix]
 ```
 
 Output format:
-```
+```text
 POLARIS.md validation report:
   src/map/POLARIS.md      OK
   src/loop/POLARIS.md     WARN: 4 files changed since last instruction update
@@ -235,7 +235,7 @@ All commands are additive — they write drafts or reports, never silently modif
 
 `polaris map query` gains an `--include-instructions` flag:
 
-```
+```shell
 polaris map query src/map/atlas.ts --include-instructions
 ```
 
