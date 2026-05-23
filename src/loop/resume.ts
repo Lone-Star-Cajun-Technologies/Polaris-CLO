@@ -20,11 +20,11 @@ function readPacket(bootstrapDir: string, runId?: string): BootstrapPacket {
 
   let target: string;
   if (runId) {
-    const match = entries.find((f) => f.startsWith(`${runId}-`));
-    if (!match) {
+    const matches = entries.filter((f) => f.startsWith(`${runId}-`)).sort();
+    if (matches.length === 0) {
       throw new Error(`No bootstrap packet found for run_id "${runId}" in ${bootstrapDir}`);
     }
-    target = match;
+    target = matches.at(-1)!;
   } else {
     // Pick the most recently written packet (last alphabetically by timestamp suffix)
     target = entries.sort().at(-1)!;

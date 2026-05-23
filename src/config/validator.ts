@@ -81,6 +81,12 @@ export function validateConfig(config: unknown): ValidationResult {
           result.errors.push("repo.sidecarOutputPath must be a string");
         }
       }
+      if ("name" in config.repo && config.repo.name !== undefined) {
+        if (!isString(config.repo.name)) {
+          result.valid = false;
+          result.errors.push("repo.name must be a string");
+        }
+      }
     }
   }
 
@@ -139,6 +145,12 @@ export function validateConfig(config: unknown): ValidationResult {
         if (!isBoolean(config.loop.analyzeImplBoundaryEnforced)) {
           result.valid = false;
           result.errors.push("loop.analyzeImplBoundaryEnforced must be a boolean");
+        }
+      }
+      if ("allowBranchDivergence" in config.loop && config.loop.allowBranchDivergence !== undefined) {
+        if (!isBoolean(config.loop.allowBranchDivergence)) {
+          result.valid = false;
+          result.errors.push("loop.allowBranchDivergence must be a boolean");
         }
       }
       if ("sessionTerminationMode" in config.loop && config.loop.sessionTerminationMode !== undefined) {

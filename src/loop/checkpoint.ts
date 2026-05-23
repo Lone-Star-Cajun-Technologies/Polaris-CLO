@@ -64,8 +64,13 @@ export function validateState(state: unknown): string[] {
   if (!Array.isArray(s["completed_children"])) errors.push("completed_children must be an array");
   if (!Array.isArray(s["open_children"])) errors.push("open_children must be an array");
   if (typeof s["step_cursor"] !== "string") errors.push("missing step_cursor");
-  if (typeof s["context_budget"] !== "object" || s["context_budget"] === null)
+  if (typeof s["context_budget"] !== "object" || s["context_budget"] === null) {
     errors.push("missing context_budget");
+  } else {
+    const budget = s["context_budget"] as Record<string, unknown>;
+    if (typeof budget["children_completed"] !== "number" || !isFinite(budget["children_completed"] as number))
+      errors.push("missing or invalid context_budget.children_completed");
+  }
   if (typeof s["status"] !== "string") errors.push("missing status");
   return errors;
 }

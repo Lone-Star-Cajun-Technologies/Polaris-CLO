@@ -64,8 +64,15 @@ def strip_llm_wrapper(text: str) -> str:
         return m.group(2)
     return text
 
-from .detect import should_compress
-from .validate import validate
+try:
+    from .detect import should_compress
+    from .validate import validate
+except ImportError:
+    import sys
+    import os
+    sys.path.insert(0, os.path.dirname(__file__))
+    from detect import should_compress  # type: ignore[no-redef]
+    from validate import validate  # type: ignore[no-redef]
 
 MAX_RETRIES = 2
 
@@ -103,10 +110,13 @@ def call_claude(prompt: str) -> str:
             text=True,
             capture_output=True,
             check=True,
+            timeout=300,
         )
         return strip_llm_wrapper(result.stdout.strip())
+    except subprocess.TimeoutExpired as e:
+        raise RuntimeError("Claude CLI call timed out after 300 seconds.") from e
     except subprocess.CalledProcessError as e:
-        raise RuntimeError(f"Claude call failed:\n{e.stderr}")
+        raise RuntimeError(f"Claude call failed:\n{e.stderr}") from e
 
 
 def build_compress_prompt(original: str) -> str:

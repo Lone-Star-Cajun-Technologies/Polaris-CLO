@@ -7,7 +7,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "dev": "ts-node src/cli/index.ts",
+    "dev": "node --loader ts-node/esm src/cli/index.ts",
     "test": "vitest --run",
     "lint": "eslint src/**/*.ts"
   },
@@ -20,6 +20,7 @@
     "@typescript-eslint/parser": "^7.0.0",
     "eslint": "^8.0.0",
     "typescript": "^5.0.0",
+    "ts-node": "^10.9.0",
     "vitest": "^1.0.0"
   }
 }

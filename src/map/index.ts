@@ -30,12 +30,17 @@ function isSecretFile(filePath: string): boolean {
   return SECRET_REGEXES.some((re) => re.test(base) || re.test(filePath));
 }
 
-function* walkDir(dir: string, root: string): Generator<string> {
+function* walkDir(
+  dir: string,
+  root: string,
+  ig?: ReturnType<typeof parsePolarisIgnore>,
+): Generator<string> {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const full = join(dir, entry.name);
     const rel = relative(root, full).replace(/\\/g, "/");
     if (entry.isDirectory()) {
-      yield* walkDir(full, root);
+      if (ig?.ignores(rel + "/")) continue;
+      yield* walkDir(full, root, ig);
     } else {
       yield rel;
     }
@@ -94,7 +99,7 @@ export function runMapIndex(repoRoot: string, dryRun: boolean, verbose: boolean)
 
   const now = new Date().toISOString();
 
-  for (const filePath of walkDir(repoRoot, repoRoot)) {
+  for (const filePath of walkDir(repoRoot, repoRoot, ig)) {
     scanned++;
 
     // Security check — never process secret files

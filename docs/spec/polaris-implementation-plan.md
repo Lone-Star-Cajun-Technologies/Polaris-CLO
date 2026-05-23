@@ -262,7 +262,7 @@ Issues are ordered sequentially in 7 clusters (POL-2 through POL-8). Each cluste
 
 ### Dependency graph
 
-```
+```text
 POL-2 (Cluster 1: Bootstrap)
   └── POL-3 (Cluster 2: CLI/config/ignore)
         └── POL-4 (Cluster 3: Map)

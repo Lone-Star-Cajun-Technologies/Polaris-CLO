@@ -30,6 +30,7 @@ function computeStateSha(stateFile: string): string {
 
 function findLatestPacket(
   bootstrapDir: string,
+  runId?: string,
 ): { path: string; packet: BootstrapPacket } | null {
   let entries: string[];
   try {
@@ -38,10 +39,18 @@ function findLatestPacket(
     return null;
   }
   if (entries.length === 0) return null;
-  const latest = entries.sort().at(-1)!;
+  const candidates = runId
+    ? entries.filter((f) => f.startsWith(`${runId}-`)).sort()
+    : entries.sort();
+  if (candidates.length === 0) return null;
+  const latest = candidates.at(-1)!;
   const fullPath = join(bootstrapDir, latest);
-  const raw = readFileSync(fullPath, "utf-8");
-  return { path: fullPath, packet: JSON.parse(raw) as BootstrapPacket };
+  try {
+    const raw = readFileSync(fullPath, "utf-8");
+    return { path: fullPath, packet: JSON.parse(raw) as BootstrapPacket };
+  } catch {
+    return null;
+  }
 }
 
 export function runLoopStatus(options: StatusOptions): void {
@@ -74,7 +83,7 @@ export function runLoopStatus(options: StatusOptions): void {
   const openChildren: string[] = state.open_children ?? [];
   const blockedChildren: string[] = ((state as unknown as Record<string, unknown>)["blocked_children"] as string[] | undefined) ?? [];
 
-  const packetResult = findLatestPacket(bootstrapDir);
+  const packetResult = findLatestPacket(bootstrapDir, state.run_id);
   let packetFresh: boolean | null = null;
   let packetPathDisplay: string | null = null;
   let stateSha: string | null = null;
