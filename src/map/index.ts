@@ -69,6 +69,11 @@ function loadIgnoreFilter(repoRoot: string): ReturnType<typeof parsePolarisIgnor
 }
 
 export function runMapIndex(repoRoot: string, dryRun: boolean, verbose: boolean): void {
+  if (!existsSync(repoRoot)) {
+    console.error(`Repo root not found: ${repoRoot}`);
+    process.exit(1);
+  }
+
   const config = loadConfig(repoRoot);
   const outputPath = resolve(repoRoot, config.repo.sidecarOutputPath ?? ".polaris/map");
   const branchName = getBranchName(repoRoot);
@@ -88,11 +93,6 @@ export function runMapIndex(repoRoot: string, dryRun: boolean, verbose: boolean)
   let ignored = 0;
 
   const now = new Date().toISOString();
-
-  if (!existsSync(repoRoot)) {
-    console.error(`Repo root not found: ${repoRoot}`);
-    process.exit(1);
-  }
 
   for (const filePath of walkDir(repoRoot, repoRoot)) {
     scanned++;

@@ -90,7 +90,10 @@ export function runMapBackfill(
 
   let added = 0;
   let queued = 0;
-  let skipped = 0;
+  let skippedSecret = 0;
+  let skippedAlreadyMapped = 0;
+  let skippedExempted = 0;
+  let skippedIgnored = 0;
 
   const scanRoots = [
     ...(config.repo.sourceRoots ?? ["src"]),
@@ -109,28 +112,28 @@ export function runMapBackfill(
 
       // Security check — never process secret files
       if (isSecretFile(filePath)) {
-        if (verbose) console.log(`  [HIGH] secret file skipped: ${filePath}`);
-        skipped++;
+        console.log(`  [HIGH] secret file skipped: ${filePath}`);
+        skippedSecret++;
         continue;
       }
 
       // Skip if already mapped (never overwrite)
       if (routes[filePath] || needsReview[filePath]) {
-        skipped++;
+        skippedAlreadyMapped++;
         if (verbose) console.log(`  skip (already mapped): ${filePath}`);
         continue;
       }
 
       // Skip if exempted
       if (exemptions[filePath]) {
-        skipped++;
+        skippedExempted++;
         if (verbose) console.log(`  skip (exempted): ${filePath}`);
         continue;
       }
 
       // Skip if ignored
       if (ig.ignores(filePath)) {
-        skipped++;
+        skippedIgnored++;
         if (verbose) console.log(`  skip (ignored): ${filePath}`);
         continue;
       }
@@ -177,6 +180,7 @@ export function runMapBackfill(
     });
   }
 
-  console.log(`Backfilled ${total} files. Added ${added}. Queued ${queued} for review. Skipped ${skipped} (already mapped).`);
+  const skipped = skippedSecret + skippedAlreadyMapped + skippedExempted + skippedIgnored;
+  console.log(`Backfilled ${total} files. Added ${added}. Queued ${queued} for review. Skipped ${skipped} (secret: ${skippedSecret}, already mapped: ${skippedAlreadyMapped}, exempted: ${skippedExempted}, ignored: ${skippedIgnored}).`);
   if (dryRun) console.log("(dry-run: no files written)");
 }

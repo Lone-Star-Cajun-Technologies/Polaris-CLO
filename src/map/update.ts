@@ -114,7 +114,14 @@ export function runMapUpdate(
       continue;
     }
 
-    // 2. Existing entry in file-routes.json → validate and update timestamp
+    // 2. File doesn't exist on disk (deleted) → remove from needs-review if present, skip
+    if (!existsSync(resolve(repoRoot, filePath))) {
+      delete needsReview[filePath];
+      summary.ignored++;
+      continue;
+    }
+
+    // 3. Existing entry in file-routes.json → validate and update timestamp
     if (routes[filePath]) {
       routes[filePath]!.last_updated = now;
       routes[filePath]!.updated_by = "polaris-map-update";
@@ -122,15 +129,8 @@ export function runMapUpdate(
       continue;
     }
 
-    // 3. Tracked-not-indexed → skip
+    // 4. Tracked-not-indexed → skip
     if (exemptions[filePath]) {
-      summary.ignored++;
-      continue;
-    }
-
-    // 4. File doesn't exist on disk (deleted) → remove from needs-review if present, skip
-    if (!existsSync(resolve(repoRoot, filePath))) {
-      delete needsReview[filePath];
       summary.ignored++;
       continue;
     }
@@ -152,10 +152,12 @@ export function runMapUpdate(
 
     if (inferred.confidence >= autoWriteAbove) {
       routes[filePath] = entry;
+      delete needsReview[filePath];
       summary.inferred++;
       summary.mapped++;
     } else {
       needsReview[filePath] = entry;
+      delete routes[filePath];
       summary.needs_review++;
       if (inferred.confidence >= confidenceThreshold) {
         // Between thresholds: also track in needs-review but don't fail by default

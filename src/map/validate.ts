@@ -7,6 +7,7 @@ import {
   readNeedsReview,
   readExemptions,
   writeFileRoutes,
+  writeNeedsReview,
 } from "./atlas.js";
 
 const SECRET_REGEXES = SECRET_PATTERNS.map(
@@ -55,10 +56,17 @@ export function runMapValidate(
       console.log(`Current entry for ${fixPath}:`);
       console.log(JSON.stringify(entry, null, 2));
       if (!existsSync(resolve(repoRoot, fixPath))) {
-        const updated = { ...routes };
-        delete updated[fixPath];
-        writeFileRoutes(outputPath, updated);
-        console.log(`Removed missing entry: ${fixPath}`);
+        if (routes[fixPath]) {
+          const updated = { ...routes };
+          delete updated[fixPath];
+          writeFileRoutes(outputPath, updated);
+          console.log(`Removed missing entry from routes: ${fixPath}`);
+        } else if (needsReview[fixPath]) {
+          const updated = { ...needsReview };
+          delete updated[fixPath];
+          writeNeedsReview(outputPath, updated);
+          console.log(`Removed missing entry from needs-review: ${fixPath}`);
+        }
       }
     } else {
       console.log(`No entry found for: ${fixPath}`);
@@ -75,7 +83,10 @@ export function runMapValidate(
   const routeToDomains = new Map<string, Set<string>>();
   const routeToFiles = new Map<string, string[]>();
 
-  for (const [filePath, entry] of Object.entries(routes)) {
+  // Combine routes and needsReview for validation checks
+  const allEntries = [...Object.entries(routes), ...Object.entries(needsReview)];
+
+  for (const [filePath, entry] of allEntries) {
     // 2. Missing source files
     if (!existsSync(resolve(repoRoot, filePath))) {
       missing.push(filePath);
@@ -111,12 +122,14 @@ export function runMapValidate(
   const needsReviewCount = Object.keys(needsReview).length;
 
   // Coverage: indexed / (indexed + needs-review + tracked-not-indexed)
-  const indexedCount = Object.keys(routes).length - missing.length;
+  // Only count routes for indexedCount, excluding missing files
+  const indexedCount = Object.keys(routes).length - missing.filter(f => routes[f]).length;
   const trackedCount = Object.keys(exemptions).length;
   const total = indexedCount + needsReviewCount + trackedCount;
   const coveragePct = total > 0 ? Math.round((indexedCount / total) * 100 * 10) / 10 : 0;
 
   // Output
+  const successMark = "✓";
   const okMark = "✓";
   const warnMark = "⚠";
   const errMark = "✗";
@@ -134,7 +147,7 @@ export function runMapValidate(
   if (sensitive.length > 0) {
     console.log(`${errMark} HIGH: ${sensitive.length} sensitive file(s) in atlas: ${sensitive.join(", ")}`);
   } else {
-    console.log(`${errMark} HIGH: 0 sensitive files in atlas`);
+    console.log(`${successMark} HIGH: 0 sensitive files in atlas`);
   }
 
   if (needsReviewCount > 0) {

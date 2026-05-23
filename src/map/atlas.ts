@@ -34,8 +34,11 @@ function ensureDir(filePath: string): void {
 function readJson<T>(filePath: string, fallback: T): T {
   try {
     return JSON.parse(readFileSync(filePath, "utf-8")) as T;
-  } catch {
-    return fallback;
+  } catch (error) {
+    if (error instanceof Error && "code" in error && (error as NodeJS.ErrnoException).code === "ENOENT") {
+      return fallback;
+    }
+    throw error;
   }
 }
 

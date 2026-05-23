@@ -119,7 +119,7 @@ export function runMapQuery(
       if (entry.taskchain === taskchain) result[filePath] = toQueryEntry(entry);
     }
   } else if (pathArg !== undefined) {
-    const isGlobPattern = pathArg.includes("*") || pathArg.includes("?") || pathArg.includes("[");
+    const isGlobPattern = pathArg.includes("*") || pathArg.includes("?");
     const isDir = !isGlobPattern && pathArg.endsWith("/");
 
     if (isGlobPattern) {
