@@ -1,0 +1,24 @@
+{
+  "run_id": "pol-5-session-1",
+  "skill": "bootstrap-run",
+  "branch": "philmeaux/pol-42-add-polaris-canon-reconciliation-and-docs-ingest-lifecycle",
+  "base_commit_sha": "5707b79e90fda6f601b1063023cd97170deb32cd",
+  "last_completed_step": "checkpoint",
+  "last_completed_child": "",
+  "next_step": "03-execute-child",
+  "open_children": [
+    "POL-26",
+    "POL-27"
+  ],
+  "artifact_pointers": {
+    "current_state": "/Users/lsctech/Developer/Polaris/.polaris/runs/current-state.json",
+    "telemetry": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/bootstrap-run/runs/pol-5-session-1/telemetry.jsonl"
+  },
+  "context_budget": {
+    "children_completed": 3,
+    "files_touched_total": 8,
+    "stop_threshold_remaining": 0
+  },
+  "current_state_sha": "efc2d48e8baf4e572fe9917ecbb5e707eb79a2db461ce7155d429e419ef63c0c",
+  "resume_instructions": "Run `polaris loop resume pol-5-session-1` on branch `philmeaux/pol-42-add-polaris-canon-reconciliation-and-docs-ingest-lifecycle` to continue with POL-26."
+}

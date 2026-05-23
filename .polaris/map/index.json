@@ -1,10 +1,10 @@
 {
-  "scan_date": "2026-05-23T15:50:16.162Z",
-  "file_count": 59,
-  "coverage_pct": 46,
+  "scan_date": "2026-05-23T16:21:50.191Z",
+  "file_count": 62,
+  "coverage_pct": 48,
   "instructionCoverage": {
     "routesCovered": 0,
-    "routesTotal": 59,
+    "routesTotal": 62,
     "coveragePercent": 0
   },
   "entries": {
@@ -26,8 +26,8 @@
       "taskchain": "polaris-cli",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-05-23T05:21:22.746Z",
-      "updated_by": "polaris-map-index",
+      "last_updated": "2026-05-23T16:21:50.191Z",
+      "updated_by": "polaris-map-update",
       "tags": [
         "cli",
         "entry-point"
@@ -337,6 +337,44 @@
       "tags": [
         "map",
         "test"
+      ]
+    },
+    "src/docs/index.ts": {
+      "domain": "docs",
+      "route": "src/docs",
+      "taskchain": "polaris-docs",
+      "confidence": 0.9,
+      "classification": "indexed",
+      "last_updated": "2026-05-23T16:21:50.191Z",
+      "updated_by": "polaris-map-update",
+      "tags": [
+        "docs",
+        "entry-point"
+      ]
+    },
+    "src/docs/seed-instructions.test.ts": {
+      "domain": "docs",
+      "route": "src/docs",
+      "taskchain": "polaris-docs",
+      "confidence": 0.9500000000000001,
+      "classification": "indexed",
+      "last_updated": "2026-05-23T16:21:50.191Z",
+      "updated_by": "polaris-map-update",
+      "tags": [
+        "docs",
+        "test"
+      ]
+    },
+    "src/docs/seed-instructions.ts": {
+      "domain": "docs",
+      "route": "src/docs",
+      "taskchain": "polaris-docs",
+      "confidence": 0.9500000000000001,
+      "classification": "indexed",
+      "last_updated": "2026-05-23T16:21:50.191Z",
+      "updated_by": "polaris-map-update",
+      "tags": [
+        "docs"
       ]
     },
     ".claude/settings.local.json": {
