@@ -76,9 +76,11 @@ You never mix skills within a single session. The `analyzeImplBoundaryEnforced: 
 
 ---
 
-## 4. Writing the chain.yaml
+## 4. Writing the taskchain skill file
 
-Create the file at `.codex/skills/<skill-name>/chain.yaml`. Use the chosen skill name as the directory name (e.g. `.codex/skills/polaris-run/chain.yaml`).
+**Note on formats:** This guide references `chain.yaml` for the machine-readable cluster definition format (as documented in `docs/spec/taskchain-format.md`). In the current Polaris implementation, skills use human-readable `chain.md` files at `.codex/skills/<skill-name>/chain.md` (see `.codex/skills/polaris-run/chain.md` and `.codex/skills/polaris-analyze/chain.md` as references). The examples below use YAML syntax for clarity, but adapt to the format expected by your skill implementation.
+
+Create the skill file at `.codex/skills/<skill-name>/` (either `chain.yaml` or `chain.md` depending on your implementation). Use the chosen skill name as the directory name (e.g. `.codex/skills/polaris-run/`).
 
 ```yaml
 version: "1.0"

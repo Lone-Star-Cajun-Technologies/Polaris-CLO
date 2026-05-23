@@ -1,15 +1,15 @@
 {
   "schema_version": "1.0",
-  "run_id": "pol-7-session-1",
-  "cluster_id": "POL-7",
-  "skill": "bootstrap-run",
+  "run_id": "pol-5-session-1",
+  "cluster_id": "POL-5",
+  "skill": "polaris-run",
   "session_type": "analyze",
   "active_child": "",
-  "completed_children": ["POL-31", "POL-32", "POL-33"],
-  "open_children": ["POL-34", "POL-35"],
+  "completed_children": ["POL-23", "POL-24", "POL-25"],
+  "open_children": ["POL-26", "POL-27"],
   "open_children_meta": {
-    "POL-34": { "type": "implement" },
-    "POL-35": { "type": "implement" }
+    "POL-26": { "type": "implement" },
+    "POL-27": { "type": "implement" }
   },
   "step_cursor": "checkpoint",
   "context_budget": {
@@ -18,5 +18,5 @@
   },
   "status": "stopped-budget",
   "last_commit": "3ad61ba",
-  "next_open_child": "POL-34"
+  "next_open_child": "POL-26"
 }
