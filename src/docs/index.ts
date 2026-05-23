@@ -1,9 +1,45 @@
 import { Command } from "commander";
+import { ingestDocs, printIngestResults } from "./ingest.js";
 import { seedInstructions, seedInstructionsAll } from "./seed-instructions.js";
 import { validateInstructions, printReport } from "./validate-instructions.js";
 
 export function createDocsCommand(): Command {
   const docs = new Command("docs").description("Polaris docs lifecycle commands");
+
+  docs
+    .command("ingest [path]")
+    .description("Classify and place docs into the Polaris docs authority structure")
+    .option("--file <path>", "Single file to ingest")
+    .option("--cluster <id>", "Cluster ID for bounded batch provenance")
+    .option("--files <paths...>", "Bounded batch file list")
+    .option("--dry-run", "Classify and report without moving files")
+    .option("--approve-authority", "Allow placement in high-authority docs areas")
+    .option("-r, --repo-root <path>", "Repository root", process.cwd())
+    .action((
+      pathArg: string | undefined,
+      options: {
+        file?: string;
+        cluster?: string;
+        files?: string[];
+        dryRun?: boolean;
+        approveAuthority?: boolean;
+        repoRoot: string;
+      },
+    ) => {
+      const files = options.files ?? (options.file ? [options.file] : pathArg ? [pathArg] : []);
+      try {
+        const results = ingestDocs(files, {
+          repoRoot: options.repoRoot,
+          dryRun: options.dryRun,
+          clusterId: options.cluster,
+          approveAuthority: options.approveAuthority,
+        });
+        printIngestResults(results);
+      } catch (err) {
+        console.error(err instanceof Error ? err.message : String(err));
+        process.exit(1);
+      }
+    });
 
   docs
     .command("seed-instructions [path]")

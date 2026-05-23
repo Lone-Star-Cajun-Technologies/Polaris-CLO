@@ -318,5 +318,27 @@
     "last_updated": "2026-05-23T15:50:16.162Z",
     "updated_by": "polaris-map-update",
     "tags": []
+  },
+  "POLARIS.md": {
+    "domain": "unknown",
+    "route": "POLARIS.md",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T17:06:26.521Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": "POLARIS.md"
+  },
+  "docs/Polaris/spec/docs-authority-model.md": {
+    "domain": "unknown",
+    "route": "docs/Polaris/spec/docs-authority-model.md",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T17:27:25.133Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": "POLARIS.md"
   }
 }

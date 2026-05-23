@@ -1,22 +1,37 @@
 {
   "schema_version": "1.0",
-  "run_id": "polaris-run-canon-docs-lifecycle-2026-05-23-003",
-  "related_run_id": "polaris-run-canon-docs-lifecycle-2026-05-23-002",
+  "run_id": "polaris-run-canon-docs-lifecycle-2026-05-23-005",
+  "related_run_id": "polaris-run-canon-docs-lifecycle-2026-05-23-004",
   "cluster_id": "POL-42",
   "skill": "polaris-run",
   "artifact_dir": ".taskchain_artifacts/polaris-run",
   "branch": "philmeaux/pol-42-add-polaris-canon-reconciliation-and-docs-ingest-lifecycle",
-  "current_step_id": "07-decide-continuation",
-  "status": "stopped",
-  "validation_status": "passed-pol45",
-  "last_commit": "93f4490",
-  "active_child": "",
-  "completed_children": ["POL-43", "POL-44", "POL-45"],
-  "open_children": ["POL-46", "POL-47", "POL-48", "POL-49", "POL-50", "POL-51", "POL-52", "POL-53"],
+  "current_step_id": "05-validate-child",
+  "step_cursor": "validate",
+  "status": "validating",
+  "validation_status": "passed-pol48",
+  "last_commit": "eeefb20",
+  "active_child": "POL-48",
+  "next_open_child": "POL-48",
+  "completed_children": [
+    "POL-43",
+    "POL-44",
+    "POL-45",
+    "POL-46",
+    "POL-47"
+  ],
+  "open_children": [
+    "POL-48",
+    "POL-49",
+    "POL-50",
+    "POL-51",
+    "POL-52",
+    "POL-53"
+  ],
   "context_budget": {
     "children_completed": 1,
-    "files_touched_total": 3,
-    "last_child_files_touched": 3
+    "files_touched_total": 1,
+    "last_child_files_touched": 1
   },
-  "updated_at": "2026-05-23T17:02:00.000Z"
+  "updated_at": "2026-05-23T17:27:36.000Z"
 }
