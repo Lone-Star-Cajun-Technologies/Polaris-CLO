@@ -25,13 +25,18 @@ function isSecretFile(filePath: string): boolean {
   return SECRET_REGEXES.some((re) => re.test(base) || re.test(filePath));
 }
 
-function* walkDir(dir: string, root: string): Generator<string> {
+function* walkDir(
+  dir: string,
+  root: string,
+  ig?: ReturnType<typeof parsePolarisIgnore>,
+): Generator<string> {
   if (!existsSync(dir)) return;
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const full = join(dir, entry.name);
     const rel = relative(root, full).replace(/\\/g, "/");
     if (entry.isDirectory()) {
-      yield* walkDir(full, root);
+      if (ig?.ignores(rel + "/")) continue;
+      yield* walkDir(full, root, ig);
     } else {
       yield rel;
     }
@@ -100,10 +105,15 @@ export function runMapBackfill(
     ...(config.repo.docsRoots ?? []),
   ];
 
+  const processedFiles = new Set<string>();
+
   for (const scanRoot of scanRoots) {
     const scanDir = resolve(repoRoot, scanRoot);
 
-    for (const filePath of walkDir(scanDir, repoRoot)) {
+    for (const filePath of walkDir(scanDir, repoRoot, ig)) {
+      if (processedFiles.has(filePath)) continue;
+      processedFiles.add(filePath);
+
       // Apply --domain filter: only process files under sourceRoot/domain/
       if (domainFilter !== undefined) {
         const domainPrefix = `${scanRoot}/${domainFilter}/`;

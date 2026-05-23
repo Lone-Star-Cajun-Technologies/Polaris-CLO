@@ -49,9 +49,14 @@ export function loadConfig(repoRoot: string): Required<PolarisConfig> {
     const raw = readFileSync(configPath, "utf-8");
     userConfig = JSON.parse(raw) as Partial<PolarisConfig>;
   } catch (err) {
-    if (typeof err === "object" && err !== null && "code" in err && (err as { code: string }).code !== "ENOENT") {
+    const isEnoent =
+      typeof err === "object" &&
+      err !== null &&
+      "code" in err &&
+      (err as { code: string }).code === "ENOENT";
+    if (!isEnoent) {
       throw new PolarisConfigError(
-        `Failed to read polaris.config.json: ${(err as unknown as Error).message}`,
+        `Failed to read polaris.config.json: ${(err as Error).message ?? String(err)}`,
         [],
       );
     }

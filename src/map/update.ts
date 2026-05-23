@@ -114,9 +114,10 @@ export function runMapUpdate(
       continue;
     }
 
-    // 2. File doesn't exist on disk (deleted) → remove from needs-review if present, skip
+    // 2. File doesn't exist on disk (deleted) → remove from both indexes, skip
     if (!existsSync(resolve(repoRoot, filePath))) {
       delete needsReview[filePath];
+      delete routes[filePath];
       summary.ignored++;
       continue;
     }

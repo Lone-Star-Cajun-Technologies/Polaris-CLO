@@ -68,7 +68,8 @@ export function inferRoute(
       const fullPath = resolve(repoRoot, filePath);
       if (existsSync(fullPath)) {
         const content = readFileSync(fullPath, "utf-8");
-        const sameDomainImport = new RegExp(`from\\s+['"](?:\\.\\.?/)*${domain}/`);
+        const escapedDomain = domain.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const sameDomainImport = new RegExp(`from\\s+['"](?:\\.\\.?/)*${escapedDomain}/`);
         if (sameDomainImport.test(content)) {
           confidence = Math.min(confidence + 0.05, 0.99);
         }

@@ -1,0 +1,322 @@
+{
+  ".claude/settings.local.json": {
+    "domain": "unknown",
+    "route": ".claude/settings.local.json",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T05:21:22.746Z",
+    "updated_by": "polaris-map-index",
+    "tags": []
+  },
+  ".codex/skills/bootstrap-run/.gitkeep": {
+    "domain": "unknown",
+    "route": ".codex/skills/bootstrap-run/.gitkeep",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T05:21:22.746Z",
+    "updated_by": "polaris-map-index",
+    "tags": []
+  },
+  ".codex/skills/bootstrap-run/README.md": {
+    "domain": "unknown",
+    "route": ".codex/skills/bootstrap-run/README.md",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T05:21:22.746Z",
+    "updated_by": "polaris-map-index",
+    "tags": []
+  },
+  ".codex/skills/bootstrap-run/chain.md": {
+    "domain": "unknown",
+    "route": ".codex/skills/bootstrap-run/chain.md",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T05:21:22.746Z",
+    "updated_by": "polaris-map-index",
+    "tags": []
+  },
+  ".codex/skills/brainstorming/scripts/helper.js": {
+    "domain": "unknown",
+    "route": ".codex/skills/brainstorming/scripts/helper.js",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T05:21:22.746Z",
+    "updated_by": "polaris-map-index",
+    "tags": []
+  },
+  ".codex/skills/caveman-compress/scripts/compress.py": {
+    "domain": "unknown",
+    "route": ".codex/skills/caveman-compress/scripts/compress.py",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T05:21:22.746Z",
+    "updated_by": "polaris-map-index",
+    "tags": []
+  },
+  ".codex/skills/writing-skills/render-graphs.js": {
+    "domain": "unknown",
+    "route": ".codex/skills/writing-skills/render-graphs.js",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T05:21:22.746Z",
+    "updated_by": "polaris-map-index",
+    "tags": []
+  },
+  ".eslintrc.json": {
+    "domain": "unknown",
+    "route": ".eslintrc.json",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T05:21:22.746Z",
+    "updated_by": "polaris-map-index",
+    "tags": []
+  },
+  ".gitignore": {
+    "domain": "unknown",
+    "route": ".gitignore",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T05:21:22.746Z",
+    "updated_by": "polaris-map-index",
+    "tags": []
+  },
+  ".polaris/bootstrap/.gitkeep": {
+    "domain": "unknown",
+    "route": ".polaris/bootstrap/.gitkeep",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T05:21:22.746Z",
+    "updated_by": "polaris-map-index",
+    "tags": []
+  },
+  ".polaris/map/.gitkeep": {
+    "domain": "unknown",
+    "route": ".polaris/map/.gitkeep",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T05:21:22.746Z",
+    "updated_by": "polaris-map-index",
+    "tags": []
+  },
+  ".polaris/map/exemptions.json": {
+    "domain": "unknown",
+    "route": ".polaris/map/exemptions.json",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T05:21:22.746Z",
+    "updated_by": "polaris-map-index",
+    "tags": []
+  },
+  ".polaris/map/file-routes.json": {
+    "domain": "unknown",
+    "route": ".polaris/map/file-routes.json",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T05:21:22.746Z",
+    "updated_by": "polaris-map-index",
+    "tags": []
+  },
+  ".polaris/map/index.json": {
+    "domain": "unknown",
+    "route": ".polaris/map/index.json",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T05:21:22.746Z",
+    "updated_by": "polaris-map-index",
+    "tags": []
+  },
+  ".polaris/map/needs-review.json": {
+    "domain": "unknown",
+    "route": ".polaris/map/needs-review.json",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T05:21:22.746Z",
+    "updated_by": "polaris-map-index",
+    "tags": []
+  },
+  ".polaris/runs/.gitkeep": {
+    "domain": "unknown",
+    "route": ".polaris/runs/.gitkeep",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T05:21:22.746Z",
+    "updated_by": "polaris-map-index",
+    "tags": []
+  },
+  ".taskchain_artifacts/.gitkeep": {
+    "domain": "unknown",
+    "route": ".taskchain_artifacts/.gitkeep",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T05:21:22.746Z",
+    "updated_by": "polaris-map-index",
+    "tags": []
+  },
+  ".taskchain_artifacts/bootstrap-run/current-state.json": {
+    "domain": "unknown",
+    "route": ".taskchain_artifacts/bootstrap-run/current-state.json",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T05:21:22.746Z",
+    "updated_by": "polaris-map-index",
+    "tags": []
+  },
+  ".taskchain_artifacts/evo-run/current-state.json": {
+    "domain": "unknown",
+    "route": ".taskchain_artifacts/evo-run/current-state.json",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T05:21:22.746Z",
+    "updated_by": "polaris-map-index",
+    "tags": []
+  },
+  ".taskchain_artifacts/evo-run/runs/evo-run-bootstrap-repo-2026-05-22-001.jsonl": {
+    "domain": "unknown",
+    "route": ".taskchain_artifacts/evo-run/runs/evo-run-bootstrap-repo-2026-05-22-001.jsonl",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T05:21:22.746Z",
+    "updated_by": "polaris-map-index",
+    "tags": []
+  },
+  ".taskchain_artifacts/evo-run/runs/evo-run-cli-config-2026-05-22-002.jsonl": {
+    "domain": "unknown",
+    "route": ".taskchain_artifacts/evo-run/runs/evo-run-cli-config-2026-05-22-002.jsonl",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T05:21:22.746Z",
+    "updated_by": "polaris-map-index",
+    "tags": []
+  },
+  "AGENTS.md": {
+    "domain": "unknown",
+    "route": "AGENTS.md",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T05:21:22.746Z",
+    "updated_by": "polaris-map-index",
+    "tags": []
+  },
+  "CLAUDE.md": {
+    "domain": "unknown",
+    "route": "CLAUDE.md",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T05:21:22.746Z",
+    "updated_by": "polaris-map-index",
+    "tags": []
+  },
+  "README.md": {
+    "domain": "unknown",
+    "route": "README.md",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T05:21:22.746Z",
+    "updated_by": "polaris-map-index",
+    "tags": []
+  },
+  "docs/planning/.gitkeep": {
+    "domain": "unknown",
+    "route": "docs/planning/.gitkeep",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T05:21:22.746Z",
+    "updated_by": "polaris-map-index",
+    "tags": []
+  },
+  "docs/planning/cluster-map.md": {
+    "domain": "unknown",
+    "route": "docs/planning/cluster-map.md",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T05:21:22.746Z",
+    "updated_by": "polaris-map-index",
+    "tags": []
+  },
+  "docs/spec/.gitkeep": {
+    "domain": "unknown",
+    "route": "docs/spec/.gitkeep",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T05:21:22.746Z",
+    "updated_by": "polaris-map-index",
+    "tags": []
+  },
+  "docs/spec/current-state-schema.md": {
+    "domain": "unknown",
+    "route": "docs/spec/current-state-schema.md",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T05:21:22.746Z",
+    "updated_by": "polaris-map-index",
+    "tags": []
+  },
+  "docs/spec/polaris-implementation-plan.md": {
+    "domain": "unknown",
+    "route": "docs/spec/polaris-implementation-plan.md",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T05:21:22.746Z",
+    "updated_by": "polaris-map-index",
+    "tags": []
+  },
+  "package-lock.json": {
+    "domain": "unknown",
+    "route": "package-lock.json",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T05:21:22.746Z",
+    "updated_by": "polaris-map-index",
+    "tags": []
+  },
+  "package.json": {
+    "domain": "unknown",
+    "route": "package.json",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T05:21:22.746Z",
+    "updated_by": "polaris-map-index",
+    "tags": []
+  },
+  "tsconfig.json": {
+    "domain": "unknown",
+    "route": "tsconfig.json",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T05:21:22.746Z",
+    "updated_by": "polaris-map-index",
+    "tags": []
+  }
+}

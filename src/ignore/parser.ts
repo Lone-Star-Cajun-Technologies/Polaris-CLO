@@ -5,8 +5,10 @@ import { DEFAULT_EXCLUSIONS, SECRET_PATTERNS } from "./defaults.js";
 
 export function parsePolarisIgnore(userPatterns: string[]): ReturnType<typeof ignore> {
   const ig = ignore();
-  ig.add(DEFAULT_EXCLUSIONS);
+  // User patterns first so SECRET_PATTERNS applied after cannot be negated
   ig.add(userPatterns);
+  ig.add(DEFAULT_EXCLUSIONS);
+  ig.add(SECRET_PATTERNS);
   return ig;
 }
 

@@ -25,9 +25,8 @@ POL-2 (Cluster 1: Bootstrap)
   └── POL-3 (Cluster 2: CLI/config/ignore)
         └── POL-4 (Cluster 3: Map)
               └── POL-5 (Cluster 4: Loop)
-                    ├── POL-6 (Cluster 5: Finalize)
-                    │     └── POL-7 (Cluster 6: EVO integration)
-                    └── POL-7 (Cluster 6: EVO integration)
+                    └── POL-6 (Cluster 5: Finalize)
+                          └── POL-7 (Cluster 6: EVO integration)
 
 POL-8 (Cluster 7: Adoption) ← POL-4 only
 ```
