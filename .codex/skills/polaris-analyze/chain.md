@@ -1,90 +1,92 @@
-# polaris-analyze
-
-Native Polaris taskchain skill for **analysis clusters**. Use this skill when children are `session_type: analyze` — producing specs, designs, and planning artifacts. When all analyze children are done, `polaris loop continue` enforces the analyze→implement boundary automatically; a fresh `polaris-run` session handles any subsequent implementation children.
-
+---
+name: polaris-analyze-chain
+description: Route map for polaris-analyze — step order, stop conditions, analyze-only boundary enforcement, and artifact requirements.
 ---
 
-## Session start
+# polaris-analyze chain
 
-1. Write `.polaris/session-type`:
-   ```
-   echo "analyze" > .polaris/session-type
-   ```
-   This signals boundary enforcement to `polaris loop continue`.
+## Step traversal order
 
-2. If this is the **first session**:
-   - Read `chain.yaml` for the cluster to learn children and dependencies.
-   - Initialize `.polaris/runs/current-state.json` with `session_type: analyze`.
-
-3. If this is a **resume session**:
-   - Run `polaris loop resume` to verify state and load bootstrap packet.
-
-4. Run `polaris loop status` to confirm the next analyze child.
-
----
-
-## Child loop
-
-Repeat for each analyze child:
-
-### 1. Select child
-
-Take the next child from `open_children` whose `blockedBy` are all in `completed_children`. Must be `session_type: analyze`.
-
-### 2. Execute
-
-Produce the analysis output per the child's Linear issue scope. Allowed outputs:
-- Docs, specs, and planning files (`docs/`, `docs/spec/`, `docs/planning/`)
-- Linear issue updates (findings, notes, links)
-
-**Not allowed in analyze sessions:**
-- Source code changes (`src/`, test files)
-- Config changes (`polaris.config.json`, `.polaris/`)
-- Any commit that modifies runnable code
-
-### 3. Commit
-
-```
-git add <docs and spec files only>
-git commit -m "[<CHILD-ID>] <child title>"
+```text
+01-fetch-and-orient      ← parallel: Linear fetch + GitNexus freshness + run-start telemetry
+02-map-affected-code     ← targeted GitNexus inspection
+03-assess-issue          ← outcome classification
+04-blocker-check         ← STOP if blocked or non-executable
+05-create-cluster-plan   ← create tracker children + local clusters.json
+06-final-report          ← terminal step
 ```
 
-### 4. Update Linear
+## Stop conditions
 
-Mark the child issue **Done** in Linear.
+**Step 04 (blocker check):**
+Stop immediately if the issue is blocked or assessment outcome is not `needs-cluster-plan`. Do not advance to step 05.
 
-### 5. Advance loop
+**Any step:**
+Stop if:
+- Implementation execution is attempted (scope violation — halt and report).
+- Canonical doctrine conflict cannot be resolved without user input.
+- HIGH or CRITICAL risk identified by GitNexus without a clear resolution path.
+- Parent issue is already Done or Cancelled.
 
+## Analyze-only boundary
+
+polaris-analyze is a read-and-plan skill. It never executes implementation work.
+
+The boundary is enforced by this skill — not by the Polaris runtime — because analyze sessions do not call `polaris loop continue`.
+
+If a step produces source code changes, halts on a `src/` file edit, or attempts to push or PR: that is a scope violation. Halt immediately, report the violation, and do not continue.
+
+## Run ID format
+
+Format: `polaris-analyze-<slug>-<date>-<seq>`
+- `<slug>`: 2–4 lowercase hyphenated words from the issue title. No Linear IDs.
+- `<date>`: `YYYY-MM-DD`
+- `<seq>`: zero-padded sequential number per day (`001`, `002`, …)
+
+Example: `polaris-analyze-local-instructions-2026-05-23-001`
+
+## Telemetry
+
+Telemetry file: `.taskchain_artifacts/polaris-analyze/runs/<run-id>/telemetry.jsonl` (append-only).
+
+| Event | Emitted by | Step |
+|---|---|---|
+| `run-start` | agent | 01 — before any Linear access |
+| `step-complete` | agent | end of every step |
+| `loop-aborted` | `polaris loop abort` | any blocker halt |
+
+Required fields on every event: `event`, `run_id`, `timestamp`.
+
+## Artifact authority
+
+`.taskchain_artifacts/polaris-analyze/current-state.json` is the sole authoritative live state surface.
+
+- Update after every completed step before advancing.
+- If the update fails: stop and report the persistence failure.
+
+## Linked-skill invocation boundaries
+
+| Skill | Allowed steps | Condition |
+|---|---|---|
+| caveman | session start | mandatory, lite mode |
+| gitnexus | 01, 02 | targeted lookup only |
+
+Invoke caveman-lite at session start. It governs all user-facing responses for the duration of the run.
+
+After each completed step, emit a checkpoint:
+
+```text
+**[step-name]** done | blocked | needs-input
+Changed: <Linear issues / docs created or updated> or none
+Validated: <checks passed> or none
+Blockers: none | <explicit blocker>
 ```
-polaris loop continue
-```
 
-If the next child is `session_type: implement`, `polaris loop continue` fires the boundary enforcement event and halts. This is the expected end of the analyze session — not an error.
+### Never compressed
 
----
-
-## Session end
-
-After `polaris loop continue` exits:
-
-- **Boundary enforced** (next child is implement-type): stop. Report the boundary event, the last completed analyze child, and the next implement child. The operator must start a new `polaris-run` session.
-- **More analyze children remain**: stop on context budget. Report next open child and resume command: `polaris loop resume`.
-- **All children Done and all are analyze-type**: run `polaris finalize`.
-
----
-
-## Blocker protocol
-
-```
-polaris loop abort "<reason>"
-```
-
-Halt immediately. Report the blocker and the unblock condition.
-
----
-
-## Constraints
-
-- Never modify `src/` or test files in an analyze session.
-- Never call `polaris finalize` unless all cluster children are Done (including any implement-type children that ran in a separate `polaris-run` session).
-- The analyze→implement boundary is enforced by Polaris, not by this skill. Do not manually check or replicate it.
+Always write in full regardless of caveman mode:
+- Child issue bodies and cluster plans (generated planning artifacts)
+- Blocker reports and unblock conditions
+- Doctrine conflict findings
+- HIGH or CRITICAL GitNexus risk findings
+- Final report (step 06)

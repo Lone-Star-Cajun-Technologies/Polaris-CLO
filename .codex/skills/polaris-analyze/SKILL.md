@@ -1,0 +1,50 @@
+---
+name: polaris-analyze
+description: Audit one Polaris issue against the actual repo using GitNexus and targeted inspection, then produce an ordered execution plan and cluster artifacts. Analysis and planning only — no code changes, no implementation execution.
+---
+
+# polaris-analyze
+
+Use this skill when the user asks to analyze or break down a Polaris issue before execution.
+
+## Related doctrine
+
+See `docs/Polaris/spec/polaris-implementation-plan.md` for the Polaris architecture reference.
+
+## When to use
+
+- "Analyze POL-XXX before running it"
+- "Break down POL-XXX into child issues"
+- "Is POL-XXX ready to execute?"
+- "Plan the execution clusters for POL-XXX"
+
+## How to execute
+
+1. Read `chain.md` — it defines the step order and traversal rules.
+2. Read `.taskchain_artifacts/polaris-analyze/current-state.json` — it contains any resumable state.
+3. Execute steps in the order `chain.md` defines. Do not skip steps.
+4. After every completed step, update `.taskchain_artifacts/polaris-analyze/current-state.json` before advancing.
+
+## Hard rules — what analyze may do
+
+- Inspect repo files and architecture
+- Query GitNexus for code intelligence
+- Summarize findings and assess feasibility
+- Create implementation plans and specs (in `docs/`)
+- Create or update tracker child issues (Linear)
+- Generate local cluster artifacts (`.polaris/clusters/<id>/clusters.json`)
+- Update tracker comments and status
+- Close the analysis issue when complete
+
+## Hard rules — what analyze must NOT do
+
+- Implement production or runtime code
+- Mutate source files (`src/`, tests, config)
+- Execute implementation loops
+- Open implementation PRs
+- Continue automatically into polaris-run execution
+- Call `polaris loop continue` or `polaris finalize`
+
+**Analyze shapes work. Run executes work.**
+
+If implementation execution is attempted during an analyze session: halt immediately and report the boundary violation.
