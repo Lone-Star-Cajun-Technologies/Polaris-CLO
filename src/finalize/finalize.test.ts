@@ -213,9 +213,11 @@ describe("runFinalize (steps 1–6, skip-delivery)", () => {
     // Capture stdout
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
-    await runFinalize({ repoRoot: testDir, stateFile, skipDelivery: true });
-
-    logSpy.mockRestore();
+    try {
+      await runFinalize({ repoRoot: testDir, stateFile, skipDelivery: true });
+    } finally {
+      logSpy.mockRestore();
+    }
 
     // Step 5 verification: run-report.md written
     const reportPath = join(testDir, ".polaris", "runs", "run-report.md");

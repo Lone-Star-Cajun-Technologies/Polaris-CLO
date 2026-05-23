@@ -45,12 +45,27 @@ export async function postLinearComment(options: PostCommentOptions): Promise<vo
         },
       },
       (res) => {
-        res.on("data", () => {});
+        const chunks: Buffer[] = [];
+        res.on("data", (chunk: Buffer) => {
+          chunks.push(chunk);
+        });
         res.on("end", () => {
           if ((res.statusCode ?? 0) >= 400) {
             reject(new Error(`Linear API returned ${res.statusCode}`));
-          } else {
-            resolve();
+            return;
+          }
+          try {
+            const body = Buffer.concat(chunks).toString("utf-8");
+            const parsed = JSON.parse(body) as { errors?: unknown[]; data?: { commentCreate?: { success?: boolean } } };
+            if (parsed.errors && Array.isArray(parsed.errors) && parsed.errors.length > 0) {
+              reject(new Error(`Linear API GraphQL errors: ${JSON.stringify(parsed.errors)}`));
+            } else if (parsed.data?.commentCreate?.success === false) {
+              reject(new Error(`Linear commentCreate failed: ${JSON.stringify(parsed.data.commentCreate)}`));
+            } else {
+              resolve();
+            }
+          } catch (err) {
+            reject(new Error(`Failed to parse Linear API response: ${err instanceof Error ? err.message : String(err)}`));
           }
         });
       },

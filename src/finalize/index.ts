@@ -29,8 +29,9 @@ function getBranch(repoRoot: string): string {
       cwd: repoRoot,
       encoding: "utf-8",
     }).trim();
-  } catch {
-    return "";
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(`Failed to get current branch in ${repoRoot}: ${msg}`);
   }
 }
 
