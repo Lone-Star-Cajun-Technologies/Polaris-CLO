@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { runLoopContinue } from "./continue.js";
 import { runLoopResume } from "./resume.js";
 import { runLoopStatus } from "./status.js";
+import { runLoopAbort } from "./abort.js";
 
 export function createLoopCommand(): Command {
   const loop = new Command("loop").description("Polaris loop commands");
@@ -46,6 +47,30 @@ export function createLoopCommand(): Command {
         json: options.json,
       });
     });
+
+  loop
+    .command("abort [reason]")
+    .description("Record a blocker, set status to blocked, and halt cleanly")
+    .option("-r, --repo-root <path>", "Repository root", process.cwd())
+    .option("--state-file <path>", "Override path to current-state.json")
+    .option("--child <id>", "Child issue ID the blocker is associated with")
+    .action(
+      (
+        reason: string | undefined,
+        options: { repoRoot: string; stateFile?: string; child?: string },
+      ) => {
+        if (!reason) {
+          process.stderr.write("Error: reason is required\n");
+          process.exit(1);
+        }
+        runLoopAbort({
+          reason,
+          childId: options.child,
+          repoRoot: options.repoRoot,
+          stateFile: options.stateFile,
+        });
+      },
+    );
 
   return loop;
 }

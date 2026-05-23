@@ -3,6 +3,7 @@ import { join, resolve } from "node:path";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { loadConfig } from "../config/loader.js";
+import { readState, writeStateAtomic } from "./checkpoint.js";
 import type { BootstrapPacket } from "./bootstrap-packet.js";
 
 function readPacket(bootstrapDir: string, runId?: string): BootstrapPacket {
@@ -123,6 +124,20 @@ export function runLoopResume(options: ResumeOptions): void {
     }
   }
 
-  // Step 5-6: Emit bootstrap packet to stdout, exit 0
+  // Step 5: Clear blocked status if state was blocked
+  try {
+    const currentState = readState(stateFile);
+    if (currentState.status === "blocked") {
+      writeStateAtomic(stateFile, {
+        ...currentState,
+        status: "running",
+        blocker: undefined,
+      });
+    }
+  } catch {
+    // Non-fatal: state read for clearing blocked status failed; proceed
+  }
+
+  // Step 6: Emit bootstrap packet to stdout, exit 0
   console.log(JSON.stringify(packet, null, 2));
 }

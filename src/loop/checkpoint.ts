@@ -8,6 +8,13 @@ import {
 import { createHash } from "node:crypto";
 import { dirname } from "node:path";
 
+export interface BlockerRecord {
+  reason: string;
+  child_id: string;
+  timestamp: string;
+  resolved: boolean;
+}
+
 export interface LoopState {
   schema_version: string;
   run_id: string;
@@ -28,6 +35,7 @@ export interface LoopState {
   last_commit?: string;
   next_open_child: string | null;
   artifact_dir?: string;
+  blocker?: BlockerRecord;
 }
 
 export interface CheckpointEvent {
@@ -91,6 +99,19 @@ export function appendBoundaryEvent(
   telemetryFile: string,
   event: BoundaryEvent,
 ): void {
+  mkdirSync(dirname(telemetryFile), { recursive: true });
+  appendFileSync(telemetryFile, JSON.stringify(event) + "\n", "utf-8");
+}
+
+export interface AbortEvent {
+  event: "loop-aborted";
+  run_id: string;
+  child_id: string;
+  reason: string;
+  timestamp: string;
+}
+
+export function appendAbortEvent(telemetryFile: string, event: AbortEvent): void {
   mkdirSync(dirname(telemetryFile), { recursive: true });
   appendFileSync(telemetryFile, JSON.stringify(event) + "\n", "utf-8");
 }
