@@ -1,18 +1,31 @@
 #!/usr/bin/env bash
 # polaris-run.sh — outer loop runner for polaris-run clusters
 #
-# Calls `claude -p` in a loop, each session handles one child.
+# Spawns a fresh agent session per child (Ralph-style structural isolation).
 # Reads .taskchain_artifacts/polaris-run/current-state.json after each
 # session to decide whether to continue, stop, or halt on a blocker.
+#
+# Agent is configurable — works with any CLI agent that accepts a prompt
+# as its last argument (claude, codex, gemini, etc.).
 #
 # Usage:
 #   scripts/polaris-run.sh <issue-id> [options]
 #
 # Options:
+#   --agent CMD         Agent command to use (default: $POLARIS_AGENT or "claude -p")
 #   --max-sessions N    Safety cap on total sessions (default: 30)
-#   --model MODEL       Claude model to use (default: claude's default)
 #   --deliver           After all children Done, run finalize delivery session
 #   --dry-run           Print what would run without executing
+#
+# Environment:
+#   POLARIS_AGENT       Default agent command (overridden by --agent)
+#
+# Examples:
+#   scripts/polaris-run.sh POL-42
+#   scripts/polaris-run.sh POL-42 --agent "claude -p"
+#   scripts/polaris-run.sh POL-42 --agent "codex"
+#   POLARIS_AGENT="gemini -p" scripts/polaris-run.sh POL-42
+#   scripts/polaris-run.sh POL-42 --deliver
 #
 # Exit codes:
 #   0  All children Done (or delivery complete)
@@ -22,20 +35,20 @@
 
 set -euo pipefail
 
-ISSUE=${1:?Usage: scripts/polaris-run.sh <issue-id> [--max-sessions N] [--model MODEL] [--deliver] [--dry-run]}
+ISSUE=${1:?Usage: scripts/polaris-run.sh <issue-id> [--agent CMD] [--max-sessions N] [--deliver] [--dry-run]}
 shift
 
 REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 STATE_FILE="$REPO_ROOT/.taskchain_artifacts/polaris-run/current-state.json"
 MAX_SESSIONS=30
-MODEL_FLAG=""
+AGENT="${POLARIS_AGENT:-claude -p}"
 DELIVER=false
 DRY_RUN=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --agent)        AGENT="$2"; shift 2 ;;
     --max-sessions) MAX_SESSIONS="$2"; shift 2 ;;
-    --model)        MODEL_FLAG="--model $2"; shift 2 ;;
     --deliver)      DELIVER=true; shift ;;
     --dry-run)      DRY_RUN=true; shift ;;
     *) echo "[polaris-run] Unknown flag: $1" >&2; exit 1 ;;
@@ -59,19 +72,16 @@ EOF
 
 run_session() {
   local prompt="$1"
-  # shellcheck disable=SC2086
-  local cmd="claude -p $(echo $MODEL_FLAG) \"$prompt\""
   if $DRY_RUN; then
-    log "[dry-run] would run: $cmd"
+    log "[dry-run] would run: $AGENT \"$prompt\""
     return 0
   fi
-  # shellcheck disable=SC2086
-  claude -p $MODEL_FLAG "$prompt"
+  $AGENT "$prompt"
 }
 
 sessions=0
 
-log "Starting loop for $ISSUE (max $MAX_SESSIONS sessions)"
+log "Starting loop for $ISSUE (agent: $AGENT, max $MAX_SESSIONS sessions)"
 log "State file: $STATE_FILE"
 
 while [[ $sessions -lt $MAX_SESSIONS ]]; do
@@ -79,7 +89,7 @@ while [[ $sessions -lt $MAX_SESSIONS ]]; do
   log "--- Session $sessions ---"
 
   if ! run_session "polaris-run on $ISSUE"; then
-    err "claude exited non-zero on session $sessions — stopping"
+    err "Agent exited non-zero on session $sessions — stopping"
     exit 1
   fi
 
@@ -98,7 +108,6 @@ while [[ $sessions -lt $MAX_SESSIONS ]]; do
           log "Delivery complete"
         else
           log "To deliver: scripts/polaris-run.sh $ISSUE --deliver"
-          log "Or: claude -p \"polaris-run on $ISSUE. Finalize delivery.\""
         fi
         exit 0
       fi
