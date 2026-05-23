@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { seedInstructions, seedInstructionsAll } from "./seed-instructions.js";
+import { validateInstructions, printReport } from "./validate-instructions.js";
 
 export function createDocsCommand(): Command {
   const docs = new Command("docs").description("Polaris docs lifecycle commands");
@@ -39,6 +40,24 @@ export function createDocsCommand(): Command {
         console.warn(`warning: ${pathArg}/POLARIS.md already exists (no draft marker) — skipped`);
       } else {
         console.log(`skipped (draft exists): ${pathArg}/POLARIS.md`);
+      }
+    });
+
+  docs
+    .command("validate-instructions")
+    .description("Check all POLARIS.md files for staleness, broken links, and missing coverage")
+    .option("--path <dir>", "Validate only the given directory")
+    .option("--fix", "Write POLARIS.draft.md for stale or missing files")
+    .option("-r, --repo-root <path>", "Repository root", process.cwd())
+    .action((options: { path?: string; fix?: boolean; repoRoot: string }) => {
+      const report = validateInstructions({
+        path: options.path,
+        fix: options.fix,
+        repoRoot: options.repoRoot,
+      });
+      printReport(report);
+      if (report.hasErrors) {
+        process.exit(1);
       }
     });
 
