@@ -5,6 +5,7 @@ import { Command } from "commander";
 import { loadConfig } from "../config/loader.js";
 import { runMapUpdate } from "./update.js";
 import { runMapValidate } from "./validate.js";
+import { runMapQuery } from "./query.js";
 import { parsePolarisIgnore } from "../ignore/parser.js";
 import { SECRET_PATTERNS } from "../ignore/defaults.js";
 import { inferRoute } from "./inference.js";
@@ -212,6 +213,17 @@ export function createMapCommand(): Command {
         options.fix,
       );
       if (hasError) process.exit(1);
+    });
+
+  map
+    .command("query [path]")
+    .description("Sidecar metadata lookup by path, glob, or filter")
+    .option("-r, --repo-root <path>", "Repository root", process.cwd())
+    .option("--domain <domain>", "All files in a domain")
+    .option("--taskchain <taskchain>", "All files in a taskchain")
+    .option("--text", "Human-readable output instead of JSON")
+    .action((pathArg: string | undefined, options: { repoRoot: string; domain?: string; taskchain?: string; text?: boolean }) => {
+      runMapQuery(options.repoRoot, pathArg, options.domain, options.taskchain, options.text ?? false);
     });
 
   return map;
