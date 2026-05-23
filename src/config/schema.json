@@ -1,0 +1,144 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PolarisConfig",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "version": {
+      "type": "string",
+      "default": "1.0"
+    },
+    "repo": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "sourceRoots": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": ["src"]
+        },
+        "docsRoots": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "taskchainRoots": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "generatedRoots": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "sidecarOutputPath": {
+          "type": "string",
+          "default": ".polaris/map"
+        }
+      }
+    },
+    "map": {
+      "type": "object",
+      "properties": {
+        "confidenceThreshold": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.75
+        },
+        "autoWriteAbove": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.85
+        },
+        "reviewRequiredBelow": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.75
+        },
+        "inferenceRules": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "onLowConfidence": {
+          "type": "string",
+          "enum": ["warn", "fail"],
+          "default": "warn"
+        }
+      }
+    },
+    "loop": {
+      "type": "object",
+      "properties": {
+        "bootstrapOutputPath": {
+          "type": "string",
+          "default": ".polaris/bootstrap"
+        },
+        "analyzeImplBoundaryEnforced": {
+          "type": "boolean",
+          "default": true
+        },
+        "sessionTerminationMode": {
+          "type": "string",
+          "enum": ["emit-marker", "exit-0"],
+          "default": "emit-marker"
+        }
+      }
+    },
+    "finalize": {
+      "type": "object",
+      "properties": {
+        "targetBranch": {
+          "type": "string",
+          "default": "main"
+        },
+        "prDraft": {
+          "type": "boolean",
+          "default": true
+        },
+        "runChecks": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": []
+        },
+        "requireMapValidation": {
+          "type": "boolean",
+          "default": true
+        },
+        "requireSchemaValidation": {
+          "type": "boolean",
+          "default": true
+        },
+        "archiveRunSnapshot": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "tracker": {
+      "type": "object",
+      "properties": {
+        "linear": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "teamId": { "type": "string" },
+            "projectId": { "type": "string" }
+          }
+        }
+      }
+    },
+    "integrations": {
+      "type": "object",
+      "properties": {
+        "github": {
+          "type": "object",
+          "properties": {
+            "owner": { "type": "string" },
+            "repo": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}
