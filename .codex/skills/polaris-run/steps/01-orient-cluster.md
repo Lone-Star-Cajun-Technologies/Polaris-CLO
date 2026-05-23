@@ -41,9 +41,9 @@ stop_rules:
 
 ## Actions
 
-0. **Generate `run_id`** — pure local computation, no I/O:
-   - Format: `polaris-run-<slug>-<date>-<seq>` (see `chain.md` for format rules)
-   - For resumed sessions, read the prior `run_id` from `.taskchain_artifacts/polaris-run/current-state.json` first, then generate a new one.
+0. **Generate `run_id`**:
+   - **Fresh runs** — pure local computation with no I/O. Generate `run_id` directly in format `polaris-run-<slug>-<date>-<seq>` (see `chain.md` for format rules).
+   - **Resumed runs** — perform I/O first by reading the prior `run_id` and state from `.taskchain_artifacts/polaris-run/current-state.json`, then generate the new `run_id` based on that prior state.
 
 1. **Emit `run-start` telemetry** — first I/O action, before any Linear access or branch work:
    ```bash

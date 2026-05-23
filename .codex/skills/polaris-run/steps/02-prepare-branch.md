@@ -32,7 +32,7 @@ stop_rules:
 
 ## Actions
 
-1. Use the branch name from the Linear parent issue's `gitBranchName` field (format: `philmeaux/<pol-id>-<slug>`). Do not invent a branch name.
+1. Use the branch name from the Linear parent issue's `gitBranchName` field as the authoritative branch name. This field provides the exact branch name to use (typically formatted like `philmeaux/<pol-id>-<slug>`, though format may vary). Do not invent or modify the branch name.
 2. If the branch already exists: check it out and verify the working tree is clean. If dirty: halt and instruct the user to commit or stash changes before continuing.
 3. If the branch does not exist: create it from `main`.
 4. Confirm no uncommitted changes from a different parent cluster exist. If `.taskchain_artifacts/polaris-run/current-state.json` records a different `cluster_id`, halt and report.

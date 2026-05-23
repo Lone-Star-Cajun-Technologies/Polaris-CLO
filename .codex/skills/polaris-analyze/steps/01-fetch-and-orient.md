@@ -34,7 +34,8 @@ stop_rules:
   - run-start telemetry write fails
   - issue missing or inaccessible
   - issue is already Done or Cancelled
-  - caveman activation fails (note and continue — lite mode is advisory)
+warnings:
+  - caveman activation fails: note and continue — lite mode is advisory
 ```
 
 ## Actions

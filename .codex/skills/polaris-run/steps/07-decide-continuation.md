@@ -50,6 +50,13 @@ Proceed if ALL hold:
 
 → Return to step 03.
 
+### STOP (boundary_enforcement)
+
+Halt if `polaris loop continue` output contains a `boundary_enforcement` field:
+- Report: last completed child ID, commit hash, offending resource counts from the boundary_enforcement field.
+- Provide resume command: `polaris loop resume`.
+- Do not push. Do not create a PR.
+
 ### STOP (token/context risk)
 
 Halt if ANY budget threshold is met:

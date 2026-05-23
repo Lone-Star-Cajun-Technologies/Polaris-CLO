@@ -40,8 +40,8 @@ Return a structured summary containing:
 5. **Clusters plan** — cluster IDs, child issues per cluster, session_types, and dependency order
 6. **clusters.json location** — `.polaris/clusters/<source-id>/clusters.json`
 7. **Recommended run command**:
-   ```text
-   Use polaris-run on <PARENT-ID>.
+   ```bash
+   polaris-run <PARENT-ID>
    ```
 8. **Remaining risks** — anything uncertain, out of scope, or requiring follow-up
 
