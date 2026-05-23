@@ -7,16 +7,17 @@
   "artifact_dir": ".taskchain_artifacts/polaris-run",
   "status": "ready",
   "branch": "philmeaux/pol-42-add-polaris-canon-reconciliation-and-docs-ingest-lifecycle",
-  "current_step_id": "05-validate-child",
-  "status": "validating",
+  "current_step_id": "07-decide-continuation",
+  "status": "stopped",
   "validation_status": "passed",
-  "active_child": "POL-43",
-  "completed_children": [],
-  "open_children": ["POL-43", "POL-44", "POL-45", "POL-46", "POL-47", "POL-48", "POL-49", "POL-50", "POL-51", "POL-52", "POL-53"],
+  "last_commit": "7491eab",
+  "active_child": "",
+  "completed_children": ["POL-43"],
+  "open_children": ["POL-44", "POL-45", "POL-46", "POL-47", "POL-48", "POL-49", "POL-50", "POL-51", "POL-52", "POL-53"],
   "context_budget": {
-    "children_completed": 0,
-    "files_touched_total": 0,
-    "last_child_files_touched": 0
+    "children_completed": 1,
+    "files_touched_total": 10,
+    "last_child_files_touched": 10
   },
   "updated_at": "2026-05-23T00:00:00Z"
 }
