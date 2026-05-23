@@ -4,18 +4,18 @@
   "parent_issue_title": "Cluster 2: Polaris CLI / config / ignore foundation",
   "status": "in_progress",
   "current_step": "03-execute-child",
-  "current_child": "POL-15",
+  "current_child": "POL-21",
   "branch": "philmeaux/pol-3-cluster-2-polaris-cli-config-ignore-foundation",
   "context_budget": {
-    "children_completed": 1,
-    "files_touched_total": 6,
-    "last_child_files_touched": 6,
-    "last_validation_lines": 3
+    "children_completed": 2,
+    "files_touched_total": 9,
+    "last_child_files_touched": 3,
+    "last_validation_lines": 4
   },
   "children": [
     {"id": "POL-14", "title": "[C2.1] Scaffold Polaris Node.js/TypeScript package (polaris --version)", "status": "Done"},
-    {"id": "POL-15", "title": "[C2.2] Implement polaris.config.json JSON schema and validator", "status": "In Progress"},
-    {"id": "POL-21", "title": "[C2.3] Implement config loader with defaults", "status": "Todo"},
+    {"id": "POL-15", "title": "[C2.2] Implement polaris.config.json JSON schema and validator", "status": "Done"},
+    {"id": "POL-21", "title": "[C2.3] Implement config loader with defaults", "status": "In Progress"},
     {"id": "POL-22", "title": "[C2.4] Implement .polarisignore parser with built-in default exclusions", "status": "Todo"}
   ],
   "related_run_id": "evo-run-bootstrap-repo-2026-05-22-001",
