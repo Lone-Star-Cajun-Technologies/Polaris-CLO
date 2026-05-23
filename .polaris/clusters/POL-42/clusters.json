@@ -1,0 +1,85 @@
+{
+  "source_id": "POL-42",
+  "source_type": "linear",
+  "created_at": "2026-05-23T00:05:00Z",
+  "clusters": [
+    {
+      "cluster_id": "cluster-01",
+      "description": "Local instructions foundation — implements POL-41 design spec",
+      "children": [
+        {
+          "id": "POL-43",
+          "title": "Add `instructionFile` atlas linkage, `--include-instructions` flag, and instruction coverage metric",
+          "session_type": "implement",
+          "blockedBy": []
+        },
+        {
+          "id": "POL-44",
+          "title": "Implement `polaris docs seed-instructions` command",
+          "session_type": "implement",
+          "blockedBy": ["POL-43"]
+        },
+        {
+          "id": "POL-45",
+          "title": "Implement `polaris docs validate-instructions` command",
+          "session_type": "implement",
+          "blockedBy": ["POL-43"]
+        },
+        {
+          "id": "POL-46",
+          "title": "Seed initial POLARIS.md files for repo root and src/{map,loop,cli,finalize,config}",
+          "session_type": "implement",
+          "blockedBy": ["POL-43"]
+        }
+      ]
+    },
+    {
+      "cluster_id": "cluster-02",
+      "description": "Docs lifecycle — authority model, ingest, and migration",
+      "children": [
+        {
+          "id": "POL-47",
+          "title": "Analyze: design docs authority model and `polaris docs ingest` implementation plan",
+          "session_type": "analyze",
+          "blockedBy": []
+        },
+        {
+          "id": "POL-48",
+          "title": "Implement docs authority structure and `polaris docs ingest` command",
+          "session_type": "implement",
+          "blockedBy": ["POL-47"]
+        },
+        {
+          "id": "POL-49",
+          "title": "Implement `polaris docs migrate` command",
+          "session_type": "implement",
+          "blockedBy": ["POL-48"]
+        }
+      ]
+    },
+    {
+      "cluster_id": "cluster-03",
+      "description": "Canon reconciliation — runtime hooks and doctrine lifecycle",
+      "children": [
+        {
+          "id": "POL-50",
+          "title": "Analyze: design canon reconciliation check protocol",
+          "session_type": "analyze",
+          "blockedBy": []
+        },
+        {
+          "id": "POL-51",
+          "title": "Implement canon conflict checks in `polaris loop continue` and `polaris finalize`",
+          "session_type": "implement",
+          "blockedBy": ["POL-50", "POL-43"]
+        },
+        {
+          "id": "POL-52",
+          "title": "Implement doctrine lifecycle commands (`polaris doctrine draft/promote/deprecate`)",
+          "session_type": "implement",
+          "blockedBy": ["POL-50", "POL-48"]
+        }
+      ]
+    }
+  ]
+}

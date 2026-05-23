@@ -199,8 +199,8 @@
     "taskchain": "polaris-map",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-05-23T05:21:22.746Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-05-23T15:50:16.162Z",
+    "updated_by": "polaris-map-update",
     "tags": [
       "map"
     ]
@@ -211,8 +211,8 @@
     "taskchain": "polaris-map",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-05-23T05:21:22.746Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-05-23T15:50:16.162Z",
+    "updated_by": "polaris-map-update",
     "tags": [
       "map",
       "entry-point"
@@ -249,7 +249,7 @@
     "taskchain": "polaris-map",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-05-23T05:24:06.662Z",
+    "last_updated": "2026-05-23T15:50:16.162Z",
     "updated_by": "polaris-map-update",
     "tags": [
       "map"
@@ -274,8 +274,8 @@
     "taskchain": "polaris-map",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-05-23T05:36:01.697Z",
-    "updated_by": "polaris-map-backfill",
+    "last_updated": "2026-05-23T15:50:16.162Z",
+    "updated_by": "polaris-map-update",
     "tags": [
       "map"
     ]
@@ -286,8 +286,8 @@
     "taskchain": "polaris-map",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-05-23T05:36:01.697Z",
-    "updated_by": "polaris-map-backfill",
+    "last_updated": "2026-05-23T15:50:16.162Z",
+    "updated_by": "polaris-map-update",
     "tags": [
       "map",
       "test"
@@ -299,8 +299,8 @@
     "taskchain": "polaris-map",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-05-23T05:36:01.697Z",
-    "updated_by": "polaris-map-backfill",
+    "last_updated": "2026-05-23T15:50:16.162Z",
+    "updated_by": "polaris-map-update",
     "tags": [
       "map"
     ]
@@ -315,6 +315,19 @@
     "updated_by": "polaris-map-backfill",
     "tags": [
       "map"
+    ]
+  },
+  "src/map/update.test.ts": {
+    "domain": "map",
+    "route": "src/map",
+    "taskchain": "polaris-map",
+    "confidence": 0.9,
+    "classification": "indexed",
+    "last_updated": "2026-05-23T15:50:16.162Z",
+    "updated_by": "polaris-map-update",
+    "tags": [
+      "map",
+      "test"
     ]
   }
 }

@@ -19,7 +19,7 @@
     "files_touched_total": 8,
     "max_children_per_session": 3
   },
-  "status": "stopped",
+  "status": "running",
   "last_commit": "f2e284e",
   "next_open_child": "POL-26",
   "pr_url": "https://github.com/ItIsYeBananaduck/Polaris/pull/8"

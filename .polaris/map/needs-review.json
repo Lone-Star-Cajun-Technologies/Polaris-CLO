@@ -288,5 +288,35 @@
     "last_updated": "2026-05-23T08:35:20.990Z",
     "updated_by": "polaris-map-update",
     "tags": []
+  },
+  ".codex/skills/caveman/SKILL.md": {
+    "domain": "unknown",
+    "route": ".codex/skills/caveman/SKILL.md",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T15:50:16.162Z",
+    "updated_by": "polaris-map-update",
+    "tags": []
+  },
+  ".taskchain_artifacts/polaris-run/current-state.json": {
+    "domain": "unknown",
+    "route": ".taskchain_artifacts/polaris-run/current-state.json",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T15:50:16.162Z",
+    "updated_by": "polaris-map-update",
+    "tags": []
+  },
+  ".taskchain_artifacts/polaris-run/runs/polaris-run-canon-docs-lifecycle-2026-05-23-001/telemetry.jsonl": {
+    "domain": "unknown",
+    "route": ".taskchain_artifacts/polaris-run/runs/polaris-run-canon-docs-lifecycle-2026-05-23-001/telemetry.jsonl",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-23T15:50:16.162Z",
+    "updated_by": "polaris-map-update",
+    "tags": []
   }
 }
