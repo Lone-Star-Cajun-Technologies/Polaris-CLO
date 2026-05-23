@@ -1,0 +1,20 @@
+{
+  "name": "polaris-analyze-chain",
+  "steps": [
+    "01-fetch-and-orient",
+    "02-map-affected-code",
+    "03-assess-issue",
+    "04-blocker-check",
+    "05-create-cluster-plan",
+    "06-final-report"
+  ],
+  "terminal_steps": ["06-final-report"],
+  "scope": "analyze-only",
+  "forbidden_actions": [
+    "src file mutations",
+    "polaris loop continue",
+    "polaris finalize",
+    "git push",
+    "pr creation"
+  ]
+}

@@ -1,91 +1,122 @@
-# polaris-run
-
-Native Polaris taskchain skill for **implementation clusters**. Use this skill when all children are `session_type: implement` (or when an analyze→implement boundary has already been crossed in a prior session).
-
+---
+name: polaris-run-chain
+description: Route map for polaris-run — step order, continuation rules, Polaris runtime integration, and artifact update requirements.
 ---
 
-## Session start
+# polaris-run chain
 
-1. If this is the **first session** for the cluster:
-   - Read `chain.yaml` for the cluster to learn children, types, and dependencies.
-   - Initialize `.polaris/runs/current-state.json` from `chain.yaml` (see taskchain-format spec).
-   - Set `session_type: implement`.
+## Step traversal order
 
-2. If this is a **resume session**:
-   - Run `polaris loop resume` — verifies state SHA, loads bootstrap packet, prints next child.
-
-3. Run `polaris loop status` to confirm which child to execute next.
-
----
-
-## Child loop
-
-Repeat until budget exhausted, cluster complete, or blocked:
-
-### 1. Select child
-
-Take the next child from `open_children` whose `blockedBy` are all in `completed_children`. This is the active child.
-
-### 2. Execute
-
-Implement the child per its Linear issue scope and done criteria. Read the issue if needed.
-
-### 3. Commit
-
-```
-git add <changed files>
-git commit -m "[<CHILD-ID>] <child title>"
+```text
+01-orient-cluster
+02-prepare-branch
+03-select-child          ← loops back here after 07 decides CONTINUE
+04-execute-child
+05-validate-child
+06-commit-and-update-linear
+07-decide-continuation   → CONTINUE: go to 03 | STOP: report and halt | DELIVER: go to 08
+08-final-delivery        ← reached when all children Done and delivery requested
 ```
 
-### 4. Update Linear
+## Continuation rules
 
-Mark the child issue **Done** in Linear.
+After step 07 evaluates the session:
 
-### 5. Advance loop
+- **CONTINUE**: return to step 03 within the same session. Re-fetch the child list. Select the next open child.
+- **STOP (token/context risk)**: halt when any budget threshold is met. Report completed child, commit hash, next open child ID, and resume command: `polaris loop resume`.
+- **STOP (blocked)**: halt immediately on blocker. Report unblock condition.
+- **DELIVER**: proceed to step 08 only when all children are Done and the user explicitly requests delivery.
 
+## Polaris runtime integration
+
+polaris-run augments the evo-run pattern with three Polaris-specific calls:
+
+| Step | Polaris call | Purpose |
+|---|---|---|
+| 06 | `polaris map update --changed` | Index files changed by the committed child |
+| 07 | `polaris loop continue` | Checkpoint state, emit JSONL event, generate bootstrap packet, enforce boundary |
+| 08 | `polaris finalize` | Push branch, open PR, append JSONL closeout events, archive run snapshot |
+
+`polaris loop continue` replaces manual STOP/CONTINUE evaluation — it reads `.polaris/session-type` and `current-state.json`, runs the boundary check, and emits the bootstrap packet. The skill reads the packet's output to determine the next action.
+
+## Context budget
+
+Track in `.taskchain_artifacts/polaris-run/current-state.json` under `context_budget`. Update after each child.
+
+| Counter | Meaning | Stop threshold |
+|---------|---------|----------------|
+| `children_completed` | Children fully Done this session | ≥ 4 → STOP |
+| `files_touched_total` | Total files changed this session | > 50 → STOP |
+| `last_child_files_touched` | Files changed by last child | > 20 → STOP |
+
+## Run ID format
+
+Format: `polaris-run-<slug>-<date>-<seq>`
+- `<slug>`: 2–4 lowercase hyphenated words from the cluster title. No Linear IDs.
+- `<date>`: `YYYY-MM-DD`
+- `<seq>`: zero-padded sequential number per day (`001`, `002`, …)
+
+Example: `polaris-run-loop-boundary-2026-05-23-001`
+
+Resumed sessions generate a new `run_id`. Record the prior in `related_run_id`.
+
+## Telemetry enforcement
+
+Telemetry file: `.taskchain_artifacts/polaris-run/runs/<run-id>/telemetry.jsonl` (append-only).
+
+| Event | Emitted by | Step |
+|---|---|---|
+| `run-start` | agent | 01 — before any Linear access |
+| `step-complete` | agent | end of every step |
+| `loop-checkpoint` | `polaris loop continue` | 07 — after each child |
+| `analyze-impl-boundary-enforced` | `polaris loop continue` | 07 — if boundary fires |
+| `loop-aborted` | `polaris loop abort` | any blocker halt |
+| `pr-opened` | `polaris finalize` | 08 |
+| `run-complete` | `polaris finalize` | 08 |
+
+Required fields on every event: `event`, `run_id`, `timestamp`.
+
+## Artifact authority
+
+`.taskchain_artifacts/polaris-run/current-state.json` is the sole authoritative live state surface.
+
+- Update after every completed step — before advancing.
+- A step is NOT complete until the state update succeeds.
+- If the update fails: stop and report the persistence failure.
+
+## Machine snapshot
+
+- **Path**: `.taskchain_artifacts/polaris-run/current-state.json`
+- **Update requirement**: after every step
+- **Purpose**: fast agent resume without replaying JSONL or markdown history
+
+## Completion rule
+
+Do not report workflow completion until `.taskchain_artifacts/polaris-run/current-state.json` has `status: complete`.
+
+## Linked-skill invocation boundaries
+
+| Skill | Allowed steps | Condition |
+|---|---|---|
+| caveman | 01 (start) | mandatory, full mode |
+| gitnexus | 01, 02, 03, 04 | targeted lookup only |
+
+## Execution reporting
+
+After each completed step, emit a checkpoint:
+
+```text
+**[step-name]** done | blocked | needs-input
+Changed: <files / artifacts / branches / issues> or none
+Validated: <commands / checks passed> or none
+Blockers: none | <explicit blocker>
 ```
-polaris loop continue
-```
 
-This checkpoints state, runs `polaris map update --changed`, checks the analyze→impl boundary, and emits a bootstrap packet. The bootstrap packet is the handoff artifact for the next session.
+### Never compressed
 
----
-
-## Session end
-
-After `polaris loop continue` exits (or when budget is exhausted):
-
-- **If more children remain**: stop. Report completed child, commit hash, next open child ID, and resume command: `polaris loop resume`.
-- **If all children Done**: run `polaris finalize` instead of stopping.
-
----
-
-## Finalize
-
-When `open_children` is empty and all children are Done:
-
-```
-polaris finalize
-```
-
-This pushes the branch, opens a PR, and archives the run snapshot.
-
----
-
-## Blocker protocol
-
-If a child cannot proceed:
-
-```
-polaris loop abort "<reason>"
-```
-
-Halt immediately. Report the blocker and the unblock condition. Do not skip to later children.
-
----
-
-## Constraints
-
-- Commit after each child — never batch multiple children into one commit.
-- Do not call `polaris loop continue` without a preceding commit.
-- `polaris finalize` replaces `polaris loop continue` on the last child — do not call both.
+Always write in full regardless of caveman mode:
+- Generated code
+- Safety warnings
+- Blocker descriptions
+- Acceptance-criteria gap explanations
+- Irreversible-action confirmations
