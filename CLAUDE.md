@@ -37,9 +37,9 @@ npm run lint    # lint TypeScript sources
 npm run build   # compile to dist/
 ```
 
-## Bootstrap note
+## Taskchain skills
 
-`.codex/skills/bootstrap-run/` is **TEMPORARY — BOOTSTRAP ONLY**. It is replaced by native Polaris taskchains in Cluster 6. Do not treat it as permanent governance infrastructure.
+Use `.codex/skills/polaris-run/chain.md` for implementation clusters, `.codex/skills/polaris-analyze/chain.md` for analysis clusters.
 
 ## Implementation target
 
