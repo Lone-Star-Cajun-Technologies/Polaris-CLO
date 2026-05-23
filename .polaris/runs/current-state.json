@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0",
+  "run_id": "pol-5-session-1",
+  "cluster_id": "POL-5",
+  "skill": "bootstrap-run",
+  "active_child": "",
+  "completed_children": ["POL-23", "POL-24", "POL-25"],
+  "open_children": ["POL-26", "POL-27"],
+  "step_cursor": "checkpoint",
+  "context_budget": {
+    "children_completed": 3,
+    "files_touched_total": 8,
+    "max_children_per_session": 3
+  },
+  "status": "stopped",
+  "last_commit": "f2e284e",
+  "next_open_child": "POL-26"
+}
