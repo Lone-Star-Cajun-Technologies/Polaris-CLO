@@ -12,6 +12,7 @@ import {
   writeFileRoutes,
   writeNeedsReview,
   writeAtlasIndex,
+  computeInstructionCoverage,
   type FileRouteEntry,
 } from "./atlas.js";
 
@@ -186,6 +187,7 @@ export function runMapBackfill(
       scan_date: now,
       file_count: totalEntries,
       coverage_pct: totalEntries > 0 ? Math.round((indexedCount / totalEntries) * 100) : 0,
+      instructionCoverage: computeInstructionCoverage(allEntries),
       entries: allEntries,
     });
   }

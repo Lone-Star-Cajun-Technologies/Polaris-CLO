@@ -12,6 +12,8 @@ import {
   writeFileRoutes,
   writeNeedsReview,
   writeAtlasIndex,
+  resolveInstructionFile,
+  computeInstructionCoverage,
   type FileRouteEntry,
 } from "./atlas.js";
 
@@ -126,6 +128,7 @@ export function runMapUpdate(
     if (routes[filePath]) {
       routes[filePath]!.last_updated = now;
       routes[filePath]!.updated_by = "polaris-map-update";
+      routes[filePath]!.instructionFile = resolveInstructionFile(filePath, repoRoot);
       summary.validated++;
       continue;
     }
@@ -149,6 +152,7 @@ export function runMapUpdate(
       last_updated: now,
       updated_by: "polaris-map-update",
       tags: inferred.tags,
+      instructionFile: resolveInstructionFile(filePath, repoRoot),
     };
 
     if (inferred.confidence >= autoWriteAbove) {
@@ -181,6 +185,7 @@ export function runMapUpdate(
     scan_date: now,
     file_count: totalFiles,
     coverage_pct: totalFiles > 0 ? Math.round((indexedCount / totalFiles) * 100) : 0,
+    instructionCoverage: computeInstructionCoverage(allEntries),
     entries: allEntries,
   });
 

@@ -5,6 +5,8 @@ import { runMapQuery } from "./query.js";
 
 const TMP = join(process.cwd(), ".test-query-tmp");
 
+const POLARIS_MD_CONTENT = "# Map subsystem instructions\n\nHandle atlas data.";
+
 const ROUTES = {
   "src/cli/index.ts": {
     domain: "cli",
@@ -25,6 +27,7 @@ const ROUTES = {
     last_updated: "2026-05-22T20:00:00Z",
     updated_by: "polaris-map-index",
     tags: ["map"],
+    instructionFile: "src/map/POLARIS.md",
   },
 };
 
@@ -57,6 +60,7 @@ function setup(): void {
   mkdirSync(join(TMP, "dist/cli"), { recursive: true });
   writeFileSync(join(TMP, "src/cli/index.ts"), "");
   writeFileSync(join(TMP, "src/map/atlas.ts"), "");
+  writeFileSync(join(TMP, "src/map/POLARIS.md"), POLARIS_MD_CONTENT);
   writeFileSync(join(TMP, ".polaris/map/file-routes.json"), JSON.stringify(ROUTES));
   writeFileSync(join(TMP, ".polaris/map/needs-review.json"), JSON.stringify(NEEDS_REVIEW));
   writeFileSync(join(TMP, ".polaris/map/exemptions.json"), JSON.stringify(EXEMPTIONS));
@@ -165,5 +169,30 @@ describe("runMapQuery", () => {
   it("warns when file does not exist in repo", () => {
     const { stderr } = captureOutput(() => runMapQuery(TMP, "does/not/exist.ts", undefined, undefined, false));
     expect(stderr).toContain("warn: file does not exist in repo");
+  });
+
+  it("includes instructionFile path in output when entry has one", () => {
+    const { stdout } = captureOutput(() => runMapQuery(TMP, "src/map/atlas.ts", undefined, undefined, false));
+    const result = JSON.parse(stdout);
+    expect(result["src/map/atlas.ts"].instructionFile).toBe("src/map/POLARIS.md");
+  });
+
+  it("--include-instructions adds instructionContent to output", () => {
+    const { stdout } = captureOutput(() => runMapQuery(TMP, "src/map/atlas.ts", undefined, undefined, false, true));
+    const result = JSON.parse(stdout);
+    expect(result["src/map/atlas.ts"].instructionFile).toBe("src/map/POLARIS.md");
+    expect(result["src/map/atlas.ts"].instructionContent).toBe(POLARIS_MD_CONTENT);
+  });
+
+  it("--include-instructions includes instructionFile in --text output", () => {
+    const { stdout } = captureOutput(() => runMapQuery(TMP, "src/map/atlas.ts", undefined, undefined, true, false));
+    expect(stdout).toContain("instructions:src/map/POLARIS.md");
+  });
+
+  it("entry without instructionFile omits field even with --include-instructions", () => {
+    const { stdout } = captureOutput(() => runMapQuery(TMP, "src/cli/index.ts", undefined, undefined, false, true));
+    const result = JSON.parse(stdout);
+    expect(result["src/cli/index.ts"].instructionFile).toBeUndefined();
+    expect(result["src/cli/index.ts"].instructionContent).toBeUndefined();
   });
 });

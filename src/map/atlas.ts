@@ -10,18 +10,48 @@ export interface FileRouteEntry {
   last_updated: string;
   updated_by: string;
   tags: string[];
+  instructionFile?: string;
+}
+
+export interface InstructionCoverage {
+  routesCovered: number;
+  routesTotal: number;
+  coveragePercent: number;
 }
 
 export interface AtlasIndex {
   scan_date: string;
   file_count: number;
   coverage_pct: number;
+  instructionCoverage: InstructionCoverage;
   entries: Record<string, FileRouteEntry>;
 }
 
 export interface ExemptionEntry {
   classification: "tracked-not-indexed" | "ignored";
   reason: string;
+}
+
+export function resolveInstructionFile(filePath: string, repoRoot: string): string | undefined {
+  const parts = filePath.split("/");
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const dir = parts.slice(0, i).join("/");
+    const candidate = dir ? `${dir}/POLARIS.md` : "POLARIS.md";
+    if (existsSync(resolve(repoRoot, candidate))) {
+      return candidate;
+    }
+  }
+  return undefined;
+}
+
+export function computeInstructionCoverage(entries: Record<string, FileRouteEntry>): InstructionCoverage {
+  const routesTotal = Object.keys(entries).length;
+  const routesCovered = Object.values(entries).filter((e) => e.instructionFile !== undefined).length;
+  return {
+    routesCovered,
+    routesTotal,
+    coveragePercent: routesTotal > 0 ? Math.round((routesCovered / routesTotal) * 100) : 0,
+  };
 }
 
 function ensureDir(filePath: string): void {

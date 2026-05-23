@@ -1,22 +1,22 @@
 {
   "schema_version": "1.0",
-  "run_id": "pol-5-session-1",
-  "cluster_id": "POL-5",
+  "run_id": "polaris-run-canon-docs-lifecycle-2026-05-23-001",
+  "related_run_id": null,
+  "cluster_id": "POL-42",
   "skill": "polaris-run",
-  "session_type": "analyze",
-  "active_child": "",
-  "completed_children": ["POL-23", "POL-24", "POL-25"],
-  "open_children": ["POL-26", "POL-27"],
-  "open_children_meta": {
-    "POL-26": { "type": "implement" },
-    "POL-27": { "type": "implement" }
-  },
-  "step_cursor": "checkpoint",
+  "artifact_dir": ".taskchain_artifacts/polaris-run",
+  "status": "ready",
+  "branch": "philmeaux/pol-42-add-polaris-canon-reconciliation-and-docs-ingest-lifecycle",
+  "current_step_id": "05-validate-child",
+  "status": "validating",
+  "validation_status": "passed",
+  "active_child": "POL-43",
+  "completed_children": [],
+  "open_children": ["POL-43", "POL-44", "POL-45", "POL-46", "POL-47", "POL-48", "POL-49", "POL-50", "POL-51", "POL-52", "POL-53"],
   "context_budget": {
-    "children_completed": 3,
-    "max_children_per_session": 3
+    "children_completed": 0,
+    "files_touched_total": 0,
+    "last_child_files_touched": 0
   },
-  "status": "stopped-budget",
-  "last_commit": "3ad61ba",
-  "next_open_child": "POL-26"
+  "updated_at": "2026-05-23T00:00:00Z"
 }

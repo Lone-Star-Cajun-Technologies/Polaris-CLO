@@ -17,6 +17,8 @@ import {
   writeNeedsReview,
   writeExemptions,
   writeAtlasIndex,
+  resolveInstructionFile,
+  computeInstructionCoverage,
   type FileRouteEntry,
 } from "./atlas.js";
 
@@ -146,6 +148,7 @@ export function runMapIndex(repoRoot: string, dryRun: boolean, verbose: boolean)
       last_updated: now,
       updated_by: "polaris-map-index",
       tags: inferred.tags,
+      instructionFile: resolveInstructionFile(filePath, repoRoot),
     };
 
     if (inferred.confidence >= (config.map.autoWriteAbove ?? 0.85)) {
@@ -165,11 +168,13 @@ export function runMapIndex(repoRoot: string, dryRun: boolean, verbose: boolean)
     writeFileRoutes(outputPath, newRoutes);
     writeNeedsReview(outputPath, newNeedsReview);
     writeExemptions(outputPath, newExemptions);
+    const allEntries = { ...newRoutes, ...newNeedsReview };
     writeAtlasIndex(outputPath, {
       scan_date: now,
       file_count: scanned,
       coverage_pct: coveragePct,
-      entries: { ...newRoutes, ...newNeedsReview },
+      instructionCoverage: computeInstructionCoverage(allEntries),
+      entries: allEntries,
     });
   }
 
@@ -239,8 +244,9 @@ export function createMapCommand(): Command {
     .option("--domain <domain>", "All files in a domain")
     .option("--taskchain <taskchain>", "All files in a taskchain")
     .option("--text", "Human-readable output instead of JSON")
-    .action((pathArg: string | undefined, options: { repoRoot: string; domain?: string; taskchain?: string; text?: boolean }) => {
-      runMapQuery(options.repoRoot, pathArg, options.domain, options.taskchain, options.text ?? false);
+    .option("--include-instructions", "Include POLARIS.md instruction file path and content in output")
+    .action((pathArg: string | undefined, options: { repoRoot: string; domain?: string; taskchain?: string; text?: boolean; includeInstructions?: boolean }) => {
+      runMapQuery(options.repoRoot, pathArg, options.domain, options.taskchain, options.text ?? false, options.includeInstructions ?? false);
     });
 
   return map;

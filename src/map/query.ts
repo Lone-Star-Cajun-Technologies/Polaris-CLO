@@ -10,7 +10,7 @@ import {
 } from "./atlas.js";
 
 type QueryEntry =
-  | { classification: "indexed" | "needs-review"; domain: string; route: string; taskchain: string; confidence: number; last_updated: string; tags: string[] }
+  | { classification: "indexed" | "needs-review"; domain: string; route: string; taskchain: string; confidence: number; last_updated: string; tags: string[]; instructionFile?: string; instructionContent?: string }
   | { classification: "ignored" | "tracked-not-indexed" | "unmapped" };
 
 function globToRegex(pattern: string): RegExp {
@@ -52,8 +52,8 @@ function loadIgnoreFilter(repoRoot: string): ReturnType<typeof parsePolarisIgnor
   return parsePolarisIgnore(userPatterns);
 }
 
-function toQueryEntry(entry: FileRouteEntry): QueryEntry {
-  return {
+function toQueryEntry(entry: FileRouteEntry, repoRoot?: string, includeInstructions?: boolean): QueryEntry {
+  const base: Extract<QueryEntry, { classification: "indexed" | "needs-review" }> = {
     domain: entry.domain,
     route: entry.route,
     taskchain: entry.taskchain,
@@ -62,6 +62,17 @@ function toQueryEntry(entry: FileRouteEntry): QueryEntry {
     last_updated: entry.last_updated,
     tags: entry.tags,
   };
+  if (entry.instructionFile !== undefined) {
+    base.instructionFile = entry.instructionFile;
+    if (includeInstructions && repoRoot !== undefined) {
+      try {
+        base.instructionContent = readFileSync(resolve(repoRoot, entry.instructionFile), "utf-8");
+      } catch {
+        // file missing — omit content silently
+      }
+    }
+  }
+  return base;
 }
 
 function resolveEntry(
@@ -70,9 +81,11 @@ function resolveEntry(
   needsReview: Record<string, FileRouteEntry>,
   exemptions: Record<string, { classification: string }>,
   ig: ReturnType<typeof parsePolarisIgnore>,
+  repoRoot: string,
+  includeInstructions: boolean,
 ): QueryEntry {
-  if (routes[filePath]) return toQueryEntry(routes[filePath]!);
-  if (needsReview[filePath]) return toQueryEntry(needsReview[filePath]!);
+  if (routes[filePath]) return toQueryEntry(routes[filePath]!, repoRoot, includeInstructions);
+  if (needsReview[filePath]) return toQueryEntry(needsReview[filePath]!, repoRoot, includeInstructions);
   if (exemptions[filePath]) return { classification: exemptions[filePath]!.classification as "tracked-not-indexed" | "ignored" };
   if (ig.ignores(filePath)) return { classification: "ignored" };
   return { classification: "unmapped" };
@@ -83,6 +96,7 @@ function printText(result: Record<string, QueryEntry>): void {
     const parts: string[] = [filePath, entry.classification];
     if ("domain" in entry) {
       parts.push(`domain:${entry.domain}`, `route:${entry.route}`, `taskchain:${entry.taskchain}`, `conf:${entry.confidence.toFixed(2)}`);
+      if (entry.instructionFile !== undefined) parts.push(`instructions:${entry.instructionFile}`);
     }
     console.log(parts.join("  "));
   }
@@ -94,6 +108,7 @@ export function runMapQuery(
   domain: string | undefined,
   taskchain: string | undefined,
   textMode: boolean,
+  includeInstructions = false,
 ): void {
   const config = loadConfig(repoRoot);
   const outputPath = resolve(repoRoot, config.repo.sidecarOutputPath ?? ".polaris/map");
@@ -112,11 +127,11 @@ export function runMapQuery(
 
   if (domain !== undefined) {
     for (const [filePath, entry] of [...Object.entries(routes), ...Object.entries(needsReview)]) {
-      if (entry.domain === domain) result[filePath] = toQueryEntry(entry);
+      if (entry.domain === domain) result[filePath] = toQueryEntry(entry, repoRoot, includeInstructions);
     }
   } else if (taskchain !== undefined) {
     for (const [filePath, entry] of [...Object.entries(routes), ...Object.entries(needsReview)]) {
-      if (entry.taskchain === taskchain) result[filePath] = toQueryEntry(entry);
+      if (entry.taskchain === taskchain) result[filePath] = toQueryEntry(entry, repoRoot, includeInstructions);
     }
   } else if (pathArg !== undefined) {
     const isGlobPattern = pathArg.includes("*") || pathArg.includes("?");
@@ -126,19 +141,19 @@ export function runMapQuery(
       const re = globToRegex(pathArg);
       const allPaths = new Set([...Object.keys(routes), ...Object.keys(needsReview), ...Object.keys(exemptions)]);
       for (const filePath of allPaths) {
-        if (re.test(filePath)) result[filePath] = resolveEntry(filePath, routes, needsReview, exemptions, ig);
+        if (re.test(filePath)) result[filePath] = resolveEntry(filePath, routes, needsReview, exemptions, ig, repoRoot, includeInstructions);
       }
     } else if (isDir) {
       const prefix = pathArg;
       const allPaths = new Set([...Object.keys(routes), ...Object.keys(needsReview), ...Object.keys(exemptions)]);
       for (const filePath of allPaths) {
-        if (filePath.startsWith(prefix)) result[filePath] = resolveEntry(filePath, routes, needsReview, exemptions, ig);
+        if (filePath.startsWith(prefix)) result[filePath] = resolveEntry(filePath, routes, needsReview, exemptions, ig, repoRoot, includeInstructions);
       }
     } else {
       if (!existsSync(resolve(repoRoot, pathArg))) {
         process.stderr.write(`warn: file does not exist in repo: ${pathArg}\n`);
       }
-      result[pathArg] = resolveEntry(pathArg, routes, needsReview, exemptions, ig);
+      result[pathArg] = resolveEntry(pathArg, routes, needsReview, exemptions, ig, repoRoot, includeInstructions);
     }
   } else {
     console.error("polaris map query: specify a path, glob, or --domain/--taskchain filter");
