@@ -1,14 +1,16 @@
 {
   "schema_version": "1.0",
-  "run_id": "",
-  "cluster_id": "",
+  "run_id": "pol-4-session-2",
+  "cluster_id": "POL-4",
   "active_child": "",
-  "completed_children": [],
+  "completed_children": ["POL-16", "POL-17", "POL-18", "POL-19", "POL-20"],
   "open_children": [],
-  "step_cursor": "",
+  "step_cursor": "CLUSTER-COMPLETE",
   "context_budget": {
-    "children_completed": 0,
+    "children_completed": 2,
     "max_children_per_session": 3
   },
-  "status": "not-started"
+  "status": "cluster-complete",
+  "last_commit": "d37161b",
+  "next_open_child": null
 }
