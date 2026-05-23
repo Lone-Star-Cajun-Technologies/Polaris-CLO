@@ -1,0 +1,21 @@
+{
+  "run_id": "run-2026-05-21-352",
+  "run_source": "fresh",
+  "parent_run_id": null,
+  "related_run_id": null,
+  "title": "evo-plan: EVO Workflow Infrastructure — Run-State Architecture and Tracker-Agnostic Execution Telemetry",
+  "description": "Plan and create the EVO run-state architecture cluster (EVOS1-352).",
+  "skill": "evo-plan",
+  "status": "complete",
+  "tracker": null,
+  "branch": null,
+  "worktree": null,
+  "current_step_id": null,
+  "resume_cursor": null,
+  "steps": [],
+  "artifacts": [],
+  "validation_status": "none",
+  "created_at": null,
+  "updated_at": null,
+  "completed_at": null
+}

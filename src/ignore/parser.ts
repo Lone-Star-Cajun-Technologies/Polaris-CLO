@@ -26,7 +26,7 @@ export function isIgnored(filePath: string, repoRoot: string): boolean {
     // Re-add secret patterns so they cannot be negated
     ig.add(SECRET_PATTERNS);
   } catch (err) {
-    if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
+    if (typeof err === "object" && err !== null && "code" in err && (err as { code: string }).code !== "ENOENT") {
       throw err;
     }
   }

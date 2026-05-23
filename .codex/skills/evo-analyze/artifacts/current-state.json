@@ -1,0 +1,148 @@
+{
+  "run_id": "run-2026-05-22-003",
+  "run_source": "fresh",
+  "parent_run_id": null,
+  "related_run_id": "run-2026-05-22-002",
+  "title": "Analyze EVOS1-369 — EVO run state and artifact architecture refactor",
+  "description": "Audit EVOS1-369 cluster against repo, map affected skill artifacts, assess scope coverage, and create ordered child issues for uncovered scope items.",
+  "skill": "evo-analyze",
+  "status": "complete",
+  "tracker": {
+    "name": "linear",
+    "target_type": "cluster",
+    "target_id": "EVOS1-369",
+    "target_url": "https://linear.app/lsctech/issue/EVOS1-369/evo-run-state-and-artifact-architecture-refactor",
+    "parent_id": null,
+    "child_ids": ["EVOS1-368", "EVOS1-367", "EVOS1-370", "EVOS1-371", "EVOS1-372"],
+    "status": "Todo",
+    "dependency_mapping": {
+      "EVOS1-368": [],
+      "EVOS1-367": [],
+      "EVOS1-370": [],
+      "EVOS1-371": ["EVOS1-367"],
+      "EVOS1-372": ["EVOS1-368"]
+    }
+  },
+  "branch": null,
+  "worktree": null,
+  "current_step_id": null,
+  "resume_cursor": 6,
+  "steps": [
+    {
+      "step_id": "01-fetch-and-orient",
+      "status": "complete",
+      "order": 1,
+      "validation": {
+        "status": "passed",
+        "checks": [
+          "EVOS1-369 fetched: Todo, Urgent priority, EVOsystem team",
+          "2 existing children fetched: EVOS1-368 (Todo), EVOS1-367 (Todo)",
+          "Parent not Done or Cancelled",
+          "Routing map, artifact schema, event catalog loaded"
+        ]
+      },
+      "started_at": "2026-05-22T00:00:00Z",
+      "completed_at": "2026-05-22T00:01:00Z"
+    },
+    {
+      "step_id": "02-map-affected-code",
+      "status": "complete",
+      "order": 2,
+      "validation": {
+        "status": "passed",
+        "checks": [
+          "18 files inspected across 5 skills",
+          "3 JSONL telemetry files sampled — 3 distinct non-conforming formats found",
+          "step 07 decision criteria confirmed subjective — no measurable threshold",
+          "step 05 validation output confirmed unbounded",
+          "No HIGH/CRITICAL risk — doc/workflow-only scope"
+        ]
+      },
+      "started_at": "2026-05-22T00:01:00Z",
+      "completed_at": "2026-05-22T00:05:00Z"
+    },
+    {
+      "step_id": "03-assess-issue",
+      "status": "complete",
+      "order": 3,
+      "validation": {
+        "status": "passed",
+        "checks": [
+          "outcome: needs-child-issues",
+          "10/10 scope items mapped",
+          "3 gaps confirmed: JSONL format, validation summarization, context budget controls"
+        ]
+      },
+      "started_at": "2026-05-22T00:05:00Z",
+      "completed_at": "2026-05-22T00:06:00Z"
+    },
+    {
+      "step_id": "04-blocker-check",
+      "status": "complete",
+      "order": 4,
+      "validation": {
+        "status": "passed",
+        "checks": [
+          "No blockers on EVOS1-369",
+          "No doctrine conflicts found",
+          "Parent is not Done or Cancelled",
+          "No HIGH or CRITICAL GitNexus risk"
+        ]
+      },
+      "started_at": "2026-05-22T00:06:00Z",
+      "completed_at": "2026-05-22T00:06:30Z"
+    },
+    {
+      "step_id": "05-create-child-issues",
+      "status": "complete",
+      "order": 5,
+      "validation": {
+        "status": "passed",
+        "checks": [
+          "EVOS1-370 created: 369.3 JSONL format normalization (High, independent)",
+          "EVOS1-371 created: 369.4 validation summarization (Medium, blocked by EVOS1-367)",
+          "EVOS1-372 created: 369.5 context budget controls (High, blocked by EVOS1-368)"
+        ]
+      },
+      "started_at": "2026-05-22T00:06:30Z",
+      "completed_at": "2026-05-22T00:08:00Z"
+    },
+    {
+      "step_id": "06-final-report",
+      "status": "complete",
+      "order": 6,
+      "validation": {
+        "status": "passed",
+        "checks": [
+          "current-run.md updated",
+          "current-state.json updated",
+          "All 5 children documented with dependency mapping"
+        ]
+      },
+      "started_at": "2026-05-22T00:08:00Z",
+      "completed_at": "2026-05-22T00:09:00Z"
+    }
+  ],
+  "artifacts": [
+    {
+      "artifact_id": "current-run",
+      "type": "other",
+      "path": ".codex/skills/evo-analyze/artifacts/current-run.md",
+      "description": "Human-readable evo-analyze state for this run.",
+      "created_at": "2026-05-22T00:00:00Z"
+    },
+    {
+      "artifact_id": "current-state",
+      "type": "other",
+      "path": ".codex/skills/evo-analyze/artifacts/current-state.json",
+      "description": "Machine-readable evo-analyze state snapshot.",
+      "created_at": "2026-05-22T00:00:00Z"
+    }
+  ],
+  "validation_status": "passed",
+  "created_at": "2026-05-22T00:00:00Z",
+  "updated_at": "2026-05-22T00:09:00Z",
+  "completed_at": "2026-05-22T00:09:00Z",
+  "compression_mode": "caveman-lite",
+  "compression_mode_active": true
+}

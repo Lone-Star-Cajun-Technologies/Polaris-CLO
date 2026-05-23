@@ -1,5 +1,3 @@
-import type { PolarisConfig } from "./schema.js";
-
 export interface ValidationResult {
   valid: boolean;
   errors: string[];

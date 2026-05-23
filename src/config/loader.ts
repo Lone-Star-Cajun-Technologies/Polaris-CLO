@@ -5,12 +5,12 @@ import { DEFAULT_CONFIG } from "./defaults.js";
 import { validateConfig } from "./validator.js";
 
 export class PolarisConfigError extends Error {
-  constructor(
-    message: string,
-    public readonly errors: string[],
-  ) {
+  public readonly errors: string[];
+
+  constructor(message: string, errors: string[]) {
     super(message);
     this.name = "PolarisConfigError";
+    this.errors = errors;
   }
 }
 
@@ -49,9 +49,9 @@ export function loadConfig(repoRoot: string): Required<PolarisConfig> {
     const raw = readFileSync(configPath, "utf-8");
     userConfig = JSON.parse(raw) as Partial<PolarisConfig>;
   } catch (err) {
-    if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
+    if (typeof err === "object" && err !== null && "code" in err && (err as { code: string }).code !== "ENOENT") {
       throw new PolarisConfigError(
-        `Failed to read polaris.config.json: ${(err as Error).message}`,
+        `Failed to read polaris.config.json: ${(err as unknown as Error).message}`,
         [],
       );
     }
