@@ -7,6 +7,7 @@ export interface BootstrapPacket {
   run_id: string;
   skill: string;
   branch: string;
+  base_commit_sha: string;
   last_completed_step: string;
   last_completed_child: string;
   next_step: string;
@@ -35,6 +36,17 @@ function getCurrentBranch(repoRoot: string): string {
   }
 }
 
+function getHeadSha(repoRoot: string): string {
+  try {
+    return execFileSync("git", ["rev-parse", "HEAD"], {
+      cwd: repoRoot,
+      encoding: "utf-8",
+    }).trim();
+  } catch {
+    return "";
+  }
+}
+
 export function buildBootstrapPacket(
   state: LoopState,
   stateFile: string,
@@ -59,6 +71,7 @@ export function buildBootstrapPacket(
     run_id: state.run_id,
     skill: state.skill ?? "bootstrap-run",
     branch,
+    base_commit_sha: getHeadSha(repoRoot),
     last_completed_step: state.step_cursor,
     last_completed_child: completedChild,
     next_step: nextChild ? "03-execute-child" : "CLUSTER-COMPLETE",

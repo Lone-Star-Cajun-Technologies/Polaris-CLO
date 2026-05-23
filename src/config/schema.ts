@@ -19,6 +19,7 @@ export interface PolarisConfig {
     bootstrapOutputPath?: string;
     analyzeImplBoundaryEnforced?: boolean;
     sessionTerminationMode?: "emit-marker" | "exit-0";
+    allowBranchDivergence?: boolean;
   };
   finalize?: {
     targetBranch?: string;

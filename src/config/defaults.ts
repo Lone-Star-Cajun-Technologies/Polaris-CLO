@@ -21,6 +21,7 @@ export const DEFAULT_CONFIG: Required<PolarisConfig> = {
     bootstrapOutputPath: ".polaris/bootstrap",
     analyzeImplBoundaryEnforced: true,
     sessionTerminationMode: "emit-marker",
+    allowBranchDivergence: false,
   },
   finalize: {
     targetBranch: "main",
