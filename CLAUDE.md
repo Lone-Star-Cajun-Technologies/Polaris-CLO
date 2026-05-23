@@ -19,6 +19,16 @@ docs/         # specs and planning docs (spec/, planning/)
 .codex/       # skills for governed cluster execution
 ```
 
+## Branch convention
+
+**Never commit cluster work directly to `main`.** Each cluster session must work on a dedicated feature branch:
+
+1. At session start, create a branch from `main` named after the Linear issue: `git checkout -b philmeaux/<pol-id>-<slug> main`
+2. Commit all work to that branch
+3. PR targets `main` (not any other branch)
+
+The branch name comes from the Linear issue's `gitBranchName` field.
+
 ## Commands
 
 ```
