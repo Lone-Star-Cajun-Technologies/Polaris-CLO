@@ -23,6 +23,9 @@ export const DEFAULT_CONFIG: Required<PolarisConfig> = {
     sessionTerminationMode: "emit-marker",
     allowBranchDivergence: false,
   },
+  execution: {
+    allowCrossAgentFallback: false,
+  },
   finalize: {
     targetBranch: "main",
     prDraft: true,

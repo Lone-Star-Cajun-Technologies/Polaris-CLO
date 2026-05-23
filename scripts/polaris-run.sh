@@ -5,14 +5,14 @@
 # Reads .taskchain_artifacts/polaris-run/current-state.json after each
 # session to decide whether to continue, stop, or halt on a blocker.
 #
-# Agent is configurable — works with any CLI agent that accepts a prompt
-# as its last argument (claude, codex, gemini, etc.).
+# Agent is configurable — works with any CLI worker that accepts a prompt
+# as its last argument.
 #
 # Usage:
 #   scripts/polaris-run.sh <issue-id> [options]
 #
 # Options:
-#   --agent CMD         Agent command to use (default: $POLARIS_AGENT or "claude -p")
+#   --agent CMD         Agent command to use (default: $POLARIS_AGENT; required if unset)
 #   --max-sessions N    Safety cap on total sessions (default: 30)
 #   --deliver           After all children Done, run finalize delivery session
 #   --dry-run           Print what would run without executing
@@ -22,9 +22,8 @@
 #
 # Examples:
 #   scripts/polaris-run.sh POL-42
-#   scripts/polaris-run.sh POL-42 --agent "claude -p"
-#   scripts/polaris-run.sh POL-42 --agent "codex"
-#   POLARIS_AGENT="gemini -p" scripts/polaris-run.sh POL-42
+#   scripts/polaris-run.sh POL-42 --agent "<configured cli worker>"
+#   POLARIS_AGENT="<configured cli worker>" scripts/polaris-run.sh POL-42
 #   scripts/polaris-run.sh POL-42 --deliver
 #
 # Exit codes:
@@ -41,7 +40,7 @@ shift
 REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 STATE_FILE="$REPO_ROOT/.taskchain_artifacts/polaris-run/current-state.json"
 MAX_SESSIONS=30
-AGENT="${POLARIS_AGENT:-claude -p}"
+AGENT="${POLARIS_AGENT:-}"
 DELIVER=false
 DRY_RUN=false
 
@@ -54,6 +53,11 @@ while [[ $# -gt 0 ]]; do
     *) echo "[polaris-run] Unknown flag: $1" >&2; exit 1 ;;
   esac
 done
+
+if [[ -z "$AGENT" ]]; then
+  err "No terminal CLI worker configured. Set POLARIS_AGENT or pass --agent."
+  exit 1
+fi
 
 log() { echo "[polaris-run] $*"; }
 err() { echo "[polaris-run] ERROR: $*" >&2; }

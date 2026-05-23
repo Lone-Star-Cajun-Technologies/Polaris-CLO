@@ -162,6 +162,30 @@ export function validateConfig(config: unknown): ValidationResult {
     }
   }
 
+  // execution
+  if ("execution" in config && config.execution !== undefined) {
+    if (!isPlainObject(config.execution)) {
+      result.valid = false;
+      result.errors.push("execution must be an object");
+    } else {
+      if ("adapter" in config.execution && config.execution.adapter !== undefined) {
+        if (
+          !isString(config.execution.adapter) ||
+          !["agent-subtask", "terminal-cli", "ci", "ssh", "remote-worker", "cross-agent"].includes(config.execution.adapter)
+        ) {
+          result.valid = false;
+          result.errors.push("execution.adapter must be one of agent-subtask, terminal-cli, ci, ssh, remote-worker, cross-agent");
+        }
+      }
+      if ("allowCrossAgentFallback" in config.execution && config.execution.allowCrossAgentFallback !== undefined) {
+        if (!isBoolean(config.execution.allowCrossAgentFallback)) {
+          result.valid = false;
+          result.errors.push("execution.allowCrossAgentFallback must be a boolean");
+        }
+      }
+    }
+  }
+
   // finalize
   if ("finalize" in config && config.finalize !== undefined) {
     if (!isPlainObject(config.finalize)) {

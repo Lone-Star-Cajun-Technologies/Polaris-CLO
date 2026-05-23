@@ -21,6 +21,10 @@ export interface PolarisConfig {
     sessionTerminationMode?: "emit-marker" | "exit-0";
     allowBranchDivergence?: boolean;
   };
+  execution?: {
+    adapter?: "agent-subtask" | "terminal-cli" | "ci" | "ssh" | "remote-worker" | "cross-agent";
+    allowCrossAgentFallback?: boolean;
+  };
   finalize?: {
     targetBranch?: string;
     prDraft?: boolean;

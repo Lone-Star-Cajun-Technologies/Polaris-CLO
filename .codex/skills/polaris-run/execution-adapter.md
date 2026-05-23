@@ -14,7 +14,7 @@ The adapter boundary is the token boundary. Parent/orchestrator context must not
 | Mode | Use | Dispatch |
 |---|---|---|
 | `agent-subtask` | Interactive agent sessions | Use the host agent's subtask/agent dispatch capability. Do not invoke a nested shell agent. |
-| `terminal-cli` | Terminal, cron, CI wrapper | Use `scripts/polaris-run.sh` or equivalent shell subprocess. The command may default to `claude -p` only as this adapter's CLI default. |
+| `terminal-cli` | Terminal, cron, CI wrapper | Use `scripts/polaris-run.sh` or equivalent shell subprocess with an explicitly configured CLI worker. |
 | `ci` | Remote CI workers | Dispatch a CI job and read the state artifact after completion. |
 
 ## Contract

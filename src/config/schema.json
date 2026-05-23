@@ -85,6 +85,19 @@
         }
       }
     },
+    "execution": {
+      "type": "object",
+      "properties": {
+        "adapter": {
+          "type": "string",
+          "enum": ["agent-subtask", "terminal-cli", "ci", "ssh", "remote-worker", "cross-agent"]
+        },
+        "allowCrossAgentFallback": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
     "finalize": {
       "type": "object",
       "properties": {

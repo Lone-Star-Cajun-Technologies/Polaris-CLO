@@ -103,6 +103,8 @@ describe("runLoopContinue", () => {
     expect(packet.last_completed_child).toBe("POL-23");
     expect(packet.current_state_sha).toBeTruthy();
     expect(packet.open_children).toEqual(["POL-24", "POL-25", "POL-26", "POL-27"]);
+    expect(packet.execution_adapter.mode).toBe("terminal-cli");
+    expect(packet.execution_adapter.compact_bootstrap_state.child_id).toBe("POL-24");
   });
 
   it("updates current-state.json atomically (moves active_child to completed)", () => {
@@ -131,7 +133,41 @@ describe("runLoopContinue", () => {
     const updated = readState(stateFile);
     expect(updated.completed_children).toContain("POL-23");
     expect(updated.active_child).toBe("");
+    expect(updated.open_children).toEqual(["POL-24"]);
     expect(updated.context_budget.children_completed).toBe(1);
+  });
+
+  it("removes completed child from open_children before selecting next child", () => {
+    const state = {
+      schema_version: "1.0",
+      run_id: "pol-5-session-1",
+      cluster_id: "POL-5",
+      active_child: "POL-23",
+      completed_children: [],
+      open_children: ["POL-23", "POL-24"],
+      step_cursor: "03-execute-child",
+      context_budget: { children_completed: 0, max_children_per_session: 3 },
+      status: "running",
+      next_open_child: "POL-23",
+    };
+    const stateFile = writeState(testDir, state);
+
+    const logs: string[] = [];
+    const origLog = console.log;
+    console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
+    try {
+      runLoopContinue({ stateFile, repoRoot: testDir });
+    } finally {
+      console.log = origLog;
+    }
+
+    const updated = readState(stateFile);
+    const packet = JSON.parse(logs.join("\n"));
+    expect(updated.completed_children).toEqual(["POL-23"]);
+    expect(updated.open_children).toEqual(["POL-24"]);
+    expect(updated.next_open_child).toBe("POL-24");
+    expect(packet.open_children).toEqual(["POL-24"]);
+    expect(packet.execution_adapter.compact_bootstrap_state.child_id).toBe("POL-24");
   });
 
   it("appends a JSONL checkpoint event to telemetry file", () => {

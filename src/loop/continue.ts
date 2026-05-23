@@ -10,10 +10,13 @@ import {
   type LoopState,
 } from "./checkpoint.js";
 import { buildBootstrapPacket, writeBootstrapPacket } from "./bootstrap-packet.js";
+import { loadConfig } from "../config/loader.js";
+import type { ExecutionAdapterMode } from "./execution-adapter.js";
 
 export interface ContinueOptions {
   stateFile: string;
   repoRoot: string;
+  adapter?: ExecutionAdapterMode;
 }
 
 function readSessionTypeFile(repoRoot: string): string | undefined {
@@ -56,7 +59,10 @@ export function runLoopContinue(options: ContinueOptions): void {
 
   const state = rawState as ReturnType<typeof readState>;
   const completedChild = state.active_child;
-  const nextChild = state.open_children[0] ?? null;
+  const remainingOpenChildren = completedChild
+    ? state.open_children.filter((child) => child !== completedChild)
+    : state.open_children;
+  const nextChild = remainingOpenChildren[0] ?? null;
 
   // Determine session type (state field takes precedence, file is secondary signal)
   const sessionTypeFile = readSessionTypeFile(repoRoot);
@@ -72,6 +78,7 @@ export function runLoopContinue(options: ContinueOptions): void {
     completed_children: completedChild
       ? [...state.completed_children, completedChild]
       : state.completed_children,
+    open_children: remainingOpenChildren,
     step_cursor: "checkpoint",
     next_open_child: nextChild,
     status: nextChild ? "running" : "cluster-complete",
@@ -123,7 +130,16 @@ export function runLoopContinue(options: ContinueOptions): void {
   }
 
   // Steps 4-5: Generate and write bootstrap packet
-  const packet = buildBootstrapPacket(updatedState, stateFile, sha, repoRoot, completedChild);
+  const config = loadConfig(repoRoot);
+  const packet = buildBootstrapPacket(
+    updatedState,
+    stateFile,
+    sha,
+    repoRoot,
+    completedChild,
+    options.adapter ?? config.execution.adapter,
+    config.execution,
+  );
   if (boundaryTriggered) {
     packet.boundary_enforcement =
       "analyze-session-ended; implementation requires fresh session with explicit impl scope";
