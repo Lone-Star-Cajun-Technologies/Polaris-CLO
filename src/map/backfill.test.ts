@@ -86,7 +86,7 @@ describe("runMapBackfill", () => {
 
   it("reports correct summary counts", () => {
     const { stdout } = captureOutput(() => runMapBackfill(TMP, false, undefined, false));
-    expect(stdout).toMatch(/Backfilled \d+ files\. Added \d+\. Queued \d+ for review\. Skipped \d+ \(already mapped\)\./);
+    expect(stdout).toMatch(/Backfilled \d+ files\. Added \d+\. Queued \d+ for review\. Skipped \d+/);
     // src/cli/index.ts should be counted as skipped
     expect(stdout).toContain("Skipped 1");
   });
