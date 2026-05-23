@@ -42,6 +42,37 @@ A step is NOT complete until:
 1. Operational action completed.
 2. `.polaris/runs/current-state.json` updated successfully.
 
+## Run ID format
+
+Format: `polaris-analyze-<slug>-<date>-<seq>` where:
+- `<slug>` is 2–4 lowercase hyphenated words from the cluster title (no Linear IDs in the slug)
+- `<date>` is `YYYY-MM-DD`
+- `<seq>` is a zero-padded sequential number per day (001, 002, …)
+
+Example: `polaris-analyze-local-instructions-2026-05-23-001`
+
+Resumed sessions generate a new `run_id` and record the prior one in `current-state.json`.
+
+## Telemetry
+
+Each run produces an append-only JSONL file:
+
+```
+.taskchain_artifacts/polaris-analyze/runs/<run-id>/telemetry.jsonl
+```
+
+Set `artifact_dir: ".taskchain_artifacts/polaris-analyze"` in `current-state.json` so the CLI commands resolve the telemetry path correctly.
+
+| Event | Emitted by | When |
+|---|---|---|
+| `run-start` | agent (step 01) | First action — before any Linear access or branch work |
+| `loop-checkpoint` | `polaris loop continue` | After each child completes (step 05) |
+| `analyze-impl-boundary-enforced` | `polaris loop continue` | When boundary fires (step 05) |
+| `loop-aborted` | `polaris loop abort` | On any blocker halt |
+| `run-complete` | `polaris finalize` | Finalize step 10 (analyze-only clusters only) |
+
+Required fields on every event: `event`, `run_id`, `timestamp`.
+
 ## Chain definition
 
 Each cluster's children, types, and dependency order are defined in:

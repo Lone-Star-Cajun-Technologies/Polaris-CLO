@@ -31,6 +31,16 @@ stop_rules:
 
 ### First session
 
+0. **Generate `run_id`** — pure local computation, no I/O:
+   - Format: `polaris-run-<slug>-<date>-<seq>` (see `chain.md` for format rules)
+   - Emit `run-start` to the telemetry file as the very first I/O action:
+     ```
+     mkdir -p .taskchain_artifacts/polaris-run/runs/<run-id>
+     echo '{"event":"run-start","run_id":"<run-id>","timestamp":"<ISO>"}' \
+       >> .taskchain_artifacts/polaris-run/runs/<run-id>/telemetry.jsonl
+     ```
+   - If this write fails: halt. Do not access Linear or touch the branch.
+
 1. Determine the `cluster-id` from the user prompt (the Linear parent issue ID, e.g. `POL-5`).
 2. Read `.polaris/clusters/<cluster-id>/chain.yaml`.
    - If missing: halt. Report "chain.yaml not found at `.polaris/clusters/<cluster-id>/chain.yaml` — create it before running polaris-run. See `.polaris/clusters/chain-yaml-format.md`."
@@ -38,7 +48,9 @@ stop_rules:
 4. Fetch the cluster's Linear parent issue to get `gitBranchName`.
 5. Create the feature branch: `git checkout -b <gitBranchName> main`.
 6. Initialize `.polaris/runs/current-state.json` from chain.yaml (see schema in `docs/Polaris/spec/current-state-schema.md`):
+   - `run_id`: the generated run_id from action 0
    - `cluster_id`, `skill: polaris-run`, `status: ready`
+   - `artifact_dir: ".taskchain_artifacts/polaris-run"`
    - `open_children`: all children in dependency order
    - `completed_children: []`
    - `active_child: ""`
@@ -47,9 +59,17 @@ stop_rules:
 
 ### Resume session
 
+0. **Generate a new `run_id`** and emit `run-start` with the prior run referenced:
+   ```
+   mkdir -p .taskchain_artifacts/polaris-run/runs/<new-run-id>
+   echo '{"event":"run-start","run_id":"<new-run-id>","prior_run_id":"<prior-run-id>","timestamp":"<ISO>"}' \
+     >> .taskchain_artifacts/polaris-run/runs/<new-run-id>/telemetry.jsonl
+   ```
+   The prior `run_id` comes from `current-state.json` before overwriting it.
 1. Run `polaris loop resume` — verifies state SHA and loads the bootstrap packet.
 2. If SHA mismatch: halt. Report "state SHA mismatch — verify `.polaris/runs/current-state.json` before resuming."
-3. Run `polaris loop status` to confirm the next open child.
+3. Update `current-state.json` with the new `run_id`.
+4. Run `polaris loop status` to confirm the next open child.
 
 ## Artifact update
 
