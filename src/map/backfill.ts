@@ -13,6 +13,7 @@ import {
   writeNeedsReview,
   writeAtlasIndex,
   computeInstructionCoverage,
+  resolveInstructionFile,
   type FileRouteEntry,
 } from "./atlas.js";
 
@@ -151,6 +152,7 @@ export function runMapBackfill(
 
       // Run inference on unmapped file
       const inferred = inferRoute(filePath, repoRoot, config, routes, branchName);
+      const instructionFile = resolveInstructionFile(filePath, repoRoot);
       const entry: FileRouteEntry = {
         domain: inferred.domain,
         route: inferred.route,
@@ -160,6 +162,7 @@ export function runMapBackfill(
         last_updated: now,
         updated_by: "polaris-map-backfill",
         tags: inferred.tags,
+        ...(instructionFile && { instructionFile }),
       };
 
       if (inferred.confidence >= autoWriteAbove) {

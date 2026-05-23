@@ -172,7 +172,7 @@ describe("runMapQuery", () => {
   });
 
   it("includes instructionFile path in output when entry has one", () => {
-    const { stdout } = captureOutput(() => runMapQuery(TMP, "src/map/atlas.ts", undefined, undefined, false));
+    const { stdout } = captureOutput(() => runMapQuery(TMP, "src/map/atlas.ts", undefined, undefined, false, true));
     const result = JSON.parse(stdout);
     expect(result["src/map/atlas.ts"].instructionFile).toBe("src/map/POLARIS.md");
   });
@@ -185,7 +185,7 @@ describe("runMapQuery", () => {
   });
 
   it("--include-instructions includes instructionFile in --text output", () => {
-    const { stdout } = captureOutput(() => runMapQuery(TMP, "src/map/atlas.ts", undefined, undefined, true, false));
+    const { stdout } = captureOutput(() => runMapQuery(TMP, "src/map/atlas.ts", undefined, undefined, true, true));
     expect(stdout).toContain("instructions:src/map/POLARIS.md");
   });
 

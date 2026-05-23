@@ -5,7 +5,6 @@
   "cluster_id": "POL-42",
   "skill": "polaris-run",
   "artifact_dir": ".taskchain_artifacts/polaris-run",
-  "status": "ready",
   "branch": "philmeaux/pol-42-add-polaris-canon-reconciliation-and-docs-ingest-lifecycle",
   "current_step_id": "07-decide-continuation",
   "status": "stopped",
