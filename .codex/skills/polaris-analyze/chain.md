@@ -1,90 +1,53 @@
-# polaris-analyze
-
-Native Polaris taskchain skill for **analysis clusters**. Use this skill when children are `session_type: analyze` — producing specs, designs, and planning artifacts. When all analyze children are done, `polaris loop continue` enforces the analyze→implement boundary automatically; a fresh `polaris-run` session handles any subsequent implementation children.
-
+---
+name: polaris-analyze-chain
+description: Route map for polaris-analyze — step order, boundary enforcement, and artifact update requirements.
 ---
 
-## Session start
+# polaris-analyze chain
 
-1. Write `.polaris/session-type`:
-   ```
-   echo "analyze" > .polaris/session-type
-   ```
-   This signals boundary enforcement to `polaris loop continue`.
+## Step traversal order
 
-2. If this is the **first session**:
-   - Read `chain.yaml` for the cluster to learn children and dependencies.
-   - Initialize `.polaris/runs/current-state.json` with `session_type: analyze`.
-
-3. If this is a **resume session**:
-   - Run `polaris loop resume` to verify state and load bootstrap packet.
-
-4. Run `polaris loop status` to confirm the next analyze child.
-
----
-
-## Child loop
-
-Repeat for each analyze child:
-
-### 1. Select child
-
-Take the next child from `open_children` whose `blockedBy` are all in `completed_children`. Must be `session_type: analyze`.
-
-### 2. Execute
-
-Produce the analysis output per the child's Linear issue scope. Allowed outputs:
-- Docs, specs, and planning files (`docs/`, `docs/spec/`, `docs/planning/`)
-- Linear issue updates (findings, notes, links)
-
-**Not allowed in analyze sessions:**
-- Source code changes (`src/`, test files)
-- Config changes (`polaris.config.json`, `.polaris/`)
-- Any commit that modifies runnable code
-
-### 3. Commit
-
-```
-git add <docs and spec files only>
-git commit -m "[<CHILD-ID>] <child title>"
+```text
+01-orient-cluster
+02-select-child          ← loops back here after 05 decides CONTINUE
+03-execute-child
+04-commit-and-update-linear
+05-advance-loop          → CONTINUE: go to 02 | BOUNDARY: halt (implement next) | FINALIZE: polaris finalize
 ```
 
-### 4. Update Linear
+## Continuation rules
 
-Mark the child issue **Done** in Linear.
+After step 05:
 
-### 5. Advance loop
+- **CONTINUE**: return to step 02 within the same session. Next child must be `session_type: analyze`.
+- **BOUNDARY**: halt when `polaris loop continue` fires the analyze→implement boundary enforcement event. Report the last completed analyze child and the first implement child. The operator must start a new polaris-run session.
+- **STOP (budget)**: halt when context budget threshold is met. Report next open child and resume command: `polaris loop resume`.
+- **FINALIZE**: run `polaris finalize` only when ALL cluster children (analyze and implement) are Done. This case applies only to analyze-only clusters.
+
+## Context budget
+
+| Counter | Meaning | Stop threshold |
+|---------|---------|----------------|
+| `children_completed` | Children fully Done this session | ≥ 3 → STOP |
+
+## Scope enforcement
+
+`polaris loop continue` reads `.polaris/session-type` to detect non-doc file mutations in the working tree. If implementation-scope changes are found, it halts with a scope violation event. This is structural enforcement — the skill does not replicate it manually.
+
+## Artifact update requirement
+
+After every completed step, update `.polaris/runs/current-state.json` before advancing.
+
+A step is NOT complete until:
+1. Operational action completed.
+2. `.polaris/runs/current-state.json` updated successfully.
+
+## Chain definition
+
+Each cluster's children, types, and dependency order are defined in:
 
 ```
-polaris loop continue
+.polaris/clusters/<cluster-id>/chain.yaml
 ```
 
-If the next child is `session_type: implement`, `polaris loop continue` fires the boundary enforcement event and halts. This is the expected end of the analyze session — not an error.
-
----
-
-## Session end
-
-After `polaris loop continue` exits:
-
-- **Boundary enforced** (next child is implement-type): stop. Report the boundary event, the last completed analyze child, and the next implement child. The operator must start a new `polaris-run` session.
-- **More analyze children remain**: stop on context budget. Report next open child and resume command: `polaris loop resume`.
-- **All children Done and all are analyze-type**: run `polaris finalize`.
-
----
-
-## Blocker protocol
-
-```
-polaris loop abort "<reason>"
-```
-
-Halt immediately. Report the blocker and the unblock condition.
-
----
-
-## Constraints
-
-- Never modify `src/` or test files in an analyze session.
-- Never call `polaris finalize` unless all cluster children are Done (including any implement-type children that ran in a separate `polaris-run` session).
-- The analyze→implement boundary is enforced by Polaris, not by this skill. Do not manually check or replicate it.
+This file must exist before a first session can start. See `.polaris/clusters/chain-yaml-format.md` for the schema.
