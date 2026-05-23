@@ -35,7 +35,7 @@ function readJson<T>(filePath: string, fallback: T): T {
   try {
     return JSON.parse(readFileSync(filePath, "utf-8")) as T;
   } catch (error) {
-    if (error instanceof Error && "code" in error && (error as NodeJS.ErrnoException).code === "ENOENT") {
+    if (error instanceof Error && "code" in error && (error as Error & { code?: string }).code === "ENOENT") {
       return fallback;
     }
     throw error;
