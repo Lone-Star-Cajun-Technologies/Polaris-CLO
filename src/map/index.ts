@@ -6,6 +6,7 @@ import { loadConfig } from "../config/loader.js";
 import { runMapUpdate } from "./update.js";
 import { runMapValidate } from "./validate.js";
 import { runMapQuery } from "./query.js";
+import { runMapBackfill } from "./backfill.js";
 import { parsePolarisIgnore } from "../ignore/parser.js";
 import { SECRET_PATTERNS } from "../ignore/defaults.js";
 import { inferRoute } from "./inference.js";
@@ -213,6 +214,17 @@ export function createMapCommand(): Command {
         options.fix,
       );
       if (hasError) process.exit(1);
+    });
+
+  map
+    .command("backfill")
+    .description("Incremental gap-fill for an already-indexed repo")
+    .option("-r, --repo-root <path>", "Repository root", process.cwd())
+    .option("--dry-run", "Print results without writing files")
+    .option("--domain <domain>", "Limit backfill to a specific domain")
+    .option("-v, --verbose", "Show per-file classification")
+    .action((options: { repoRoot: string; dryRun?: boolean; domain?: string; verbose?: boolean }) => {
+      runMapBackfill(options.repoRoot, options.dryRun ?? false, options.domain, options.verbose ?? false);
     });
 
   map
