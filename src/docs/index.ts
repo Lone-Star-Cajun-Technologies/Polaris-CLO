@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { ingestDocs, printIngestResults } from "./ingest.js";
+import { migrateDocs, printMigrateResults } from "./migrate.js";
 import { seedInstructions, seedInstructionsAll } from "./seed-instructions.js";
 import { validateInstructions, printReport } from "./validate-instructions.js";
 
@@ -35,6 +36,26 @@ export function createDocsCommand(): Command {
           approveAuthority: options.approveAuthority,
         });
         printIngestResults(results);
+      } catch (err) {
+        console.error(err instanceof Error ? err.message : String(err));
+        process.exit(1);
+      }
+    });
+
+  docs
+    .command("migrate")
+    .description("Find scattered markdown files, move them to docs/raw/, and produce an ingest cluster list")
+    .option("--dry-run", "Show plan without moving files")
+    .option("--migration-run-id <id>", "Override the generated migration run ID")
+    .option("-r, --repo-root <path>", "Repository root", process.cwd())
+    .action((options: { dryRun?: boolean; migrationRunId?: string; repoRoot: string }) => {
+      try {
+        const result = migrateDocs({
+          repoRoot: options.repoRoot,
+          dryRun: options.dryRun,
+          migrationRunId: options.migrationRunId,
+        });
+        printMigrateResults(result);
       } catch (err) {
         console.error(err instanceof Error ? err.message : String(err));
         process.exit(1);
