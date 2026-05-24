@@ -1,0 +1,64 @@
+{
+  "run_id": "polaris-run-canon-docs-lifecycle-2026-05-23-006",
+  "skill": "polaris-run",
+  "branch": "philmeaux/pol-42-add-polaris-canon-reconciliation-and-docs-ingest-lifecycle",
+  "base_commit_sha": "9e0a5db61c7a74a88fe8423b0cdfd346df8a7434",
+  "last_completed_step": "checkpoint",
+  "last_completed_child": "",
+  "next_step": "03-execute-child",
+  "open_children": [
+    "POL-50",
+    "POL-51",
+    "POL-52",
+    "POL-53"
+  ],
+  "artifact_pointers": {
+    "current_state": ".taskchain_artifacts/polaris-run/current-state.json",
+    "telemetry": ".taskchain_artifacts/polaris-run/runs/polaris-run-canon-docs-lifecycle-2026-05-23-006/telemetry.jsonl"
+  },
+  "context_budget": {
+    "children_completed": 1,
+    "files_touched_total": 3,
+    "stop_threshold_remaining": 2
+  },
+  "current_state_sha": "aa36f4130154924b6a93c39969d18d3623241491daec407c6c67a4e0c3e72a5b",
+  "resume_instructions": "Run `polaris loop resume polaris-run-canon-docs-lifecycle-2026-05-23-006` on branch `philmeaux/pol-42-add-polaris-canon-reconciliation-and-docs-ingest-lifecycle` to continue with POL-50.",
+  "execution_adapter": {
+    "mode": "terminal-cli",
+    "autoDispatch": false,
+    "providerCoupling": "shell-process",
+    "priority": 2,
+    "warnings": [],
+    "reason": "terminal CLI worker adapter configured",
+    "compact_bootstrap_state": {
+      "run_id": "polaris-run-canon-docs-lifecycle-2026-05-23-006",
+      "cluster_id": "POL-42",
+      "child_id": "POL-50",
+      "state_file": ".taskchain_artifacts/polaris-run/current-state.json",
+      "telemetry_file": ".taskchain_artifacts/polaris-run/runs/polaris-run-canon-docs-lifecycle-2026-05-23-006/telemetry.jsonl",
+      "current_state_sha": "aa36f4130154924b6a93c39969d18d3623241491daec407c6c67a4e0c3e72a5b",
+      "branch": "philmeaux/pol-42-add-polaris-canon-reconciliation-and-docs-ingest-lifecycle",
+      "return_summary_contract": [
+        "child_id",
+        "status",
+        "commit_hash",
+        "validation_summary",
+        "next_action"
+      ]
+    },
+    "dispatch_contract": {
+      "one_child_per_worker": true,
+      "parent_receives_compact_summary_only": true,
+      "child_transcript_retained_by_worker": true,
+      "updates_current_state_and_telemetry": true
+    },
+    "fallback_order": [
+      "agent-subtask",
+      "terminal-cli",
+      "ci",
+      "ssh",
+      "remote-worker",
+      "cross-agent"
+    ]
+  }
+}

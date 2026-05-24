@@ -1,0 +1,21 @@
+{"event":"run-start","run_id":"polaris-run-canon-docs-lifecycle-2026-05-23-006","prior_run_id":"polaris-run-canon-docs-lifecycle-2026-05-23-005","timestamp":"2026-05-23T18:00:00.000Z"}
+{"event":"step-complete","run_id":"polaris-run-canon-docs-lifecycle-2026-05-23-006","step":"01-orient-cluster","timestamp":"2026-05-23T18:00:10.000Z"}
+{"event":"step-complete","run_id":"polaris-run-canon-docs-lifecycle-2026-05-23-006","step":"02-prepare-branch","timestamp":"2026-05-23T18:00:20.000Z"}
+{"event":"step-complete","run_id":"polaris-run-canon-docs-lifecycle-2026-05-23-006","step":"03-select-child","active_child":"POL-49","timestamp":"2026-05-23T18:00:30.000Z"}
+{"event":"step-complete","run_id":"polaris-run-canon-docs-lifecycle-2026-05-23-006","step":"04-execute-child","child":"POL-49","timestamp":"2026-05-24T04:28:00.000Z"}
+{"event":"step-complete","run_id":"polaris-run-canon-docs-lifecycle-2026-05-23-006","step":"05-validate-child","child":"POL-49","validation_status":"passed","commands":["vitest run src/docs/migrate.test.ts"],"tests_passed":10,"timestamp":"2026-05-23T18:05:00.000Z"}
+{"event":"step-complete","run_id":"polaris-run-canon-docs-lifecycle-2026-05-23-006","step":"06-commit-and-update-linear","child":"POL-49","commit":"9e0a5db","linear_status":"Done","timestamp":"2026-05-23T18:10:00.000Z"}
+{"event":"loop-checkpoint","run_id":"polaris-run-canon-docs-lifecycle-2026-05-23-006","child_id":"","next_child":"POL-50","timestamp":"2026-05-24T04:30:08.133Z"}
+{"event":"loop-checkpoint","run_id":"polaris-run-canon-docs-lifecycle-2026-05-23-006","completed_child":"POL-49","next_child":"POL-50","decision":"adapter-handoff","timestamp":"2026-05-23T18:12:00.000Z"}
+{"event":"step-complete","run_id":"polaris-run-canon-docs-lifecycle-2026-05-23-006","step":"04-execute-child","child":"POL-50","timestamp":"2026-05-24T04:33:41.000Z"}
+{"event":"step-complete","run_id":"polaris-run-canon-docs-lifecycle-2026-05-23-006","step":"05-validate-child","child":"POL-50","validation_status":"passed","commands":["file-existence-check","section-check"],"notes":"spec-only child, all required sections present","timestamp":"2026-05-23T18:20:00.000Z"}
+{"event":"step-complete","run_id":"polaris-run-canon-docs-lifecycle-2026-05-23-006","step":"06-commit-and-update-linear","child":"POL-50","commit":"f43d1a8","linear_status":"Done","map_update":"needs-review-nonfatal","timestamp":"2026-05-23T18:22:00.000Z"}
+{"event":"loop-checkpoint","run_id":"polaris-run-canon-docs-lifecycle-2026-05-23-006","child_id":"","next_child":"POL-51","timestamp":"2026-05-24T04:34:50.461Z"}
+{"event":"loop-checkpoint","run_id":"polaris-run-canon-docs-lifecycle-2026-05-23-006","completed_child":"POL-50","next_child":"POL-51","decision":"adapter-handoff","stop_threshold_remaining":1,"timestamp":"2026-05-23T18:24:00.000Z"}
+{"event":"step-complete","run_id":"polaris-run-canon-docs-lifecycle-2026-05-23-006","step":"04-execute-child","child":"POL-51","timestamp":"2026-05-24T04:40:50.000Z"}
+{"event":"step-complete","run_id":"polaris-run-canon-docs-lifecycle-2026-05-23-006","step":"05-validate-child","child":"POL-51","validation_status":"passed","commands":["vitest run src/docs/canon-check.test.ts"],"tests_passed":11,"timestamp":"2026-05-23T18:45:00.000Z"}
+{"event":"step-complete","run_id":"polaris-run-canon-docs-lifecycle-2026-05-23-006","step":"06-commit-and-update-linear","child":"POL-51","commit":"df3bed5","linear_status":"Done","timestamp":"2026-05-23T18:47:00.000Z"}
+{"event":"loop-checkpoint","run_id":"polaris-run-canon-docs-lifecycle-2026-05-23-006","child_id":"","next_child":"POL-52","timestamp":"2026-05-24T04:41:41.676Z"}
+{"event":"canon-check-start","run_id":"polaris-run-canon-docs-lifecycle-2026-05-23-006","child_id":"POL-52","canon_files_inspected":0,"changed_files_count":0,"timestamp":"2026-05-24T04:41:41.800Z"}
+{"event":"canon-check-result","run_id":"polaris-run-canon-docs-lifecycle-2026-05-23-006","child_id":"POL-52","outcome":"aligned","conflicts":[],"timestamp":"2026-05-24T04:41:41.800Z"}
+{"event":"loop-checkpoint","run_id":"polaris-run-canon-docs-lifecycle-2026-05-23-006","completed_child":"POL-51","next_child":"POL-52","decision":"stop-budget-exhausted","stop_threshold_remaining":0,"timestamp":"2026-05-23T18:50:00.000Z"}

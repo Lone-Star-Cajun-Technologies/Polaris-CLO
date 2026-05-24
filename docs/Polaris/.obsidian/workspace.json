@@ -185,6 +185,10 @@
   },
   "active": "be422318a9ddeb4c",
   "lastOpenFiles": [
+    "spec/provider-capabilities.md",
+    "spec/canon-reconciliation-protocol.md",
+    "spec/docs-authority-model.md",
+    "spec/execution-adapter-architecture.md",
     "spec/local-instructions-layer.md",
     "spec/current-state-schema.md",
     "planning/cluster-map.md",
