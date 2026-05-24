@@ -2,5 +2,6 @@ node_modules/
 dist/
 build/
 *.js
+!.codex/skills/**/*.js
 .env
 docs/Polaris/.obsidian/
