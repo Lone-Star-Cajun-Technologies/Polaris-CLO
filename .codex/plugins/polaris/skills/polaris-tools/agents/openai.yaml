@@ -1,0 +1,5 @@
+interface:
+  display_name: "Polaris Tools"
+  short_description: "Run and manage Polaris taskchain clusters via CLI"
+  brand_color: "#6366F1"
+  default_prompt: "Use $polaris-tools to run a Polaris child task or check cluster status."
