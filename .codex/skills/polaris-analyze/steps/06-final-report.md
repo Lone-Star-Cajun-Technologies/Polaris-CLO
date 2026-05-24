@@ -34,7 +34,7 @@ stop_rules:
 Return a structured summary containing:
 
 1. **Parent issue audited** — ID, title, state
-2. **GitNexus status** — fresh, stale, or refreshed
+2. **Repo-analysis provider status** — `available` / `unavailable` / `not-configured` (if available: provider name and index freshness)
 3. **Files / systems inspected** — list (max 10; summarize remainder as "N additional files")
 4. **Findings** — outcome assessment with evidence (max 5–10 lines; no raw command output)
 5. **Clusters plan** — cluster IDs, child issues per cluster, session_types, and dependency order

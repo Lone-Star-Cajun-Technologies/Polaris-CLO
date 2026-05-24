@@ -50,4 +50,10 @@ export interface PolarisConfig {
     checkOnContinue?: boolean;
     checkOnFinalize?: boolean;
   };
+  providers?: {
+    repoAnalysis?: {
+      preferred?: string;
+      fallback?: string[];
+    };
+  };
 }

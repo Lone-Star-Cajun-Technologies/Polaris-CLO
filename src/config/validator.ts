@@ -293,15 +293,54 @@ export function validateConfig(config: unknown): ValidationResult {
     }
   }
 
+  // providers
+  if ("providers" in config && config.providers !== undefined) {
+    if (!isPlainObject(config.providers)) {
+      result.valid = false;
+      result.errors.push("providers must be an object");
+    } else {
+      if ("repoAnalysis" in config.providers && config.providers.repoAnalysis !== undefined) {
+        if (!isPlainObject(config.providers.repoAnalysis)) {
+          result.valid = false;
+          result.errors.push("providers.repoAnalysis must be an object");
+        } else {
+          if (
+            "preferred" in config.providers.repoAnalysis &&
+            config.providers.repoAnalysis.preferred !== undefined
+          ) {
+            if (!isString(config.providers.repoAnalysis.preferred)) {
+              result.valid = false;
+              result.errors.push("providers.repoAnalysis.preferred must be a string");
+            }
+          }
+          if (
+            "fallback" in config.providers.repoAnalysis &&
+            config.providers.repoAnalysis.fallback !== undefined
+          ) {
+            if (!isStringArray(config.providers.repoAnalysis.fallback)) {
+              result.valid = false;
+              result.errors.push(
+                "providers.repoAnalysis.fallback must be an array of strings",
+              );
+            }
+          }
+        }
+      }
+    }
+  }
+
   // unknown top-level fields -> warnings
   const knownKeys = new Set([
     "version",
     "repo",
     "map",
     "loop",
+    "execution",
     "finalize",
     "tracker",
     "integrations",
+    "canon",
+    "providers",
   ]);
   for (const key of Object.keys(config)) {
     if (!knownKeys.has(key)) {

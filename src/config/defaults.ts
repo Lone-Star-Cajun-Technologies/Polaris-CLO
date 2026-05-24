@@ -1,6 +1,6 @@
 import type { PolarisConfig } from "./schema.js";
 
-export const DEFAULT_CONFIG: Omit<Required<PolarisConfig>, "canon"> & { canon: Required<NonNullable<PolarisConfig["canon"]>> } = {
+export const DEFAULT_CONFIG: Omit<Required<PolarisConfig>, "canon" | "providers"> & { canon: Required<NonNullable<PolarisConfig["canon"]>>; providers: { repoAnalysis: { preferred: string | undefined; fallback: string[] } } } = {
   version: "1.0",
   repo: {
     name: "",
@@ -50,5 +50,11 @@ export const DEFAULT_CONFIG: Omit<Required<PolarisConfig>, "canon"> & { canon: R
   canon: {
     checkOnContinue: true,
     checkOnFinalize: true,
+  },
+  providers: {
+    repoAnalysis: {
+      preferred: undefined as string | undefined,
+      fallback: ["polaris-map", "ripgrep"],
+    },
   },
 };
