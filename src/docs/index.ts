@@ -3,6 +3,7 @@ import { ingestDocs, printIngestResults } from "./ingest.js";
 import { migrateDocs, printMigrateResults } from "./migrate.js";
 import { seedInstructions, seedInstructionsAll } from "./seed-instructions.js";
 import { validateInstructions, printReport } from "./validate-instructions.js";
+import { doctrineDraft, doctrinePromote, doctrineDeprecate } from "./doctrine.js";
 
 export function createDocsCommand(): Command {
   const docs = new Command("docs").description("Polaris docs lifecycle commands");
@@ -119,4 +120,61 @@ export function createDocsCommand(): Command {
     });
 
   return docs;
+}
+
+export function createDoctrineCommand(): Command {
+  const doctrine = new Command("doctrine").description("Polaris doctrine lifecycle commands");
+
+  doctrine
+    .command("draft <path>")
+    .description("Move a doc from docs/raw/ or docs/doctrine/raw/ to docs/doctrine/candidate/")
+    .option("-r, --repo-root <path>", "Repository root", process.cwd())
+    .option("--run-id <id>", "Override the generated doctrine run ID")
+    .action((path: string, options: { repoRoot: string; runId?: string }) => {
+      try {
+        const result = doctrineDraft(path, { repoRoot: options.repoRoot, runId: options.runId });
+        console.log(`drafted: ${result.destination}`);
+        console.log(`provenance: ${result.lifecyclePath}`);
+      } catch (err) {
+        console.error(err instanceof Error ? err.message : String(err));
+        process.exit(1);
+      }
+    });
+
+  doctrine
+    .command("promote <path>")
+    .description("Move a doc from docs/doctrine/candidate/ to docs/doctrine/active/")
+    .option("-r, --repo-root <path>", "Repository root", process.cwd())
+    .option("--run-id <id>", "Override the generated doctrine run ID")
+    .action((path: string, options: { repoRoot: string; runId?: string }) => {
+      try {
+        const result = doctrinePromote(path, { repoRoot: options.repoRoot, runId: options.runId });
+        console.log(`promoted: ${result.destination}`);
+        console.log(`provenance: ${result.lifecyclePath}`);
+      } catch (err) {
+        console.error(err instanceof Error ? err.message : String(err));
+        process.exit(1);
+      }
+    });
+
+  doctrine
+    .command("deprecate <path>")
+    .description("Move a doc from docs/doctrine/active/ to docs/doctrine/deprecated/")
+    .option("-r, --repo-root <path>", "Repository root", process.cwd())
+    .option("--run-id <id>", "Override the generated doctrine run ID")
+    .action((path: string, options: { repoRoot: string; runId?: string }) => {
+      try {
+        const result = doctrineDeprecate(path, {
+          repoRoot: options.repoRoot,
+          runId: options.runId,
+        });
+        console.log(`deprecated: ${result.destination}`);
+        console.log(`provenance: ${result.lifecyclePath}`);
+      } catch (err) {
+        console.error(err instanceof Error ? err.message : String(err));
+        process.exit(1);
+      }
+    });
+
+  return doctrine;
 }
