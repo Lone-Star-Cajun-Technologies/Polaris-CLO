@@ -1,27 +1,20 @@
-# Run Report: polaris-run-canon-docs-lifecycle-2026-05-23-007
+# Run Report: pol-5-session-1
 
-**Status:** stopped
-**Branch:** philmeaux/pol-42-add-polaris-canon-reconciliation-and-docs-ingest-lifecycle
+**Status:** running
+**Branch:** philmeaux/pol-55-analyze-scheduler-only-parent-loop-and-provider-worker
 **PR:** TBD — set at delivery step 9
-**Children completed:** 12 of 12
+**Children completed:** 3 of 5
 **Validation:** passed
 
 ## Children
 
 | ID | Title | Commit | Status |
 |---|---|---|---|
-| POL-43 | — | — | Done |
-| POL-44 | — | — | Done |
-| POL-45 | — | — | Done |
-| POL-46 | — | — | Done |
-| POL-47 | — | — | Done |
-| POL-48 | — | — | Done |
-| POL-49 | — | — | Done |
-| POL-50 | — | — | Done |
-| POL-51 | — | — | Done |
-| POL-52 | — | — | Done |
-| POL-53 | — | — | Done |
-| POL-54 | — | — | Done |
+| POL-23 | — | — | Done |
+| POL-24 | — | — | Done |
+| POL-25 | — | — | Done |
+| POL-26 | — | — | Open |
+| POL-27 | — | — | Open |
 
 ## Artifacts produced
 

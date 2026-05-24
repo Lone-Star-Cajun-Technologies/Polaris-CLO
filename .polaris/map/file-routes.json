@@ -68,7 +68,7 @@
     "taskchain": "polaris-config",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-05-24T05:03:13.782Z",
+    "last_updated": "2026-05-24T22:33:45.736Z",
     "updated_by": "polaris-map-update",
     "tags": [
       "config"
@@ -105,7 +105,7 @@
     "taskchain": "polaris-config",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-05-24T05:03:13.782Z",
+    "last_updated": "2026-05-24T22:33:45.736Z",
     "updated_by": "polaris-map-update",
     "tags": [
       "config"
@@ -118,7 +118,7 @@
     "taskchain": "polaris-config",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-05-24T05:03:13.782Z",
+    "last_updated": "2026-05-24T22:33:45.736Z",
     "updated_by": "polaris-map-update",
     "tags": [
       "config"
@@ -611,5 +611,45 @@
       "test"
     ],
     "instructionFile": "src/config/POLARIS.md"
+  },
+  "src/loop/budget.test.ts": {
+    "domain": "loop",
+    "route": "src/loop",
+    "taskchain": "polaris-loop",
+    "confidence": 0.9500000000000001,
+    "classification": "indexed",
+    "last_updated": "2026-05-24T22:33:45.736Z",
+    "updated_by": "polaris-map-update",
+    "tags": [
+      "loop",
+      "test"
+    ],
+    "instructionFile": "src/loop/POLARIS.md"
+  },
+  "src/loop/budget.ts": {
+    "domain": "loop",
+    "route": "src/loop",
+    "taskchain": "polaris-loop",
+    "confidence": 0.9500000000000001,
+    "classification": "indexed",
+    "last_updated": "2026-05-24T22:33:45.736Z",
+    "updated_by": "polaris-map-update",
+    "tags": [
+      "loop"
+    ],
+    "instructionFile": "src/loop/POLARIS.md"
+  },
+  "src/loop/parent.ts": {
+    "domain": "loop",
+    "route": "src/loop",
+    "taskchain": "polaris-loop",
+    "confidence": 0.9500000000000001,
+    "classification": "indexed",
+    "last_updated": "2026-05-24T22:33:45.736Z",
+    "updated_by": "polaris-map-update",
+    "tags": [
+      "loop"
+    ],
+    "instructionFile": "src/loop/POLARIS.md"
   }
 }
