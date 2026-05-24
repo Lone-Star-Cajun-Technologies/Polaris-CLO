@@ -1,37 +1,44 @@
 {
   "schema_version": "1.0",
-  "run_id": "polaris-run-canon-docs-lifecycle-2026-05-23-007",
-  "related_run_id": "polaris-run-canon-docs-lifecycle-2026-05-23-006",
-  "cluster_id": "POL-42",
+  "run_id": "polaris-run-scheduler-worker-adapters-2026-05-24-001",
+  "related_run_id": null,
+  "cluster_id": "POL-55",
   "skill": "polaris-run",
   "artifact_dir": ".taskchain_artifacts/polaris-run",
-  "branch": "philmeaux/pol-42-add-polaris-canon-reconciliation-and-docs-ingest-lifecycle",
-  "current_step_id": "07-decide-continuation",
-  "step_cursor": "checkpoint",
-  "status": "stopped",
-  "validation_status": "passed-pol54",
+  "branch": "philmeaux/pol-55-analyze-scheduler-only-parent-loop-and-provider-worker",
+  "current_step_id": "04-execute-child",
+  "step_cursor": "dispatching",
+  "status": "executing",
+  "session_type": "implementation",
   "active_child": "",
-  "last_commit": "e095dd1",
-  "next_open_child": null,
+  "last_commit": "PLACEHOLDER",
+  "next_open_child": "POL-68",
   "completed_children": [
-    "POL-43",
-    "POL-44",
-    "POL-45",
-    "POL-46",
-    "POL-47",
-    "POL-48",
-    "POL-49",
-    "POL-50",
-    "POL-51",
-    "POL-52",
-    "POL-53",
-    "POL-54"
+    "POL-67"
   ],
-  "open_children": [],
-  "context_budget": {
-    "children_completed": 3,
-    "files_touched_total": 23,
-    "last_child_files_touched": 0
+  "open_children": [
+    "POL-68",
+    "POL-69",
+    "POL-70",
+    "POL-74",
+    "POL-71",
+    "POL-72",
+    "POL-73"
+  ],
+  "open_children_meta": {
+    "POL-67": { "type": "implement", "title": "Implement polaris CLI package entry point and installable bin surface" },
+    "POL-68": { "type": "implement", "title": "Implement scheduler-only parent loop with dispatch boundary enforcement" },
+    "POL-69": { "type": "implement", "title": "Implement worker contract: bootstrap reader, execution wrapper, compact return" },
+    "POL-70": { "type": "implement", "title": "Implement configurable budget/cap policy (replace hardcoded max_children_per_session: 3)" },
+    "POL-74": { "type": "implement", "title": "Implement analyze-drift guardrail in parent loop runtime" },
+    "POL-71": { "type": "implement", "title": "Implement Claude Code skill for polaris-run and polaris-loop-continue" },
+    "POL-72": { "type": "implement", "title": "Implement Codex plugin for local polaris CLI invocation" },
+    "POL-73": { "type": "implement", "title": "Implement Windsurf orchestrator dispatch path" }
   },
-  "updated_at": "2026-05-24T05:03:00.000Z"
+  "context_budget": {
+    "children_completed": 1,
+    "files_touched_total": 2,
+    "last_child_files_touched": 2
+  },
+  "updated_at": "2026-05-24T15:10:00.000Z"
 }
