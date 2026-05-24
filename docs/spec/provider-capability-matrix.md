@@ -1,6 +1,6 @@
 # Provider Capability Matrix
 
-> Written as part of POL-55 analysis convergence. This document does not require another analyze pass — it directly informs POL-71 (Claude Code skill), POL-72 (Codex plugin), and POL-73 (Windsurf path).
+> Written as part of POL-55 analysis convergence. This document does not require another analysis pass — it directly informs POL-71 (Claude Code skill), POL-72 (Codex plugin), and POL-73 (Windsurf path).
 
 ## Decision summary
 
@@ -31,7 +31,7 @@
 
 ## Adapter mapping
 
-```
+```text
 Provider              Adapter
 ─────────────────     ───────────────────────────
 Claude Code           agent-subtask (native)
