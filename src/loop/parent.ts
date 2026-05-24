@@ -314,6 +314,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     // compact JSON summary via stdout.
 
     const packet = buildPacket(state, nextChild, stateFile, telemetryFile);
+    const childrenCompletedBeforeDispatch = state.context_budget.children_completed;
 
     if (!dryRun) {
       appendTelemetry(telemetryFile, {
@@ -495,8 +496,14 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
       (workerSummary as Record<string, unknown>)?.['commit'] as string | undefined ??
       (workerSummary as Record<string, unknown>)?.['commit_hash'] as string | undefined;
 
-    state = advanceState(state, nextChild, lastCommit);
-    childrenDispatched += 1;
+    const childAlreadyRecorded =
+      state.completed_children.includes(nextChild) ||
+      state.context_budget.children_completed > childrenCompletedBeforeDispatch;
+
+    if (!childAlreadyRecorded) {
+      state = advanceState(state, nextChild, lastCommit);
+      childrenDispatched += 1;
+    }
 
     // Persist updated state after each successful child
     if (!dryRun) {

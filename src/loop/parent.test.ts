@@ -10,7 +10,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { runParentLoop } from "./parent.js";
@@ -296,6 +296,59 @@ describe("runParentLoop", () => {
     expect(result.haltReason).toBe("cluster-complete");
     expect(result.childrenDispatched).toBe(1);
     expect(result.message).toContain("Cluster complete");
+  });
+
+  it("does not double-count when worker already persisted child completion", async () => {
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+
+    const mockAdapter: ExecutionAdapter = {
+      name: "mock",
+      async dispatch() {
+        const state = JSON.parse(readFileSync(stateFile, "utf-8")) as Record<string, unknown>;
+        const contextBudget = state.context_budget as Record<string, unknown>;
+        writeFileSync(
+          stateFile,
+          JSON.stringify(
+            {
+              ...state,
+              open_children: [],
+              completed_children: ["POL-100"],
+              context_budget: {
+                ...contextBudget,
+                children_completed: 1,
+              },
+              next_open_child: null,
+              status: "cluster-complete",
+            },
+            null,
+            2,
+          ),
+          "utf-8",
+        );
+        return {
+          exit_code: 0,
+          provider_used: "mock",
+          command_run: "mock-worker",
+          summary: JSON.stringify({ child_id: "POL-100", status: "done", commit: "abc1234" }),
+        };
+      },
+    };
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+    const finalState = JSON.parse(readFileSync(stateFile, "utf-8")) as {
+      completed_children: string[];
+      context_budget: { children_completed: number };
+    };
+
+    expect(result.haltReason).toBe("cluster-complete");
+    expect(result.childrenDispatched).toBe(0);
+    expect(finalState.completed_children).toEqual(["POL-100"]);
+    expect(finalState.context_budget.children_completed).toBe(1);
   });
 
   it("returns state-invalid when current-state.json is malformed", async () => {
