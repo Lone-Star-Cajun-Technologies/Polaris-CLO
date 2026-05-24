@@ -1,68 +1,34 @@
 {
   "schema_version": "1.0",
-  "run_id": "polaris-run-scheduler-worker-adapters-2026-05-24-001",
-  "related_run_id": null,
+  "run_id": "polaris-run-scheduler-worker-adapters-2026-05-24-002",
+  "related_run_id": "polaris-run-scheduler-worker-adapters-2026-05-24-001",
   "cluster_id": "POL-55",
   "skill": "polaris-run",
   "artifact_dir": ".taskchain_artifacts/polaris-run",
   "branch": "philmeaux/pol-55-analyze-scheduler-only-parent-loop-and-provider-worker",
-  "current_step_id": "07-decide-continuation",
-  "step_cursor": "checkpoint",
-  "status": "running",
+  "current_step_id": "06-commit-and-update-linear",
+  "step_cursor": null,
+  "status": "all-children-complete",
   "session_type": "implementation",
   "active_child": "",
-  "last_commit": "33d5478",
-  "next_open_child": "POL-70",
+  "last_commit": "daa0901b35bd35537d44e817caf41810ff3f47b8",
+  "next_open_child": "",
   "completed_children": [
     "POL-67",
     "POL-68",
-    "POL-69"
-  ],
-  "open_children": [
+    "POL-69",
     "POL-70",
     "POL-74",
     "POL-71",
     "POL-72",
     "POL-73"
   ],
-  "open_children_meta": {
-    "POL-67": {
-      "type": "implement",
-      "title": "Implement polaris CLI package entry point and installable bin surface"
-    },
-    "POL-68": {
-      "type": "implement",
-      "title": "Implement scheduler-only parent loop with dispatch boundary enforcement"
-    },
-    "POL-69": {
-      "type": "implement",
-      "title": "Implement worker contract: bootstrap reader, execution wrapper, compact return"
-    },
-    "POL-70": {
-      "type": "implement",
-      "title": "Implement configurable budget/cap policy (replace hardcoded max_children_per_session: 3)"
-    },
-    "POL-74": {
-      "type": "implement",
-      "title": "Implement analyze-drift guardrail in parent loop runtime"
-    },
-    "POL-71": {
-      "type": "implement",
-      "title": "Implement Claude Code skill for polaris-run and polaris-loop-continue"
-    },
-    "POL-72": {
-      "type": "implement",
-      "title": "Implement Codex plugin for local polaris CLI invocation"
-    },
-    "POL-73": {
-      "type": "implement",
-      "title": "Implement Windsurf orchestrator dispatch path"
-    }
-  },
+  "open_children": [],
+  "open_children_meta": {},
   "context_budget": {
-    "children_completed": 3,
-    "files_touched_total": 12,
-    "last_child_files_touched": 3
+    "children_completed": 5,
+    "files_touched_total": 23,
+    "last_child_files_touched": 2
   },
-  "updated_at": "2026-05-24T23:45:00.000Z"
+  "updated_at": "2026-05-24T23:35:00.000Z"
 }
