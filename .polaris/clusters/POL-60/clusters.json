@@ -1,0 +1,18 @@
+{
+  "source_id": "POL-60",
+  "source_type": "linear",
+  "created_at": "2026-05-24T10:12:00.000Z",
+  "clusters": [
+    {
+      "cluster_id": "cluster-01",
+      "children": [
+        {
+          "id": "POL-66",
+          "title": "Implement: Write provider-capability-matrix.md spec doc",
+          "session_type": "implement",
+          "blockedBy": []
+        }
+      ]
+    }
+  ]
+}
