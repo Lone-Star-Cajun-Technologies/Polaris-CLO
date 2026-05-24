@@ -81,7 +81,7 @@ export function policyFromConfig(
   const mode: BudgetMode = budgetConfig?.mode ?? 'fixed-cap';
   const maxChildrenPerSession =
     budgetConfig?.max_children ?? contextBudget.max_children_per_session ?? 3;
-  const stopOnFail = budgetConfig?.stop_on_fail ?? false;
+  const stopOnFail = budgetConfig?.stop_on_fail ?? (mode === 'stop-on-fail');
 
   return { mode, maxChildrenPerSession, stopOnFail };
 }

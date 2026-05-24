@@ -69,7 +69,7 @@ The script prints compact JSON to stdout and exits 0 on success, non-zero on err
 ## Discovery order for the Polaris binary
 
 1. `polaris` on `PATH` (installed via `npm link` or `npm install -g`)
-2. `npx polaris` (project-local install)
+2. `npx --no-install polaris` (project-local install)
 3. Error emitted clearly if neither resolves
 
 ## Error format

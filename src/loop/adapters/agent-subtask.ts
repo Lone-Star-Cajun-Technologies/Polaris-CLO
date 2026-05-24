@@ -15,7 +15,7 @@ import type { BootstrapPacket, DispatchOptions, DispatchResult, ExecutionAdapter
 export class AgentSubtaskAdapter implements ExecutionAdapter {
   readonly name = 'agent-subtask';
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // eslint-disable-next-line no-unused-vars
   async dispatch(_packet: BootstrapPacket, _options: DispatchOptions): Promise<DispatchResult> {
     // Native agent subtask dispatch is environment-specific (e.g. Claude Code
     // TaskCreate tool). This adapter stub signals that the caller must arrange

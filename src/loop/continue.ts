@@ -18,6 +18,8 @@ export interface ContinueOptions {
   stateFile: string;
   repoRoot: string;
   adapter?: ExecutionAdapterMode;
+  /** Override AI provider for the next worker session. */
+  provider?: string;
   /** If true, allow analyze-type children to be dispatched (overrides budget.allow_analyze_children). */
   allowAnalyzeChildren?: boolean;
 }

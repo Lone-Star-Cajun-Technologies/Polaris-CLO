@@ -231,13 +231,15 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
 
     if (nextChild === null) {
       // All children completed — write final state and halt
-      writeStateAtomic(stateFile, { ...state, status: "cluster-complete" });
-      appendTelemetry(telemetryFile, {
-        event: "cluster-complete",
-        run_id: state.run_id,
-        children_completed: state.completed_children.length,
-        timestamp: new Date().toISOString(),
-      });
+      if (!dryRun) {
+        writeStateAtomic(stateFile, { ...state, status: "cluster-complete" });
+        appendTelemetry(telemetryFile, {
+          event: "cluster-complete",
+          run_id: state.run_id,
+          children_completed: state.completed_children.length,
+          timestamp: new Date().toISOString(),
+        });
+      }
       return {
         haltReason: 'cluster-complete',
         childrenDispatched,
@@ -256,12 +258,14 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
         `  or: polaris loop continue --allow-analyze-children`,
       ].join("\n");
       process.stderr.write(errMsg + "\n");
-      appendTelemetry(telemetryFile, {
-        event: "analyze-drift-halt",
-        run_id: state.run_id,
-        child_id: nextChild,
-        timestamp: new Date().toISOString(),
-      });
+      if (!dryRun) {
+        appendTelemetry(telemetryFile, {
+          event: "analyze-drift-halt",
+          run_id: state.run_id,
+          child_id: nextChild,
+          timestamp: new Date().toISOString(),
+        });
+      }
       return {
         haltReason: 'analyze-drift',
         childrenDispatched,
@@ -277,20 +281,22 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     });
     if (budgetCheck.status === 'exhausted') {
       // Write checkpoint before halting
-      writeStateAtomic(stateFile, {
-        ...state,
-        status: "budget-exhausted",
-        step_cursor: "budget-check",
-        next_open_child: nextChild,
-      });
-      appendTelemetry(telemetryFile, {
-        event: "budget-exhausted",
-        run_id: state.run_id,
-        children_completed: state.context_budget.children_completed,
-        next_child: nextChild,
-        reason: budgetCheck.reason,
-        timestamp: new Date().toISOString(),
-      });
+      if (!dryRun) {
+        writeStateAtomic(stateFile, {
+          ...state,
+          status: "budget-exhausted",
+          step_cursor: "budget-check",
+          next_open_child: nextChild,
+        });
+        appendTelemetry(telemetryFile, {
+          event: "budget-exhausted",
+          run_id: state.run_id,
+          children_completed: state.context_budget.children_completed,
+          next_child: nextChild,
+          reason: budgetCheck.reason,
+          timestamp: new Date().toISOString(),
+        });
+      }
       return {
         haltReason: 'budget-exhausted',
         childrenDispatched,
@@ -309,28 +315,32 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
 
     const packet = buildPacket(state, nextChild, stateFile, telemetryFile);
 
-    appendTelemetry(telemetryFile, {
-      event: "child-dispatch",
-      run_id: state.run_id,
-      child_id: nextChild,
-      adapter: adapterName,
-      provider: providerName,
-      dry_run: dryRun,
-      timestamp: new Date().toISOString(),
-    });
+    if (!dryRun) {
+      appendTelemetry(telemetryFile, {
+        event: "child-dispatch",
+        run_id: state.run_id,
+        child_id: nextChild,
+        adapter: adapterName,
+        provider: providerName,
+        dry_run: dryRun,
+        timestamp: new Date().toISOString(),
+      });
+    }
 
     let dispatchResult;
     try {
       dispatchResult = await adapter.dispatch(packet, { provider: providerName, dryRun });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      appendTelemetry(telemetryFile, {
-        event: "child-dispatch-error",
-        run_id: state.run_id,
-        child_id: nextChild,
-        error: msg,
-        timestamp: new Date().toISOString(),
-      });
+      if (!dryRun) {
+        appendTelemetry(telemetryFile, {
+          event: "child-dispatch-error",
+          run_id: state.run_id,
+          child_id: nextChild,
+          error: msg,
+          timestamp: new Date().toISOString(),
+        });
+      }
       return {
         haltReason: 'worker-error',
         childrenDispatched,
@@ -343,30 +353,52 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     const workerSummary = parseWorkerSummary(dispatchResult.summary);
     const workerStatus = workerSummary?.status ?? (dispatchResult.exit_code === 0 ? 'done' : 'error');
 
+    // Verify child_id matches if present in worker summary
+    if (workerSummary && 'child_id' in workerSummary && workerSummary.child_id !== nextChild) {
+      const errMsg = `Worker returned mismatched child_id: expected ${nextChild}, got ${workerSummary.child_id}`;
+      if (!dryRun) {
+        appendTelemetry(telemetryFile, {
+          event: "child-error",
+          run_id: state.run_id,
+          child_id: nextChild,
+          error: errMsg,
+          timestamp: new Date().toISOString(),
+        });
+      }
+      return {
+        haltReason: 'worker-error',
+        childrenDispatched,
+        haltingChild: nextChild,
+        message: errMsg,
+      };
+    }
+
     if (workerStatus === 'blocked') {
       const blockerMsg =
         ((workerSummary as Record<string, unknown> | null)?.['blocker'] as string | undefined) ??
         dispatchResult.summary ??
         `Worker reported blocked for ${nextChild}`;
-      appendTelemetry(telemetryFile, {
-        event: "child-blocked",
-        run_id: state.run_id,
-        child_id: nextChild,
-        blocker: blockerMsg,
-        timestamp: new Date().toISOString(),
-      });
-      // Write checkpoint with blocker information
-      writeStateAtomic(stateFile, {
-        ...state,
-        status: "blocked",
-        step_cursor: "blocked",
-        blocker: {
-          reason: typeof blockerMsg === 'string' ? blockerMsg : String(blockerMsg),
+      if (!dryRun) {
+        appendTelemetry(telemetryFile, {
+          event: "child-blocked",
+          run_id: state.run_id,
           child_id: nextChild,
+          blocker: blockerMsg,
           timestamp: new Date().toISOString(),
-          resolved: false,
-        },
-      });
+        });
+        // Write checkpoint with blocker information
+        writeStateAtomic(stateFile, {
+          ...state,
+          status: "blocked",
+          step_cursor: "blocked",
+          blocker: {
+            reason: typeof blockerMsg === 'string' ? blockerMsg : String(blockerMsg),
+            child_id: nextChild,
+            timestamp: new Date().toISOString(),
+            resolved: false,
+          },
+        });
+      }
       return {
         haltReason: 'blocked',
         childrenDispatched,
@@ -377,14 +409,16 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
 
     if (workerStatus === 'error' || dispatchResult.exit_code !== 0) {
       const errMsg = dispatchResult.summary ?? `Worker exited with code ${dispatchResult.exit_code}`;
-      appendTelemetry(telemetryFile, {
-        event: "child-error",
-        run_id: state.run_id,
-        child_id: nextChild,
-        exit_code: dispatchResult.exit_code,
-        summary: errMsg,
-        timestamp: new Date().toISOString(),
-      });
+      if (!dryRun) {
+        appendTelemetry(telemetryFile, {
+          event: "child-error",
+          run_id: state.run_id,
+          child_id: nextChild,
+          exit_code: dispatchResult.exit_code,
+          summary: errMsg,
+          timestamp: new Date().toISOString(),
+        });
+      }
       return {
         haltReason: 'worker-error',
         childrenDispatched,
@@ -393,7 +427,70 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
       };
     }
 
-    // Worker completed successfully — advance state
+    // Only treat 'done' as successful completion; treat unknown statuses as errors
+    if (workerStatus !== 'done') {
+      const errMsg = `Worker returned unexpected status: ${workerStatus}`;
+      if (!dryRun) {
+        appendTelemetry(telemetryFile, {
+          event: "child-error",
+          run_id: state.run_id,
+          child_id: nextChild,
+          error: errMsg,
+          timestamp: new Date().toISOString(),
+        });
+      }
+      return {
+        haltReason: 'worker-error',
+        childrenDispatched,
+        haltingChild: nextChild,
+        message: `Worker for ${nextChild} returned unexpected status: ${workerStatus}`,
+      };
+    }
+
+    // Worker completed successfully — reload state from disk before advancing
+    // The worker may have updated current-state.json; reload to avoid clobbering
+    try {
+      const reloadedState = readState(stateFile);
+      const reloadErrors = validateState(reloadedState);
+      if (reloadErrors.length > 0) {
+        const errMsg = `State file corrupted after worker execution:\n${reloadErrors.join("\n")}`;
+        if (!dryRun) {
+          appendTelemetry(telemetryFile, {
+            event: "state-reload-error",
+            run_id: state.run_id,
+            child_id: nextChild,
+            error: errMsg,
+            timestamp: new Date().toISOString(),
+          });
+        }
+        return {
+          haltReason: 'state-invalid',
+          childrenDispatched,
+          haltingChild: nextChild,
+          message: errMsg,
+        };
+      }
+      state = reloadedState;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const errMsg = `Failed to reload state after worker execution: ${msg}`;
+      if (!dryRun) {
+        appendTelemetry(telemetryFile, {
+          event: "state-reload-error",
+          run_id: state.run_id,
+          child_id: nextChild,
+          error: errMsg,
+          timestamp: new Date().toISOString(),
+        });
+      }
+      return {
+        haltReason: 'state-invalid',
+        childrenDispatched,
+        haltingChild: nextChild,
+        message: errMsg,
+      };
+    }
+
     const lastCommit =
       (workerSummary as Record<string, unknown>)?.['commit'] as string | undefined ??
       (workerSummary as Record<string, unknown>)?.['commit_hash'] as string | undefined;
@@ -402,15 +499,17 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     childrenDispatched += 1;
 
     // Persist updated state after each successful child
-    writeStateAtomic(stateFile, state);
+    if (!dryRun) {
+      writeStateAtomic(stateFile, state);
 
-    appendTelemetry(telemetryFile, {
-      event: "child-complete",
-      run_id: state.run_id,
-      child_id: nextChild,
-      children_completed: state.context_budget.children_completed,
-      timestamp: new Date().toISOString(),
-    });
+      appendTelemetry(telemetryFile, {
+        event: "child-complete",
+        run_id: state.run_id,
+        child_id: nextChild,
+        children_completed: state.context_budget.children_completed,
+        timestamp: new Date().toISOString(),
+      });
+    }
 
     // ── Step 05 (post-dispatch): Re-check budget before next iteration ───
     const postBudgetCheck = checkBudget({
@@ -420,20 +519,22 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     });
     if (postBudgetCheck.status === 'exhausted') {
       const nextPending = state.open_children[0] ?? null;
-      writeStateAtomic(stateFile, {
-        ...state,
-        status: "budget-exhausted",
-        step_cursor: "budget-check",
-        next_open_child: nextPending,
-      });
-      appendTelemetry(telemetryFile, {
-        event: "budget-exhausted",
-        run_id: state.run_id,
-        children_completed: state.context_budget.children_completed,
-        next_child: nextPending,
-        reason: postBudgetCheck.reason,
-        timestamp: new Date().toISOString(),
-      });
+      if (!dryRun) {
+        writeStateAtomic(stateFile, {
+          ...state,
+          status: "budget-exhausted",
+          step_cursor: "budget-check",
+          next_open_child: nextPending,
+        });
+        appendTelemetry(telemetryFile, {
+          event: "budget-exhausted",
+          run_id: state.run_id,
+          children_completed: state.context_budget.children_completed,
+          next_child: nextPending,
+          reason: postBudgetCheck.reason,
+          timestamp: new Date().toISOString(),
+        });
+      }
       return {
         haltReason: 'budget-exhausted',
         childrenDispatched,

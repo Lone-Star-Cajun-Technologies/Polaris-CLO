@@ -35,7 +35,7 @@ export function createLoopCommand(): Command {
       const repoRoot = options.repoRoot;
       const stateFile =
         options.stateFile ?? join(repoRoot, ".polaris", "runs", "current-state.json");
-      runLoopContinue({ stateFile, repoRoot, adapter: options.adapter, allowAnalyzeChildren: options.allowAnalyzeChildren });
+      runLoopContinue({ stateFile, repoRoot, adapter: options.adapter, provider: options.provider, allowAnalyzeChildren: options.allowAnalyzeChildren });
     });
 
   loop

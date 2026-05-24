@@ -117,13 +117,13 @@ export interface WorkerOptions {
    * Receives the child ID; should throw on failure or return void on success.
    * Used in tests to simulate child task execution without actual side effects.
    */
-  executeChild?: (childId: string, packet: BootstrapPacket) => void;
+  executeChild?: (_childId: string, _packet: BootstrapPacket) => void;
 }
 
 /**
  * Build a CompactReturn for an error case without touching durable state.
  */
-function blockedReturn(childId: string, reason: string): CompactReturn {
+function blockedReturn(childId: string, _reason: string): CompactReturn {
   return {
     child_id: childId,
     status: 'blocked',
@@ -240,9 +240,26 @@ export async function executeOneChild(
     };
     writeStateAtomic(stateFile, updatedState as Parameters<typeof writeStateAtomic>[1]);
     stateUpdated = true;
-  } catch {
-    // State update failure is non-fatal; log it but continue to return result
-    stateUpdated = false;
+  } catch (err) {
+    // State persistence failure is critical — return error status
+    const msg = err instanceof Error ? err.message : String(err);
+    appendTelemetry(telemetryFile, {
+      event: "state-update-error",
+      run_id: packet.run_id,
+      child_id: childId,
+      error: msg,
+      timestamp: now(),
+    });
+    return {
+      child_id: childId,
+      status: 'failed',
+      commit,
+      validation,
+      tracker_updated: false,
+      state_updated: false,
+      telemetry_updated: telemetryUpdated,
+      next_recommended_action: 'investigate',
+    };
   }
 
   // Linear tracker update is intentionally skipped by the worker:

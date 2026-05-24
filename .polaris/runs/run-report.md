@@ -1,9 +1,9 @@
 # Run Report: pol-5-session-1
 
-**Status:** running
+**Status:** completed
 **Branch:** philmeaux/pol-55-analyze-scheduler-only-parent-loop-and-provider-worker
 **PR:** TBD — set at delivery step 9
-**Children completed:** 3 of 5
+**Children completed:** 5 of 5
 **Validation:** passed
 
 ## Children
@@ -13,8 +13,8 @@
 | POL-23 | — | — | Done |
 | POL-24 | — | — | Done |
 | POL-25 | — | — | Done |
-| POL-26 | — | — | Open |
-| POL-27 | — | — | Open |
+| POL-26 | — | — | Done |
+| POL-27 | — | — | Done |
 
 ## Artifacts produced
 

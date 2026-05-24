@@ -47,7 +47,7 @@ program
   .option("-r, --repo-root <path>", "Repository root", process.cwd())
   .option("--provider <provider>", "AI provider for worker sessions (e.g. claude, openai, gemini)")
   .option("--dry-run", "Print the plan without executing")
-  .action((_issue: string, _options: { repoRoot: string; provider?: string; dryRun?: boolean }) => {
+  .action(() => {
     console.log("not yet implemented");
   });
 

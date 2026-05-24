@@ -378,7 +378,7 @@ export function validateConfig(config: unknown): ValidationResult {
         }
       }
       if ("max_children" in config.budget && config.budget.max_children !== undefined) {
-        if (!isNumber(config.budget.max_children) || config.budget.max_children < 1) {
+        if (!isNumber(config.budget.max_children) || config.budget.max_children < 1 || !Number.isInteger(config.budget.max_children)) {
           result.valid = false;
           result.errors.push("budget.max_children must be a positive integer");
         }
