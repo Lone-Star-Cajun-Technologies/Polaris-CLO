@@ -1,9 +1,9 @@
-import { execFileSync, spawn } from 'child_process';
-import fs from 'fs';
-import os from 'os';
-import path from 'path';
-import type { ExecutionConfig, ProviderConfig } from '../../config/schema';
-import type { BootstrapPacket, DispatchOptions, DispatchResult, ExecutionAdapter } from './types';
+import { execFileSync, spawn } from "node:child_process";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import type { ExecutionConfig, ProviderConfig } from "../../config/schema.js";
+import type { BootstrapPacket, DispatchOptions, DispatchResult, ExecutionAdapter } from "./types.js";
 
 /** Expand $VAR and ${VAR} references from process.env. */
 function expandEnvVars(str: string): string {

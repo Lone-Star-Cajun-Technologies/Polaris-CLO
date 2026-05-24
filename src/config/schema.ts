@@ -32,17 +32,59 @@ export interface ExecutionConfig {
   /**
    * Ordered list of provider names for sequential rotation.
    * When --provider is not specified, the first entry is used.
-   * The parent loop selects which provider runs each child.
    */
   rotation?: string[];
 
   /**
    * If false (default), a failed provider does not automatically retry with another.
-   * Cross-agent fallback must be implemented at the orchestrator level.
    */
   allowCrossAgentFallback?: boolean;
 }
 
 export interface PolarisConfig {
+  version?: string;
+  repo?: {
+    name?: string;
+    sourceRoots?: string[];
+    docsRoots?: string[];
+    taskchainRoots?: string[];
+    generatedRoots?: string[];
+    sidecarOutputPath?: string;
+  };
+  map?: {
+    confidenceThreshold?: number;
+    autoWriteAbove?: number;
+    reviewRequiredBelow?: number;
+    inferenceRules?: string[];
+    onLowConfidence?: "warn" | "fail";
+  };
+  loop?: {
+    bootstrapOutputPath?: string;
+    analyzeImplBoundaryEnforced?: boolean;
+    sessionTerminationMode?: "emit-marker" | "exit-0";
+    allowBranchDivergence?: boolean;
+  };
+  finalize?: {
+    targetBranch?: string;
+    prDraft?: boolean;
+    runChecks?: string[];
+    requireMapValidation?: boolean;
+    requireSchemaValidation?: boolean;
+    archiveRunSnapshot?: boolean;
+  };
+  tracker?: {
+    linear?: {
+      enabled?: boolean;
+      teamId?: string;
+      projectId?: string;
+    };
+  };
+  integrations?: {
+    github?: {
+      owner?: string;
+      repo?: string;
+    };
+  };
+  /** Configuration for external agent dispatch via terminal-cli adapter. */
   execution?: ExecutionConfig;
 }

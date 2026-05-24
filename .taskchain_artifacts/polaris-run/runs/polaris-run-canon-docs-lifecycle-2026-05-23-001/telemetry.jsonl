@@ -1,0 +1,8 @@
+{"event":"run-start","run_id":"polaris-run-canon-docs-lifecycle-2026-05-23-001","prior_run_id":null,"timestamp":"2026-05-23T00:00:00Z"}
+{"event":"step-complete","run_id":"polaris-run-canon-docs-lifecycle-2026-05-23-001","step":"01-orient-cluster","timestamp":"2026-05-23T00:00:01Z"}
+{"event":"step-complete","run_id":"polaris-run-canon-docs-lifecycle-2026-05-23-001","step":"02-prepare-branch","timestamp":"2026-05-23T00:00:02Z"}
+{"event":"step-complete","run_id":"polaris-run-canon-docs-lifecycle-2026-05-23-001","step":"03-select-child","child":"POL-43","timestamp":"2026-05-23T00:00:03Z"}
+{"event":"step-complete","run_id":"polaris-run-canon-docs-lifecycle-2026-05-23-001","step":"05-validate-child","child":"POL-43","result":"passed","timestamp":"2026-05-23T00:00:05Z"}
+{"event":"step-complete","run_id":"polaris-run-canon-docs-lifecycle-2026-05-23-001","step":"06-commit-and-update-linear","child":"POL-43","commit":"7491eab","timestamp":"2026-05-23T00:00:06Z"}
+{"event":"loop-checkpoint","run_id":"polaris-run-canon-docs-lifecycle-2026-05-23-001","decision":"CONTINUE","child_completed":"POL-43","children_completed":1,"timestamp":"2026-05-23T00:00:07Z"}
+{"event":"step-complete","run_id":"polaris-run-canon-docs-lifecycle-2026-05-23-001","step":"07-decide-continuation","decision":"STOP","reason":"child-complete","child_completed":"POL-43","next_child":"POL-44","timestamp":"2026-05-23T00:00:08Z"}

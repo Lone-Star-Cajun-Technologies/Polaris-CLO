@@ -1,147 +1,137 @@
-import fs from 'fs';
-import path from 'path';
-import { loadConfig } from '../config/loader';
-import type { ExecutionConfig } from '../config/schema';
-import { createAdapter } from './adapters/registry';
-import type { BootstrapPacket, DispatchResult } from './adapters/types';
+import { join, resolve } from "node:path";
+import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import {
+  readState,
+  validateState,
+  writeStateAtomic,
+  appendCheckpointEvent,
+  appendBoundaryEvent,
+  type LoopState,
+} from "./checkpoint.js";
+import { buildBootstrapPacket, writeBootstrapPacket } from "./bootstrap-packet.js";
 
-const DEFAULT_STATE_FILE = '.taskchain_artifacts/bootstrap-run/current-state.json';
-
-export interface LoopContinueOptions {
-  /** Adapter to use. Overrides polaris.config.json execution.adapter. */
-  adapter?: string;
-  /** Provider name to dispatch to. Overrides rotation[0]. */
-  provider?: string;
-  /** Print dispatch command without running it. */
-  dryRun?: boolean;
-  /** Path to current-state.json. */
-  stateFile?: string;
-  /** Working directory (defaults to process.cwd()). */
-  cwd?: string;
+export interface ContinueOptions {
+  stateFile: string;
+  repoRoot: string;
 }
 
-export interface LoopContinueResult {
-  dispatch: DispatchResult;
-  activeChild: string;
-  provider: string;
+function readSessionTypeFile(repoRoot: string): string | undefined {
+  try {
+    return readFileSync(join(repoRoot, ".polaris", "session-type"), "utf-8").trim();
+  } catch {
+    return undefined;
+  }
 }
 
-export async function loopContinue(options: LoopContinueOptions = {}): Promise<LoopContinueResult> {
-  const cwd = options.cwd ?? process.cwd();
-  const config = loadConfig(cwd);
+function getNextChildType(state: LoopState, nextChild: string | null): string | undefined {
+  if (!nextChild) return undefined;
+  return state.open_children_meta?.[nextChild]?.type;
+}
 
-  const executionConfig = resolveExecutionConfig(config.execution, options.adapter);
-  const provider = resolveProvider(executionConfig, options.provider);
+function isAnalyzeImplBoundary(sessionType: string | undefined, nextChildType: string | undefined): boolean {
+  return sessionType === "analyze" && nextChildType === "implement";
+}
 
-  const stateFilePath = path.resolve(cwd, options.stateFile ?? DEFAULT_STATE_FILE);
-  const state = readState(stateFilePath);
+export function runLoopContinue(options: ContinueOptions): void {
+  const { stateFile, repoRoot } = options;
 
-  const runId = (state.run_id as string) || generateRunId();
-  const activeChild = (state.active_child as string) || '';
-  const clusterId = (state.cluster_id as string) || '';
-  const telemetryFile = path.join(path.dirname(stateFilePath), 'telemetry.jsonl');
+  // Step 1: Read and validate current-state.json
+  let rawState: unknown;
+  try {
+    rawState = readState(stateFile);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`Error: cannot read state file ${stateFile}: ${msg}`);
+    process.exit(1);
+  }
 
-  const packet: BootstrapPacket = {
-    schema_version: '1.0',
-    run_id: runId,
-    cluster_id: clusterId,
-    active_child: activeChild,
-    state_file: stateFilePath,
-    telemetry_file: telemetryFile,
+  const validationErrors = validateState(rawState);
+  if (validationErrors.length > 0) {
+    console.error(
+      `current-state.json is invalid — cannot generate bootstrap packet:\n${validationErrors.join("\n")}`,
+    );
+    process.exit(1);
+  }
+
+  const state = rawState as ReturnType<typeof readState>;
+  const completedChild = state.active_child;
+  const nextChild = state.open_children[0] ?? null;
+
+  // Determine session type (state field takes precedence, file is secondary signal)
+  const sessionTypeFile = readSessionTypeFile(repoRoot);
+  const sessionType = state.session_type ?? sessionTypeFile;
+  if (sessionTypeFile && !state.session_type) {
+    console.warn(`Warning: session_type not in state; using .polaris/session-type file: ${sessionTypeFile}`);
+  }
+
+  // Update state: mark active_child as completed
+  const updatedState = {
+    ...state,
+    active_child: "",
+    completed_children: completedChild
+      ? [...state.completed_children, completedChild]
+      : state.completed_children,
+    step_cursor: "checkpoint",
+    next_open_child: nextChild,
+    status: nextChild ? "running" : "cluster-complete",
+    context_budget: {
+      ...state.context_budget,
+      children_completed: state.context_budget.children_completed + (completedChild ? 1 : 0),
+    },
   };
 
-  const adapter = createAdapter(executionConfig.adapter, executionConfig);
+  // Step 1 (cont): Atomic write of updated current-state.json
+  const sha = writeStateAtomic(stateFile, updatedState);
 
-  if (!options.dryRun) {
-    console.log(
-      `polaris loop continue: adapter=${executionConfig.adapter} provider=${provider}` +
-        (activeChild ? ` child=${activeChild}` : '')
-    );
-  }
+  // Step 2: Append JSONL checkpoint event
+  const artifactDir =
+    state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "bootstrap-run");
+  const telemetryFile = join(artifactDir, "runs", state.run_id, "telemetry.jsonl");
+  appendCheckpointEvent(telemetryFile, {
+    event: "loop-checkpoint",
+    run_id: state.run_id,
+    child_id: completedChild,
+    next_child: nextChild,
+    timestamp: new Date().toISOString(),
+  });
 
-  const result = await adapter.dispatch(packet, { provider, dryRun: options.dryRun });
-
-  if (!options.dryRun) {
-    console.log(`\nDispatch complete — exit_code=${result.exit_code} provider=${result.provider_used}`);
-    if (result.summary) {
-      console.log(`Summary: ${result.summary}`);
-    }
-  }
-
-  return { dispatch: result, activeChild, provider };
-}
-
-function resolveExecutionConfig(
-  fromConfig: ExecutionConfig | undefined,
-  adapterOverride: string | undefined
-): ExecutionConfig {
-  if (!fromConfig && !adapterOverride) {
-    throw new Error(
-      'No execution configuration found. ' +
-        'Add an "execution" block to polaris.config.json or pass --adapter on the command line.\n\n' +
-        'Example polaris.config.json:\n' +
-        JSON.stringify(
-          {
-            execution: {
-              adapter: 'terminal-cli',
-              providers: {
-                codex: { command: 'codex', args: [] },
-                gemini: { command: 'gemini', args: [] },
-                custom: { command: '$POLARIS_AGENT' },
-              },
-              rotation: ['codex', 'gemini'],
-              allowCrossAgentFallback: false,
-            },
-          },
-          null,
-          2
-        )
-    );
-  }
-
-  if (adapterOverride) {
-    return { ...(fromConfig ?? { providers: {} }), adapter: adapterOverride };
-  }
-
-  return fromConfig!;
-}
-
-function resolveProvider(config: ExecutionConfig, providerOverride: string | undefined): string {
-  if (providerOverride) return providerOverride;
-
-  const rotation = config.rotation ?? [];
-  if (rotation.length > 0) return rotation[0];
-
-  const providers = Object.keys(config.providers ?? {});
-  if (providers.length === 1) return providers[0];
-
-  if (providers.length > 1) {
-    throw new Error(
-      `Multiple providers configured but no provider selected. ` +
-        `Use --provider <name> or set "rotation" in polaris.config.json. ` +
-        `Available providers: ${providers.join(', ')}`
-    );
-  }
-
-  throw new Error(
-    `No providers configured. ` +
-      `Add providers to polaris.config.json execution.providers or use --provider with a custom command.`
+  // Step 3: Run polaris map update --changed (non-fatal if not yet implemented)
+  const mapResult = spawnSync(
+    process.execPath,
+    [resolve(repoRoot, "dist/cli/index.js"), "map", "update", "--changed"],
+    { cwd: repoRoot, encoding: "utf-8" },
   );
-}
-
-function readState(stateFilePath: string): Record<string, unknown> {
-  if (!fs.existsSync(stateFilePath)) {
-    return {};
+  if (mapResult.status !== 0) {
+    console.warn(
+      "Warning: polaris map update --changed failed (map not yet implemented). Continuing.",
+    );
   }
-  try {
-    return JSON.parse(fs.readFileSync(stateFilePath, 'utf-8')) as Record<string, unknown>;
-  } catch (err) {
-    throw new Error(`Cannot parse state file ${stateFilePath}: ${(err as Error).message}`);
-  }
-}
 
-function generateRunId(): string {
-  const ts = Date.now().toString(36);
-  const rand = Math.random().toString(36).slice(2, 6);
-  return `run-${ts}-${rand}`;
+  // Step 4: Analyze→implementation boundary check
+  const nextChildType = getNextChildType(state, nextChild);
+  const boundaryTriggered = isAnalyzeImplBoundary(sessionType, nextChildType);
+
+  if (boundaryTriggered) {
+    appendBoundaryEvent(telemetryFile, {
+      event: "analyze-impl-boundary-enforced",
+      run_id: state.run_id,
+      stopped_before: nextChild,
+      reason: "analyze session cannot auto-continue into implementation",
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  // Steps 4-5: Generate and write bootstrap packet
+  const packet = buildBootstrapPacket(updatedState, stateFile, sha, repoRoot, completedChild);
+  if (boundaryTriggered) {
+    packet.boundary_enforcement =
+      "analyze-session-ended; implementation requires fresh session with explicit impl scope";
+  }
+  const bootstrapDir = join(repoRoot, ".polaris", "bootstrap");
+  const packetPath = writeBootstrapPacket(packet, bootstrapDir);
+
+  // Step 6: Emit bootstrap packet to stdout, exit 0
+  console.log(JSON.stringify(packet, null, 2));
+  process.stderr.write(`Bootstrap packet written to: ${packetPath}\n`);
 }

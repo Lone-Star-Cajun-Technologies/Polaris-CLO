@@ -1,2 +1,2 @@
-export type { PolarisConfig, ExecutionConfig, ProviderConfig } from './schema';
-export { loadConfig, findConfigPath } from './loader';
+export type { PolarisConfig, ExecutionConfig, ProviderConfig } from "./schema.js";
+export { loadConfig, PolarisConfigError } from "./loader.js";

@@ -1,6 +1,6 @@
-import type { ExecutionConfig } from '../../config/schema';
-import { TerminalCliAdapter } from './terminal-cli';
-import type { ExecutionAdapter } from './types';
+import type { ExecutionConfig } from "../../config/schema.js";
+import { TerminalCliAdapter } from "./terminal-cli.js";
+import type { ExecutionAdapter } from "./types.js";
 
 const SUPPORTED_ADAPTERS = ['terminal-cli'] as const;
 
