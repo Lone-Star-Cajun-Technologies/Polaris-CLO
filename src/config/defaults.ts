@@ -24,6 +24,9 @@ export const DEFAULT_CONFIG: Omit<Required<PolarisConfig>, "canon" | "providers"
     allowBranchDivergence: false,
   },
   execution: {
+    adapter: "terminal-cli",
+    providers: {},
+    rotation: [],
     allowCrossAgentFallback: false,
   },
   finalize: {

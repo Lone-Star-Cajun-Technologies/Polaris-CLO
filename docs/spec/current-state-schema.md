@@ -1,6 +1,6 @@
 # Bootstrap current-state.json Schema
 
-**Note:** This is the bootstrap schema for the temporary `bootstrap-run` skill. The full Polaris current-state schema (used by `polaris loop`) will be richer — see `polaris-architecture-spec.md` §1.
+**Note:** This is the bootstrap schema for the temporary `bootstrap-run` skill. The full Polaris current-state schema (used by `polaris loop`) will be richer and will be documented in a future `docs/spec/polaris-architecture-spec.md` spec.
 
 ## Schema
 
