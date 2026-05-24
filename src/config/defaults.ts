@@ -44,4 +44,10 @@ export const DEFAULT_CONFIG: Required<PolarisConfig> = {
       repo: "",
     },
   },
+  execution: {
+    adapter: "terminal-cli",
+    providers: {},
+    rotation: [],
+    allowCrossAgentFallback: false,
+  },
 };
