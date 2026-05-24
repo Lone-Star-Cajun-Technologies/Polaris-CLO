@@ -101,7 +101,7 @@ describe("registry", () => {
   });
 
   it("createAdapter throws for unknown adapter", () => {
-    expect(() => createAdapter("agent-subtask", { adapter: "agent-subtask", providers: {} })).toThrow(
+    expect(() => createAdapter("not-a-real-adapter", { adapter: "not-a-real-adapter", providers: {} })).toThrow(
       /Unknown adapter/,
     );
   });
