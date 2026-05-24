@@ -23,7 +23,7 @@ import { dirname, join } from "node:path";
 import { readState, validateState, writeStateAtomic, type LoopState } from "./checkpoint.js";
 import { createAdapter } from "./adapters/registry.js";
 import type { BootstrapPacket, WorkerSummary } from "./adapters/types.js";
-import { checkBudget, policyFromState } from "./budget.js";
+import { checkBudget, policyFromConfig } from "./budget.js";
 import { loadConfig } from "../config/loader.js";
 
 export interface ParentLoopOptions {
@@ -199,7 +199,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     "default";
 
   const adapter = createAdapter(adapterName, config.execution ?? { adapter: adapterName, providers: {} });
-  const budgetPolicy = policyFromState(state.context_budget);
+  const budgetPolicy = policyFromConfig(state.context_budget, config.budget);
   const telemetryFile = resolveTelemetryFile(state, repoRoot);
   let childrenDispatched = 0;
 
@@ -370,6 +370,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     // ── Step 05 (post-dispatch): Re-check budget before next iteration ───
     const postBudgetCheck = checkBudget({
       childrenCompleted: state.context_budget.children_completed,
+      lastChildStatus: workerStatus,
       policy: budgetPolicy,
     });
     if (postBudgetCheck.status === 'exhausted') {
