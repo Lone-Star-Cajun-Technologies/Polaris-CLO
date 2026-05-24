@@ -27,11 +27,15 @@ export function createLoopCommand(): Command {
       "--provider <provider>",
       "AI provider for the next worker session (e.g. claude, openai, gemini)",
     )
-    .action((options: { repoRoot: string; stateFile?: string; adapter?: ExecutionAdapterMode; provider?: string }) => {
+    .option(
+      "--allow-analyze-children",
+      "Allow analyze-type children to be dispatched (overrides budget.allow_analyze_children)",
+    )
+    .action((options: { repoRoot: string; stateFile?: string; adapter?: ExecutionAdapterMode; provider?: string; allowAnalyzeChildren?: boolean }) => {
       const repoRoot = options.repoRoot;
       const stateFile =
         options.stateFile ?? join(repoRoot, ".polaris", "runs", "current-state.json");
-      runLoopContinue({ stateFile, repoRoot, adapter: options.adapter });
+      runLoopContinue({ stateFile, repoRoot, adapter: options.adapter, allowAnalyzeChildren: options.allowAnalyzeChildren });
     });
 
   loop

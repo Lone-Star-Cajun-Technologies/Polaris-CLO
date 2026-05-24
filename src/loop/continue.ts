@@ -18,6 +18,8 @@ export interface ContinueOptions {
   stateFile: string;
   repoRoot: string;
   adapter?: ExecutionAdapterMode;
+  /** If true, allow analyze-type children to be dispatched (overrides budget.allow_analyze_children). */
+  allowAnalyzeChildren?: boolean;
 }
 
 function readSessionTypeFile(repoRoot: string): string | undefined {

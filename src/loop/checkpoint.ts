@@ -24,7 +24,7 @@ export interface LoopState {
   active_child: string;
   completed_children: string[];
   open_children: string[];
-  open_children_meta?: Record<string, { type?: string }>;
+  open_children_meta?: Record<string, { type?: string; title?: string; labels?: string[] }>;
   step_cursor: string;
   context_budget: {
     children_completed: number;

@@ -46,14 +46,20 @@ export interface ParentLoopOptions {
    * If true, run in dry-run mode: log each dispatch without executing.
    */
   dryRun?: boolean;
+  /**
+   * If true, allow analyze-type children to be dispatched in an impl session.
+   * Overrides budget.allow_analyze_children from config.
+   */
+  allowAnalyzeChildren?: boolean;
 }
 
 export type ParentLoopHaltReason =
-  | 'cluster-complete'  // All children done
-  | 'budget-exhausted'  // Budget cap reached
-  | 'blocked'           // A child reported a blocker
-  | 'worker-error'      // Worker returned a non-zero exit code or error status
-  | 'state-invalid';    // current-state.json failed validation
+  | 'cluster-complete'     // All children done
+  | 'budget-exhausted'     // Budget cap reached
+  | 'blocked'              // A child reported a blocker
+  | 'worker-error'         // Worker returned a non-zero exit code or error status
+  | 'state-invalid'        // current-state.json failed validation
+  | 'analyze-drift';       // Next child is an analyze issue and allow_analyze_children is false
 
 export interface ParentLoopResult {
   /** Final halt reason. */
@@ -87,6 +93,19 @@ function resolveTelemetryFile(state: LoopState, repoRoot: string): string {
  */
 function selectNextChild(state: LoopState): string | null {
   return state.open_children[0] ?? null;
+}
+
+/**
+ * Returns true when the given child is detected as an analyze issue.
+ * Detection is intentionally conservative: title prefix or label match only.
+ */
+function isAnalyzeChild(childId: string, state: LoopState): boolean {
+  const meta = state.open_children_meta?.[childId];
+  if (!meta) return false;
+  const title = meta.title ?? "";
+  if (title.startsWith("Analyze:") || title.startsWith("polaris-analyze")) return true;
+  if (meta.labels?.includes("analyze")) return true;
+  return false;
 }
 
 /**
@@ -164,7 +183,7 @@ function advanceState(state: LoopState, completedChild: string, lastCommit?: str
  * returns a structured result describing why it halted.
  */
 export async function runParentLoop(options: ParentLoopOptions): Promise<ParentLoopResult> {
-  const { stateFile, repoRoot, dryRun = false } = options;
+  const { stateFile, repoRoot, dryRun = false, allowAnalyzeChildren: allowAnalyzeChildrenFlag = false } = options;
 
   // ── Step 01: Load cluster / read current-state.json ─────────────────────
 
@@ -200,6 +219,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
 
   const adapter = createAdapter(adapterName, config.execution ?? { adapter: adapterName, providers: {} });
   const budgetPolicy = policyFromConfig(state.context_budget, config.budget);
+  const allowAnalyzeChildren = allowAnalyzeChildrenFlag || (config.budget?.allow_analyze_children === true);
   const telemetryFile = resolveTelemetryFile(state, repoRoot);
   let childrenDispatched = 0;
 
@@ -222,6 +242,31 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
         haltReason: 'cluster-complete',
         childrenDispatched,
         message: `Cluster complete. All ${state.completed_children.length} children dispatched.`,
+      };
+    }
+
+    // ── Step 02 (post-select): Analyze-drift guardrail ───────────────────
+    if (!allowAnalyzeChildren && isAnalyzeChild(nextChild, state)) {
+      const errMsg = [
+        `ERROR: Next child ${nextChild} is an analyze issue.`,
+        `Loop halted to prevent recursive analysis drift.`,
+        ``,
+        `To override:`,
+        `  polaris.config.json → budget.allow_analyze_children: true`,
+        `  or: polaris loop continue --allow-analyze-children`,
+      ].join("\n");
+      process.stderr.write(errMsg + "\n");
+      appendTelemetry(telemetryFile, {
+        event: "analyze-drift-halt",
+        run_id: state.run_id,
+        child_id: nextChild,
+        timestamp: new Date().toISOString(),
+      });
+      return {
+        haltReason: 'analyze-drift',
+        childrenDispatched,
+        haltingChild: nextChild,
+        message: errMsg,
       };
     }
 

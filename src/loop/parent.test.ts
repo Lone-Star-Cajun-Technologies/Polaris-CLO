@@ -106,6 +106,41 @@ function makeStateFile(
   return stateFile;
 }
 
+function makeStateFileWithMeta(
+  dir: string,
+  openChildren: string[],
+  meta: Record<string, { type?: string; title?: string; labels?: string[] }>,
+  maxChildren: number = 10,
+): string {
+  const stateFile = join(dir, "current-state.json");
+  const state = {
+    schema_version: "1.0",
+    run_id: "test-run-001",
+    cluster_id: "POL-99",
+    skill: "polaris-run",
+    artifact_dir: dir,
+    branch: "feature/test",
+    current_step_id: "03-execute-child",
+    step_cursor: "dispatching",
+    status: "executing",
+    session_type: "implementation",
+    active_child: "",
+    last_commit: "",
+    next_open_child: openChildren[0] ?? null,
+    completed_children: [],
+    open_children: openChildren,
+    open_children_meta: meta,
+    context_budget: {
+      children_completed: 0,
+      files_touched_total: 0,
+      max_children_per_session: maxChildren,
+    },
+    updated_at: new Date().toISOString(),
+  };
+  writeFileSync(stateFile, JSON.stringify(state, null, 2), "utf-8");
+  return stateFile;
+}
+
 // ── Mock registry so tests can inject a mock adapter ────────────────────────
 
 vi.mock("./adapters/registry.js", () => ({
@@ -294,5 +329,119 @@ describe("runParentLoop", () => {
       active_child: "POL-100",
       state_file: stateFile,
     });
+  });
+
+  // ── Analyze-drift guardrail tests ──────────────────────────────────────────
+
+  it("halts with analyze-drift when next child title starts with 'Analyze:'", async () => {
+    const mockAdapter = makeMockAdapter([SUCCESS_RESULT]);
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    const stateFile = makeStateFileWithMeta(
+      tmpDir,
+      ["POL-200"],
+      { "POL-200": { title: "Analyze: scheduler behavior" } },
+    );
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(result.haltReason).toBe("analyze-drift");
+    expect(result.haltingChild).toBe("POL-200");
+    expect(result.message).toContain("POL-200");
+    expect(result.message).toContain("allow_analyze_children");
+  });
+
+  it("halts with analyze-drift when next child title starts with 'polaris-analyze'", async () => {
+    const mockAdapter = makeMockAdapter([SUCCESS_RESULT]);
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    const stateFile = makeStateFileWithMeta(
+      tmpDir,
+      ["POL-200"],
+      { "POL-200": { title: "polaris-analyze worker adapters" } },
+    );
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(result.haltReason).toBe("analyze-drift");
+    expect(result.haltingChild).toBe("POL-200");
+  });
+
+  it("halts with analyze-drift when next child has 'analyze' label", async () => {
+    const mockAdapter = makeMockAdapter([SUCCESS_RESULT]);
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    const stateFile = makeStateFileWithMeta(
+      tmpDir,
+      ["POL-200"],
+      { "POL-200": { labels: ["analyze", "spike"] } },
+    );
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(result.haltReason).toBe("analyze-drift");
+    expect(result.haltingChild).toBe("POL-200");
+  });
+
+  it("does NOT halt for an implementation/fix child", async () => {
+    const mockAdapter = makeMockAdapter([SUCCESS_RESULT]);
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    const stateFile = makeStateFileWithMeta(
+      tmpDir,
+      ["POL-200"],
+      { "POL-200": { title: "Implement: add budget guardrail", labels: ["feature"] } },
+    );
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(result.haltReason).toBe("cluster-complete");
+  });
+
+  it("does NOT halt when allowAnalyzeChildren flag is set", async () => {
+    const mockAdapter = makeMockAdapter([SUCCESS_RESULT]);
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    const stateFile = makeStateFileWithMeta(
+      tmpDir,
+      ["POL-200"],
+      { "POL-200": { title: "Analyze: scheduler behavior" } },
+    );
+
+    const result = await runParentLoop({
+      stateFile,
+      repoRoot: tmpDir,
+      allowAnalyzeChildren: true,
+    });
+
+    expect(result.haltReason).toBe("cluster-complete");
+  });
+
+  it("does NOT halt when budget.allow_analyze_children is true in config", async () => {
+    const mockAdapter = makeMockAdapter([SUCCESS_RESULT]);
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    // Override config mock to include allow_analyze_children: true
+    const { loadConfig } = await import("../config/loader.js");
+    vi.mocked(loadConfig).mockReturnValueOnce({
+      execution: {
+        adapter: "mock",
+        providers: { mock: { command: "mock-worker" } },
+        rotation: ["mock"],
+      },
+      budget: {
+        allow_analyze_children: true,
+      },
+    } as unknown as Required<import("../config/schema.js").PolarisConfig>);
+
+    const stateFile = makeStateFileWithMeta(
+      tmpDir,
+      ["POL-200"],
+      { "POL-200": { title: "Analyze: scheduler behavior" } },
+    );
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(result.haltReason).toBe("cluster-complete");
   });
 });
