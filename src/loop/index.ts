@@ -4,6 +4,7 @@ import { runLoopContinue } from "./continue.js";
 import { runLoopResume } from "./resume.js";
 import { runLoopStatus } from "./status.js";
 import { runLoopAbort } from "./abort.js";
+import type { ExecutionAdapterMode } from "./execution-adapter.js";
 
 export function createLoopCommand(): Command {
   const loop = new Command("loop").description("Polaris loop commands");
@@ -18,11 +19,15 @@ export function createLoopCommand(): Command {
       "--state-file <path>",
       "Path to current-state.json",
     )
-    .action((options: { repoRoot: string; stateFile?: string }) => {
+    .option(
+      "--adapter <mode>",
+      "Execution adapter: agent-subtask, terminal-cli, ci, ssh, remote-worker, cross-agent",
+    )
+    .action((options: { repoRoot: string; stateFile?: string; adapter?: ExecutionAdapterMode }) => {
       const repoRoot = options.repoRoot;
       const stateFile =
         options.stateFile ?? join(repoRoot, ".polaris", "runs", "current-state.json");
-      runLoopContinue({ stateFile, repoRoot });
+      runLoopContinue({ stateFile, repoRoot, adapter: options.adapter });
     });
 
   loop

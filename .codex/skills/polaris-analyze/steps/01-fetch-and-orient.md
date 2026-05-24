@@ -1,6 +1,6 @@
 ---
 name: polaris-analyze-step-01-fetch-and-orient
-description: Generate run_id, emit run-start telemetry, activate caveman-lite, fetch the Linear issue and GitNexus freshness in parallel.
+description: Generate run_id, emit run-start telemetry, activate caveman-lite, fetch the Linear issue and check repo-analysis provider availability in parallel.
 ---
 
 # Step 01 — Fetch and orient
@@ -22,13 +22,13 @@ allowed_routes:
   - .codex/skills/polaris-analyze/chain.md
 allowed_skills:
   - caveman
-  - gitnexus
+  - repo-analysis
 expected_evidence:
   - run_id generated
   - run-start telemetry emitted
   - caveman-lite active
   - Linear issue fetched
-  - GitNexus freshness checked
+  - repo-analysis provider status checked
   - analysis target and context recorded
 stop_rules:
   - run-start telemetry write fails
@@ -57,8 +57,13 @@ warnings:
 3. Run both of the following **in the same turn** (independent, parallelizable):
    - Fetch the Linear issue by ID. Read: title, description, labels, state, priority, existing child issues, blocking relationships.
      - If already Done or Cancelled: report and stop.
-   - Read `gitnexus://repo/{name}/context` and check the staleness warning.
-     - If stale: run `npx gitnexus analyze` to refresh, then re-read.
+   - Check `polaris.config.json` for `providers.repoAnalysis.preferred`.
+     - If a provider is configured and available in the session environment:
+       - Check provider index freshness. If stale: attempt refresh per provider's documented mechanism.
+       - Record `repo_analysis_status: available` in artifact.
+     - If not configured or unavailable:
+       - Note: no repo-analysis provider available — polaris map query + direct inspection will be used in step 02.
+       - Record `repo_analysis_status: not-configured` or `unavailable` accordingly.
 
 ## Artifact update
 
@@ -69,7 +74,7 @@ Update `.taskchain_artifacts/polaris-analyze/current-state.json`:
 - `artifact_dir: ".taskchain_artifacts/polaris-analyze"`
 - `status: running`
 - `parent_issue: <ID — title>`
-- `gitnexus_status: fresh | stale | refreshed`
+- `repo_analysis_status: available | unavailable | not-configured`
 - `current_step_id: 01-fetch-and-orient`
 - `started_at: <timestamp>`
 

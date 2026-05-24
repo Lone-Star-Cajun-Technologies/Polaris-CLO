@@ -14,7 +14,7 @@ description: Route map for polaris-run — step order, continuation rules, Polar
 04-execute-child
 05-validate-child
 06-commit-and-update-linear
-07-decide-continuation   → STOP (always after one child) | DELIVER: go to 08
+07-decide-continuation   → CHECKPOINT + adapter handoff | STOP (blocked/all-done) | DELIVER: go to 08
 08-final-delivery        ← reached when all children Done and delivery requested
 ```
 
@@ -22,12 +22,12 @@ description: Route map for polaris-run — step order, continuation rules, Polar
 
 After step 07 evaluates the session:
 
-- **STOP (child-complete)**: always halt after one child completes. Report completed child, commit hash, next open child ID, and resume command. The user starts a new session and runs polaris-run again to pick up the next child.
+- **ADAPTER HANDOFF (child-complete)**: after one child completes, checkpoint state and hand the next child to the configured execution adapter. The parent/orchestrator reads only the compact state/telemetry summary; worker transcripts do not flow back into parent context.
 - **STOP (blocked)**: halt immediately on blocker. Report unblock condition.
 - **STOP (all-done, awaiting delivery)**: all children Done but delivery not yet requested. Report branch and last commit. Provide delivery command: `Use polaris-run on <PARENT-ID>. Finalize delivery.`
 - **DELIVER**: proceed to step 08 only when all children are Done and the user explicitly requests delivery in this session invocation.
 
-There is no CONTINUE. Every completed child ends the session.
+Interactive-agent mode uses an agent/subtask adapter, not shell nesting. Terminal/CI mode may use `scripts/polaris-run.sh` as the `terminal-cli` adapter.
 
 ## Polaris runtime integration
 
@@ -39,7 +39,7 @@ polaris-run augments the evo-run pattern with three Polaris-specific calls:
 | 07 | `polaris loop continue` | Checkpoint state, emit JSONL event, generate bootstrap packet, enforce boundary |
 | 08 | `polaris finalize` | Push branch, open PR, append JSONL closeout events, archive run snapshot |
 
-`polaris loop continue` replaces manual STOP/CONTINUE evaluation — it reads `.polaris/session-type` and `current-state.json`, runs the boundary check, and emits the bootstrap packet. The skill reads the packet's output to determine the next action.
+`polaris loop continue` replaces manual STOP/CONTINUE evaluation — it reads `.polaris/session-type` and `current-state.json`, runs the boundary check, and emits the bootstrap packet. The skill reads the packet's compact output to determine whether to halt, deliver, or dispatch the next child through the configured execution adapter.
 
 ## Context budget
 
@@ -47,7 +47,7 @@ Track in `.taskchain_artifacts/polaris-run/current-state.json` under `context_bu
 
 | Counter | Meaning | Stop threshold |
 |---------|---------|----------------|
-| `children_completed` | Children fully Done this session | ≥ 1 → STOP |
+| `children_completed` | Children fully Done this session | ≥ 1 → adapter handoff or STOP |
 | `files_touched_total` | Total files changed this session | > 50 → STOP (safety) |
 | `last_child_files_touched` | Files changed by last child | > 20 → STOP (safety) |
 
@@ -101,7 +101,8 @@ Do not report workflow completion until `.taskchain_artifacts/polaris-run/curren
 | Skill | Allowed steps | Condition |
 |---|---|---|
 | caveman | 01 (start) | mandatory, full mode |
-| gitnexus | 01, 02, 03, 04 | targeted lookup only |
+| repo-analysis | 01, 02, 03, 04 | targeted lookup only; conditional on provider availability |
+| execution-adapter | 07 | required when a completed child has a next open child |
 
 ## Execution reporting
 

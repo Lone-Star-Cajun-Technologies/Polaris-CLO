@@ -96,13 +96,13 @@ describe("TerminalCliAdapter", () => {
 
 describe("registry", () => {
   it("createAdapter returns TerminalCliAdapter for terminal-cli", () => {
-    const cfg = { adapter: "terminal-cli", providers: {} };
-    const adapter = createAdapter("terminal-cli", cfg);
+    const adapter = createAdapter("terminal-cli", { adapter: "terminal-cli", providers: {} });
     expect(adapter.name).toBe("terminal-cli");
   });
 
   it("createAdapter throws for unknown adapter", () => {
-    const cfg = { adapter: "agent-subtask", providers: {} };
-    expect(() => createAdapter("agent-subtask", cfg)).toThrow(/Unknown adapter/);
+    expect(() => createAdapter("agent-subtask", { adapter: "agent-subtask", providers: {} })).toThrow(
+      /Unknown adapter/,
+    );
   });
 });

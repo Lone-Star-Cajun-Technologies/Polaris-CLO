@@ -8,8 +8,8 @@ description: Route map for polaris-analyze — step order, stop conditions, anal
 ## Step traversal order
 
 ```text
-01-fetch-and-orient      ← parallel: Linear fetch + GitNexus freshness + run-start telemetry
-02-map-affected-code     ← targeted GitNexus inspection
+01-fetch-and-orient      ← parallel: Linear fetch + repo-analysis provider check + run-start telemetry
+02-map-affected-code     ← targeted repo-analysis inspection (provider or fallback)
 03-assess-issue          ← outcome classification
 04-blocker-check         ← STOP if blocked or non-executable
 05-create-cluster-plan   ← create tracker children + local clusters.json
@@ -25,7 +25,7 @@ Stop immediately if the issue is blocked or assessment outcome is not `needs-clu
 Stop if:
 - Implementation execution is attempted (scope violation — halt and report).
 - Canonical doctrine conflict cannot be resolved without user input.
-- HIGH or CRITICAL risk identified by GitNexus without a clear resolution path.
+- HIGH or CRITICAL risk identified by repo-analysis provider without a clear resolution path.
 - Parent issue is already Done or Cancelled.
 
 ## Analyze-only boundary
@@ -69,7 +69,7 @@ Required fields on every event: `event`, `run_id`, `timestamp`.
 | Skill | Allowed steps | Condition |
 |---|---|---|
 | caveman | session start | mandatory, lite mode |
-| gitnexus | 01, 02 | targeted lookup only |
+| repo-analysis | 01, 02 | targeted lookup only; conditional on provider availability |
 
 Invoke caveman-lite at session start. It governs all user-facing responses for the duration of the run.
 
@@ -88,5 +88,5 @@ Always write in full regardless of caveman mode:
 - Child issue bodies and cluster plans (generated planning artifacts)
 - Blocker reports and unblock conditions
 - Doctrine conflict findings
-- HIGH or CRITICAL GitNexus risk findings
+- HIGH or CRITICAL repo-analysis provider risk findings
 - Final report (step 06)

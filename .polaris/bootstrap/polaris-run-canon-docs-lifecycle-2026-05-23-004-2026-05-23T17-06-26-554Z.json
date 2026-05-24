@@ -1,0 +1,29 @@
+{
+  "run_id": "polaris-run-canon-docs-lifecycle-2026-05-23-004",
+  "skill": "polaris-run",
+  "branch": "philmeaux/pol-42-add-polaris-canon-reconciliation-and-docs-ingest-lifecycle",
+  "base_commit_sha": "1e8b87b5e7cac23b63f18d25a772b320bd478bb2",
+  "last_completed_step": "checkpoint",
+  "last_completed_child": "POL-46",
+  "next_step": "03-execute-child",
+  "open_children": [
+    "POL-47",
+    "POL-48",
+    "POL-49",
+    "POL-50",
+    "POL-51",
+    "POL-52",
+    "POL-53"
+  ],
+  "artifact_pointers": {
+    "current_state": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json",
+    "telemetry": ".taskchain_artifacts/polaris-run/runs/polaris-run-canon-docs-lifecycle-2026-05-23-004/telemetry.jsonl"
+  },
+  "context_budget": {
+    "children_completed": 2,
+    "files_touched_total": 6,
+    "stop_threshold_remaining": 1
+  },
+  "current_state_sha": "214c66e1eb4be2dcd874dd263179ca546e96845bd7e11b80645c2fcb759b5521",
+  "resume_instructions": "Run `polaris loop resume polaris-run-canon-docs-lifecycle-2026-05-23-004` on branch `philmeaux/pol-42-add-polaris-canon-reconciliation-and-docs-ingest-lifecycle` to continue with POL-47."
+}

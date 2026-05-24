@@ -1,0 +1,36 @@
+{
+  "run_id": "polaris-analyze-canon-reconciliation-docs-ingest-2026-05-23-001",
+  "cluster_id": "POL-42",
+  "skill": "polaris-analyze",
+  "artifact_dir": ".taskchain_artifacts/polaris-analyze",
+  "status": "complete",
+  "parent_issue": "POL-42 — Add Polaris canon reconciliation and docs-ingest lifecycle",
+  "gitnexus_status": "not-indexed",
+  "current_step_id": "06-final-report",
+  "outcome": "needs-cluster-plan",
+  "clusters_file": ".polaris/clusters/POL-42/clusters.json",
+  "child_issues": [
+    "POL-43 — Add instructionFile atlas linkage, --include-instructions flag, and instruction coverage metric",
+    "POL-44 — Implement polaris docs seed-instructions command",
+    "POL-45 — Implement polaris docs validate-instructions command",
+    "POL-46 — Seed initial POLARIS.md files for repo root and src/{map,loop,cli,finalize,config}",
+    "POL-47 — Analyze: design docs authority model and polaris docs ingest implementation plan",
+    "POL-48 — Implement docs authority structure and polaris docs ingest command",
+    "POL-49 — Implement polaris docs migrate command",
+    "POL-50 — Analyze: design canon reconciliation check protocol",
+    "POL-51 — Implement canon conflict checks in polaris loop continue and polaris finalize",
+    "POL-52 — Implement doctrine lifecycle commands"
+  ],
+  "files_inspected": [
+    "src/cli/index.ts",
+    "src/map/index.ts",
+    "src/map/atlas.ts",
+    "src/finalize/index.ts",
+    "docs/Polaris/spec/local-instructions-layer.md",
+    "docs/Polaris/spec/polaris-implementation-plan.md",
+    "docs/Polaris/planning/cluster-map.md"
+  ],
+  "started_at": "2026-05-23T00:00:00Z",
+  "completed_at": "2026-05-23T00:06:00Z",
+  "updated_at": "2026-05-23T00:06:00Z"
+}

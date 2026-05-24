@@ -64,6 +64,8 @@ export interface PolarisConfig {
     sessionTerminationMode?: "emit-marker" | "exit-0";
     allowBranchDivergence?: boolean;
   };
+  /** Configuration for external agent dispatch via terminal-cli adapter. */
+  execution?: ExecutionConfig;
   finalize?: {
     targetBranch?: string;
     prDraft?: boolean;
@@ -85,6 +87,14 @@ export interface PolarisConfig {
       repo?: string;
     };
   };
-  /** Configuration for external agent dispatch via terminal-cli adapter. */
-  execution?: ExecutionConfig;
+  canon?: {
+    checkOnContinue?: boolean;
+    checkOnFinalize?: boolean;
+  };
+  providers?: {
+    repoAnalysis?: {
+      preferred?: string;
+      fallback?: string[];
+    };
+  };
 }

@@ -1,13 +1,13 @@
 ---
 name: polaris-run-step-07-decide-continuation
-description: Run polaris loop continue to checkpoint state and generate the bootstrap packet, then route to STOP or DELIVER. One child per session — always STOP after a child completes.
+description: Run polaris loop continue to checkpoint state and generate the bootstrap packet, then route to adapter handoff, STOP, or DELIVER.
 ---
 
 # Step 07 — Decide continuation
 
 ## Purpose
 
-Checkpoint session state via the Polaris runtime. One child completes per session — always halt and provide a resume command so the next session starts fresh.
+Checkpoint session state via the Polaris runtime. After a child completes, preserve the token boundary by dispatching any next child through the configured execution adapter instead of continuing implementation inline.
 
 ## Scope declarations
 
@@ -22,7 +22,7 @@ allowed_routes:
 expected_evidence:
   - polaris loop continue executed
   - bootstrap packet emitted
-  - STOP or DELIVER decision recorded
+  - adapter handoff, STOP, or DELIVER decision recorded
 stop_rules:
   - polaris loop continue exits non-zero (excluding expected boundary event)
   - child just completed (always)
@@ -39,14 +39,16 @@ stop_rules:
 
 2. Evaluate the output to determine the decision:
 
-### STOP (child-complete) — default after every child
+### ADAPTER HANDOFF (child-complete) — default after every child
 
-After any child completes, always halt:
-- Report: last completed child ID, commit hash, next open child ID and title.
-- Provide resume instruction: start a new session and run `polaris-run on <PARENT-ID>`.
+After any child completes and another child remains open:
+- Report only compact state: last completed child ID, commit hash, next open child ID and title.
+- Dispatch the next child via the configured execution adapter.
+- In interactive-agent mode, use the agent/subtask adapter; do not shell out to a nested CLI session.
+- In terminal mode, `scripts/polaris-run.sh` is the `terminal-cli` adapter and may invoke the configured CLI command.
 - Do not push. Do not create a PR.
 
-This is the normal case. There is no CONTINUE.
+This is the normal case. The adapter boundary is the token boundary.
 
 ### STOP (boundary_enforcement)
 

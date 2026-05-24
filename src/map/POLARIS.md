@@ -1,0 +1,48 @@
+# src/map
+
+## Purpose
+
+The map subsystem is the Polaris sidecar atlas. It scans the repository, infers route/domain/taskchain ownership for each file, and maintains three output files: `file-routes.json` (indexed entries), `needs-review.json` (low-confidence entries), and `index.json` (summary metrics). It also resolves `instructionFile` pointers to `POLARIS.md` files during indexing and updates.
+
+## What belongs here
+
+- `atlas.ts` — core data types (`FileRouteEntry`, `AtlasIndex`), read/write helpers, `resolveInstructionFile`, `computeInstructionCoverage`
+- `index.ts` — `polaris map` command registration and `runMapIndex` implementation
+- `update.ts` — incremental `polaris map update --changed` logic
+- `validate.ts` — atlas integrity checks and stale-entry detection
+- `inference.ts` — route inference engine (confidence scoring, domain/taskchain assignment)
+- `backfill.ts` — gap-fill for already-indexed repos
+- `query.ts` — `polaris map query` lookup, including `--include-instructions` output
+- `*.test.ts` — unit tests for map subsystem modules
+
+## What does not belong here
+
+- Session state management — belongs in `src/loop/`
+- Config loading — belongs in `src/config/`
+- CLI entry point — belongs in `src/cli/`
+- Finalization delivery steps — belongs in `src/finalize/`
+
+## Editing rules
+
+- `atlas.ts` is the single source of truth for all atlas data types. Do not duplicate `FileRouteEntry` or `AtlasIndex` interfaces elsewhere.
+- `resolveInstructionFile` walks up from a file's directory. The resolution logic must match the spec in `docs/Polaris/spec/local-instructions-layer.md` section 4.
+- `computeInstructionCoverage` counts entries with `instructionFile !== undefined`. Do not filter by classification.
+- All atlas JSON writes go through the helpers in `atlas.ts` (`writeFileRoutes`, `writeAtlasIndex`, etc.) — never write directly with `fs`.
+- `needs-review.json` entries must not silently overwrite `file-routes.json` entries on subsequent index runs.
+
+## Architecture assumptions
+
+- The atlas is append-safe: incremental `update --changed` merges into existing entries rather than replacing the whole file.
+- `instructionFile` is resolved at index/update time, not at query time.
+- Confidence threshold for auto-write is configurable via `config.map.autoWriteAbove` (default `0.85`).
+- The map subsystem never directly executes git commands — it receives changed file paths as arguments or via the update helper.
+
+## Read before editing
+
+- `docs/Polaris/spec/local-instructions-layer.md` — full `instructionFile` linkage model and coverage metric spec
+- `docs/spec/polaris-architecture-spec.md` — how map fits into the loop/map/finalize triad
+- `src/config/schema.ts` — `PolarisConfig` fields that affect map behavior (`map.autoWriteAbove`, `repo.sidecarOutputPath`)
+
+## Related routes
+
+- `polaris.map` — all files in this directory

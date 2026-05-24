@@ -7,7 +7,7 @@ description: Implement the current child issue with the smallest scoped change p
 
 ## Purpose
 
-Implement the current child issue with the smallest scoped change possible.
+Execute only the selected child worker scope. In interactive-agent mode this step belongs inside the worker session dispatched by the execution adapter; the parent/orchestrator must not perform child implementation inline.
 
 ## Scope declarations
 
@@ -22,7 +22,7 @@ allowed_routes:
   - docs/Polaris/spec/polaris-implementation-plan.md
   - .codex/skills/polaris-run/chain.md
 allowed_skills:
-  - gitnexus
+  - repo-analysis
 expected_evidence:
   - child acceptance criteria implemented
   - touched paths match child scope
@@ -36,13 +36,14 @@ stop_rules:
 
 ## Actions
 
-1. Re-fetch the current child issue from Linear to confirm latest state, requirements, and any new blocking relationships.
-2. Identify the files relevant to this child. Inspect only those files.
-3. Use GitNexus for targeted file or symbol lookup only — not broad repo analysis.
-4. Make the smallest scoped change that satisfies the child's acceptance criteria.
-5. Do not touch files outside the child's scope.
-6. Do not perform unrelated cleanup.
-7. If a discovery falls outside the child's scope: note it as a follow-up — do not silently expand scope.
+1. Confirm this is a worker execution context for the selected child. If this is a parent/orchestrator context with another open child to dispatch, return to step 07 and use the execution adapter instead of implementing inline.
+2. Re-fetch the current child issue from Linear to confirm latest state, requirements, and any new blocking relationships.
+3. Identify the files relevant to this child. Inspect only those files.
+4. If a repo-analysis provider is configured and available: use it for targeted file or symbol lookup only. Otherwise use `polaris map query` and direct file inspection. Do not perform broad repo analysis regardless of which path is used.
+5. Make the smallest scoped change that satisfies the child's acceptance criteria.
+6. Do not touch files outside the child's scope.
+7. Do not perform unrelated cleanup.
+8. If a discovery falls outside the child's scope: note it as a follow-up — do not silently expand scope.
 
 ## Blocker protocol
 

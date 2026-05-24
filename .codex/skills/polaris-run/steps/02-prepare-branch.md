@@ -19,7 +19,7 @@ allowed_routes:
   - CLAUDE.md
   - .codex/skills/polaris-run/chain.md
 allowed_skills:
-  - gitnexus
+  - repo-analysis
 expected_evidence:
   - target branch identified or created from main
   - dirty checkout policy applied

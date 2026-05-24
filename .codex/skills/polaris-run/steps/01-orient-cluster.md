@@ -23,7 +23,7 @@ allowed_routes:
   - .codex/skills/polaris-run/chain.md
 allowed_skills:
   - caveman
-  - gitnexus
+  - repo-analysis
 expected_evidence:
   - run_id generated
   - run-start telemetry emitted

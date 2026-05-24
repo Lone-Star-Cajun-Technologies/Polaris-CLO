@@ -19,7 +19,7 @@ allowed_routes:
   - CLAUDE.md
   - .codex/skills/polaris-run/chain.md
 allowed_skills:
-  - gitnexus
+  - repo-analysis
 expected_evidence:
   - fresh child list fetched from Linear
   - lowest-ordered open child selected

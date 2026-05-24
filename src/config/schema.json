@@ -85,6 +85,37 @@
         }
       }
     },
+    "execution": {
+      "type": "object",
+      "properties": {
+        "adapter": {
+          "type": "string",
+          "enum": ["agent-subtask", "terminal-cli", "ci", "ssh", "remote-worker", "cross-agent"]
+        },
+        "providers": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "command": { "type": "string" },
+              "args": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            },
+            "required": ["command"]
+          }
+        },
+        "rotation": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "allowCrossAgentFallback": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
     "finalize": {
       "type": "object",
       "properties": {

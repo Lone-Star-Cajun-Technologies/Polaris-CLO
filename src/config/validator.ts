@@ -162,6 +162,42 @@ export function validateConfig(config: unknown): ValidationResult {
     }
   }
 
+  // execution
+  if ("execution" in config && config.execution !== undefined) {
+    if (!isPlainObject(config.execution)) {
+      result.valid = false;
+      result.errors.push("execution must be an object");
+    } else {
+      if ("adapter" in config.execution && config.execution.adapter !== undefined) {
+        if (
+          !isString(config.execution.adapter) ||
+          !["agent-subtask", "terminal-cli", "ci", "ssh", "remote-worker", "cross-agent"].includes(config.execution.adapter)
+        ) {
+          result.valid = false;
+          result.errors.push("execution.adapter must be one of agent-subtask, terminal-cli, ci, ssh, remote-worker, cross-agent");
+        }
+      }
+      if ("providers" in config.execution && config.execution.providers !== undefined) {
+        if (!isPlainObject(config.execution.providers)) {
+          result.valid = false;
+          result.errors.push("execution.providers must be a plain object");
+        }
+      }
+      if ("rotation" in config.execution && config.execution.rotation !== undefined) {
+        if (!isStringArray(config.execution.rotation)) {
+          result.valid = false;
+          result.errors.push("execution.rotation must be an array of strings");
+        }
+      }
+      if ("allowCrossAgentFallback" in config.execution && config.execution.allowCrossAgentFallback !== undefined) {
+        if (!isBoolean(config.execution.allowCrossAgentFallback)) {
+          result.valid = false;
+          result.errors.push("execution.allowCrossAgentFallback must be a boolean");
+        }
+      }
+    }
+  }
+
   // finalize
   if ("finalize" in config && config.finalize !== undefined) {
     if (!isPlainObject(config.finalize)) {
@@ -269,15 +305,75 @@ export function validateConfig(config: unknown): ValidationResult {
     }
   }
 
+  // providers
+  if ("providers" in config && config.providers !== undefined) {
+    if (!isPlainObject(config.providers)) {
+      result.valid = false;
+      result.errors.push("providers must be an object");
+    } else {
+      if ("repoAnalysis" in config.providers && config.providers.repoAnalysis !== undefined) {
+        if (!isPlainObject(config.providers.repoAnalysis)) {
+          result.valid = false;
+          result.errors.push("providers.repoAnalysis must be an object");
+        } else {
+          if (
+            "preferred" in config.providers.repoAnalysis &&
+            config.providers.repoAnalysis.preferred !== undefined
+          ) {
+            if (!isString(config.providers.repoAnalysis.preferred)) {
+              result.valid = false;
+              result.errors.push("providers.repoAnalysis.preferred must be a string");
+            }
+          }
+          if (
+            "fallback" in config.providers.repoAnalysis &&
+            config.providers.repoAnalysis.fallback !== undefined
+          ) {
+            if (!isStringArray(config.providers.repoAnalysis.fallback)) {
+              result.valid = false;
+              result.errors.push(
+                "providers.repoAnalysis.fallback must be an array of strings",
+              );
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // canon
+  if ("canon" in config && config.canon !== undefined) {
+    if (!isPlainObject(config.canon)) {
+      result.valid = false;
+      result.errors.push("canon must be an object");
+    } else {
+      if ("checkOnContinue" in config.canon && config.canon.checkOnContinue !== undefined) {
+        if (!isBoolean(config.canon.checkOnContinue)) {
+          result.valid = false;
+          result.errors.push("canon.checkOnContinue must be a boolean");
+        }
+      }
+      if ("checkOnFinalize" in config.canon && config.canon.checkOnFinalize !== undefined) {
+        if (!isBoolean(config.canon.checkOnFinalize)) {
+          result.valid = false;
+          result.errors.push("canon.checkOnFinalize must be a boolean");
+        }
+      }
+    }
+  }
+
   // unknown top-level fields -> warnings
   const knownKeys = new Set([
     "version",
     "repo",
     "map",
     "loop",
+    "execution",
     "finalize",
     "tracker",
     "integrations",
+    "canon",
+    "providers",
   ]);
   for (const key of Object.keys(config)) {
     if (!knownKeys.has(key)) {

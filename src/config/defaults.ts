@@ -1,6 +1,6 @@
 import type { PolarisConfig } from "./schema.js";
 
-export const DEFAULT_CONFIG: Required<PolarisConfig> = {
+export const DEFAULT_CONFIG: Omit<Required<PolarisConfig>, "canon" | "providers"> & { canon: Required<NonNullable<PolarisConfig["canon"]>>; providers: { repoAnalysis: { preferred: string | undefined; fallback: string[] } } } = {
   version: "1.0",
   repo: {
     name: "",
@@ -23,6 +23,12 @@ export const DEFAULT_CONFIG: Required<PolarisConfig> = {
     sessionTerminationMode: "emit-marker",
     allowBranchDivergence: false,
   },
+  execution: {
+    adapter: "terminal-cli",
+    providers: {},
+    rotation: [],
+    allowCrossAgentFallback: false,
+  },
   finalize: {
     targetBranch: "main",
     prDraft: true,
@@ -44,10 +50,14 @@ export const DEFAULT_CONFIG: Required<PolarisConfig> = {
       repo: "",
     },
   },
-  execution: {
-    adapter: "terminal-cli",
-    providers: {},
-    rotation: [],
-    allowCrossAgentFallback: false,
+  canon: {
+    checkOnContinue: true,
+    checkOnFinalize: true,
+  },
+  providers: {
+    repoAnalysis: {
+      preferred: undefined as string | undefined,
+      fallback: ["polaris-map", "ripgrep"],
+    },
   },
 };

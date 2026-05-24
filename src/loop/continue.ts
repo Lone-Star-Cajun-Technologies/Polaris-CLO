@@ -10,10 +10,14 @@ import {
   type LoopState,
 } from "./checkpoint.js";
 import { buildBootstrapPacket, writeBootstrapPacket } from "./bootstrap-packet.js";
+import { loadConfig } from "../config/loader.js";
+import type { ExecutionAdapterMode } from "./execution-adapter.js";
+import { runCanonCheck } from "../docs/canon-check.js";
 
 export interface ContinueOptions {
   stateFile: string;
   repoRoot: string;
+  adapter?: ExecutionAdapterMode;
 }
 
 function readSessionTypeFile(repoRoot: string): string | undefined {
@@ -56,7 +60,10 @@ export function runLoopContinue(options: ContinueOptions): void {
 
   const state = rawState as ReturnType<typeof readState>;
   const completedChild = state.active_child;
-  const nextChild = state.open_children[0] ?? null;
+  const remainingOpenChildren = completedChild
+    ? state.open_children.filter((child) => child !== completedChild)
+    : state.open_children;
+  const nextChild = remainingOpenChildren[0] ?? null;
 
   // Determine session type (state field takes precedence, file is secondary signal)
   const sessionTypeFile = readSessionTypeFile(repoRoot);
@@ -66,18 +73,20 @@ export function runLoopContinue(options: ContinueOptions): void {
   }
 
   // Update state: mark active_child as completed
+  const newCompletedChildren = completedChild
+    ? [...state.completed_children, completedChild]
+    : state.completed_children;
   const updatedState = {
     ...state,
     active_child: "",
-    completed_children: completedChild
-      ? [...state.completed_children, completedChild]
-      : state.completed_children,
+    completed_children: newCompletedChildren,
+    open_children: remainingOpenChildren,
     step_cursor: "checkpoint",
     next_open_child: nextChild,
     status: nextChild ? "running" : "cluster-complete",
     context_budget: {
       ...state.context_budget,
-      children_completed: state.context_budget.children_completed + (completedChild ? 1 : 0),
+      children_completed: newCompletedChildren.length,
     },
   };
 
@@ -96,6 +105,9 @@ export function runLoopContinue(options: ContinueOptions): void {
     timestamp: new Date().toISOString(),
   });
 
+  // Load config early — needed for canon check and adapter selection
+  const config = loadConfig(repoRoot);
+
   // Step 3: Run polaris map update --changed (non-fatal if not yet implemented)
   const mapResult = spawnSync(
     process.execPath,
@@ -106,6 +118,33 @@ export function runLoopContinue(options: ContinueOptions): void {
     console.warn(
       "Warning: polaris map update --changed failed (map not yet implemented). Continuing.",
     );
+  }
+
+  // Step 3.5: Canon reconciliation check
+  const canonCheckEnabled = config.canon?.checkOnContinue !== false;
+  if (canonCheckEnabled && nextChild) {
+    const changedFiles: string[] = (updatedState as Record<string, unknown>)["changed_files"] as string[] ?? [];
+    const canonResult = runCanonCheck({
+      repoRoot,
+      changedFiles,
+      childId: nextChild,
+      runId: state.run_id,
+      telemetryFile,
+    });
+    if (canonResult.outcome === "stale-implementation") {
+      const conflict = canonResult.conflicts.find((c) => c.type === "stale-implementation");
+      process.stderr.write(
+        [
+          `Canon conflict halt — cannot generate bootstrap packet.`,
+          `Canon file: ${conflict?.canonFile ?? "unknown"}`,
+          `Statement: ${conflict?.statement ?? ""}`,
+          `Affected file: ${conflict?.changedFile ?? ""}`,
+          `Detail: ${conflict?.detail ?? ""}`,
+          `Resolution: Update the canon file or implement the missing piece before continuing.`,
+        ].join("\n") + "\n",
+      );
+      process.exit(1);
+    }
   }
 
   // Step 4: Analyze→implementation boundary check
@@ -123,7 +162,15 @@ export function runLoopContinue(options: ContinueOptions): void {
   }
 
   // Steps 4-5: Generate and write bootstrap packet
-  const packet = buildBootstrapPacket(updatedState, stateFile, sha, repoRoot, completedChild);
+  const packet = buildBootstrapPacket(
+    updatedState,
+    stateFile,
+    sha,
+    repoRoot,
+    completedChild,
+    (options.adapter ?? config.execution.adapter) as ExecutionAdapterMode | undefined,
+    config.execution,
+  );
   if (boundaryTriggered) {
     packet.boundary_enforcement =
       "analyze-session-ended; implementation requires fresh session with explicit impl scope";

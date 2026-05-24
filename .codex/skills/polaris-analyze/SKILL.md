@@ -1,6 +1,6 @@
 ---
 name: polaris-analyze
-description: Audit one Polaris issue against the actual repo using GitNexus and targeted inspection, then produce an ordered execution plan and cluster artifacts. Analysis and planning only — no code changes, no implementation execution.
+description: Audit one Polaris issue against the actual repo using a configured repo-analysis provider (if available) and targeted inspection, then produce an ordered execution plan and cluster artifacts. Analysis and planning only — no code changes, no implementation execution.
 ---
 
 # polaris-analyze
@@ -28,7 +28,7 @@ See `docs/Polaris/spec/polaris-implementation-plan.md` for the Polaris architect
 ## Hard rules — what analyze may do
 
 - Inspect repo files and architecture
-- Query GitNexus for code intelligence
+- Query the configured repo-analysis provider for code intelligence (if available; falls back to polaris map query + ripgrep)
 - Summarize findings and assess feasibility
 - Create implementation plans and specs (in `docs/`)
 - Create or update tracker child issues (Linear)
