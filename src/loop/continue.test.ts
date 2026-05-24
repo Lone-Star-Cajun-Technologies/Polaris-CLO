@@ -203,8 +203,12 @@ describe("runLoopContinue", () => {
       "telemetry.jsonl",
     );
     expect(existsSync(telemetryFile)).toBe(true);
-    const line = JSON.parse(readFileSync(telemetryFile, "utf-8").trim());
-    expect(line.event).toBe("loop-checkpoint");
+    const lines = readFileSync(telemetryFile, "utf-8")
+      .trim()
+      .split("\n")
+      .map((l) => JSON.parse(l));
+    const line = lines.find((e) => e.event === "loop-checkpoint");
+    expect(line).toBeTruthy();
     expect(line.run_id).toBe("pol-5-session-1");
     expect(line.child_id).toBe("POL-23");
   });

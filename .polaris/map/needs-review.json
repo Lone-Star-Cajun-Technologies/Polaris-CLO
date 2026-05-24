@@ -608,5 +608,16 @@
     "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": "POLARIS.md"
+  },
+  "docs/Polaris/spec/canon-reconciliation-protocol.md": {
+    "domain": "unknown",
+    "route": "docs/Polaris/spec/canon-reconciliation-protocol.md",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-24T04:34:50.577Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": "POLARIS.md"
   }
 }
