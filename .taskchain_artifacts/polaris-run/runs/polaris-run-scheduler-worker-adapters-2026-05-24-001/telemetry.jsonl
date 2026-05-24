@@ -20,3 +20,4 @@
 {"event":"step-complete","run_id":"polaris-run-scheduler-worker-adapters-2026-05-24-001","step":"04-execute-child","child_id":"POL-69","timestamp":"2026-05-24T23:45:00.000Z"}
 {"event":"step-complete","run_id":"polaris-run-scheduler-worker-adapters-2026-05-24-001","step":"05-validate-child","child_id":"POL-69","validation":"passed","timestamp":"2026-05-24T23:45:00.000Z"}
 {"event":"step-complete","run_id":"polaris-run-scheduler-worker-adapters-2026-05-24-001","step":"06-commit","child_id":"POL-69","commit":"180ad22","timestamp":"2026-05-24T23:45:00.000Z"}
+{"event":"step-complete","run_id":"polaris-run-scheduler-worker-adapters-2026-05-24-001","step":"06-commit","child_id":"POL-69","commit":"33d5478","note":"actual-commit-hash","timestamp":"2026-05-24T23:45:01.000Z"}
