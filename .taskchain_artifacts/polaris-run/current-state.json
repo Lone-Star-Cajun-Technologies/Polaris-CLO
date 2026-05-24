@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
-  "run_id": "polaris-run-canon-docs-lifecycle-2026-05-23-005",
-  "related_run_id": "polaris-run-canon-docs-lifecycle-2026-05-23-004",
+  "run_id": "polaris-run-canon-docs-lifecycle-2026-05-23-007",
+  "related_run_id": "polaris-run-canon-docs-lifecycle-2026-05-23-006",
   "cluster_id": "POL-42",
   "skill": "polaris-run",
   "artifact_dir": ".taskchain_artifacts/polaris-run",
@@ -9,29 +9,29 @@
   "current_step_id": "07-decide-continuation",
   "step_cursor": "checkpoint",
   "status": "stopped",
-  "validation_status": "passed-pol48",
-  "last_commit": "07028ad",
+  "validation_status": "passed-pol54",
   "active_child": "",
-  "next_open_child": "POL-49",
+  "last_commit": "e095dd1",
+  "next_open_child": null,
   "completed_children": [
     "POL-43",
     "POL-44",
     "POL-45",
     "POL-46",
     "POL-47",
-    "POL-48"
-  ],
-  "open_children": [
+    "POL-48",
     "POL-49",
     "POL-50",
     "POL-51",
     "POL-52",
-    "POL-53"
+    "POL-53",
+    "POL-54"
   ],
+  "open_children": [],
   "context_budget": {
-    "children_completed": 1,
-    "files_touched_total": 1,
-    "last_child_files_touched": 1
+    "children_completed": 3,
+    "files_touched_total": 23,
+    "last_child_files_touched": 0
   },
-  "updated_at": "2026-05-23T17:28:58.000Z"
+  "updated_at": "2026-05-24T05:03:00.000Z"
 }
