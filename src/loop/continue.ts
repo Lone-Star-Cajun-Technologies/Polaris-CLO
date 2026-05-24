@@ -12,6 +12,7 @@ import {
 import { buildBootstrapPacket, writeBootstrapPacket } from "./bootstrap-packet.js";
 import { loadConfig } from "../config/loader.js";
 import type { ExecutionAdapterMode } from "./execution-adapter.js";
+import { runCanonCheck } from "../docs/canon-check.js";
 
 export interface ContinueOptions {
   stateFile: string;
@@ -103,6 +104,9 @@ export function runLoopContinue(options: ContinueOptions): void {
     timestamp: new Date().toISOString(),
   });
 
+  // Load config early — needed for canon check and adapter selection
+  const config = loadConfig(repoRoot);
+
   // Step 3: Run polaris map update --changed (non-fatal if not yet implemented)
   const mapResult = spawnSync(
     process.execPath,
@@ -113,6 +117,33 @@ export function runLoopContinue(options: ContinueOptions): void {
     console.warn(
       "Warning: polaris map update --changed failed (map not yet implemented). Continuing.",
     );
+  }
+
+  // Step 3.5: Canon reconciliation check
+  const canonCheckEnabled = config.canon?.checkOnContinue !== false;
+  if (canonCheckEnabled && nextChild) {
+    const changedFiles: string[] = (updatedState as Record<string, unknown>)["changed_files"] as string[] ?? [];
+    const canonResult = runCanonCheck({
+      repoRoot,
+      changedFiles,
+      childId: nextChild,
+      runId: state.run_id,
+      telemetryFile,
+    });
+    if (canonResult.outcome === "stale-implementation") {
+      const conflict = canonResult.conflicts.find((c) => c.type === "stale-implementation");
+      process.stderr.write(
+        [
+          `Canon conflict halt — cannot generate bootstrap packet.`,
+          `Canon file: ${conflict?.canonFile ?? "unknown"}`,
+          `Statement: ${conflict?.statement ?? ""}`,
+          `Affected file: ${conflict?.changedFile ?? ""}`,
+          `Detail: ${conflict?.detail ?? ""}`,
+          `Resolution: Update the canon file or implement the missing piece before continuing.`,
+        ].join("\n") + "\n",
+      );
+      process.exit(1);
+    }
   }
 
   // Step 4: Analyze→implementation boundary check
@@ -130,7 +161,6 @@ export function runLoopContinue(options: ContinueOptions): void {
   }
 
   // Steps 4-5: Generate and write bootstrap packet
-  const config = loadConfig(repoRoot);
   const packet = buildBootstrapPacket(
     updatedState,
     stateFile,

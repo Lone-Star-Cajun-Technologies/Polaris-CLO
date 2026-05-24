@@ -1,6 +1,6 @@
 import type { PolarisConfig } from "./schema.js";
 
-export const DEFAULT_CONFIG: Required<PolarisConfig> = {
+export const DEFAULT_CONFIG: Omit<Required<PolarisConfig>, "canon"> & { canon: Required<NonNullable<PolarisConfig["canon"]>> } = {
   version: "1.0",
   repo: {
     name: "",
@@ -46,5 +46,9 @@ export const DEFAULT_CONFIG: Required<PolarisConfig> = {
       owner: "",
       repo: "",
     },
+  },
+  canon: {
+    checkOnContinue: true,
+    checkOnFinalize: true,
   },
 };

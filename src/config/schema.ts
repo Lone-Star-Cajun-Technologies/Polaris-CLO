@@ -46,4 +46,8 @@ export interface PolarisConfig {
       repo?: string;
     };
   };
+  canon?: {
+    checkOnContinue?: boolean;
+    checkOnFinalize?: boolean;
+  };
 }

@@ -3,6 +3,7 @@ import { join, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 import { loadConfig } from "../config/loader.js";
 import { readState } from "../loop/checkpoint.js";
+import { runCanonCheck } from "../docs/canon-check.js";
 import { stepMapUpdate } from "./steps/01-map-update.js";
 import { stepMapValidate } from "./steps/02-map-validate.js";
 import { stepSchemaValidate } from "./steps/03-schema-validate.js";
@@ -68,6 +69,50 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
     stepRunChecks(repoRoot, checks);
   } else {
     console.log("[4/12] No finalize.runChecks configured — skipping.");
+  }
+
+  // Step 4.5: Canon reconciliation check
+  const canonCheckEnabled = config.canon?.checkOnFinalize !== false;
+  if (canonCheckEnabled) {
+    console.log("[4.5/12] Running canon reconciliation check...");
+    let changedFiles: string[] = [];
+    try {
+      const baseBranch = config.finalize?.targetBranch ?? "main";
+      const diffOutput = execFileSync(
+        "git",
+        ["diff", "--name-only", `${baseBranch}...HEAD`],
+        { cwd: repoRoot, encoding: "utf-8" },
+      );
+      changedFiles = diffOutput.trim().split("\n").filter(Boolean);
+    } catch {
+      // If git diff fails, proceed without changed files list (canon check returns aligned)
+    }
+
+    const artifactDirForCheck = state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "bootstrap-run");
+    const telemetryFileForCheck = join(artifactDirForCheck, "runs", state.run_id, "telemetry.jsonl");
+
+    const canonResult = runCanonCheck({
+      repoRoot,
+      changedFiles,
+      childId: undefined,
+      runId: state.run_id,
+      telemetryFile: telemetryFileForCheck,
+    });
+
+    if (canonResult.outcome === "stale-implementation") {
+      const conflict = canonResult.conflicts.find((c) => c.type === "stale-implementation");
+      process.stderr.write(
+        [
+          `Canon conflict halt — finalize blocked. PR will not be created.`,
+          `Canon file: ${conflict?.canonFile ?? "unknown"}`,
+          `Statement: ${conflict?.statement ?? ""}`,
+          `Affected file: ${conflict?.changedFile ?? ""}`,
+          `Detail: ${conflict?.detail ?? ""}`,
+          `Resolution: Update the canon file or implement the missing piece before finalizing.`,
+        ].join("\n") + "\n",
+      );
+      process.exit(1);
+    }
   }
 
   // Step 5: Generate run-report.md (written once, never updated)
