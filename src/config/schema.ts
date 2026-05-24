@@ -22,7 +22,7 @@ export interface ExecutionConfig {
    * Adapter to use for external dispatch. Currently supported: "terminal-cli"
    * Future: "agent-subtask" (Claude subagent workflows)
    */
-  adapter: "agent-subtask" | "terminal-cli" | "ci" | "ssh" | "remote-worker" | "cross-agent";
+  adapter: string;
 
   /**
    * Named provider configurations. Keys are provider names (e.g. "codex", "gemini", "custom").

@@ -167,7 +167,7 @@ export function runLoopContinue(options: ContinueOptions): void {
     sha,
     repoRoot,
     completedChild,
-    options.adapter ?? config.execution.adapter,
+    (options.adapter ?? config.execution.adapter) as ExecutionAdapterMode | undefined,
     config.execution,
   );
   if (boundaryTriggered) {
