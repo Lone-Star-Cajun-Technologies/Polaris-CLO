@@ -84,8 +84,11 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
         { cwd: repoRoot, encoding: "utf-8" },
       );
       changedFiles = diffOutput.trim().split("\n").filter(Boolean);
-    } catch {
-      // If git diff fails, proceed without changed files list (canon check returns aligned)
+    } catch (err) {
+      // Fail closed: if git diff fails, we cannot determine changed files for canon check
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`Error: git diff failed during canon check: ${msg}`);
+      throw new Error(`Canon check cannot proceed: git diff failed: ${msg}`);
     }
 
     const artifactDirForCheck = state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "bootstrap-run");

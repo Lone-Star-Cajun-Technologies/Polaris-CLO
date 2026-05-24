@@ -258,6 +258,11 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
 
   for (const source of files) {
     const absSource = resolve(repoRoot, source);
+    // Path traversal check: ensure absSource is within repoRoot
+    const relCheck = relative(repoRoot, absSource);
+    if (relCheck.startsWith("..") || relCheck.startsWith("/")) {
+      throw new Error(`polaris docs ingest: path traversal detected, file outside repo: ${source}`);
+    }
     if (!existsSync(absSource)) throw new Error(`polaris docs ingest: file not found: ${source}`);
     const content = readFileSync(absSource, "utf-8");
     const relSource = relative(repoRoot, absSource).replace(/\\/g, "/");
@@ -271,7 +276,10 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
     mkdirSync(targetDir, { recursive: true });
     const destination = uniqueDestination(join(targetDir, basename(absSource)));
     const relDestination = relative(repoRoot, destination).replace(/\\/g, "/");
-    const provenancePath = destination.replace(/\.md$/i, ".provenance.json");
+    // Fix: only replace .md suffix if present, otherwise append .provenance.json
+    const provenancePath = /\.md$/i.test(destination)
+      ? destination.replace(/\.md$/i, ".provenance.json")
+      : `${destination}.provenance.json`;
 
     emitTelemetry(repoRoot, runId, {
       event: "docs-ingest-classified",

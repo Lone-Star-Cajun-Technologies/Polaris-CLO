@@ -97,6 +97,11 @@ export function seedInstructions(
   opts: { dryRun?: boolean } = {},
 ): "written" | "skipped-exists" | "skipped-draft" {
   const absTarget = resolve(repoRoot, targetPath);
+  // Path traversal check: ensure absTarget is within repoRoot
+  const relCheck = relative(repoRoot, absTarget);
+  if (relCheck.startsWith("..") || relCheck.startsWith("/")) {
+    throw new Error(`Path traversal detected: target path is outside repo root`);
+  }
   const outFile = join(absTarget, "POLARIS.md");
 
   if (existsSync(outFile)) {

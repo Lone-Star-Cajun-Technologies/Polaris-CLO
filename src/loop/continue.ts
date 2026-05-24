@@ -73,19 +73,20 @@ export function runLoopContinue(options: ContinueOptions): void {
   }
 
   // Update state: mark active_child as completed
+  const newCompletedChildren = completedChild
+    ? [...state.completed_children, completedChild]
+    : state.completed_children;
   const updatedState = {
     ...state,
     active_child: "",
-    completed_children: completedChild
-      ? [...state.completed_children, completedChild]
-      : state.completed_children,
+    completed_children: newCompletedChildren,
     open_children: remainingOpenChildren,
     step_cursor: "checkpoint",
     next_open_child: nextChild,
     status: nextChild ? "running" : "cluster-complete",
     context_budget: {
       ...state.context_budget,
-      children_completed: state.context_budget.children_completed + (completedChild ? 1 : 0),
+      children_completed: newCompletedChildren.length,
     },
   };
 

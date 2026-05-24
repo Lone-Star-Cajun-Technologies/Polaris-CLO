@@ -119,6 +119,8 @@ function fromConfigured(mode: ExecutionAdapterMode): AdapterSelection {
         warnings: [],
         reason: "cross-agent fallback explicitly configured",
       };
+    default:
+      throw new Error(`Unknown ExecutionAdapterMode: ${String(mode)}`);
   }
 }
 

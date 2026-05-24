@@ -6,7 +6,7 @@ import {
   unlinkSync,
   writeFileSync,
 } from "node:fs";
-import { basename, dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve, relative } from "node:path";
 
 export const CANDIDATE_MARKER = "<!-- polaris:doctrine-candidate -->";
 
@@ -50,9 +50,14 @@ export function doctrineDraft(path: string, options: DoctrineOptions): DoctrineR
     throw new Error(`Source file not found: ${source}`);
   }
 
-  const rawDir = join(repoRoot, "docs", "raw") + "/";
-  const doctrineRawDir = join(repoRoot, "docs", "doctrine", "raw") + "/";
-  if (!source.startsWith(rawDir) && !source.startsWith(doctrineRawDir)) {
+  const rawDir = resolve(repoRoot, "docs", "raw");
+  const doctrineRawDir = resolve(repoRoot, "docs", "doctrine", "raw");
+  const relToRaw = relative(rawDir, source);
+  const relToDoctrineRaw = relative(doctrineRawDir, source);
+  const isInRaw = !relToRaw.startsWith("..") && !relToRaw.startsWith("/");
+  const isInDoctrineRaw = !relToDoctrineRaw.startsWith("..") && !relToDoctrineRaw.startsWith("/");
+
+  if (!isInRaw && !isInDoctrineRaw) {
     throw new Error(
       `doctrineDraft source must be in docs/raw/ or docs/doctrine/raw/ — got: ${source}`,
     );
@@ -92,8 +97,11 @@ export function doctrinePromote(path: string, options: DoctrineOptions): Doctrin
     throw new Error(`Source file not found: ${source}`);
   }
 
-  const candidateDir = join(repoRoot, "docs", "doctrine", "candidate") + "/";
-  if (!source.startsWith(candidateDir)) {
+  const candidateDir = resolve(repoRoot, "docs", "doctrine", "candidate");
+  const relToCandidate = relative(candidateDir, source);
+  const isInCandidate = !relToCandidate.startsWith("..") && !relToCandidate.startsWith("/");
+
+  if (!isInCandidate) {
     throw new Error(
       `doctrinePromote source must be in docs/doctrine/candidate/ — got: ${source}`,
     );
@@ -140,8 +148,11 @@ export function doctrineDeprecate(path: string, options: DoctrineOptions): Doctr
     throw new Error(`Source file not found: ${source}`);
   }
 
-  const activeDir = join(repoRoot, "docs", "doctrine", "active") + "/";
-  if (!source.startsWith(activeDir)) {
+  const activeDir = resolve(repoRoot, "docs", "doctrine", "active");
+  const relToActive = relative(activeDir, source);
+  const isInActive = !relToActive.startsWith("..") && !relToActive.startsWith("/");
+
+  if (!isInActive) {
     throw new Error(
       `doctrineDeprecate source must be in docs/doctrine/active/ — got: ${source}`,
     );

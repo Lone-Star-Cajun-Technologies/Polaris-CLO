@@ -51,7 +51,7 @@ docs/
 |---|---|---|---|
 | `raw/` | none | any agent freely | manual or `docs ingest` classification |
 | `runtime/` | low | polaris-run, polaris-finalize | no promotion; informational only |
-| `specs/raw/` | none | any agent | `docs ingest` promotes to `specs/active/` |
+| `specs/raw/` | none | any agent | remains in `specs/raw/`; user review moves to `specs/active/` |
 | `specs/active/` | medium | approved work only | moved to `implemented/` or `superseded/` |
 | `audits/` | medium | analyze sessions | findings moved to `resolved/` on close |
 | `doctrine/raw/` | none | any agent | `docs ingest` promotes to `doctrine/candidate/` |

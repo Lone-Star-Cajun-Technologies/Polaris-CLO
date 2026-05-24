@@ -37,6 +37,9 @@ set -euo pipefail
 ISSUE=${1:?Usage: scripts/polaris-run.sh <issue-id> [--agent CMD] [--max-sessions N] [--deliver] [--dry-run]}
 shift
 
+log() { echo "[polaris-run] $*"; }
+err() { echo "[polaris-run] ERROR: $*" >&2; }
+
 REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 STATE_FILE="$REPO_ROOT/.taskchain_artifacts/polaris-run/current-state.json"
 MAX_SESSIONS=30
@@ -46,8 +49,18 @@ DRY_RUN=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --agent)        AGENT="$2"; shift 2 ;;
-    --max-sessions) MAX_SESSIONS="$2"; shift 2 ;;
+    --agent)
+      if [[ $# -lt 2 || -z "$2" || "$2" == --* ]]; then
+        echo "[polaris-run] ERROR: --agent requires a non-empty value" >&2
+        exit 1
+      fi
+      AGENT="$2"; shift 2 ;;
+    --max-sessions)
+      if [[ $# -lt 2 || -z "$2" || "$2" == --* ]]; then
+        echo "[polaris-run] ERROR: --max-sessions requires a non-empty value" >&2
+        exit 1
+      fi
+      MAX_SESSIONS="$2"; shift 2 ;;
     --deliver)      DELIVER=true; shift ;;
     --dry-run)      DRY_RUN=true; shift ;;
     *) echo "[polaris-run] Unknown flag: $1" >&2; exit 1 ;;
@@ -58,9 +71,6 @@ if [[ -z "$AGENT" ]]; then
   err "No terminal CLI worker configured. Set POLARIS_AGENT or pass --agent."
   exit 1
 fi
-
-log() { echo "[polaris-run] $*"; }
-err() { echo "[polaris-run] ERROR: $*" >&2; }
 
 read_state_field() {
   local field="$1"

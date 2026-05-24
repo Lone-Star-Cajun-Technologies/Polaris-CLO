@@ -177,6 +177,18 @@ export function validateConfig(config: unknown): ValidationResult {
           result.errors.push("execution.adapter must be one of agent-subtask, terminal-cli, ci, ssh, remote-worker, cross-agent");
         }
       }
+      if ("providers" in config.execution && config.execution.providers !== undefined) {
+        if (!isPlainObject(config.execution.providers)) {
+          result.valid = false;
+          result.errors.push("execution.providers must be a plain object");
+        }
+      }
+      if ("rotation" in config.execution && config.execution.rotation !== undefined) {
+        if (!isStringArray(config.execution.rotation)) {
+          result.valid = false;
+          result.errors.push("execution.rotation must be an array of strings");
+        }
+      }
       if ("allowCrossAgentFallback" in config.execution && config.execution.allowCrossAgentFallback !== undefined) {
         if (!isBoolean(config.execution.allowCrossAgentFallback)) {
           result.valid = false;
@@ -324,6 +336,27 @@ export function validateConfig(config: unknown): ValidationResult {
               );
             }
           }
+        }
+      }
+    }
+  }
+
+  // canon
+  if ("canon" in config && config.canon !== undefined) {
+    if (!isPlainObject(config.canon)) {
+      result.valid = false;
+      result.errors.push("canon must be an object");
+    } else {
+      if ("checkOnContinue" in config.canon && config.canon.checkOnContinue !== undefined) {
+        if (!isBoolean(config.canon.checkOnContinue)) {
+          result.valid = false;
+          result.errors.push("canon.checkOnContinue must be a boolean");
+        }
+      }
+      if ("checkOnFinalize" in config.canon && config.canon.checkOnFinalize !== undefined) {
+        if (!isBoolean(config.canon.checkOnFinalize)) {
+          result.valid = false;
+          result.errors.push("canon.checkOnFinalize must be a boolean");
         }
       }
     }

@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, readFileSync, mkdirSync, writeFileSync, appendFileSync } from "node:fs";
-import { join, dirname, resolve } from "node:path";
+import { join, dirname, resolve, basename } from "node:path";
 
 export type CanonOutcome =
   | "aligned"
@@ -142,14 +142,27 @@ function checkPolarisMd(
     if (!isDeleted) continue;
 
     for (const changedFile of changedFiles) {
-      const basename = changedFile.split("/").pop() ?? "";
-      if (lower.includes(basename.toLowerCase()) && existsSync(resolve(repoRoot, changedFile))) {
+      const fileBasename = basename(changedFile);
+      if (lower.includes(fileBasename.toLowerCase()) && existsSync(resolve(repoRoot, changedFile))) {
+        // Determine conflict type based on rule text and changed file
+        let conflictType: Exclude<CanonOutcome, "aligned"> = "stale-implementation";
+        const ext = changedFile.split(".").pop()?.toLowerCase() ?? "";
+        const isDocFile = ext === "md" || changedFile.startsWith("docs/");
+        const hasDocKeywords = /\b(doc|documentation|readme|guide|spec)\b/i.test(lower);
+        const hasCandidateKeywords = /\b(candidate|divergence|proposal)\b/i.test(lower);
+
+        if (isDocFile || hasDocKeywords) {
+          conflictType = "stale-docs";
+        } else if (hasCandidateKeywords) {
+          conflictType = "candidate-divergence";
+        }
+
         conflicts.push({
-          type: "stale-implementation",
+          type: conflictType,
           canonFile,
           statement: rule,
           changedFile,
-          detail: `POLARIS.md states "${basename}" is deleted/removed but the file still exists`,
+          detail: `POLARIS.md states "${fileBasename}" is deleted/removed but the file still exists`,
         });
       }
     }
@@ -187,14 +200,14 @@ function checkDocFile(
     if (!deletedAssertion) continue;
 
     for (const changedFile of changedFiles) {
-      const basename = changedFile.split("/").pop() ?? "";
-      if (lower.includes(basename.toLowerCase()) && existsSync(resolve(repoRoot, changedFile))) {
+      const fileBasename = basename(changedFile);
+      if (lower.includes(fileBasename.toLowerCase()) && existsSync(resolve(repoRoot, changedFile))) {
         conflicts.push({
           type: "stale-implementation",
           canonFile,
           statement: line.trim(),
           changedFile,
-          detail: `Canon asserts "${basename}" is deleted/removed but file still exists`,
+          detail: `Canon asserts "${fileBasename}" is deleted/removed but file still exists`,
         });
       }
     }
@@ -252,8 +265,8 @@ export function runCanonCheck(options: CanonCheckOptions): CanonCheckResult {
   const allConflicts: CanonConflict[] = [];
 
   for (const canonFile of canonFilesSet) {
-    const basename = canonFile.split("/").pop() ?? "";
-    const isPolarisMd = basename === "POLARIS.md";
+    const fileBasename = basename(canonFile);
+    const isPolarisMd = fileBasename === "POLARIS.md";
     const fileConflicts = isPolarisMd
       ? checkPolarisMd(canonFile, changedFiles, repoRoot)
       : checkDocFile(canonFile, changedFiles, repoRoot);
@@ -311,7 +324,7 @@ function writeStaleDraftDocs(conflicts: CanonConflict[], repoRoot: string, child
   try {
     mkdirSync(rawDir, { recursive: true });
     for (const conflict of conflicts) {
-      const slug = conflict.canonFile.split("/").pop()?.replace(/\.md$/, "") ?? "unknown";
+      const slug = basename(conflict.canonFile).replace(/\.md$/, "");
       const date = new Date().toISOString().slice(0, 10);
       const filename = `stale-flag-${slug}-${date}.md`;
       const path = join(rawDir, filename);
@@ -338,7 +351,7 @@ function writeCandidateDraftDocs(conflicts: CanonConflict[], repoRoot: string, c
   try {
     mkdirSync(candidateDir, { recursive: true });
     for (const conflict of conflicts) {
-      const slug = conflict.canonFile.split("/").pop()?.replace(/\.md$/, "") ?? "unknown";
+      const slug = basename(conflict.canonFile).replace(/\.md$/, "");
       const date = new Date().toISOString().slice(0, 10);
       const filename = `${slug}-${date}.draft.md`;
       const path = join(candidateDir, filename);

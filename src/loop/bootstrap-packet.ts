@@ -1,5 +1,5 @@
 import { writeFileSync, mkdirSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { join, dirname, relative } from "node:path";
 import { execFileSync } from "node:child_process";
 import type { LoopState } from "./checkpoint.js";
 import {
@@ -97,6 +97,10 @@ export function buildBootstrapPacket(
     branch,
   });
 
+  // Normalize artifact_pointers to repo-relative paths
+  const relStateFile = stateFile.startsWith("/") ? relative(repoRoot, stateFile) : stateFile;
+  const relTelemetryFile = telemetryFile.startsWith("/") ? relative(repoRoot, telemetryFile) : telemetryFile;
+
   return {
     run_id: state.run_id,
     skill: state.skill ?? "bootstrap-run",
@@ -107,8 +111,8 @@ export function buildBootstrapPacket(
     next_step: nextChild ? "03-execute-child" : "CLUSTER-COMPLETE",
     open_children: state.open_children,
     artifact_pointers: {
-      current_state: stateFile,
-      telemetry: telemetryFile,
+      current_state: relStateFile,
+      telemetry: relTelemetryFile,
     },
     context_budget: {
       children_completed: state.context_budget.children_completed,

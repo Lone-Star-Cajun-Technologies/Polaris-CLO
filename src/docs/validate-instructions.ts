@@ -239,7 +239,12 @@ export function validateInstructions(
 
   let dirsToCheck: string[];
   if (opts.path) {
-    const relPath = relative(repoRoot, resolve(repoRoot, opts.path)).replace(/\\/g, "/");
+    const absPath = resolve(repoRoot, opts.path);
+    const relPath = relative(repoRoot, absPath).replace(/\\/g, "/");
+    // Path traversal check
+    if (relPath.startsWith("..") || relPath.startsWith("/")) {
+      throw new Error(`Path traversal detected: path is outside repo root: ${opts.path}`);
+    }
     dirsToCheck = [relPath];
   } else {
     // Include root dir and all subdirs
@@ -261,6 +266,23 @@ export function validateInstructions(
       if (result.status !== "OK") {
         const absDir = resolve(repoRoot, result.dir);
         const draftPath = join(absDir, "POLARIS.draft.md");
+        // Path traversal check for draft path
+        const relDraft = relative(repoRoot, draftPath);
+        if (relDraft.startsWith("..") || relDraft.startsWith("/")) {
+          result.findings.push({
+            severity: "ERROR",
+            message: "Cannot write draft: path traversal detected",
+          });
+          continue;
+        }
+        // Don't clobber existing drafts in fix mode
+        if (existsSync(draftPath)) {
+          result.findings.push({
+            severity: "WARN",
+            message: "Draft already exists at POLARIS.draft.md; skipping write",
+          });
+          continue;
+        }
         const content = generateDraft(result.dir, repoRoot, allRoutes);
         writeFileSync(draftPath, content, "utf-8");
         result.findings.push({
