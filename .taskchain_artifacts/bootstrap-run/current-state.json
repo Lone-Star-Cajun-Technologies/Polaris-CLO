@@ -1,14 +1,14 @@
 {
   "schema_version": "1.0",
-  "run_id": "polaris-run-pol-76-SvfBe",
-  "cluster_id": "POL-76",
+  "run_id": "polaris-run-pol-80",
+  "cluster_id": "POL-80",
   "active_child": "",
-  "completed_children": ["POL-77", "POL-78", "POL-79"],
+  "completed_children": ["POL-80"],
   "open_children": [],
   "step_cursor": "06-decide-continuation",
   "context_budget": {
-    "children_completed": 3,
+    "children_completed": 1,
     "max_children_per_session": 3
   },
-  "status": "cluster-complete"
+  "status": "complete"
 }
