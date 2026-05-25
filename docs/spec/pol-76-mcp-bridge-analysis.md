@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-A local MCP server is the correct and sufficient bridge between Claude Desktop and the Polaris runtime. The server should be a thin Node.js/TypeScript stdio process living in `src/mcp/`, exposing narrow read-only tools that call Polaris CLI commands via subprocess. The first slice delivers `polaris_status` only. Mutating tools come later, gated behind explicit approval boundaries.
+A local MCP server is the correct and sufficient bridge between Claude Desktop and the Polaris runtime. The server should be a thin Node.js/TypeScript stdio process living in `src/mcp/`, exposing narrow read-only tools that call Polaris CLI commands via subprocess. The first slice delivers three read-only tools: `polaris_status`, `polaris_loop_status`, and `polaris_current_state`. Mutating tools come later, gated behind explicit approval boundaries.
 
 The path is clear, the risk surface is manageable, and the architecture coexists cleanly with the existing Claude Code `.claude/skills/` surface.
 
@@ -113,7 +113,7 @@ polaris status --json
 # or fallback:
 node dist/cli.js status --json
 # or fallback (pure file read):
-read .taskchain_artifacts/polaris-run/current-state.json
+cat .taskchain_artifacts/polaris-run/current-state.json
 ```
 
 **When to use which invocation path:** See §8 below.
@@ -287,7 +287,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) o
 }
 ```
 
-`POLARIS_ROOT` env var is the canonical way the server locates the repo root (see §5 on repo-root resolution below).
+`POLARIS_ROOT` env var is the canonical way the server locates the repo root (see §6 on repo-root resolution below).
 
 ### Step 4: Restart Claude Desktop
 
