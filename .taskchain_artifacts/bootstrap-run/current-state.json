@@ -1,14 +1,14 @@
 {
   "schema_version": "1.0",
-  "run_id": "polaris-run-pol-80",
+  "run_id": "polaris-run-pol-80-MnsUx",
   "cluster_id": "POL-80",
   "active_child": "",
-  "completed_children": ["POL-80"],
-  "open_children": [],
+  "completed_children": ["POL-84", "POL-85", "POL-86"],
+  "open_children": ["POL-87"],
   "step_cursor": "06-decide-continuation",
   "context_budget": {
-    "children_completed": 1,
+    "children_completed": 3,
     "max_children_per_session": 3
   },
-  "status": "complete"
+  "status": "stopped"
 }
