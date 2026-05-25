@@ -11,6 +11,10 @@ import {
 } from "./execution-adapter.js";
 import type { PolarisConfig } from "../config/schema.js";
 
+type PacketExecutionConfig = Required<PolarisConfig>["execution"] & {
+  allow_analyze_children?: boolean;
+};
+
 export interface BootstrapPacket {
   run_id: string;
   skill: string;
@@ -64,7 +68,7 @@ export function buildBootstrapPacket(
   repoRoot: string,
   completedChild: string,
   adapterMode?: ExecutionAdapterMode,
-  executionConfig?: Required<PolarisConfig>["execution"],
+  executionConfig?: PacketExecutionConfig,
 ): BootstrapPacket {
   const branch = getCurrentBranch(repoRoot);
   const nextChild = state.open_children[0] ?? null;
@@ -95,6 +99,7 @@ export function buildBootstrapPacket(
     telemetryFile,
     currentStateSha,
     branch,
+    allowAnalyzeChildren: executionConfig?.allow_analyze_children,
   });
 
   // Normalize artifact_pointers to repo-relative paths

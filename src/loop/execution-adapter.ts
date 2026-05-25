@@ -38,6 +38,7 @@ export interface CompactBootstrapInput {
   telemetryFile: string;
   currentStateSha: string;
   branch: string;
+  allowAnalyzeChildren?: boolean;
 }
 
 export interface CompactBootstrapState {
@@ -48,6 +49,7 @@ export interface CompactBootstrapState {
   telemetry_file: string;
   current_state_sha: string;
   branch: string;
+  allow_analyze_children?: boolean;
   return_summary_contract: string[];
 }
 
@@ -174,6 +176,7 @@ export function buildCompactBootstrapState(input: CompactBootstrapInput): Compac
     telemetry_file: input.telemetryFile,
     current_state_sha: input.currentStateSha,
     branch: input.branch,
+    allow_analyze_children: input.allowAnalyzeChildren,
     return_summary_contract: [
       "child_id",
       "status",

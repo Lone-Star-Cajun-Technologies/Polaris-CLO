@@ -130,6 +130,10 @@ export function runLoopContinue(options: ContinueOptions): void {
             allow_analyze_children: allowAnalyzeChildren,
           },
   };
+  const effectiveExecution = {
+    ...effectiveConfig.execution,
+    allow_analyze_children: effectiveConfig.budget?.allow_analyze_children,
+  };
 
   // Step 3: Run polaris map update --changed (non-fatal if not yet implemented)
   const mapResult = spawnSync(
@@ -191,8 +195,8 @@ export function runLoopContinue(options: ContinueOptions): void {
     sha,
     repoRoot,
     completedChild,
-    (options.adapter ?? effectiveConfig.execution.adapter) as ExecutionAdapterMode | undefined,
-    effectiveConfig.execution,
+    (options.adapter ?? effectiveExecution.adapter) as ExecutionAdapterMode | undefined,
+    effectiveExecution,
   );
   if (boundaryTriggered) {
     packet.boundary_enforcement =
