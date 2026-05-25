@@ -12,7 +12,7 @@ export class InvokeError extends Error {
 }
 
 export function invokePolarisJson(repoRoot: string, args: string[]): unknown {
-  const result = spawnSync("node", [join("dist", "cli", "index.js"), ...args], {
+  const result = spawnSync(process.execPath, [join("dist", "cli", "index.js"), ...args], {
     cwd: repoRoot,
     encoding: "utf-8",
     timeout: 10_000,

@@ -1,5 +1,5 @@
-import { readFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { readFileSync, realpathSync } from "node:fs";
+import { join, resolve, sep } from "node:path";
 import { resolveRepoRoot } from "../lib/root.js";
 import { redact } from "../lib/redact.js";
 
@@ -17,6 +17,14 @@ export async function handlePolarisCurrentState(
   const repoRoot = resolveRepoRoot();
 
   const artifactDir = args.artifact_dir ?? "polaris-run";
+
+  if (typeof artifactDir !== "string") {
+    return {
+      ok: false,
+      error: "invalid_argument",
+      message: `artifact_dir must be a string, received ${typeof artifactDir}: ${JSON.stringify(artifactDir)}`,
+    };
+  }
 
   if (!isValidDirName(artifactDir)) {
     return {
@@ -40,7 +48,18 @@ export async function handlePolarisCurrentState(
 
   let raw: string;
   try {
-    raw = readFileSync(statePath, "utf-8");
+    const realStatePath = realpathSync(statePath);
+    const realRepoRoot = realpathSync(repoRoot);
+
+    if (!realStatePath.startsWith(realRepoRoot + sep)) {
+      return {
+        ok: false,
+        error: "invalid_argument",
+        message: "artifact_dir resolved outside repo root (symlink detected)",
+      };
+    }
+
+    raw = readFileSync(realStatePath, "utf-8");
   } catch {
     return {
       ok: false,
