@@ -1,14 +1,14 @@
 {
   "schema_version": "1.0",
-  "run_id": "polaris-run-pol-80-MnsUx",
+  "run_id": "polaris-run-pol-80-UB1WV",
   "cluster_id": "POL-80",
-  "active_child": "",
-  "completed_children": ["POL-84", "POL-85", "POL-86"],
-  "open_children": ["POL-87"],
+  "active_child": null,
+  "completed_children": ["POL-84", "POL-85", "POL-86", "POL-87"],
+  "open_children": [],
   "step_cursor": "06-decide-continuation",
   "context_budget": {
-    "children_completed": 3,
+    "children_completed": 1,
     "max_children_per_session": 3
   },
-  "status": "stopped"
+  "status": "complete"
 }
