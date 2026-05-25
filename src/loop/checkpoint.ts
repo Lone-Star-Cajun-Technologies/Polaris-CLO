@@ -25,7 +25,7 @@ export interface LoopState {
   completed_children: string[];
   open_children: string[];
   open_children_meta?: Record<string, { type?: string; title?: string; labels?: string[] }>;
-  step_cursor: string;
+  step_cursor: string | null;
   context_budget: {
     children_completed: number;
     files_touched_total?: number;
@@ -63,7 +63,7 @@ export function validateState(state: unknown): string[] {
   if (typeof s["active_child"] !== "string") errors.push("missing active_child");
   if (!Array.isArray(s["completed_children"])) errors.push("completed_children must be an array");
   if (!Array.isArray(s["open_children"])) errors.push("open_children must be an array");
-  if (typeof s["step_cursor"] !== "string") errors.push("missing step_cursor");
+  if (s["step_cursor"] !== null && typeof s["step_cursor"] !== "string") errors.push("missing step_cursor");
   if (typeof s["context_budget"] !== "object" || s["context_budget"] === null) {
     errors.push("missing context_budget");
   } else {

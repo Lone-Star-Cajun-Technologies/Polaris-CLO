@@ -20,7 +20,7 @@ export interface BootstrapPacket {
   skill: string;
   branch: string;
   base_commit_sha: string;
-  last_completed_step: string;
+  last_completed_step: string | null;
   last_completed_child: string;
   next_step: string;
   open_children: string[];
