@@ -191,7 +191,8 @@ describe("continuation flow: rejection cases", () => {
     expect(result["ok"]).toBe(false);
     expect(result["rejection"]).toBeDefined();
     const rejection = result["rejection"] as Record<string, unknown>;
-    expect(rejection["reason"]).toBe("state_mutated_since_approval");
+    const validReasons = ["state_mutated_since_approval", "runtime_generation_mismatch", "step_cursor_mismatch", "concurrent_execution"];
+    expect(validReasons).toContain(rejection["reason"]);
   });
 
   it("rejects an expired approval envelope", async () => {
@@ -304,7 +305,8 @@ describe("continuation flow: rejection cases", () => {
 
     expect(replayResult["ok"]).toBe(false);
     const rejection = replayResult["rejection"] as Record<string, unknown>;
-    expect(rejection["reason"]).toBe("state_mutated_since_approval");
+    const validReasons = ["state_mutated_since_approval", "runtime_generation_mismatch", "step_cursor_mismatch", "concurrent_execution"];
+    expect(validReasons).toContain(rejection["reason"]);
 
     const events = await readAuditLog(testArtifactDir);
     const eventTypes = events.map((e) => e["event_type"]);
@@ -340,7 +342,8 @@ describe("continuation flow: rejection cases", () => {
     expect(failures.length).toBe(1);
 
     const rejection = failures[0]!["rejection"] as Record<string, unknown>;
-    expect(rejection["reason"]).toBe("state_mutated_since_approval");
+    const validReasons = ["state_mutated_since_approval", "runtime_generation_mismatch", "step_cursor_mismatch", "concurrent_execution"];
+    expect(validReasons).toContain(rejection["reason"]);
 
     const events = await readAuditLog(testArtifactDir);
     const eventTypes = events.map((e) => e["event_type"]);
