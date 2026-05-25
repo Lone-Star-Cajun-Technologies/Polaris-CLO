@@ -13,6 +13,10 @@ export interface CurrentState {
     max_children_per_session: number;
   };
   status: RunStatus;
+  // Extended fields — absent in older state files; treat missing as defaults
+  runtime_generation?: number;
+  orchestration_mode?: string;
+  continuation_epoch?: number;
 }
 
 export type AuditEventType =
