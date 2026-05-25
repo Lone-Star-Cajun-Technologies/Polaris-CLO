@@ -70,8 +70,9 @@ polaris status
 # JSON output — for programmatic verification
 polaris status --json
 
-# Dry-run — proves the run path without mutating state
-node dist/cli/index.js loop continue --dry-run --state-file .taskchain_artifacts/polaris-run/current-state.json
+# Note: --dry-run is not yet wired for loop continue (ContinueOptions has no dryRun field).
+# Do not run loop continue as a smoke test — it spawns a real agent session.
+# Status-only smoke tests above are sufficient to prove the invocation path.
 ```
 
 All three must exit 0.
