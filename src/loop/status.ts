@@ -135,7 +135,7 @@ export function runLoopStatus(options: StatusOptions): void {
 
   const maxChildren = state.context_budget.max_children_per_session ?? 3;
   const completed = state.context_budget.children_completed;
-  const remaining = maxChildren - completed;
+  const remaining = Math.max(0, maxChildren - completed);
 
   const lines: string[] = [
     "Polaris Loop Status",
