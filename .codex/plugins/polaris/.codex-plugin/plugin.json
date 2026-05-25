@@ -1,0 +1,32 @@
+{
+  "name": "polaris",
+  "version": "1.0.0",
+  "description": "Exposes Polaris CLI commands as Codex tools for running and managing taskchain clusters.",
+  "author": {
+    "name": "Polaris",
+    "email": "phil.meaux@lsctech.biz",
+    "url": "https://github.com/ItIsYeBananaduck/Polaris"
+  },
+  "homepage": "https://github.com/ItIsYeBananaduck/Polaris",
+  "repository": "https://github.com/ItIsYeBananaduck/Polaris",
+  "license": "MIT",
+  "keywords": ["polaris", "taskchain", "orchestration", "cluster", "worker"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Polaris",
+    "shortDescription": "Run and manage Polaris taskchain clusters",
+    "longDescription": "Provides polaris_run, polaris_loop_continue, and polaris_status tools backed by the local Polaris CLI. Use in Codex worker sessions to execute child tasks, advance the orchestration loop, and check cluster state — all without dumping large state files into context.",
+    "developerName": "Polaris",
+    "category": "Productivity",
+    "capabilities": ["Interactive", "Write"],
+    "websiteURL": "https://github.com/ItIsYeBananaduck/Polaris",
+    "privacyPolicyURL": "https://github.com/ItIsYeBananaduck/Polaris",
+    "termsOfServiceURL": "https://github.com/ItIsYeBananaduck/Polaris",
+    "defaultPrompt": [
+      "Run polaris on POL-42",
+      "Continue the polaris loop",
+      "Show polaris cluster status"
+    ],
+    "brandColor": "#6366F1"
+  }
+}

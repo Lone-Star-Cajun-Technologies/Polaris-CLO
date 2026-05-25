@@ -41,4 +41,14 @@ program.addCommand(createFinalizeCommand());
 program.addCommand(createDocsCommand());
 program.addCommand(createDoctrineCommand());
 
+program
+  .command("run <issue>")
+  .description("Run a Polaris cluster for a given Linear issue")
+  .option("-r, --repo-root <path>", "Repository root", process.cwd())
+  .option("--provider <provider>", "AI provider for worker sessions (e.g. claude, openai, gemini)")
+  .option("--dry-run", "Print the plan without executing")
+  .action(() => {
+    console.log("not yet implemented");
+  });
+
 program.parse();

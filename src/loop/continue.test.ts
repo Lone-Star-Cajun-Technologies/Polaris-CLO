@@ -250,6 +250,34 @@ describe("runLoopContinue", () => {
     expect(packet.run_id).toBe("pol-5-session-1");
   });
 
+  it("forwards allowAnalyzeChildren override into execution bootstrap state", () => {
+    const state = {
+      schema_version: "1.0",
+      run_id: "pol-5-session-1",
+      cluster_id: "POL-5",
+      active_child: "POL-23",
+      completed_children: [],
+      open_children: ["POL-24"],
+      step_cursor: "03-execute-child",
+      context_budget: { children_completed: 0, max_children_per_session: 3 },
+      status: "running",
+      next_open_child: "POL-24",
+    };
+    const stateFile = writeState(testDir, state);
+
+    const logs: string[] = [];
+    const origLog = console.log;
+    console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
+    try {
+      runLoopContinue({ stateFile, repoRoot: testDir, allowAnalyzeChildren: true });
+    } finally {
+      console.log = origLog;
+    }
+
+    const packet = JSON.parse(logs.join("\n"));
+    expect(packet.execution_adapter.compact_bootstrap_state.allow_analyze_children).toBe(true);
+  });
+
   it("exits with error if state file missing", () => {
     const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
       throw new Error("process.exit called");

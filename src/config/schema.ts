@@ -97,4 +97,19 @@ export interface PolarisConfig {
       fallback?: string[];
     };
   };
+  budget?: {
+    /**
+     * Budget enforcement mode.
+     * - "fixed-cap": stop after max_children children (default)
+     * - "run-until-done": run all open children without a cap
+     * - "stop-on-fail": halt immediately when any child returns status "failed"
+     */
+    mode?: "fixed-cap" | "run-until-done" | "stop-on-fail";
+    /** Maximum children per session (only used in fixed-cap mode). Default: 3. */
+    max_children?: number;
+    /** If true, halt immediately when a child returns status "failed". Default: false. */
+    stop_on_fail?: boolean;
+    /** If true, allow analyze-type children to run in an impl session. Default: false. */
+    allow_analyze_children?: boolean;
+  };
 }

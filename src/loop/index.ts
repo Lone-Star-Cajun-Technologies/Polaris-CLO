@@ -23,11 +23,19 @@ export function createLoopCommand(): Command {
       "--adapter <mode>",
       "Execution adapter: agent-subtask, terminal-cli, ci, ssh, remote-worker, cross-agent",
     )
-    .action((options: { repoRoot: string; stateFile?: string; adapter?: ExecutionAdapterMode }) => {
+    .option(
+      "--provider <provider>",
+      "AI provider for the next worker session (e.g. claude, openai, gemini)",
+    )
+    .option(
+      "--allow-analyze-children",
+      "Allow analyze-type children to be dispatched (overrides budget.allow_analyze_children)",
+    )
+    .action((options: { repoRoot: string; stateFile?: string; adapter?: ExecutionAdapterMode; provider?: string; allowAnalyzeChildren?: boolean }) => {
       const repoRoot = options.repoRoot;
       const stateFile =
         options.stateFile ?? join(repoRoot, ".polaris", "runs", "current-state.json");
-      runLoopContinue({ stateFile, repoRoot, adapter: options.adapter });
+      runLoopContinue({ stateFile, repoRoot, adapter: options.adapter, provider: options.provider, allowAnalyzeChildren: options.allowAnalyzeChildren });
     });
 
   loop

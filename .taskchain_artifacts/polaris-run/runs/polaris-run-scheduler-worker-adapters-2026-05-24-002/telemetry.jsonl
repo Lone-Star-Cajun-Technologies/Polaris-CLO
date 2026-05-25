@@ -1,0 +1,15 @@
+{"event":"run-start","run_id":"polaris-run-scheduler-worker-adapters-2026-05-24-002","prior_run_id":"polaris-run-scheduler-worker-adapters-2026-05-24-001","timestamp":"2026-05-24T22:30:00.000Z"}
+{"event":"step-complete","run_id":"polaris-run-scheduler-worker-adapters-2026-05-24-002","step":"01-orient-cluster","timestamp":"2026-05-24T22:30:10.000Z"}
+{"event":"step-complete","run_id":"polaris-run-scheduler-worker-adapters-2026-05-24-002","step":"02-prepare-branch","timestamp":"2026-05-24T22:30:20.000Z"}
+{"event":"step-complete","run_id":"polaris-run-scheduler-worker-adapters-2026-05-24-002","step":"03-select-child","active_child":"POL-70","timestamp":"2026-05-24T22:30:30.000Z"}
+{"event":"step-complete","run_id":"polaris-run-scheduler-worker-adapters-2026-05-24-002","step":"03-select-child","active_child":"POL-70","timestamp":"2026-05-24T22:30:45.000Z"}
+{"event":"child-complete","run_id":"polaris-run-scheduler-worker-adapters-2026-05-24-002","child_id":"POL-70","status":"done","commit":"27ecaefc3cce5d6e5e5a654c701f3d93810b9bd4","timestamp":"2026-05-24T22:35:00.000Z"}
+{"event":"loop-checkpoint","run_id":"polaris-run-scheduler-worker-adapters-2026-05-24-002","child_id":"POL-70","commit":"27ecaefc3cce5d6e5e5a654c701f3d93810b9bd4","next_child":"POL-74","children_completed_this_session":1,"timestamp":"2026-05-24T22:34:03.000Z"}
+{"event":"step-complete","run_id":"polaris-run-scheduler-worker-adapters-2026-05-24-002","step":"07-decide-continuation","decision":"STOP-child-complete","last_child":"POL-70","next_child":"POL-74","timestamp":"2026-05-24T22:34:10.000Z"}
+{"event":"child-complete","run_id":"polaris-run-scheduler-worker-adapters-2026-05-24-002","child_id":"POL-74","status":"done","commit":"bf19123","timestamp":"2026-05-24T22:41:00.000Z"}
+{"event":"loop-checkpoint","run_id":"polaris-run-scheduler-worker-adapters-2026-05-24-002","child_id":"POL-74","commit":"bf19123","next_child":"POL-71","children_completed_this_session":2,"timestamp":"2026-05-24T22:41:00.000Z"}
+{"event":"child-complete","run_id":"polaris-run-scheduler-worker-adapters-2026-05-24-002","child_id":"POL-71","status":"done","commit":"fdf1627","timestamp":"2026-05-24T23:05:00.000Z"}
+{"event":"loop-checkpoint","run_id":"polaris-run-scheduler-worker-adapters-2026-05-24-002","child_id":"POL-71","commit":"fdf1627","next_child":"POL-72","children_completed_this_session":3,"timestamp":"2026-05-24T23:05:00.000Z"}
+{"event":"child-complete","run_id":"polaris-run-scheduler-worker-adapters-2026-05-24-002","child_id":"POL-72","status":"done","commit":"151b92b6c651c028e08e5537e082a5e1d4170c4d","timestamp":"2026-05-24T23:15:00.000Z"}
+{"event":"loop-checkpoint","run_id":"polaris-run-scheduler-worker-adapters-2026-05-24-002","child_id":"POL-72","commit":"151b92b6c651c028e08e5537e082a5e1d4170c4d","next_child":"POL-73","children_completed_this_session":4,"timestamp":"2026-05-24T23:15:00.000Z"}
+{"event":"child-complete","run_id":"polaris-run-scheduler-worker-adapters-2026-05-24-002","child_id":"POL-73","status":"done","commit":"daa0901b35bd35537d44e817caf41810ff3f47b8","timestamp":"2026-05-24T23:35:00.000Z"}

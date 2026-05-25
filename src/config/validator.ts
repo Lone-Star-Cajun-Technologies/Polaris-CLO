@@ -362,6 +362,42 @@ export function validateConfig(config: unknown): ValidationResult {
     }
   }
 
+  // budget
+  if ("budget" in config && config.budget !== undefined) {
+    if (!isPlainObject(config.budget)) {
+      result.valid = false;
+      result.errors.push("budget must be an object");
+    } else {
+      if ("mode" in config.budget && config.budget.mode !== undefined) {
+        if (
+          !isString(config.budget.mode) ||
+          !["fixed-cap", "run-until-done", "stop-on-fail"].includes(config.budget.mode)
+        ) {
+          result.valid = false;
+          result.errors.push('budget.mode must be one of "fixed-cap", "run-until-done", "stop-on-fail"');
+        }
+      }
+      if ("max_children" in config.budget && config.budget.max_children !== undefined) {
+        if (!isNumber(config.budget.max_children) || config.budget.max_children < 1 || !Number.isInteger(config.budget.max_children)) {
+          result.valid = false;
+          result.errors.push("budget.max_children must be a positive integer");
+        }
+      }
+      if ("stop_on_fail" in config.budget && config.budget.stop_on_fail !== undefined) {
+        if (!isBoolean(config.budget.stop_on_fail)) {
+          result.valid = false;
+          result.errors.push("budget.stop_on_fail must be a boolean");
+        }
+      }
+      if ("allow_analyze_children" in config.budget && config.budget.allow_analyze_children !== undefined) {
+        if (!isBoolean(config.budget.allow_analyze_children)) {
+          result.valid = false;
+          result.errors.push("budget.allow_analyze_children must be a boolean");
+        }
+      }
+    }
+  }
+
   // unknown top-level fields -> warnings
   const knownKeys = new Set([
     "version",
@@ -374,6 +410,7 @@ export function validateConfig(config: unknown): ValidationResult {
     "integrations",
     "canon",
     "providers",
+    "budget",
   ]);
   for (const key of Object.keys(config)) {
     if (!knownKeys.has(key)) {

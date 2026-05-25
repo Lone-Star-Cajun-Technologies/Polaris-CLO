@@ -36,6 +36,36 @@
 | `context_budget.max_children_per_session` | number | Maximum children allowed per session (default: 3) |
 | `status` | string | Run status: not-started, running, stopped, complete |
 
+## Budget config fields (polaris.config.json)
+
+The `budget` section of `polaris.config.json` controls how the parent loop enforces child dispatch limits. When absent, the default behavior is a 3-child fixed-cap (backwards compatible with `max_children_per_session: 3`).
+
+```json
+{
+  "budget": {
+    "mode": "fixed-cap",
+    "max_children": 3,
+    "stop_on_fail": false,
+    "allow_analyze_children": false
+  }
+}
+```
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `budget.mode` | string | `"fixed-cap"` | Enforcement mode: `"fixed-cap"`, `"run-until-done"`, or `"stop-on-fail"` |
+| `budget.max_children` | number | `3` | Max children per session (only enforced in `fixed-cap` mode) |
+| `budget.stop_on_fail` | boolean | `false` | If true, halt immediately when any child returns `status: "failed"` |
+| `budget.allow_analyze_children` | boolean | `false` | If true, allow analyze-type children in an impl session |
+
+### Modes
+
+- **`fixed-cap`** (default): stop after `max_children` children complete. Equivalent to the old hardcoded `max_children_per_session: 3`.
+- **`run-until-done`**: run all open children without a count cap. Ignores `max_children`.
+- **`stop-on-fail`**: no count cap, but halt immediately when any child returns `status: "failed"`. Implies `stop_on_fail: true`.
+
+The `stop_on_fail` flag can be combined with any mode for fail-fast behavior.
+
 ## Usage
 
 The bootstrap-run skill reads and writes this file to track execution state across sessions. It should be committed to preserve state between sessions.

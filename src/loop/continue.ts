@@ -18,6 +18,10 @@ export interface ContinueOptions {
   stateFile: string;
   repoRoot: string;
   adapter?: ExecutionAdapterMode;
+  /** Override AI provider for the next worker session. */
+  provider?: string;
+  /** If true, allow analyze-type children to be dispatched (overrides budget.allow_analyze_children). */
+  allowAnalyzeChildren?: boolean;
 }
 
 function readSessionTypeFile(repoRoot: string): string | undefined {
@@ -38,7 +42,7 @@ function isAnalyzeImplBoundary(sessionType: string | undefined, nextChildType: s
 }
 
 export function runLoopContinue(options: ContinueOptions): void {
-  const { stateFile, repoRoot } = options;
+  const { stateFile, repoRoot, provider, allowAnalyzeChildren } = options;
 
   // Step 1: Read and validate current-state.json
   let rawState: unknown;
@@ -107,6 +111,29 @@ export function runLoopContinue(options: ContinueOptions): void {
 
   // Load config early — needed for canon check and adapter selection
   const config = loadConfig(repoRoot);
+  const effectiveConfig = {
+    ...config,
+    execution: provider
+      ? {
+          ...config.execution,
+          rotation: [
+            provider,
+            ...(config.execution.rotation ?? []).filter((name) => name !== provider),
+          ],
+        }
+      : config.execution,
+    budget:
+      allowAnalyzeChildren === undefined
+        ? config.budget
+        : {
+            ...config.budget,
+            allow_analyze_children: allowAnalyzeChildren,
+          },
+  };
+  const effectiveExecution = {
+    ...effectiveConfig.execution,
+    allow_analyze_children: effectiveConfig.budget?.allow_analyze_children,
+  };
 
   // Step 3: Run polaris map update --changed (non-fatal if not yet implemented)
   const mapResult = spawnSync(
@@ -121,7 +148,7 @@ export function runLoopContinue(options: ContinueOptions): void {
   }
 
   // Step 3.5: Canon reconciliation check
-  const canonCheckEnabled = config.canon?.checkOnContinue !== false;
+  const canonCheckEnabled = effectiveConfig.canon?.checkOnContinue !== false;
   if (canonCheckEnabled && nextChild) {
     const changedFiles: string[] = (updatedState as Record<string, unknown>)["changed_files"] as string[] ?? [];
     const canonResult = runCanonCheck({
@@ -168,8 +195,8 @@ export function runLoopContinue(options: ContinueOptions): void {
     sha,
     repoRoot,
     completedChild,
-    (options.adapter ?? config.execution.adapter) as ExecutionAdapterMode | undefined,
-    config.execution,
+    (options.adapter ?? effectiveExecution.adapter) as ExecutionAdapterMode | undefined,
+    effectiveExecution,
   );
   if (boundaryTriggered) {
     packet.boundary_enforcement =

@@ -24,7 +24,7 @@ export interface LoopState {
   active_child: string;
   completed_children: string[];
   open_children: string[];
-  open_children_meta?: Record<string, { type?: string }>;
+  open_children_meta?: Record<string, { type?: string; title?: string; labels?: string[] }>;
   step_cursor: string;
   context_budget: {
     children_completed: number;
@@ -72,6 +72,34 @@ export function validateState(state: unknown): string[] {
       errors.push("missing or invalid context_budget.children_completed");
   }
   if (typeof s["status"] !== "string") errors.push("missing status");
+
+  // Validate open_children_meta if present
+  if ("open_children_meta" in s && s["open_children_meta"] !== undefined) {
+    if (typeof s["open_children_meta"] !== "object" || s["open_children_meta"] === null || Array.isArray(s["open_children_meta"])) {
+      errors.push("open_children_meta must be an object");
+    } else {
+      const meta = s["open_children_meta"] as Record<string, unknown>;
+      for (const [childId, value] of Object.entries(meta)) {
+        if (typeof value !== "object" || value === null || Array.isArray(value)) {
+          errors.push(`open_children_meta["${childId}"] must be an object`);
+          continue;
+        }
+        const childMeta = value as Record<string, unknown>;
+        if ("type" in childMeta && childMeta["type"] !== undefined && typeof childMeta["type"] !== "string") {
+          errors.push(`open_children_meta["${childId}"].type must be a string`);
+        }
+        if ("title" in childMeta && childMeta["title"] !== undefined && typeof childMeta["title"] !== "string") {
+          errors.push(`open_children_meta["${childId}"].title must be a string`);
+        }
+        if ("labels" in childMeta && childMeta["labels"] !== undefined) {
+          if (!Array.isArray(childMeta["labels"]) || !childMeta["labels"].every((l: unknown) => typeof l === "string")) {
+            errors.push(`open_children_meta["${childId}"].labels must be an array of strings`);
+          }
+        }
+      }
+    }
+  }
+
   return errors;
 }
 
