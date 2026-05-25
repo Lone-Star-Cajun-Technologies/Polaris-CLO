@@ -158,8 +158,12 @@ describe("continuation flow: dry-run → confirmed", () => {
 
     // dry_run_executed must come before mutation events
     const dryRunIdx = eventTypes.indexOf("dry_run_executed");
+    const checkpointIdx = eventTypes.indexOf("checkpoint_written");
+    const mutationApprovedIdx = eventTypes.indexOf("mutation_approved");
     const mutationIdx = eventTypes.indexOf("mutation_requested");
-    expect(dryRunIdx).toBeLessThan(mutationIdx);
+    expect(dryRunIdx).toBeLessThan(checkpointIdx);
+    expect(checkpointIdx).toBeLessThan(mutationApprovedIdx);
+    expect(mutationApprovedIdx).toBeLessThan(mutationIdx);
   });
 });
 
@@ -260,6 +264,110 @@ describe("continuation flow: rejection cases", () => {
     });
 
     expect(result["ok"]).toBe(false);
+
+    const events = await readAuditLog(testArtifactDir);
+    const eventTypes = events.map((e) => e["event_type"]);
+    expect(eventTypes).toContain("mutation_rejected");
+
+    // No checkpoint should have been written
+    const checkpointsDir = path.join(ARTIFACTS_ROOT, testArtifactDir, "checkpoints");
+    const checkpointFiles = existsSync(checkpointsDir)
+      ? readdirSync(checkpointsDir).filter((f) => f.endsWith(".json"))
+      : [];
+    expect(checkpointFiles.length).toBe(0);
+  });
+
+  it("rejects nonce replay (reusing same approval envelope after successful confirm)", async () => {
+    await writeState(testArtifactDir, makeRunningState());
+
+    const dryRunResult = await executeDryRun({
+      artifact_dir: testArtifactDir,
+      expected_step_cursor: "06-decide-continuation",
+    });
+    expect(dryRunResult.ok).toBe(true);
+    if (!dryRunResult.ok) return;
+
+    const envelope = buildEnvelope(dryRunResult.preview.approval_template);
+
+    // First confirmation succeeds
+    const firstResult = await handleLoopContinueConfirmed({
+      artifact_dir: testArtifactDir,
+      ...envelope,
+    });
+    expect(firstResult["ok"]).toBe(true);
+
+    // Replay the same envelope (same nonce)
+    const replayResult = await handleLoopContinueConfirmed({
+      artifact_dir: testArtifactDir,
+      ...envelope,
+    });
+
+    expect(replayResult["ok"]).toBe(false);
+    const rejection = replayResult["rejection"] as Record<string, unknown>;
+    expect(rejection["reason"]).toBe("state_mutated_since_approval");
+
+    const events = await readAuditLog(testArtifactDir);
+    const eventTypes = events.map((e) => e["event_type"]);
+    expect(eventTypes).toContain("mutation_rejected");
+  });
+
+  it("rejects concurrent execution race (two parallel confirms from same dry-run)", async () => {
+    await writeState(testArtifactDir, makeRunningState());
+
+    const dryRunResult = await executeDryRun({
+      artifact_dir: testArtifactDir,
+      expected_step_cursor: "06-decide-continuation",
+    });
+    expect(dryRunResult.ok).toBe(true);
+    if (!dryRunResult.ok) return;
+
+    // Create two envelopes from the same dry-run
+    const envelope1 = buildEnvelope(dryRunResult.preview.approval_template);
+    const envelope2 = buildEnvelope(dryRunResult.preview.approval_template);
+
+    // Invoke both concurrently
+    const [result1, result2] = await Promise.all([
+      handleLoopContinueConfirmed({ artifact_dir: testArtifactDir, ...envelope1 }),
+      handleLoopContinueConfirmed({ artifact_dir: testArtifactDir, ...envelope2 }),
+    ]);
+
+    // One should succeed, the other should fail
+    const results = [result1, result2];
+    const successes = results.filter((r) => r["ok"] === true);
+    const failures = results.filter((r) => r["ok"] === false);
+
+    expect(successes.length).toBe(1);
+    expect(failures.length).toBe(1);
+
+    const rejection = failures[0]!["rejection"] as Record<string, unknown>;
+    expect(rejection["reason"]).toBe("state_mutated_since_approval");
+
+    const events = await readAuditLog(testArtifactDir);
+    const eventTypes = events.map((e) => e["event_type"]);
+    expect(eventTypes).toContain("mutation_rejected");
+  });
+
+  it("rejects step-cursor drift (state cursor changed before confirm)", async () => {
+    await writeState(testArtifactDir, makeRunningState());
+
+    const dryRunResult = await executeDryRun({
+      artifact_dir: testArtifactDir,
+      expected_step_cursor: "06-decide-continuation",
+    });
+    expect(dryRunResult.ok).toBe(true);
+    if (!dryRunResult.ok) return;
+
+    // Mutate the state's step_cursor before confirming
+    await writeState(testArtifactDir, makeRunningState({ step_cursor: "07-somewhere-else" }));
+
+    const result = await handleLoopContinueConfirmed({
+      artifact_dir: testArtifactDir,
+      ...buildEnvelope(dryRunResult.preview.approval_template),
+    });
+
+    expect(result["ok"]).toBe(false);
+    const rejection = result["rejection"] as Record<string, unknown>;
+    expect(rejection["reason"]).toBe("step_cursor_mismatch");
 
     const events = await readAuditLog(testArtifactDir);
     const eventTypes = events.map((e) => e["event_type"]);
