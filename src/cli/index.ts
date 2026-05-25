@@ -43,7 +43,7 @@ switch (cmd) {
     break;
 
   case "loop": {
-    const sub = positional[0] ?? rest[0];
+    const sub = positional[0];
     if (sub === "continue") {
       runLoopContinue({
         stateFile: findStateFile(),
