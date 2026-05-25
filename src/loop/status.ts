@@ -145,7 +145,7 @@ export function runLoopStatus(options: StatusOptions): void {
     `Branch:          ${branch}`,
     `Session type:    ${state.session_type ?? "(not set)"}`,
     `Active child:    ${state.active_child || "(none)"}`,
-    `Step cursor:     ${state.step_cursor}`,
+    `Step cursor:     ${state.step_cursor ?? "(none)"}`,
     `Context budget:  ${completed}/${maxChildren} children completed (${remaining} remaining)`,
     "",
     `Completed:       ${state.completed_children.length > 0 ? state.completed_children.join(", ") + ` (${state.completed_children.length})` : "none"}`,
