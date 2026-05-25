@@ -32,10 +32,15 @@ To get machine-readable output:
 polaris status --json
 ```
 
-## Targeting a specific state file
+## State file discovery
 
+By default the CLI checks these locations automatically (no flag needed):
+1. `.taskchain_artifacts/polaris-run/current-state.json`
+2. `.polaris/runs/current-state.json`
+
+To override with a custom path:
 ```
-polaris status --state-file .taskchain_artifacts/polaris-run/current-state.json
+polaris status --state-file path/to/current-state.json
 ```
 
 ## Preconditions
@@ -48,4 +53,4 @@ polaris status --state-file .taskchain_artifacts/polaris-run/current-state.json
 
 - This command is read-only. Safe to run at any time.
 - It reports the durable state from `current-state.json` — not live execution state.
-- Use `polaris loop status` for an equivalent command via the loop skill.
+- `polaris loop status` is an equivalent alias handled by the `polaris-loop` skill.
