@@ -1,6 +1,7 @@
 import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { handlePolarisLoopStatus, handlePolarisStatus } from "./status.js";
 import { handlePolarisCurrentState } from "./current-state.js";
+import { handleLoopContinueDryRun } from "./loop-dry-run.js";
 
 export const TOOLS: Tool[] = [
   {
@@ -38,6 +39,25 @@ export const TOOLS: Tool[] = [
       required: [],
     },
   },
+  {
+    name: "polaris_loop_continue_dry_run",
+    description:
+      "Preview what loop continue would do — returns eligibility status and approval template without mutating any state. Dry-run only: no bootstrap packets, no worker dispatch, no execution leases.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        artifact_dir: {
+          type: "string",
+          description: "Artifact directory name under .taskchain_artifacts/. Default: bootstrap-run",
+        },
+        expected_step_cursor: {
+          type: "string",
+          description: "Expected current step cursor (e.g. '06-decide-continuation')",
+        },
+      },
+      required: ["expected_step_cursor"],
+    },
+  },
 ];
 
 const REGISTERED = new Set(TOOLS.map((t) => t.name));
@@ -65,6 +85,9 @@ export async function dispatchTool(
       break;
     case "polaris_current_state":
       result = await handlePolarisCurrentState(args as { artifact_dir?: string });
+      break;
+    case "polaris_loop_continue_dry_run":
+      result = await handleLoopContinueDryRun(args);
       break;
     default:
       result = { ok: false, error: "unknown_tool", message: `Unhandled tool: ${name}` };
