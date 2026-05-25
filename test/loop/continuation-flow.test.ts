@@ -156,14 +156,14 @@ describe("continuation flow: dry-run → confirmed", () => {
     expect(eventTypes).toContain("checkpoint_written");
     expect(eventTypes).toContain("mutation_approved");
 
-    // dry_run_executed must come before mutation events
+    // Verify correct event ordering: dry_run → mutation_requested → checkpoint → mutation_approved
     const dryRunIdx = eventTypes.indexOf("dry_run_executed");
+    const mutationRequestedIdx = eventTypes.indexOf("mutation_requested");
     const checkpointIdx = eventTypes.indexOf("checkpoint_written");
     const mutationApprovedIdx = eventTypes.indexOf("mutation_approved");
-    const mutationIdx = eventTypes.indexOf("mutation_requested");
-    expect(dryRunIdx).toBeLessThan(checkpointIdx);
+    expect(dryRunIdx).toBeLessThan(mutationRequestedIdx);
+    expect(mutationRequestedIdx).toBeLessThan(checkpointIdx);
     expect(checkpointIdx).toBeLessThan(mutationApprovedIdx);
-    expect(mutationApprovedIdx).toBeLessThan(mutationIdx);
   });
 });
 
@@ -191,8 +191,8 @@ describe("continuation flow: rejection cases", () => {
     expect(result["ok"]).toBe(false);
     expect(result["rejection"]).toBeDefined();
     const rejection = result["rejection"] as Record<string, unknown>;
-    const validReasons = ["state_mutated_since_approval", "runtime_generation_mismatch", "step_cursor_mismatch", "concurrent_execution"];
-    expect(validReasons).toContain(rejection["reason"]);
+    const fingerprintMismatchReasons = ["state_mutated_since_approval", "runtime_generation_mismatch"];
+    expect(fingerprintMismatchReasons).toContain(rejection["reason"]);
   });
 
   it("rejects an expired approval envelope", async () => {
@@ -305,8 +305,8 @@ describe("continuation flow: rejection cases", () => {
 
     expect(replayResult["ok"]).toBe(false);
     const rejection = replayResult["rejection"] as Record<string, unknown>;
-    const validReasons = ["state_mutated_since_approval", "runtime_generation_mismatch", "step_cursor_mismatch", "concurrent_execution"];
-    expect(validReasons).toContain(rejection["reason"]);
+    const nonceReplayReasons = ["state_mutated_since_approval", "runtime_generation_mismatch", "step_cursor_mismatch"];
+    expect(nonceReplayReasons).toContain(rejection["reason"]);
 
     const events = await readAuditLog(testArtifactDir);
     const eventTypes = events.map((e) => e["event_type"]);
@@ -342,8 +342,8 @@ describe("continuation flow: rejection cases", () => {
     expect(failures.length).toBe(1);
 
     const rejection = failures[0]!["rejection"] as Record<string, unknown>;
-    const validReasons = ["state_mutated_since_approval", "runtime_generation_mismatch", "step_cursor_mismatch", "concurrent_execution"];
-    expect(validReasons).toContain(rejection["reason"]);
+    const raceReasons = ["state_mutated_since_approval", "runtime_generation_mismatch", "step_cursor_mismatch", "concurrent_execution"];
+    expect(raceReasons).toContain(rejection["reason"]);
 
     const events = await readAuditLog(testArtifactDir);
     const eventTypes = events.map((e) => e["event_type"]);
