@@ -10,8 +10,13 @@
     "lint": "tsc --noEmit",
     "test": "vitest run"
   },
+  "dependencies": {
+    "commander": "^12.0.0",
+    "ignore": "^6.0.2"
+  },
   "devDependencies": {
     "@types/node": "^25.9.1",
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "vitest": "^3.0.0"
   }
 }

@@ -75,7 +75,7 @@ polaris status --json
 # Status-only smoke tests above are sufficient to prove the invocation path.
 ```
 
-All three must exit 0.
+Both `polaris status` and `polaris status --json` smoke-test commands must exit 0.
 
 ## Runtime Architecture Compliance
 

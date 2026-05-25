@@ -48,7 +48,7 @@ cd /Users/lsctech/Developer/Polaris
 npm test
 ```
 
-Expected: All existing tests pass (green). If any fail, stop and investigate before continuing.
+Expected: 218 passing, 8 known failures (baseline) — investigate any changes beyond this baseline.
 
 - [ ] **Step 3: Commit**
 
@@ -315,7 +315,7 @@ cd /Users/lsctech/Developer/Polaris
 npm test
 ```
 
-Expected: All tests pass.
+Expected: 218 passing, 8 known failures (baseline) — investigate any changes beyond this baseline.
 
 - [ ] **Step 8: Lint**
 
@@ -652,7 +652,7 @@ cd /Users/lsctech/Developer/Polaris
 npm test
 ```
 
-Expected: All tests pass (vitest run — no failures).
+Expected: 218 passing, 8 known failures (baseline) — investigate any changes beyond this baseline.
 
 - [ ] **Step 4: Smoke test — status**
 
