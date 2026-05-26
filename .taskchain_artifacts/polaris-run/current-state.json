@@ -6,16 +6,16 @@
   "skill": "polaris-run",
   "artifact_dir": ".taskchain_artifacts/polaris-run",
   "branch": "philmeaux/pol-114-implement-polaris-native-compact-orchestration-and-worker",
-  "current_step_id": "07-decide-continuation",
+  "current_step_id": "06-commit-and-update-linear",
   "step_cursor": "checkpoint",
-  "status": "stopped",
+  "status": "cluster-complete",
   "session_type": "implementation",
-  "active_child": "POL-120",
-  "last_commit": "a97f7d5",
+  "active_child": "",
+  "last_commit": "75f5bf4",
   "pr_url": "",
-  "next_open_child": "POL-120",
-  "completed_children": ["POL-115", "POL-116", "POL-117", "POL-118", "POL-119"],
-  "open_children": ["POL-120"],
+  "next_open_child": "",
+  "completed_children": ["POL-115", "POL-116", "POL-117", "POL-118", "POL-119", "POL-120"],
+  "open_children": [],
   "open_children_meta": {
     "POL-115": {
       "title": "IMPLEMENT: Write docs/spec/polaris-compact-contracts.md",
@@ -45,15 +45,15 @@
     "POL-120": {
       "title": "IMPLEMENT: Add test coverage for compact config, bootstrap injection, and provider detection",
       "blockedBy": ["POL-118", "POL-119"],
-      "status": "Backlog"
+      "status": "Done"
     }
   },
   "context_budget": {
-    "children_completed": 5,
-    "files_touched_total": 20,
-    "last_child_files_touched": 8
+    "children_completed": 6,
+    "files_touched_total": 22,
+    "last_child_files_touched": 2
   },
   "map_update_warning": "polaris CLI not in PATH; polaris map update --changed skipped (non-fatal)",
   "validation_status": "passed",
-  "updated_at": "2026-05-26T18:45:00.000Z"
+  "updated_at": "2026-05-26T18:50:00.000Z"
 }
