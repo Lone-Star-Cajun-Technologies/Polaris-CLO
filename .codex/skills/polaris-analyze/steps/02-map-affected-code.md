@@ -36,11 +36,11 @@ stop_rules:
 1. Check `repo_analysis_status` from the step 01 artifact.
 2. **If provider is available:** use it for targeted inspection only — query concepts relevant to the issue scope. Use impact analysis and context queries for specific symbols mentioned in the issue. Do not summarize the whole repo.
 3. **If provider is unavailable (fallback path):**
-   - Use `polaris map query <path>` for route/domain/taskchain context on affected files
+   - Use `npm run polaris -- map query <path>` for route/domain/taskchain context on affected files
    - Use `rg <symbol>` for symbol and pattern location across the repo
    - Use direct file inspection for implementation details
    - The fallback path is always sufficient to complete the analysis.
-4. Always run `polaris map query <path>` for each affected file — it provides Polaris-specific routing context regardless of whether a provider is also in use.
+4. Always run `npm run polaris -- map query <path>` for each affected file — it provides Polaris-specific routing context regardless of whether a provider is also in use.
 5. Inspect only files relevant to the issue scope.
 6. Record the files and execution flows inspected.
 
