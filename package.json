@@ -1,5 +1,14 @@
 {
   "name": "polaris",
   "version": "0.1.0",
-  "private": true
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "lint": "tsc --noEmit",
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
 }
