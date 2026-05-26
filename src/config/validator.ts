@@ -338,6 +338,17 @@ export function validateConfig(config: unknown): ValidationResult {
           }
         }
       }
+      if (
+        "compactionProviders" in config.providers &&
+        config.providers.compactionProviders !== undefined
+      ) {
+        if (!isStringArray(config.providers.compactionProviders)) {
+          result.valid = false;
+          result.errors.push(
+            "providers.compactionProviders must be an array of strings",
+          );
+        }
+      }
     }
   }
 

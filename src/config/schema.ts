@@ -96,6 +96,12 @@ export interface PolarisConfig {
       preferred?: string;
       fallback?: string[];
     };
+    /**
+     * Compaction providers detected by `polaris init`.
+     * Supported values: "caveman", "gitnexus".
+     * Omit the field (or leave as empty array) when no providers are detected.
+     */
+    compactionProviders?: string[];
   };
   budget?: {
     /**
