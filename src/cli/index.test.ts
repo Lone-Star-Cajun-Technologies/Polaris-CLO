@@ -57,8 +57,21 @@ describe("polaris public CLI", () => {
     expect(result.stdout).toContain("loop");
     expect(result.stdout).toContain("map");
     expect(result.stdout).toContain("finalize");
+    expect(result.stdout).toContain("docs");
     expect(result.stdout).toContain("safe/read-only");
+    // config command remains deferred in 1.0
     expect(result.stdout).toContain("deferred");
+  });
+
+  it("exposes docs ingest command with expected flags", async () => {
+    const result = await runCommand(["docs", "ingest", "--help"]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("Usage: polaris docs ingest");
+    expect(result.stdout).toContain("--file");
+    expect(result.stdout).toContain("--batch");
+    expect(result.stdout).toContain("--dry-run");
+    expect(result.stdout).toContain("Polaris-Docs/docs");
   });
 
   it("prints the package version", async () => {

@@ -1,15 +1,15 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { describe, expect, it } from "vitest";
-import { classifyDoc, ingestDocs } from "./ingest.js";
+import { classifyDoc, ingestDocs, CANONICAL_TARGET } from "./ingest.js";
 
 function makeRepo(): string {
   const repoRoot = mkdtempSync(join(tmpdir(), "polaris-docs-ingest-"));
   mkdirSync(join(repoRoot, "docs", "raw"), { recursive: true });
+  mkdirSync(join(repoRoot, CANONICAL_TARGET, "doctrine", "active"), { recursive: true });
   mkdirSync(join(repoRoot, ".polaris", "map"), { recursive: true });
-  mkdirSync(join(repoRoot, ".taskchain_artifacts", "polaris-run"), { recursive: true });
   writeFileSync(
     join(repoRoot, "polaris.config.json"),
     JSON.stringify({ repo: { sidecarOutputPath: ".polaris/map" } }),
@@ -33,11 +33,19 @@ function makeRepo(): string {
     "utf-8",
   );
   writeFileSync(join(repoRoot, ".polaris", "map", "needs-review.json"), "{}\n", "utf-8");
+  return repoRoot;
+}
+
+function makeRepoWithoutCanonical(): string {
+  const repoRoot = mkdtempSync(join(tmpdir(), "polaris-docs-ingest-"));
+  mkdirSync(join(repoRoot, ".polaris", "map"), { recursive: true });
   writeFileSync(
-    join(repoRoot, ".taskchain_artifacts", "polaris-run", "current-state.json"),
-    JSON.stringify({ run_id: "test-run-001", cluster_id: "POL-42" }),
+    join(repoRoot, "polaris.config.json"),
+    JSON.stringify({ repo: { sidecarOutputPath: ".polaris/map" } }),
     "utf-8",
   );
+  writeFileSync(join(repoRoot, ".polaris", "map", "file-routes.json"), "{}\n", "utf-8");
+  writeFileSync(join(repoRoot, ".polaris", "map", "needs-review.json"), "{}\n", "utf-8");
   return repoRoot;
 }
 
@@ -62,15 +70,22 @@ describe("ingestDocs", () => {
     const [result] = ingestDocs(["docs/raw/ingest-plan.md"], { repoRoot });
 
     expect(result.classification).toBe("spec-raw");
-    expect(result.destinationPath).toBe("docs/specs/raw/ingest-plan.md");
+    expect(result.destinationPath).toBe(`${CANONICAL_TARGET}/specs/raw/ingest-plan.md`);
     expect(result.linkedMapArea).toBe("src/docs");
-    expect(existsSync(join(repoRoot, "docs", "specs", "raw", "ingest-plan.md"))).toBe(true);
-    expect(existsSync(join(repoRoot, "docs", "specs", "raw", "ingest-plan.provenance.json"))).toBe(true);
-    const telemetry = readFileSync(
-      join(repoRoot, ".taskchain_artifacts", "polaris-run", "runs", "test-run-001", "telemetry.jsonl"),
-      "utf-8",
-    );
-    expect(telemetry).toContain("\"event\":\"docs-ingest\"");
+    expect(existsSync(join(repoRoot, CANONICAL_TARGET, "specs", "raw", "ingest-plan.md"))).toBe(true);
+    expect(existsSync(join(repoRoot, CANONICAL_TARGET, "specs", "raw", "ingest-plan.provenance.json"))).toBe(true);
+
+    // Telemetry written to polaris-docs-ingest path using the generated run_id
+    const runsDir = join(repoRoot, ".taskchain_artifacts", "polaris-docs-ingest", "runs");
+    expect(existsSync(runsDir)).toBe(true);
+    const runDirs = readdirSync(runsDir);
+    expect(runDirs).toHaveLength(1);
+    const telemetry = readFileSync(join(runsDir, runDirs[0], "telemetry.jsonl"), "utf-8");
+    expect(telemetry).toContain('"event":"run-start"');
+    expect(telemetry).toContain('"event":"docs-ingest"');
+
+    // run_id in result matches the telemetry dir
+    expect(result.runId).toBe(runDirs[0]);
   });
 
   it("rejects batches above the bounded file limit", () => {
@@ -98,5 +113,86 @@ describe("ingestDocs", () => {
     writeFileSync(join(repoRoot, "docs", "raw", "architecture.md"), "# Architecture\n\nStructural design", "utf-8");
 
     expect(() => ingestDocs(["docs/raw/architecture.md"], { repoRoot })).toThrow("requires explicit approval");
+  });
+
+  it("halts when Polaris-Docs/docs/ canonical target is missing", () => {
+    const repoRoot = makeRepoWithoutCanonical();
+    writeFileSync(join(repoRoot, "test.md"), "# Spec\n\nAcceptance Criteria", "utf-8");
+
+    expect(() => ingestDocs(["test.md"], { repoRoot })).toThrow("canonical target");
+    expect(() => ingestDocs(["test.md"], { repoRoot })).toThrow("Polaris-Docs/docs");
+  });
+
+  it("dry-run classifies and reports placement without moving files", () => {
+    const repoRoot = makeRepo();
+    writeFileSync(
+      join(repoRoot, "docs", "raw", "spec-dry.md"),
+      "# Feature Spec\n\nAcceptance Criteria",
+      "utf-8",
+    );
+
+    const [result] = ingestDocs(["docs/raw/spec-dry.md"], { repoRoot, dryRun: true });
+
+    expect(result.dryRun).toBe(true);
+    expect(result.classification).toBe("spec-raw");
+    expect(result.destinationPath).toBe(`${CANONICAL_TARGET}/specs/raw/spec-dry.md`);
+    expect(result.provenancePath).toBeNull();
+
+    // Source file still exists (not moved)
+    expect(existsSync(join(repoRoot, "docs", "raw", "spec-dry.md"))).toBe(true);
+    // Target file does not exist
+    expect(existsSync(join(repoRoot, CANONICAL_TARGET, "specs", "raw", "spec-dry.md"))).toBe(false);
+
+    // run-start telemetry still emitted even for dry-run
+    const runsDir = join(repoRoot, ".taskchain_artifacts", "polaris-docs-ingest", "runs");
+    const runDirs = readdirSync(runsDir);
+    expect(runDirs).toHaveLength(1);
+    const telemetry = readFileSync(join(runsDir, runDirs[0], "telemetry.jsonl"), "utf-8");
+    expect(telemetry).toContain('"event":"run-start"');
+  });
+
+  it("halts and emits conflict telemetry when ingested doc contradicts active doctrine", () => {
+    const repoRoot = makeRepo();
+    // "must preserve" → docRequires captures "preserve"
+    // "never preserve" → ingestedProhibits captures "preserve" → conflict
+    writeFileSync(
+      join(repoRoot, CANONICAL_TARGET, "doctrine", "active", "state-integrity.md"),
+      "# State Integrity Doctrine\n\nAgents must preserve telemetry files.\n",
+      "utf-8",
+    );
+    writeFileSync(
+      join(repoRoot, "docs", "raw", "conflicting-doc.md"),
+      "# Conflicting Policy\n\nAgents never preserve telemetry files.",
+      "utf-8",
+    );
+
+    expect(() =>
+      ingestDocs(["docs/raw/conflicting-doc.md"], { repoRoot }),
+    ).toThrow("conflict detected");
+
+    // Conflict telemetry should be present
+    const runsDir = join(repoRoot, ".taskchain_artifacts", "polaris-docs-ingest", "runs");
+    const runDirs = readdirSync(runsDir);
+    expect(runDirs).toHaveLength(1);
+    const telemetry = readFileSync(join(runsDir, runDirs[0], "telemetry.jsonl"), "utf-8");
+    expect(telemetry).toContain('"event":"docs-ingest-conflict-detected"');
+  });
+
+  it("writes durable state to polaris-docs-ingest after a successful ingest", () => {
+    const repoRoot = makeRepo();
+    writeFileSync(
+      join(repoRoot, "docs", "raw", "state-test.md"),
+      "# Feature Spec\n\nAcceptance Criteria",
+      "utf-8",
+    );
+
+    const [result] = ingestDocs(["docs/raw/state-test.md"], { repoRoot });
+
+    const stateFile = join(repoRoot, ".taskchain_artifacts", "polaris-docs-ingest", "current-state.json");
+    expect(existsSync(stateFile)).toBe(true);
+    const state = JSON.parse(readFileSync(stateFile, "utf-8")) as { run_id: string; status: string; files_ingested: number };
+    expect(state.run_id).toBe(result.runId);
+    expect(state.status).toBe("complete");
+    expect(state.files_ingested).toBe(1);
   });
 });

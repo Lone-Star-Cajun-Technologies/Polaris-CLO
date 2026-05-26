@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { Command } from "commander";
 import { ingestDocs, printIngestResults } from "./ingest.js";
 import { migrateDocs, printMigrateResults } from "./migrate.js";
@@ -10,9 +12,10 @@ export function createDocsCommand(): Command {
 
   docs
     .command("ingest [path]")
-    .description("Classify and place docs into the Polaris docs authority structure")
+    .description("Classify and place docs into the Polaris-Docs/docs/ canonical authority structure")
     .option("--file <path>", "Single file to ingest")
-    .option("--cluster <id>", "Cluster ID for bounded batch provenance")
+    .option("--batch <cluster-id>", "Cluster ID for bounded batch ingest (reads .polaris/docs-ingest/<cluster-id>.json)")
+    .option("--cluster <id>", "Alias for --batch")
     .option("--files <paths...>", "Bounded batch file list")
     .option("--dry-run", "Classify and report without moving files")
     .option("--approve-authority", "Allow placement in high-authority docs areas")
@@ -21,6 +24,7 @@ export function createDocsCommand(): Command {
       pathArg: string | undefined,
       options: {
         file?: string;
+        batch?: string;
         cluster?: string;
         files?: string[];
         dryRun?: boolean;
@@ -28,12 +32,30 @@ export function createDocsCommand(): Command {
         repoRoot: string;
       },
     ) => {
-      const files = options.files ?? (options.file ? [options.file] : pathArg ? [pathArg] : []);
+      const clusterId = options.batch ?? options.cluster;
+      let files = options.files ?? (options.file ? [options.file] : pathArg ? [pathArg] : []);
+
+      if (clusterId && files.length === 0) {
+        const batchFile = join(options.repoRoot, ".polaris", "docs-ingest", `${clusterId}.json`);
+        try {
+          const batch = JSON.parse(readFileSync(batchFile, "utf-8")) as { files?: string[] };
+          files = batch.files ?? [];
+        } catch (err) {
+          console.error(`polaris docs ingest: cannot read batch file ${batchFile}: ${err instanceof Error ? err.message : String(err)}`);
+          process.exit(1);
+        }
+      }
+
+      if (files.length === 0) {
+        console.error("polaris docs ingest: provide at least one file via --file, --files, --batch, or a path argument");
+        process.exit(1);
+      }
+
       try {
         const results = ingestDocs(files, {
           repoRoot: options.repoRoot,
           dryRun: options.dryRun,
-          clusterId: options.cluster,
+          clusterId,
           approveAuthority: options.approveAuthority,
         });
         printIngestResults(results);
