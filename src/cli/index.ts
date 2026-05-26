@@ -33,6 +33,14 @@ function resolveStateFile(repoRoot: string, explicit?: string): string {
   return taskchainPath;
 }
 
+function failDeferredCommand(command: Command, commandName: string): never {
+  command.outputHelp({ error: true });
+  command.error(
+    `error: ${commandName} is deferred in the Polaris 1.0 CLI and is not available yet.`,
+    { code: "commander.deferredCommand", exitCode: 1 },
+  );
+}
+
 export function createPolarisCommand(options: PolarisCommandOptions = {}): Command {
   const repoRoot = options.repoRoot ?? resolve(process.cwd());
   const statusHandler = options.runLoopStatus ?? runLoopStatus;
@@ -45,7 +53,7 @@ export function createPolarisCommand(options: PolarisCommandOptions = {}): Comma
 
   program
     .command("status")
-    .description("Print current loop run state summary")
+    .description("safe/read-only: print current loop run state summary")
     .option("--state-file <path>", "Override path to current-state.json")
     .option("--json", "Emit JSON output instead of human-readable text")
     .action((commandOptions: { stateFile?: string; json?: boolean }) => {
@@ -77,6 +85,18 @@ export function createPolarisCommand(options: PolarisCommandOptions = {}): Comma
       runFinalize: options.runFinalize,
     }),
   );
+
+  const docs = new Command("docs")
+    .description("deferred in 1.0: documentation workflows are not wired in this CLI")
+    .showHelpAfterError();
+  docs.action(() => failDeferredCommand(docs, "polaris docs"));
+  program.addCommand(docs);
+
+  const config = new Command("config")
+    .description("deferred in 1.0: config workflows are not wired in this CLI")
+    .showHelpAfterError();
+  config.action(() => failDeferredCommand(config, "polaris config"));
+  program.addCommand(config);
 
   return program;
 }

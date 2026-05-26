@@ -95,7 +95,7 @@
     "taskchain": "polaris-core",
     "confidence": 0,
     "classification": "needs-review",
-    "last_updated": "2026-05-23T17:28:42.729Z",
+    "last_updated": "2026-05-26T05:19:53.055Z",
     "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": "POLARIS.md"
@@ -106,7 +106,7 @@
     "taskchain": "polaris-core",
     "confidence": 0,
     "classification": "needs-review",
-    "last_updated": "2026-05-23T17:28:42.729Z",
+    "last_updated": "2026-05-26T05:19:53.055Z",
     "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": "POLARIS.md"
@@ -117,7 +117,7 @@
     "taskchain": "polaris-core",
     "confidence": 0,
     "classification": "needs-review",
-    "last_updated": "2026-05-23T17:28:42.729Z",
+    "last_updated": "2026-05-26T05:19:53.055Z",
     "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": "POLARIS.md"
@@ -309,7 +309,7 @@
     "taskchain": "polaris-core",
     "confidence": 0,
     "classification": "needs-review",
-    "last_updated": "2026-05-26T05:18:58.230Z",
+    "last_updated": "2026-05-26T05:30:20.013Z",
     "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": "POLARIS.md"
@@ -770,7 +770,29 @@
     "taskchain": "polaris-core",
     "confidence": 0,
     "classification": "needs-review",
-    "last_updated": "2026-05-26T05:18:58.230Z",
+    "last_updated": "2026-05-26T05:30:20.013Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": "POLARIS.md"
+  },
+  "docs/integrations/claude-plugin.md": {
+    "domain": "unknown",
+    "route": "docs/integrations/claude-plugin.md",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-26T05:30:20.013Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": "POLARIS.md"
+  },
+  "docs/spec/pol-97-cli-operator-surface-analysis.md": {
+    "domain": "unknown",
+    "route": "docs/spec/pol-97-cli-operator-surface-analysis.md",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-26T05:30:20.013Z",
     "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": "POLARIS.md"

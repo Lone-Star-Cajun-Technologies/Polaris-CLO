@@ -21,18 +21,33 @@ function defaultStateFile(repoRoot: string, stateFile?: string): string {
   );
 }
 
+function failMissingSubcommand(command: Command, commandName: string): never {
+  const unknownSubcommand = command.args[0];
+  const message = unknownSubcommand
+    ? `error: unknown command '${unknownSubcommand}' for '${commandName}'. Run '${commandName} --help'.`
+    : `error: missing command for '${commandName}'. Run '${commandName} --help'.`;
+  command.error(message, {
+    code: "commander.missingCommand",
+    exitCode: 1,
+  });
+}
+
 export function createLoopCommand(handlers: LoopCommandHandlers = {}): Command {
   const continueHandler = handlers.runLoopContinue ?? runLoopContinue;
   const resumeHandler = handlers.runLoopResume ?? runLoopResume;
   const statusHandler = handlers.runLoopStatus ?? runLoopStatus;
   const abortHandler = handlers.runLoopAbort ?? runLoopAbort;
   const repoRootDefault = handlers.repoRoot ?? process.cwd();
-  const loop = new Command("loop").description("Polaris loop commands");
+  const loop = new Command("loop")
+    .description("Polaris loop commands: status is safe/read-only; continue is mutating")
+    .showHelpAfterError()
+    .showSuggestionAfterError();
+  loop.action(() => failMissingSubcommand(loop, "polaris loop"));
 
   loop
     .command("continue")
     .description(
-      "Checkpoint current session state and generate next-session bootstrap packet",
+      "mutating: checkpoint state and generate next-session bootstrap packet; not a smoke test",
     )
     .option("-r, --repo-root <path>", "Repository root", repoRootDefault)
     .option(
@@ -59,7 +74,7 @@ export function createLoopCommand(handlers: LoopCommandHandlers = {}): Command {
 
   loop
     .command("resume [run_id]")
-    .description("Resume a session from a bootstrap packet, verifying branch and state integrity")
+    .description("mutating: resume from a bootstrap packet after branch/state integrity checks")
     .option("-r, --repo-root <path>", "Repository root", repoRootDefault)
     .option("--state-file <path>", "Override path to current-state.json")
     .action((runId: string | undefined, options: { repoRoot: string; stateFile?: string }) => {
@@ -68,7 +83,7 @@ export function createLoopCommand(handlers: LoopCommandHandlers = {}): Command {
 
   loop
     .command("status")
-    .description("Print current loop run state summary")
+    .description("safe/read-only: print current loop run state summary")
     .option("-r, --repo-root <path>", "Repository root", repoRootDefault)
     .option("--state-file <path>", "Override path to current-state.json")
     .option("--json", "Emit JSON output instead of human-readable text")
@@ -82,7 +97,7 @@ export function createLoopCommand(handlers: LoopCommandHandlers = {}): Command {
 
   loop
     .command("abort [reason]")
-    .description("Record a blocker, set status to blocked, and halt cleanly")
+    .description("mutating: record a blocker, set status to blocked, and halt cleanly")
     .option("-r, --repo-root <path>", "Repository root", repoRootDefault)
     .option("--state-file <path>", "Override path to current-state.json")
     .option("--child <id>", "Child issue ID the blocker is associated with")

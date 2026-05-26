@@ -39,11 +39,11 @@ Keep `polaris status` as a top-level alias to loop status. Add `--version` throu
 - `polaris map validate`
 - `polaris finalize run`
 
-`polaris run` should remain deferred or explicitly marked unavailable until it has a runtime-backed implementation.
+`polaris run` should remain deferred or explicitly marked unavailable until it has a runtime-backed implementation. Other intentionally deferred top-level surfaces should be listed as deferred in help and fail non-zero when invoked.
 
 ## Finalize recommendation
 
-Expose finalize as `polaris finalize run`. It should remain manual/operator-triggered. Loop completion should tell the operator to verify status and run finalize; it should not automatically push, create PRs, or close Linear issues without an explicit finalize command. `--dry-run` and `--skip-delivery` remain important safety valves.
+Expose finalize as `polaris finalize run`. It should remain manual/operator-triggered and performs delivery unless `--dry-run` or `--skip-delivery` is supplied. Loop completion should tell the operator to verify status and run finalize; it should not automatically push, create PRs, or close Linear issues without an explicit finalize command.
 
 ## Codex plugin recommendation
 
@@ -53,6 +53,8 @@ Codex plugin mapping should follow the safety model:
 - Safe preview: `polaris loop continue --dry-run` only when it is truly non-mutating.
 - Confirmed mutation: continuation only through an approval-envelope flow.
 - Operator-only: `polaris finalize run` until a dedicated confirmed finalize approval flow exists.
+
+`polaris loop continue` is mutating in the current CLI: it checkpoints state, appends telemetry, may update the atlas map, runs canon checks, and writes a bootstrap packet. Do not use it as a smoke test.
 
 The current Codex helper advertises direct `polaris_run` and ungated `polaris_loop_continue`; that should be removed, deferred, or clearly marked operator-only unless backed by the approved safety contract.
 

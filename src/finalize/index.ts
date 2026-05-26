@@ -176,20 +176,35 @@ export interface FinalizeCommandHandlers {
   repoRoot?: string;
 }
 
+function failMissingSubcommand(command: Command, commandName: string): never {
+  const unknownSubcommand = command.args[0];
+  const message = unknownSubcommand
+    ? `error: unknown command '${unknownSubcommand}' for '${commandName}'. Run '${commandName} --help'.`
+    : `error: missing command for '${commandName}'. Run '${commandName} --help'.`;
+  command.error(message, {
+    code: "commander.missingCommand",
+    exitCode: 1,
+  });
+}
+
 export function createFinalizeCommand(handlers: FinalizeCommandHandlers = {}): Command {
   const finalizeHandler = handlers.runFinalize ?? runFinalize;
   const repoRootDefault = handlers.repoRoot ?? process.cwd();
-  const finalize = new Command("finalize").description(
-    "Atomic 12-step final delivery sequence",
-  );
+  const finalize = new Command("finalize")
+    .description(
+      "manual/operator-triggered delivery; finalize run performs delivery unless --dry-run or --skip-delivery is supplied",
+    )
+    .showHelpAfterError()
+    .showSuggestionAfterError();
+  finalize.action(() => failMissingSubcommand(finalize, "polaris finalize"));
 
   finalize
     .command("run")
-    .description("Run polaris finalize (all 12 steps)")
+    .description("mutating: run manual/operator-triggered finalize and perform delivery")
     .option("-r, --repo-root <path>", "Repository root", repoRootDefault)
     .option("--state-file <path>", "Path to current-state.json")
-    .option("--dry-run", "Validate and generate report without committing or pushing")
-    .option("--skip-delivery", "Run steps 1–6 only; skip push/PR/Linear/archive")
+    .option("--dry-run", "non-mutating preview: validate and generate report without committing or pushing")
+    .option("--skip-delivery", "perform local finalize steps only; skip push/PR/Linear/archive")
     .action((options: { repoRoot: string; stateFile?: string; dryRun?: boolean; skipDelivery?: boolean }) => {
       const repoRoot = options.repoRoot;
       const stateFile =

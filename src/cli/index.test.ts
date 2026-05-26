@@ -20,6 +20,7 @@ function configureForTest(program: Command, output: { stdout: string; stderr: st
 
 async function runCommand(argv: string[]) {
   const output = { stdout: "", stderr: "" };
+  let exitCode = 0;
   const status = vi.fn();
   const continueLoop = vi.fn();
   const queryMap = vi.fn();
@@ -37,19 +38,14 @@ async function runCommand(argv: string[]) {
   try {
     await program.parseAsync(["node", "polaris", ...argv], { from: "node" });
   } catch (error) {
-    if (
-      !(
-        error instanceof Error &&
-        "code" in error &&
-        (error.code === "commander.helpDisplayed" ||
-          error.code === "commander.version")
-      )
-    ) {
+    if (error instanceof Error && "exitCode" in error) {
+      exitCode = Number(error.exitCode);
+    } else {
       throw error;
     }
   }
 
-  return { ...output, status, continueLoop, queryMap, finalize };
+  return { ...output, exitCode, status, continueLoop, queryMap, finalize };
 }
 
 describe("polaris public CLI", () => {
@@ -57,9 +53,12 @@ describe("polaris public CLI", () => {
     const result = await runCommand(["--help"]);
 
     expect(result.stdout).toContain("Usage: polaris");
+    expect(result.stdout).toContain("status");
     expect(result.stdout).toContain("loop");
     expect(result.stdout).toContain("map");
     expect(result.stdout).toContain("finalize");
+    expect(result.stdout).toContain("safe/read-only");
+    expect(result.stdout).toContain("deferred");
   });
 
   it("prints the package version", async () => {
@@ -107,5 +106,55 @@ describe("polaris public CLI", () => {
     expect(result.stdout).toContain("Usage: polaris finalize run");
     expect(result.stdout).toContain("--dry-run");
     expect(result.stdout).toContain("--skip-delivery");
+  });
+
+  it("marks safe previews and mutating commands in subsystem help", async () => {
+    const loop = await runCommand(["loop", "--help"]);
+    const map = await runCommand(["map", "--help"]);
+    const finalize = await runCommand(["finalize", "--help"]);
+
+    expect(loop.exitCode).toBe(0);
+    expect(loop.stdout).toContain("status");
+    expect(loop.stdout).toContain("safe/read-only");
+    expect(loop.stdout).toContain("continue");
+    expect(loop.stdout).toContain("mutating");
+    expect(loop.stdout).toContain("not a smoke test");
+
+    expect(map.exitCode).toBe(0);
+    expect(map.stdout).toContain("--dry-run");
+    expect(map.stdout).toContain("non-mutating preview");
+
+    expect(finalize.exitCode).toBe(0);
+    expect(finalize.stdout).toContain("manual/operator-triggered");
+    expect(finalize.stdout).toContain("performs delivery");
+    expect(finalize.stdout).toContain("--dry-run");
+    expect(finalize.stdout).toContain("--skip-delivery");
+  });
+
+  it("fails unknown commands with actionable help", async () => {
+    const result = await runCommand(["not-a-command"]);
+
+    expect(result.exitCode).toBeGreaterThan(0);
+    expect(result.stderr).toContain("unknown command");
+    expect(result.stderr).toContain("Usage: polaris");
+    expect(result.stderr).toContain("Commands:");
+  });
+
+  it("fails missing subsystem subcommands with actionable help", async () => {
+    const result = await runCommand(["loop"]);
+
+    expect(result.exitCode).toBeGreaterThan(0);
+    expect(result.stderr).toContain("missing command");
+    expect(result.stderr).toContain("Usage: polaris loop");
+    expect(result.stderr).toContain("Commands:");
+  });
+
+  it("fails unknown subsystem subcommands with actionable help", async () => {
+    const result = await runCommand(["loop", "not-a-subcommand"]);
+
+    expect(result.exitCode).toBeGreaterThan(0);
+    expect(result.stderr).toContain("unknown command 'not-a-subcommand'");
+    expect(result.stderr).toContain("Usage: polaris loop");
+    expect(result.stderr).toContain("Commands:");
   });
 });

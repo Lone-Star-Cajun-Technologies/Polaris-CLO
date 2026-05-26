@@ -193,6 +193,17 @@ export interface MapCommandHandlers {
   repoRoot?: string;
 }
 
+function failMissingSubcommand(command: Command, commandName: string): never {
+  const unknownSubcommand = command.args[0];
+  const message = unknownSubcommand
+    ? `error: unknown command '${unknownSubcommand}' for '${commandName}'. Run '${commandName} --help'.`
+    : `error: missing command for '${commandName}'. Run '${commandName} --help'.`;
+  command.error(message, {
+    code: "commander.missingCommand",
+    exitCode: 1,
+  });
+}
+
 export function createMapCommand(handlers: MapCommandHandlers = {}): Command {
   const indexHandler = handlers.runMapIndex ?? runMapIndex;
   const updateHandler = handlers.runMapUpdate ?? runMapUpdate;
@@ -200,13 +211,17 @@ export function createMapCommand(handlers: MapCommandHandlers = {}): Command {
   const backfillHandler = handlers.runMapBackfill ?? runMapBackfill;
   const queryHandler = handlers.runMapQuery ?? runMapQuery;
   const repoRootDefault = handlers.repoRoot ?? process.cwd();
-  const map = new Command("map").description("Polaris atlas map commands");
+  const map = new Command("map")
+    .description("Polaris atlas map commands: --dry-run is a non-mutating preview")
+    .showHelpAfterError()
+    .showSuggestionAfterError();
+  map.action(() => failMissingSubcommand(map, "polaris map"));
 
   map
     .command("index")
-    .description("Full first-pass atlas generation")
+    .description("mutating: full first-pass atlas generation")
     .option("-r, --repo-root <path>", "Repository root", repoRootDefault)
-    .option("--dry-run", "Print results without writing files")
+    .option("--dry-run", "non-mutating preview: print results without writing files")
     .option("-v, --verbose", "Show per-file classification")
     .action((options: { repoRoot: string; dryRun?: boolean; verbose?: boolean }) => {
       indexHandler(options.repoRoot, options.dryRun ?? false, options.verbose ?? false);
@@ -214,7 +229,7 @@ export function createMapCommand(handlers: MapCommandHandlers = {}): Command {
 
   map
     .command("update")
-    .description("Incremental changed-file mapping")
+    .description("mutating: incremental changed-file mapping")
     .option("-r, --repo-root <path>", "Repository root", repoRootDefault)
     .option("--changed [files...]", "Changed files (omit to detect from git diff)")
     .option("--from-commit <sha>", "Start commit for diff (default: HEAD~1)")
@@ -228,7 +243,7 @@ export function createMapCommand(handlers: MapCommandHandlers = {}): Command {
 
   map
     .command("validate")
-    .description("Atlas integrity check and needs-review reporting")
+    .description("safe/read-only by default: atlas integrity check and needs-review reporting")
     .option("-r, --repo-root <path>", "Repository root", repoRootDefault)
     .option("--stale-threshold <days>", "Days before an entry is considered stale", "30")
     .option("--fix <path>", "Show and optionally fix entry for a specific file")
@@ -243,9 +258,9 @@ export function createMapCommand(handlers: MapCommandHandlers = {}): Command {
 
   map
     .command("backfill")
-    .description("Incremental gap-fill for an already-indexed repo")
+    .description("mutating unless --dry-run: incremental gap-fill for an already-indexed repo")
     .option("-r, --repo-root <path>", "Repository root", repoRootDefault)
-    .option("--dry-run", "Print results without writing files")
+    .option("--dry-run", "non-mutating preview: print results without writing files")
     .option("--domain <domain>", "Limit backfill to a specific domain")
     .option("-v, --verbose", "Show per-file classification")
     .action((options: { repoRoot: string; dryRun?: boolean; domain?: string; verbose?: boolean }) => {
@@ -254,7 +269,7 @@ export function createMapCommand(handlers: MapCommandHandlers = {}): Command {
 
   map
     .command("query [path]")
-    .description("Sidecar metadata lookup by path, glob, or filter")
+    .description("safe/read-only: sidecar metadata lookup by path, glob, or filter")
     .option("-r, --repo-root <path>", "Repository root", repoRootDefault)
     .option("--domain <domain>", "All files in a domain")
     .option("--taskchain <taskchain>", "All files in a taskchain")
