@@ -44,9 +44,9 @@ stop_rules:
 2. Verify the working tree is clean.
 3. Run:
    ```bash
-   polaris finalize
+   npm run polaris -- finalize
    ```
-   `polaris finalize` executes the full 12-step sequence:
+   `npm run polaris -- finalize` executes the full 12-step sequence:
    - Validates the Polaris map
    - Validates `current-state.json` schema
    - Runs targeted checks

@@ -41,9 +41,9 @@ stop_rules:
    ```bash
    git commit -m "[<CHILD-ID>] <child title>"
    ```
-3. **Run `polaris map update --changed`** (Polaris-specific addition):
+3. **Run `npm run polaris -- map update --changed`** (Polaris-specific addition):
    ```bash
-   polaris map update --changed
+   npm run polaris -- map update --changed
    ```
    Non-fatal if the map is not yet fully implemented — log a warning and continue.
 4. Re-fetch the current child issue from Linear to get latest acceptance criteria.
@@ -59,7 +59,7 @@ stop_rules:
 ## Blocker escalation
 
 If the child cannot be marked Done:
-- Run `polaris loop abort "<reason>"`.
+- Run `npm run polaris -- loop abort "<reason>"`.
 - Add a comment with the unblock condition.
 - Halt. Do not continue to the next child.
 
