@@ -39,9 +39,9 @@ stop_rules:
    - Update artifact: `status: all-children-complete`.
    - End the session. Report: all children Done. Provide the delivery command: `Use polaris-run on <PARENT-ID>. Finalize delivery.`
    - Do not push. Do not create a PR.
-5. If clusters.json exists, use it to determine execution order and dependencies. Otherwise select the lowest-numbered open child.
+5. If clusters.json exists, use it to determine execution order and dependencies. If absent, use the child issue ordering from Linear (lowest-numbered first) as a last-resort fallback — do not improvise ordering from chat reasoning or assumptions.
 6. Verify the selected child is not blocked in Linear. If blocked:
-   - Run `polaris loop abort "<reason>"`.
+   - Run `npm run polaris -- loop abort "<reason>"`.
    - Report blocked state and halt. Do not skip to a later child.
 7. Set the selected child as `active_child`.
 

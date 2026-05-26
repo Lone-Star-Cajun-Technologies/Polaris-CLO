@@ -33,9 +33,9 @@ stop_rules:
 
 1. Run:
    ```bash
-   polaris loop continue
+   npm run polaris -- loop continue
    ```
-   This checkpoints `.polaris/runs/current-state.json`, emits a `loop-checkpoint` JSONL event, runs `polaris map update --changed` (idempotent), checks the analyze→implement boundary, and writes a bootstrap packet to `.polaris/bootstrap/`.
+   This checkpoints `.polaris/runs/current-state.json`, emits a `loop-checkpoint` JSONL event, runs `npm run polaris -- map update --changed` (idempotent), checks the analyze→implement boundary, and writes a bootstrap packet to `.polaris/bootstrap/`.
 
 2. Evaluate the output to determine the decision:
 
