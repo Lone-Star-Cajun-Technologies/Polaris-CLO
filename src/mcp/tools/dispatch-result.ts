@@ -153,7 +153,7 @@ export async function handlePolarisDispatchResult(
   }
   const runId = state["run_id"].trim();
   const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(runId);
-  const isRunIdFormat = /^[\w.-:]+$/.test(runId);
+  const isRunIdFormat = /^[\w.\-:]+$/.test(runId);
   if (!isUUID && !isRunIdFormat) {
     return {
       ok: false,
