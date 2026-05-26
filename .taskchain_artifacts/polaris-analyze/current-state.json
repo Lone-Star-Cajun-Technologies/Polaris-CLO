@@ -3,7 +3,6 @@
   "cluster_id": "POL-88",
   "skill": "polaris-analyze",
   "artifact_dir": ".taskchain_artifacts/polaris-analyze",
-  "status": "running",
   "parent_issue": "POL-88 — ANALYZE: Bridge MCP confirmed continuation into execution adapter dispatch",
   "repo_analysis_status": "not-configured",
   "files_inspected": [

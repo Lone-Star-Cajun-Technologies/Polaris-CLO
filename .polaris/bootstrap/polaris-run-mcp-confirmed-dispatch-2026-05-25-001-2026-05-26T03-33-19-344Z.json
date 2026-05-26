@@ -31,7 +31,7 @@
       "run_id": "polaris-run-mcp-confirmed-dispatch-2026-05-25-001",
       "cluster_id": "POL-88",
       "child_id": "POL-90",
-      "state_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json",
+      "state_file": ".taskchain_artifacts/polaris-run/current-state.json",
       "telemetry_file": ".taskchain_artifacts/polaris-run/runs/polaris-run-mcp-confirmed-dispatch-2026-05-25-001/telemetry.jsonl",
       "current_state_sha": "50bcf6699066f390c2f8cf110cbcad5a576871a2de6c2d5e8d8984f8dc2c68d1",
       "branch": "philmeaux/pol-88-analyze-bridge-mcp-confirmed-continuation-into-execution",
