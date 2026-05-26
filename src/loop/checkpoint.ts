@@ -7,23 +7,7 @@ import {
 } from "node:fs";
 import { createHash } from "node:crypto";
 import { dirname } from "node:path";
-
-let lastTimestamp = 0;
-let sequenceCounter = 0;
-
-function getMonotonicTimestamp(): string {
-  const now = Date.now();
-  if (now === lastTimestamp) {
-    sequenceCounter += 1;
-  } else {
-    lastTimestamp = now;
-    sequenceCounter = 0;
-  }
-  const isoBase = new Date(now).toISOString();
-  return sequenceCounter > 0
-    ? isoBase.replace(/\.(\d{3})Z$/, `.${String(Number(RegExp.$1) + sequenceCounter).padStart(3, '0')}Z`)
-    : isoBase;
-}
+import { getMonotonicTimestamp } from "../utils/monotonic-timestamp.js";
 
 export interface BlockerRecord {
   reason: string;

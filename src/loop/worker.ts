@@ -21,6 +21,7 @@ import { execFileSync } from "node:child_process";
 import { readState, writeStateAtomic } from "./checkpoint.js";
 import type { CompactReturn } from "./compact-return.js";
 import type { BootstrapPacket } from "./adapters/types.js";
+import { getMonotonicTimestamp } from "../utils/monotonic-timestamp.js";
 
 // ────────────────────────────────────────────────────────────────────────────
 // Bootstrap packet reading
@@ -79,23 +80,6 @@ export function readBootstrapPacket(argv: string[] = process.argv): BootstrapPac
 // ────────────────────────────────────────────────────────────────────────────
 // Telemetry helpers
 // ────────────────────────────────────────────────────────────────────────────
-
-let lastTimestamp = 0;
-let sequenceCounter = 0;
-
-function getMonotonicTimestamp(): string {
-  const now = Date.now();
-  if (now === lastTimestamp) {
-    sequenceCounter += 1;
-  } else {
-    lastTimestamp = now;
-    sequenceCounter = 0;
-  }
-  const isoBase = new Date(now).toISOString();
-  return sequenceCounter > 0
-    ? isoBase.replace(/\.(\d{3})Z$/, `.${String(Number(RegExp.$1) + sequenceCounter).padStart(3, '0')}Z`)
-    : isoBase;
-}
 
 function appendTelemetry(telemetryFile: string, event: Record<string, unknown>): void {
   mkdirSync(dirname(telemetryFile), { recursive: true });
