@@ -6,16 +6,16 @@
   "skill": "polaris-run",
   "artifact_dir": ".taskchain_artifacts/polaris-run",
   "branch": "philmeaux/pol-114-implement-polaris-native-compact-orchestration-and-worker",
-  "current_step_id": "07-decide-continuation",
+  "current_step_id": "06-commit-and-update-linear",
   "step_cursor": "checkpoint",
   "status": "stopped",
   "session_type": "implementation",
-  "active_child": "POL-118",
-  "last_commit": "986d551",
+  "active_child": "",
+  "last_commit": "a03d05c",
   "pr_url": "",
-  "next_open_child": "POL-118",
-  "completed_children": ["POL-115", "POL-116", "POL-117"],
-  "open_children": ["POL-118", "POL-119", "POL-120"],
+  "next_open_child": "POL-119",
+  "completed_children": ["POL-115", "POL-116", "POL-117", "POL-118"],
+  "open_children": ["POL-119", "POL-120"],
   "open_children_meta": {
     "POL-115": {
       "title": "IMPLEMENT: Write docs/spec/polaris-compact-contracts.md",
@@ -35,7 +35,7 @@
     "POL-118": {
       "title": "IMPLEMENT: Wire compact config into bootstrap packet and execution adapter injection",
       "blockedBy": ["POL-116"],
-      "status": "Backlog"
+      "status": "Done"
     },
     "POL-119": {
       "title": "IMPLEMENT: Add optional Caveman/GitNexus provider detection to polaris init",
@@ -49,11 +49,11 @@
     }
   },
   "context_budget": {
-    "children_completed": 3,
-    "files_touched_total": 9,
-    "last_child_files_touched": 5
+    "children_completed": 4,
+    "files_touched_total": 12,
+    "last_child_files_touched": 3
   },
   "map_update_warning": "polaris CLI not in PATH; polaris map update --changed skipped (non-fatal)",
   "validation_status": "passed",
-  "updated_at": "2026-05-26T18:10:00.000Z"
+  "updated_at": "2026-05-26T18:35:00.000Z"
 }
