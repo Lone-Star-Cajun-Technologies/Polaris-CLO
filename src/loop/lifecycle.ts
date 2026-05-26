@@ -45,6 +45,9 @@ export class WorkerLifecycleManager {
    * Throws `Error` if the active-worker limit would be exceeded.
    */
   register(workerId: string, childId: string | null, role: string): WorkerRecord {
+    if (this.workers.has(workerId)) {
+      throw new Error(`Worker "${workerId}" is already registered`);
+    }
     if (!this.canDispatch()) {
       const active = this.describeActive();
       throw new Error(
