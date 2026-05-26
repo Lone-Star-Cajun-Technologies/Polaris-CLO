@@ -53,7 +53,7 @@ export async function dispatchConfirmedContinuation(
   const lastDispatch = findLastEvent(auditLog, "worker_dispatched", rawState.run_id, rawState.step_cursor ?? "");
   const lastResult = findLastEvent(auditLog, "worker_result_received", rawState.run_id, rawState.step_cursor ?? "");
 
-  if (lastDispatch && !lastResult) {
+  if (lastDispatch && (!lastResult || lastDispatch.timestamp > lastResult.timestamp)) {
     // dispatched-awaiting-result: a worker was dispatched but result not yet received — do NOT re-dispatch
     return { ok: false, rejection: { check: "recovery", reason: "dispatched-awaiting-result" } };
   }
@@ -163,8 +163,8 @@ export async function dispatchConfirmedContinuation(
     run_id: state.run_id,
     cluster_id: state.cluster_id,
     active_child: nextChild,
-    state_file: `${artifact_dir}/current-state.json`,
-    telemetry_file: `${artifact_dir}/telemetry.jsonl`,
+    state_file: path.resolve(artifact_dir, "current-state.json"),
+    telemetry_file: path.resolve(artifact_dir, "telemetry.jsonl"),
   };
 
   const adapter = request._adapterFactory ? request._adapterFactory() : new AgentSubtaskAdapter();
@@ -230,7 +230,14 @@ export async function dispatchConfirmedContinuation(
 
   // Step 13: handle state_updated: false — defensively clear active_child
   if (compactReturn.state_updated === false) {
-    await writeState(artifact_dir, { ...state, active_child: "" });
+    // Read the latest persisted state to avoid clobbering newer fields like continuation_epoch
+    const currentPersistedState = await loadState(artifact_dir);
+    if (currentPersistedState !== null) {
+      await writeState(artifact_dir, { ...currentPersistedState, active_child: "" });
+    } else {
+      // Fallback: use the stale state if persisted state is missing (should not happen)
+      await writeState(artifact_dir, { ...state, active_child: "" });
+    }
     await appendAuditEvent(artifact_dir, {
       event_type: "recovery_attempted",
       run_id: state.run_id,

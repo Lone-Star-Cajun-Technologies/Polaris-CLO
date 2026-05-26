@@ -7,13 +7,23 @@ export async function readAuditLog(artifactDir: string): Promise<AuditEvent[]> {
   const auditFile = path.join(getArtifactDir(artifactDir), "audit.jsonl");
   try {
     const raw = await readFile(auditFile, "utf-8");
-    return raw
-      .trim()
-      .split("\n")
-      .filter(Boolean)
-      .map((line) => JSON.parse(line) as AuditEvent);
-  } catch {
-    return [];
+    const lines = raw.trim().split("\n").filter(Boolean);
+    const events: AuditEvent[] = [];
+    for (const line of lines) {
+      try {
+        events.push(JSON.parse(line) as AuditEvent);
+      } catch (parseErr) {
+        throw new Error(
+          `Audit log corruption detected in ${auditFile}: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`,
+        );
+      }
+    }
+    return events;
+  } catch (error) {
+    if (typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT") {
+      return [];
+    }
+    throw error;
   }
 }
 
