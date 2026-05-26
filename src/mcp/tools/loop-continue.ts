@@ -161,7 +161,20 @@ export async function handleLoopContinueConfirmed(
       typeof args["adapterOverride"] === "string"
         ? (args["adapterOverride"] as ExecutionAdapterMode)
         : undefined;
-    const dispatchResult = await dispatchConfirmedContinuation({ artifact_dir, envelope, adapterOverride });
+
+    let dispatchResult: Awaited<ReturnType<typeof dispatchConfirmedContinuation>>;
+    try {
+      dispatchResult = await dispatchConfirmedContinuation({ artifact_dir, envelope, adapterOverride });
+    } catch (err) {
+      return {
+        ok: false,
+        rejection: {
+          check: "dispatch_error",
+          reason: "continuation_dispatch_failed",
+          detail: err instanceof Error ? err.message : String(err),
+        },
+      };
+    }
 
     if (!dispatchResult.ok) {
       return { ok: false, rejection: dispatchResult.rejection };
