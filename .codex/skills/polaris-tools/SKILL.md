@@ -1,14 +1,15 @@
 ---
 name: polaris-tools
-description: Exposes polaris CLI commands as callable tools within a Claude Code session. Provides polaris_run, polaris_loop_continue, and polaris_status without dumping large state into chat context.
+description: Exposes compact read-only Polaris status helpers. Direct run, ungated loop continuation, and finalize remain operator-only.
 ---
 
 # polaris-tools
 
-Use this skill when the user wants to invoke Polaris CLI commands directly from chat:
-- `polaris run <issue-id>` → `polaris_run`
-- `polaris loop continue [--provider <provider>]` → `polaris_loop_continue`
-- `polaris loop status` / compact current-state summary → `polaris_status`
+Use this skill when the user wants to inspect Polaris run state without dumping large artifacts:
+- `polaris status --json` / compact current-state summary → `polaris_status`
+- `polaris loop status --json` / compact current-state summary → `polaris_loop_status`
+
+Do not use this skill as a casual mutation surface. `polaris_run` and `polaris_loop_continue` are operator-only legacy names in the helper and return an error without invoking the CLI. Finalize is manual/operator-only until a confirmed finalize approval flow exists.
 
 ## Prerequisites
 
@@ -16,37 +17,39 @@ The Polaris CLI must be installed before using this skill. See `README.md` for i
 
 ## Tool behaviours
 
-### polaris_run(issue_id)
-
-Invokes `polaris run <issue_id>` via the local shell. Returns compact JSON:
-```json
-{"tool":"polaris_run","issue_id":"<id>","exit_code":0,"summary":"<first 300 chars of stdout>"}
-```
-
-### polaris_loop_continue(provider?)
-
-Invokes `polaris loop continue [--provider <provider>]` via the local shell. Returns compact JSON:
-```json
-{"tool":"polaris_loop_continue","provider":"<provider or null>","exit_code":0,"summary":"<first 300 chars of stdout>"}
-```
-
 ### polaris_status()
 
-Attempts `polaris loop status`. If that command is not available, reads and summarises
+Attempts `polaris status --json`. If the CLI is not available, reads and summarises
 `.taskchain_artifacts/polaris-run/current-state.json` compactly. Returns:
 ```json
 {
   "tool": "polaris_status",
   "run_id": "...",
+  "cluster_id": "...",
   "status": "...",
-  "active_child": "...",
+  "active_child": null,
+  "next_open_child": "...",
   "completed_children": [...],
   "open_children": [...],
   "updated_at": "..."
 }
 ```
 
-Never dumps the full state file into chat.
+### polaris_loop_status()
+
+Attempts `polaris loop status --json`. If the CLI is not available, reads and summarises
+`.taskchain_artifacts/polaris-run/current-state.json` compactly. Returns the same compact shape with `"tool": "polaris_loop_status"`.
+
+### Operator-only names
+
+`polaris_run(issue_id)` and `polaris_loop_continue(provider?)` are not exposed as casual helpers. They return:
+```json
+{"tool":"polaris_loop_continue","error":"operator_only","message":"..."}
+```
+
+The MCP safety model has a separate `polaris_loop_continue_dry_run` / `polaris_loop_continue_confirmed` approval-envelope flow. This helper does not wrap continuation unless a true non-mutating CLI dry-run is added.
+
+Never dump the full state file into chat.
 
 ## How to invoke
 
@@ -58,10 +61,8 @@ node .codex/skills/polaris-tools/tools.js <tool> [args...]
 
 Examples:
 ```
-node .codex/skills/polaris-tools/tools.js polaris_run POL-71
-node .codex/skills/polaris-tools/tools.js polaris_loop_continue
-node .codex/skills/polaris-tools/tools.js polaris_loop_continue anthropic
 node .codex/skills/polaris-tools/tools.js polaris_status
+node .codex/skills/polaris-tools/tools.js polaris_loop_status
 ```
 
 The script prints compact JSON to stdout and exits 0 on success, non-zero on error.

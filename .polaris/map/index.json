@@ -1,11 +1,11 @@
 {
-  "scan_date": "2026-05-26T05:30:20.013Z",
-  "file_count": 128,
-  "coverage_pct": 41,
+  "scan_date": "2026-05-26T05:43:58.319Z",
+  "file_count": 137,
+  "coverage_pct": 39,
   "instructionCoverage": {
-    "routesCovered": 75,
-    "routesTotal": 128,
-    "coveragePercent": 59
+    "routesCovered": 84,
+    "routesTotal": 137,
+    "coveragePercent": 61
   },
   "entries": {
     "src/cli/.gitkeep": {
@@ -26,7 +26,7 @@
       "taskchain": "polaris-cli",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-05-26T05:30:20.013Z",
+      "last_updated": "2026-05-26T05:40:56.646Z",
       "updated_by": "polaris-map-update",
       "tags": [
         "cli",
@@ -224,7 +224,7 @@
       "taskchain": "polaris-map",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-05-26T05:30:20.013Z",
+      "last_updated": "2026-05-26T05:40:56.646Z",
       "updated_by": "polaris-map-update",
       "tags": [
         "map",
@@ -414,7 +414,7 @@
       "taskchain": "polaris-cli",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-05-26T05:30:20.013Z",
+      "last_updated": "2026-05-26T05:40:56.646Z",
       "updated_by": "polaris-map-update",
       "tags": [
         "cli"
@@ -440,7 +440,7 @@
       "taskchain": "polaris-finalize",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-05-26T05:30:20.013Z",
+      "last_updated": "2026-05-26T05:40:56.646Z",
       "updated_by": "polaris-map-update",
       "tags": [
         "finalize"
@@ -453,7 +453,7 @@
       "taskchain": "polaris-loop",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-05-26T05:30:20.013Z",
+      "last_updated": "2026-05-26T05:40:56.646Z",
       "updated_by": "polaris-map-update",
       "tags": [
         "loop"
@@ -560,7 +560,7 @@
       "taskchain": "polaris-finalize",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-05-26T05:30:20.013Z",
+      "last_updated": "2026-05-26T05:40:56.646Z",
       "updated_by": "polaris-map-update",
       "tags": [
         "finalize",
@@ -668,7 +668,7 @@
       "taskchain": "polaris-cli",
       "confidence": 0.9500000000000001,
       "classification": "indexed",
-      "last_updated": "2026-05-26T05:30:20.013Z",
+      "last_updated": "2026-05-26T05:40:56.646Z",
       "updated_by": "polaris-map-update",
       "tags": [
         "cli",
@@ -682,7 +682,7 @@
       "taskchain": "polaris-loop",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-05-26T05:30:20.013Z",
+      "last_updated": "2026-05-26T05:40:56.646Z",
       "updated_by": "polaris-map-update",
       "tags": [
         "loop",
@@ -786,7 +786,7 @@
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
-      "last_updated": "2026-05-26T05:19:53.055Z",
+      "last_updated": "2026-05-26T05:40:56.646Z",
       "updated_by": "polaris-map-update",
       "tags": [],
       "instructionFile": "POLARIS.md"
@@ -797,7 +797,7 @@
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
-      "last_updated": "2026-05-26T05:19:53.055Z",
+      "last_updated": "2026-05-26T05:40:56.646Z",
       "updated_by": "polaris-map-update",
       "tags": [],
       "instructionFile": "POLARIS.md"
@@ -808,7 +808,7 @@
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
-      "last_updated": "2026-05-26T05:19:53.055Z",
+      "last_updated": "2026-05-26T05:40:56.646Z",
       "updated_by": "polaris-map-update",
       "tags": [],
       "instructionFile": "POLARIS.md"
@@ -1000,7 +1000,7 @@
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
-      "last_updated": "2026-05-26T05:30:20.013Z",
+      "last_updated": "2026-05-26T05:43:58.319Z",
       "updated_by": "polaris-map-update",
       "tags": [],
       "instructionFile": "POLARIS.md"
@@ -1461,7 +1461,7 @@
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
-      "last_updated": "2026-05-26T05:30:20.013Z",
+      "last_updated": "2026-05-26T05:43:58.319Z",
       "updated_by": "polaris-map-update",
       "tags": [],
       "instructionFile": "POLARIS.md"
@@ -1472,7 +1472,7 @@
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
-      "last_updated": "2026-05-26T05:30:20.013Z",
+      "last_updated": "2026-05-26T05:40:56.646Z",
       "updated_by": "polaris-map-update",
       "tags": [],
       "instructionFile": "POLARIS.md"
@@ -1483,7 +1483,108 @@
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
-      "last_updated": "2026-05-26T05:30:20.013Z",
+      "last_updated": "2026-05-26T05:40:56.646Z",
+      "updated_by": "polaris-map-update",
+      "tags": [],
+      "instructionFile": "POLARIS.md"
+    },
+    ".codex/plugins/polaris/.codex-plugin/plugin.json": {
+      "domain": "unknown",
+      "route": ".codex/plugins/polaris/.codex-plugin/plugin.json",
+      "taskchain": "polaris-core",
+      "confidence": 0,
+      "classification": "needs-review",
+      "last_updated": "2026-05-26T05:43:58.319Z",
+      "updated_by": "polaris-map-update",
+      "tags": [],
+      "instructionFile": "POLARIS.md"
+    },
+    ".codex/plugins/polaris/README.md": {
+      "domain": "unknown",
+      "route": ".codex/plugins/polaris/README.md",
+      "taskchain": "polaris-core",
+      "confidence": 0,
+      "classification": "needs-review",
+      "last_updated": "2026-05-26T05:43:58.319Z",
+      "updated_by": "polaris-map-update",
+      "tags": [],
+      "instructionFile": "POLARIS.md"
+    },
+    ".codex/plugins/polaris/skills/polaris-tools/SKILL.md": {
+      "domain": "unknown",
+      "route": ".codex/plugins/polaris/skills/polaris-tools/SKILL.md",
+      "taskchain": "polaris-core",
+      "confidence": 0,
+      "classification": "needs-review",
+      "last_updated": "2026-05-26T05:43:58.319Z",
+      "updated_by": "polaris-map-update",
+      "tags": [],
+      "instructionFile": "POLARIS.md"
+    },
+    ".codex/plugins/polaris/skills/polaris-tools/agents/openai.yaml": {
+      "domain": "unknown",
+      "route": ".codex/plugins/polaris/skills/polaris-tools/agents/openai.yaml",
+      "taskchain": "polaris-core",
+      "confidence": 0,
+      "classification": "needs-review",
+      "last_updated": "2026-05-26T05:43:58.319Z",
+      "updated_by": "polaris-map-update",
+      "tags": [],
+      "instructionFile": "POLARIS.md"
+    },
+    ".codex/plugins/polaris/skills/polaris-tools/tools.js": {
+      "domain": "unknown",
+      "route": ".codex/plugins/polaris/skills/polaris-tools/tools.js",
+      "taskchain": "polaris-core",
+      "confidence": 0,
+      "classification": "needs-review",
+      "last_updated": "2026-05-26T05:43:58.319Z",
+      "updated_by": "polaris-map-update",
+      "tags": [],
+      "instructionFile": "POLARIS.md"
+    },
+    ".codex/plugins/polaris/skills/polaris-tools/tools.test.js": {
+      "domain": "unknown",
+      "route": ".codex/plugins/polaris/skills/polaris-tools/tools.test.js",
+      "taskchain": "polaris-core",
+      "confidence": 0,
+      "classification": "needs-review",
+      "last_updated": "2026-05-26T05:43:58.319Z",
+      "updated_by": "polaris-map-update",
+      "tags": [
+        "test"
+      ],
+      "instructionFile": "POLARIS.md"
+    },
+    ".codex/skills/polaris-tools/README.md": {
+      "domain": "unknown",
+      "route": ".codex/skills/polaris-tools/README.md",
+      "taskchain": "polaris-core",
+      "confidence": 0,
+      "classification": "needs-review",
+      "last_updated": "2026-05-26T05:43:58.319Z",
+      "updated_by": "polaris-map-update",
+      "tags": [],
+      "instructionFile": "POLARIS.md"
+    },
+    ".codex/skills/polaris-tools/SKILL.md": {
+      "domain": "unknown",
+      "route": ".codex/skills/polaris-tools/SKILL.md",
+      "taskchain": "polaris-core",
+      "confidence": 0,
+      "classification": "needs-review",
+      "last_updated": "2026-05-26T05:43:58.319Z",
+      "updated_by": "polaris-map-update",
+      "tags": [],
+      "instructionFile": "POLARIS.md"
+    },
+    ".codex/skills/polaris-tools/tools.js": {
+      "domain": "unknown",
+      "route": ".codex/skills/polaris-tools/tools.js",
+      "taskchain": "polaris-core",
+      "confidence": 0,
+      "classification": "needs-review",
+      "last_updated": "2026-05-26T05:43:58.319Z",
       "updated_by": "polaris-map-update",
       "tags": [],
       "instructionFile": "POLARIS.md"
