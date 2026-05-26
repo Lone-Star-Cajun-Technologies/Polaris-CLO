@@ -18,7 +18,7 @@ Prevent silent contradiction of active doctrine or specs. Every conflict must be
    - Overlapping scope (two specs govern the same surface) → flag as candidate supersede. Surface recommendation to user. Do not halt; continue with warning.
 
 3. **Stale assumption check** — scan for references to APIs, file paths, commands, or module names that no longer exist (cross-reference `.polaris/map/index.json`).
-   - Stale assumption found → annotate document front-matter: `stale-warning: <detail>`. Emit `docs-ingest-stale-assumption` telemetry. Do not halt.
+   - Stale assumption found → record in `current-state.json` under `stale_assumptions` and emit `docs-ingest-stale-assumption` telemetry. Do not halt. Do not mutate source files.
 
 4. **No conflicts** → proceed to step 04.
 
@@ -47,7 +47,7 @@ allowed_files:
 expected_evidence:
   - all files checked against active doctrine and specs
   - direct contradictions halted and reported
-  - stale assumptions annotated
+  - stale assumptions recorded in current-state.json
   - overlaps surfaced with candidate-supersede recommendation
 stop_rules:
   - direct doctrine contradiction (file held; batch may continue)

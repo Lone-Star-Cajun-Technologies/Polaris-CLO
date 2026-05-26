@@ -15,9 +15,11 @@ Execute placements for all files that cleared steps 02–03 (approval-required f
 
 2. **Check for existing file** at the target path. If a file already exists there: halt for that file and report. Do not overwrite without explicit approval.
 
-3. **Move or copy** to target path.
-   - If source is already in `Polaris-Docs/docs/` (reclassification): update front-matter only, no move.
+3. **Copy** to target path (never move directly — copy first to preserve rollback safety).
+   - Always copy the source into `Polaris-Docs/docs/` first.
+   - If source is already in `Polaris-Docs/docs/` (reclassification): update front-matter only, no copy.
    - Do not write anything to root `docs/`.
+   - After writing provenance (step 5) and after the map update (step 7) succeeds, delete the original source file. If the map update fails, retain the original source.
 
 4. **Doctrine-candidate front-matter** — before placing in `Polaris-Docs/docs/doctrine/candidate/`, inject:
    ```yaml

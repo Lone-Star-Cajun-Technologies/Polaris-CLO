@@ -42,7 +42,7 @@ stop_rules:
 
 0. **Generate `run_id`**:
    - Fresh runs: `polaris-docs-ingest-<slug>-<date>-<seq>` (see `chain.md` for format rules).
-   - Resumed runs: read prior `run_id` from `current-state.json` first, then generate new one.
+   - Resumed runs: generate new `run_id` first, emit run-start telemetry immediately (with `prior_run_id: null`), then read `current-state.json` to retrieve prior `run_id` for state continuity.
 
 1. **Emit `run-start` telemetry** — first I/O action, before any file access:
    ```bash
@@ -50,21 +50,21 @@ stop_rules:
    echo '{"event":"run-start","run_id":"<run-id>","prior_run_id":"<prior or null>","timestamp":"<ISO>"}' \
      >> .taskchain_artifacts/polaris-docs-ingest/runs/<run-id>/telemetry.jsonl
    ```
-   If this write fails: halt. Do not continue.
+   If this write fails: halt. Do not continue. For resumed runs, the `prior_run_id` is obtained after this emit by reading `current-state.json`.
 
 2. **Determine ingest source**:
    - `--file <path>`: single file mode. Treat as a batch of one.
    - `--batch <cluster-id>`: read `.polaris/docs-ingest/<cluster-id>.json` for file list.
    - No flags: read `current-state.json` for the next pending cluster ID. If none: halt with "no pending ingest clusters — use --file or --batch, or register clusters first."
 
-4. **Confirm canonical target** — verify `Polaris-Docs/docs/` exists in the repo root.
+3. **Confirm canonical target** — verify `Polaris-Docs/docs/` exists in the repo root.
    - If not found: halt and report. Do not attempt to create it.
    - Assert doctrine: `Polaris-Docs/docs/` is the only valid ingest target. Root `docs/` is legacy. New Smart Docs must not be placed there.
    - If any source file already lives in `Polaris-Docs/docs/`: reclassification only — no file move needed in step 04.
 
-5. **Load Polaris map** — read `.polaris/map/index.json` for code-area linking in step 04. If absent, note and proceed (map linking will be skipped in step 04).
+4. **Load Polaris map** — read `.polaris/map/index.json` for code-area linking in step 04. If absent, note and proceed (map linking will be skipped in step 04).
 
-6. **Restate working context** in under 8 bullets:
+5. **Restate working context** in under 8 bullets:
    - `run_id` and fresh/resumed
    - Ingest mode (`--file` / `--batch` / pending-cluster)
    - File list to process
