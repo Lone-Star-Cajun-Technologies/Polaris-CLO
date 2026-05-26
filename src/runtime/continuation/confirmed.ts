@@ -2,18 +2,20 @@ import { loadState, writeState } from "../state.js";
 import { validateEnvelope } from "../verification/envelope.js";
 import { writeCheckpoint } from "../checkpoint.js";
 import { appendAuditEvent } from "../audit/logger.js";
+import { selectExecutionAdapter } from "../../loop/execution-adapter.js";
+import type { ExecutionAdapterMode } from "../../loop/execution-adapter.js";
 import type { ContinuationApprovalEnvelope } from "../verification/envelope.js";
 
 export interface ConfirmedContinuationRequest {
   artifact_dir: string;
   envelope: ContinuationApprovalEnvelope;
-  adapterOverride?: string;
+  adapterOverride?: ExecutionAdapterMode;
   executionWindow?: unknown; // typed in Issue D (POL-94)
 }
 
 export type ConfirmedContinuationResult =
   | { ok: true; child_id: string; compact_return: { status: string; state_updated: boolean } }
-  | { ok: false; rejection: { check: string; reason: string; expected?: string; actual?: string } };
+  | { ok: false; rejection: { check: string; reason: string; expected?: string; actual?: string; detail?: string } };
 
 /**
  * Dispatch a confirmed continuation: validate, checkpoint, acquire active_child lease,
@@ -70,7 +72,27 @@ export async function dispatchConfirmedContinuation(
     metadata: { next_child: nextChild },
   });
 
-  // Step 8: stub — adapter dispatch wired in Issue C (POL-93)
+  // Step 8: adapter selection + autoDispatch gating
+  const selection = selectExecutionAdapter({
+    explicitAdapter: request.adapterOverride,
+    insideAgentSession: true,
+    nativeSubtaskAvailable: true,
+    crossAgentConfigured: false,
+    tokenBudgetLow: false,
+  });
+
+  if (!selection.autoDispatch) {
+    return {
+      ok: false,
+      rejection: {
+        check: "adapter_mode",
+        reason: "manual_dispatch_required",
+        detail: `Adapter "${selection.mode}" requires manual operator dispatch`,
+      },
+    };
+  }
+
+  // Step 9: stub — adapter dispatch wired in Issue C (POL-93)
   return {
     ok: true,
     child_id: nextChild,
