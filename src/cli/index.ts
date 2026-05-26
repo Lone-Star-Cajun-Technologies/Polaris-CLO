@@ -96,7 +96,7 @@ export function createPolarisCommand(options: PolarisCommandOptions = {}): Comma
     }),
   );
 
-  program.addCommand(createDocsCommand());
+  program.addCommand(createDocsCommand({ repoRoot }));
 
   const config = new Command("config")
     .description("deferred in 1.0: config workflows are not wired in this CLI")

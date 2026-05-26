@@ -80,6 +80,23 @@ export function readBootstrapPacket(argv: string[] = process.argv): BootstrapPac
 // Telemetry helpers
 // ────────────────────────────────────────────────────────────────────────────
 
+let lastTimestamp = 0;
+let sequenceCounter = 0;
+
+function getMonotonicTimestamp(): string {
+  const now = Date.now();
+  if (now === lastTimestamp) {
+    sequenceCounter += 1;
+  } else {
+    lastTimestamp = now;
+    sequenceCounter = 0;
+  }
+  const isoBase = new Date(now).toISOString();
+  return sequenceCounter > 0
+    ? isoBase.replace(/\.(\d{3})Z$/, `.${String(Number(RegExp.$1) + sequenceCounter).padStart(3, '0')}Z`)
+    : isoBase;
+}
+
 function appendTelemetry(telemetryFile: string, event: Record<string, unknown>): void {
   mkdirSync(dirname(telemetryFile), { recursive: true });
   appendFileSync(telemetryFile, JSON.stringify(event) + "\n", "utf-8");
@@ -149,7 +166,7 @@ export async function executeOneChild(
   const childId = packet.active_child;
   const stateFile = packet.state_file;
   const telemetryFile = packet.telemetry_file;
-  const now = () => new Date().toISOString();
+  const now = getMonotonicTimestamp;
 
   let stateUpdated = false;
   let telemetryUpdated = false;

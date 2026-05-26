@@ -8,6 +8,23 @@ import {
 import { createHash } from "node:crypto";
 import { dirname } from "node:path";
 
+let lastTimestamp = 0;
+let sequenceCounter = 0;
+
+function getMonotonicTimestamp(): string {
+  const now = Date.now();
+  if (now === lastTimestamp) {
+    sequenceCounter += 1;
+  } else {
+    lastTimestamp = now;
+    sequenceCounter = 0;
+  }
+  const isoBase = new Date(now).toISOString();
+  return sequenceCounter > 0
+    ? isoBase.replace(/\.(\d{3})Z$/, `.${String(Number(RegExp.$1) + sequenceCounter).padStart(3, '0')}Z`)
+    : isoBase;
+}
+
 export interface BlockerRecord {
   reason: string;
   child_id: string;
@@ -126,16 +143,18 @@ export function appendCheckpointEvent(
   telemetryFile: string,
   event: CheckpointEvent,
 ): void {
+  const timestampedEvent = { ...event, timestamp: getMonotonicTimestamp() };
   mkdirSync(dirname(telemetryFile), { recursive: true });
-  appendFileSync(telemetryFile, JSON.stringify(event) + "\n", "utf-8");
+  appendFileSync(telemetryFile, JSON.stringify(timestampedEvent) + "\n", "utf-8");
 }
 
 export function appendBoundaryEvent(
   telemetryFile: string,
   event: BoundaryEvent,
 ): void {
+  const timestampedEvent = { ...event, timestamp: getMonotonicTimestamp() };
   mkdirSync(dirname(telemetryFile), { recursive: true });
-  appendFileSync(telemetryFile, JSON.stringify(event) + "\n", "utf-8");
+  appendFileSync(telemetryFile, JSON.stringify(timestampedEvent) + "\n", "utf-8");
 }
 
 export interface AbortEvent {
@@ -147,6 +166,7 @@ export interface AbortEvent {
 }
 
 export function appendAbortEvent(telemetryFile: string, event: AbortEvent): void {
+  const timestampedEvent = { ...event, timestamp: getMonotonicTimestamp() };
   mkdirSync(dirname(telemetryFile), { recursive: true });
-  appendFileSync(telemetryFile, JSON.stringify(event) + "\n", "utf-8");
+  appendFileSync(telemetryFile, JSON.stringify(timestampedEvent) + "\n", "utf-8");
 }

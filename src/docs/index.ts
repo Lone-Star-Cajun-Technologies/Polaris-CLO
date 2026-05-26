@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { Command } from "commander";
 import { ingestDocs, printIngestResults } from "./ingest.js";
 import { migrateDocs, printMigrateResults } from "./migrate.js";
@@ -7,7 +7,12 @@ import { seedInstructions, seedInstructionsAll } from "./seed-instructions.js";
 import { validateInstructions, printReport } from "./validate-instructions.js";
 import { doctrineDraft, doctrinePromote, doctrineDeprecate } from "./doctrine.js";
 
-export function createDocsCommand(): Command {
+export interface DocsCommandOptions {
+  repoRoot?: string;
+}
+
+export function createDocsCommand(options: DocsCommandOptions = {}): Command {
+  const defaultRepoRoot = options.repoRoot ?? process.cwd();
   const docs = new Command("docs").description("Polaris docs lifecycle commands");
 
   docs
@@ -19,7 +24,7 @@ export function createDocsCommand(): Command {
     .option("--files <paths...>", "Bounded batch file list")
     .option("--dry-run", "Classify and report without moving files")
     .option("--approve-authority", "Allow placement in high-authority docs areas")
-    .option("-r, --repo-root <path>", "Repository root", process.cwd())
+    .option("-r, --repo-root <path>", "Repository root", defaultRepoRoot)
     .action((
       pathArg: string | undefined,
       options: {
@@ -33,13 +38,55 @@ export function createDocsCommand(): Command {
       },
     ) => {
       const clusterId = options.batch ?? options.cluster;
+
+      // Validate clusterId
+      if (clusterId && !/^[A-Za-z0-9_-]+$/.test(clusterId)) {
+        console.error(`polaris docs ingest: invalid cluster ID "${clusterId}" - must contain only alphanumeric, underscore, or hyphen characters`);
+        process.exit(1);
+      }
+
       let files = options.files ?? (options.file ? [options.file] : pathArg ? [pathArg] : []);
 
       if (clusterId && files.length === 0) {
         const batchFile = join(options.repoRoot, ".polaris", "docs-ingest", `${clusterId}.json`);
         try {
-          const batch = JSON.parse(readFileSync(batchFile, "utf-8")) as { files?: string[] };
-          files = batch.files ?? [];
+          const rawContent = readFileSync(batchFile, "utf-8");
+          const batch = JSON.parse(rawContent);
+
+          // Validate parsed batch structure
+          if (typeof batch !== "object" || batch === null || Array.isArray(batch)) {
+            console.error(`polaris docs ingest: batch file ${batchFile} must contain a JSON object`);
+            process.exit(1);
+          }
+
+          if (!("files" in batch) || !Array.isArray(batch.files)) {
+            console.error(`polaris docs ingest: batch file ${batchFile} must contain a "files" array`);
+            process.exit(1);
+          }
+
+          // Validate each file path
+          for (const file of batch.files) {
+            if (typeof file !== "string") {
+              console.error(`polaris docs ingest: batch file ${batchFile} contains non-string file entry`);
+              process.exit(1);
+            }
+            if (file.includes("..") || file.includes("\\") || file.startsWith("/")) {
+              console.error(`polaris docs ingest: batch file ${batchFile} contains invalid file path "${file}" (contains "..", path separators, or is absolute)`);
+              process.exit(1);
+            }
+          }
+
+          // Validate resolved paths are within ingest directory
+          const ingestDir = resolve(options.repoRoot, ".polaris/docs-ingest");
+          for (const file of batch.files) {
+            const resolvedPath = resolve(ingestDir, file);
+            if (!resolvedPath.startsWith(ingestDir)) {
+              console.error(`polaris docs ingest: file path "${file}" resolves outside ingest directory`);
+              process.exit(1);
+            }
+          }
+
+          files = batch.files;
         } catch (err) {
           console.error(`polaris docs ingest: cannot read batch file ${batchFile}: ${err instanceof Error ? err.message : String(err)}`);
           process.exit(1);
@@ -70,7 +117,7 @@ export function createDocsCommand(): Command {
     .description("Find scattered markdown files, move them to docs/raw/, and produce an ingest cluster list")
     .option("--dry-run", "Show plan without moving files")
     .option("--migration-run-id <id>", "Override the generated migration run ID")
-    .option("-r, --repo-root <path>", "Repository root", process.cwd())
+    .option("-r, --repo-root <path>", "Repository root", defaultRepoRoot)
     .action((options: { dryRun?: boolean; migrationRunId?: string; repoRoot: string }) => {
       try {
         const result = migrateDocs({
@@ -88,7 +135,7 @@ export function createDocsCommand(): Command {
   docs
     .command("seed-instructions [path]")
     .description("Generate a draft POLARIS.md for a directory using atlas signals")
-    .option("-r, --repo-root <path>", "Repository root", process.cwd())
+    .option("-r, --repo-root <path>", "Repository root", defaultRepoRoot)
     .option("--all", "Generate drafts for all directories lacking a POLARIS.md")
     .option("--dry-run", "Print what would be written without writing files")
     .action((pathArg: string | undefined, options: { repoRoot: string; all?: boolean; dryRun?: boolean }) => {
@@ -128,7 +175,7 @@ export function createDocsCommand(): Command {
     .description("Check all POLARIS.md files for staleness, broken links, and missing coverage")
     .option("--path <dir>", "Validate only the given directory")
     .option("--fix", "Write POLARIS.draft.md for stale or missing files")
-    .option("-r, --repo-root <path>", "Repository root", process.cwd())
+    .option("-r, --repo-root <path>", "Repository root", defaultRepoRoot)
     .action((options: { path?: string; fix?: boolean; repoRoot: string }) => {
       const report = validateInstructions({
         path: options.path,

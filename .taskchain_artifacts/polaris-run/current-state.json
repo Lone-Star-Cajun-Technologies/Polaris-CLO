@@ -18,13 +18,7 @@
     "POL-121"
   ],
   "open_children": [],
-  "open_children_meta": {
-    "POL-121": {
-      "title": "Wire polaris docs ingest CLI to Smart Docs ingest runtime",
-      "blockedBy": [],
-      "status": "In Progress"
-    }
-  },
+  "open_children_meta": {},
   "context_budget": {
     "children_completed": 1,
     "files_touched_total": 5,

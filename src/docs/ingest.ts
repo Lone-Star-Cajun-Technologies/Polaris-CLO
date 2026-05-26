@@ -18,6 +18,23 @@ import {
   type FileRouteEntry,
 } from "../map/atlas.js";
 
+let lastTimestamp = 0;
+let sequenceCounter = 0;
+
+function getMonotonicTimestamp(): string {
+  const now = Date.now();
+  if (now === lastTimestamp) {
+    sequenceCounter += 1;
+  } else {
+    lastTimestamp = now;
+    sequenceCounter = 0;
+  }
+  const isoBase = new Date(now).toISOString();
+  return sequenceCounter > 0
+    ? isoBase.replace(/\.(\d{3})Z$/, `.${String(Number(RegExp.$1) + sequenceCounter).padStart(3, '0')}Z`)
+    : isoBase;
+}
+
 export type DocsClassification =
   | "runtime-summary"
   | "run-report"
@@ -138,7 +155,14 @@ function generateRunId(repoRoot: string): string {
   if (existsSync(runsDir)) {
     try {
       const existing = readdirSync(runsDir).filter((d) => d.includes(date));
-      seq = existing.length + 1;
+      const suffixes = existing
+        .map((d) => {
+          const match = d.match(/-(\d{3})$/);
+          return match ? parseInt(match[1], 10) : 0;
+        })
+        .filter((n) => !isNaN(n) && n > 0);
+      const maxSuffix = suffixes.length > 0 ? Math.max(...suffixes) : 0;
+      seq = maxSuffix + 1;
     } catch {
       // use seq = 1
     }
@@ -159,7 +183,7 @@ function emitRunStartTelemetry(repoRoot: string, runId: string, priorRunId: stri
       event: "run-start",
       run_id: runId,
       prior_run_id: priorRunId,
-      timestamp: new Date().toISOString(),
+      timestamp: getMonotonicTimestamp(),
     }) + "\n",
     "utf-8",
   );
@@ -169,7 +193,7 @@ function emitTelemetry(telPath: string, runId: string, event: Record<string, unk
   try {
     appendFileSync(
       telPath,
-      JSON.stringify({ ...event, run_id: runId, timestamp: new Date().toISOString() }) + "\n",
+      JSON.stringify({ ...event, run_id: runId, timestamp: getMonotonicTimestamp() }) + "\n",
       "utf-8",
     );
   } catch {
@@ -360,7 +384,7 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
   if (files.length > limit) throw new Error(`polaris docs ingest: batch limit is ${limit} files`);
 
   const priorState = readCurrentState(repoRoot);
-  const clusterId = options.clusterId ?? priorState.cluster_id ?? null;
+  const clusterId = options.clusterId ?? null;
   const runId = generateRunId(repoRoot);
 
   // Emit run-start telemetry (STOP CONDITION if this write fails)
