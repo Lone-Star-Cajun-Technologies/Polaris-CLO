@@ -1,31 +1,34 @@
 {
-  "run_id": "polaris-analyze-scheduler-worker-contracts-2026-05-24-003",
-  "cluster_id": "POL-58",
+  "run_id": "polaris-analyze-bridge-mcp-confirmed-dispatch-2026-05-25-001",
+  "cluster_id": "POL-88",
   "skill": "polaris-analyze",
   "artifact_dir": ".taskchain_artifacts/polaris-analyze",
-  "status": "complete",
-  "parent_issue": "POL-58 — Analyze: Specify parent scheduler-only contract and worker contract",
+  "parent_issue": "POL-88 — ANALYZE: Bridge MCP confirmed continuation into execution adapter dispatch",
   "repo_analysis_status": "not-configured",
-  "outcome": "needs-cluster-plan",
   "files_inspected": [
-    "src/loop/adapters/types.ts",
-    "src/loop/adapters/registry.ts",
-    "src/loop/adapters/terminal-cli.ts",
+    "src/mcp/tools/loop-continue.ts",
+    "src/runtime/continuation/dry-run.ts",
+    "src/runtime/verification/envelope.ts",
     "src/loop/execution-adapter.ts",
     "src/loop/continue.ts",
-    "src/config/schema.ts",
-    "docs/Polaris/spec/execution-adapter-architecture.md",
-    ".codex/skills/polaris-run/execution-adapter.md",
-    ".codex/skills/polaris-run/steps/04-execute-child.md",
-    ".codex/skills/polaris-run/steps/07-decide-continuation.md",
-    ".polaris/clusters/POL-55/clusters.json"
+    "src/runtime/checkpoint.ts",
+    "src/runtime/state.ts",
+    "src/runtime/scheduling/child-selector.ts",
+    "src/loop/worker.ts",
+    "src/runtime/execution-window.ts",
+    "src/loop/adapters/types.ts",
+    "src/loop/compact-return.ts",
+    "src/types/runtime-state.ts"
   ],
-  "clusters_file": ".polaris/clusters/POL-58/clusters.json",
+  "outcome": "needs-cluster-plan",
+  "clusters_file": ".polaris/clusters/POL-88/clusters.json",
   "child_issues": [
-    "POL-65 — Implement: Write scheduler-worker-contract.md"
+    "POL-89 — IMPLEMENT: Write mcp-confirmed-dispatch-architecture.md",
+    "POL-90 — IMPLEMENT: Create MCP dispatch implementation child issues from spec"
   ],
   "current_step_id": "06-final-report",
-  "started_at": "2026-05-24T10:00:00.000Z",
-  "completed_at": "2026-05-24T10:15:00.000Z",
-  "updated_at": "2026-05-24T10:15:00.000Z"
+  "status": "complete",
+  "started_at": "2026-05-25T00:00:00.000Z",
+  "completed_at": "2026-05-25T00:06:00.000Z",
+  "updated_at": "2026-05-25T00:06:00.000Z"
 }

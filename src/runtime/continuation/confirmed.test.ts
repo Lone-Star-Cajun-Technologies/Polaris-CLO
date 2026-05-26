@@ -1,0 +1,488 @@
+/**
+ * POL-92: Unit tests for adapter selection + autoDispatch gating in confirmed.ts
+ *
+ * Tests the selectExecutionAdapter integration and autoDispatch gate.
+ * Each test gets an isolated artifact directory in .taskchain_artifacts.
+ */
+
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { mkdir, writeFile, readFile, rm } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import path from "node:path";
+import type { CurrentState } from "../../types/runtime-state.js";
+import type { ContinuationApprovalEnvelope } from "../verification/envelope.js";
+import type { BootstrapPacket, DispatchOptions, DispatchResult, ExecutionAdapter } from "../../loop/adapters/types.js";
+import type { ExecutionWindow } from "../execution-window.js";
+import { computeStateFingerprint } from "../verification/fingerprint.js";
+import { dispatchConfirmedContinuation } from "./confirmed.js";
+import { appendAuditEvent } from "../audit/logger.js";
+
+async function readAuditLog(artifactDir: string): Promise<Array<Record<string, unknown>>> {
+  const filePath = path.join(ARTIFACTS_ROOT, artifactDir, "audit.jsonl");
+  try {
+    const raw = await readFile(filePath, "utf-8");
+    return raw.trim().split("\n").filter(Boolean).map((line) => JSON.parse(line));
+  } catch {
+    return [];
+  }
+}
+
+function makeMockAdapter(result: { status: string; state_updated: boolean }): () => ExecutionAdapter {
+  return () => ({
+    name: "mock-adapter",
+    // eslint-disable-next-line no-unused-vars
+    async dispatch(_packet: BootstrapPacket, _options: DispatchOptions): Promise<DispatchResult> {
+      return {
+        exit_code: 0,
+        provider_used: "mock",
+        command_run: "mock",
+        summary: JSON.stringify(result),
+      };
+    },
+  });
+}
+
+const ARTIFACTS_ROOT = path.join(process.cwd(), ".taskchain_artifacts");
+
+function makeRunningState(overrides: Partial<CurrentState> = {}): CurrentState {
+  return {
+    schema_version: "1.0",
+    run_id: "polaris-run-test-pol92",
+    cluster_id: "POL-88",
+    active_child: null,
+    completed_children: ["POL-89", "POL-90", "POL-91"],
+    open_children: ["POL-92"],
+    step_cursor: "06-decide-continuation",
+    context_budget: { children_completed: 3, max_children_per_session: 4 },
+    status: "running",
+    runtime_generation: 1,
+    orchestration_mode: "bootstrap",
+    continuation_epoch: 0,
+    ...overrides,
+  };
+}
+
+async function writeStateToDir(artifactDir: string, state: CurrentState): Promise<void> {
+  const dir = path.join(ARTIFACTS_ROOT, artifactDir);
+  await mkdir(dir, { recursive: true });
+  await writeFile(path.join(dir, "current-state.json"), JSON.stringify(state, null, 2) + "\n", "utf-8");
+}
+
+function buildEnvelope(state: CurrentState): ContinuationApprovalEnvelope {
+  const nonce = randomUUID();
+  const fingerprint = computeStateFingerprint({ state, approvalNonce: nonce });
+  const now = new Date();
+  return {
+    run_id: state.run_id,
+    expected_step_cursor: state.step_cursor,
+    fingerprint,
+    runtime_generation: state.runtime_generation ?? 1,
+    nonce,
+    issued_at: now.toISOString(),
+    expires_at: new Date(now.getTime() + 5 * 60 * 1000).toISOString(),
+    requested_action: "loop_continue",
+  };
+}
+
+let testArtifactDir: string;
+
+beforeEach(() => {
+  testArtifactDir = `test-pol92-${randomUUID().slice(0, 8)}`;
+});
+
+afterEach(async () => {
+  const dir = path.join(ARTIFACTS_ROOT, testArtifactDir);
+  await rm(dir, { recursive: true, force: true });
+});
+
+describe("confirmed.ts: adapter selection + autoDispatch gating", () => {
+  it("agent-subtask mode → autoDispatch true → proceeds past gating (ok: true)", async () => {
+    const state = makeRunningState();
+    await writeStateToDir(testArtifactDir, state);
+    const envelope = buildEnvelope(state);
+
+    const result = await dispatchConfirmedContinuation({
+      artifact_dir: testArtifactDir,
+      envelope,
+      adapterOverride: "agent-subtask",
+      _adapterFactory: makeMockAdapter({ status: "done", state_updated: true }),
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.child_id).toBe("POL-92");
+      expect(result.compact_return.status).toBe("done");
+    }
+  });
+
+  it("terminal-cli mode → autoDispatch false → returns manual_dispatch_required rejection", async () => {
+    const state = makeRunningState();
+    await writeStateToDir(testArtifactDir, state);
+    const envelope = buildEnvelope(state);
+
+    const result = await dispatchConfirmedContinuation({
+      artifact_dir: testArtifactDir,
+      envelope,
+      adapterOverride: "terminal-cli",
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.rejection.check).toBe("adapter_mode");
+      expect(result.rejection.reason).toBe("manual_dispatch_required");
+      expect(result.rejection.detail).toContain("terminal-cli");
+    }
+  });
+
+  it("ci mode → autoDispatch false → returns manual_dispatch_required rejection", async () => {
+    const state = makeRunningState();
+    await writeStateToDir(testArtifactDir, state);
+    const envelope = buildEnvelope(state);
+
+    const result = await dispatchConfirmedContinuation({
+      artifact_dir: testArtifactDir,
+      envelope,
+      adapterOverride: "ci",
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.rejection.check).toBe("adapter_mode");
+      expect(result.rejection.reason).toBe("manual_dispatch_required");
+      expect(result.rejection.detail).toContain("ci");
+    }
+  });
+
+  it("no adapterOverride → auto-detects agent-subtask (insideAgentSession + nativeSubtaskAvailable) → autoDispatch true → ok", async () => {
+    const state = makeRunningState();
+    await writeStateToDir(testArtifactDir, state);
+    const envelope = buildEnvelope(state);
+
+    // No adapterOverride: selectExecutionAdapter called with insideAgentSession: true, nativeSubtaskAvailable: true
+    // → resolves to agent-subtask → autoDispatch: true
+    const result = await dispatchConfirmedContinuation({
+      artifact_dir: testArtifactDir,
+      envelope,
+      _adapterFactory: makeMockAdapter({ status: "done", state_updated: true }),
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.child_id).toBe("POL-92");
+    }
+  });
+});
+
+function makeWindow(state: CurrentState, overrides: Partial<ExecutionWindow> = {}): ExecutionWindow {
+  return {
+    run_id: state.run_id,
+    max_continuations: 3,
+    valid_from: new Date(Date.now() - 60000).toISOString(),
+    valid_until: new Date(Date.now() + 3600000).toISOString(),
+    allowed_child_types: [],
+    state_fingerprint_at_issue: computeStateFingerprint({ state, approvalNonce: state.run_id }),
+    ...overrides,
+  };
+}
+
+describe("execution window validation", () => {
+  it("window present and valid → proceeds to dispatch (ok: true)", async () => {
+    const state = makeRunningState();
+    await writeStateToDir(testArtifactDir, state);
+    const envelope = buildEnvelope(state);
+    const executionWindow = makeWindow(state);
+
+    const result = await dispatchConfirmedContinuation({
+      artifact_dir: testArtifactDir,
+      envelope,
+      adapterOverride: "agent-subtask",
+      executionWindow,
+      _adapterFactory: makeMockAdapter({ status: "done", state_updated: true }),
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.child_id).toBe("POL-92");
+    }
+  });
+
+  it("window present and exhausted (max_continuations: 0) → returns execution_window/window_exhausted rejection", async () => {
+    const state = makeRunningState();
+    await writeStateToDir(testArtifactDir, state);
+    const envelope = buildEnvelope(state);
+    const executionWindow = makeWindow(state, { max_continuations: 0 });
+
+    const result = await dispatchConfirmedContinuation({
+      artifact_dir: testArtifactDir,
+      envelope,
+      executionWindow,
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.rejection.check).toBe("execution_window");
+      expect(result.rejection.reason).toBe("window_exhausted");
+    }
+  });
+
+  it("window absent → skipped entirely (proceeds normally, ok: true)", async () => {
+    const state = makeRunningState();
+    await writeStateToDir(testArtifactDir, state);
+    const envelope = buildEnvelope(state);
+
+    const result = await dispatchConfirmedContinuation({
+      artifact_dir: testArtifactDir,
+      envelope,
+      adapterOverride: "agent-subtask",
+      _adapterFactory: makeMockAdapter({ status: "done", state_updated: true }),
+    });
+
+    expect(result.ok).toBe(true);
+  });
+
+  it("valid window with non-empty allowed_child_types → proceeds (check deferred)", async () => {
+    const state = makeRunningState();
+    await writeStateToDir(testArtifactDir, state);
+    const envelope = buildEnvelope(state);
+    const executionWindow = makeWindow(state, { allowed_child_types: ["implement"] });
+
+    const result = await dispatchConfirmedContinuation({
+      artifact_dir: testArtifactDir,
+      envelope,
+      adapterOverride: "agent-subtask",
+      executionWindow,
+      _adapterFactory: makeMockAdapter({ status: "done", state_updated: true }),
+    });
+
+    expect(result.ok).toBe(true);
+  });
+
+  it("decremented window is written to side-file after lease acquired", async () => {
+    const state = makeRunningState();
+    await writeStateToDir(testArtifactDir, state);
+    const envelope = buildEnvelope(state);
+    const executionWindow = makeWindow(state, { max_continuations: 3 });
+
+    const result = await dispatchConfirmedContinuation({
+      artifact_dir: testArtifactDir,
+      envelope,
+      adapterOverride: "agent-subtask",
+      executionWindow,
+      _adapterFactory: makeMockAdapter({ status: "done", state_updated: true }),
+    });
+
+    expect(result.ok).toBe(true);
+
+    const windowFilePath = path.join(ARTIFACTS_ROOT, testArtifactDir, "execution-window.json");
+    const raw = await readFile(windowFilePath, "utf-8");
+    const persisted = JSON.parse(raw) as ExecutionWindow;
+    expect(persisted.max_continuations).toBe(2); // decremented from 3
+    expect(persisted.run_id).toBe(state.run_id);
+  });
+});
+
+describe("confirmed.ts: POL-93 dispatch + CompactReturn handling", () => {
+  it("mock adapter state_updated: true → active_child NOT cleared, worker_dispatched and worker_result_received in audit log", async () => {
+    const state = makeRunningState();
+    await writeStateToDir(testArtifactDir, state);
+    const envelope = buildEnvelope(state);
+
+    const result = await dispatchConfirmedContinuation({
+      artifact_dir: testArtifactDir,
+      envelope,
+      adapterOverride: "agent-subtask",
+      _adapterFactory: makeMockAdapter({ status: "done", state_updated: true }),
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.child_id).toBe("POL-92");
+      expect(result.compact_return.status).toBe("done");
+      expect(result.compact_return.state_updated).toBe(true);
+    }
+
+    const events = await readAuditLog(testArtifactDir);
+    const dispatchedIdx = events.findIndex((e) => e["event_type"] === "worker_dispatched");
+    const receivedIdx = events.findIndex((e) => e["event_type"] === "worker_result_received");
+
+    expect(dispatchedIdx).toBeGreaterThanOrEqual(0);
+    expect(receivedIdx).toBeGreaterThanOrEqual(0);
+    // worker_dispatched must appear before worker_result_received
+    expect(dispatchedIdx).toBeLessThan(receivedIdx);
+
+    const dispatched = events[dispatchedIdx];
+    expect(dispatched["child_id"]).toBe("POL-92");
+    expect(dispatched["operator"]).toBe("mcp");
+    expect(dispatched["operation"]).toBe("confirmed_dispatch");
+    expect(dispatched["result"]).toBe("ok");
+
+    const received = events[receivedIdx];
+    expect(received["child_id"]).toBe("POL-92");
+    expect((received["metadata"] as Record<string, unknown>)["status"]).toBe("done");
+
+    // active_child should NOT be cleared by confirmed.ts (state_updated: true means adapter handled it)
+    // We can verify no recovery_attempted event was emitted
+    const recovery = events.find((e) => e["event_type"] === "recovery_attempted");
+    expect(recovery).toBeUndefined();
+  });
+
+  it("mock adapter state_updated: false → active_child defensively cleared + recovery_attempted emitted", async () => {
+    const state = makeRunningState();
+    await writeStateToDir(testArtifactDir, state);
+    const envelope = buildEnvelope(state);
+
+    const result = await dispatchConfirmedContinuation({
+      artifact_dir: testArtifactDir,
+      envelope,
+      adapterOverride: "agent-subtask",
+      _adapterFactory: makeMockAdapter({ status: "dispatched-stub", state_updated: false }),
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.compact_return.state_updated).toBe(false);
+    }
+
+    const events = await readAuditLog(testArtifactDir);
+    const recovery = events.find((e) => e["event_type"] === "recovery_attempted");
+    expect(recovery).toBeDefined();
+    expect(recovery!["result"]).toBe("ok");
+    expect((recovery!["metadata"] as Record<string, unknown>)["reason"]).toBe("state_updated_false");
+  });
+
+  it("worker_dispatched event appears before worker_result_received in audit log", async () => {
+    const state = makeRunningState();
+    await writeStateToDir(testArtifactDir, state);
+    const envelope = buildEnvelope(state);
+
+    await dispatchConfirmedContinuation({
+      artifact_dir: testArtifactDir,
+      envelope,
+      adapterOverride: "agent-subtask",
+      _adapterFactory: makeMockAdapter({ status: "done", state_updated: true }),
+    });
+
+    const events = await readAuditLog(testArtifactDir);
+    const types = events.map((e) => e["event_type"]);
+    const dispatchedIdx = types.indexOf("worker_dispatched");
+    const receivedIdx = types.indexOf("worker_result_received");
+    expect(dispatchedIdx).toBeGreaterThanOrEqual(0);
+    expect(receivedIdx).toBeGreaterThanOrEqual(0);
+    expect(dispatchedIdx).toBeLessThan(receivedIdx);
+  });
+});
+
+describe("recovery state detection", () => {
+  it("clean state (no prior dispatch events) → proceeds normally (ok: true)", async () => {
+    const state = makeRunningState();
+    await writeStateToDir(testArtifactDir, state);
+    const envelope = buildEnvelope(state);
+
+    const result = await dispatchConfirmedContinuation({
+      artifact_dir: testArtifactDir,
+      envelope,
+      adapterOverride: "agent-subtask",
+      _adapterFactory: makeMockAdapter({ status: "done", state_updated: true }),
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.child_id).toBe("POL-92");
+    }
+  });
+
+  it("dispatched-awaiting-result: worker_dispatched with no worker_result_received → returns dispatched-awaiting-result rejection", async () => {
+    const state = makeRunningState();
+    await writeStateToDir(testArtifactDir, state);
+
+    // Pre-seed worker_dispatched but no worker_result_received
+    await appendAuditEvent(testArtifactDir, {
+      event_type: "worker_dispatched",
+      run_id: state.run_id,
+      step_cursor: state.step_cursor,
+      operator: "mcp",
+      operation: "confirmed_dispatch",
+      result: "ok",
+      metadata: { adapter_mode: "agent-subtask" },
+    });
+
+    const envelope = buildEnvelope(state);
+    const result = await dispatchConfirmedContinuation({
+      artifact_dir: testArtifactDir,
+      envelope,
+      adapterOverride: "agent-subtask",
+      _adapterFactory: makeMockAdapter({ status: "done", state_updated: true }),
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.rejection.check).toBe("recovery");
+      expect(result.rejection.reason).toBe("dispatched-awaiting-result");
+    }
+  });
+
+  it("interrupted-before-dispatch: active_child set but no worker_dispatched → clears active_child, emits recovery_attempted, then proceeds", async () => {
+    // Envelope issued against clean state (active_child null), then active_child got set without dispatch
+    const cleanState = makeRunningState({ active_child: null });
+    const envelope = buildEnvelope(cleanState);
+    // Now simulate an interrupted state: active_child got set but no worker_dispatched was emitted
+    const state = makeRunningState({ active_child: "POL-92" });
+    await writeStateToDir(testArtifactDir, state);
+
+    const result = await dispatchConfirmedContinuation({
+      artifact_dir: testArtifactDir,
+      envelope,
+      adapterOverride: "agent-subtask",
+      _adapterFactory: makeMockAdapter({ status: "done", state_updated: true }),
+    });
+
+    expect(result.ok).toBe(true);
+
+    const events = await readAuditLog(testArtifactDir);
+    const recovery = events.find((e) => e["event_type"] === "recovery_attempted");
+    expect(recovery).toBeDefined();
+    expect(recovery!["result"]).toBe("ok");
+    expect((recovery!["metadata"] as Record<string, unknown>)["cleared_active_child"]).toBe("POL-92");
+    expect((recovery!["metadata"] as Record<string, unknown>)["operation"]).toBeUndefined();
+    // Verify operation field on the recovery event
+    expect(recovery!["operation"]).toBe("interrupted_before_dispatch_recovery");
+  });
+
+  it("idempotency: both worker_dispatched and worker_result_received present → proceeds normally", async () => {
+    const state = makeRunningState();
+    await writeStateToDir(testArtifactDir, state);
+
+    // Pre-seed both events (previous successful dispatch)
+    await appendAuditEvent(testArtifactDir, {
+      event_type: "worker_dispatched",
+      run_id: state.run_id,
+      step_cursor: state.step_cursor,
+      operator: "mcp",
+      operation: "confirmed_dispatch",
+      result: "ok",
+      metadata: {},
+    });
+    await appendAuditEvent(testArtifactDir, {
+      event_type: "worker_result_received",
+      run_id: state.run_id,
+      step_cursor: state.step_cursor,
+      operator: "mcp",
+      operation: "confirmed_dispatch",
+      result: "ok",
+      metadata: {},
+    });
+
+    const envelope = buildEnvelope(state);
+    const result = await dispatchConfirmedContinuation({
+      artifact_dir: testArtifactDir,
+      envelope,
+      adapterOverride: "agent-subtask",
+      _adapterFactory: makeMockAdapter({ status: "done", state_updated: true }),
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.child_id).toBe("POL-92");
+    }
+  });
+});

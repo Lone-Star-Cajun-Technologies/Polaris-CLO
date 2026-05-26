@@ -1,34 +1,44 @@
 {
   "schema_version": "1.0",
-  "run_id": "polaris-run-scheduler-worker-adapters-2026-05-24-002",
-  "related_run_id": "polaris-run-scheduler-worker-adapters-2026-05-24-001",
-  "cluster_id": "POL-55",
+  "run_id": "polaris-run-mcp-confirmed-dispatch-2026-05-25-002",
+  "related_run_id": "polaris-run-mcp-confirmed-dispatch-2026-05-25-001",
+  "cluster_id": "POL-88",
   "skill": "polaris-run",
   "artifact_dir": ".taskchain_artifacts/polaris-run",
-  "branch": "philmeaux/pol-55-analyze-scheduler-only-parent-loop-and-provider-worker",
-  "current_step_id": "06-commit-and-update-linear",
-  "step_cursor": null,
-  "status": "all-children-complete",
+  "branch": "philmeaux/pol-88-analyze-bridge-mcp-confirmed-continuation-into-execution",
+  "current_step_id": "08-final-delivery",
+  "step_cursor": "checkpoint",
+  "status": "running",
   "session_type": "implementation",
   "active_child": "",
-  "last_commit": "daa0901b35bd35537d44e817caf41810ff3f47b8",
-  "next_open_child": "",
+  "last_commit": "1a1d482",
+  "pr_url": null,
+  "next_open_child": null,
   "completed_children": [
-    "POL-67",
-    "POL-68",
-    "POL-69",
-    "POL-70",
-    "POL-74",
-    "POL-71",
-    "POL-72",
-    "POL-73"
+    "POL-89",
+    "POL-90",
+    "POL-91",
+    "POL-92",
+    "POL-93",
+    "POL-94",
+    "POL-95",
+    "POL-96"
   ],
   "open_children": [],
-  "open_children_meta": {},
-  "context_budget": {
-    "children_completed": 5,
-    "files_touched_total": 23,
-    "last_child_files_touched": 2
+  "open_children_meta": {
+    "POL-89": { "title": "IMPLEMENT: Write mcp-confirmed-dispatch-architecture.md", "blockedBy": [], "status": "Done" },
+    "POL-90": { "title": "IMPLEMENT: Create MCP dispatch implementation child issues from spec", "blockedBy": [], "status": "Done" },
+    "POL-91": { "title": "IMPLEMENT: confirmed.ts skeleton + active_child lease write (no adapter call)", "blockedBy": [], "status": "Done" },
+    "POL-92": { "title": "IMPLEMENT: Adapter selection + autoDispatch gating in confirmed.ts", "blockedBy": [], "status": "Done" },
+    "POL-93": { "title": "IMPLEMENT: agent-subtask dispatch + CompactReturn handling in confirmed.ts", "blockedBy": [], "status": "Done" },
+    "POL-94": { "title": "IMPLEMENT: Execution window validation in confirmed.ts", "blockedBy": [], "status": "Done" },
+    "POL-95": { "title": "IMPLEMENT: Recovery state detection in confirmed.ts", "blockedBy": [], "status": "Done" },
+    "POL-96": { "title": "IMPLEMENT: MCP response shape update + end-to-end test for confirmed dispatch", "blockedBy": [], "status": "Done" }
   },
-  "updated_at": "2026-05-24T23:35:00.000Z"
+  "context_budget": {
+    "children_completed": 8,
+    "files_touched_total": 0,
+    "last_child_files_touched": 0
+  },
+  "updated_at": "2026-05-25T04:18:00.000Z"
 }

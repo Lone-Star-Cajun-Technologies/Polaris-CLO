@@ -13,8 +13,25 @@ import { randomUUID } from "node:crypto";
 import path from "node:path";
 import type { CurrentState } from "../../src/types/runtime-state.js";
 import type { ContinuationApprovalEnvelope } from "../../src/runtime/verification/envelope.js";
+import type { ExecutionAdapter, BootstrapPacket, DispatchOptions, DispatchResult } from "../../src/loop/adapters/types.js";
 import { executeDryRun } from "../../src/runtime/continuation/dry-run.js";
 import { handleLoopContinueConfirmed } from "../../src/mcp/tools/loop-continue.js";
+
+/** Test-only stub adapter that simulates a successful worker dispatch. */
+function makeMockSuccessAdapter(): () => ExecutionAdapter {
+  return () => ({
+    name: "mock-success",
+    // eslint-disable-next-line no-unused-vars
+    async dispatch(_packet: BootstrapPacket, _options: DispatchOptions): Promise<DispatchResult> {
+      return {
+        exit_code: 0,
+        provider_used: "mock",
+        command_run: "mock",
+        summary: JSON.stringify({ status: "done", state_updated: true }),
+      };
+    },
+  });
+}
 
 const ARTIFACTS_ROOT = path.join(process.cwd(), ".taskchain_artifacts");
 
@@ -100,11 +117,12 @@ describe("continuation flow: dry-run → confirmed", () => {
     const confirmResult = await handleLoopContinueConfirmed({
       artifact_dir: testArtifactDir,
       ...envelope,
+      _adapterFactory: makeMockSuccessAdapter(),
     });
 
     expect(confirmResult["ok"]).toBe(true);
-    expect(confirmResult["next_child"]).toBe("POL-87");
-    expect(typeof confirmResult["message"]).toBe("string");
+    expect(confirmResult["child_id"]).toBe("POL-87");
+    expect(confirmResult["compact_return"]).toBeDefined();
   });
 
   it("writes a checkpoint file to disk after successful confirmation", async () => {
@@ -120,6 +138,7 @@ describe("continuation flow: dry-run → confirmed", () => {
     await handleLoopContinueConfirmed({
       artifact_dir: testArtifactDir,
       ...buildEnvelope(dryRunResult.preview.approval_template),
+      _adapterFactory: makeMockSuccessAdapter(),
     });
 
     const checkpointsDir = path.join(ARTIFACTS_ROOT, testArtifactDir, "checkpoints");
@@ -147,6 +166,7 @@ describe("continuation flow: dry-run → confirmed", () => {
     await handleLoopContinueConfirmed({
       artifact_dir: testArtifactDir,
       ...buildEnvelope(dryRunResult.preview.approval_template),
+      _adapterFactory: makeMockSuccessAdapter(),
     });
 
     const events = await readAuditLog(testArtifactDir);
@@ -294,6 +314,7 @@ describe("continuation flow: rejection cases", () => {
     const firstResult = await handleLoopContinueConfirmed({
       artifact_dir: testArtifactDir,
       ...envelope,
+      _adapterFactory: makeMockSuccessAdapter(),
     });
     expect(firstResult["ok"]).toBe(true);
 
@@ -305,7 +326,8 @@ describe("continuation flow: rejection cases", () => {
 
     expect(replayResult["ok"]).toBe(false);
     const rejection = replayResult["rejection"] as Record<string, unknown>;
-    const nonceReplayReasons = ["state_mutated_since_approval", "runtime_generation_mismatch", "step_cursor_mismatch"];
+    // concurrent_execution is also valid: active_child is now set after a successful confirm
+    const nonceReplayReasons = ["state_mutated_since_approval", "runtime_generation_mismatch", "step_cursor_mismatch", "concurrent_execution"];
     expect(nonceReplayReasons).toContain(rejection["reason"]);
 
     const events = await readAuditLog(testArtifactDir);
@@ -329,8 +351,8 @@ describe("continuation flow: rejection cases", () => {
 
     // Invoke both concurrently
     const [result1, result2] = await Promise.all([
-      handleLoopContinueConfirmed({ artifact_dir: testArtifactDir, ...envelope1 }),
-      handleLoopContinueConfirmed({ artifact_dir: testArtifactDir, ...envelope2 }),
+      handleLoopContinueConfirmed({ artifact_dir: testArtifactDir, ...envelope1, _adapterFactory: makeMockSuccessAdapter() }),
+      handleLoopContinueConfirmed({ artifact_dir: testArtifactDir, ...envelope2, _adapterFactory: makeMockSuccessAdapter() }),
     ]);
 
     // One should succeed, the other should fail

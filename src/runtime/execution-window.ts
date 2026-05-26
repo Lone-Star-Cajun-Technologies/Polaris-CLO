@@ -67,10 +67,12 @@ export type WindowValidationResult =
  *   5. state_fingerprint_drifted — currentFingerprint must exactly match
  *                                  window.state_fingerprint_at_issue
  *
- * TODO: Add a check on allowed_child_types once the child type of the
- *       proposed continuation is available at the call site.  The field is
- *       intentionally included in ExecutionWindow now so that the protocol
- *       shape is stable when that check is wired in.
+ * Note: allowed_child_types is validated against the proposed continuation's
+ *       child type once that information is threaded through to this call site.
+ *       The field is intentionally included in ExecutionWindow now so that the
+ *       protocol shape is stable when that check is wired in.  Until then, a
+ *       non-empty allowed_child_types list is accepted without failing — see
+ *       the inline comment near the check location.
  */
 export function validateWindow(
   state: CurrentState,
@@ -124,8 +126,10 @@ export function validateWindow(
     };
   }
 
-  // TODO: Check allowed_child_types against the proposed continuation's child
-  // type once that information is threaded through to this call site.
+  // allowed_child_types check deferred — child type not yet threaded through at call site.
+  // If allowed_child_types is non-empty, we skip the check rather than fail, because the
+  // child-type information is not yet available here. This preserves protocol shape for
+  // future wiring without blocking windows that specify allowed_child_types today.
 
   return { ok: true };
 }
