@@ -65,13 +65,9 @@ function writeJsonAtomic(path: string, value: Record<string, unknown>): void {
 
 function appendTelemetry(
   artifactDir: string,
-  state: Record<string, unknown>,
+  runId: string,
   result: { childId: string; status: string; commit?: string; validation: unknown },
 ): void {
-  if (typeof state["run_id"] !== "string") {
-    throw new Error("run_id must be a string in state before emitting telemetry");
-  }
-  const runId = state["run_id"];
   const event = {
     event: "mcp-dispatch-result",
     run_id: runId,
@@ -147,6 +143,23 @@ export async function handlePolarisDispatchResult(
     };
   }
 
+  // Validate run_id strictly before any persistence
+  if (typeof state["run_id"] !== "string" || state["run_id"].trim() === "") {
+    return {
+      ok: false,
+      error: "invalid_run_id",
+      message: "run_id must be a non-empty string in state",
+    };
+  }
+  const runId = state["run_id"].trim();
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(runId)) {
+    return {
+      ok: false,
+      error: "invalid_run_id",
+      message: "run_id must be a valid UUID format",
+    };
+  }
+
   const recordedAt = new Date().toISOString();
   const completed = terminalStatuses.has(parsed.status.toLowerCase());
   const openChildren = completed ? withoutChild(state["open_children"], parsed.childId) : state["open_children"];
@@ -175,7 +188,7 @@ export async function handlePolarisDispatchResult(
 
   try {
     writeJsonAtomic(statePath, updated);
-    appendTelemetry(parsed.artifactDir, updated, {
+    appendTelemetry(parsed.artifactDir, runId, {
       childId: parsed.childId,
       status: parsed.status,
       commit: parsed.commit,
