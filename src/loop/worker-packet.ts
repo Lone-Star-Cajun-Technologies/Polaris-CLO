@@ -72,13 +72,13 @@ export interface WorkerPacket extends BootstrapPacket {
 
 /** Type guard: returns true when packet is a compiled WorkerPacket. */
 export function isWorkerPacket(packet: BootstrapPacket): packet is WorkerPacket {
-  const maybeWorker = packet as any;
+  const p = packet as unknown as Record<string, unknown>;
   return (
     packet.schema_version === '2.0' &&
-    typeof maybeWorker.worker_role === 'string' &&
-    Array.isArray(maybeWorker.instructions) &&
-    typeof maybeWorker.lifecycle === 'object' && maybeWorker.lifecycle !== null &&
-    typeof maybeWorker.return_contract === 'object' && maybeWorker.return_contract !== null
+    typeof p['worker_role'] === 'string' &&
+    typeof p['instructions'] === 'object' && p['instructions'] !== null && !Array.isArray(p['instructions']) &&
+    typeof p['lifecycle'] === 'object' && p['lifecycle'] !== null &&
+    Array.isArray(p['return_contract'])
   );
 }
 
