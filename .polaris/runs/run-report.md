@@ -1,20 +1,22 @@
-# Run Report: pol-5-session-1
+# Run Report: polaris-run-cli-parity-workflow-migration-2026-05-26-001
 
-**Status:** running
-**Branch:** philmeaux/pol-105-implement-issue-hierarchy-and-ephemeral-execution-refactor
+**Status:** cluster-complete
+**Branch:** philmeaux/pol-123-implement-polaris-runtime-cli-parity-and-deferred-workflow
 **PR:** TBD — set at delivery step 9
-**Children completed:** 3 of 5
+**Children completed:** 5 of 5
 **Validation:** passed
+
+**Blocker:** Blocked: POL-124 validation cannot run because src/loop/checkpoint.ts and src/docs/ingest.ts import missing ../utils/monotonic-timestamp.js on main; fixing it is outside POL-124 allowed changes. (child: POL-124)
 
 ## Children
 
 | ID | Title | Commit | Status |
 |---|---|---|---|
-| POL-23 | — | — | Done |
-| POL-24 | — | — | Done |
-| POL-25 | — | — | Done |
-| POL-26 | — | — | Open |
-| POL-27 | — | — | Open |
+| POL-128 | — | — | Done |
+| POL-124 | — | — | Done |
+| POL-125 | — | — | Done |
+| POL-126 | — | — | Done |
+| POL-127 | — | — | Done |
 
 ## Artifacts produced
 

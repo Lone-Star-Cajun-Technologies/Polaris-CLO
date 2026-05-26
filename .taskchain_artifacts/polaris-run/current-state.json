@@ -1,29 +1,65 @@
 {
   "schema_version": "1.0",
-  "run_id": "polaris-run-pol-121-2026-05-26-001",
-  "related_run_id": null,
-  "cluster_id": "POL-121",
+  "run_id": "polaris-run-cli-parity-workflow-migration-2026-05-26-001",
+  "related_run_id": "polaris-run-pol-121-2026-05-26-001",
+  "cluster_id": "POL-123",
   "skill": "polaris-run",
   "artifact_dir": ".taskchain_artifacts/polaris-run",
-  "branch": "philmeaux/pol-121-wire-polaris-docs-ingest-cli-to-smart-docs-ingest-runtime",
-  "current_step_id": "07-decide-continuation",
-  "step_cursor": "complete",
-  "status": "complete",
+  "branch": "philmeaux/pol-123-implement-polaris-runtime-cli-parity-and-deferred-workflow",
+  "current_step_id": "06-commit-and-update-linear",
+  "step_cursor": "checkpoint",
+  "status": "cluster-complete",
   "session_type": "implementation",
   "active_child": "",
-  "last_commit": "8b21225",
-  "pr_url": "https://github.com/ItIsYeBananaduck/Polaris/pull/36",
+  "last_commit": "d62cb22",
+  "pr_url": null,
   "next_open_child": null,
   "completed_children": [
-    "POL-121"
+    "POL-128",
+    "POL-124",
+    "POL-125",
+    "POL-126",
+    "POL-127"
   ],
   "open_children": [],
-  "open_children_meta": {},
+  "open_children_meta": {
+    "POL-124": {
+      "title": "IMPLEMENT: Wire polaris doctrine subcommand into CLI",
+      "state": "Done",
+      "status_type": "completed",
+      "blocked_by": []
+    },
+    "POL-125": {
+      "title": "IMPLEMENT: Add polaris docs init for Smart Docs scaffold bootstrap",
+      "state": "Done",
+      "status_type": "completed",
+      "blocked_by": []
+    },
+    "POL-126": {
+      "title": "IMPLEMENT: Extend polaris init with repoAnalysis provider detection",
+      "state": "Done",
+      "status_type": "completed",
+      "blocked_by": []
+    },
+    "POL-127": {
+      "title": "IMPLEMENT: Add read-only polaris config show subcommand",
+      "state": "Done",
+      "status_type": "completed",
+      "blocked_by": []
+    }
+  },
   "context_budget": {
-    "children_completed": 1,
-    "files_touched_total": 5,
+    "children_completed": 5,
+    "files_touched_total": 16,
     "last_child_files_touched": 5
   },
-  "validation_status": null,
-  "updated_at": "2026-05-26T20:55:09.549Z"
+  "validation_status": "passed",
+  "updated_at": "2026-05-26T23:36:49Z",
+  "blocker": {
+    "reason": "Blocked: POL-124 validation cannot run because src/loop/checkpoint.ts and src/docs/ingest.ts import missing ../utils/monotonic-timestamp.js on main; fixing it is outside POL-124 allowed changes.",
+    "child_id": "POL-124",
+    "timestamp": "2026-05-26T23:14:30.870Z",
+    "resolved": true,
+    "follow_up_issue": "POL-128"
+  }
 }
