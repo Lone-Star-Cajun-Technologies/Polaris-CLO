@@ -33,7 +33,7 @@
       "run_id": "polaris-run-cli-operator-surface-2026-05-26-001",
       "cluster_id": "POL-97",
       "child_id": "POL-99",
-      "state_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json",
+      "state_file": ".taskchain_artifacts/polaris-run/current-state.json",
       "telemetry_file": ".taskchain_artifacts/polaris-run/runs/polaris-run-cli-operator-surface-2026-05-26-001/telemetry.jsonl",
       "current_state_sha": "f079cee686336f3c005184484bc3b4a814d0204809952ab3b22f375fc7f0da21",
       "branch": "codex/pol-97-cli-operator-analysis",

@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { join } from "node:path";
+import { existsSync } from "node:fs";
 import { runLoopContinue } from "./continue.js";
 import { runLoopResume } from "./resume.js";
 import { runLoopStatus } from "./status.js";
@@ -15,10 +16,25 @@ export interface LoopCommandHandlers {
 }
 
 function defaultStateFile(repoRoot: string, stateFile?: string): string {
-  return (
-    stateFile ??
-    join(repoRoot, ".taskchain_artifacts", "polaris-run", "current-state.json")
-  );
+  if (stateFile) {
+    return stateFile;
+  }
+
+  const newPath = join(repoRoot, ".taskchain_artifacts", "polaris-run", "current-state.json");
+  const legacyPath = join(repoRoot, ".polaris", "runs", "current-state.json");
+
+  // If the new path exists, use it
+  if (existsSync(newPath)) {
+    return newPath;
+  }
+
+  // If the legacy path exists, use it
+  if (existsSync(legacyPath)) {
+    return legacyPath;
+  }
+
+  // Neither exists, return the new path so callers can create it
+  return newPath;
 }
 
 function failMissingSubcommand(command: Command, commandName: string): never {
