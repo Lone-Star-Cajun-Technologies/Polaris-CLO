@@ -1,6 +1,6 @@
 ---
 name: polaris-analyze-step-01-fetch-and-orient
-description: Generate run_id, emit run-start telemetry, activate caveman-lite, fetch the Linear issue and check repo-analysis provider availability in parallel.
+description: Generate run_id, emit run-start telemetry, fetch the Linear issue and check repo-analysis provider availability in parallel.
 ---
 
 # Step 01 — Fetch and orient
@@ -21,12 +21,10 @@ allowed_routes:
   - docs/Polaris/spec/polaris-implementation-plan.md
   - .codex/skills/polaris-analyze/chain.md
 allowed_skills:
-  - caveman
   - repo-analysis
 expected_evidence:
   - run_id generated
   - run-start telemetry emitted
-  - caveman-lite active
   - Linear issue fetched
   - repo-analysis provider status checked
   - analysis target and context recorded
@@ -34,8 +32,6 @@ stop_rules:
   - run-start telemetry write fails
   - issue missing or inaccessible
   - issue is already Done or Cancelled
-warnings:
-  - caveman activation fails: note and continue — lite mode is advisory
 ```
 
 ## Actions
@@ -52,9 +48,7 @@ warnings:
    ```
    If this write fails: halt.
 
-2. **Activate caveman-lite** per `linked-skills/caveman.md`. If not installed, proceed and note the gap.
-
-3. Run both of the following **in the same turn** (independent, parallelizable):
+2. Run both of the following **in the same turn** (independent, parallelizable):
    - Fetch the Linear issue by ID. Read: title, description, labels, state, priority, existing child issues, blocking relationships.
      - If already Done or Cancelled: report and stop.
    - Check `polaris.config.json` for `providers.repoAnalysis.preferred`.
