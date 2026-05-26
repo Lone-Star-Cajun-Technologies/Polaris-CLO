@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { mkdirSync, writeFileSync, rmSync, realpathSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -49,15 +49,21 @@ describe("resolveRepoRoot()", () => {
     // but the function re-reads process.env at call time)
     const { resolveRepoRoot } = await import("./root.js");
     const result = resolveRepoRoot();
-    expect(result).toBe(resolve(tempDir));
+    // Compare real paths to handle macOS symlinked temp directories
+    expect(realpathSync(result)).toBe(realpathSync(resolve(tempDir)));
   });
 
   it("resolves a relative POLARIS_ROOT path to an absolute path", async () => {
-    // Set a relative path — resolveRepoRoot should resolve() it
+    // Create a real directory for relative path test (realpathSync requires path to exist)
+    const relativeDir = join(tempDir, "relative-path");
+    mkdirSync(relativeDir, { recursive: true });
+    // Change to tempDir so relative path resolves correctly
+    process.chdir(tempDir);
     process.env["POLARIS_ROOT"] = "./relative-path";
     const { resolveRepoRoot } = await import("./root.js");
     const result = resolveRepoRoot();
-    expect(result).toBe(resolve("./relative-path"));
+    // Compare real paths to handle macOS symlinked temp directories
+    expect(realpathSync(result)).toBe(realpathSync(relativeDir));
   });
 
   it("walks up from cwd and finds the repo root when package.json has name=polaris", async () => {
@@ -71,7 +77,8 @@ describe("resolveRepoRoot()", () => {
     delete process.env["POLARIS_ROOT"];
     const { resolveRepoRoot } = await import("./root.js");
     const result = resolveRepoRoot();
-    expect(result).toBe(tempDir);
+    // Compare real paths to handle macOS symlinked temp directories
+    expect(realpathSync(result)).toBe(realpathSync(tempDir));
   });
 
   it("throws when no polaris root can be found and POLARIS_ROOT is not set", async () => {
