@@ -1,0 +1,15 @@
+{"event":"run-start","run_id":"polaris-run-subagent-dispatch-2026-05-26-003","prior_run_id":"polaris-run-cli-operator-surface-2026-05-26-001","timestamp":"2026-05-26T18:05:00.000Z"}
+
+{"event":"step-complete","run_id":"polaris-run-subagent-dispatch-2026-05-26-003","step":"01-orient-cluster","timestamp":"2026-05-26T18:08:05.000Z"}
+{"event":"step-complete","run_id":"polaris-run-subagent-dispatch-2026-05-26-003","step":"02-prepare-branch","timestamp":"2026-05-26T18:10:05.000Z"}
+{"event":"step-complete","run_id":"polaris-run-subagent-dispatch-2026-05-26-003","step":"03-select-child","active_child":"POL-106","timestamp":"2026-05-26T18:12:05.000Z"}
+{"event":"step-complete","run_id":"polaris-run-subagent-dispatch-2026-05-26-003","step":"04-execute-child","active_child":"POL-106","changed_files":["docs/spec/issue-hierarchy-doctrine.md","docs/spec/polaris-implementation-plan.md"],"timestamp":"2026-05-26T14:25:10.000Z"}
+{"event":"step-complete","run_id":"polaris-run-subagent-dispatch-2026-05-26-003","step":"05-validate-child","active_child":"POL-106","validation":["test -f docs/spec/issue-hierarchy-doctrine.md","grep -q \"IMPLEMENT parent\" docs/spec/issue-hierarchy-doctrine.md","grep -q \"migration\" docs/spec/issue-hierarchy-doctrine.md"],"result":"passed","timestamp":"2026-05-26T14:25:10.000Z"}
+{"event":"step-complete","run_id":"polaris-run-subagent-dispatch-2026-05-26-003","step":"06-commit-and-update-linear","active_child":"POL-106","commit":"1547760","map_update":"warning: docs/spec files added to needs-review with confidence 0.00","timestamp":"2026-05-26T14:25:10.000Z"}
+{"event":"loop-checkpoint","run_id":"polaris-run-subagent-dispatch-2026-05-26-003","child_id":"","next_child":"POL-107","timestamp":"2026-05-26T14:26:42.838Z"}
+{"event":"canon-check-start","run_id":"polaris-run-subagent-dispatch-2026-05-26-003","child_id":"POL-107","canon_files_inspected":0,"changed_files_count":0,"timestamp":"2026-05-26T14:26:42.946Z"}
+{"event":"canon-check-result","run_id":"polaris-run-subagent-dispatch-2026-05-26-003","child_id":"POL-107","outcome":"aligned","conflicts":[],"timestamp":"2026-05-26T14:26:42.946Z"}
+
+{"event":"step-complete","run_id":"polaris-run-subagent-dispatch-2026-05-26-003","step":"03-select-child","active_child":"POL-107","timestamp":"2026-05-26T14:30:05.000Z"}
+{"event":"step-complete","run_id":"polaris-run-subagent-dispatch-2026-05-26-003","step":"04-execute-child","active_child":"POL-107","changed_files":["docs/spec/ephemeral-execution-architecture.md"],"timestamp":"2026-05-26T14:29:09.000Z"}
+{"event":"step-complete","run_id":"polaris-run-subagent-dispatch-2026-05-26-003","step":"05-validate-child","active_child":"POL-107","validation":["test -f docs/spec/ephemeral-execution-architecture.md","grep -q \"AgentSubtaskAdapter\" docs/spec/ephemeral-execution-architecture.md","grep -q \"manual\" docs/spec/ephemeral-execution-architecture.md","grep -q \"test plan\" docs/spec/ephemeral-execution-architecture.md"],"result":"passed","timestamp":"2026-05-26T14:29:09.000Z"}
