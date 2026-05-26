@@ -68,7 +68,10 @@ function appendTelemetry(
   state: Record<string, unknown>,
   result: { childId: string; status: string; commit?: string; validation: unknown },
 ): void {
-  const runId = typeof state["run_id"] === "string" ? state["run_id"] : "unknown-run";
+  if (typeof state["run_id"] !== "string") {
+    throw new Error("run_id must be a string in state before emitting telemetry");
+  }
+  const runId = state["run_id"];
   const event = {
     event: "mcp-dispatch-result",
     run_id: runId,

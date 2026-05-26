@@ -77,6 +77,29 @@ describe("handlePolarisDispatchResult()", () => {
     expect(telemetry).toContain("\"commit\":\"abc1234\"");
   });
 
+  it("returns error when run_id is missing from state", async () => {
+    writeState(repoRoot, "polaris-run", {
+      schema_version: "1.0",
+      cluster_id: "POL-105",
+      active_child: "POL-111",
+      open_children: ["POL-111"],
+      completed_children: [],
+      status: "running",
+      step_cursor: "04-execute-child",
+    });
+
+    const result = await handlePolarisDispatchResult({
+      child_id: "POL-111",
+      status: "completed",
+      commit: "abc1234",
+      validation: "passed",
+    });
+
+    expect(result["ok"]).toBe(false);
+    expect(typeof (result["error"] as Record<string, unknown>)["message"]).toBe("string");
+    expect((result["error"] as Record<string, unknown>)["message"]).toContain("run_id");
+  });
+
   it("returns active_child_mismatch when the result does not match active_child", async () => {
     writeState(repoRoot, "polaris-run", {
       schema_version: "1.0",
