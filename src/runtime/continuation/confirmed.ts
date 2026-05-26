@@ -1,9 +1,14 @@
-import { loadState, writeState } from "../state.js";
+import path from "node:path";
+import { writeFile } from "node:fs/promises";
+import { loadState, writeState, getArtifactDir } from "../state.js";
 import { validateEnvelope } from "../verification/envelope.js";
 import { writeCheckpoint } from "../checkpoint.js";
 import { appendAuditEvent } from "../audit/logger.js";
 import { selectExecutionAdapter } from "../../loop/execution-adapter.js";
 import { AgentSubtaskAdapter } from "../../loop/adapters/agent-subtask.js";
+import { validateWindow, decrementWindow } from "../execution-window.js";
+import { computeStateFingerprint } from "../verification/fingerprint.js";
+import type { ExecutionWindow } from "../execution-window.js";
 import type { ExecutionAdapterMode } from "../../loop/execution-adapter.js";
 import type { ExecutionAdapter } from "../../loop/adapters/types.js";
 import type { ContinuationApprovalEnvelope } from "../verification/envelope.js";
@@ -18,7 +23,7 @@ export interface ConfirmedContinuationRequest {
   artifact_dir: string;
   envelope: ContinuationApprovalEnvelope;
   adapterOverride?: ExecutionAdapterMode;
-  executionWindow?: unknown; // typed in Issue D (POL-94)
+  executionWindow?: ExecutionWindow;
   /** For test injection: override the adapter factory. */
   _adapterFactory?: () => ExecutionAdapter;
 }
@@ -48,8 +53,14 @@ export async function dispatchConfirmedContinuation(
     return { ok: false, rejection: validation.failure };
   }
 
-  // Step 3: execution window check — full validation in Issue D (POL-94)
-  // Pass-through if executionWindow not provided.
+  // Step 3: execution window validation
+  if (request.executionWindow) {
+    const fingerprint = computeStateFingerprint({ state, approvalNonce: request.executionWindow.run_id });
+    const windowResult = validateWindow(state, request.executionWindow, fingerprint);
+    if (!windowResult.ok) {
+      return { ok: false, rejection: { check: "execution_window", reason: windowResult.reason } };
+    }
+  }
 
   // Step 4: recovery state detection stub — full implementation in Issue E (POL-95)
   if (state.active_child) {
@@ -69,6 +80,14 @@ export async function dispatchConfirmedContinuation(
     active_child: nextChild,
     continuation_epoch: (state.continuation_epoch ?? 0) + 1,
   });
+
+  // Decrement window after lease acquired — persist as side-file
+  if (request.executionWindow) {
+    const decremented = decrementWindow(request.executionWindow);
+    // Persist decremented window to side-file (not in CurrentState)
+    const windowFile = path.join(getArtifactDir(artifact_dir), "execution-window.json");
+    await writeFile(windowFile, JSON.stringify(decremented, null, 2) + "\n", "utf-8");
+  }
 
   // Step 7: record mutation_approved after state is durably written
   await appendAuditEvent(artifact_dir, {

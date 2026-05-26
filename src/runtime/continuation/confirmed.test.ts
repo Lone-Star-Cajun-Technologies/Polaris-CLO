@@ -12,6 +12,7 @@ import path from "node:path";
 import type { CurrentState } from "../../types/runtime-state.js";
 import type { ContinuationApprovalEnvelope } from "../verification/envelope.js";
 import type { BootstrapPacket, DispatchOptions, DispatchResult, ExecutionAdapter } from "../../loop/adapters/types.js";
+import type { ExecutionWindow } from "../execution-window.js";
 import { computeStateFingerprint } from "../verification/fingerprint.js";
 import { dispatchConfirmedContinuation } from "./confirmed.js";
 
@@ -166,6 +167,114 @@ describe("confirmed.ts: adapter selection + autoDispatch gating", () => {
     if (result.ok) {
       expect(result.child_id).toBe("POL-92");
     }
+  });
+});
+
+function makeWindow(state: CurrentState, overrides: Partial<ExecutionWindow> = {}): ExecutionWindow {
+  return {
+    run_id: state.run_id,
+    max_continuations: 3,
+    valid_from: new Date(Date.now() - 60000).toISOString(),
+    valid_until: new Date(Date.now() + 3600000).toISOString(),
+    allowed_child_types: [],
+    state_fingerprint_at_issue: computeStateFingerprint({ state, approvalNonce: state.run_id }),
+    ...overrides,
+  };
+}
+
+describe("execution window validation", () => {
+  it("window present and valid → proceeds to dispatch (ok: true)", async () => {
+    const state = makeRunningState();
+    await writeStateToDir(testArtifactDir, state);
+    const envelope = buildEnvelope(state);
+    const executionWindow = makeWindow(state);
+
+    const result = await dispatchConfirmedContinuation({
+      artifact_dir: testArtifactDir,
+      envelope,
+      adapterOverride: "agent-subtask",
+      executionWindow,
+      _adapterFactory: makeMockAdapter({ status: "done", state_updated: true }),
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.child_id).toBe("POL-92");
+    }
+  });
+
+  it("window present and exhausted (max_continuations: 0) → returns execution_window/window_exhausted rejection", async () => {
+    const state = makeRunningState();
+    await writeStateToDir(testArtifactDir, state);
+    const envelope = buildEnvelope(state);
+    const executionWindow = makeWindow(state, { max_continuations: 0 });
+
+    const result = await dispatchConfirmedContinuation({
+      artifact_dir: testArtifactDir,
+      envelope,
+      executionWindow,
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.rejection.check).toBe("execution_window");
+      expect(result.rejection.reason).toBe("window_exhausted");
+    }
+  });
+
+  it("window absent → skipped entirely (proceeds normally, ok: true)", async () => {
+    const state = makeRunningState();
+    await writeStateToDir(testArtifactDir, state);
+    const envelope = buildEnvelope(state);
+
+    const result = await dispatchConfirmedContinuation({
+      artifact_dir: testArtifactDir,
+      envelope,
+      adapterOverride: "agent-subtask",
+      _adapterFactory: makeMockAdapter({ status: "done", state_updated: true }),
+    });
+
+    expect(result.ok).toBe(true);
+  });
+
+  it("valid window with non-empty allowed_child_types → proceeds (check deferred)", async () => {
+    const state = makeRunningState();
+    await writeStateToDir(testArtifactDir, state);
+    const envelope = buildEnvelope(state);
+    const executionWindow = makeWindow(state, { allowed_child_types: ["implement"] });
+
+    const result = await dispatchConfirmedContinuation({
+      artifact_dir: testArtifactDir,
+      envelope,
+      adapterOverride: "agent-subtask",
+      executionWindow,
+      _adapterFactory: makeMockAdapter({ status: "done", state_updated: true }),
+    });
+
+    expect(result.ok).toBe(true);
+  });
+
+  it("decremented window is written to side-file after lease acquired", async () => {
+    const state = makeRunningState();
+    await writeStateToDir(testArtifactDir, state);
+    const envelope = buildEnvelope(state);
+    const executionWindow = makeWindow(state, { max_continuations: 3 });
+
+    const result = await dispatchConfirmedContinuation({
+      artifact_dir: testArtifactDir,
+      envelope,
+      adapterOverride: "agent-subtask",
+      executionWindow,
+      _adapterFactory: makeMockAdapter({ status: "done", state_updated: true }),
+    });
+
+    expect(result.ok).toBe(true);
+
+    const windowFilePath = path.join(ARTIFACTS_ROOT, testArtifactDir, "execution-window.json");
+    const raw = await readFile(windowFilePath, "utf-8");
+    const persisted = JSON.parse(raw) as ExecutionWindow;
+    expect(persisted.max_continuations).toBe(2); // decremented from 3
+    expect(persisted.run_id).toBe(state.run_id);
   });
 });
 
