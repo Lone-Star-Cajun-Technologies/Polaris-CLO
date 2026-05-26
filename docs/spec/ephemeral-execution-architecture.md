@@ -133,7 +133,7 @@ Ephemeral mode can use MCP operations when the parent and worker do not share pr
 
 ### Claim
 
-`polaris.ephemeral.claim` reserves one child for one worker.
+`polaris_claim_child` (MCP tool name; conceptual alias: `polaris.ephemeral.claim`) reserves one child for one worker.
 
 Input:
 
@@ -153,7 +153,7 @@ The operation must be atomic. A second worker cannot claim the same child unless
 
 ### Dispatch
 
-`polaris.ephemeral.dispatch` creates or records a handoff.
+`polaris_dispatch_child` (MCP tool name; conceptual alias: `polaris.ephemeral.dispatch`) creates or records a handoff.
 
 Input:
 
@@ -173,7 +173,7 @@ Dispatch does not mark the child complete. It only records that a worker can beg
 
 ### Result
 
-`polaris.ephemeral.result` records the worker outcome.
+`polaris_dispatch_result` (MCP tool name; conceptual alias: `polaris.ephemeral.result`) records the worker outcome.
 
 Input:
 

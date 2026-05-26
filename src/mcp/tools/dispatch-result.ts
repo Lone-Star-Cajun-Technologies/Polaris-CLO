@@ -36,10 +36,13 @@ function parseArgs(args: DispatchResultArgs): {
     throw new Error("commit must be a string when provided");
   }
 
+  const normalizedChildId = args.child_id.trim();
+  const normalizedStatus = args.status.trim();
+
   return {
     artifactDir,
-    childId: args.child_id,
-    status: args.status,
+    childId: normalizedChildId,
+    status: normalizedStatus,
     commit: args.commit,
     validation: args.validation ?? null,
   };
@@ -167,13 +170,27 @@ export async function handlePolarisDispatchResult(
     updated_at: recordedAt,
   };
 
-  writeJsonAtomic(statePath, updated);
-  appendTelemetry(parsed.artifactDir, updated, {
-    childId: parsed.childId,
-    status: parsed.status,
-    commit: parsed.commit,
-    validation: parsed.validation,
-  });
+  try {
+    writeJsonAtomic(statePath, updated);
+    appendTelemetry(parsed.artifactDir, updated, {
+      childId: parsed.childId,
+      status: parsed.status,
+      commit: parsed.commit,
+      validation: parsed.validation,
+    });
+  } catch (err) {
+    return {
+      ok: false,
+      error: {
+        message: err instanceof Error ? err.message : String(err),
+        name: err instanceof Error ? err.name : "Error",
+        meta: {
+          statePath,
+          childId: parsed.childId,
+        },
+      },
+    };
+  }
 
   return {
     ok: true,

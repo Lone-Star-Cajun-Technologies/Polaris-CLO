@@ -39,7 +39,10 @@ function writeJsonAtomic(path: string, value: Record<string, unknown>): void {
 }
 
 function appendTelemetry(artifactDir: string, state: Record<string, unknown>, childId: string): void {
-  const runId = typeof state["run_id"] === "string" ? state["run_id"] : "unknown-run";
+  if (typeof state["run_id"] !== "string") {
+    throw new Error("run_id must be a string in state before emitting telemetry");
+  }
+  const runId = state["run_id"];
   const event = {
     event: "mcp-claim-child",
     run_id: runId,
@@ -110,8 +113,17 @@ export async function handlePolarisClaimChild(
       active_child: parsed.childId,
       updated_at: new Date().toISOString(),
     };
-    writeJsonAtomic(statePath, updated);
-    appendTelemetry(parsed.artifactDir, updated, parsed.childId);
+
+    try {
+      writeJsonAtomic(statePath, updated);
+      appendTelemetry(parsed.artifactDir, updated, parsed.childId);
+    } catch (error) {
+      return {
+        ok: false,
+        error: "telemetry_write_failed",
+        message: error instanceof Error ? error.message : String(error),
+      };
+    }
 
     return {
       ok: true,

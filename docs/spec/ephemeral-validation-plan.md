@@ -25,7 +25,7 @@ Use a separate guard cluster for rejection behavior:
 
 ## Failure Conditions
 
-- Any real network or Linear call occurs during the in-process smoke test.
+- Any real network or Linear call occurs during the real validation harness.
 - An ANALYZE parent dispatches a child instead of halting.
 - More than one child dispatches in the validation run.
 - The parent loop executes child work inline instead of using the adapter.
