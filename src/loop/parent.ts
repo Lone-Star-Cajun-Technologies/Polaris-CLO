@@ -59,6 +59,7 @@ export type ParentLoopHaltReason =
   | 'blocked'              // A child reported a blocker
   | 'worker-error'         // Worker returned a non-zero exit code or error status
   | 'state-invalid'        // current-state.json failed validation
+  | 'analyze-parent'       // Cluster root is an ANALYZE issue
   | 'analyze-drift';       // Next child is an analyze issue and allow_analyze_children is false
 
 export interface ParentLoopResult {
@@ -104,6 +105,18 @@ function isAnalyzeChild(childId: string, state: LoopState): boolean {
   if (!meta) return false;
   const title = meta.title ?? "";
   if (title.startsWith("Analyze:") || title.startsWith("polaris-analyze")) return true;
+  if (meta.labels?.includes("analyze")) return true;
+  return false;
+}
+
+/**
+ * Returns true when the cluster root is an ANALYZE issue.
+ */
+function isAnalyzeParent(state: LoopState): boolean {
+  const meta = state.open_children_meta?.[state.cluster_id];
+  if (!meta) return false;
+  const title = meta.title ?? "";
+  if (title.startsWith("ANALYZE:")) return true;
   if (meta.labels?.includes("analyze")) return true;
   return false;
 }
@@ -210,16 +223,35 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     };
   }
 
+  if (isAnalyzeParent(state)) {
+    return {
+      haltReason: 'analyze-parent',
+      childrenDispatched: 0,
+      message: "polaris-run targets IMPLEMENT parents, not ANALYZE issues. Run polaris-analyze first to create an IMPLEMENT parent.",
+    };
+  }
+
   // Load config for adapter and provider resolution
   const config = loadConfig(repoRoot);
-  const adapterName = options.adapter ?? config.execution?.adapter ?? "terminal-cli";
+  const orchestrationMode =
+    (state as { orchestration_mode?: string }).orchestration_mode ?? "persistent-parent";
+  const adapterName =
+    orchestrationMode === "ephemeral"
+      ? "agent-subtask"
+      : options.adapter ?? config.execution?.adapter ?? "terminal-cli";
   const providerName =
-    options.provider ??
-    config.execution?.rotation?.[0] ??
-    Object.keys(config.execution?.providers ?? {})[0] ??
-    "default";
+    adapterName === "agent-subtask"
+      ? "agent-subtask"
+      : options.provider ??
+        config.execution?.rotation?.[0] ??
+        Object.keys(config.execution?.providers ?? {})[0] ??
+        "default";
 
-  const adapter = createAdapter(adapterName, config.execution ?? { adapter: adapterName, providers: {} });
+  const executionConfig =
+    adapterName === "agent-subtask"
+      ? { ...(config.execution ?? { providers: {} }), adapter: "agent-subtask" }
+      : config.execution ?? { adapter: adapterName, providers: {} };
+  const adapter = createAdapter(adapterName, executionConfig);
   const budgetPolicy = policyFromConfig(state.context_budget, config.budget);
   const allowAnalyzeChildren = allowAnalyzeChildrenFlag || (config.budget?.allow_analyze_children === true);
   const telemetryFile = resolveTelemetryFile(state, repoRoot);
@@ -324,6 +356,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
         run_id: state.run_id,
         child_id: nextChild,
         adapter: adapterName,
+        orchestration_mode: orchestrationMode,
         provider: providerName,
         dry_run: dryRun,
         timestamp: new Date().toISOString(),

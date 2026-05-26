@@ -1,4 +1,5 @@
 export type RunStatus = "not-started" | "running" | "stopped" | "complete";
+export type OrchestrationMode = "ephemeral" | "persistent-parent";
 
 export interface CurrentState {
   schema_version: string;
@@ -15,7 +16,12 @@ export interface CurrentState {
   status: RunStatus;
   // Extended fields — absent in older state files; treat missing as defaults
   runtime_generation?: number;
-  orchestration_mode?: string;
+  /**
+   * Valid values: "ephemeral" dispatches one child to a fresh worker;
+   * "persistent-parent" keeps the parent loop in-process.
+   * Older persisted state may still contain "bootstrap" and is treated as legacy.
+   */
+  orchestration_mode?: OrchestrationMode | "bootstrap";
   continuation_epoch?: number;
 }
 

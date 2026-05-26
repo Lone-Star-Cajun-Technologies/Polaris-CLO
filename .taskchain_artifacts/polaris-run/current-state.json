@@ -1,63 +1,86 @@
 {
   "schema_version": "1.0",
-  "run_id": "polaris-run-cli-operator-surface-2026-05-26-001",
-  "related_run_id": "polaris-run-mcp-confirmed-dispatch-2026-05-25-002",
-  "cluster_id": "POL-97",
+  "run_id": "polaris-run-subagent-dispatch-2026-05-26-003",
+  "related_run_id": "polaris-run-cli-operator-surface-2026-05-26-001",
+  "cluster_id": "POL-105",
   "skill": "polaris-run",
   "artifact_dir": ".taskchain_artifacts/polaris-run",
-  "branch": "codex/pol-97-cli-operator-analysis",
-  "current_step_id": "08-final-delivery",
+  "branch": "philmeaux/pol-105-implement-issue-hierarchy-and-ephemeral-execution-refactor",
+  "current_step_id": "06-commit-and-update-linear",
   "step_cursor": "checkpoint",
-  "status": "complete",
+  "status": "cluster-complete",
   "session_type": "implementation",
   "active_child": "",
-  "last_commit": "550f09a",
-  "pr_url": "https://github.com/ItIsYeBananaduck/Polaris/pull/27",
-  "next_open_child": "POL-101",
+  "last_commit": "a62990ee66544bb50ab25a978ebc9204e5acb4ad",
+  "pr_url": "",
+  "next_open_child": "",
   "completed_children": [
-    "POL-98",
-    "POL-99",
-    "POL-100"
+    "POL-106",
+    "POL-107",
+    "POL-108",
+    "POL-109",
+    "POL-110",
+    "POL-111",
+    "POL-112"
   ],
-  "open_children": [
-    "POL-101"
-  ],
+  "open_children": [],
   "open_children_meta": {
-    "POL-98": {
-      "title": "IMPLEMENT: Wire Polaris public CLI through Commander and expose finalize",
+    "POL-106": {
+      "title": "IMPLEMENT: Write issue-hierarchy-doctrine.md and migration guide",
       "blockedBy": [],
       "status": "Done"
     },
-    "POL-99": {
-      "title": "IMPLEMENT: Normalize Polaris CLI help, errors, and operator safety text",
+    "POL-107": {
+      "title": "IMPLEMENT: Write ephemeral-execution-architecture.md (Claude, Codex, manual fallback, test plan)",
+      "blockedBy": [],
+      "status": "Done"
+    },
+    "POL-108": {
+      "title": "IMPLEMENT: Update polaris-analyze step 05 to create separate IMPLEMENT parent issue",
       "blockedBy": [
-        "POL-98"
+        "POL-106"
       ],
       "status": "Done"
     },
-    "POL-100": {
-      "title": "IMPLEMENT: Align Codex plugin commands with Polaris safety boundaries",
+    "POL-109": {
+      "title": "IMPLEMENT: Add polaris-run ANALYZE-parent rejection guard in orient-cluster",
       "blockedBy": [
-        "POL-98",
-        "POL-99"
+        "POL-106"
       ],
       "status": "Done"
     },
-    "POL-101": {
-      "title": "IMPLEMENT: Run Polaris 1.0 operator smoke test on a tiny real issue",
+    "POL-110": {
+      "title": "IMPLEMENT: Implement AgentSubtaskAdapter.dispatch() and activate orchestration_mode in parent loop",
       "blockedBy": [
-        "POL-98",
-        "POL-99",
-        "POL-100"
+        "POL-107"
       ],
-      "status": "Backlog"
+      "status": "Done"
+    },
+    "POL-111": {
+      "title": "IMPLEMENT: Add MCP ephemeral dispatch tools (claim, dispatch-result) to polaris MCP server",
+      "blockedBy": [
+        "POL-107",
+        "POL-110"
+      ],
+      "status": "Done"
+    },
+    "POL-112": {
+      "title": "IMPLEMENT: Write Polaris ephemeral execution smoke test and validation harness",
+      "blockedBy": [
+        "POL-108",
+        "POL-109",
+        "POL-110"
+      ],
+      "status": "Done"
     }
   },
   "context_budget": {
-    "children_completed": 3,
-    "files_touched_total": 19,
-    "last_child_files_touched": 9
+    "children_completed": 7,
+    "files_touched_total": 23,
+    "last_child_files_touched": 2
   },
+  "map_update_warning": "polaris map update --changed completed with low-confidence needs-review entries for POL-111 run ledger files",
   "validation_status": "passed",
-  "updated_at": "2026-05-26T17:50:00.000Z"
+  "validation_command_substitution": "npm test -- --testPathPattern=\"ephemeral-smoke\" failed because Vitest does not support --testPathPattern; ran npm test -- src/loop/ephemeral-smoke.test.ts instead.",
+  "updated_at": "2026-05-26T16:00:30.000Z"
 }
