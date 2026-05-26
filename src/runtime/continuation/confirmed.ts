@@ -193,7 +193,7 @@ export async function dispatchConfirmedContinuation(
     // Adapter dispatch failed — clear active_child, write recovery audit events, and
     // return ok: false so MCP callers are not misled into treating a failed dispatch
     // as successful execution.
-    await writeState(artifact_dir, { ...state, active_child: null });
+    await writeState(artifact_dir, { ...state, active_child: "" });
     await appendAuditEvent(artifact_dir, {
       event_type: "worker_result_received",
       run_id: state.run_id,
