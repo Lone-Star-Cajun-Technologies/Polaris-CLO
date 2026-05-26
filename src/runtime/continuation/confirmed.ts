@@ -4,6 +4,7 @@ import { loadState, writeState, getArtifactDir } from "../state.js";
 import { validateEnvelope } from "../verification/envelope.js";
 import { writeCheckpoint } from "../checkpoint.js";
 import { appendAuditEvent } from "../audit/logger.js";
+import { readAuditLog, findLastEvent } from "../audit/reader.js";
 import { selectExecutionAdapter } from "../../loop/execution-adapter.js";
 import { AgentSubtaskAdapter } from "../../loop/adapters/agent-subtask.js";
 import { validateWindow, decrementWindow } from "../execution-window.js";
@@ -42,9 +43,36 @@ export async function dispatchConfirmedContinuation(
   const { artifact_dir, envelope } = request;
 
   // Step 1: fresh state read — never use a caller-supplied cached copy
-  const state = await loadState(artifact_dir);
-  if (state === null) {
+  const rawState = await loadState(artifact_dir);
+  if (rawState === null) {
     return { ok: false, rejection: { check: "state", reason: "state_not_found" } };
+  }
+
+  // Step 4: recovery state detection (before envelope validation — active_child may need clearing first)
+  const auditLog = await readAuditLog(artifact_dir);
+  const lastDispatch = findLastEvent(auditLog, "worker_dispatched", rawState.run_id, rawState.step_cursor ?? "");
+  const lastResult = findLastEvent(auditLog, "worker_result_received", rawState.run_id, rawState.step_cursor ?? "");
+
+  if (lastDispatch && !lastResult) {
+    // dispatched-awaiting-result: a worker was dispatched but result not yet received — do NOT re-dispatch
+    return { ok: false, rejection: { check: "recovery", reason: "dispatched-awaiting-result" } };
+  }
+
+  let state = rawState;
+  if (rawState.active_child && !lastDispatch) {
+    // interrupted-before-dispatch: active_child set but no dispatch event — clear and proceed
+    const cleared = { ...rawState, active_child: null };
+    await writeState(artifact_dir, cleared);
+    await appendAuditEvent(artifact_dir, {
+      event_type: "recovery_attempted",
+      run_id: rawState.run_id,
+      step_cursor: rawState.step_cursor ?? "",
+      operator: "mcp",
+      operation: "interrupted_before_dispatch_recovery",
+      result: "ok",
+      metadata: { cleared_active_child: rawState.active_child },
+    });
+    state = cleared;
   }
 
   // Step 2: paranoid re-validation after the pendingConfirmations gate
@@ -60,13 +88,6 @@ export async function dispatchConfirmedContinuation(
     if (!windowResult.ok) {
       return { ok: false, rejection: { check: "execution_window", reason: windowResult.reason } };
     }
-  }
-
-  // Step 4: recovery state detection stub — full implementation in Issue E (POL-95)
-  if (state.active_child) {
-    console.warn(
-      `[confirmed] active_child="${state.active_child}" set on entry — possible interrupted-before-dispatch; recovery not yet implemented`,
-    );
   }
 
   // Step 5: pre-dispatch checkpoint
