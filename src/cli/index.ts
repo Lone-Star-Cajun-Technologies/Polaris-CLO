@@ -13,6 +13,7 @@ import { createFinalizeCommand } from "../finalize/index.js";
 import { runFinalize } from "../finalize/index.js";
 import { createInitCommand, runInit } from "./init.js";
 import { createDocsCommand, createDoctrineCommand } from "../docs/index.js";
+import { createConfigCommand, runConfigShow } from "../config/show.js";
 
 export interface PolarisCommandHandlers {
   runLoopStatus?: typeof runLoopStatus;
@@ -20,6 +21,7 @@ export interface PolarisCommandHandlers {
   runMapQuery?: typeof runMapQuery;
   runFinalize?: typeof runFinalize;
   runInit?: typeof runInit;
+  runConfigShow?: typeof runConfigShow;
 }
 
 export interface PolarisCommandOptions extends PolarisCommandHandlers {
@@ -34,14 +36,6 @@ function resolveStateFile(repoRoot: string, explicit?: string): string {
   if (existsSync(taskchainPath)) return taskchainPath;
   if (existsSync(polarisPath)) return polarisPath;
   return taskchainPath;
-}
-
-function failDeferredCommand(command: Command, commandName: string): never {
-  command.outputHelp({ error: true });
-  command.error(
-    `error: ${commandName} is deferred in the Polaris 1.0 CLI and is not available yet.`,
-    { code: "commander.deferredCommand", exitCode: 1 },
-  );
 }
 
 export function createPolarisCommand(options: PolarisCommandOptions = {}): Command {
@@ -99,11 +93,12 @@ export function createPolarisCommand(options: PolarisCommandOptions = {}): Comma
   program.addCommand(createDocsCommand({ repoRoot }));
   program.addCommand(createDoctrineCommand());
 
-  const config = new Command("config")
-    .description("deferred in 1.0: config workflows are not wired in this CLI")
-    .showHelpAfterError();
-  config.action(() => failDeferredCommand(config, "polaris config"));
-  program.addCommand(config);
+  program.addCommand(
+    createConfigCommand({
+      repoRoot,
+      runConfigShow: options.runConfigShow,
+    }),
+  );
 
   return program;
 }
