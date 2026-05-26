@@ -171,7 +171,14 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
   console.log("polaris finalize complete.");
 }
 
-export function createFinalizeCommand(): Command {
+export interface FinalizeCommandHandlers {
+  runFinalize?: typeof runFinalize;
+  repoRoot?: string;
+}
+
+export function createFinalizeCommand(handlers: FinalizeCommandHandlers = {}): Command {
+  const finalizeHandler = handlers.runFinalize ?? runFinalize;
+  const repoRootDefault = handlers.repoRoot ?? process.cwd();
   const finalize = new Command("finalize").description(
     "Atomic 12-step final delivery sequence",
   );
@@ -179,7 +186,7 @@ export function createFinalizeCommand(): Command {
   finalize
     .command("run")
     .description("Run polaris finalize (all 12 steps)")
-    .option("-r, --repo-root <path>", "Repository root", process.cwd())
+    .option("-r, --repo-root <path>", "Repository root", repoRootDefault)
     .option("--state-file <path>", "Path to current-state.json")
     .option("--dry-run", "Validate and generate report without committing or pushing")
     .option("--skip-delivery", "Run steps 1–6 only; skip push/PR/Linear/archive")
@@ -187,7 +194,7 @@ export function createFinalizeCommand(): Command {
       const repoRoot = options.repoRoot;
       const stateFile =
         options.stateFile ?? join(repoRoot, ".polaris", "runs", "current-state.json");
-      runFinalize({ repoRoot, stateFile, dryRun: options.dryRun, skipDelivery: options.skipDelivery })
+      finalizeHandler({ repoRoot, stateFile, dryRun: options.dryRun, skipDelivery: options.skipDelivery })
         .catch((err: unknown) => {
           process.stderr.write(`finalize error: ${err instanceof Error ? err.message : String(err)}\n`);
           process.exit(1);

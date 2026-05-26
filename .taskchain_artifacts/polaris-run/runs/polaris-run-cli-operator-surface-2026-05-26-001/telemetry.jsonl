@@ -1,0 +1,6 @@
+{"event":"run-start","run_id":"polaris-run-cli-operator-surface-2026-05-26-001","prior_run_id":"polaris-run-mcp-confirmed-dispatch-2026-05-25-002","timestamp":"2026-05-26T05:26:00.000Z"}
+{"event":"step-complete","run_id":"polaris-run-cli-operator-surface-2026-05-26-001","step":"01-orient-cluster","timestamp":"2026-05-26T05:14:29.000Z"}
+{"event":"step-complete","run_id":"polaris-run-cli-operator-surface-2026-05-26-001","step":"02-prepare-branch","timestamp":"2026-05-26T05:14:29.000Z"}
+{"event":"step-complete","run_id":"polaris-run-cli-operator-surface-2026-05-26-001","step":"03-select-child","timestamp":"2026-05-26T05:14:29.000Z"}
+{"event":"step-complete","run_id":"polaris-run-cli-operator-surface-2026-05-26-001","step":"04-execute-child","child_id":"POL-98","timestamp":"2026-05-26T05:18:20.000Z"}
+{"event":"step-complete","run_id":"polaris-run-cli-operator-surface-2026-05-26-001","step":"05-validate-child","child_id":"POL-98","status":"passed","commands":["npm run build","npm test -- src/cli src/loop src/map src/finalize","node dist/cli/index.js --help","node dist/cli/index.js --version","node dist/cli/index.js finalize run --help","node dist/cli/index.js map query src/cli/index.ts","node dist/cli/index.js status --json","node dist/cli/index.js loop status --json"],"timestamp":"2026-05-26T05:18:20.000Z"}

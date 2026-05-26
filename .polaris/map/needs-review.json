@@ -309,7 +309,7 @@
     "taskchain": "polaris-core",
     "confidence": 0,
     "classification": "needs-review",
-    "last_updated": "2026-05-24T23:01:13.252Z",
+    "last_updated": "2026-05-26T05:18:58.230Z",
     "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": "POLARIS.md"
@@ -760,6 +760,17 @@
     "confidence": 0,
     "classification": "needs-review",
     "last_updated": "2026-05-24T23:01:13.252Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": "POLARIS.md"
+  },
+  ".taskchain_artifacts/polaris-run/runs/polaris-run-cli-operator-surface-2026-05-26-001/telemetry.jsonl": {
+    "domain": "unknown",
+    "route": ".taskchain_artifacts/polaris-run/runs/polaris-run-cli-operator-surface-2026-05-26-001/telemetry.jsonl",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-26T05:18:58.230Z",
     "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": "POLARIS.md"
