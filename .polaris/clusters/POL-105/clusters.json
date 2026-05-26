@@ -7,7 +7,7 @@
   "clusters": [
     {
       "cluster_id": "cluster-01",
-      "description": "Track A: Issue hierarchy doctrine and tooling (POL-106 → POL-108, POL-109)",
+      "description": "Tracks A and B: Issue hierarchy doctrine and tooling (POL-106 → POL-108, POL-109; includes POL-107, POL-110, POL-111, POL-112)",
       "children": [
         {
           "id": "POL-106",
