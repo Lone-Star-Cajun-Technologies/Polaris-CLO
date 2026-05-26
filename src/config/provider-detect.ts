@@ -16,11 +16,12 @@ export function detectCaveman(repoRoot: string): boolean {
  * Detects whether the GitNexus compaction provider is available.
  *
  * GitNexus is considered present when the `gitnexus` executable is
- * found on PATH (equivalent to `which gitnexus` returning a hit).
+ * found on PATH (cross-platform: uses `where` on Windows, `which` on Unix).
  */
 export function detectGitNexus(): boolean {
   try {
-    execFileSync("which", ["gitnexus"], { stdio: "ignore" });
+    const command = process.platform === "win32" ? "where" : "which";
+    execFileSync(command, ["gitnexus"], { stdio: "ignore" });
     return true;
   } catch {
     return false;

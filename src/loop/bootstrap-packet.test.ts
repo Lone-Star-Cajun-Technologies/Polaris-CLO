@@ -10,6 +10,7 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import * as child_process from "node:child_process";
+import { isAbsolute } from "node:path";
 import { buildBootstrapPacket } from "./bootstrap-packet.js";
 import type { LoopState } from "./checkpoint.js";
 
@@ -291,5 +292,12 @@ describe("buildBootstrapPacket — packet shape", () => {
       /\.taskchain_artifacts/,
     );
     expect(packet.artifact_pointers.telemetry).toMatch(/telemetry\.jsonl$/);
+
+    // Ensure paths are not absolute
+    expect(isAbsolute(packet.artifact_pointers.current_state)).toBe(false);
+    expect(isAbsolute(packet.artifact_pointers.telemetry)).toBe(false);
+    // Ensure paths do not start with /repo/ prefix
+    expect(packet.artifact_pointers.current_state).not.toMatch(/^\/repo\//);
+    expect(packet.artifact_pointers.telemetry).not.toMatch(/^\/repo\//);
   });
 });

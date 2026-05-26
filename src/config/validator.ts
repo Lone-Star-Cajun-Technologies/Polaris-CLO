@@ -28,6 +28,8 @@ function inRange(value: number, min: number, max: number): boolean {
   return value >= min && value <= max;
 }
 
+const SUPPORTED_COMPACTION_PROVIDER_IDS = ["caveman", "gitnexus"] as const;
+
 export function validateConfig(config: unknown): ValidationResult {
   const result: ValidationResult = { valid: true, errors: [], warnings: [] };
 
@@ -347,6 +349,16 @@ export function validateConfig(config: unknown): ValidationResult {
           result.errors.push(
             "providers.compactionProviders must be an array of strings",
           );
+        } else {
+          // Validate each provider ID is supported
+          for (const providerId of config.providers.compactionProviders) {
+            if (!SUPPORTED_COMPACTION_PROVIDER_IDS.includes(providerId as typeof SUPPORTED_COMPACTION_PROVIDER_IDS[number])) {
+              result.valid = false;
+              result.errors.push(
+                `providers.compactionProviders contains unsupported provider id: ${providerId}`,
+              );
+            }
+          }
         }
       }
     }

@@ -59,7 +59,7 @@ export function runInit(options: InitOptions = {}): void {
 
   const updated: Record<string, unknown> = {
     ...existing,
-    version: (existing.version as string | undefined) ?? "1.0",
+    version: typeof existing.version === "string" ? existing.version : "1.0",
   };
 
   if (Object.keys(updatedProviders).length > 0) {
