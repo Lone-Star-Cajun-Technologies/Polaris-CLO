@@ -3,18 +3,28 @@ import { validateEnvelope } from "../verification/envelope.js";
 import { writeCheckpoint } from "../checkpoint.js";
 import { appendAuditEvent } from "../audit/logger.js";
 import { selectExecutionAdapter } from "../../loop/execution-adapter.js";
+import { AgentSubtaskAdapter } from "../../loop/adapters/agent-subtask.js";
 import type { ExecutionAdapterMode } from "../../loop/execution-adapter.js";
+import type { ExecutionAdapter } from "../../loop/adapters/types.js";
 import type { ContinuationApprovalEnvelope } from "../verification/envelope.js";
+
+export interface CompactReturn {
+  status: string;
+  state_updated: boolean;
+  [key: string]: unknown;
+}
 
 export interface ConfirmedContinuationRequest {
   artifact_dir: string;
   envelope: ContinuationApprovalEnvelope;
   adapterOverride?: ExecutionAdapterMode;
   executionWindow?: unknown; // typed in Issue D (POL-94)
+  /** For test injection: override the adapter factory. */
+  _adapterFactory?: () => ExecutionAdapter;
 }
 
 export type ConfirmedContinuationResult =
-  | { ok: true; child_id: string; compact_return: { status: string; state_updated: boolean } }
+  | { ok: true; child_id: string; compact_return: CompactReturn }
   | { ok: false; rejection: { check: string; reason: string; expected?: string; actual?: string; detail?: string } };
 
 /**
@@ -92,10 +102,83 @@ export async function dispatchConfirmedContinuation(
     };
   }
 
-  // Step 9: stub — adapter dispatch wired in Issue C (POL-93)
-  return {
-    ok: true,
+  // Step 9: dispatch boundary assertion
+  if (!nextChild) throw new Error("dispatch_invariant_violated: nextChild must be non-empty at dispatch boundary");
+
+  // Step 10: emit worker_dispatched audit event before adapter call
+  await appendAuditEvent(artifact_dir, {
+    event_type: "worker_dispatched",
+    run_id: state.run_id,
+    step_cursor: state.step_cursor,
     child_id: nextChild,
-    compact_return: { status: "dispatched-stub", state_updated: false },
+    operator: "mcp",
+    operation: "confirmed_dispatch",
+    result: "ok",
+    metadata: { adapter_mode: selection.mode },
+  });
+
+  // Step 11: build bootstrap packet and call adapter.dispatch()
+  const packet = {
+    schema_version: "1.0",
+    run_id: state.run_id,
+    cluster_id: state.cluster_id,
+    active_child: nextChild,
+    state_file: `${artifact_dir}/current-state.json`,
+    telemetry_file: `${artifact_dir}/telemetry.jsonl`,
   };
+
+  const adapter = request._adapterFactory ? request._adapterFactory() : new AgentSubtaskAdapter();
+
+  let compactReturn: CompactReturn;
+  let dispatchResultCode = 0;
+  try {
+    const dispatchResult = await adapter.dispatch(packet, { provider: "agent-subtask" });
+    dispatchResultCode = dispatchResult.exit_code;
+    // Parse summary if available; fall back to inferring done state from exit_code
+    if (dispatchResult.summary) {
+      try {
+        const parsed = JSON.parse(dispatchResult.summary) as Record<string, unknown>;
+        compactReturn = {
+          status: typeof parsed["status"] === "string" ? parsed["status"] : "done",
+          state_updated: typeof parsed["state_updated"] === "boolean" ? parsed["state_updated"] : dispatchResult.exit_code === 0,
+          exit_code: dispatchResult.exit_code,
+        };
+      } catch {
+        compactReturn = { status: "done", state_updated: dispatchResult.exit_code === 0, exit_code: dispatchResult.exit_code };
+      }
+    } else {
+      compactReturn = { status: "done", state_updated: dispatchResult.exit_code === 0, exit_code: dispatchResult.exit_code };
+    }
+  } catch {
+    // Adapter not available in this environment — graceful fallback to stub behavior
+    compactReturn = { status: "dispatched-stub", state_updated: false };
+  }
+
+  // Step 12: emit worker_result_received audit event
+  await appendAuditEvent(artifact_dir, {
+    event_type: "worker_result_received",
+    run_id: state.run_id,
+    step_cursor: state.step_cursor,
+    child_id: nextChild,
+    operator: "mcp",
+    operation: "confirmed_dispatch",
+    result: compactReturn.status === "dispatched-stub" ? "error" : "ok",
+    metadata: { exit_code: dispatchResultCode, status: compactReturn.status },
+  });
+
+  // Step 13: handle state_updated: false — defensively clear active_child
+  if (compactReturn.state_updated === false) {
+    await writeState(artifact_dir, { ...state, active_child: "" });
+    await appendAuditEvent(artifact_dir, {
+      event_type: "recovery_attempted",
+      run_id: state.run_id,
+      step_cursor: state.step_cursor,
+      operator: "mcp",
+      operation: "confirmed_dispatch_recovery",
+      result: "ok",
+      metadata: { reason: "state_updated_false" },
+    });
+  }
+
+  return { ok: true, child_id: nextChild, compact_return: compactReturn };
 }
