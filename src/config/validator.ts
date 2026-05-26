@@ -398,6 +398,42 @@ export function validateConfig(config: unknown): ValidationResult {
     }
   }
 
+  // compact
+  if ("compact" in config && config.compact !== undefined) {
+    if (!isPlainObject(config.compact)) {
+      result.valid = false;
+      result.errors.push("compact must be an object");
+    } else {
+      if ("orchestratorMode" in config.compact && config.compact.orchestratorMode !== undefined) {
+        if (
+          !isString(config.compact.orchestratorMode) ||
+          !["standard", "strict"].includes(config.compact.orchestratorMode)
+        ) {
+          result.valid = false;
+          result.errors.push('compact.orchestratorMode must be either "standard" or "strict"');
+        }
+      }
+      if ("workerMode" in config.compact && config.compact.workerMode !== undefined) {
+        if (
+          !isString(config.compact.workerMode) ||
+          !["standard", "strict", "minimal"].includes(config.compact.workerMode)
+        ) {
+          result.valid = false;
+          result.errors.push('compact.workerMode must be one of "standard", "strict", "minimal"');
+        }
+      }
+      if ("level" in config.compact && config.compact.level !== undefined) {
+        if (
+          !isString(config.compact.level) ||
+          !["standard", "strict", "minimal"].includes(config.compact.level)
+        ) {
+          result.valid = false;
+          result.errors.push('compact.level must be one of "standard", "strict", "minimal"');
+        }
+      }
+    }
+  }
+
   // unknown top-level fields -> warnings
   const knownKeys = new Set([
     "version",
@@ -411,6 +447,7 @@ export function validateConfig(config: unknown): ValidationResult {
     "canon",
     "providers",
     "budget",
+    "compact",
   ]);
   for (const key of Object.keys(config)) {
     if (!knownKeys.has(key)) {
