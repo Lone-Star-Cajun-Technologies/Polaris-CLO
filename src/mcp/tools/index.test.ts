@@ -46,8 +46,8 @@ const mockHandlePolarisCurrentState = vi.mocked(handlePolarisCurrentState);
 const mockHandleLoopContinueConfirmed = vi.mocked(handleLoopContinueConfirmed);
 
 describe("TOOLS array", () => {
-  it("has exactly 5 tools", () => {
-    expect(TOOLS).toHaveLength(5);
+  it("has exactly 7 tools", () => {
+    expect(TOOLS).toHaveLength(7);
   });
 
   it("contains polaris_status", () => {
@@ -78,7 +78,9 @@ describe("TOOLS array", () => {
   it("has the exact set of tools", () => {
     const names = TOOLS.map((t) => t.name).sort();
     expect(names).toEqual([
+      "polaris_claim_child",
       "polaris_current_state",
+      "polaris_dispatch_result",
       "polaris_loop_continue_confirmed",
       "polaris_loop_continue_dry_run",
       "polaris_loop_status",

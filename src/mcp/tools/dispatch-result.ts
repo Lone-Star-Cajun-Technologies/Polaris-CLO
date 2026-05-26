@@ -147,8 +147,10 @@ export async function handlePolarisDispatchResult(
   if (typeof state["run_id"] !== "string" || state["run_id"].trim() === "") {
     return {
       ok: false,
-      error: "invalid_run_id",
-      message: "run_id must be a non-empty string in state",
+      error: {
+        code: "invalid_run_id",
+        message: "run_id must be a non-empty string in state",
+      },
     };
   }
   const runId = state["run_id"].trim();
@@ -157,8 +159,10 @@ export async function handlePolarisDispatchResult(
   if (!isUUID && !isRunIdFormat) {
     return {
       ok: false,
-      error: "invalid_run_id",
-      message: "run_id must be a valid UUID format or run-id format",
+      error: {
+        code: "invalid_run_id",
+        message: "run_id must be a valid UUID format or run-id format",
+      },
     };
   }
 

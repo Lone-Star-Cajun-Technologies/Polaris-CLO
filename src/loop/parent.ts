@@ -156,8 +156,7 @@ function buildPacket(
   telemetryFile: string,
   repoRoot: string,
 ): BootstrapPacket {
-  const branch = (state as unknown as Record<string, unknown>)["branch"] as string | undefined
-    ?? getCurrentBranch(repoRoot);
+  const branch = state.branch ?? getCurrentBranch(repoRoot);
 
   const childMeta = state.open_children_meta?.[activeChild];
   const issueContext = childMeta
@@ -508,7 +507,9 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
       };
     }
 
-    if (workerStatus === 'error' || dispatchResult.exit_code !== 0) {
+    // 'failed' is the CompactReturn terminal failure status; 'error' is the adapter-level status.
+    // Both map to worker-error halt — the exit_code check catches exit=1 from runWorker().
+    if (workerStatus === 'error' || workerStatus === 'failed' || dispatchResult.exit_code !== 0) {
       const errMsg = dispatchResult.summary ?? `Worker exited with code ${dispatchResult.exit_code}`;
       if (!dryRun) {
         appendTelemetry(telemetryFile, {

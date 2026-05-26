@@ -26,10 +26,14 @@ export interface BootstrapPacket {
   context?: Record<string, unknown>;
 }
 
-/** Worker summary returned via stdout (last line must be valid JSON or plain text). */
+/**
+ * Worker summary returned via stdout (last line must be valid JSON or plain text).
+ * `status` includes both 'error' (generic adapter error) and 'failed' (CompactReturn
+ * terminal failure) so the parent can handle both without an unexpected-status halt.
+ */
 export interface WorkerSummary {
   active_child: string;
-  status: 'done' | 'blocked' | 'error';
+  status: 'done' | 'blocked' | 'error' | 'failed';
   message?: string;
   [key: string]: unknown;
 }
