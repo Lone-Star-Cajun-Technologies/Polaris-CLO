@@ -1,6 +1,6 @@
 ---
 name: polaris-run-step-01-orient-cluster
-description: Generate run_id, emit run-start telemetry, activate caveman-full, fetch the parent cluster from Linear, and restate bounded session context.
+description: Generate run_id, emit run-start telemetry, activate caveman-full if available, fetch the parent cluster from Linear, and restate bounded session context.
 ---
 
 # Step 01 — Orient cluster
@@ -27,13 +27,12 @@ allowed_skills:
 expected_evidence:
   - run_id generated
   - run-start telemetry emitted
-  - caveman-full active
+  - caveman-full activated if available (or native compact baseline confirmed)
   - Linear parent and children fetched
   - cluster is valid and executable
   - bounded session context restated
 stop_rules:
   - run-start telemetry write fails
-  - caveman-full not confirmed active before Linear access
   - parent issue missing or inaccessible
   - parent or selected child is blocked
   - cluster has no children and issue is not standalone
@@ -53,10 +52,10 @@ stop_rules:
    ```
    If this write fails: halt. Do not continue.
 
-2. **Activate caveman-full** immediately after run-start emission:
+2. **Activate caveman-full if available** immediately after run-start emission:
    - Invoke the caveman skill per `linked-skills/caveman.md`.
-   - Confirm full mode is active before proceeding.
-   - If activation fails: halt. Do not fetch from Linear.
+   - If caveman is installed and activation succeeds: confirm full mode is active, then proceed.
+   - If caveman is not installed or activation fails: note the provider status, confirm Polaris-native compact baseline is in effect (per `docs/spec/polaris-compact-contracts.md` §8), and proceed without it.
 
 3. Fetch the **parent issue AND all child issues** from Linear in two sequential calls (get parent, then list children by parent ID).
 

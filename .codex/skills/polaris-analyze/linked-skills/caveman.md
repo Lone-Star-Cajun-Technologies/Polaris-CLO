@@ -43,5 +43,6 @@ Keep polaris-analyze user-facing status updates terse while preserving planning 
 
 ## Invocation note
 
-Mandatory at session start in lite mode. Governs user-facing responses for the duration of the run.
-If caveman is not installed in this repo, proceed without it but note the gap.
+Optional at session start. If Caveman is available, activate in lite mode to govern user-facing responses for the duration of the run.
+If Caveman is not installed, Polaris uses native compact behavior as the required baseline; note the provider status and proceed.
+See `docs/spec/polaris-compact-contracts.md` §8 for the polaris-native compact baseline and provider compatibility rules.
