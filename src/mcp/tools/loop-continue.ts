@@ -8,6 +8,7 @@ import { validateEnvelope } from "../../runtime/verification/envelope.js";
 import { appendAuditEvent } from "../../runtime/audit/logger.js";
 import { loadState } from "../../runtime/state.js";
 import { dispatchConfirmedContinuation } from "../../runtime/continuation/confirmed.js";
+import type { ExecutionAdapterMode } from "../../loop/execution-adapter.js";
 
 // Per-artifact-dir lock: prevents two concurrent confirmations from both passing
 // validation before either writes active_child to disk. Set operations are
@@ -61,9 +62,11 @@ function parseEnvelope(args: Record<string, unknown>): ContinuationApprovalEnvel
  * Handle a polaris_loop_continue_confirmed MCP tool call.
  *
  * Validates the supplied ContinuationApprovalEnvelope against the current live
- * state (fresh disk read — never cached). On success, writes a checkpoint and
- * records approval in the audit log. Does NOT dispatch workers; that is a
- * future implementation concern.
+ * state (fresh disk read — never cached). On success, dispatches the next child
+ * via the confirmed continuation service and returns the dispatch result.
+ *
+ * Returns `{ ok: true, child_id, compact_return }` on success, or
+ * `{ ok: false, rejection: { check, reason, ... } }` on any failure.
  */
 export async function handleLoopContinueConfirmed(
   args: Record<string, unknown>,
@@ -153,8 +156,12 @@ export async function handleLoopContinueConfirmed(
     });
 
     // Delegate checkpoint, active_child lease write, and mutation_approved audit to
-    // the confirmed continuation service. Adapter dispatch wired in Issue C (POL-93).
-    const dispatchResult = await dispatchConfirmedContinuation({ artifact_dir, envelope });
+    // the confirmed continuation service.
+    const adapterOverride =
+      typeof args["adapterOverride"] === "string"
+        ? (args["adapterOverride"] as ExecutionAdapterMode)
+        : undefined;
+    const dispatchResult = await dispatchConfirmedContinuation({ artifact_dir, envelope, adapterOverride });
 
     if (!dispatchResult.ok) {
       return { ok: false, rejection: dispatchResult.rejection };
@@ -162,8 +169,8 @@ export async function handleLoopContinueConfirmed(
 
     return {
       ok: true,
-      next_child: dispatchResult.child_id,
-      message: "Continuation approved. Worker dispatch is not yet implemented.",
+      child_id: dispatchResult.child_id,
+      compact_return: dispatchResult.compact_return,
     };
   } finally {
     pendingConfirmations.delete(artifact_dir);

@@ -103,8 +103,8 @@ describe("continuation flow: dry-run → confirmed", () => {
     });
 
     expect(confirmResult["ok"]).toBe(true);
-    expect(confirmResult["next_child"]).toBe("POL-87");
-    expect(typeof confirmResult["message"]).toBe("string");
+    expect(confirmResult["child_id"]).toBe("POL-87");
+    expect(confirmResult["compact_return"]).toBeDefined();
   });
 
   it("writes a checkpoint file to disk after successful confirmation", async () => {
