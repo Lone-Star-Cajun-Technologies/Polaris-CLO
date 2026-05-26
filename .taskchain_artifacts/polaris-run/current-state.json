@@ -6,11 +6,11 @@
   "skill": "polaris-run",
   "artifact_dir": ".taskchain_artifacts/polaris-run",
   "branch": "philmeaux/pol-114-implement-polaris-native-compact-orchestration-and-worker",
-  "current_step_id": "06-commit-and-update-linear",
+  "current_step_id": "07-decide-continuation",
   "step_cursor": "checkpoint",
   "status": "stopped",
   "session_type": "implementation",
-  "active_child": "",
+  "active_child": "POL-120",
   "last_commit": "a97f7d5",
   "pr_url": "",
   "next_open_child": "POL-120",
@@ -55,5 +55,5 @@
   },
   "map_update_warning": "polaris CLI not in PATH; polaris map update --changed skipped (non-fatal)",
   "validation_status": "passed",
-  "updated_at": "2026-05-26T17:37:30.000Z"
+  "updated_at": "2026-05-26T18:45:00.000Z"
 }
