@@ -25,6 +25,9 @@ import { createAdapter } from "./adapters/registry.js";
 import type { BootstrapPacket, WorkerSummary } from "./adapters/types.js";
 import { checkBudget, policyFromConfig } from "./budget.js";
 import { loadConfig } from "../config/loader.js";
+import { WorkerLifecycleManager } from "./lifecycle.js";
+import { compileImplPacket } from "./worker-packet.js";
+import { execFileSync } from "node:child_process";
 
 export interface ParentLoopOptions {
   /** Absolute path to current-state.json. */
@@ -121,29 +124,60 @@ function isAnalyzeParent(state: LoopState): boolean {
   return false;
 }
 
+/** Normalise a file path to its canonical realpath (resolves macOS /var → /private/var symlinks). */
+function canonicalPath(p: string): string {
+  try {
+    return realpathSync(p);
+  } catch {
+    return p;
+  }
+}
+
+/** Returns the current git branch, or "unknown" on failure. */
+function getCurrentBranch(cwd: string): string {
+  try {
+    return execFileSync("git", ["branch", "--show-current"], {
+      cwd,
+      encoding: "utf-8",
+    }).trim();
+  } catch {
+    return (process.env["POLARIS_BRANCH"] as string | undefined) ?? "unknown";
+  }
+}
+
 /**
- * Build a bootstrap packet from state and the selected child.
+ * Build a compiled WorkerPacket for impl dispatch.
+ * Workers receive pre-baked instructions — no skill re-ingestion required.
  */
 function buildPacket(
   state: LoopState,
   activeChild: string,
   stateFile: string,
   telemetryFile: string,
+  repoRoot: string,
 ): BootstrapPacket {
-  return {
-    schema_version: state.schema_version,
-    run_id: state.run_id,
-    cluster_id: state.cluster_id,
-    active_child: activeChild,
-    // Normalize to real path so the worker gets a canonical, symlink-free path
-    // (important on macOS where tmpdir() returns /var/... but resolves to /private/var/...).
-    state_file: (() => { try { return realpathSync(stateFile); } catch { return stateFile; } })(),
-    telemetry_file: telemetryFile,
-    context: {
-      skill: state.skill,
-      branch: (state as unknown as Record<string, unknown>)["branch"],
-    },
-  };
+  const branch = (state as unknown as Record<string, unknown>)["branch"] as string | undefined
+    ?? getCurrentBranch(repoRoot);
+
+  const childMeta = state.open_children_meta?.[activeChild];
+  const issueContext = childMeta
+    ? {
+        id: activeChild,
+        title: childMeta.title ?? activeChild,
+        key_requirements: [],
+      }
+    : undefined;
+
+  return compileImplPacket({
+    runId: state.run_id,
+    clusterId: state.cluster_id,
+    childId: activeChild,
+    branch,
+    stateFile: canonicalPath(stateFile),
+    telemetryFile,
+    issueContext,
+    maxConcurrentWorkers: 1,
+  });
 }
 
 /**
@@ -257,6 +291,13 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
   const telemetryFile = resolveTelemetryFile(state, repoRoot);
   let childrenDispatched = 0;
 
+  // ── Lifecycle manager: enforce one-active-worker policy ─────────────────
+  // forceReleaseAll() clears any orphaned registrations from a previous
+  // crashed session. Registrations are session-memory only; they are not
+  // persisted to disk, so a fresh loop start always begins clean.
+  const lifecycle = new WorkerLifecycleManager(1);
+  lifecycle.forceReleaseAll();
+
   // ── Main dispatch loop ───────────────────────────────────────────────────
   // eslint-disable-next-line no-constant-condition
   while (true) {
@@ -346,15 +387,33 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     // The worker runs the child in an external process/subtask, writes its
     // result to current-state.json and telemetry.jsonl, then returns a
     // compact JSON summary via stdout.
+    //
+    // Lifecycle: register before dispatch, release after result.
+    // Only one worker may be active at a time (maxConcurrentWorkers = 1).
 
-    const packet = buildPacket(state, nextChild, stateFile, telemetryFile);
+    const packet = buildPacket(state, nextChild, stateFile, telemetryFile, repoRoot);
     const childrenCompletedBeforeDispatch = state.context_budget.children_completed;
+
+    // Register the worker slot before dispatch.
+    const workerId = `${state.run_id}:${nextChild}:${Date.now()}`;
+    try {
+      lifecycle.register(workerId, nextChild, 'impl');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return {
+        haltReason: 'worker-error',
+        childrenDispatched,
+        haltingChild: nextChild,
+        message: `Lifecycle slot unavailable for ${nextChild}: ${msg}`,
+      };
+    }
 
     if (!dryRun) {
       appendTelemetry(telemetryFile, {
         event: "child-dispatch",
         run_id: state.run_id,
         child_id: nextChild,
+        worker_id: workerId,
         adapter: adapterName,
         orchestration_mode: orchestrationMode,
         provider: providerName,
@@ -367,12 +426,15 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     try {
       dispatchResult = await adapter.dispatch(packet, { provider: providerName, dryRun });
     } catch (err) {
+      // Release slot on dispatch failure so the parent can retry or halt cleanly.
+      lifecycle.release(workerId);
       const msg = err instanceof Error ? err.message : String(err);
       if (!dryRun) {
         appendTelemetry(telemetryFile, {
           event: "child-dispatch-error",
           run_id: state.run_id,
           child_id: nextChild,
+          worker_id: workerId,
           error: msg,
           timestamp: new Date().toISOString(),
         });
@@ -384,6 +446,9 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
         message: `Adapter "${adapterName}" threw during dispatch of ${nextChild}: ${msg}`,
       };
     }
+
+    // Release the lifecycle slot — worker has returned its result.
+    lifecycle.release(workerId);
 
     // ── Step 04: Receive and validate compact worker return JSON ─────────
     const workerSummary = parseWorkerSummary(dispatchResult.summary);

@@ -7,6 +7,10 @@
  *   - POLARIS_PACKET_FILE env var (path to a temp file with the same JSON)
  *   - POLARIS_PACKET_JSON env var (raw JSON string)
  *   - Individual fields as POLARIS_* env vars
+ *
+ * When schema_version is '2.0', the packet is a compiled WorkerPacket (see
+ * src/loop/worker-packet.ts) containing pre-baked instructions. Adapters SHOULD
+ * check for the WorkerPacket shape and use compiled instructions when available.
  */
 export interface BootstrapPacket {
   schema_version: string;
