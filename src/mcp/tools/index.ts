@@ -3,6 +3,8 @@ import { handlePolarisLoopStatus, handlePolarisStatus } from "./status.js";
 import { handlePolarisCurrentState } from "./current-state.js";
 import { handleLoopContinueDryRun } from "./loop-dry-run.js";
 import { handleLoopContinueConfirmed } from "./loop-continue.js";
+import { handlePolarisClaimChild } from "./claim-child.js";
+import { handlePolarisDispatchResult } from "./dispatch-result.js";
 
 export const TOOLS: Tool[] = [
   {
@@ -115,6 +117,67 @@ export const TOOLS: Tool[] = [
       ],
     },
   },
+  {
+    name: "polaris_claim_child",
+    description:
+      "Atomically claim an open Polaris child issue by writing active_child in current-state.json. Mutates run state and appends telemetry.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        artifact_dir: {
+          type: "string",
+          description: "Artifact directory name under .taskchain_artifacts/. Default: polaris-run",
+        },
+        child_id: {
+          type: "string",
+          description: "Open child issue ID to claim, e.g. POL-111",
+        },
+      },
+      required: ["child_id"],
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
+  },
+  {
+    name: "polaris_dispatch_result",
+    description:
+      "Record a Polaris worker result for the matching active_child in current-state.json and append dispatch-result telemetry.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        artifact_dir: {
+          type: "string",
+          description: "Artifact directory name under .taskchain_artifacts/. Default: polaris-run",
+        },
+        child_id: {
+          type: "string",
+          description: "Active child issue ID whose result is being recorded",
+        },
+        status: {
+          type: "string",
+          description: "Worker status, such as completed, failed, or blocked",
+        },
+        commit: {
+          type: "string",
+          description: "Commit hash produced by the worker, when available",
+        },
+        validation: {
+          description: "Validation summary or structured validation evidence from the worker",
+        },
+      },
+      required: ["child_id", "status"],
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
+  },
 ];
 
 const REGISTERED = new Set(TOOLS.map((t) => t.name));
@@ -148,6 +211,12 @@ export async function dispatchTool(
       break;
     case "polaris_loop_continue_confirmed":
       result = await handleLoopContinueConfirmed(args);
+      break;
+    case "polaris_claim_child":
+      result = await handlePolarisClaimChild(args);
+      break;
+    case "polaris_dispatch_result":
+      result = await handlePolarisDispatchResult(args);
       break;
     default:
       result = { ok: false, error: "unknown_tool", message: `Unhandled tool: ${name}` };
