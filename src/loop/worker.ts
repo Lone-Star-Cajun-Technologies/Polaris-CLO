@@ -21,6 +21,7 @@ import { execFileSync } from "node:child_process";
 import { readState, writeStateAtomic } from "./checkpoint.js";
 import type { CompactReturn } from "./compact-return.js";
 import type { BootstrapPacket } from "./adapters/types.js";
+import { getMonotonicTimestamp } from "../utils/monotonic-timestamp.js";
 
 // ────────────────────────────────────────────────────────────────────────────
 // Bootstrap packet reading
@@ -149,7 +150,7 @@ export async function executeOneChild(
   const childId = packet.active_child;
   const stateFile = packet.state_file;
   const telemetryFile = packet.telemetry_file;
-  const now = () => new Date().toISOString();
+  const now = getMonotonicTimestamp;
 
   let stateUpdated = false;
   let telemetryUpdated = false;

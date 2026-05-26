@@ -12,6 +12,7 @@ import { runMapQuery } from "../map/query.js";
 import { createFinalizeCommand } from "../finalize/index.js";
 import { runFinalize } from "../finalize/index.js";
 import { createInitCommand, runInit } from "./init.js";
+import { createDocsCommand } from "../docs/index.js";
 
 export interface PolarisCommandHandlers {
   runLoopStatus?: typeof runLoopStatus;
@@ -95,11 +96,7 @@ export function createPolarisCommand(options: PolarisCommandOptions = {}): Comma
     }),
   );
 
-  const docs = new Command("docs")
-    .description("deferred in 1.0: documentation workflows are not wired in this CLI")
-    .showHelpAfterError();
-  docs.action(() => failDeferredCommand(docs, "polaris docs"));
-  program.addCommand(docs);
+  program.addCommand(createDocsCommand({ repoRoot }));
 
   const config = new Command("config")
     .description("deferred in 1.0: config workflows are not wired in this CLI")

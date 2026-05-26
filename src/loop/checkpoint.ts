@@ -7,6 +7,7 @@ import {
 } from "node:fs";
 import { createHash } from "node:crypto";
 import { dirname } from "node:path";
+import { getMonotonicTimestamp } from "../utils/monotonic-timestamp.js";
 
 export interface BlockerRecord {
   reason: string;
@@ -126,16 +127,18 @@ export function appendCheckpointEvent(
   telemetryFile: string,
   event: CheckpointEvent,
 ): void {
+  const timestampedEvent = { ...event, timestamp: getMonotonicTimestamp() };
   mkdirSync(dirname(telemetryFile), { recursive: true });
-  appendFileSync(telemetryFile, JSON.stringify(event) + "\n", "utf-8");
+  appendFileSync(telemetryFile, JSON.stringify(timestampedEvent) + "\n", "utf-8");
 }
 
 export function appendBoundaryEvent(
   telemetryFile: string,
   event: BoundaryEvent,
 ): void {
+  const timestampedEvent = { ...event, timestamp: getMonotonicTimestamp() };
   mkdirSync(dirname(telemetryFile), { recursive: true });
-  appendFileSync(telemetryFile, JSON.stringify(event) + "\n", "utf-8");
+  appendFileSync(telemetryFile, JSON.stringify(timestampedEvent) + "\n", "utf-8");
 }
 
 export interface AbortEvent {
@@ -147,6 +150,7 @@ export interface AbortEvent {
 }
 
 export function appendAbortEvent(telemetryFile: string, event: AbortEvent): void {
+  const timestampedEvent = { ...event, timestamp: getMonotonicTimestamp() };
   mkdirSync(dirname(telemetryFile), { recursive: true });
-  appendFileSync(telemetryFile, JSON.stringify(event) + "\n", "utf-8");
+  appendFileSync(telemetryFile, JSON.stringify(timestampedEvent) + "\n", "utf-8");
 }

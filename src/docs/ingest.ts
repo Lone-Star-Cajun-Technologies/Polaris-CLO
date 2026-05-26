@@ -2,6 +2,7 @@ import {
   appendFileSync,
   existsSync,
   mkdirSync,
+  readdirSync,
   readFileSync,
   renameSync,
   writeFileSync,
@@ -16,6 +17,7 @@ import {
   computeInstructionCoverage,
   type FileRouteEntry,
 } from "../map/atlas.js";
+import { getMonotonicTimestamp } from "../utils/monotonic-timestamp.js";
 
 export type DocsClassification =
   | "runtime-summary"
@@ -41,31 +43,45 @@ export interface IngestResult {
   destinationPath: string;
   classification: DocsClassification;
   linkedMapArea: string | null;
-  runId: string | null;
+  runId: string;
   provenancePath: string | null;
   dryRun: boolean;
 }
 
-interface CurrentState {
+interface DocsIngestState {
   run_id?: string;
-  cluster_id?: string;
+  prior_run_id?: string | null;
+  cluster_id?: string | null;
+  status?: string;
+  files_ingested?: number;
+  last_run_at?: string;
 }
 
+export const CANONICAL_TARGET = "Polaris-Docs/docs";
+const DOCS_INGEST_STATE_FILE = ".taskchain_artifacts/polaris-docs-ingest/current-state.json";
+const DOCS_INGEST_RUNS_DIR = ".taskchain_artifacts/polaris-docs-ingest/runs";
 const DEFAULT_BATCH_LIMIT = 4;
 
 const TARGET_DIRS: Record<DocsClassification, string> = {
-  "runtime-summary": "docs/runtime/summaries",
-  "run-report": "docs/runtime/run-reports",
-  "spec-raw": "docs/specs/raw",
-  "spec-active": "docs/specs/active",
-  "audit-finding": "docs/audits/findings",
-  "doctrine-candidate": "docs/doctrine/candidate",
-  architecture: "docs/architecture",
-  decision: "docs/decisions",
-  "deprecated-noise": "docs/runtime/generated",
+  "runtime-summary": `${CANONICAL_TARGET}/runtime/summaries`,
+  "run-report": `${CANONICAL_TARGET}/runtime/run-reports`,
+  "spec-raw": `${CANONICAL_TARGET}/specs/raw`,
+  "spec-active": `${CANONICAL_TARGET}/specs/active`,
+  "audit-finding": `${CANONICAL_TARGET}/audits/findings`,
+  "doctrine-candidate": `${CANONICAL_TARGET}/doctrine/candidate`,
+  architecture: `${CANONICAL_TARGET}/architecture`,
+  decision: `${CANONICAL_TARGET}/decisions`,
+  "deprecated-noise": `${CANONICAL_TARGET}/runtime/generated`,
 };
 
 const APPROVAL_REQUIRED = new Set<DocsClassification>(["spec-active", "architecture", "decision"]);
+
+const MODAL_REQUIRES = /\b(?:must|always)\s+(\w+)/gi;
+const MODAL_PROHIBITS = /\b(?:never|must\s+not)\s+(\w+)/gi;
+const CONFLICT_STOPWORDS = new Set([
+  "this", "that", "with", "from", "have", "been", "will", "when", "then",
+  "else", "each", "every", "also", "note", "not", "used", "only",
+]);
 
 function readJson<T>(filePath: string, fallback: T): T {
   try {
@@ -112,38 +128,85 @@ export function classifyDoc(content: string, filePath = ""): DocsClassification 
   return "spec-raw";
 }
 
+function readCurrentState(repoRoot: string): DocsIngestState {
+  return readJson(resolve(repoRoot, DOCS_INGEST_STATE_FILE), {});
+}
+
+function generateRunId(repoRoot: string): string {
+  const date = new Date().toISOString().slice(0, 10);
+  const runsDir = resolve(repoRoot, DOCS_INGEST_RUNS_DIR);
+  let seq = 1;
+  if (existsSync(runsDir)) {
+    try {
+      const existing = readdirSync(runsDir).filter((d) => d.includes(date));
+      const suffixes = existing
+        .map((d) => {
+          const match = d.match(/-(\d{3})$/);
+          return match ? parseInt(match[1], 10) : 0;
+        })
+        .filter((n) => !isNaN(n) && n > 0);
+      const maxSuffix = suffixes.length > 0 ? Math.max(...suffixes) : 0;
+      seq = maxSuffix + 1;
+    } catch {
+      // use seq = 1
+    }
+  }
+  return `polaris-docs-ingest-docs-ingest-${date}-${String(seq).padStart(3, "0")}`;
+}
+
+function docsIngestTelemetryPath(repoRoot: string, runId: string): string {
+  return resolve(repoRoot, DOCS_INGEST_RUNS_DIR, runId, "telemetry.jsonl");
+}
+
+function emitRunStartTelemetry(repoRoot: string, runId: string, priorRunId: string | null): void {
+  const telPath = docsIngestTelemetryPath(repoRoot, runId);
+  mkdirSync(dirname(telPath), { recursive: true });
+  appendFileSync(
+    telPath,
+    JSON.stringify({
+      event: "run-start",
+      run_id: runId,
+      prior_run_id: priorRunId,
+      timestamp: getMonotonicTimestamp(),
+    }) + "\n",
+    "utf-8",
+  );
+}
+
+function emitTelemetry(telPath: string, runId: string, event: Record<string, unknown>): void {
+  try {
+    appendFileSync(
+      telPath,
+      JSON.stringify({ ...event, run_id: runId, timestamp: getMonotonicTimestamp() }) + "\n",
+      "utf-8",
+    );
+  } catch {
+    // non-fatal for post-run-start events
+  }
+}
+
+function writeDocsIngestState(repoRoot: string, state: DocsIngestState): void {
+  const statePath = resolve(repoRoot, DOCS_INGEST_STATE_FILE);
+  mkdirSync(dirname(statePath), { recursive: true });
+  writeFileSync(statePath, JSON.stringify(state, null, 2) + "\n", "utf-8");
+}
+
 function ensureDocsScaffold(repoRoot: string): void {
   for (const dir of Object.values(TARGET_DIRS)) {
     mkdirSync(resolve(repoRoot, dir), { recursive: true });
   }
   for (const dir of [
-    "docs/raw",
-    "docs/specs/implemented",
-    "docs/specs/superseded",
-    "docs/audits/raw",
-    "docs/audits/resolved",
-    "docs/doctrine/raw",
-    "docs/doctrine/active",
-    "docs/doctrine/deprecated",
+    `${CANONICAL_TARGET}/raw`,
+    `${CANONICAL_TARGET}/specs/implemented`,
+    `${CANONICAL_TARGET}/specs/superseded`,
+    `${CANONICAL_TARGET}/audits/raw`,
+    `${CANONICAL_TARGET}/audits/resolved`,
+    `${CANONICAL_TARGET}/doctrine/raw`,
+    `${CANONICAL_TARGET}/doctrine/active`,
+    `${CANONICAL_TARGET}/doctrine/deprecated`,
   ]) {
     mkdirSync(resolve(repoRoot, dir), { recursive: true });
   }
-}
-
-function readCurrentState(repoRoot: string): CurrentState {
-  return readJson(resolve(repoRoot, ".taskchain_artifacts/polaris-run/current-state.json"), {});
-}
-
-function telemetryPath(repoRoot: string, runId: string | null): string | null {
-  if (!runId) return null;
-  return resolve(repoRoot, ".taskchain_artifacts/polaris-run/runs", runId, "telemetry.jsonl");
-}
-
-function emitTelemetry(repoRoot: string, runId: string | null, event: Record<string, unknown>): void {
-  const path = telemetryPath(repoRoot, runId);
-  if (!path) return;
-  mkdirSync(dirname(path), { recursive: true });
-  appendFileSync(path, `${JSON.stringify({ ...event, run_id: runId, timestamp: new Date().toISOString() })}\n`, "utf-8");
 }
 
 function uniqueDestination(filePath: string): string {
@@ -230,16 +293,90 @@ function updateMapEntry(
   });
 }
 
+function extractVerbKeywords(content: string, pattern: RegExp): Set<string> {
+  const result = new Set<string>();
+  const re = new RegExp(pattern.source, pattern.flags);
+  for (const match of content.matchAll(re)) {
+    const kw = match[1]?.toLowerCase();
+    if (kw && kw.length >= 4 && !CONFLICT_STOPWORDS.has(kw)) result.add(kw);
+  }
+  return result;
+}
+
+function detectDoctrineConflict(
+  content: string,
+  repoRoot: string,
+): { conflictingFile: string; detail: string } | null {
+  const activeDoctrineDir = resolve(repoRoot, CANONICAL_TARGET, "doctrine", "active");
+  if (!existsSync(activeDoctrineDir)) return null;
+
+  let files: string[];
+  try {
+    files = readdirSync(activeDoctrineDir).filter((f) => f.endsWith(".md"));
+  } catch {
+    return null;
+  }
+
+  if (files.length === 0) return null;
+
+  const ingestedRequires = extractVerbKeywords(content, MODAL_REQUIRES);
+  const ingestedProhibits = extractVerbKeywords(content, MODAL_PROHIBITS);
+
+  for (const file of files) {
+    let docContent: string;
+    try {
+      docContent = readFileSync(join(activeDoctrineDir, file), "utf-8");
+    } catch {
+      continue;
+    }
+
+    const docRequires = extractVerbKeywords(docContent, MODAL_REQUIRES);
+    const docProhibits = extractVerbKeywords(docContent, MODAL_PROHIBITS);
+
+    for (const kw of ingestedProhibits) {
+      if (docRequires.has(kw)) {
+        return {
+          conflictingFile: file,
+          detail: `ingested doc prohibits "${kw}" but ${file} requires it`,
+        };
+      }
+    }
+    for (const kw of ingestedRequires) {
+      if (docProhibits.has(kw)) {
+        return {
+          conflictingFile: file,
+          detail: `ingested doc requires "${kw}" but ${file} prohibits it`,
+        };
+      }
+    }
+  }
+
+  return null;
+}
+
 export function ingestDocs(files: string[], options: IngestOptions): IngestResult[] {
   const repoRoot = resolve(options.repoRoot);
+
+  // Canonical target check (STOP CONDITION)
+  const canonicalDir = resolve(repoRoot, CANONICAL_TARGET);
+  if (!existsSync(canonicalDir)) {
+    throw new Error(`polaris docs ingest: canonical target ${CANONICAL_TARGET}/ not found — halting`);
+  }
+
   const limit = options.maxFiles ?? DEFAULT_BATCH_LIMIT;
   if (files.length === 0) throw new Error("polaris docs ingest: provide at least one file");
   if (files.length > limit) throw new Error(`polaris docs ingest: batch limit is ${limit} files`);
 
+  const priorState = readCurrentState(repoRoot);
+  const clusterId = options.clusterId ?? null;
+  const runId = generateRunId(repoRoot);
+
+  // Emit run-start telemetry (STOP CONDITION if this write fails)
+  emitRunStartTelemetry(repoRoot, runId, priorState.run_id ?? null);
+  const telPath = docsIngestTelemetryPath(repoRoot, runId);
+
   ensureDocsScaffold(repoRoot);
-  const state = readCurrentState(repoRoot);
-  const runId = state.run_id ?? null;
-  const clusterId = options.clusterId ?? state.cluster_id ?? null;
+
   const config = loadConfig(repoRoot);
   const atlasPath = resolve(repoRoot, config.repo.sidecarOutputPath ?? ".polaris/map");
   const routes = {
@@ -247,18 +384,10 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
     ...readNeedsReview(atlasPath),
   };
 
-  emitTelemetry(repoRoot, runId, {
-    event: "docs-ingest-start",
-    file: files[0],
-    count: files.length,
-    cluster_id: clusterId,
-  });
-
   const results: IngestResult[] = [];
 
   for (const source of files) {
     const absSource = resolve(repoRoot, source);
-    // Path traversal check: ensure absSource is within repoRoot
     const relCheck = relative(repoRoot, absSource);
     if (relCheck.startsWith("..") || relCheck.startsWith("/")) {
       throw new Error(`polaris docs ingest: path traversal detected, file outside repo: ${source}`);
@@ -267,8 +396,22 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
     const content = readFileSync(absSource, "utf-8");
     const relSource = relative(repoRoot, absSource).replace(/\\/g, "/");
     const classification = classifyDoc(content, relSource);
+
     if (APPROVAL_REQUIRED.has(classification) && !options.approveAuthority) {
       throw new Error(`polaris docs ingest: ${classification} requires explicit approval; rerun with --approve-authority`);
+    }
+
+    // Conflict detection against active doctrine (STOP CONDITION)
+    const conflict = detectDoctrineConflict(content, repoRoot);
+    if (conflict) {
+      emitTelemetry(telPath, runId, {
+        event: "docs-ingest-conflict-detected",
+        file: relSource,
+        conflicting_doctrine_file: conflict.conflictingFile,
+        detail: conflict.detail,
+        cluster_id: clusterId,
+      });
+      throw new Error(`polaris docs ingest: conflict detected — ${conflict.detail}`);
     }
 
     const { label: linkedMapArea, entry: linkedEntry } = deriveLinkedArea(content, routes);
@@ -276,12 +419,11 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
     mkdirSync(targetDir, { recursive: true });
     const destination = uniqueDestination(join(targetDir, basename(absSource)));
     const relDestination = relative(repoRoot, destination).replace(/\\/g, "/");
-    // Fix: only replace .md suffix if present, otherwise append .provenance.json
     const provenancePath = /\.md$/i.test(destination)
       ? destination.replace(/\.md$/i, ".provenance.json")
       : `${destination}.provenance.json`;
 
-    emitTelemetry(repoRoot, runId, {
+    emitTelemetry(telPath, runId, {
       event: "docs-ingest-classified",
       file: relSource,
       classification,
@@ -306,7 +448,7 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
             ingestRunId: runId,
             ingestClusterId: clusterId,
             relatedRunId: runId,
-            relatedIssue: state.cluster_id ?? null,
+            relatedIssue: clusterId,
             classifiedAs: classification,
             linkedMapArea,
             conflictsDetected: false,
@@ -320,14 +462,14 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
     }
 
     if (classification === "doctrine-candidate") {
-      emitTelemetry(repoRoot, runId, {
+      emitTelemetry(telPath, runId, {
         event: "doctrine-candidate-proposed",
         file: relDestination,
         cluster_id: clusterId,
       });
     }
 
-    emitTelemetry(repoRoot, runId, {
+    emitTelemetry(telPath, runId, {
       event: "docs-ingest",
       file: relSource,
       classification,
@@ -347,12 +489,22 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
     });
   }
 
-  emitTelemetry(repoRoot, runId, {
+  emitTelemetry(telPath, runId, {
     event: "docs-ingest-complete",
-    file: files[files.length - 1],
-    count: files.length,
+    count: results.length,
     cluster_id: clusterId,
   });
+
+  if (!options.dryRun) {
+    writeDocsIngestState(repoRoot, {
+      run_id: runId,
+      prior_run_id: priorState.run_id ?? null,
+      cluster_id: clusterId ?? undefined,
+      status: "complete",
+      files_ingested: results.length,
+      last_run_at: new Date().toISOString(),
+    });
+  }
 
   return results;
 }
@@ -363,7 +515,7 @@ export function printIngestResults(results: IngestResult[]): void {
     console.log(`${prefix}${result.sourcePath} -> ${result.destinationPath}`);
     console.log(`classification: ${result.classification}`);
     console.log(`linked_map_area: ${result.linkedMapArea ?? "none"}`);
-    console.log(`run_id: ${result.runId ?? "none"}`);
+    console.log(`run_id: ${result.runId}`);
     if (result.provenancePath) console.log(`provenance: ${result.provenancePath}`);
   }
 }
