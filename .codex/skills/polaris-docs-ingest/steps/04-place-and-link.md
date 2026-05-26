@@ -19,7 +19,8 @@ Execute placements for all files that cleared steps 02–03 (approval-required f
    - Always copy the source into `Polaris-Docs/docs/` first.
    - If source is already in `Polaris-Docs/docs/` (reclassification): update front-matter only, no copy.
    - Do not write anything to root `docs/`.
-   - After writing provenance (step 5) and after the map update (step 7) succeeds, delete the original source file. If the map update fails, retain the original source.
+   - After writing provenance (step 5) and after the map update (step 7) succeeds, delete only the copied/raw external source (for example files under `raw/`).
+   - Retain any files already under `Polaris-Docs/docs/`; if the map update fails, retain the external source as well.
 
 4. **Doctrine-candidate front-matter** — before placing in `Polaris-Docs/docs/doctrine/candidate/`, inject:
    ```yaml

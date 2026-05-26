@@ -18,7 +18,7 @@ Assign each file to exactly one classification. Classification determines target
 | `spec-raw` | `Polaris-Docs/docs/specs/raw/` | none | no |
 | `spec-active` | `Polaris-Docs/docs/specs/active/` | medium | yes |
 | `audit-finding` | `Polaris-Docs/docs/audits/findings/` | medium | no |
-| `doctrine-candidate` | `Polaris-Docs/docs/doctrine/candidate/` | low | no — active/ requires approval |
+| `doctrine-candidate` | `Polaris-Docs/docs/doctrine/candidate/` | low | no |
 | `architecture` | `Polaris-Docs/docs/architecture/` | high | yes |
 | `decision` | `Polaris-Docs/docs/decisions/` | high | yes |
 | `deprecated-noise` | `Polaris-Docs/docs/runtime/generated/` | low | no |
