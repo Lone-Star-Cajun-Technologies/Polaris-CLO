@@ -6,8 +6,8 @@
 import type { ContinuationApprovalEnvelope } from "../../runtime/verification/envelope.js";
 import { validateEnvelope } from "../../runtime/verification/envelope.js";
 import { appendAuditEvent } from "../../runtime/audit/logger.js";
-import { loadState, writeState } from "../../runtime/state.js";
-import { writeCheckpoint } from "../../runtime/checkpoint.js";
+import { loadState } from "../../runtime/state.js";
+import { dispatchConfirmedContinuation } from "../../runtime/continuation/confirmed.js";
 
 // Per-artifact-dir lock: prevents two concurrent confirmations from both passing
 // validation before either writes active_child to disk. Set operations are
@@ -152,34 +152,17 @@ export async function handleLoopContinueConfirmed(
       result: "ok",
     });
 
-    // Write checkpoint before any state mutation
-    await writeCheckpoint(artifact_dir, state.step_cursor);
+    // Delegate checkpoint, active_child lease write, and mutation_approved audit to
+    // the confirmed continuation service. Adapter dispatch wired in Issue C (POL-93).
+    const dispatchResult = await dispatchConfirmedContinuation({ artifact_dir, envelope });
 
-    // Increment continuation_epoch — this changes the state fingerprint so that
-    // any replay of the same approval envelope (same nonce) will fail the
-    // fingerprint check (state_mutated_since_approval) rather than relying solely
-    // on the active_child guard. Worker dispatch is not yet implemented, so
-    // active_child is intentionally left null until dispatch is wired in.
-    await writeState(artifact_dir, {
-      ...state,
-      continuation_epoch: (state.continuation_epoch ?? 0) + 1,
-    });
-
-    // Record mutation_approved after state is durably written
-    await appendAuditEvent(artifact_dir, {
-      event_type: "mutation_approved",
-      run_id: state.run_id,
-      step_cursor: state.step_cursor,
-      operator: "mcp",
-      operation: "loop_continue_confirmed",
-      approval_fingerprint: envelope.fingerprint,
-      result: "ok",
-      metadata: { next_child: validation.next_child },
-    });
+    if (!dispatchResult.ok) {
+      return { ok: false, rejection: dispatchResult.rejection };
+    }
 
     return {
       ok: true,
-      next_child: validation.next_child,
+      next_child: dispatchResult.child_id,
       message: "Continuation approved. Worker dispatch is not yet implemented.",
     };
   } finally {

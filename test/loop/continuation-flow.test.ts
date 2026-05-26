@@ -305,7 +305,8 @@ describe("continuation flow: rejection cases", () => {
 
     expect(replayResult["ok"]).toBe(false);
     const rejection = replayResult["rejection"] as Record<string, unknown>;
-    const nonceReplayReasons = ["state_mutated_since_approval", "runtime_generation_mismatch", "step_cursor_mismatch"];
+    // concurrent_execution is also valid: active_child is now set after a successful confirm
+    const nonceReplayReasons = ["state_mutated_since_approval", "runtime_generation_mismatch", "step_cursor_mismatch", "concurrent_execution"];
     expect(nonceReplayReasons).toContain(rejection["reason"]);
 
     const events = await readAuditLog(testArtifactDir);
