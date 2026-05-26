@@ -15,8 +15,10 @@ It stores execution groupings, dependencies, and session types for a work unit.
 ```
 
 Where `<source-id>` is:
-- The Linear parent issue ID (e.g., `POL-5`) for tracker-backed workflows.
+- The Linear IMPLEMENT parent issue ID (e.g., `POL-105`) for tracker-backed workflows.
 - A locally generated slug for trackerless (spec-file-backed) workflows.
+
+For tracker-backed workflows created from an ANALYZE issue, `source_id` points to the IMPLEMENT parent consumed by `polaris-run`; `analyze_source_id` records the ANALYZE issue that produced the cluster plan.
 
 ---
 
@@ -25,6 +27,7 @@ Where `<source-id>` is:
 ```json
 {
   "source_id": "<Linear parent issue ID or local slug>",
+  "analyze_source_id": "<Linear ANALYZE issue ID, tracker-backed only>",
   "source_type": "linear | local",
   "created_at": "<ISO timestamp>",
   "clusters": [
@@ -49,7 +52,8 @@ Where `<source-id>` is:
 
 ```json
 {
-  "source_id": "POL-5",
+  "source_id": "POL-105",
+  "analyze_source_id": "POL-104",
   "source_type": "linear",
   "created_at": "2026-05-23T00:00:00.000Z",
   "clusters": [
@@ -57,16 +61,16 @@ Where `<source-id>` is:
       "cluster_id": "cluster-01",
       "children": [
         {
-          "id": "POL-23",
+          "id": "POL-106",
           "title": "Implement polaris loop continue",
           "session_type": "implement",
           "blockedBy": []
         },
         {
-          "id": "POL-24",
+          "id": "POL-107",
           "title": "Implement polaris loop status",
           "session_type": "implement",
-          "blockedBy": ["POL-23"]
+          "blockedBy": ["POL-106"]
         }
       ]
     }
@@ -74,7 +78,7 @@ Where `<source-id>` is:
 }
 ```
 
-For tracker-backed workflows, `polaris-run` may query Linear directly for child state and use `clusters.json` as supplementary ordering metadata.
+For tracker-backed workflows, `polaris-run` may query Linear directly for child state and use `clusters.json` as supplementary ordering metadata. The executable children are children of the IMPLEMENT parent named by `source_id`, not direct children of the ANALYZE issue named by `analyze_source_id`.
 
 ---
 
@@ -115,5 +119,6 @@ For trackerless workflows, `polaris-run` reads from `clusters.json` as the autho
 
 - `session_type` must be `analyze` or `implement`.
 - `blockedBy` entries must reference IDs within the same cluster file.
+- For tracker-backed ANALYZE-to-IMPLEMENT workflows, `source_id` must be the IMPLEMENT parent issue ID and `analyze_source_id` must be the ANALYZE issue ID.
 - Do not store skill traversal contracts here — those belong in `chain.md` and `chain.json`.
 - `clusters.json` is written once by polaris-analyze and read by polaris-run. Do not hand-edit after a run has started.

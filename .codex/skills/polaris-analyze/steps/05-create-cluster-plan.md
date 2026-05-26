@@ -22,8 +22,9 @@ allowed_routes:
   - docs/Polaris/spec/polaris-implementation-plan.md
   - .codex/skills/polaris-analyze/chain.md
 expected_evidence:
-  - clusters.json written to .polaris/clusters/<source-id>/clusters.json
-  - Linear child issues created (tracker-backed) or task list updated (trackerless)
+  - clusters.json written to .polaris/clusters/<implement-parent-id>/clusters.json
+  - Linear IMPLEMENT parent issue created under the ANALYZE issue (tracker-backed)
+  - Linear child issues created under the IMPLEMENT parent (tracker-backed) or task list updated (trackerless)
   - execution ordering is unambiguous
   - no source code changes made
 stop_rules:
@@ -55,13 +56,27 @@ Each child must have:
 - `blockedBy`: list of child IDs that must be Done first (empty list if none)
 - A well-scoped Linear issue body (see below) for tracker-backed workflows
 
-### 2. Write clusters.json
+### 2. Create Linear IMPLEMENT parent issue (tracker-backed only)
 
-Always write to `.polaris/clusters/<source-id>/clusters.json`:
+Before creating any child issue, create or reuse a separate Linear IMPLEMENT parent issue:
+- Title: `IMPLEMENT: <slug>`
+- Parent: the ANALYZE source issue that produced this cluster plan
+- Purpose: hold executable implementation children for `polaris-run`
+
+If a matching IMPLEMENT parent already exists under the ANALYZE issue, update/refine it instead of duplicating it.
+
+Children must be created under the IMPLEMENT parent, not under the ANALYZE issue.
+
+### 3. Write clusters.json
+
+Always write to `.polaris/clusters/<implement-parent-id>/clusters.json`.
+
+Set `clusters.json` `source_id` to the IMPLEMENT parent issue ID, not the ANALYZE issue ID. Set `analyze_source_id` to the ANALYZE issue ID for traceability.
 
 ```json
 {
-  "source_id": "<Linear parent issue ID>",
+  "source_id": "<Linear IMPLEMENT parent issue ID>",
+  "analyze_source_id": "<Linear ANALYZE issue ID>",
   "source_type": "linear",
   "created_at": "<ISO timestamp>",
   "clusters": [
@@ -82,11 +97,12 @@ Always write to `.polaris/clusters/<source-id>/clusters.json`:
 
 For trackerless workflows (`source_type: "local"`), IDs are locally generated slugs. polaris-run reads from clusters.json rather than Linear.
 
-### 3. Create Linear child issues (tracker-backed only)
+### 4. Create Linear child issues (tracker-backed only)
 
 **Before creating any child:**
 - Check all existing child issues.
 - If a matching child already exists, update/refine it — do not duplicate.
+- Confirm the child parent is the IMPLEMENT parent issue.
 
 **Each child issue body must include:**
 
@@ -116,7 +132,7 @@ Child IDs that must be Done before this one can start.
 ## Artifact update
 
 Update `.taskchain_artifacts/polaris-analyze/current-state.json`:
-- `clusters_file: ".polaris/clusters/<source-id>/clusters.json"`
+- `clusters_file: ".polaris/clusters/<implement-parent-id>/clusters.json"`
 - `child_issues: [<ID — title>, ...]`
 - `current_step_id: 05-create-cluster-plan`
 - `updated_at: <timestamp>`

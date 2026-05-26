@@ -6,12 +6,12 @@
   "skill": "polaris-run",
   "artifact_dir": ".taskchain_artifacts/polaris-run",
   "branch": "philmeaux/pol-105-implement-issue-hierarchy-and-ephemeral-execution-refactor",
-  "current_step_id": "06-commit-and-update-linear",
+  "current_step_id": "05-validate-child",
   "step_cursor": "child-validated",
   "status": "ready",
   "session_type": "implementation",
-  "active_child": "POL-107",
-  "last_commit": "PENDING_POL-107",
+  "active_child": "POL-108",
+  "last_commit": "PENDING_POL-108",
   "pr_url": "",
   "next_open_child": "POL-108",
   "completed_children": [
@@ -80,6 +80,7 @@
     "files_touched_total": 3,
     "last_child_files_touched": 1
   },
+  "map_update_warning": "polaris map update --changed completed with low-confidence needs-review entries for POL-107 files",
   "validation_status": "passed",
-  "updated_at": "2026-05-26T14:29:09.000Z"
+  "updated_at": "2026-05-26T14:33:45.000Z"
 }
