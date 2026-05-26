@@ -18,7 +18,7 @@
  *   06 – CONTINUE (back to step 02) or halt (STOP / CLUSTER COMPLETE)
  */
 
-import { appendFileSync, mkdirSync } from "node:fs";
+import { appendFileSync, mkdirSync, realpathSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { readState, validateState, writeStateAtomic, type LoopState } from "./checkpoint.js";
 import { createAdapter } from "./adapters/registry.js";
@@ -122,7 +122,9 @@ function buildPacket(
     run_id: state.run_id,
     cluster_id: state.cluster_id,
     active_child: activeChild,
-    state_file: stateFile,
+    // Normalize to real path so the worker gets a canonical, symlink-free path
+    // (important on macOS where tmpdir() returns /var/... but resolves to /private/var/...).
+    state_file: (() => { try { return realpathSync(stateFile); } catch { return stateFile; } })(),
     telemetry_file: telemetryFile,
     context: {
       skill: state.skill,

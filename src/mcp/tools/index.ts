@@ -2,6 +2,7 @@ import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { handlePolarisLoopStatus, handlePolarisStatus } from "./status.js";
 import { handlePolarisCurrentState } from "./current-state.js";
 import { handleLoopContinueDryRun } from "./loop-dry-run.js";
+import { handleLoopContinueConfirmed } from "./loop-continue.js";
 
 export const TOOLS: Tool[] = [
   {
@@ -58,6 +59,62 @@ export const TOOLS: Tool[] = [
       required: ["expected_step_cursor"],
     },
   },
+  {
+    name: "polaris_loop_continue_confirmed",
+    description:
+      "Submit a pre-approved continuation envelope to gate a loop continue action. Requires a valid ContinuationApprovalEnvelope from a prior dry-run call. Does not dispatch workers — returns approval status only.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        artifact_dir: {
+          type: "string",
+          description: "Artifact directory name under .taskchain_artifacts/. Default: bootstrap-run",
+        },
+        run_id: {
+          type: "string",
+          description: "Run ID from the approval envelope",
+        },
+        expected_step_cursor: {
+          type: "string",
+          description: "Expected step cursor from the approval envelope",
+        },
+        fingerprint: {
+          type: "string",
+          description: "State fingerprint from the approval envelope",
+        },
+        runtime_generation: {
+          type: "number",
+          description: "Runtime generation counter from the approval envelope",
+        },
+        issued_at: {
+          type: "string",
+          description: "ISO 8601 timestamp when the envelope was issued",
+        },
+        expires_at: {
+          type: "string",
+          description: "ISO 8601 timestamp when the envelope expires",
+        },
+        nonce: {
+          type: "string",
+          description: "Unique nonce from the approval envelope",
+        },
+        requested_action: {
+          type: "string",
+          description: 'Must be "loop_continue"',
+        },
+      },
+      required: [
+        "run_id",
+        "expected_step_cursor",
+        "fingerprint",
+        "runtime_generation",
+        "issued_at",
+        "expires_at",
+        "nonce",
+        "requested_action",
+      ],
+    },
+  },
 ];
 
 const REGISTERED = new Set(TOOLS.map((t) => t.name));
@@ -88,6 +145,9 @@ export async function dispatchTool(
       break;
     case "polaris_loop_continue_dry_run":
       result = await handleLoopContinueDryRun(args);
+      break;
+    case "polaris_loop_continue_confirmed":
+      result = await handleLoopContinueConfirmed(args);
       break;
     default:
       result = { ok: false, error: "unknown_tool", message: `Unhandled tool: ${name}` };

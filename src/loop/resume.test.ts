@@ -29,6 +29,7 @@ function makeTestDir(): string {
   execFileSync("git", ["init"], { cwd: dir });
   execFileSync("git", ["config", "user.email", "test@test.com"], { cwd: dir });
   execFileSync("git", ["config", "user.name", "Test"], { cwd: dir });
+  execFileSync("git", ["config", "commit.gpgsign", "false"], { cwd: dir });
   writeFileSync(join(dir, "README.md"), "test\n");
   execFileSync("git", ["add", "."], { cwd: dir });
   execFileSync("git", ["commit", "-m", "init"], { cwd: dir });

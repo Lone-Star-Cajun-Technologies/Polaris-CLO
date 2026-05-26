@@ -18,9 +18,9 @@ A dry-run executes the continuation *decision logic* without executing any *cont
 |-------|-----------|-------|
 | Load current runtime state | YES | Reads `.polaris/runs/{run_id}/current-state.json` |
 | Validate state preconditions | YES | Ensures run is in a continuable state |
-| Select next child | YES | Applies child-selection logic (lowest open child by number) |
+| Select next child | YES | **Temporary placeholder:** lowest open child by number. Future scheduling belongs to Polaris runtime policy/dependency logic, not this contract. |
 | Determine worker type | YES | Derived from child task type (analyze/implement) |
-| Determine provider routing | YES | Applies provider-selection logic |
+| Preview eligible provider candidates | PREVIEW ONLY | Identifies currently eligible providers; not a reservation or authoritative selection. Actual routing decided at dispatch time. |
 | Generate bootstrap packet content | PREVIEW ONLY | Content produced but not written to disk |
 | Dispatch worker | NO | Hard forbidden |
 | Write to `.polaris/runs/` | NO | Hard forbidden |
@@ -161,6 +161,10 @@ function computeStateFingerprint(state: CurrentState): string {
 ```
 
 Sorting `open_children` before hashing ensures order-independence.
+
+### Generation and epoch invalidation
+
+Any change to `runtime_generation` or `continuation_epoch` produces a different fingerprint and therefore invalidates all prior approval envelopes. These counters should be incremented whenever the runtime performs a structural state transition (e.g. recovering from a checkpoint, completing a continuation). This ensures stale approvals issued against an earlier generation cannot be replayed against a later one.
 
 ### Pre-mutation verification sequence
 

@@ -10,7 +10,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { runParentLoop } from "./parent.js";
@@ -32,9 +32,19 @@ function makeMockAdapter(
     name: "mock",
     async dispatch(packet, options) {
       calls.push({ packet, options });
-      const result = responses[callIndex] ?? responses[responses.length - 1];
+      const base = responses[callIndex] ?? responses[responses.length - 1]!;
       callIndex += 1;
-      return result;
+      // Rewrite child_id in the summary to match the dispatched child so the
+      // parent loop's mismatch guard doesn't reject a valid mock result.
+      try {
+        const parsed = JSON.parse(base.summary ?? "{}") as Record<string, unknown>;
+        if ("child_id" in parsed) {
+          return { ...base, summary: JSON.stringify({ ...parsed, child_id: packet.active_child }) };
+        }
+      } catch {
+        // Summary is not JSON — leave as-is
+      }
+      return base;
     },
   };
 }
@@ -380,7 +390,8 @@ describe("runParentLoop", () => {
       run_id: "test-run-001",
       cluster_id: "POL-99",
       active_child: "POL-100",
-      state_file: stateFile,
+      // parent.ts normalizes via realpathSync to resolve macOS /var → /private/var symlinks
+      state_file: realpathSync(stateFile),
     });
   });
 

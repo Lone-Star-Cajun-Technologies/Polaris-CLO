@@ -3,7 +3,7 @@
  *
  * Covers:
  * - dispatchTool() returns unknown_tool error for unregistered tool name
- * - TOOLS array has exactly 3 tools: polaris_status, polaris_loop_status, polaris_current_state
+ * - TOOLS array contains the expected tools
  * - dispatchTool() result has content array with a text item containing valid JSON
  */
 
@@ -23,17 +23,31 @@ vi.mock("./current-state.js", () => ({
   }),
 }));
 
+vi.mock("./loop-dry-run.js", () => ({
+  handleLoopContinueDryRun: vi.fn().mockResolvedValue({ ok: true, eligible: true }),
+}));
+
+vi.mock("./loop-continue.js", () => ({
+  handleLoopContinueConfirmed: vi.fn().mockResolvedValue({
+    ok: true,
+    next_child: "POL-85",
+    message: "Continuation approved. Worker dispatch is not yet implemented.",
+  }),
+}));
+
 import { TOOLS, dispatchTool } from "./index.js";
 import { handlePolarisStatus, handlePolarisLoopStatus } from "./status.js";
 import { handlePolarisCurrentState } from "./current-state.js";
+import { handleLoopContinueConfirmed } from "./loop-continue.js";
 
 const mockHandlePolarisStatus = vi.mocked(handlePolarisStatus);
 const mockHandlePolarisLoopStatus = vi.mocked(handlePolarisLoopStatus);
 const mockHandlePolarisCurrentState = vi.mocked(handlePolarisCurrentState);
+const mockHandleLoopContinueConfirmed = vi.mocked(handleLoopContinueConfirmed);
 
 describe("TOOLS array", () => {
-  it("has exactly 3 tools", () => {
-    expect(TOOLS).toHaveLength(3);
+  it("has exactly 5 tools", () => {
+    expect(TOOLS).toHaveLength(5);
   });
 
   it("contains polaris_status", () => {
@@ -51,9 +65,25 @@ describe("TOOLS array", () => {
     expect(names).toContain("polaris_current_state");
   });
 
-  it("has the exact set of tools: polaris_status, polaris_loop_status, polaris_current_state", () => {
+  it("contains polaris_loop_continue_dry_run", () => {
+    const names = TOOLS.map((t) => t.name);
+    expect(names).toContain("polaris_loop_continue_dry_run");
+  });
+
+  it("contains polaris_loop_continue_confirmed", () => {
+    const names = TOOLS.map((t) => t.name);
+    expect(names).toContain("polaris_loop_continue_confirmed");
+  });
+
+  it("has the exact set of tools", () => {
     const names = TOOLS.map((t) => t.name).sort();
-    expect(names).toEqual(["polaris_current_state", "polaris_loop_status", "polaris_status"]);
+    expect(names).toEqual([
+      "polaris_current_state",
+      "polaris_loop_continue_confirmed",
+      "polaris_loop_continue_dry_run",
+      "polaris_loop_status",
+      "polaris_status",
+    ]);
   });
 });
 
@@ -117,6 +147,31 @@ describe("dispatchTool()", () => {
     const parsed = JSON.parse(response.content[0]!.text) as Record<string, unknown>;
     expect(parsed["ok"]).toBe(true);
     expect(parsed["artifact_dir"]).toBe("polaris-run");
+  });
+
+  it("dispatches polaris_loop_continue_confirmed to handleLoopContinueConfirmed", async () => {
+    mockHandleLoopContinueConfirmed.mockResolvedValue({
+      ok: true,
+      next_child: "POL-85",
+      message: "Continuation approved. Worker dispatch is not yet implemented.",
+    });
+    const envelopeArgs = {
+      artifact_dir: "bootstrap-run",
+      run_id: "run-123",
+      expected_step_cursor: "06-decide-continuation",
+      fingerprint: "abc123",
+      runtime_generation: 1,
+      issued_at: "2026-05-25T00:00:00.000Z",
+      expires_at: "2026-05-25T01:00:00.000Z",
+      nonce: "nonce-xyz",
+      requested_action: "loop_continue",
+    };
+    const response = await dispatchTool("polaris_loop_continue_confirmed", envelopeArgs);
+    expect(mockHandleLoopContinueConfirmed).toHaveBeenCalledOnce();
+    expect(mockHandleLoopContinueConfirmed).toHaveBeenCalledWith(envelopeArgs);
+    const parsed = JSON.parse(response.content[0]!.text) as Record<string, unknown>;
+    expect(parsed["ok"]).toBe(true);
+    expect(parsed["next_child"]).toBe("POL-85");
   });
 
   it("unknown_tool error message includes the tool name", async () => {

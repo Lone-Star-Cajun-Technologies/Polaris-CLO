@@ -1,4 +1,4 @@
-import { readFile, readdir } from "node:fs/promises";
+import { readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { CurrentState } from "../types/runtime-state.js";
 
@@ -21,6 +21,10 @@ export async function loadState(artifactDir: string): Promise<CurrentState | nul
   } catch {
     return null;
   }
+}
+
+export async function writeState(artifactDir: string, state: CurrentState): Promise<void> {
+  await writeFile(getStateFilePath(artifactDir), JSON.stringify(state, null, 2) + "\n", "utf-8");
 }
 
 export async function listArtifactDirs(): Promise<string[]> {

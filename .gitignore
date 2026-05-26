@@ -6,3 +6,4 @@ build/
 !.codex/plugins/**/*.js
 .env
 docs/Polaris/.obsidian/
+.claude/worktrees/
