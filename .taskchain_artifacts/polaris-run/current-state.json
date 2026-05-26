@@ -8,23 +8,22 @@
   "branch": "philmeaux/pol-105-implement-issue-hierarchy-and-ephemeral-execution-refactor",
   "current_step_id": "06-commit-and-update-linear",
   "step_cursor": "checkpoint",
-  "status": "ready",
+  "status": "cluster-complete",
   "session_type": "implementation",
   "active_child": "",
-  "last_commit": "f36b982",
+  "last_commit": "pending-pol-112-commit",
   "pr_url": "",
-  "next_open_child": "POL-112",
+  "next_open_child": "",
   "completed_children": [
     "POL-106",
     "POL-107",
     "POL-108",
     "POL-109",
     "POL-110",
-    "POL-111"
-  ],
-  "open_children": [
+    "POL-111",
     "POL-112"
   ],
+  "open_children": [],
   "open_children_meta": {
     "POL-106": {
       "title": "IMPLEMENT: Write issue-hierarchy-doctrine.md and migration guide",
@@ -76,12 +75,12 @@
     }
   },
   "context_budget": {
-    "children_completed": 6,
-    "files_touched_total": 21,
-    "last_child_files_touched": 5
+    "children_completed": 7,
+    "files_touched_total": 23,
+    "last_child_files_touched": 2
   },
   "map_update_warning": "polaris map update --changed completed with low-confidence needs-review entries for POL-111 run ledger files",
   "validation_status": "passed",
-  "validation_command_substitution": "npm test -- --testPathPattern=\"claim-child|dispatch-result\" failed because Vitest does not support --testPathPattern; ran npm test -- src/mcp/tools/claim-child.test.ts src/mcp/tools/dispatch-result.test.ts instead.",
-  "updated_at": "2026-05-26T15:05:00.000Z"
+  "validation_command_substitution": "npm test -- --testPathPattern=\"ephemeral-smoke\" failed because Vitest does not support --testPathPattern; ran npm test -- src/loop/ephemeral-smoke.test.ts instead.",
+  "updated_at": "2026-05-26T16:00:30.000Z"
 }
