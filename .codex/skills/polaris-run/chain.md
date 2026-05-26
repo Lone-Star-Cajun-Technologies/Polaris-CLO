@@ -116,7 +116,6 @@ Do not report workflow completion until `.taskchain_artifacts/polaris-run/curren
 
 | Skill | Allowed steps | Condition |
 |---|---|---|
-| caveman | 01 (start) | optional; explicitly enabled runs only — detection is not activation |
 | repo-analysis | 01, 02, 03, 04 | targeted lookup only; conditional on provider availability |
 | execution-adapter | 07 | required when a completed child has a next open child |
 
@@ -133,7 +132,7 @@ Blockers: none | <explicit blocker>
 
 ### Never compressed
 
-Always write in full regardless of caveman mode:
+Always write in full:
 - Generated code
 - Safety warnings
 - Blocker descriptions

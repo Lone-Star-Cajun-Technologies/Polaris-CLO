@@ -84,10 +84,7 @@ Required fields on every event: `event`, `run_id`, `timestamp`.
 
 | Skill | Allowed steps | Condition |
 |---|---|---|
-| caveman | session start | optional; explicitly enabled runs only — detection is not activation |
 | repo-analysis | 01, 02 | targeted lookup only; conditional on provider availability |
-
-Detection is not activation. Only activate Caveman if explicitly enabled for the current run via config or invocation flag. If not explicitly enabled, Polaris-native compact is the required baseline (per `docs/spec/polaris-compact-contracts.md` §8); confirm provider status and proceed. If Caveman is explicitly enabled, activate in lite mode per `linked-skills/caveman.md`.
 
 After each completed step, emit a checkpoint:
 
@@ -100,7 +97,7 @@ Blockers: none | <explicit blocker>
 
 ### Never compressed
 
-Always write in full regardless of caveman mode:
+Always write in full:
 - Child issue bodies and cluster plans (generated planning artifacts)
 - Blocker reports and unblock conditions
 - Doctrine conflict findings
