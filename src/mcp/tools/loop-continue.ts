@@ -6,8 +6,13 @@
 import type { ContinuationApprovalEnvelope } from "../../runtime/verification/envelope.js";
 import { validateEnvelope } from "../../runtime/verification/envelope.js";
 import { appendAuditEvent } from "../../runtime/audit/logger.js";
-import { loadState } from "../../runtime/state.js";
+import { loadState, writeState } from "../../runtime/state.js";
 import { writeCheckpoint } from "../../runtime/checkpoint.js";
+
+// Per-artifact-dir lock: prevents two concurrent confirmations from both passing
+// validation before either writes active_child to disk. Set operations are
+// synchronous so the check-and-add is atomic within a single Node.js event loop tick.
+const pendingConfirmations = new Set<string>();
 
 function parseEnvelope(args: Record<string, unknown>): ContinuationApprovalEnvelope & { artifact_dir: string } {
   const artifact_dir =
@@ -77,7 +82,8 @@ export async function handleLoopContinueConfirmed(
 
   const { artifact_dir, ...envelope } = parsed;
 
-  // Load state — always a fresh read, never cached
+  // Load state first — needed for audit events even if we reject early.
+  // Always a fresh read, never cached.
   const state = await loadState(artifact_dir);
   if (state === null) {
     return {
@@ -87,11 +93,10 @@ export async function handleLoopContinueConfirmed(
     };
   }
 
-  // Validate envelope against live state (all 9 structural checks)
-  const validation = validateEnvelope(state, envelope);
-
-  if (!validation.ok) {
-    // Append mutation_rejected audit event before returning failure
+  // In-memory lock: if another confirmation is in flight for this artifact_dir,
+  // reject immediately. Load state first so we can write a proper audit event.
+  // Set operations are synchronous, so check+add is atomic within one event-loop tick.
+  if (pendingConfirmations.has(artifact_dir)) {
     await appendAuditEvent(artifact_dir, {
       event_type: "mutation_rejected",
       run_id: state.run_id,
@@ -100,49 +105,84 @@ export async function handleLoopContinueConfirmed(
       operation: "loop_continue_confirmed",
       approval_fingerprint: envelope.fingerprint,
       result: "rejected",
-      rejection_reason: `${validation.failure.check}: ${validation.failure.reason}`,
+      rejection_reason: "active_child: concurrent_execution",
+    });
+    return {
+      ok: false,
+      rejection: { check: "active_child", reason: "concurrent_execution" },
+    };
+  }
+  pendingConfirmations.add(artifact_dir);
+
+  try {
+    // Validate envelope against live state (all 9 structural checks)
+    const validation = validateEnvelope(state, envelope);
+
+    if (!validation.ok) {
+      await appendAuditEvent(artifact_dir, {
+        event_type: "mutation_rejected",
+        run_id: state.run_id,
+        step_cursor: state.step_cursor,
+        operator: "mcp",
+        operation: "loop_continue_confirmed",
+        approval_fingerprint: envelope.fingerprint,
+        result: "rejected",
+        rejection_reason: `${validation.failure.check}: ${validation.failure.reason}`,
+      });
+
+      return {
+        ok: false,
+        rejection: {
+          check: validation.failure.check,
+          reason: validation.failure.reason,
+          ...(validation.failure.expected !== undefined && { expected: validation.failure.expected }),
+          ...(validation.failure.actual !== undefined && { actual: validation.failure.actual }),
+        },
+      };
+    }
+
+    // Validation passed — record mutation_requested
+    await appendAuditEvent(artifact_dir, {
+      event_type: "mutation_requested",
+      run_id: state.run_id,
+      step_cursor: state.step_cursor,
+      operator: "mcp",
+      operation: "loop_continue_confirmed",
+      approval_fingerprint: envelope.fingerprint,
+      result: "ok",
+    });
+
+    // Write checkpoint before any state mutation
+    await writeCheckpoint(artifact_dir, state.step_cursor);
+
+    // Increment continuation_epoch — this changes the state fingerprint so that
+    // any replay of the same approval envelope (same nonce) will fail the
+    // fingerprint check (state_mutated_since_approval) rather than relying solely
+    // on the active_child guard. Worker dispatch is not yet implemented, so
+    // active_child is intentionally left null until dispatch is wired in.
+    await writeState(artifact_dir, {
+      ...state,
+      continuation_epoch: (state.continuation_epoch ?? 0) + 1,
+    });
+
+    // Record mutation_approved after state is durably written
+    await appendAuditEvent(artifact_dir, {
+      event_type: "mutation_approved",
+      run_id: state.run_id,
+      step_cursor: state.step_cursor,
+      operator: "mcp",
+      operation: "loop_continue_confirmed",
+      approval_fingerprint: envelope.fingerprint,
+      result: "ok",
+      metadata: { next_child: validation.next_child },
     });
 
     return {
-      ok: false,
-      rejection: {
-        check: validation.failure.check,
-        reason: validation.failure.reason,
-        ...(validation.failure.expected !== undefined && { expected: validation.failure.expected }),
-        ...(validation.failure.actual !== undefined && { actual: validation.failure.actual }),
-      },
+      ok: true,
+      next_child: validation.next_child,
+      message: "Continuation approved. Worker dispatch is not yet implemented.",
     };
+  } finally {
+    pendingConfirmations.delete(artifact_dir);
   }
-
-  // Validation passed — record mutation_requested
-  await appendAuditEvent(artifact_dir, {
-    event_type: "mutation_requested",
-    run_id: state.run_id,
-    step_cursor: state.step_cursor,
-    operator: "mcp",
-    operation: "loop_continue_confirmed",
-    approval_fingerprint: envelope.fingerprint,
-    result: "ok",
-  });
-
-  // Write checkpoint before any state mutation
-  await writeCheckpoint(artifact_dir, state.step_cursor);
-
-  // Record mutation_approved after checkpoint is safely written
-  await appendAuditEvent(artifact_dir, {
-    event_type: "mutation_approved",
-    run_id: state.run_id,
-    step_cursor: state.step_cursor,
-    operator: "mcp",
-    operation: "loop_continue_confirmed",
-    approval_fingerprint: envelope.fingerprint,
-    result: "ok",
-    metadata: { next_child: validation.next_child },
-  });
-
-  return {
-    ok: true,
-    next_child: validation.next_child,
-    message: "Continuation approved. Worker dispatch is not yet implemented.",
-  };
 }
