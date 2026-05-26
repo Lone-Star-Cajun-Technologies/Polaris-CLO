@@ -193,7 +193,14 @@ export async function dispatchConfirmedContinuation(
     // Adapter dispatch failed — clear active_child, write recovery audit events, and
     // return ok: false so MCP callers are not misled into treating a failed dispatch
     // as successful execution.
-    await writeState(artifact_dir, { ...state, active_child: "" });
+    // Read the latest persisted state to avoid clobbering newer fields like continuation_epoch
+    const latestState = await loadState(artifact_dir);
+    if (latestState !== null) {
+      await writeState(artifact_dir, { ...latestState, active_child: "" });
+    } else {
+      // Fallback: use the stale state if persisted state is missing (should not happen)
+      await writeState(artifact_dir, { ...state, active_child: "" });
+    }
     await appendAuditEvent(artifact_dir, {
       event_type: "worker_result_received",
       run_id: state.run_id,
