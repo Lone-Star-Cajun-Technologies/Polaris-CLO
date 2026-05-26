@@ -15,6 +15,8 @@ type PacketExecutionConfig = Required<PolarisConfig>["execution"] & {
   allow_analyze_children?: boolean;
 };
 
+type CompactConfig = Required<PolarisConfig>["compact"];
+
 export interface BootstrapPacket {
   run_id: string;
   skill: string;
@@ -35,6 +37,7 @@ export interface BootstrapPacket {
   };
   current_state_sha: string;
   resume_instructions: string;
+  compact_mode?: "standard" | "strict" | "minimal";
   execution_adapter?: ExecutionAdapterContract;
   boundary_enforcement?: string;
 }
@@ -69,6 +72,7 @@ export function buildBootstrapPacket(
   completedChild: string,
   adapterMode?: ExecutionAdapterMode,
   executionConfig?: PacketExecutionConfig,
+  compactConfig?: CompactConfig,
 ): BootstrapPacket {
   const branch = getCurrentBranch(repoRoot);
   const nextChild = state.open_children[0] ?? null;
@@ -78,6 +82,10 @@ export function buildBootstrapPacket(
   const artifactDir =
     state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "bootstrap-run");
   const telemetryFile = join(artifactDir, "runs", state.run_id, "telemetry.jsonl");
+
+  // Resolve compact_mode: explicit level wins, then orchestratorMode, then default "standard"
+  const compactMode: "standard" | "strict" | "minimal" =
+    compactConfig?.level ?? compactConfig?.orchestratorMode ?? "standard";
 
   const resumeInstructions = nextChild
     ? `Run \`polaris loop resume ${state.run_id}\` on branch \`${branch}\` to continue with ${nextChild}.`
@@ -100,6 +108,7 @@ export function buildBootstrapPacket(
     currentStateSha,
     branch,
     allowAnalyzeChildren: executionConfig?.allow_analyze_children,
+    compactMode,
   });
 
   // Normalize artifact_pointers to repo-relative paths
@@ -126,6 +135,7 @@ export function buildBootstrapPacket(
     },
     current_state_sha: currentStateSha,
     resume_instructions: resumeInstructions,
+    compact_mode: compactMode,
     execution_adapter: buildExecutionAdapterContract(adapterSelection, compactBootstrapState),
   };
 }

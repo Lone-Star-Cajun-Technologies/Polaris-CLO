@@ -70,5 +70,5 @@ export function loadConfig(repoRoot: string): Required<PolarisConfig> {
     );
   }
 
-  return deepMerge(DEFAULT_CONFIG, userConfig) as Required<PolarisConfig>;
+  return deepMerge(DEFAULT_CONFIG as unknown as Record<string, unknown>, userConfig as Record<string, unknown>) as unknown as Required<PolarisConfig>;
 }

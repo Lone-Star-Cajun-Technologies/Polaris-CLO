@@ -1,86 +1,59 @@
 {
   "schema_version": "1.0",
-  "run_id": "polaris-run-subagent-dispatch-2026-05-26-003",
-  "related_run_id": "polaris-run-cli-operator-surface-2026-05-26-001",
-  "cluster_id": "POL-105",
+  "run_id": "polaris-run-pol-114-2026-05-26-001",
+  "related_run_id": null,
+  "cluster_id": "POL-114",
   "skill": "polaris-run",
   "artifact_dir": ".taskchain_artifacts/polaris-run",
-  "branch": "philmeaux/pol-105-implement-issue-hierarchy-and-ephemeral-execution-refactor",
-  "current_step_id": "06-commit-and-update-linear",
-  "step_cursor": "checkpoint",
-  "status": "cluster-complete",
+  "branch": "philmeaux/pol-114-implement-polaris-native-compact-orchestration-and-worker",
+  "current_step_id": "08-final-delivery",
+  "step_cursor": "complete",
+  "status": "complete",
   "session_type": "implementation",
   "active_child": "",
-  "last_commit": "a62990ee66544bb50ab25a978ebc9204e5acb4ad",
-  "pr_url": "",
+  "last_commit": "75f5bf4",
+  "pr_url": "https://github.com/ItIsYeBananaduck/Polaris/pull/32",
   "next_open_child": "",
-  "completed_children": [
-    "POL-106",
-    "POL-107",
-    "POL-108",
-    "POL-109",
-    "POL-110",
-    "POL-111",
-    "POL-112"
-  ],
+  "completed_children": ["POL-115", "POL-116", "POL-117", "POL-118", "POL-119", "POL-120"],
   "open_children": [],
   "open_children_meta": {
-    "POL-106": {
-      "title": "IMPLEMENT: Write issue-hierarchy-doctrine.md and migration guide",
+    "POL-115": {
+      "title": "IMPLEMENT: Write docs/spec/polaris-compact-contracts.md",
       "blockedBy": [],
       "status": "Done"
     },
-    "POL-107": {
-      "title": "IMPLEMENT: Write ephemeral-execution-architecture.md (Claude, Codex, manual fallback, test plan)",
-      "blockedBy": [],
+    "POL-116": {
+      "title": "IMPLEMENT: Add compact config section to PolarisConfig schema",
+      "blockedBy": ["POL-115"],
       "status": "Done"
     },
-    "POL-108": {
-      "title": "IMPLEMENT: Update polaris-analyze step 05 to create separate IMPLEMENT parent issue",
-      "blockedBy": [
-        "POL-106"
-      ],
+    "POL-117": {
+      "title": "IMPLEMENT: Remove hard Caveman dependency from polaris-run and polaris-analyze skill chains",
+      "blockedBy": ["POL-115"],
       "status": "Done"
     },
-    "POL-109": {
-      "title": "IMPLEMENT: Add polaris-run ANALYZE-parent rejection guard in orient-cluster",
-      "blockedBy": [
-        "POL-106"
-      ],
+    "POL-118": {
+      "title": "IMPLEMENT: Wire compact config into bootstrap packet and execution adapter injection",
+      "blockedBy": ["POL-116"],
       "status": "Done"
     },
-    "POL-110": {
-      "title": "IMPLEMENT: Implement AgentSubtaskAdapter.dispatch() and activate orchestration_mode in parent loop",
-      "blockedBy": [
-        "POL-107"
-      ],
+    "POL-119": {
+      "title": "IMPLEMENT: Add optional Caveman/GitNexus provider detection to polaris init",
+      "blockedBy": ["POL-116"],
       "status": "Done"
     },
-    "POL-111": {
-      "title": "IMPLEMENT: Add MCP ephemeral dispatch tools (claim, dispatch-result) to polaris MCP server",
-      "blockedBy": [
-        "POL-107",
-        "POL-110"
-      ],
-      "status": "Done"
-    },
-    "POL-112": {
-      "title": "IMPLEMENT: Write Polaris ephemeral execution smoke test and validation harness",
-      "blockedBy": [
-        "POL-108",
-        "POL-109",
-        "POL-110"
-      ],
+    "POL-120": {
+      "title": "IMPLEMENT: Add test coverage for compact config, bootstrap injection, and provider detection",
+      "blockedBy": ["POL-118", "POL-119"],
       "status": "Done"
     }
   },
   "context_budget": {
-    "children_completed": 7,
-    "files_touched_total": 23,
+    "children_completed": 6,
+    "files_touched_total": 22,
     "last_child_files_touched": 2
   },
-  "map_update_warning": "polaris map update --changed completed with low-confidence needs-review entries for POL-111 run ledger files",
+  "map_update_warning": "polaris CLI not in PATH; polaris map update --changed skipped (non-fatal)",
   "validation_status": "passed",
-  "validation_command_substitution": "npm test -- --testPathPattern=\"ephemeral-smoke\" failed because Vitest does not support --testPathPattern; ran npm test -- src/loop/ephemeral-smoke.test.ts instead.",
-  "updated_at": "2026-05-26T16:00:30.000Z"
+  "updated_at": "2026-05-26T18:55:00.000Z"
 }

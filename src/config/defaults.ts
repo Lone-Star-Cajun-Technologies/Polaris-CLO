@@ -1,6 +1,6 @@
 import type { PolarisConfig } from "./schema.js";
 
-export const DEFAULT_CONFIG: Omit<Required<PolarisConfig>, "canon" | "providers"> & { canon: Required<NonNullable<PolarisConfig["canon"]>>; providers: { repoAnalysis: { preferred: string | undefined; fallback: string[] } } } = {
+export const DEFAULT_CONFIG: Omit<Required<PolarisConfig>, "canon" | "providers"> & { canon: Required<NonNullable<PolarisConfig["canon"]>>; providers: { repoAnalysis: { preferred: string | undefined; fallback: string[] } } } & { compact: Required<Pick<NonNullable<PolarisConfig["compact"]>, "orchestratorMode" | "workerMode">> } = {
   version: "1.0",
   repo: {
     name: "",
@@ -65,5 +65,9 @@ export const DEFAULT_CONFIG: Omit<Required<PolarisConfig>, "canon" | "providers"
     max_children: 3,
     stop_on_fail: false,
     allow_analyze_children: false,
+  },
+  compact: {
+    orchestratorMode: "standard",
+    workerMode: "standard",
   },
 };

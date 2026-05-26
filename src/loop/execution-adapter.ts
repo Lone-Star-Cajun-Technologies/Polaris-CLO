@@ -39,6 +39,7 @@ export interface CompactBootstrapInput {
   currentStateSha: string;
   branch: string;
   allowAnalyzeChildren?: boolean;
+  compactMode?: "standard" | "strict" | "minimal";
 }
 
 export interface CompactBootstrapState {
@@ -50,6 +51,7 @@ export interface CompactBootstrapState {
   current_state_sha: string;
   branch: string;
   allow_analyze_children?: boolean;
+  compact_mode: "standard" | "strict" | "minimal";
   return_summary_contract: string[];
 }
 
@@ -168,7 +170,7 @@ export function selectExecutionAdapter(input: AdapterSelectionInput): AdapterSel
 }
 
 export function buildCompactBootstrapState(input: CompactBootstrapInput): CompactBootstrapState {
-  return {
+  const result: CompactBootstrapState = {
     run_id: input.runId,
     cluster_id: input.clusterId,
     child_id: input.childId,
@@ -176,7 +178,7 @@ export function buildCompactBootstrapState(input: CompactBootstrapInput): Compac
     telemetry_file: input.telemetryFile,
     current_state_sha: input.currentStateSha,
     branch: input.branch,
-    allow_analyze_children: input.allowAnalyzeChildren,
+    compact_mode: input.compactMode ?? "standard",
     return_summary_contract: [
       "child_id",
       "status",
@@ -185,6 +187,10 @@ export function buildCompactBootstrapState(input: CompactBootstrapInput): Compac
       "next_action",
     ],
   };
+  if (input.allowAnalyzeChildren !== undefined) {
+    result.allow_analyze_children = input.allowAnalyzeChildren;
+  }
+  return result;
 }
 
 export function buildExecutionAdapterContract(

@@ -96,6 +96,12 @@ export interface PolarisConfig {
       preferred?: string;
       fallback?: string[];
     };
+    /**
+     * Compaction providers detected by `polaris init`.
+     * Supported values: "caveman", "gitnexus".
+     * Omit the field (or leave as empty array) when no providers are detected.
+     */
+    compactionProviders?: string[];
   };
   budget?: {
     /**
@@ -111,5 +117,29 @@ export interface PolarisConfig {
     stop_on_fail?: boolean;
     /** If true, allow analyze-type children to run in an impl session. Default: false. */
     allow_analyze_children?: boolean;
+  };
+  /**
+   * Controls compaction behavior for orchestrator and worker sessions.
+   * Compaction determines how aggressively context is trimmed as conversation grows.
+   */
+  compact?: {
+    /**
+     * Compaction mode for orchestrator sessions.
+     * - "standard": default compaction behavior (default)
+     * - "strict": aggressive compaction; prune more aggressively to stay within budget
+     */
+    orchestratorMode?: "standard" | "strict";
+    /**
+     * Compaction mode for worker sessions.
+     * - "standard": default compaction behavior (default)
+     * - "strict": aggressive compaction; prune more aggressively
+     * - "minimal": minimal compaction; preserve as much context as possible
+     */
+    workerMode?: "standard" | "strict" | "minimal";
+    /**
+     * Shorthand that sets both orchestratorMode and workerMode when neither is
+     * specified individually. Ignored if orchestratorMode or workerMode is set.
+     */
+    level?: "standard" | "strict" | "minimal";
   };
 }

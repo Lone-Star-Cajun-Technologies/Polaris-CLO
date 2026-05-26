@@ -68,10 +68,10 @@ Required fields on every event: `event`, `run_id`, `timestamp`.
 
 | Skill | Allowed steps | Condition |
 |---|---|---|
-| caveman | session start | mandatory, lite mode |
+| caveman | session start | optional; activate lite mode if available, else fall back to polaris-native compact baseline |
 | repo-analysis | 01, 02 | targeted lookup only; conditional on provider availability |
 
-Invoke caveman-lite at session start. It governs all user-facing responses for the duration of the run.
+Invoke caveman-lite at session start if Caveman is available. If not installed, Polaris uses native compact behavior as the required baseline (per `docs/spec/polaris-compact-contracts.md` §8); note the provider status and proceed. When Caveman is active, it governs all user-facing responses for the duration of the run.
 
 After each completed step, emit a checkpoint:
 

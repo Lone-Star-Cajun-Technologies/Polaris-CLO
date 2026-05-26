@@ -11,12 +11,14 @@ import { createMapCommand } from "../map/index.js";
 import { runMapQuery } from "../map/query.js";
 import { createFinalizeCommand } from "../finalize/index.js";
 import { runFinalize } from "../finalize/index.js";
+import { createInitCommand, runInit } from "./init.js";
 
 export interface PolarisCommandHandlers {
   runLoopStatus?: typeof runLoopStatus;
   runLoopContinue?: typeof runLoopContinue;
   runMapQuery?: typeof runMapQuery;
   runFinalize?: typeof runFinalize;
+  runInit?: typeof runInit;
 }
 
 export interface PolarisCommandOptions extends PolarisCommandHandlers {
@@ -83,6 +85,13 @@ export function createPolarisCommand(options: PolarisCommandOptions = {}): Comma
     createFinalizeCommand({
       repoRoot,
       runFinalize: options.runFinalize,
+    }),
+  );
+
+  program.addCommand(
+    createInitCommand({
+      repoRoot,
+      detectProviders: undefined,
     }),
   );
 

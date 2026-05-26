@@ -42,5 +42,6 @@ Keep polaris-run orientation and status reporting terse while preserving technic
 
 ## Invocation note
 
-Mandatory at session start in full mode (caveman-full) during step 01.
-If caveman is not installed in this repo, proceed without it but note the gap.
+Optional at session start. If Caveman is available, activate in full mode (caveman-full) during step 01 for terse orientation output.
+If Caveman is not installed, Polaris uses native compact behavior as the required baseline; note the provider status and proceed.
+See `docs/spec/polaris-compact-contracts.md` §8 for the polaris-native compact baseline and provider compatibility rules.
