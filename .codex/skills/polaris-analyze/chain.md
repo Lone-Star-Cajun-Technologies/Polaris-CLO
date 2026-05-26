@@ -73,7 +73,7 @@ Load open analysis issue list from runtime state. Do not determine scope from ch
 
 ### 02-dispatch-analyze-worker
 
-Query runtime for the lowest-priority open analysis issue. Dispatch an analyze worker packet scoped to that issue.
+Query runtime for the highest-priority open analysis issue. Dispatch an analyze worker packet scoped to that issue.
 
 ### 03-validate-compact-result
 

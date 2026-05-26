@@ -73,7 +73,7 @@ Load the cluster's open issue list from runtime state. Do not determine cluster 
 
 ### 02-dispatch-worker
 
-Query runtime for the lowest-priority open issue. Dispatch a worker packet scoped to that issue. Do not execute the issue directly from the parent.
+Query runtime for the highest-priority open issue. Dispatch a worker packet scoped to that issue. Do not execute the issue directly from the parent.
 
 ### 03-validate-compact-result
 
