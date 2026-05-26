@@ -105,12 +105,13 @@ describe("confirmed.ts: adapter selection + autoDispatch gating", () => {
       artifact_dir: testArtifactDir,
       envelope,
       adapterOverride: "agent-subtask",
+      _adapterFactory: makeMockAdapter({ status: "done", state_updated: true }),
     });
 
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.child_id).toBe("POL-92");
-      expect(result.compact_return.status).toBe("dispatched-stub");
+      expect(result.compact_return.status).toBe("done");
     }
   });
 
@@ -162,6 +163,7 @@ describe("confirmed.ts: adapter selection + autoDispatch gating", () => {
     const result = await dispatchConfirmedContinuation({
       artifact_dir: testArtifactDir,
       envelope,
+      _adapterFactory: makeMockAdapter({ status: "done", state_updated: true }),
     });
 
     expect(result.ok).toBe(true);

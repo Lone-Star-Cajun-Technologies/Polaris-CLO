@@ -9,6 +9,7 @@ import { appendAuditEvent } from "../../runtime/audit/logger.js";
 import { loadState } from "../../runtime/state.js";
 import { dispatchConfirmedContinuation } from "../../runtime/continuation/confirmed.js";
 import type { ExecutionAdapterMode } from "../../loop/execution-adapter.js";
+import type { ExecutionAdapter } from "../../loop/adapters/types.js";
 
 // Per-artifact-dir lock: prevents two concurrent confirmations from both passing
 // validation before either writes active_child to disk. Set operations are
@@ -161,7 +162,11 @@ export async function handleLoopContinueConfirmed(
       typeof args["adapterOverride"] === "string"
         ? (args["adapterOverride"] as ExecutionAdapterMode)
         : undefined;
-    const dispatchResult = await dispatchConfirmedContinuation({ artifact_dir, envelope, adapterOverride });
+    const _adapterFactory =
+      typeof args["_adapterFactory"] === "function"
+        ? (args["_adapterFactory"] as () => ExecutionAdapter)
+        : undefined;
+    const dispatchResult = await dispatchConfirmedContinuation({ artifact_dir, envelope, adapterOverride, _adapterFactory });
 
     if (!dispatchResult.ok) {
       return { ok: false, rejection: dispatchResult.rejection };

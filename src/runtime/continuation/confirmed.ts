@@ -190,8 +190,30 @@ export async function dispatchConfirmedContinuation(
       compactReturn = { status: "done", state_updated: dispatchResult.exit_code === 0, exit_code: dispatchResult.exit_code };
     }
   } catch {
-    // Adapter not available in this environment — graceful fallback to stub behavior
-    compactReturn = { status: "dispatched-stub", state_updated: false };
+    // Adapter dispatch failed — clear active_child, write recovery audit events, and
+    // return ok: false so MCP callers are not misled into treating a failed dispatch
+    // as successful execution.
+    await writeState(artifact_dir, { ...state, active_child: null });
+    await appendAuditEvent(artifact_dir, {
+      event_type: "worker_result_received",
+      run_id: state.run_id,
+      step_cursor: state.step_cursor,
+      child_id: nextChild,
+      operator: "mcp",
+      operation: "confirmed_dispatch",
+      result: "error",
+      metadata: { reason: "adapter_throw" },
+    });
+    await appendAuditEvent(artifact_dir, {
+      event_type: "recovery_attempted",
+      run_id: state.run_id,
+      step_cursor: state.step_cursor,
+      operator: "mcp",
+      operation: "confirmed_dispatch_recovery",
+      result: "ok",
+      metadata: { reason: "adapter_dispatch_failed" },
+    });
+    return { ok: false, rejection: { check: "adapter_dispatch", reason: "dispatch_failed" } };
   }
 
   // Step 12: emit worker_result_received audit event
@@ -202,7 +224,7 @@ export async function dispatchConfirmedContinuation(
     child_id: nextChild,
     operator: "mcp",
     operation: "confirmed_dispatch",
-    result: compactReturn.status === "dispatched-stub" ? "error" : "ok",
+    result: "ok",
     metadata: { exit_code: dispatchResultCode, status: compactReturn.status },
   });
 
