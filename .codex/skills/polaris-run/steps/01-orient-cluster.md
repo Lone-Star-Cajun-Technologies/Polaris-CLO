@@ -41,8 +41,8 @@ stop_rules:
 
 0. **Query runtime state**:
    Run `npm run polaris -- loop status` to check for existing session state.
-   - **Resumed run** (state exists and is active for this cluster): read `run_id`, `cluster_id`, and step context from the runtime output. Generate a new `run_id` from that prior context following chain.md format rules. Runtime state is authoritative — do not infer session context from chat history.
-   - **Fresh run** (no state file, or state belongs to a different cluster): generate `run_id` directly in format `polaris-run-<slug>-<date>-<seq>` (see `chain.md` for format rules).
+   - **Resumed run** (state exists and is active for this cluster): read `cluster_id` and step context from runtime output, mint a new `run_id` in `polaris-run-<slug>-<date>-<seq>` format (see `chain.md` for format rules), and store the prior `run_id` as `related_run_id`. Runtime state is authoritative — do not infer session context from chat history.
+   - **Fresh run** (no state file, or state belongs to a different cluster): generate `run_id` directly in format `polaris-run-<slug>-<date>-<seq>` (see `chain.md` for format rules). `related_run_id` is `null`.
 
 1. **Emit `run-start` telemetry** — first write action, before any Linear access or branch work:
    ```bash
