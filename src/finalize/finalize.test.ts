@@ -15,9 +15,10 @@ import { execFileSync } from "node:child_process";
 function makeTestDir(): string {
   const dir = join(tmpdir(), `polaris-finalize-test-${Date.now()}`);
   mkdirSync(dir, { recursive: true });
-  execFileSync("git", ["init"], { cwd: dir, stdio: "pipe" });
+  execFileSync("git", ["-c", "init.defaultBranch=main", "init"], { cwd: dir, stdio: "pipe" });
   execFileSync("git", ["config", "user.email", "test@test.com"], { cwd: dir, stdio: "pipe" });
   execFileSync("git", ["config", "user.name", "Test"], { cwd: dir, stdio: "pipe" });
+  execFileSync("git", ["config", "commit.gpgsign", "false"], { cwd: dir, stdio: "pipe" });
   writeFileSync(join(dir, "README.md"), "test\n");
   execFileSync("git", ["add", "."], { cwd: dir, stdio: "pipe" });
   execFileSync("git", ["commit", "-m", "init"], { cwd: dir, stdio: "pipe" });
