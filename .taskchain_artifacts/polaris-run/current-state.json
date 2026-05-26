@@ -1,59 +1,35 @@
 {
   "schema_version": "1.0",
-  "run_id": "polaris-run-pol-114-2026-05-26-001",
+  "run_id": "polaris-run-pol-121-2026-05-26-001",
   "related_run_id": null,
-  "cluster_id": "POL-114",
+  "cluster_id": "POL-121",
   "skill": "polaris-run",
   "artifact_dir": ".taskchain_artifacts/polaris-run",
-  "branch": "philmeaux/pol-114-implement-polaris-native-compact-orchestration-and-worker",
-  "current_step_id": "08-final-delivery",
+  "branch": "philmeaux/pol-121-wire-polaris-docs-ingest-cli-to-smart-docs-ingest-runtime",
+  "current_step_id": "07-decide-continuation",
   "step_cursor": "complete",
   "status": "complete",
   "session_type": "implementation",
   "active_child": "",
-  "last_commit": "75f5bf4",
-  "pr_url": "https://github.com/ItIsYeBananaduck/Polaris/pull/32",
-  "next_open_child": "",
-  "completed_children": ["POL-115", "POL-116", "POL-117", "POL-118", "POL-119", "POL-120"],
+  "last_commit": "8b21225",
+  "pr_url": "https://github.com/ItIsYeBananaduck/Polaris/pull/36",
+  "next_open_child": null,
+  "completed_children": [
+    "POL-121"
+  ],
   "open_children": [],
   "open_children_meta": {
-    "POL-115": {
-      "title": "IMPLEMENT: Write docs/spec/polaris-compact-contracts.md",
+    "POL-121": {
+      "title": "Wire polaris docs ingest CLI to Smart Docs ingest runtime",
       "blockedBy": [],
-      "status": "Done"
-    },
-    "POL-116": {
-      "title": "IMPLEMENT: Add compact config section to PolarisConfig schema",
-      "blockedBy": ["POL-115"],
-      "status": "Done"
-    },
-    "POL-117": {
-      "title": "IMPLEMENT: Remove hard Caveman dependency from polaris-run and polaris-analyze skill chains",
-      "blockedBy": ["POL-115"],
-      "status": "Done"
-    },
-    "POL-118": {
-      "title": "IMPLEMENT: Wire compact config into bootstrap packet and execution adapter injection",
-      "blockedBy": ["POL-116"],
-      "status": "Done"
-    },
-    "POL-119": {
-      "title": "IMPLEMENT: Add optional Caveman/GitNexus provider detection to polaris init",
-      "blockedBy": ["POL-116"],
-      "status": "Done"
-    },
-    "POL-120": {
-      "title": "IMPLEMENT: Add test coverage for compact config, bootstrap injection, and provider detection",
-      "blockedBy": ["POL-118", "POL-119"],
-      "status": "Done"
+      "status": "In Progress"
     }
   },
   "context_budget": {
-    "children_completed": 6,
-    "files_touched_total": 22,
-    "last_child_files_touched": 2
+    "children_completed": 1,
+    "files_touched_total": 5,
+    "last_child_files_touched": 5
   },
-  "map_update_warning": "polaris CLI not in PATH; polaris map update --changed skipped (non-fatal)",
-  "validation_status": "passed",
-  "updated_at": "2026-05-26T18:55:00.000Z"
+  "validation_status": null,
+  "updated_at": "2026-05-26T20:55:09.549Z"
 }
