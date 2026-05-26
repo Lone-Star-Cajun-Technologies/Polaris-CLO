@@ -7,7 +7,7 @@ description: Run polaris finalize to push, open the draft PR, emit JSONL closeou
 
 ## Purpose
 
-Complete the parent cluster via `polaris finalize` — the Polaris runtime handles push, PR, telemetry, and archive.
+Complete the parent cluster via `polaris finalize run` — the Polaris runtime handles push, PR, telemetry, and archive.
 
 ## Preconditions (verify before proceeding)
 
@@ -44,9 +44,9 @@ stop_rules:
 2. Verify the working tree is clean.
 3. Run:
    ```bash
-   npm run polaris -- finalize
+   npm run polaris -- finalize run
    ```
-   `npm run polaris -- finalize` executes the full 12-step sequence:
+   `npm run polaris -- finalize run` executes the full 12-step sequence:
    - Validates the Polaris map
    - Validates `current-state.json` schema
    - Runs targeted checks
