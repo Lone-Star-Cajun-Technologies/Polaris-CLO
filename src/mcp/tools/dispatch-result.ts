@@ -152,11 +152,13 @@ export async function handlePolarisDispatchResult(
     };
   }
   const runId = state["run_id"].trim();
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(runId)) {
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(runId);
+  const isRunIdFormat = /^[\w.-:]+$/.test(runId);
+  if (!isUUID && !isRunIdFormat) {
     return {
       ok: false,
       error: "invalid_run_id",
-      message: "run_id must be a valid UUID format",
+      message: "run_id must be a valid UUID format or run-id format",
     };
   }
 
