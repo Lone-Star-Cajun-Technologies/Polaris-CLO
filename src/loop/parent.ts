@@ -233,14 +233,25 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
 
   // Load config for adapter and provider resolution
   const config = loadConfig(repoRoot);
-  const adapterName = options.adapter ?? config.execution?.adapter ?? "terminal-cli";
+  const orchestrationMode =
+    (state as { orchestration_mode?: string }).orchestration_mode ?? "persistent-parent";
+  const adapterName =
+    orchestrationMode === "ephemeral"
+      ? "agent-subtask"
+      : options.adapter ?? config.execution?.adapter ?? "terminal-cli";
   const providerName =
-    options.provider ??
-    config.execution?.rotation?.[0] ??
-    Object.keys(config.execution?.providers ?? {})[0] ??
-    "default";
+    adapterName === "agent-subtask"
+      ? "agent-subtask"
+      : options.provider ??
+        config.execution?.rotation?.[0] ??
+        Object.keys(config.execution?.providers ?? {})[0] ??
+        "default";
 
-  const adapter = createAdapter(adapterName, config.execution ?? { adapter: adapterName, providers: {} });
+  const executionConfig =
+    adapterName === "agent-subtask"
+      ? { ...(config.execution ?? { providers: {} }), adapter: "agent-subtask" }
+      : config.execution ?? { adapter: adapterName, providers: {} };
+  const adapter = createAdapter(adapterName, executionConfig);
   const budgetPolicy = policyFromConfig(state.context_budget, config.budget);
   const allowAnalyzeChildren = allowAnalyzeChildrenFlag || (config.budget?.allow_analyze_children === true);
   const telemetryFile = resolveTelemetryFile(state, repoRoot);
@@ -345,6 +356,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
         run_id: state.run_id,
         child_id: nextChild,
         adapter: adapterName,
+        orchestration_mode: orchestrationMode,
         provider: providerName,
         dry_run: dryRun,
         timestamp: new Date().toISOString(),

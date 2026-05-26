@@ -546,4 +546,65 @@ describe("runParentLoop", () => {
 
     expect(result.haltReason).toBe("cluster-complete");
   });
+
+  it("uses the agent-subtask adapter when orchestration_mode is ephemeral", async () => {
+    const calls: MockCall[] = [];
+    const mockAdapter = makeMockAdapter([SUCCESS_RESULT], calls);
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    const { loadConfig } = await import("../config/loader.js");
+    vi.mocked(loadConfig).mockReturnValueOnce({
+      execution: {
+        adapter: "terminal-cli",
+        providers: { terminal: { command: "terminal-worker" } },
+        rotation: ["terminal"],
+      },
+    } as unknown as Required<import("../config/schema.js").PolarisConfig>);
+
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+    const state = JSON.parse(readFileSync(stateFile, "utf-8")) as Record<string, unknown>;
+    writeFileSync(
+      stateFile,
+      JSON.stringify({ ...state, orchestration_mode: "ephemeral" }, null, 2),
+      "utf-8",
+    );
+
+    await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(createAdapter).toHaveBeenCalledWith(
+      "agent-subtask",
+      expect.objectContaining({ adapter: "agent-subtask" }),
+    );
+    expect(calls[0].options.provider).toBe("agent-subtask");
+  });
+
+  it("uses the configured adapter when orchestration_mode is persistent-parent", async () => {
+    const calls: MockCall[] = [];
+    const mockAdapter = makeMockAdapter([SUCCESS_RESULT], calls);
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+    const state = JSON.parse(readFileSync(stateFile, "utf-8")) as Record<string, unknown>;
+    writeFileSync(
+      stateFile,
+      JSON.stringify({ ...state, orchestration_mode: "persistent-parent" }, null, 2),
+      "utf-8",
+    );
+
+    await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(createAdapter).toHaveBeenCalledWith(
+      "mock",
+      expect.objectContaining({ adapter: "mock" }),
+    );
+    expect(calls[0].options.provider).toBe("mock");
+  });
 });

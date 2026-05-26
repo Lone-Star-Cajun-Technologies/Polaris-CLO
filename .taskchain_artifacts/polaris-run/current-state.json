@@ -7,21 +7,21 @@
   "artifact_dir": ".taskchain_artifacts/polaris-run",
   "branch": "philmeaux/pol-105-implement-issue-hierarchy-and-ephemeral-execution-refactor",
   "current_step_id": "06-commit-and-update-linear",
-  "step_cursor": "child-committed",
+  "step_cursor": "checkpoint",
   "status": "ready",
   "session_type": "implementation",
   "active_child": "",
-  "last_commit": "PENDING_POL-109",
+  "last_commit": "bd5a91a",
   "pr_url": "",
-  "next_open_child": "POL-110",
+  "next_open_child": "POL-111",
   "completed_children": [
     "POL-106",
     "POL-107",
     "POL-108",
-    "POL-109"
+    "POL-109",
+    "POL-110"
   ],
   "open_children": [
-    "POL-110",
     "POL-111",
     "POL-112"
   ],
@@ -55,7 +55,7 @@
       "blockedBy": [
         "POL-107"
       ],
-      "status": "Backlog"
+      "status": "Done"
     },
     "POL-111": {
       "title": "IMPLEMENT: Add MCP ephemeral dispatch tools (claim, dispatch-result) to polaris MCP server",
@@ -76,12 +76,12 @@
     }
   },
   "context_budget": {
-    "children_completed": 4,
-    "files_touched_total": 11,
-    "last_child_files_touched": 4
+    "children_completed": 5,
+    "files_touched_total": 16,
+    "last_child_files_touched": 5
   },
-  "map_update_warning": "polaris map update --changed completed with low-confidence needs-review entries for POL-108 files",
+  "map_update_warning": "polaris map update --changed completed with low-confidence needs-review entries for POL-110 run ledger files",
   "validation_status": "passed",
-  "validation_command_substitution": "npm test -- --testPathPattern=\"parent\" failed because Vitest does not support --testPathPattern; ran npm test -- src/loop/parent.test.ts instead.",
-  "updated_at": "2026-05-26T14:39:30.000Z"
+  "validation_command_substitution": "npm test -- --testPathPattern=\"agent-subtask|parent\" failed because Vitest does not support --testPathPattern; ran npm test -- src/loop/adapters/agent-subtask.test.ts src/loop/parent.test.ts instead.",
+  "updated_at": "2026-05-26T14:50:00.000Z"
 }
