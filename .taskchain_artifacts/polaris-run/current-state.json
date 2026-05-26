@@ -6,16 +6,16 @@
   "skill": "polaris-run",
   "artifact_dir": ".taskchain_artifacts/polaris-run",
   "branch": "philmeaux/pol-114-implement-polaris-native-compact-orchestration-and-worker",
-  "current_step_id": "07-decide-continuation",
+  "current_step_id": "06-commit-and-update-linear",
   "step_cursor": "checkpoint",
   "status": "stopped",
   "session_type": "implementation",
-  "active_child": "POL-116",
-  "last_commit": "10dce5d",
+  "active_child": "",
+  "last_commit": "986d551",
   "pr_url": "",
-  "next_open_child": "POL-116",
-  "completed_children": ["POL-115"],
-  "open_children": ["POL-116", "POL-117", "POL-118", "POL-119", "POL-120"],
+  "next_open_child": "POL-118",
+  "completed_children": ["POL-115", "POL-116", "POL-117"],
+  "open_children": ["POL-118", "POL-119", "POL-120"],
   "open_children_meta": {
     "POL-115": {
       "title": "IMPLEMENT: Write docs/spec/polaris-compact-contracts.md",
@@ -25,12 +25,12 @@
     "POL-116": {
       "title": "IMPLEMENT: Add compact config section to PolarisConfig schema",
       "blockedBy": ["POL-115"],
-      "status": "Backlog"
+      "status": "Done"
     },
     "POL-117": {
       "title": "IMPLEMENT: Remove hard Caveman dependency from polaris-run and polaris-analyze skill chains",
       "blockedBy": ["POL-115"],
-      "status": "Backlog"
+      "status": "Done"
     },
     "POL-118": {
       "title": "IMPLEMENT: Wire compact config into bootstrap packet and execution adapter injection",
@@ -49,11 +49,11 @@
     }
   },
   "context_budget": {
-    "children_completed": 1,
-    "files_touched_total": 1,
-    "last_child_files_touched": 1
+    "children_completed": 3,
+    "files_touched_total": 9,
+    "last_child_files_touched": 5
   },
   "map_update_warning": "polaris CLI not in PATH; polaris map update --changed skipped (non-fatal)",
   "validation_status": "passed",
-  "updated_at": "2026-05-26T00:07:00.000Z"
+  "updated_at": "2026-05-26T18:10:00.000Z"
 }
