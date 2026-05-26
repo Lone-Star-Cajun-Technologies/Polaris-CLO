@@ -64,6 +64,8 @@ stop_rules:
    - Has children (or is a standalone issue).
    - Not blocked at the parent level.
    - Not Done or Cancelled.
+   - Parent is an IMPLEMENT root, not an ANALYZE root. If the parent title starts with `ANALYZE:` or has the `analyze` label, halt before branch work or child dispatch with exactly:
+     `polaris-run targets IMPLEMENT parents, not ANALYZE issues. Run polaris-analyze first to create an IMPLEMENT parent.`
    - If ambiguous or not executable: stop and recommend running polaris-analyze first.
 
 5. Check `.polaris/clusters/<cluster-id>/clusters.json` if it exists — it provides execution ordering and dependency metadata produced by polaris-analyze. If absent, derive ordering from child issue numbering.

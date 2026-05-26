@@ -59,6 +59,7 @@ export type ParentLoopHaltReason =
   | 'blocked'              // A child reported a blocker
   | 'worker-error'         // Worker returned a non-zero exit code or error status
   | 'state-invalid'        // current-state.json failed validation
+  | 'analyze-parent'       // Cluster root is an ANALYZE issue
   | 'analyze-drift';       // Next child is an analyze issue and allow_analyze_children is false
 
 export interface ParentLoopResult {
@@ -104,6 +105,18 @@ function isAnalyzeChild(childId: string, state: LoopState): boolean {
   if (!meta) return false;
   const title = meta.title ?? "";
   if (title.startsWith("Analyze:") || title.startsWith("polaris-analyze")) return true;
+  if (meta.labels?.includes("analyze")) return true;
+  return false;
+}
+
+/**
+ * Returns true when the cluster root is an ANALYZE issue.
+ */
+function isAnalyzeParent(state: LoopState): boolean {
+  const meta = state.open_children_meta?.[state.cluster_id];
+  if (!meta) return false;
+  const title = meta.title ?? "";
+  if (title.startsWith("ANALYZE:")) return true;
   if (meta.labels?.includes("analyze")) return true;
   return false;
 }
@@ -207,6 +220,14 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
       haltReason: 'state-invalid',
       childrenDispatched: 0,
       message: `Cannot read state file ${stateFile}: ${msg}`,
+    };
+  }
+
+  if (isAnalyzeParent(state)) {
+    return {
+      haltReason: 'analyze-parent',
+      childrenDispatched: 0,
+      message: "polaris-run targets IMPLEMENT parents, not ANALYZE issues. Run polaris-analyze first to create an IMPLEMENT parent.",
     };
   }
 

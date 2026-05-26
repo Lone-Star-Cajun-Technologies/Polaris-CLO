@@ -395,6 +395,44 @@ describe("runParentLoop", () => {
     });
   });
 
+  it("halts with analyze-parent when cluster root title starts with 'ANALYZE:'", async () => {
+    const calls: MockCall[] = [];
+    const mockAdapter = makeMockAdapter([SUCCESS_RESULT], calls);
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    const stateFile = makeStateFileWithMeta(
+      tmpDir,
+      ["POL-100"],
+      { "POL-99": { title: "ANALYZE: Split execution architecture" } },
+    );
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(result.haltReason).toBe("analyze-parent");
+    expect(result.childrenDispatched).toBe(0);
+    expect(result.message).toBe(
+      "polaris-run targets IMPLEMENT parents, not ANALYZE issues. Run polaris-analyze first to create an IMPLEMENT parent.",
+    );
+    expect(calls).toHaveLength(0);
+  });
+
+  it("halts with analyze-parent when cluster root has 'analyze' label", async () => {
+    const calls: MockCall[] = [];
+    const mockAdapter = makeMockAdapter([SUCCESS_RESULT], calls);
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    const stateFile = makeStateFileWithMeta(
+      tmpDir,
+      ["POL-100"],
+      { "POL-99": { title: "Plan issue hierarchy", labels: ["analyze"] } },
+    );
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(result.haltReason).toBe("analyze-parent");
+    expect(calls).toHaveLength(0);
+  });
+
   // ── Analyze-drift guardrail tests ──────────────────────────────────────────
 
   it("halts with analyze-drift when next child title starts with 'Analyze:'", async () => {

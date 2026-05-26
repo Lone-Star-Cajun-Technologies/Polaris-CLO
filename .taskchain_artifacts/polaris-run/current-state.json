@@ -6,21 +6,21 @@
   "skill": "polaris-run",
   "artifact_dir": ".taskchain_artifacts/polaris-run",
   "branch": "philmeaux/pol-105-implement-issue-hierarchy-and-ephemeral-execution-refactor",
-  "current_step_id": "05-validate-child",
-  "step_cursor": "child-validated",
+  "current_step_id": "06-commit-and-update-linear",
+  "step_cursor": "child-committed",
   "status": "ready",
   "session_type": "implementation",
-  "active_child": "POL-108",
-  "last_commit": "PENDING_POL-108",
+  "active_child": "",
+  "last_commit": "PENDING_POL-109",
   "pr_url": "",
-  "next_open_child": "POL-108",
+  "next_open_child": "POL-110",
   "completed_children": [
     "POL-106",
-    "POL-107"
+    "POL-107",
+    "POL-108",
+    "POL-109"
   ],
   "open_children": [
-    "POL-108",
-    "POL-109",
     "POL-110",
     "POL-111",
     "POL-112"
@@ -41,14 +41,14 @@
       "blockedBy": [
         "POL-106"
       ],
-      "status": "Backlog"
+      "status": "Done"
     },
     "POL-109": {
       "title": "IMPLEMENT: Add polaris-run ANALYZE-parent rejection guard in orient-cluster",
       "blockedBy": [
         "POL-106"
       ],
-      "status": "Backlog"
+      "status": "Done"
     },
     "POL-110": {
       "title": "IMPLEMENT: Implement AgentSubtaskAdapter.dispatch() and activate orchestration_mode in parent loop",
@@ -76,11 +76,12 @@
     }
   },
   "context_budget": {
-    "children_completed": 2,
-    "files_touched_total": 3,
-    "last_child_files_touched": 1
+    "children_completed": 4,
+    "files_touched_total": 11,
+    "last_child_files_touched": 4
   },
-  "map_update_warning": "polaris map update --changed completed with low-confidence needs-review entries for POL-107 files",
+  "map_update_warning": "polaris map update --changed completed with low-confidence needs-review entries for POL-108 files",
   "validation_status": "passed",
-  "updated_at": "2026-05-26T14:33:45.000Z"
+  "validation_command_substitution": "npm test -- --testPathPattern=\"parent\" failed because Vitest does not support --testPathPattern; ran npm test -- src/loop/parent.test.ts instead.",
+  "updated_at": "2026-05-26T14:39:30.000Z"
 }

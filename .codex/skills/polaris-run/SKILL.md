@@ -7,6 +7,10 @@ description: Execute one governed Polaris Linear parent cluster per fresh sessio
 
 Use this skill when the user asks to run a governed Polaris implementation cluster or standalone Polaris issue.
 
+polaris-run only targets IMPLEMENT parents. If Step 01 detects a parent title
+starting with `ANALYZE:` or an `analyze` label, halt with:
+`polaris-run targets IMPLEMENT parents, not ANALYZE issues. Run polaris-analyze first to create an IMPLEMENT parent.`
+
 ## Related doctrine
 
 See `docs/Polaris/spec/polaris-implementation-plan.md` for the Polaris architecture reference.
