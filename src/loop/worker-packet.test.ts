@@ -1,0 +1,215 @@
+/**
+ * Unit tests for src/loop/worker-packet.ts
+ *
+ * Verifies compiled packet shape, type guard, and that no skill files are
+ * referenced (workers receive self-contained instructions).
+ */
+
+import { describe, expect, it } from "vitest";
+import {
+  compileImplPacket,
+  compileFinalizePacket,
+  compilePreflightPacket,
+  isWorkerPacket,
+  IMPL_RETURN_CONTRACT,
+  FINALIZE_RETURN_CONTRACT,
+  PREFLIGHT_RETURN_CONTRACT,
+  type WorkerPacket,
+} from "./worker-packet.js";
+import type { BootstrapPacket } from "./adapters/types.js";
+
+// ── Fixtures ──────────────────────────────────────────────────────────────────
+
+const BASE = {
+  runId: "run-001",
+  clusterId: "POL-120",
+  branch: "feature/pol-120",
+  stateFile: "/repo/.taskchain_artifacts/polaris-run/current-state.json",
+  telemetryFile: "/repo/.taskchain_artifacts/polaris-run/runs/run-001/telemetry.jsonl",
+};
+
+// ── isWorkerPacket type guard ─────────────────────────────────────────────────
+
+describe("isWorkerPacket", () => {
+  it("returns false for a v1 BootstrapPacket", () => {
+    const v1: BootstrapPacket = {
+      schema_version: "1.0",
+      run_id: "run-001",
+      cluster_id: "POL-120",
+      active_child: "POL-121",
+      state_file: BASE.stateFile,
+      telemetry_file: BASE.telemetryFile,
+    };
+    expect(isWorkerPacket(v1)).toBe(false);
+  });
+
+  it("returns true for a compiled WorkerPacket", () => {
+    const packet = compileImplPacket({ ...BASE, childId: "POL-121" });
+    expect(isWorkerPacket(packet)).toBe(true);
+  });
+});
+
+// ── compileImplPacket ─────────────────────────────────────────────────────────
+
+describe("compileImplPacket", () => {
+  it("produces schema_version 2.0 and worker_role impl", () => {
+    const p = compileImplPacket({ ...BASE, childId: "POL-121" });
+    expect(p.schema_version).toBe("2.0");
+    expect(p.worker_role).toBe("impl");
+  });
+
+  it("sets active_child to the child ID (BootstrapPacket compat)", () => {
+    const p = compileImplPacket({ ...BASE, childId: "POL-121" });
+    expect(p.active_child).toBe("POL-121");
+  });
+
+  it("includes the child ID in steps and primary_goal", () => {
+    const p = compileImplPacket({ ...BASE, childId: "POL-121" });
+    expect(p.instructions.primary_goal).toContain("POL-121");
+    const stepsText = p.instructions.steps.join(" ");
+    expect(stepsText).toContain("POL-121");
+  });
+
+  it("embeds pre-compiled steps so workers do not re-ingest skills", () => {
+    const p = compileImplPacket({ ...BASE, childId: "POL-121" });
+    // Steps must not reference any skill file path
+    const stepsText = p.instructions.steps.join(" ");
+    expect(stepsText).not.toContain(".codex/skills");
+    expect(stepsText).not.toContain("chain.md");
+    // Steps must include one-child termination instruction
+    expect(stepsText.toUpperCase()).toContain("TERMINATE");
+  });
+
+  it("includes issue context requirements in steps when provided", () => {
+    const p = compileImplPacket({
+      ...BASE,
+      childId: "POL-121",
+      issueContext: {
+        id: "POL-121",
+        title: "Add validation layer",
+        key_requirements: ["Validate schema on load", "Emit error events"],
+      },
+    });
+    const stepsText = p.instructions.steps.join(" ");
+    expect(stepsText).toContain("Validate schema on load");
+    expect(stepsText).toContain("Emit error events");
+  });
+
+  it("respects allowedScope and validationCommands", () => {
+    const p = compileImplPacket({
+      ...BASE,
+      childId: "POL-121",
+      allowedScope: ["src/loop/**"],
+      validationCommands: ["npm test"],
+    });
+    expect(p.instructions.allowed_scope).toEqual(["src/loop/**"]);
+    expect(p.instructions.validation_commands).toEqual(["npm test"]);
+  });
+
+  it("has terminate_after_completion: true in lifecycle", () => {
+    const p = compileImplPacket({ ...BASE, childId: "POL-121" });
+    expect(p.lifecycle.terminate_after_completion).toBe(true);
+  });
+
+  it("defaults max_concurrent to 1", () => {
+    const p = compileImplPacket({ ...BASE, childId: "POL-121" });
+    expect(p.lifecycle.max_concurrent).toBe(1);
+  });
+
+  it("uses cleanup_on_exit: commit-and-exit", () => {
+    const p = compileImplPacket({ ...BASE, childId: "POL-121" });
+    expect(p.lifecycle.cleanup_on_exit).toBe("commit-and-exit");
+  });
+
+  it("return_contract matches IMPL_RETURN_CONTRACT", () => {
+    const p = compileImplPacket({ ...BASE, childId: "POL-121" });
+    expect(p.return_contract).toEqual(IMPL_RETURN_CONTRACT);
+  });
+
+  it("is a valid BootstrapPacket (has all required v1 fields)", () => {
+    const p = compileImplPacket({ ...BASE, childId: "POL-121" });
+    expect(typeof p.run_id).toBe("string");
+    expect(typeof p.cluster_id).toBe("string");
+    expect(typeof p.active_child).toBe("string");
+    expect(typeof p.state_file).toBe("string");
+    expect(typeof p.telemetry_file).toBe("string");
+  });
+});
+
+// ── compileFinalizePacket ─────────────────────────────────────────────────────
+
+describe("compileFinalizePacket", () => {
+  it("produces worker_role finalize with empty active_child", () => {
+    const p = compileFinalizePacket(BASE);
+    expect(p.worker_role).toBe("finalize");
+    expect(p.active_child).toBe("");
+  });
+
+  it("includes the target branch in steps", () => {
+    const p = compileFinalizePacket({ ...BASE, targetBranch: "main" });
+    const stepsText = p.instructions.steps.join(" ");
+    expect(stepsText).toContain("main");
+  });
+
+  it("defaults targetBranch to main", () => {
+    const p = compileFinalizePacket(BASE);
+    expect(p.instructions.primary_goal).toContain("main");
+  });
+
+  it("has terminate_after_completion: true", () => {
+    const p = compileFinalizePacket(BASE);
+    expect(p.lifecycle.terminate_after_completion).toBe(true);
+  });
+
+  it("return_contract matches FINALIZE_RETURN_CONTRACT", () => {
+    const p = compileFinalizePacket(BASE);
+    expect(p.return_contract).toEqual(FINALIZE_RETURN_CONTRACT);
+  });
+
+  it("does not reference skill files", () => {
+    const p = compileFinalizePacket(BASE);
+    const stepsText = p.instructions.steps.join(" ");
+    expect(stepsText).not.toContain(".codex/skills");
+  });
+});
+
+// ── compilePreflightPacket ────────────────────────────────────────────────────
+
+describe("compilePreflightPacket", () => {
+  it("produces worker_role preflight", () => {
+    const p = compilePreflightPacket(BASE);
+    expect(p.worker_role).toBe("preflight");
+  });
+
+  it("has empty active_child", () => {
+    const p = compilePreflightPacket(BASE);
+    expect(p.active_child).toBe("");
+  });
+
+  it("uses cleanup_on_exit: exit-immediately", () => {
+    const p = compilePreflightPacket(BASE);
+    expect(p.lifecycle.cleanup_on_exit).toBe("exit-immediately");
+  });
+
+  it("has empty allowed_scope (read-only check)", () => {
+    const p = compilePreflightPacket(BASE);
+    expect(p.instructions.allowed_scope).toEqual([]);
+  });
+
+  it("return_contract matches PREFLIGHT_RETURN_CONTRACT", () => {
+    const p = compilePreflightPacket(BASE);
+    expect(p.return_contract).toEqual(PREFLIGHT_RETURN_CONTRACT);
+  });
+});
+
+// ── WorkerPacket as BootstrapPacket ───────────────────────────────────────────
+
+describe("WorkerPacket structural compatibility", () => {
+  it("impl packet passes as BootstrapPacket (structural subtype)", () => {
+    const p: WorkerPacket = compileImplPacket({ ...BASE, childId: "POL-121" });
+    // Assign to BootstrapPacket — should compile without errors
+    const bp: BootstrapPacket = p;
+    expect(bp.run_id).toBe("run-001");
+    expect(bp.active_child).toBe("POL-121");
+  });
+});

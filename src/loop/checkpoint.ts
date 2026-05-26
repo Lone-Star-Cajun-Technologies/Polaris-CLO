@@ -20,6 +20,8 @@ export interface LoopState {
   run_id: string;
   cluster_id: string;
   skill?: string;
+  /** Git branch this run is executing on. */
+  branch?: string;
   session_type?: "analyze" | "implement" | string;
   active_child: string;
   completed_children: string[];

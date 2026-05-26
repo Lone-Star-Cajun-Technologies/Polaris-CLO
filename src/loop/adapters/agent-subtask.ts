@@ -1,15 +1,16 @@
 /**
  * Agent-subtask adapter — dispatches a worker as a native agent subtask.
  *
- * In an environment that supports native subtask dispatch (e.g. Claude Code
- * with the TaskCreate tool), the parent invokes a subtask rather than spawning
- * a shell process. The contract is identical: one bootstrap packet in, one
- * compact return JSON out.
+ * When the packet is a compiled WorkerPacket (schema_version === '2.0') the
+ * adapter uses pre-compiled instructions from `packet.instructions` rather
+ * than generating generic instructions from packet metadata. This eliminates
+ * per-dispatch skill re-ingestion and reduces worker token burn.
  *
- * When native dispatch is unavailable at runtime this adapter throws so the
- * caller can fall back to terminal-cli or surface a clear error.
+ * The adapter also includes the lifecycle teardown contract in every prompt so
+ * the worker session terminates immediately after returning compact JSON.
  */
 
+import { isWorkerPacket } from "../worker-packet.js";
 import type { BootstrapPacket, DispatchOptions, DispatchResult, ExecutionAdapter } from "./types.js";
 
 export interface AgentSubtaskRequest {
@@ -22,7 +23,8 @@ export type AgentSubtaskDispatcher = (
   request: AgentSubtaskRequest
 ) => Promise<string | Record<string, unknown>>;
 
-const RETURN_CONTRACT = [
+/** Fallback return contract for legacy v1 BootstrapPackets. */
+const LEGACY_RETURN_CONTRACT = [
   "child_id",
   "status",
   "commit_hash",
@@ -31,6 +33,16 @@ const RETURN_CONTRACT = [
   "warnings",
 ];
 
+/** Lifecycle teardown preamble appended to every worker prompt. */
+const LIFECYCLE_TEARDOWN_NOTICE = [
+  `LIFECYCLE CONTRACT (mandatory):`,
+  `  - Execute ONLY the single child or task named in this packet.`,
+  `  - After writing compact return JSON to stdout, TERMINATE THIS SESSION IMMEDIATELY.`,
+  `  - Do NOT select, claim, or execute any other child.`,
+  `  - Do NOT continue looping after one child completes.`,
+  `  - One worker. One child. One commit. Then exit.`,
+].join("\n");
+
 function defaultDispatcher(): AgentSubtaskDispatcher | undefined {
   const host = globalThis as typeof globalThis & {
     __POLARIS_AGENT_SUBTASK_DISPATCH__?: AgentSubtaskDispatcher;
@@ -38,7 +50,57 @@ function defaultDispatcher(): AgentSubtaskDispatcher | undefined {
   return host.__POLARIS_AGENT_SUBTASK_DISPATCH__;
 }
 
-function buildInstructions(packet: BootstrapPacket): string {
+/**
+ * Build instructions for a compiled WorkerPacket.
+ * Uses pre-baked steps from packet.instructions — no skill ingestion.
+ */
+function buildCompiledInstructions(packet: BootstrapPacket): string {
+  if (!isWorkerPacket(packet)) {
+    return buildLegacyInstructions(packet);
+  }
+
+  const { instructions, lifecycle, return_contract, worker_role, run_id, cluster_id } = packet;
+  const lines = [
+    `POLARIS WORKER — role: ${worker_role}`,
+    `Run: ${run_id} | Cluster: ${cluster_id}`,
+    ``,
+    `OBJECTIVE:`,
+    instructions.primary_goal,
+    ``,
+    `EXECUTION STEPS (pre-compiled — do not re-read skill files):`,
+    ...instructions.steps.map((s, i) => `  ${i + 1}. ${s}`),
+  ];
+
+  if (instructions.allowed_scope.length > 0) {
+    lines.push(``, `ALLOWED SCOPE:`, ...instructions.allowed_scope.map((s) => `  ${s}`));
+  }
+
+  if (instructions.validation_commands.length > 0) {
+    lines.push(
+      ``,
+      `VALIDATION COMMANDS (run before returning):`,
+      ...instructions.validation_commands.map((c) => `  ${c}`),
+    );
+  }
+
+  lines.push(
+    ``,
+    `REQUIRED RETURN FIELDS: ${return_contract.join(", ")}`,
+    ``,
+    LIFECYCLE_TEARDOWN_NOTICE,
+    ``,
+    `Session must terminate after max_concurrent=${lifecycle.max_concurrent} active workers.`,
+    `cleanup_on_exit: ${lifecycle.cleanup_on_exit}`,
+  );
+
+  return lines.join("\n");
+}
+
+/**
+ * Build instructions for a legacy v1 BootstrapPacket.
+ * Kept for backward compat; generates generic instructions from packet metadata.
+ */
+function buildLegacyInstructions(packet: BootstrapPacket): string {
   return [
     `You are the dedicated Polaris worker subagent for exactly one child issue: ${packet.active_child}.`,
     `Run id: ${packet.run_id}`,
@@ -49,7 +111,9 @@ function buildInstructions(packet: BootstrapPacket): string {
     `Execute only ${packet.active_child}, update the state and telemetry files named in the packet, and return only compact JSON.`,
     `Do not include a transcript or continue to another child.`,
     ``,
-    `Required return fields: ${RETURN_CONTRACT.join(", ")}`,
+    `Required return fields: ${LEGACY_RETURN_CONTRACT.join(", ")}`,
+    ``,
+    LIFECYCLE_TEARDOWN_NOTICE,
     ``,
     `Bootstrap packet:`,
     JSON.stringify(packet, null, 2),
@@ -63,9 +127,12 @@ function normalizeSummary(value: string | Record<string, unknown>): string {
 function validateSummary(summary: string, packet: BootstrapPacket): string | null {
   try {
     const parsed = JSON.parse(summary) as Record<string, unknown>;
-    const returnedChild = parsed.child_id ?? parsed.active_child;
-    if (returnedChild !== packet.active_child) {
-      return `Native subtask returned mismatched child_id: expected ${packet.active_child}, got ${String(returnedChild)}`;
+    // For finalize/preflight workers active_child is "" — skip child_id check.
+    if (packet.active_child) {
+      const returnedChild = parsed.child_id ?? parsed.active_child;
+      if (returnedChild !== packet.active_child) {
+        return `Native subtask returned mismatched child_id: expected ${packet.active_child}, got ${String(returnedChild)}`;
+      }
     }
     if (!["done", "blocked", "error"].includes(String(parsed.status))) {
       return `Native subtask returned invalid status: ${String(parsed.status)}`;
@@ -76,15 +143,20 @@ function validateSummary(summary: string, packet: BootstrapPacket): string | nul
   }
 }
 
+/** Returns the return contract for this packet (compiled or legacy). */
+function returnContractFor(packet: BootstrapPacket): string[] {
+  return isWorkerPacket(packet) ? packet.return_contract : LEGACY_RETURN_CONTRACT;
+}
+
 export class AgentSubtaskAdapter implements ExecutionAdapter {
   readonly name = 'agent-subtask';
 
   constructor(private readonly dispatcher: AgentSubtaskDispatcher | undefined = defaultDispatcher()) {}
 
   async dispatch(packet: BootstrapPacket, options: DispatchOptions): Promise<DispatchResult> {
-    const commandRun = `agent-subtask:${packet.active_child}`;
+    const label = packet.active_child || (isWorkerPacket(packet) ? packet.worker_role : 'worker');
+    const commandRun = `agent-subtask:${label}`;
     const provider = options.provider || "agent-subtask";
-    const instructions = buildInstructions(packet);
 
     if (!this.dispatcher) {
       const error =
@@ -100,12 +172,13 @@ export class AgentSubtaskAdapter implements ExecutionAdapter {
     }
 
     if (options.dryRun) {
+      const childId = packet.active_child || 'no-child';
       return {
         exit_code: 0,
         provider_used: provider,
         command_run: commandRun,
         summary: JSON.stringify({
-          child_id: packet.active_child,
+          child_id: childId,
           status: "done",
           validation_summary: "dry-run: native ephemeral agent subtask dispatch not executed",
           next_action: "resume-parent",
@@ -114,11 +187,14 @@ export class AgentSubtaskAdapter implements ExecutionAdapter {
       };
     }
 
+    const instructions = buildCompiledInstructions(packet);
+    const returnContract = returnContractFor(packet);
+
     try {
       const rawSummary = await this.dispatcher({
         packet,
         instructions,
-        returnContract: RETURN_CONTRACT,
+        returnContract,
       });
       const summary = normalizeSummary(rawSummary);
       const validationError = validateSummary(summary, packet);

@@ -96,8 +96,9 @@ describe("handlePolarisDispatchResult()", () => {
     });
 
     expect(result["ok"]).toBe(false);
-    expect(typeof (result["error"] as Record<string, unknown>)["message"]).toBe("string");
-    expect((result["error"] as Record<string, unknown>)["message"]).toContain("run_id");
+    expect(result["error"]).toBe("invalid_run_id");
+    expect(typeof result["message"]).toBe("string");
+    expect(result["message"]).toContain("run_id");
   });
 
   it("returns active_child_mismatch when the result does not match active_child", async () => {
