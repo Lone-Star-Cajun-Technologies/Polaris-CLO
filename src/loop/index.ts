@@ -94,7 +94,11 @@ export function createLoopCommand(handlers: LoopCommandHandlers = {}): Command {
     .option("-r, --repo-root <path>", "Repository root", repoRootDefault)
     .option("--state-file <path>", "Override path to current-state.json")
     .action((runId: string | undefined, options: { repoRoot: string; stateFile?: string }) => {
-      resumeHandler({ runId, repoRoot: options.repoRoot, stateFile: options.stateFile });
+      resumeHandler({
+        runId,
+        repoRoot: options.repoRoot,
+        stateFile: defaultStateFile(options.repoRoot, options.stateFile),
+      });
     });
 
   loop
@@ -130,7 +134,7 @@ export function createLoopCommand(handlers: LoopCommandHandlers = {}): Command {
           reason,
           childId: options.child,
           repoRoot: options.repoRoot,
-          stateFile: options.stateFile,
+          stateFile: defaultStateFile(options.repoRoot, options.stateFile),
         });
       },
     );
