@@ -12,7 +12,7 @@ import { runMapQuery } from "../map/query.js";
 import { createFinalizeCommand } from "../finalize/index.js";
 import { runFinalize } from "../finalize/index.js";
 import { createInitCommand, runInit } from "./init.js";
-import { createDocsCommand } from "../docs/index.js";
+import { createDocsCommand, createDoctrineCommand } from "../docs/index.js";
 
 export interface PolarisCommandHandlers {
   runLoopStatus?: typeof runLoopStatus;
@@ -97,6 +97,7 @@ export function createPolarisCommand(options: PolarisCommandOptions = {}): Comma
   );
 
   program.addCommand(createDocsCommand({ repoRoot }));
+  program.addCommand(createDoctrineCommand());
 
   const config = new Command("config")
     .description("deferred in 1.0: config workflows are not wired in this CLI")

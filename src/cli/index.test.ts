@@ -58,6 +58,7 @@ describe("polaris public CLI", () => {
     expect(result.stdout).toContain("map");
     expect(result.stdout).toContain("finalize");
     expect(result.stdout).toContain("docs");
+    expect(result.stdout).toContain("doctrine");
     expect(result.stdout).toContain("safe/read-only");
     // config command remains deferred in 1.0
     expect(result.stdout).toContain("deferred");
@@ -73,6 +74,17 @@ describe("polaris public CLI", () => {
     expect(result.stdout).toContain("--dry-run");
     expect(result.stdout).toContain("Polaris-Docs/docs");
   });
+
+  it.each(["draft", "promote", "deprecate"])(
+    "exposes doctrine %s command through the public entrypoint",
+    async (subcommand) => {
+      const result = await runCommand(["doctrine", subcommand, "--help"]);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).not.toContain("unknown command");
+      expect(result.stdout).toContain(`Usage: polaris doctrine ${subcommand}`);
+    },
+  );
 
   it("prints the package version", async () => {
     const result = await runCommand(["--version"]);
