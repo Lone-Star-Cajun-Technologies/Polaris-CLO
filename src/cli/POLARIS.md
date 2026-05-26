@@ -19,6 +19,8 @@ The CLI entry point for Polaris. It registers all top-level commands (`map`, `lo
 
 - To add a new top-level command, create a `create<Name>Command()` factory in the appropriate subsystem and register it with `program.addCommand()` here.
 - Do not add inline `.action()` handlers in `index.ts` for anything beyond trivial cases (e.g., `config show`).
+- Public help must label safe/read-only commands separately from mutating commands. Deferred 1.0 commands must be marked unavailable instead of sounding implemented.
+- Unknown commands and bare subsystem commands must exit non-zero with actionable help.
 - Keep `index.ts` short — it should remain a thin wiring file.
 - Version string comes from `getVersion()` only — do not hardcode version strings elsewhere.
 

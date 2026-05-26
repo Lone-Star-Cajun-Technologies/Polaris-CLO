@@ -95,7 +95,7 @@
     "taskchain": "polaris-core",
     "confidence": 0,
     "classification": "needs-review",
-    "last_updated": "2026-05-23T17:28:42.729Z",
+    "last_updated": "2026-05-26T05:40:56.646Z",
     "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": "POLARIS.md"
@@ -106,7 +106,7 @@
     "taskchain": "polaris-core",
     "confidence": 0,
     "classification": "needs-review",
-    "last_updated": "2026-05-23T17:28:42.729Z",
+    "last_updated": "2026-05-26T05:40:56.646Z",
     "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": "POLARIS.md"
@@ -117,7 +117,7 @@
     "taskchain": "polaris-core",
     "confidence": 0,
     "classification": "needs-review",
-    "last_updated": "2026-05-23T17:28:42.729Z",
+    "last_updated": "2026-05-26T05:40:56.646Z",
     "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": "POLARIS.md"
@@ -309,7 +309,7 @@
     "taskchain": "polaris-core",
     "confidence": 0,
     "classification": "needs-review",
-    "last_updated": "2026-05-24T23:01:13.252Z",
+    "last_updated": "2026-05-26T05:43:58.319Z",
     "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": "POLARIS.md"
@@ -760,6 +760,140 @@
     "confidence": 0,
     "classification": "needs-review",
     "last_updated": "2026-05-24T23:01:13.252Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": "POLARIS.md"
+  },
+  ".taskchain_artifacts/polaris-run/runs/polaris-run-cli-operator-surface-2026-05-26-001/telemetry.jsonl": {
+    "domain": "unknown",
+    "route": ".taskchain_artifacts/polaris-run/runs/polaris-run-cli-operator-surface-2026-05-26-001/telemetry.jsonl",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-26T05:43:58.319Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": "POLARIS.md"
+  },
+  "docs/integrations/claude-plugin.md": {
+    "domain": "unknown",
+    "route": "docs/integrations/claude-plugin.md",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-26T05:40:56.646Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": "POLARIS.md"
+  },
+  "docs/spec/pol-97-cli-operator-surface-analysis.md": {
+    "domain": "unknown",
+    "route": "docs/spec/pol-97-cli-operator-surface-analysis.md",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-26T05:40:56.646Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": "POLARIS.md"
+  },
+  ".codex/plugins/polaris/.codex-plugin/plugin.json": {
+    "domain": "unknown",
+    "route": ".codex/plugins/polaris/.codex-plugin/plugin.json",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-26T05:43:58.319Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": "POLARIS.md"
+  },
+  ".codex/plugins/polaris/README.md": {
+    "domain": "unknown",
+    "route": ".codex/plugins/polaris/README.md",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-26T05:43:58.319Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": "POLARIS.md"
+  },
+  ".codex/plugins/polaris/skills/polaris-tools/SKILL.md": {
+    "domain": "unknown",
+    "route": ".codex/plugins/polaris/skills/polaris-tools/SKILL.md",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-26T05:43:58.319Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": "POLARIS.md"
+  },
+  ".codex/plugins/polaris/skills/polaris-tools/agents/openai.yaml": {
+    "domain": "unknown",
+    "route": ".codex/plugins/polaris/skills/polaris-tools/agents/openai.yaml",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-26T05:43:58.319Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": "POLARIS.md"
+  },
+  ".codex/plugins/polaris/skills/polaris-tools/tools.js": {
+    "domain": "unknown",
+    "route": ".codex/plugins/polaris/skills/polaris-tools/tools.js",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-26T05:43:58.319Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": "POLARIS.md"
+  },
+  ".codex/plugins/polaris/skills/polaris-tools/tools.test.js": {
+    "domain": "unknown",
+    "route": ".codex/plugins/polaris/skills/polaris-tools/tools.test.js",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-26T05:43:58.319Z",
+    "updated_by": "polaris-map-update",
+    "tags": [
+      "test"
+    ],
+    "instructionFile": "POLARIS.md"
+  },
+  ".codex/skills/polaris-tools/README.md": {
+    "domain": "unknown",
+    "route": ".codex/skills/polaris-tools/README.md",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-26T05:43:58.319Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": "POLARIS.md"
+  },
+  ".codex/skills/polaris-tools/SKILL.md": {
+    "domain": "unknown",
+    "route": ".codex/skills/polaris-tools/SKILL.md",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-26T05:43:58.319Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": "POLARIS.md"
+  },
+  ".codex/skills/polaris-tools/tools.js": {
+    "domain": "unknown",
+    "route": ".codex/skills/polaris-tools/tools.js",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-26T05:43:58.319Z",
     "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": "POLARIS.md"

@@ -17,7 +17,7 @@
     "taskchain": "polaris-cli",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-05-24T04:52:14.032Z",
+    "last_updated": "2026-05-26T05:40:56.646Z",
     "updated_by": "polaris-map-update",
     "tags": [
       "cli",
@@ -215,12 +215,13 @@
     "taskchain": "polaris-map",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-05-23T15:50:16.162Z",
+    "last_updated": "2026-05-26T05:40:56.646Z",
     "updated_by": "polaris-map-update",
     "tags": [
       "map",
       "entry-point"
-    ]
+    ],
+    "instructionFile": "src/map/POLARIS.md"
   },
   "src/map/inference.test.ts": {
     "domain": "map",
@@ -404,7 +405,7 @@
     "taskchain": "polaris-cli",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-05-23T17:06:26.521Z",
+    "last_updated": "2026-05-26T05:40:56.646Z",
     "updated_by": "polaris-map-update",
     "tags": [
       "cli"
@@ -430,7 +431,7 @@
     "taskchain": "polaris-finalize",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-05-23T17:06:26.521Z",
+    "last_updated": "2026-05-26T05:40:56.646Z",
     "updated_by": "polaris-map-update",
     "tags": [
       "finalize"
@@ -443,7 +444,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-05-23T17:06:26.521Z",
+    "last_updated": "2026-05-26T05:40:56.646Z",
     "updated_by": "polaris-map-update",
     "tags": [
       "loop"
@@ -550,7 +551,7 @@
     "taskchain": "polaris-finalize",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-05-24T04:41:41.792Z",
+    "last_updated": "2026-05-26T05:40:56.646Z",
     "updated_by": "polaris-map-update",
     "tags": [
       "finalize",
@@ -649,6 +650,34 @@
     "updated_by": "polaris-map-update",
     "tags": [
       "loop"
+    ],
+    "instructionFile": "src/loop/POLARIS.md"
+  },
+  "src/cli/index.test.ts": {
+    "domain": "cli",
+    "route": "src/cli",
+    "taskchain": "polaris-cli",
+    "confidence": 0.9500000000000001,
+    "classification": "indexed",
+    "last_updated": "2026-05-26T05:40:56.646Z",
+    "updated_by": "polaris-map-update",
+    "tags": [
+      "cli",
+      "test"
+    ],
+    "instructionFile": "src/cli/POLARIS.md"
+  },
+  "src/loop/index.ts": {
+    "domain": "loop",
+    "route": "src/loop",
+    "taskchain": "polaris-loop",
+    "confidence": 0.9,
+    "classification": "indexed",
+    "last_updated": "2026-05-26T05:40:56.646Z",
+    "updated_by": "polaris-map-update",
+    "tags": [
+      "loop",
+      "entry-point"
     ],
     "instructionFile": "src/loop/POLARIS.md"
   }

@@ -1,6 +1,6 @@
 # polaris-tools skill
 
-Claude Code skill that exposes Polaris CLI commands as callable tools without dumping large state into chat context.
+Codex skill that exposes compact, read-only Polaris status helpers without dumping large state into chat context.
 
 ## Installation prerequisite
 
@@ -34,26 +34,29 @@ If the binary is not found, the skill will attempt `npx --no-install polaris` as
 
 | Tool | CLI equivalent | Description |
 |------|---------------|-------------|
-| `polaris_run` | `polaris run <issue_id>` | Start or resume a Polaris implementation run |
-| `polaris_loop_continue` | `polaris loop continue [--provider p]` | Checkpoint state and advance the loop |
-| `polaris_status` | `polaris loop status` | Compact status summary (no full state dump) |
+| `polaris_status` | `polaris status --json` | Compact current run summary (no full state dump) |
+| `polaris_loop_status` | `polaris loop status --json` | Compact loop subsystem summary (no full state dump) |
 
-## Usage from Claude Code
+`polaris_run` and `polaris_loop_continue` are recognized only as operator-only legacy names and return an error without invoking the CLI. The public CLI does not expose `polaris run`, and `polaris loop continue` is mutating: it checkpoints state and writes a bootstrap packet.
+
+The MCP safety model exposes `polaris_loop_continue_dry_run` and `polaris_loop_continue_confirmed` as a separate approval-envelope flow. This helper does not wrap continuation unless a true non-mutating CLI dry-run is added.
+
+`polaris finalize` remains manual/operator-only. Do not expose finalize as a normal tool until a confirmed finalize approval flow exists.
+
+## Usage from Codex
 
 Invoke the helper script from the repo root:
 
 ```bash
-node .codex/skills/polaris-tools/tools.js polaris_run POL-71
-node .codex/skills/polaris-tools/tools.js polaris_loop_continue
-node .codex/skills/polaris-tools/tools.js polaris_loop_continue anthropic
 node .codex/skills/polaris-tools/tools.js polaris_status
+node .codex/skills/polaris-tools/tools.js polaris_loop_status
 ```
 
 All tools return compact JSON on stdout. On error, exit code is non-zero and the JSON contains an `error` field.
 
 ## Output contract
 
-Tools return only a compact JSON summary. They never dump the full `current-state.json` or worker transcript into chat. The `summary` field is truncated to 300 characters (600 for `polaris_status`).
+Tools return only a compact JSON summary. They never dump the full `current-state.json` or worker transcript into chat. Text summaries are truncated to 600 characters.
 
 ## Security note
 

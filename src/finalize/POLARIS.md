@@ -25,6 +25,7 @@ The finalize subsystem implements the atomic 12-step final delivery sequence for
 - Each step file exports a single named function (`step<Name>`). Steps must not call each other directly — the orchestrator in `index.ts` sequences them.
 - `stepCommit` (step 06) must commit exactly: state + map + run-report. No other files.
 - Steps 7–12 are skipped when `--skip-delivery` is passed or `--dry-run` is active. Enforce this in `runFinalize`, not in individual step files.
+- `polaris finalize run` is manual/operator-triggered and performs delivery unless `--dry-run` or `--skip-delivery` is supplied.
 - JSONL telemetry events (`pr-opened`, `run-complete`) are emitted by `polaris finalize` via step 10. Do not emit them elsewhere.
 - `polaris finalize` is the only command that pushes to remote. No other subsystem may call `git push`.
 

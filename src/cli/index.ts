@@ -2,79 +2,108 @@
 
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { parseCliArgs } from "./args.js";
-import { runLoopStatus } from "../loop/status.js";
+import { Command } from "commander";
+import { getVersion } from "./version.js";
+import { createLoopCommand } from "../loop/index.js";
 import { runLoopContinue } from "../loop/continue.js";
+import { runLoopStatus } from "../loop/status.js";
+import { createMapCommand } from "../map/index.js";
+import { runMapQuery } from "../map/query.js";
+import { createFinalizeCommand } from "../finalize/index.js";
+import { runFinalize } from "../finalize/index.js";
 
-const repoRoot = resolve(process.cwd());
-const [, , cmd, ...rest] = process.argv;
-const { flags, positional } = parseCliArgs(rest);
+export interface PolarisCommandHandlers {
+  runLoopStatus?: typeof runLoopStatus;
+  runLoopContinue?: typeof runLoopContinue;
+  runMapQuery?: typeof runMapQuery;
+  runFinalize?: typeof runFinalize;
+}
 
-function findStateFile(): string {
+export interface PolarisCommandOptions extends PolarisCommandHandlers {
+  repoRoot?: string;
+}
+
+function resolveStateFile(repoRoot: string, explicit?: string): string {
+  if (explicit) return resolve(explicit);
+
   const taskchainPath = join(repoRoot, ".taskchain_artifacts", "polaris-run", "current-state.json");
   const polarisPath = join(repoRoot, ".polaris", "runs", "current-state.json");
-  if (flags["state-file"] && typeof flags["state-file"] === "string") {
-    return resolve(flags["state-file"]);
-  }
   if (existsSync(taskchainPath)) return taskchainPath;
   if (existsSync(polarisPath)) return polarisPath;
-  return taskchainPath; // let runLoopStatus report the missing-file error
+  return taskchainPath;
 }
 
-function usage(): void {
-  console.log("Usage: polaris <command> [subcommand] [options]");
-  console.log("");
-  console.log("Commands:");
-  console.log("  status                       Print current loop state");
-  console.log("  loop status                  Print current loop state");
-  console.log("  loop continue                Advance the current taskchain loop");
-  console.log("  run                          Start or resume a Polaris run");
-  console.log("");
-  console.log("Options:");
-  console.log("  --state-file <path>          Path to current-state.json");
-  console.log("  --json                       Output as JSON");
-  console.log("  --dry-run                    Dry-run mode (no mutations)");
-  process.exit(1);
+function failDeferredCommand(command: Command, commandName: string): never {
+  command.outputHelp({ error: true });
+  command.error(
+    `error: ${commandName} is deferred in the Polaris 1.0 CLI and is not available yet.`,
+    { code: "commander.deferredCommand", exitCode: 1 },
+  );
 }
 
-switch (cmd) {
-  case "run":
-    console.log("[polaris] run — not yet implemented (Cluster 4)");
-    break;
+export function createPolarisCommand(options: PolarisCommandOptions = {}): Command {
+  const repoRoot = options.repoRoot ?? resolve(process.cwd());
+  const statusHandler = options.runLoopStatus ?? runLoopStatus;
 
-  case "loop": {
-    const sub = positional[0];
-    if (sub === "continue") {
-      runLoopContinue({
-        stateFile: findStateFile(),
-        repoRoot,
-      });
-    } else if (sub === "status") {
-      runLoopStatus({
-        stateFile: findStateFile(),
-        repoRoot,
-        json: flags["json"] === true,
-      });
-    } else {
-      console.error(`Unknown loop subcommand: ${sub ?? "(none)"}`);
-      usage();
-    }
-    break;
-  }
+  const program = new Command("polaris")
+    .description("Polaris taskchain operator CLI")
+    .version(getVersion())
+    .showHelpAfterError()
+    .showSuggestionAfterError();
 
-  case "status":
-    runLoopStatus({
-      stateFile: findStateFile(),
-      repoRoot,
-      json: flags["json"] === true,
+  program
+    .command("status")
+    .description("safe/read-only: print current loop run state summary")
+    .option("--state-file <path>", "Override path to current-state.json")
+    .option("--json", "Emit JSON output instead of human-readable text")
+    .action((commandOptions: { stateFile?: string; json?: boolean }) => {
+      statusHandler({
+        repoRoot,
+        stateFile: resolveStateFile(repoRoot, commandOptions.stateFile),
+        json: commandOptions.json,
+      });
     });
-    break;
 
-  default:
-    if (!cmd) {
-      usage();
-    } else {
-      console.error(`Unknown command: ${cmd}`);
-      usage();
-    }
+  program.addCommand(
+    createLoopCommand({
+      repoRoot,
+      runLoopStatus: statusHandler,
+      runLoopContinue: options.runLoopContinue,
+    }),
+  );
+
+  program.addCommand(
+    createMapCommand({
+      repoRoot,
+      runMapQuery: options.runMapQuery,
+    }),
+  );
+
+  program.addCommand(
+    createFinalizeCommand({
+      repoRoot,
+      runFinalize: options.runFinalize,
+    }),
+  );
+
+  const docs = new Command("docs")
+    .description("deferred in 1.0: documentation workflows are not wired in this CLI")
+    .showHelpAfterError();
+  docs.action(() => failDeferredCommand(docs, "polaris docs"));
+  program.addCommand(docs);
+
+  const config = new Command("config")
+    .description("deferred in 1.0: config workflows are not wired in this CLI")
+    .showHelpAfterError();
+  config.action(() => failDeferredCommand(config, "polaris config"));
+  program.addCommand(config);
+
+  return program;
+}
+
+if (require.main === module) {
+  createPolarisCommand().parseAsync(process.argv).catch((err: unknown) => {
+    process.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
+    process.exit(1);
+  });
 }

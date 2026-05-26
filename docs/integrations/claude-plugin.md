@@ -71,7 +71,7 @@ polaris status
 polaris status --json
 
 # Note: --dry-run is not yet wired for loop continue (ContinueOptions has no dryRun field).
-# Do not run loop continue as a smoke test — it spawns a real agent session.
+# Do not run loop continue as a smoke test — it mutates state, telemetry, map data, and bootstrap artifacts.
 # Status-only smoke tests above are sufficient to prove the invocation path.
 ```
 
@@ -96,9 +96,9 @@ The plugin is thin by design:
 2. **`polaris run` is stubbed**: `polaris run` prints `[polaris] run — not yet
    implemented (Cluster 4)`. Full run execution is a Cluster 4 deliverable.
 
-3. **`polaris loop continue` calls `runLoopContinue`**: This is wired but the
-   implementation spawns a real Claude agent session. Do not invoke in dry-run
-   without verifying adapter behavior first.
+3. **`polaris loop continue` calls `runLoopContinue`**: This is wired and
+   mutating. Do not invoke it as a smoke test or preview unless a true dry-run
+   path has been implemented and verified.
 
 4. **Provider neutrality**: The plugin routes to Polaris runtime. Polaris
    manages provider selection. The plugin does not hardcode Claude.

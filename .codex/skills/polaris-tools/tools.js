@@ -1,14 +1,13 @@
 #!/usr/bin/env node
 /**
- * polaris-tools — Claude Code skill helper
+ * polaris-tools — Codex plugin skill helper
  *
- * Exposes three tools backed by local Polaris CLI invocation.
+ * Exposes compact read-only helpers backed by local Polaris CLI invocation.
  * Prints compact JSON to stdout. Never dumps full state files.
  *
  * Usage:
- *   node tools.js polaris_run <issue_id>
- *   node tools.js polaris_loop_continue [provider]
  *   node tools.js polaris_status
+ *   node tools.js polaris_loop_status
  */
 
 'use strict';
@@ -26,10 +25,7 @@ const path = require('path');
 function findPolaris() {
   // 1. polaris on PATH
   const probe = spawnSync('polaris', ['--version'], { stdio: 'pipe', timeout: 5_000 });
-  if (probe.status === 0 || probe.error === undefined) {
-    // spawnSync sets error only when the binary is not found
-    if (!probe.error) return { cmd: 'polaris', args: [] };
-  }
+  if (probe.status === 0 && !probe.error) return { cmd: 'polaris', args: [] };
 
   // 2. npx polaris (project-local, no network fetch)
   const npxProbe = spawnSync('npx', ['--no-install', 'polaris', '--version'], {
@@ -42,11 +38,11 @@ function findPolaris() {
 }
 
 function binaryError(tool) {
-  return JSON.stringify({
+  return {
     error:
       'polaris binary not found. Install via: npm link (from repo root) or npm install -g polaris',
     tool,
-  });
+  };
 }
 
 // ── compact runner ─────────────────────────────────────────────────────────
@@ -71,106 +67,106 @@ function runSafe(cmd, args) {
 
 function truncate(str, max = 300) {
   if (!str || str.length <= max) return str;
-  return str.slice(0, max) + ' …(truncated)';
+  return str.slice(0, max) + ' ...(truncated)';
 }
 
 // ── tools ──────────────────────────────────────────────────────────────────
 
-function polarisRun(issueId) {
-  if (!issueId) {
-    console.log(JSON.stringify({ error: 'issue_id is required', tool: 'polaris_run' }));
-    process.exit(1);
-  }
-  const bin = findPolaris();
-  if (!bin) { console.log(binaryError('polaris_run')); process.exit(1); }
-
-  const { exit_code, stdout, stderr } = runSafe(bin.cmd, [...bin.args, 'run', issueId]);
-  console.log(
-    JSON.stringify({
-      tool: 'polaris_run',
-      issue_id: issueId,
-      exit_code,
-      summary: truncate(stdout || stderr),
-    })
-  );
-  process.exit(exit_code === 0 ? 0 : 1);
+function printJson(value, exitCode = 0) {
+  console.log(JSON.stringify(value));
+  process.exit(exitCode);
 }
 
-function polarisLoopContinue(provider) {
-  const bin = findPolaris();
-  if (!bin) { console.log(binaryError('polaris_loop_continue')); process.exit(1); }
-
-  const extraArgs = provider ? ['loop', 'continue', '--provider', provider] : ['loop', 'continue'];
-  const { exit_code, stdout, stderr } = runSafe(bin.cmd, [...bin.args, ...extraArgs]);
-  console.log(
-    JSON.stringify({
-      tool: 'polaris_loop_continue',
-      provider: provider || null,
-      exit_code,
-      summary: truncate(stdout || stderr),
-    })
+function operatorOnly(tool, cliEquivalent) {
+  printJson(
+    {
+      tool,
+      error: 'operator_only',
+      message:
+        `${cliEquivalent} is mutating or deferred and is not exposed as a casual Codex plugin helper. Use the governed operator workflow with an explicit approval boundary.`,
+    },
+    1
   );
-  process.exit(exit_code === 0 ? 0 : 1);
 }
 
-function polarisStatus() {
-  const bin = findPolaris();
+function compactState(tool, state) {
+  return {
+    tool,
+    run_id: state.run_id,
+    cluster_id: state.cluster_id,
+    status: state.status,
+    active_child: state.active_child || null,
+    next_open_child: state.next_open_child ?? null,
+    completed_children: Array.isArray(state.completed_children) ? state.completed_children : [],
+    open_children: Array.isArray(state.open_children) ? state.open_children : [],
+    updated_at: state.updated_at,
+  };
+}
 
-  // Try `polaris loop status` first
-  if (bin) {
-    const { exit_code, stdout } = runSafe(bin.cmd, [...bin.args, 'loop', 'status']);
-    if (exit_code === 0 && stdout) {
-      console.log(
-        JSON.stringify({ tool: 'polaris_status', exit_code, summary: truncate(stdout, 600) })
-      );
-      process.exit(0);
-    }
+function compactCliStatus(tool, exit_code, stdout, stderr) {
+  if (exit_code !== 0) {
+    return {
+      tool,
+      exit_code,
+      error: 'polaris status command failed',
+      summary: truncate(stderr || stdout, 600),
+    };
   }
 
-  // Fall back: read current-state.json and emit compact summary
+  try {
+    return {
+      ...compactState(tool, JSON.parse(stdout)),
+      exit_code,
+    };
+  } catch {
+    return { tool, exit_code, summary: truncate(stdout || stderr, 600) };
+  }
+}
+
+function statusFromStateFile(tool) {
   const stateFile = path.join(
     process.cwd(),
     '.taskchain_artifacts',
     'polaris-run',
     'current-state.json'
   );
-  if (!fs.existsSync(stateFile)) {
-    console.log(
-      JSON.stringify({
-        tool: 'polaris_status',
-        error: 'No current-state.json found and polaris loop status unavailable',
-      })
-    );
-    process.exit(1);
-  }
+  if (!fs.existsSync(stateFile)) return null;
 
-  let state;
   try {
-    state = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+    const state = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+    return compactState(tool, state);
   } catch (e) {
-    console.log(
-      JSON.stringify({
-        tool: 'polaris_status',
-        error: `Failed to parse current-state.json: ${e.message}`,
-      })
-    );
-    process.exit(1);
+    return {
+      tool,
+      error: `Failed to parse current-state.json: ${e.message}`,
+    };
+  }
+}
+
+function polarisStatus(tool, cliArgs) {
+  const bin = findPolaris();
+
+  if (bin) {
+    const { exit_code, stdout, stderr } = runSafe(bin.cmd, [...bin.args, ...cliArgs]);
+    const result = compactCliStatus(tool, exit_code, stdout, stderr);
+    printJson(result, exit_code === 0 ? 0 : 1);
   }
 
-  // Compact summary — never dump the full state
+  const fallback = statusFromStateFile(tool);
+  if (fallback) {
+    printJson(fallback, fallback.error ? 1 : 0);
+  }
+
+  printJson(binaryError(tool), 1);
+}
+
+function unknownTool(tool) {
   console.log(
     JSON.stringify({
-      tool: 'polaris_status',
-      run_id: state.run_id,
-      status: state.status,
-      active_child: state.active_child,
-      completed_children: state.completed_children,
-      open_children: state.open_children,
-      last_commit: state.last_commit,
-      updated_at: state.updated_at,
+      error: `Unknown tool: "${tool}". Valid tools: polaris_status, polaris_loop_status. Operator-only legacy names: polaris_run, polaris_loop_continue`,
     })
   );
-  process.exit(0);
+  process.exit(1);
 }
 
 // ── dispatch ───────────────────────────────────────────────────────────────
@@ -179,19 +175,17 @@ const [, , tool, ...rest] = process.argv;
 
 switch (tool) {
   case 'polaris_run':
-    polarisRun(rest[0]);
+    operatorOnly('polaris_run', 'polaris run <issue_id>');
     break;
   case 'polaris_loop_continue':
-    polarisLoopContinue(rest[0]);
+    operatorOnly('polaris_loop_continue', 'polaris loop continue');
     break;
   case 'polaris_status':
-    polarisStatus();
+    polarisStatus('polaris_status', ['status', '--json']);
+    break;
+  case 'polaris_loop_status':
+    polarisStatus('polaris_loop_status', ['loop', 'status', '--json']);
     break;
   default:
-    console.log(
-      JSON.stringify({
-        error: `Unknown tool: "${tool}". Valid tools: polaris_run, polaris_loop_continue, polaris_status`,
-      })
-    );
-    process.exit(1);
+    unknownTool(tool);
 }

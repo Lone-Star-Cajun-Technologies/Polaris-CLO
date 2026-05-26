@@ -1,7 +1,7 @@
 {
   "name": "polaris",
   "version": "1.0.0",
-  "description": "Exposes Polaris CLI commands as Codex tools for running and managing taskchain clusters.",
+  "description": "Exposes compact read-only Polaris status helpers as Codex tools.",
   "author": {
     "name": "Polaris",
     "email": "phil.meaux@lsctech.biz",
@@ -14,18 +14,18 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Polaris",
-    "shortDescription": "Run and manage Polaris taskchain clusters",
-    "longDescription": "Provides polaris_run, polaris_loop_continue, and polaris_status tools backed by the local Polaris CLI. Use in Codex worker sessions to execute child tasks, advance the orchestration loop, and check cluster state — all without dumping large state files into context.",
+    "shortDescription": "Inspect Polaris taskchain cluster status",
+    "longDescription": "Provides compact polaris_status and polaris_loop_status helpers backed by the local Polaris CLI or current-state fallback. Direct run, ungated loop continuation, and finalize delivery remain operator-only and are not exposed as casual Codex plugin tools.",
     "developerName": "Polaris",
     "category": "Productivity",
-    "capabilities": ["Interactive", "Write"],
+    "capabilities": ["Interactive", "Read"],
     "websiteURL": "https://github.com/ItIsYeBananaduck/Polaris",
     "privacyPolicyURL": "https://github.com/ItIsYeBananaduck/Polaris",
     "termsOfServiceURL": "https://github.com/ItIsYeBananaduck/Polaris",
     "defaultPrompt": [
-      "Run polaris on POL-42",
-      "Continue the polaris loop",
-      "Show polaris cluster status"
+      "Show polaris cluster status",
+      "Show polaris loop status",
+      "Check compact Polaris run state"
     ],
     "brandColor": "#6366F1"
   }
