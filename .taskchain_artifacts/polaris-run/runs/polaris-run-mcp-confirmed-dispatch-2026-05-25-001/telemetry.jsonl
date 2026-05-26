@@ -13,3 +13,5 @@
 {"event":"loop-checkpoint","run_id":"polaris-run-mcp-confirmed-dispatch-2026-05-25-001","child_id":"","next_child":null,"timestamp":"2026-05-26T03:37:48.957Z"}
 {"event":"loop-checkpoint","run_id":"polaris-run-mcp-confirmed-dispatch-2026-05-25-001","child_id":"","next_child":null,"status":"cluster-complete","timestamp":"2026-05-26T03:37:49.000Z"}
 {"event":"step-complete","run_id":"polaris-run-mcp-confirmed-dispatch-2026-05-25-001","step":"07-decide-continuation","decision":"stop-all-done","timestamp":"2026-05-26T03:37:49.000Z"}
+{"event":"pr-opened","run_id":"polaris-run-mcp-confirmed-dispatch-2026-05-25-001","pr_url":"https://github.com/ItIsYeBananaduck/Polaris/pull/26","branch":"philmeaux/pol-88-analyze-bridge-mcp-confirmed-continuation-into-execution","timestamp":"2026-05-26T03:38:30.000Z"}
+{"event":"run-complete","run_id":"polaris-run-mcp-confirmed-dispatch-2026-05-25-001","cluster_id":"POL-88","children_completed":["POL-89","POL-90"],"timestamp":"2026-05-26T03:38:30.000Z"}
