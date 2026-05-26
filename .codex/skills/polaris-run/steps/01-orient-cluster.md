@@ -1,6 +1,6 @@
 ---
 name: polaris-run-step-01-orient-cluster
-description: Generate run_id, emit run-start telemetry, activate caveman-full if available, fetch the parent cluster from Linear, and restate bounded session context.
+description: Generate run_id, emit run-start telemetry, confirm provider status, fetch the parent cluster from Linear, and restate bounded session context.
 ---
 
 # Step 01 — Orient cluster
@@ -27,7 +27,7 @@ allowed_skills:
 expected_evidence:
   - run_id generated
   - run-start telemetry emitted
-  - caveman-full activated if available (or native compact baseline confirmed)
+  - provider status confirmed; Polaris-native compact baseline active or Caveman explicitly enabled
   - Linear parent and children fetched
   - cluster is valid and executable
   - bounded session context restated
@@ -52,10 +52,11 @@ stop_rules:
    ```
    If this write fails: halt. Do not continue.
 
-2. **Activate caveman-full if available** immediately after run-start emission:
-   - Invoke the caveman skill per `linked-skills/caveman.md`.
-   - If caveman is installed and activation succeeds: confirm full mode is active, then proceed.
-   - If caveman is not installed or activation fails: note the provider status, confirm Polaris-native compact baseline is in effect (per `docs/spec/polaris-compact-contracts.md` §8), and proceed without it.
+2. **Confirm provider status** immediately after run-start emission:
+   - Read `linked-skills/caveman.md`. Detection is not activation.
+   - Only activate Caveman if it is explicitly enabled for this run via config or invocation flag.
+   - If Caveman is not explicitly enabled: confirm Polaris-native compact baseline is in effect (per `docs/spec/polaris-compact-contracts.md` §8) and proceed without it.
+   - If Caveman is explicitly enabled and available: activate per `linked-skills/caveman.md` and confirm mode active.
 
 3. Fetch the **parent issue AND all child issues** from Linear in two sequential calls (get parent, then list children by parent ID).
 
@@ -78,7 +79,7 @@ stop_rules:
    - Any blockers visible at this stage
    - Execution boundary (one parent cluster, this session)
 
-7. Do not open source files, read code, or run shell commands beyond telemetry append and the caveman invocation.
+7. Do not open source files, read code, or run shell commands beyond telemetry append and provider status confirmation.
 
 ## Artifact update
 

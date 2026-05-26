@@ -5,6 +5,22 @@ description: Route map for polaris-run — step order, continuation rules, Polar
 
 # polaris-run chain
 
+## Authority
+
+**Polaris runtime state is authoritative. Chat reasoning is not authoritative.**
+
+Query runtime state before acting. Do not infer cluster scope or progress from conversation context.
+
+## CLI
+
+Always use the repo-local Polaris CLI:
+
+```
+npm run polaris -- <command>
+```
+
+Never assume a globally linked `polaris` command exists.
+
 ## Step traversal order
 
 ```text
@@ -35,11 +51,11 @@ polaris-run augments the evo-run pattern with three Polaris-specific calls:
 
 | Step | Polaris call | Purpose |
 |---|---|---|
-| 06 | `polaris map update --changed` | Index files changed by the committed child |
-| 07 | `polaris loop continue` | Checkpoint state, emit JSONL event, generate bootstrap packet, enforce boundary |
-| 08 | `polaris finalize` | Push branch, open PR, append JSONL closeout events, archive run snapshot |
+| 06 | `npm run polaris -- map update --changed` | Index files changed by the committed child |
+| 07 | `npm run polaris -- loop continue` | Checkpoint state, emit JSONL event, generate bootstrap packet, enforce boundary |
+| 08 | `npm run polaris -- finalize` | Push branch, open PR, append JSONL closeout events, archive run snapshot |
 
-`polaris loop continue` replaces manual STOP/CONTINUE evaluation — it reads `.polaris/session-type` and `current-state.json`, runs the boundary check, and emits the bootstrap packet. The skill reads the packet's compact output to determine whether to halt, deliver, or dispatch the next child through the configured execution adapter.
+`npm run polaris -- loop continue` replaces manual STOP/CONTINUE evaluation — it reads `.polaris/session-type` and `current-state.json`, runs the boundary check, and emits the bootstrap packet. The skill reads the packet's compact output to determine whether to halt, deliver, or dispatch the next child through the configured execution adapter.
 
 ## Context budget
 
@@ -70,11 +86,11 @@ Telemetry file: `.taskchain_artifacts/polaris-run/runs/<run-id>/telemetry.jsonl`
 |---|---|---|
 | `run-start` | agent | 01 — before any Linear access |
 | `step-complete` | agent | end of every step |
-| `loop-checkpoint` | `polaris loop continue` | 07 — after each child |
-| `analyze-impl-boundary-enforced` | `polaris loop continue` | 07 — if boundary fires |
-| `loop-aborted` | `polaris loop abort` | any blocker halt |
-| `pr-opened` | `polaris finalize` | 08 |
-| `run-complete` | `polaris finalize` | 08 |
+| `loop-checkpoint` | `npm run polaris -- loop continue` | 07 — after each child |
+| `analyze-impl-boundary-enforced` | `npm run polaris -- loop continue` | 07 — if boundary fires |
+| `loop-aborted` | `npm run polaris -- loop abort` | any blocker halt |
+| `pr-opened` | `npm run polaris -- finalize` | 08 |
+| `run-complete` | `npm run polaris -- finalize` | 08 |
 
 Required fields on every event: `event`, `run_id`, `timestamp`.
 
@@ -100,7 +116,7 @@ Do not report workflow completion until `.taskchain_artifacts/polaris-run/curren
 
 | Skill | Allowed steps | Condition |
 |---|---|---|
-| caveman | 01 (start) | optional; activate full mode if available, else fall back to polaris-native compact baseline |
+| caveman | 01 (start) | optional; explicitly enabled runs only — detection is not activation |
 | repo-analysis | 01, 02, 03, 04 | targeted lookup only; conditional on provider availability |
 | execution-adapter | 07 | required when a completed child has a next open child |
 

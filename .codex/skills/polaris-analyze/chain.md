@@ -5,6 +5,22 @@ description: Route map for polaris-analyze — step order, stop conditions, anal
 
 # polaris-analyze chain
 
+## Authority
+
+**Polaris runtime state is authoritative. Chat reasoning is not authoritative.**
+
+Query runtime state before acting. Do not infer analysis scope or prior progress from conversation context.
+
+## CLI
+
+Always use the repo-local Polaris CLI:
+
+```
+npm run polaris -- <command>
+```
+
+Never assume a globally linked `polaris` command exists.
+
 ## Step traversal order
 
 ```text
@@ -53,7 +69,7 @@ Telemetry file: `.taskchain_artifacts/polaris-analyze/runs/<run-id>/telemetry.js
 |---|---|---|
 | `run-start` | agent | 01 — before any Linear access |
 | `step-complete` | agent | end of every step |
-| `loop-aborted` | `polaris loop abort` | any blocker halt |
+| `loop-aborted` | `npm run polaris -- loop abort` | any blocker halt |
 
 Required fields on every event: `event`, `run_id`, `timestamp`.
 
@@ -68,10 +84,10 @@ Required fields on every event: `event`, `run_id`, `timestamp`.
 
 | Skill | Allowed steps | Condition |
 |---|---|---|
-| caveman | session start | optional; activate lite mode if available, else fall back to polaris-native compact baseline |
+| caveman | session start | optional; explicitly enabled runs only — detection is not activation |
 | repo-analysis | 01, 02 | targeted lookup only; conditional on provider availability |
 
-Invoke caveman-lite at session start if Caveman is available. If not installed, Polaris uses native compact behavior as the required baseline (per `docs/spec/polaris-compact-contracts.md` §8); note the provider status and proceed. When Caveman is active, it governs all user-facing responses for the duration of the run.
+Detection is not activation. Only activate Caveman if explicitly enabled for the current run via config or invocation flag. If not explicitly enabled, Polaris-native compact is the required baseline (per `docs/spec/polaris-compact-contracts.md` §8); confirm provider status and proceed. If Caveman is explicitly enabled, activate in lite mode per `linked-skills/caveman.md`.
 
 After each completed step, emit a checkpoint:
 

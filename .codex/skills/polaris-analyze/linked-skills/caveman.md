@@ -43,6 +43,10 @@ Keep polaris-analyze user-facing status updates terse while preserving planning 
 
 ## Invocation note
 
-Optional at session start. If Caveman is available, activate in lite mode to govern user-facing responses for the duration of the run.
-If Caveman is not installed, Polaris uses native compact behavior as the required baseline; note the provider status and proceed.
+Detection is not activation. Polaris-native compact is the default baseline regardless of whether Caveman is present.
+
+Only activate Caveman if it is explicitly enabled for the current run via config or invocation flag. Do not auto-activate because Caveman is installed or this file is present.
+
+If Caveman is explicitly enabled: activate in lite mode for terse session checkpoints.
+If Caveman is not explicitly enabled: confirm Polaris-native compact baseline is in effect (per `docs/spec/polaris-compact-contracts.md` §8) and proceed.
 See `docs/spec/polaris-compact-contracts.md` §8 for the polaris-native compact baseline and provider compatibility rules.
