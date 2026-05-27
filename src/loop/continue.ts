@@ -12,6 +12,10 @@ import { buildBootstrapPacket, writeBootstrapPacket } from "./bootstrap-packet.j
 import { loadConfig } from "../config/loader.js";
 import type { ExecutionAdapterMode } from "./execution-adapter.js";
 import { runCanonCheck } from "../smartdocs-engine/canon-check.js";
+import {
+  assertContinueRequiresDispatch,
+  advanceContinueEpoch,
+} from "./dispatch-boundary.js";
 
 export interface ContinueOptions {
   stateFile: string;
@@ -62,6 +66,23 @@ export function runLoopContinue(options: ContinueOptions): void {
   }
 
   const state = rawState as ReturnType<typeof readState>;
+
+  // ── Dispatch boundary enforcement ─────────────────────────────────────────
+  // continue MUST be preceded by a `polaris loop dispatch` call.
+  // If no dispatch was recorded (dispatch_epoch === continue_epoch),
+  // reject immediately and do NOT mutate any state.
+  const artifactDirForTelemetry =
+    state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "bootstrap-run");
+  const telemetryFileForCheck = join(artifactDirForTelemetry, "runs", state.run_id, "telemetry.jsonl");
+
+  try {
+    assertContinueRequiresDispatch(state, telemetryFileForCheck);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`Error: ${msg}`);
+    process.exit(1);
+  }
+
   const completedChild = state.active_child;
   const remainingOpenChildren = completedChild
     ? state.open_children.filter((child) => child !== completedChild)
@@ -91,6 +112,8 @@ export function runLoopContinue(options: ContinueOptions): void {
       ...state.context_budget,
       children_completed: newCompletedChildren.length,
     },
+    // Advance continue_epoch to match the consumed dispatch_epoch
+    dispatch_boundary: advanceContinueEpoch(state.dispatch_boundary),
   };
 
   // Step 1 (cont): Atomic write of updated current-state.json

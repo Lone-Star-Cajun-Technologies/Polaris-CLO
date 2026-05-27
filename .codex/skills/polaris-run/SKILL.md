@@ -40,3 +40,59 @@ If the artifact update fails or cannot be verified, stop and report the artifact
 - `polaris loop continue` is post-child only. Do not call it before the worker has returned.
 - Do not call `polaris loop continue` without a preceding commit.
 - `polaris finalize` replaces manual push and PR — do not push or open PRs directly.
+
+## Runtime-enforced dispatch boundaries
+
+**The runtime enforces dispatch boundaries. Parent/orchestrator inline implementation is forbidden.**
+
+The Polaris runtime tracks a `dispatch_boundary` record in `current-state.json` with monotonic epoch counters:
+
+```json
+{
+  "dispatch_boundary": {
+    "dispatch_epoch": 1,
+    "continue_epoch": 0,
+    "last_dispatched_child": "POL-23"
+  }
+}
+```
+
+### Enforcement rules
+
+- `polaris loop continue` **will hard-fail** if `dispatch_epoch === continue_epoch` (no dispatch preceded this call).
+- `polaris loop dispatch` **will hard-fail** if `active_child` is already set (previous dispatch not completed).
+- `polaris loop run` (parent loop) **will hard-fail** if `active_child` is set at the start of a dispatch iteration.
+
+These are not warnings. They are runtime errors with `process.exit(1)`.
+
+### Allowed state machine transitions
+
+```
+idle           → dispatched        (polaris loop dispatch)
+checkpointed   → dispatched        (polaris loop dispatch, next child)
+dispatched     → worker-completed  (worker CompactReturn)
+worker-completed → checkpointed    (polaris loop continue)
+dispatched     → checkpointed      (polaris loop continue when worker wrote own completion)
+checkpointed   → cluster-complete  (polaris loop continue, no remaining children)
+*              → blocked           (polaris loop abort)
+```
+
+### Disallowed transitions (runtime-rejected)
+
+```
+idle           → worker-completed  (worker completed without dispatch)
+idle           → checkpointed      (continue called without dispatch)
+idle           → cluster-complete  (cluster done without dispatch path)
+selected       → completed         (inline completion — forbidden)
+selected       → checkpointed      (checkpoint without dispatch — forbidden)
+```
+
+### Telemetry events emitted on violation
+
+| Event | When |
+|---|---|
+| `dispatch-required` | `polaris loop continue` called without prior dispatch |
+| `invalid-inline-attempt` | `polaris loop dispatch` called with `active_child` already set |
+| `illegal-state-transition` | Parent tries to complete child without dispatch boundary |
+
+These events are append-only to `telemetry.jsonl` and appear only on failure paths.

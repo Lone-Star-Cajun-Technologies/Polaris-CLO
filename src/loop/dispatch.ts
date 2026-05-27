@@ -4,6 +4,10 @@ import { dirname, join } from "node:path";
 import { readState, validateState, writeStateAtomic, type LoopState } from "./checkpoint.js";
 import { compileImplPacket, type WorkerPacket } from "./worker-packet.js";
 import { selectPromptMode } from "./worker-prompt.js";
+import {
+  advanceDispatchEpoch,
+  assertNoActiveChildBeforeDispatch,
+} from "./dispatch-boundary.js";
 
 export interface DispatchOptions {
   stateFile: string;
@@ -115,15 +119,23 @@ export function runLoopDispatch(options: DispatchOptions): void {
   }
 
   const childId = selectChild(state, options.childId);
+
+  const telemetryFile = resolveTelemetryFile(state, options.repoRoot);
+
+  // ── Dispatch boundary enforcement ─────────────────────────────────────────
+  // Halt immediately if active_child is already set (orphaned dispatch).
+  // The parent/orchestrator MUST NOT re-dispatch or complete inline.
+  assertNoActiveChildBeforeDispatch(state, telemetryFile);
+
   const updatedState: LoopState = {
     ...state,
     active_child: childId,
     next_open_child: childId,
     step_cursor: "dispatch",
+    dispatch_boundary: advanceDispatchEpoch(state.dispatch_boundary, childId),
   };
   writeStateAtomic(options.stateFile, updatedState);
 
-  const telemetryFile = resolveTelemetryFile(updatedState, options.repoRoot);
   const packet = buildPacket(
     updatedState,
     childId,

@@ -38,11 +38,42 @@ Never assume a globally linked `polaris` command exists.
 
 After step 07 evaluates the session:
 
-- **DISPATCH boundary (next-child)**: when another child is eligible, run `npm run polaris -- loop dispatch` or invoke the execution adapter directly. The parent/orchestrator must not implement child work inline. State updates occur only at CHECKPOINT boundaries, not between steps.
+- **DISPATCH boundary (next-child)**: when another child is eligible, run `npm run polaris -- loop dispatch` or invoke the execution adapter directly. **The runtime enforces dispatch boundaries. Parent/orchestrator inline implementation is forbidden.** State updates occur only at CHECKPOINT boundaries, not between steps.
 - **CHECKPOINT (worker-returned)**: after the dispatched worker returns compact state, run `npm run polaris -- loop continue` to checkpoint state, emit telemetry, and generate or refresh the bootstrap packet. Worker transcripts must not merge back into parent context. This is the only boundary where state updates occur.
 - **STOP (blocked)**: halt immediately on blocker. Report unblock condition.
 - **STOP (all-done, awaiting delivery)**: all children Done but delivery not yet requested. Report branch and last commit. Provide delivery command: `Use polaris-run on <PARENT-ID>. Finalize delivery.`
 - **DELIVER**: proceed to step 08 only when all children are Done and the user explicitly requests delivery in this session invocation.
+
+## Dispatch boundary enforcement (runtime-owned)
+
+**The runtime enforces dispatch boundaries. Parent/orchestrator inline implementation is forbidden.**
+
+This is not advisory. The runtime will hard-fail with `process.exit(1)` on violations.
+
+### Allowed transition sequence (only legal path)
+
+```
+child selected
+  → polaris loop dispatch        (sets dispatch_boundary.dispatch_epoch++)
+  → worker runs externally       (adapter dispatch, NOT inline)
+  → worker returns CompactReturn
+  → polaris loop continue        (checks dispatch_epoch > continue_epoch, then sets continue_epoch++)
+  → next child (repeat) or cluster-complete
+```
+
+### Hard failures (illegal transitions)
+
+| Attempt | Runtime response |
+|---|---|
+| `polaris loop continue` without prior dispatch | `exit(1)` + `dispatch-required` telemetry event |
+| `polaris loop dispatch` with `active_child` already set | `exit(1)` + `invalid-inline-attempt` telemetry event |
+| Parent completing child without dispatch record | `exit(1)` + `illegal-state-transition` telemetry event |
+| `selected → completed` (no dispatch in path) | Hard failure — never allowed |
+| `selected → checkpointed` (no dispatch in path) | Hard failure — never allowed |
+
+### No inline fallbacks
+
+There are no soft warnings. There are no inline fallback execution paths. There is no "continue means dispatch" behavior. The only legal transition from child selected to child execution is `polaris loop dispatch`.
 
 Interactive-agent mode uses an agent/subtask adapter, not shell nesting. Terminal/CI mode may use `scripts/polaris-run.sh` as the `terminal-cli` adapter.
 

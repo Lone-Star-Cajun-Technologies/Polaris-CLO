@@ -29,6 +29,13 @@ import { WorkerLifecycleManager } from "./lifecycle.js";
 import { compileImplPacket, type WorkerPacket } from "./worker-packet.js";
 import { selectPromptMode } from "./worker-prompt.js";
 import { execFileSync } from "node:child_process";
+import {
+  INLINE_EXECUTION_ERROR,
+  assertNoActiveChildBeforeDispatch,
+  assertDispatchedBeforeCompletion,
+  advanceDispatchEpoch,
+  advanceContinueEpoch,
+} from "./dispatch-boundary.js";
 
 export interface ParentLoopOptions {
   /** Absolute path to current-state.json. */
@@ -383,6 +390,35 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
       };
     }
 
+    // ── Dispatch boundary guard ──────────────────────────────────────────────
+    //
+    // HARD CONSTRAINT: The parent/orchestrator MUST NOT execute child work
+    // inline. If active_child is already set, a previous dispatch was not
+    // properly completed — halt and require manual resolution.
+    //
+    // This guard also fires if the runtime somehow reached a child-execution
+    // state without a dispatch event (e.g. state corruption or inline attempt).
+    try {
+      assertNoActiveChildBeforeDispatch(state, telemetryFile);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!dryRun) {
+        appendTelemetry(telemetryFile, {
+          event: "invalid-inline-attempt",
+          run_id: state.run_id,
+          child_id: nextChild,
+          error: msg,
+          timestamp: new Date().toISOString(),
+        });
+      }
+      return {
+        haltReason: 'worker-error',
+        childrenDispatched,
+        haltingChild: nextChild,
+        message: msg,
+      };
+    }
+
     // ── Step 03: Dispatch worker via configured adapter ──────────────────
     //
     // ADAPTER HANDOFF semantics: dispatching the worker and then continuing
@@ -393,6 +429,21 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     //
     // Lifecycle: register before dispatch, release after result.
     // Only one worker may be active at a time (maxConcurrentWorkers = 1).
+    //
+    // Record the dispatch in state BEFORE calling the adapter so that
+    // dispatch_boundary.dispatch_epoch is always incremented before any
+    // worker execution occurs. This ensures the "dispatched → completed"
+    // transition is always verifiable from state alone.
+    if (!dryRun) {
+      const stateWithDispatch: LoopState = {
+        ...state,
+        active_child: nextChild,
+        step_cursor: "dispatch",
+        dispatch_boundary: advanceDispatchEpoch(state.dispatch_boundary, nextChild),
+      };
+      writeStateAtomic(stateFile, stateWithDispatch);
+      state = stateWithDispatch;
+    }
 
     const packet = buildPacket(state, nextChild, stateFile, telemetryFile, repoRoot);
     const childrenCompletedBeforeDispatch = state.context_budget.children_completed;
@@ -612,14 +663,53 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
       state.context_budget.children_completed > childrenCompletedBeforeDispatch;
 
     if (!workerWroteCompletion) {
-      state = advanceState(state, nextChild, lastCommit);
+      // ── Dispatch boundary: verify dispatch happened before advancing ──────
+      // The parent dispatched via adapter, so dispatch_boundary should show
+      // dispatch_epoch > continue_epoch. If not, the state is inconsistent
+      // and we must not complete the child (it would be inline completion).
+      if (!dryRun) {
+        try {
+          assertDispatchedBeforeCompletion(state, nextChild, telemetryFile);
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          appendTelemetry(telemetryFile, {
+            event: "illegal-state-transition",
+            run_id: state.run_id,
+            child_id: nextChild,
+            error: msg,
+            timestamp: new Date().toISOString(),
+          });
+          return {
+            haltReason: 'worker-error',
+            childrenDispatched,
+            haltingChild: nextChild,
+            message: msg,
+          };
+        }
+      }
+
+      // Advance state, including continue_epoch to match the consumed dispatch
+      const advanced = advanceState(state, nextChild, lastCommit);
+      state = {
+        ...advanced,
+        dispatch_boundary: advanceContinueEpoch(state.dispatch_boundary),
+      };
       childrenDispatched += 1;
       // Worker did not write its own completion — orchestrator fills the gap.
       if (!dryRun) {
         writeStateAtomic(stateFile, state);
       }
     } else {
+      // Worker wrote its own completion — advance continue_epoch to stay in sync.
+      // The worker does not manage dispatch_boundary, so the parent must do it.
+      state = {
+        ...state,
+        dispatch_boundary: advanceContinueEpoch(state.dispatch_boundary),
+      };
       childrenDispatched += 1;
+      if (!dryRun) {
+        writeStateAtomic(stateFile, state);
+      }
     }
 
     // Orchestrator checkpoint event — always emitted after a successful child.
