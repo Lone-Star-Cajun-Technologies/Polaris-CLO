@@ -1,62 +1,65 @@
 {
   "schema_version": "1.0",
-  "run_id": "polaris-run-endpoint-artifact-protection-2026-05-27-001",
-  "related_run_id": "polaris-run-cli-parity-workflow-migration-2026-05-26-001",
-  "cluster_id": "POL-130",
+  "run_id": "polaris-run-smart-docs-summary-arch-2026-05-27-001",
+  "related_run_id": null,
+  "cluster_id": "POL-136",
   "skill": "polaris-run",
   "artifact_dir": ".taskchain_artifacts/polaris-run",
-  "branch": "philmeaux/pol-130-implement-endpoint-artifact-protection-for-smart-docs-ingest",
-  "current_step_id": "05-validate-child",
-  "step_cursor": "complete",
+  "branch": "claude/clever-meitner-u6x5x",
+  "current_step_id": "01-orient-cluster",
+  "step_cursor": "checkpoint",
   "status": "running",
   "session_type": "implementation",
-  "active_child": "POL-131",
-  "last_commit": "",
+  "active_child": "",
+  "last_commit": "6c67e1a4bbbd1aeff508e519cbd5195812ba6f1f",
   "pr_url": "",
-  "next_open_child": "POL-131",
-  "completed_children": [],
+  "next_open_child": "POL-138",
+  "completed_children": [
+    "POL-137"
+  ],
   "open_children": [
-    "POL-131",
-    "POL-132",
-    "POL-133",
-    "POL-134"
+    "POL-138",
+    "POL-139",
+    "POL-140"
   ],
   "open_children_meta": {
-    "POL-131": {
-      "title": "IMPLEMENT: Add .smartdocignore parser and enforce in polaris docs ingest",
-      "state": "Backlog",
-      "status_type": "backlog",
+    "POL-137": {
+      "title": "IMPLEMENT: Write Smart Docs summary architecture spec",
+      "state": "Done",
+      "status_type": "completed",
       "blocked_by": []
     },
-    "POL-132": {
-      "title": "IMPLEMENT: Add endpoint artifact protection to polaris docs migrate",
-      "state": "Backlog",
-      "status_type": "backlog",
+    "POL-138": {
+      "title": "IMPLEMENT: Clarify and enforce POLARIS.md role boundaries in seed/validate tooling",
+      "state": "Todo",
+      "status_type": "unstarted",
       "blocked_by": [
-        "POL-131"
+        "POL-137"
       ]
     },
-    "POL-133": {
-      "title": "IMPLEMENT: Add candidate promotion governance with audit logging",
-      "state": "Backlog",
-      "status_type": "backlog",
-      "blocked_by": []
-    },
-    "POL-134": {
-      "title": "IMPLEMENT: Add polaris docs audit subcommand for recursive ingest risk report",
-      "state": "Backlog",
-      "status_type": "backlog",
+    "POL-139": {
+      "title": "IMPLEMENT: Add SUMMARY.md generation, validation, and ignore tooling",
+      "state": "Todo",
+      "status_type": "unstarted",
       "blocked_by": [
-        "POL-131"
+        "POL-138"
+      ]
+    },
+    "POL-140": {
+      "title": "IMPLEMENT: Add SUMMARY.md ingest governance and canon-check safeguards",
+      "state": "Todo",
+      "status_type": "unstarted",
+      "blocked_by": [
+        "POL-139"
       ]
     }
   },
   "context_budget": {
-    "children_completed": 0,
+    "children_completed": 1,
     "files_touched_total": 0,
     "last_child_files_touched": 0
   },
-  "validation_status": "passed",
-  "updated_at": "2026-05-27T03:53:50Z",
+  "validation_status": "pending",
+  "updated_at": "2026-05-27T00:00:00Z",
   "blocker": null
 }
