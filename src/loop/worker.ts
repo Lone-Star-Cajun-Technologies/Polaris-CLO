@@ -16,7 +16,7 @@
  */
 
 import { readFileSync, appendFileSync, mkdirSync } from "node:fs";
-import { dirname } from "node:path";
+import { dirname, resolve, isAbsolute } from "node:path";
 import { execFileSync } from "node:child_process";
 import { readState, writeStateAtomic } from "./checkpoint.js";
 import type { CompactReturn } from "./compact-return.js";
@@ -148,8 +148,12 @@ export async function executeOneChild(
 ): Promise<CompactReturn> {
   const repoRoot = options.repoRoot ?? process.cwd();
   const childId = packet.active_child;
-  const stateFile = packet.state_file;
-  const telemetryFile = packet.telemetry_file;
+  const stateFile = isAbsolute(packet.state_file)
+    ? packet.state_file
+    : resolve(repoRoot, packet.state_file);
+  const telemetryFile = isAbsolute(packet.telemetry_file)
+    ? packet.telemetry_file
+    : resolve(repoRoot, packet.telemetry_file);
   const now = getMonotonicTimestamp;
 
   let stateUpdated = false;

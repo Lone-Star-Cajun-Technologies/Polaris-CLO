@@ -34,7 +34,7 @@
       "run_id": "polaris-run-smart-docs-summary-arch-2026-05-27-001",
       "cluster_id": "POL-136",
       "child_id": "POL-138",
-      "state_file": "/home/user/Polaris/.taskchain_artifacts/polaris-run/current-state.json",
+      "state_file": ".taskchain_artifacts/polaris-run/current-state.json",
       "telemetry_file": ".taskchain_artifacts/polaris-run/runs/polaris-run-smart-docs-summary-arch-2026-05-27-001/telemetry.jsonl",
       "current_state_sha": "219a8aa5e58f00d787e9c6c1502e717c1e79883b5e02c00ef4546753ba176e03",
       "branch": "claude/clever-meitner-u6x5x",

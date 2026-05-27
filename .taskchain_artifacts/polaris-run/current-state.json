@@ -25,8 +25,8 @@
   "open_children_meta": {
     "POL-137": {
       "title": "IMPLEMENT: Write Smart Docs summary architecture spec",
-      "state": "Todo",
-      "status_type": "unstarted",
+      "state": "Done",
+      "status_type": "completed",
       "blocked_by": []
     },
     "POL-138": {
