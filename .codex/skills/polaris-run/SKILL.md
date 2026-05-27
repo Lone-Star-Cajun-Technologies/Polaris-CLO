@@ -20,7 +20,7 @@ See `docs/Polaris/spec/polaris-implementation-plan.md` for the Polaris architect
 1. Read `chain.md` — it is the route map for this workflow.
 2. Read `.taskchain_artifacts/polaris-run/current-state.json` — it holds shared runtime state across sessions.
 3. Execute one step at a time in the order `chain.md` specifies.
-4. After each step completes, update `.taskchain_artifacts/polaris-run/current-state.json` before advancing.
+4. Write `.taskchain_artifacts/polaris-run/current-state.json` **only at checkpoint boundaries**: session start (step 01), after each child completes (step 07 via `polaris loop continue`), session end (step 08), and on blocking failure. Do NOT write state after steps 02, 03, 05, or any intermediate substep.
 5. Do not skip steps.
 6. Do not report completion until `.taskchain_artifacts/polaris-run/current-state.json` has `status: complete`.
 
@@ -28,9 +28,11 @@ See `docs/Polaris/spec/polaris-implementation-plan.md` for the Polaris architect
 
 `.taskchain_artifacts/polaris-run/current-state.json` is the authoritative run ledger, not an optional note.
 
-A step is not complete until its state update has been written successfully.
+A **child completion** is not complete until `polaris loop continue` has written the checkpoint successfully.
 
-If the artifact update fails or cannot be verified, stop and report the artifact failure instead of continuing.
+Do not write state for orientation, branch prep, child selection, validation substeps, Linear reads, or individual command execution. These are read-only substeps.
+
+If a checkpoint write fails or cannot be verified, stop and report the failure instead of continuing.
 
 ## Hard rules
 
@@ -38,3 +40,6 @@ If the artifact update fails or cannot be verified, stop and report the artifact
 - One child per commit. Never batch multiple children into one commit.
 - Do not call `polaris loop continue` without a preceding commit.
 - `polaris finalize` replaces manual push and PR — do not push or open PRs directly.
+- **Worker spawn guard**: for narrow, single-repo children, execute directly in the active worktree/branch. Do not spawn a worker unless the working tree is dirty in a risky way, the child is cross-cutting, parallelism is needed, the user explicitly requests isolation, or the child is high-risk. If a worker is spawned, record a short reason in the session-start or child-completion checkpoint.
+- **Linear update cadence**: only update Linear when a child completes or a blocker is found. Avoid duplicate comments, repeated state churn, and mid-step Linear updates.
+- **Map update**: run `polaris map update --changed` **once at session end** (step 08), never after individual children. Do not run it mid-loop.

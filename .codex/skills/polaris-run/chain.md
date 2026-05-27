@@ -51,11 +51,13 @@ polaris-run augments the evo-run pattern with three Polaris-specific calls:
 
 | Step | Polaris call | Purpose |
 |---|---|---|
-| 06 | `npm run polaris -- map update --changed` | Index files changed by the committed child |
 | 07 | `npm run polaris -- loop continue` | Checkpoint state, emit JSONL event, generate bootstrap packet, enforce boundary |
+| 08 | `npm run polaris -- map update --changed` | Index all files changed during the run — **once at session end, not per child** |
 | 08 | `npm run polaris -- finalize` | Push branch, open PR, append JSONL closeout events, archive run snapshot |
 
 `npm run polaris -- loop continue` replaces manual STOP/CONTINUE evaluation — it reads `.polaris/session-type` and `current-state.json`, runs the boundary check, and emits the bootstrap packet. The skill reads the packet's compact output to determine whether to halt, deliver, or dispatch the next child through the configured execution adapter.
+
+**Map update rule:** Run `polaris map update --changed` **once at session end** (step 08), not after each child. Build prerequisites (e.g. `npm run build`) are handled once at session start, not rediscovered mid-run. Do not run map update mid-loop.
 
 ## Context budget
 
@@ -82,15 +84,25 @@ Resumed sessions generate a new `run_id`. Record the prior in `related_run_id`.
 
 Telemetry file: `.taskchain_artifacts/polaris-run/runs/<run-id>/telemetry.jsonl` (append-only).
 
-| Event | Emitted by | Step |
+**Checkpoint cadence — write state and telemetry ONLY at these points:**
+
+| Event | Emitted by | When |
 |---|---|---|
-| `run-start` | agent | 01 — before any Linear access |
-| `step-complete` | agent | end of every step |
-| `loop-checkpoint` | `npm run polaris -- loop continue` | 07 — after each child |
-| `analyze-impl-boundary-enforced` | `npm run polaris -- loop continue` | 07 — if boundary fires |
-| `loop-aborted` | `npm run polaris -- loop abort` | any blocker halt |
-| `pr-opened` | `npm run polaris -- finalize` | 08 |
-| `run-complete` | `npm run polaris -- finalize` | 08 |
+| `run-start` | agent | Session start — once, before any Linear access |
+| `loop-checkpoint` | `npm run polaris -- loop continue` | After each child completes — once per child |
+| `analyze-impl-boundary-enforced` | `npm run polaris -- loop continue` | If boundary fires |
+| `loop-aborted` | `npm run polaris -- loop abort` | On blocking failure — only if run state truly changes |
+| `pr-opened` | `npm run polaris -- finalize` | Session end (step 08) |
+| `run-complete` | `npm run polaris -- finalize` | Session end (step 08) |
+
+**Do NOT emit telemetry or write current-state.json for:**
+- Orientation substeps (step 01)
+- Branch preparation (step 02)
+- Child selection (step 03)
+- Agent/worker spawn
+- Individual command execution
+- Validation phases (step 05)
+- Linear reads or checks
 
 Required fields on every event: `event`, `run_id`, `timestamp`.
 
@@ -98,14 +110,21 @@ Required fields on every event: `event`, `run_id`, `timestamp`.
 
 `.taskchain_artifacts/polaris-run/current-state.json` is the sole authoritative live state surface.
 
-- Update after every completed step — before advancing.
-- A step is NOT complete until the state update succeeds.
-- If the update fails: stop and report the persistence failure.
+**Write current-state.json only at checkpoint boundaries:**
+- Once at session start (step 01, after initial orientation)
+- Once after each child completes (step 07, via `polaris loop continue`)
+- Once at session end (step 08, via `polaris finalize`)
+- Once on blocking failure — only when run state truly changes
+
+Do NOT write current-state.json for steps 02 (branch prep), 03 (child selection), 05 (validation), or any intermediate substep.
+
+A child-completion checkpoint is NOT complete until `polaris loop continue` succeeds.
+If `polaris loop continue` fails: stop and report the persistence failure.
 
 ## Machine snapshot
 
 - **Path**: `.taskchain_artifacts/polaris-run/current-state.json`
-- **Update requirement**: after every step
+- **Update requirement**: at checkpoint boundaries only (session-start, child-complete, session-end, blocker)
 - **Purpose**: fast agent resume without replaying JSONL or markdown history
 
 ## Completion rule
@@ -121,14 +140,18 @@ Do not report workflow completion until `.taskchain_artifacts/polaris-run/curren
 
 ## Execution reporting
 
-After each completed step, emit a checkpoint:
+After each child completes, emit one compact completion packet:
 
 ```text
 **[step-name]** done | blocked | needs-input
-Changed: <files / artifacts / branches / issues> or none
-Validated: <commands / checks passed> or none
-Blockers: none | <explicit blocker>
+Files changed: <list> or none
+Behavior implemented: <description>
+Validation: <commands run and results>
+Blockers/follow-ups: none | <explicit blocker>
+Commit: <hash>
 ```
+
+Do not emit per-substep progress reports. Report once per child.
 
 ### Never compressed
 

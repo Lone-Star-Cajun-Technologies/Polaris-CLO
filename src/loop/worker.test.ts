@@ -119,7 +119,7 @@ describe("executeOneChild", () => {
     expect(result.child_id).toBe("POL-69");
     expect(result.status).toBe("done");
     expect(result.validation).toBe("passed");
-    expect(result.telemetry_updated).toBe(true);
+    expect(result.telemetry_updated).toBe(false);
     expect(result.state_updated).toBe(true);
     expect(result.next_recommended_action).toBe("continue");
   });
@@ -151,7 +151,7 @@ describe("executeOneChild", () => {
     expect(savedState["status"]).toBe("running"); // POL-70 still open
   });
 
-  it("appends telemetry JSONL events for execute, validate, and commit steps", async () => {
+  it("does not emit intermediate step-complete telemetry events on success", async () => {
     const stateFile = makeStateFile(tmpDir, "POL-69");
     const telemetryFile = makeTelemetryFile(tmpDir, "test-run-001");
     const packet = makePacket(stateFile, telemetryFile);
@@ -161,25 +161,15 @@ describe("executeOneChild", () => {
       executeChild: () => { /* noop */ },
     });
 
-    const lines = readFileSync(telemetryFile, "utf-8")
-      .trim()
-      .split("\n")
-      .filter(Boolean)
-      .map((l) => JSON.parse(l) as Record<string, unknown>);
+    // Worker writes no telemetry on the success path — the parent emits
+    // child-complete via polaris loop continue (checkpoint cadence).
+    const raw = readFileSync(telemetryFile, "utf-8").trim();
+    const lines = raw ? raw.split("\n").filter(Boolean) : [];
+    const stepCompleteEvents = lines
+      .map((l) => JSON.parse(l) as Record<string, unknown>)
+      .filter((e) => e["event"] === "step-complete");
 
-    const steps = lines
-      .filter((e) => e["event"] === "step-complete")
-      .map((e) => e["step"] as string);
-
-    expect(steps).toContain("04-execute-child");
-    expect(steps).toContain("05-validate-child");
-    expect(steps).toContain("06-commit");
-
-    // All events tagged with correct run_id and child_id
-    for (const line of lines) {
-      expect(line["run_id"]).toBe("test-run-001");
-      expect(line["child_id"]).toBe("POL-69");
-    }
+    expect(stepCompleteEvents).toHaveLength(0);
   });
 
   it("returns status=failed when executeChild throws", async () => {

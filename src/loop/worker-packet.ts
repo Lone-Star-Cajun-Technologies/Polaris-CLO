@@ -152,9 +152,8 @@ export function compileImplPacket(input: CompileImplPacketInput): WorkerPacket {
     ...(requirementLines.length > 0 ? [`Requirements:`, ...requirementLines] : []),
     `Run validation commands and confirm all pass.`,
     `Create exactly ONE git commit: [${input.childId}] ${childTitle}.`,
-    `Update ${input.stateFile}: move "${input.childId}" from open_children to completed_children.`,
-    `Append a telemetry event to ${input.telemetryFile}.`,
-    `Write compact return JSON to stdout (fields: ${IMPL_RETURN_CONTRACT.join(', ')}).`,
+    `Update ${input.stateFile}: move "${input.childId}" from open_children to completed_children. Write state ONCE here — do not write state before this point.`,
+    `Write compact return JSON to stdout (fields: ${IMPL_RETURN_CONTRACT.join(', ')}). Do not emit intermediate telemetry events — the parent checkpoint covers this.`,
     `TERMINATE SESSION IMMEDIATELY. Do not select or execute the next child.`,
   ];
 

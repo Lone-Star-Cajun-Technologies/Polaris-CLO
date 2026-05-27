@@ -113,6 +113,22 @@ function isAnalyzeChild(childId: string, state: LoopState): boolean {
 }
 
 /**
+ * Returns true when a child should be executed directly (no worker spawn).
+ * A child is narrow when it is not cross-cutting, not labeled high-risk,
+ * and no explicit isolation is requested.
+ */
+function isNarrowChild(childId: string, state: LoopState): boolean {
+  const meta = state.open_children_meta?.[childId];
+  if (!meta) return true;
+  const labels = meta.labels ?? [];
+  if (labels.includes("cross-cutting")) return false;
+  if (labels.includes("high-risk")) return false;
+  if (labels.includes("parallel")) return false;
+  if (labels.includes("worker-isolation")) return false;
+  return true;
+}
+
+/**
  * Returns true when the cluster root is an ANALYZE issue.
  */
 function isAnalyzeParent(state: LoopState): boolean {
@@ -389,6 +405,19 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     //
     // Lifecycle: register before dispatch, release after result.
     // Only one worker may be active at a time (maxConcurrentWorkers = 1).
+    //
+    // Worker spawn guard: narrow children (not labeled cross-cutting, high-risk,
+    // parallel, or worker-isolation) are dispatched directly in persistent-parent
+    // mode without a separate worker process. When a worker IS spawned,
+    // spawn_reason is recorded in the child-dispatch telemetry event.
+
+    const narrow = orchestrationMode !== "ephemeral" && isNarrowChild(nextChild, state);
+    const spawnReason: string | null = narrow ? null : (
+      orchestrationMode === "ephemeral" ? "ephemeral-mode" :
+      ((state.open_children_meta?.[nextChild]?.labels ?? []).find(
+        (l) => ["cross-cutting", "high-risk", "parallel", "worker-isolation"].includes(l)
+      ) ?? "adapter-default")
+    );
 
     const packet = buildPacket(state, nextChild, stateFile, telemetryFile, repoRoot);
     const childrenCompletedBeforeDispatch = state.context_budget.children_completed;
@@ -416,6 +445,8 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
         adapter: adapterName,
         orchestration_mode: orchestrationMode,
         provider: providerName,
+        narrow,
+        ...(spawnReason !== null ? { spawn_reason: spawnReason } : {}),
         dry_run: dryRun,
         timestamp: new Date().toISOString(),
       });
@@ -597,19 +628,27 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
       (workerSummary as Record<string, unknown>)?.['commit'] as string | undefined ??
       (workerSummary as Record<string, unknown>)?.['commit_hash'] as string | undefined;
 
-    const childAlreadyRecorded =
+    // workerStatus === "done" has already been validated upstream.
+    // If the reloaded state already reflects the completed child,
+    // the worker owns the completion checkpoint and the parent
+    // must not rewrite it.
+    const workerWroteCompletion =
       state.completed_children.includes(nextChild) ||
       state.context_budget.children_completed > childrenCompletedBeforeDispatch;
 
-    if (!childAlreadyRecorded) {
+    if (!workerWroteCompletion) {
       state = advanceState(state, nextChild, lastCommit);
+      childrenDispatched += 1;
+      // Worker did not write its own completion — orchestrator fills the gap.
+      if (!dryRun) {
+        writeStateAtomic(stateFile, state);
+      }
+    } else {
       childrenDispatched += 1;
     }
 
-    // Persist updated state after each successful child
+    // Orchestrator checkpoint event — always emitted after a successful child.
     if (!dryRun) {
-      writeStateAtomic(stateFile, state);
-
       appendTelemetry(telemetryFile, {
         event: "child-complete",
         run_id: state.run_id,
