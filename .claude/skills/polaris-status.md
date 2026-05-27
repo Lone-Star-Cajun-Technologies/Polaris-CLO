@@ -1,5 +1,8 @@
 # polaris-status
 
+> **Canonical skill**: `.codex/skills/polaris-tools/SKILL.md`
+> This file is a Claude-specific invocation wrapper. Full status tool behaviour is defined in the Codex skill.
+
 Print the current Polaris runtime status for the active taskchain run.
 
 ## Steps
