@@ -27,9 +27,9 @@ Never assume a globally linked `polaris` command exists.
 01-orient-cluster
 02-prepare-branch
 03-select-child
-04-execute-child
-05-validate-child
-06-commit-and-update-linear
+04-execute-child              ← worker/adapter-owned execution phase
+05-validate-child             ← worker-owned validation phase
+06-commit-and-update-linear   ← worker-return validation and completion recording
 07-decide-continuation   → DISPATCH boundary | CHECKPOINT after worker return | STOP (blocked/all-done) | DELIVER: go to 08
 08-final-delivery        ← reached when all children Done and delivery requested
 ```
@@ -52,9 +52,8 @@ polaris-run augments the evo-run pattern with three Polaris-specific calls:
 
 | Step | Polaris call | Purpose |
 |---|---|---|
-| 06 | `npm run polaris -- map update --changed` | Index files changed by the committed child |
-| 07 | `npm run polaris -- loop dispatch` | Dispatch exactly one selected child through the configured execution adapter |
-| 07 | `npm run polaris -- loop continue` | Post-child checkpoint after the worker returns: emit JSONL event, generate bootstrap packet, enforce boundary |
+| 07 | `npm run polaris -- loop dispatch` | Dispatch exactly one selected child through the configured execution adapter; this starts child execution |
+| 07 | `npm run polaris -- loop continue` | Post-child checkpoint after the worker returns: emit checkpoint telemetry, generate bootstrap packet, enforce boundary |
 | 08 | `npm run polaris -- finalize` | Push branch, open PR, append JSONL closeout events, archive run snapshot |
 
 `npm run polaris -- loop dispatch` is the dispatch command. It selects the configured execution adapter and sends one child worker prompt across the parent/worker boundary.
@@ -89,10 +88,10 @@ Telemetry file: `.taskchain_artifacts/polaris-run/runs/<run-id>/telemetry.jsonl`
 | Event | Emitted by | Step |
 |---|---|---|
 | `run-start` | agent | 01 — before any Linear access |
-| `step-complete` | agent | end of every step |
 | `child-dispatched` | `npm run polaris -- loop dispatch` | 07 — when one child is accepted by the execution adapter |
+| `child-complete` | parent runtime | 07 — after worker return validation and completion recording |
 | `loop-checkpoint` | `npm run polaris -- loop continue` | 07 — after each child |
-| `analyze-impl-boundary-enforced` | `npm run polaris -- loop continue` | 07 — if boundary fires |
+| `analyze-impl-boundary-enforced` | `npm run polaris -- loop continue` | 07 — blocker/state-repair boundary event only |
 | `loop-aborted` | `npm run polaris -- loop abort` | any blocker halt |
 | `pr-opened` | `npm run polaris -- finalize` | 08 |
 | `run-complete` | `npm run polaris -- finalize` | 08 |

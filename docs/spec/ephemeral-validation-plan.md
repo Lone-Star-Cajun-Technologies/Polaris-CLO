@@ -20,7 +20,7 @@ Use a separate guard cluster for rejection behavior:
 - Running `polaris-run` against `POL-EPHEMERAL-VALIDATE-1` dispatches exactly one child through the ephemeral `agent-subtask` path.
 - The child writes only its marker file and the run ledger or telemetry artifacts required by `polaris-run`.
 - `current-state.json` records the child in `completed_children`, clears `open_children`, clears `next_open_child`, updates `last_commit`, and increments `context_budget.children_completed`.
-- `telemetry.jsonl` contains `child-dispatch` and `child-complete` events with `orchestration_mode: ephemeral` and `adapter: agent-subtask`.
+- `telemetry.jsonl` contains `child-dispatched` and `child-complete` events with `orchestration_mode: ephemeral` and `adapter: agent-subtask`.
 - The child commit message begins with the child issue key.
 
 ## Failure Conditions
@@ -39,7 +39,7 @@ Use a separate guard cluster for rejection behavior:
 - Maximum runtime per validation run: `10 minutes`.
 - Use a dedicated branch and sandbox issue keys only.
 - Do not target active implementation parents, customer-facing repos, or issue clusters with unresolved blockers.
-- Stop immediately if telemetry shows more than one `child-dispatch` event for the run.
+- Stop immediately if telemetry shows more than one `child-dispatched` event for the run.
 
 ## Rollback Procedure
 

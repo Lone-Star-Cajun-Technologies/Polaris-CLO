@@ -134,15 +134,19 @@ describe("runLoopDispatch", () => {
     expect(stderr).toContain("no open children");
   });
 
-  it("does not modify completed_children", () => {
+  it("claims active_child without advancing completion state", () => {
     const stateFile = writeState(testDir, baseState());
 
     captureStdout(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
 
-    expect(readState(stateFile).completed_children).toEqual(["POL-144"]);
+    const updated = readState(stateFile);
+    expect(updated.active_child).toBe("POL-145");
+    expect(updated.completed_children).toEqual(["POL-144"]);
+    expect(updated.open_children).toEqual(["POL-145", "POL-146"]);
+    expect(updated.status).toBe("running");
   });
 
-  it("emits exactly one child-dispatch JSONL event", () => {
+  it("emits exactly one child-dispatched JSONL event", () => {
     const artifactDir = join(testDir, ".taskchain_artifacts", "polaris-run");
     const stateFile = writeState(testDir, baseState({ artifact_dir: artifactDir }));
 
@@ -154,7 +158,7 @@ describe("runLoopDispatch", () => {
       .trim()
       .split("\n")
       .map((line) => JSON.parse(line))
-      .filter((event) => event.event === "child-dispatch");
+      .filter((event) => event.event === "child-dispatched");
     expect(events).toHaveLength(1);
     expect(events[0]).toMatchObject({
       run_id: "pol-142-session-1",

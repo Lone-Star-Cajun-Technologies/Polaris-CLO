@@ -47,7 +47,7 @@ stop_rules:
    ```bash
    npm run polaris -- loop continue
    ```
-   This post-child checkpoint updates `.polaris/runs/current-state.json`, emits a `loop-checkpoint` JSONL event, runs `npm run polaris -- map update --changed` (idempotent), checks the analyze→implement boundary, and writes a bootstrap packet to `.polaris/bootstrap/`.
+   This post-child checkpoint updates `.polaris/runs/current-state.json`, emits a `loop-checkpoint` JSONL event, checks the analyze→implement boundary, and writes a bootstrap packet to `.polaris/bootstrap/`.
 
 4. Evaluate the output to determine the decision:
 

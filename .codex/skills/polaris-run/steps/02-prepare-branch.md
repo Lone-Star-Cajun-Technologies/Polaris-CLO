@@ -46,7 +46,7 @@ Update `.taskchain_artifacts/polaris-run/current-state.json`:
 - `current_step_id: 02-prepare-branch`
 - `updated_at: <timestamp>`
 
-Emit `step-complete` for `02-prepare-branch` to telemetry JSONL.
+Do not emit per-step `step-complete` telemetry. Telemetry is checkpoint-only (`run-start`, `child-dispatched`, child completion/checkpoint events, session end, and blocker/state-repair events).
 
 ## Next step
 

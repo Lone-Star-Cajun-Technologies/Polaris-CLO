@@ -4,6 +4,7 @@ Authoritative specification for the parent/worker boundary used by Polaris loop 
 
 Implementation reference files:
 
+- `src/loop/dispatch.ts`
 - `src/loop/continue.ts`
 - `src/loop/parent.ts`
 - `src/loop/worker-prompt.ts`
@@ -83,17 +84,18 @@ session-start -> select-child -> DISPATCH -> child-executing -> worker-returned 
 
 ### `polaris loop dispatch`
 
-`polaris loop dispatch` is the explicit parent/worker boundary. It prepares the selected child packet, renders the worker prompt from `src/loop/worker-prompt.ts`, calls the configured execution adapter, and records a dispatch event.
+`polaris loop dispatch` is the explicit parent/worker boundary. It claims the selected child (`active_child`), prepares the selected child packet, and records a `child-dispatched` event. Adapter execution starts child work at this boundary.
 
 Dispatch responsibilities:
 
 - Accept exactly one selected child.
+- Claim exactly one child by setting `active_child` (and related dispatch cursor fields).
 - Use the execution adapter rather than inline implementation.
 - Pass the worker the issue identity, scope, validation, and report-back contract.
 - Leave completion state unchanged until a worker return is validated.
 - Preserve parent control of child ordering and next-step decisions.
 
-Dispatch must not advance `completed_children`. Dispatch must not mark child complete.
+Dispatch must never add to `completed_children`, must never remove the active child from `open_children`, must never advance to the next child, and must never mark child or cluster completion.
 
 ### `polaris loop continue`
 
@@ -132,13 +134,14 @@ The prompt must be sufficient for a fresh worker session with no inherited chat 
 
 ## 6. Telemetry Cadence
 
-Telemetry uses checkpoint-only events. The parent records lifecycle boundaries; the worker reports only the assigned child result.
+Telemetry uses checkpoint-only events. The parent records lifecycle boundaries; child completion/checkpoint events are emitted after worker return validation.
 
 | Event | Owner | When |
 |---|---|---|
 | `session-start` | Parent | When a parent session begins or resumes. |
 | `child-dispatched` | Parent | When the execution adapter accepts one child dispatch. |
 | `child-complete` | Parent | After worker return validation and completion recording. |
+| `loop-checkpoint` | Parent | When post-child checkpoint state is persisted. |
 | `session-end` | Parent | When the parent stops, blocks, or finishes the governed session. |
 
 Blocking-only extras are permitted when a blocker prevents forward progress, such as dispatch failure, malformed worker return, validation failure, scope violation, missing state, or unavailable adapter.

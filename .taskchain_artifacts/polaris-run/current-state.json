@@ -1,65 +1,62 @@
 {
   "schema_version": "1.0",
-  "run_id": "polaris-run-subagent-dispatch-2026-05-27-003",
-  "related_run_id": "polaris-run-endpoint-artifact-protection-2026-05-27-001",
-  "cluster_id": "POL-142",
+  "run_id": "polaris-run-endpoint-artifact-protection-2026-05-27-001",
+  "related_run_id": "polaris-run-cli-parity-workflow-migration-2026-05-26-001",
+  "cluster_id": "POL-130",
   "skill": "polaris-run",
   "artifact_dir": ".taskchain_artifacts/polaris-run",
-  "branch": "philmeaux/pol-142-implement-add-explicit-polaris-subagent-dispatch-boundary",
-  "current_step_id": "08-final-delivery",
-  "step_cursor": "checkpoint",
-  "status": "complete",
+  "branch": "philmeaux/pol-130-implement-endpoint-artifact-protection-for-smart-docs-ingest",
+  "current_step_id": "05-validate-child",
+  "step_cursor": "complete",
+  "status": "running",
   "session_type": "implementation",
-  "active_child": "",
-  "last_commit": "216670ac1506a7c52ec0c002c9dd54eac08b5047",
-  "pr_url": "https://github.com/ItIsYeBananaduck/Polaris/pull/43",
-  "next_open_child": null,
-  "completed_children": [
-    "POL-143",
-    "POL-144",
-    "POL-145",
-    "POL-146"
+  "active_child": "POL-131",
+  "last_commit": "",
+  "pr_url": "",
+  "next_open_child": "POL-131",
+  "completed_children": [],
+  "open_children": [
+    "POL-131",
+    "POL-132",
+    "POL-133",
+    "POL-134"
   ],
-  "open_children": [],
   "open_children_meta": {
-    "POL-143": {
-      "title": "IMPLEMENT: Write polaris-dispatch-contract spec",
-      "state": "Done",
-      "status_type": "completed",
+    "POL-131": {
+      "title": "IMPLEMENT: Add .smartdocignore parser and enforce in polaris docs ingest",
+      "state": "Backlog",
+      "status_type": "backlog",
       "blocked_by": []
     },
-    "POL-144": {
-      "title": "IMPLEMENT: Update polaris-run skill files with explicit dispatch boundary",
-      "state": "Done",
-      "status_type": "completed",
+    "POL-132": {
+      "title": "IMPLEMENT: Add endpoint artifact protection to polaris docs migrate",
+      "state": "Backlog",
+      "status_type": "backlog",
       "blocked_by": [
-        "POL-143"
+        "POL-131"
       ]
     },
-    "POL-145": {
-      "title": "IMPLEMENT: Add polaris loop dispatch CLI command",
-      "state": "Done",
-      "status_type": "completed",
-      "blocked_by": [
-        "POL-143",
-        "POL-144"
-      ]
+    "POL-133": {
+      "title": "IMPLEMENT: Add candidate promotion governance with audit logging",
+      "state": "Backlog",
+      "status_type": "backlog",
+      "blocked_by": []
     },
-    "POL-146": {
-      "title": "IMPLEMENT: Expose runParentLoop as polaris loop run CLI command",
-      "state": "Done",
-      "status_type": "completed",
+    "POL-134": {
+      "title": "IMPLEMENT: Add polaris docs audit subcommand for recursive ingest risk report",
+      "state": "Backlog",
+      "status_type": "backlog",
       "blocked_by": [
-        "POL-145"
+        "POL-131"
       ]
     }
   },
   "context_budget": {
-    "children_completed": 4,
-    "files_touched_total": 10,
-    "last_child_files_touched": 2
+    "children_completed": 0,
+    "files_touched_total": 0,
+    "last_child_files_touched": 0
   },
   "validation_status": "passed",
-  "updated_at": "2026-05-27T15:47:22Z",
+  "updated_at": "2026-05-27T03:53:50Z",
   "blocker": null
 }

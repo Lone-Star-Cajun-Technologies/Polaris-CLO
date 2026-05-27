@@ -1,19 +1,19 @@
-# Run Report: polaris-run-subagent-dispatch-2026-05-27-003
+# Run Report: pol-5-session-1
 
-**Status:** cluster-complete
-**Branch:** philmeaux/pol-142-implement-add-explicit-polaris-subagent-dispatch-boundary
+**Status:** running
+**Branch:** philmeaux/pol-130-implement-endpoint-artifact-protection-for-smart-docs-ingest
 **PR:** TBD — set at delivery step 9
-**Children completed:** 4 of 4
+**Children completed:** 0 of 4
 **Validation:** passed
 
 ## Children
 
 | ID | Title | Commit | Status |
 |---|---|---|---|
-| POL-143 | — | — | Done |
-| POL-144 | — | — | Done |
-| POL-145 | — | — | Done |
-| POL-146 | — | — | Done |
+| POL-131 | — | — | Open |
+| POL-132 | — | — | Open |
+| POL-133 | — | — | Open |
+| POL-134 | — | — | Open |
 
 ## Artifacts produced
 

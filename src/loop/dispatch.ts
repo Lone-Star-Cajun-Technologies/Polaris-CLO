@@ -133,7 +133,7 @@ export function runLoopDispatch(options: DispatchOptions): void {
   );
 
   appendTelemetry(telemetryFile, {
-    event: "child-dispatch",
+    event: "child-dispatched",
     run_id: updatedState.run_id,
     child_id: childId,
     prompt_mode: packet.prompt_mode,

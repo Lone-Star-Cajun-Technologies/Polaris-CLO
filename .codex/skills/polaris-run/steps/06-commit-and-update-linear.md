@@ -1,13 +1,13 @@
 ---
 name: polaris-run-step-06-commit-and-update-linear
-description: Commit changed files, run polaris map update --changed to index them, add evidence to Linear, and mark the child Done.
+description: Record worker return outcomes for the active child and update Linear completion state without inline parent implementation.
 ---
 
-# Step 06 — Commit and update Linear
+# Step 06 — Record completion and update Linear
 
 ## Purpose
 
-Record completed work in git, index changed files in the Polaris atlas, and update Linear before deciding whether to continue.
+Record worker-returned completion state, update Linear, and prepare for continuation decisions.
 
 ## Scope declarations
 
@@ -20,8 +20,8 @@ allowed_routes:
   - CLAUDE.md
   - .codex/skills/polaris-run/chain.md
 expected_evidence:
-  - commit created with child ID prefix
-  - polaris map update --changed executed (non-fatal on partial failure)
+  - worker return includes commit hash or explicit no-commit status
+  - parent completion record written only after return validation
   - Linear evidence comment added with run_id
   - child marked Done only after criteria pass
 stop_rules:
@@ -32,29 +32,17 @@ stop_rules:
 
 ## Actions
 
-1. Stage only the files changed by the current child:
-   ```bash
-   git add <changed files>
-   ```
-   Do not stage unrelated files.
-2. Commit with the child ID prefix:
-   ```bash
-   git commit -m "[<CHILD-ID>] <child title>"
-   ```
-3. **Run `npm run polaris -- map update --changed`** (Polaris-specific addition):
-   ```bash
-   npm run polaris -- map update --changed
-   ```
-   Non-fatal if the map is not yet fully implemented — log a warning and continue.
-4. Re-fetch the current child issue from Linear to get latest acceptance criteria.
-5. Add a concise evidence comment to the Linear child issue. The comment must open with:
+1. Read the worker return for the active child and verify completion evidence (status, commit hash when applicable, and validation summary).
+2. Re-fetch the current child issue from Linear to get latest acceptance criteria.
+3. Add a concise evidence comment to the Linear child issue. The comment must open with:
    ```yaml
    run_id: <run_id>
    skill: polaris-run
    ```
    Followed by: what was done, commit hash, validation result from step 05.
-6. Mark the child Done in Linear **only if** its acceptance criteria are satisfied.
+4. Mark the child Done in Linear **only if** its acceptance criteria are satisfied.
    - If criteria are not met: leave the child open, add a comment with the gap, treat as blocked.
+5. Do not run `npm run polaris -- map update --changed` per child. Map update belongs at final delivery/session end unless runtime requirements explicitly override this.
 
 ## Blocker escalation
 
@@ -74,7 +62,7 @@ Update `.taskchain_artifacts/polaris-run/current-state.json`:
 - `context_budget.children_completed` incremented
 - `updated_at: <timestamp>`
 
-Emit `step-complete` for `06-commit-and-update-linear` to telemetry JSONL.
+Telemetry remains checkpoint-only. Do not emit per-step `step-complete` events.
 
 If blocker escalation:
 - `status: blocked`
