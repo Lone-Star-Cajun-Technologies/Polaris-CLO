@@ -63,7 +63,7 @@ export function generateDraft(
     "",
     "## Purpose",
     "",
-    "<!-- Replace with a description of what this directory does and its key responsibilities. -->",
+    "<!-- One paragraph describing what this folder does. -->",
     "",
   ];
 
@@ -72,21 +72,41 @@ export function generateDraft(
   if (taskchains.length > 0) lines.push(`**Taskchain:** ${taskchains.join(", ")}`);
   if (domains.length + routes.length + taskchains.length > 0) lines.push("");
 
+  lines.push("## What belongs here", "");
   if (filesInDir.length > 0) {
-    lines.push("## Files", "");
     for (const [filePath, entry] of filesInDir) {
       lines.push(`- \`${basename(filePath)}\` — ${entry.route} (${entry.domain})`);
     }
-    lines.push("");
+  } else {
+    lines.push("<!-- Bulleted file list of contents. -->");
   }
+  lines.push("");
 
+  lines.push("## What does not belong here", "");
+  lines.push("<!-- Explicit exclusions of files or responsibilities. -->");
+  lines.push("");
+
+  lines.push("## Editing rules", "");
+  lines.push("<!-- Behavioral constraints for agents and humans. -->");
+  lines.push("");
+
+  lines.push("## Architecture assumptions", "");
+  lines.push("<!-- What the code assumes about the world. -->");
+  lines.push("");
+
+  lines.push("## Read before editing", "");
   if (nearbyDocs.length > 0) {
-    lines.push("## Nearby docs", "");
     for (const docPath of nearbyDocs) {
-      lines.push(`- \`${docPath}\``);
+      lines.push(`- [${basename(docPath)}](${docPath})`);
     }
-    lines.push("");
+  } else {
+    lines.push("<!-- Links to canonical sources (doctrine, specs). -->");
   }
+  lines.push("");
+
+  lines.push("## Related routes", "");
+  lines.push("<!-- Atlas route pointer to sibling or parent folders. -->");
+  lines.push("");
 
   return lines.join("\n");
 }

@@ -111,12 +111,39 @@ describe("validateDir - MISSING", () => {
 // validateDir — OK
 // ---------------------------------------------------------------------------
 
+function validPolarisContent(extra?: string): string {
+  return [
+    "# map",
+    "",
+    "## Purpose",
+    "Some text.",
+    "",
+    "## What belongs here",
+    "- files",
+    "",
+    "## What does not belong here",
+    "none",
+    "",
+    "## Editing rules",
+    "none",
+    "",
+    "## Architecture assumptions",
+    "none",
+    "",
+    "## Read before editing",
+    extra ?? "none",
+    "",
+    "## Related routes",
+    "none",
+  ].join("\n");
+}
+
 describe("validateDir - OK", () => {
   beforeEach(setup);
   afterEach(teardown);
 
   it("returns OK for a POLARIS.md with no issues (no git history, no links, no atlas)", () => {
-    writeFileSync(join(TMP, "src/map/POLARIS.md"), "# map\n\n## Purpose\nSome text.\n");
+    writeFileSync(join(TMP, "src/map/POLARIS.md"), validPolarisContent());
     const result = validateDir("src/map", TMP, {});
     expect(result.status).toBe("OK");
     expect(result.findings).toHaveLength(0);
@@ -132,13 +159,7 @@ describe("validateDir - broken links", () => {
   afterEach(teardown);
 
   it("reports ERROR for a broken link in Read before editing", () => {
-    const content = [
-      "# map",
-      "",
-      "## Read before editing",
-      "",
-      "- [Missing spec](../nonexistent/spec.md)",
-    ].join("\n");
+    const content = validPolarisContent("- [Missing spec](../nonexistent/spec.md)");
     writeFileSync(join(TMP, "src/map/POLARIS.md"), content);
     const result = validateDir("src/map", TMP, {});
     expect(result.status).toBe("ERROR");
@@ -149,13 +170,7 @@ describe("validateDir - broken links", () => {
 
   it("does not report error for an existing linked file", () => {
     writeFileSync(join(TMP, "src/map/atlas.ts"), "// file");
-    const content = [
-      "# map",
-      "",
-      "## Read before editing",
-      "",
-      "- [Atlas](./atlas.ts)",
-    ].join("\n");
+    const content = validPolarisContent("- [Atlas](./atlas.ts)");
     writeFileSync(join(TMP, "src/map/POLARIS.md"), content);
     const result = validateDir("src/map", TMP, {});
     expect(result.status).toBe("OK");
@@ -171,7 +186,7 @@ describe("validateDir - instructionFile pointer", () => {
   afterEach(teardown);
 
   it("reports ERROR when atlas instructionFile pointer references a non-existent file", () => {
-    writeFileSync(join(TMP, "src/map/POLARIS.md"), "# map\n\n## Purpose\nText.\n");
+    writeFileSync(join(TMP, "src/map/POLARIS.md"), validPolarisContent());
     const routes: Record<string, FileRouteEntry> = {
       "src/map/atlas.ts": makeEntry({ instructionFile: "src/map/POLARIS.md" }),
       "src/map/update.ts": makeEntry({ instructionFile: "src/map/GHOST.md" }),
@@ -183,7 +198,7 @@ describe("validateDir - instructionFile pointer", () => {
   });
 
   it("does not report error when instructionFile exists", () => {
-    writeFileSync(join(TMP, "src/map/POLARIS.md"), "# map\n\n## Purpose\nText.\n");
+    writeFileSync(join(TMP, "src/map/POLARIS.md"), validPolarisContent());
     const routes: Record<string, FileRouteEntry> = {
       "src/map/atlas.ts": makeEntry({ instructionFile: "src/map/POLARIS.md" }),
     };
@@ -192,7 +207,7 @@ describe("validateDir - instructionFile pointer", () => {
   });
 
   it("ignores atlas entries for other directories", () => {
-    writeFileSync(join(TMP, "src/map/POLARIS.md"), "# map\n\n## Purpose\nText.\n");
+    writeFileSync(join(TMP, "src/map/POLARIS.md"), validPolarisContent());
     const routes: Record<string, FileRouteEntry> = {
       "src/cli/index.ts": makeEntry({ instructionFile: "src/cli/GHOST.md" }),
     };
@@ -210,19 +225,13 @@ describe("validateInstructions", () => {
   afterEach(teardown);
 
   it("returns hasErrors=false when all checks pass", () => {
-    writeFileSync(join(TMP, "src/map/POLARIS.md"), "# map\n\n## Purpose\nText.\n");
+    writeFileSync(join(TMP, "src/map/POLARIS.md"), validPolarisContent());
     const report = validateInstructions({ repoRoot: TMP, path: "src/map" });
     expect(report.hasErrors).toBe(false);
   });
 
   it("returns hasErrors=true when there is an ERROR", () => {
-    const content = [
-      "# map",
-      "",
-      "## Read before editing",
-      "",
-      "- [Missing](./nonexistent.md)",
-    ].join("\n");
+    const content = validPolarisContent("- [Missing](./nonexistent.md)");
     writeFileSync(join(TMP, "src/map/POLARIS.md"), content);
     const report = validateInstructions({ repoRoot: TMP, path: "src/map" });
     expect(report.hasErrors).toBe(true);

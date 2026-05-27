@@ -201,6 +201,68 @@ export function validateDir(
     }
   }
 
+  // Enforce POLARIS.md role boundaries (required and forbidden sections)
+  const headingRe = /^##\s+(.+)$/gm;
+  const parsedHeadings: { normalized: string; original: string }[] = [];
+  let headingMatch: RegExpExecArray | null;
+  while ((headingMatch = headingRe.exec(content)) !== null) {
+    const original = headingMatch[1].trim();
+    parsedHeadings.push({
+      normalized: original.toLowerCase(),
+      original,
+    });
+  }
+
+  const requiredSections = [
+    { key: "purpose", name: "Purpose" },
+    { key: "what belongs here", alternative: "files", name: "What belongs here" },
+    { key: "what does not belong here", name: "What does not belong here" },
+    { key: "editing rules", name: "Editing rules" },
+    { key: "architecture assumptions", name: "Architecture assumptions" },
+    { key: "read before editing", name: "Read before editing" },
+    { key: "related routes", name: "Related routes" },
+  ];
+
+  for (const section of requiredSections) {
+    const hasSection = parsedHeadings.some(
+      (h) => h.normalized === section.key || (section.alternative && h.normalized === section.alternative),
+    );
+    if (!hasSection) {
+      findings.push({
+        severity: "WARN",
+        message: `Missing required section: "${section.name}"`,
+      });
+    }
+  }
+
+  for (const h of parsedHeadings) {
+    if (h.normalized.includes("doctrine")) {
+      findings.push({
+        severity: "ERROR",
+        message: `POLARIS.md must not contain doctrine (found section: "## ${h.original}")`,
+      });
+    }
+    if (h.normalized.includes("spec") || h.normalized.includes("specification")) {
+      if (!h.normalized.includes("read before editing") && !h.normalized.includes("nearby doc")) {
+        findings.push({
+          severity: "ERROR",
+          message: `POLARIS.md must not contain architecture specs (found section: "## ${h.original}")`,
+        });
+      }
+    }
+    if (
+      h.normalized.includes("history") ||
+      h.normalized.includes("run summary") ||
+      h.normalized.includes("run history") ||
+      h.normalized.includes("session")
+    ) {
+      findings.push({
+        severity: "ERROR",
+        message: `POLARIS.md must not contain session history or run summaries (found section: "## ${h.original}")`,
+      });
+    }
+  }
+
   if (findings.length === 0) {
     return { dir: relDir, polarisFile: polarisRel, status: "OK", findings: [] };
   }
