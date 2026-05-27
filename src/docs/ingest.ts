@@ -19,6 +19,7 @@ import {
 } from "../map/atlas.js";
 import { getMonotonicTimestamp } from "../utils/monotonic-timestamp.js";
 import { isIngestIneligible } from "./smartdoc-ignore.js";
+import { addCandidateGovernanceMetadata } from "./doctrine.js";
 
 export type DocsClassification =
   | "runtime-summary"
@@ -462,7 +463,10 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
     });
 
     if (!options.dryRun) {
-      const output = classification === "doctrine-candidate" ? addCandidateFrontMatter(content, relSource) : content;
+      let output = classification === "doctrine-candidate" ? addCandidateFrontMatter(content, relSource) : content;
+      if (classification === "doctrine-candidate") {
+        output = addCandidateGovernanceMetadata(output, classification);
+      }
       if (output !== content) {
         writeFileSync(absSource, output, "utf-8");
       }

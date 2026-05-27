@@ -8,6 +8,7 @@ import {
   doctrineDraft,
   doctrineDeprecate,
   doctrinePromote,
+  addCandidateGovernanceMetadata,
 } from "./doctrine.js";
 
 function makeTempDir(): string {
@@ -98,9 +99,23 @@ describe("doctrinePromote", () => {
     repoRoot = makeTempDir();
   });
 
+  const governanceFrontMatter = [
+    "---",
+    "status: candidate",
+    "doc-type: doctrine",
+    "confidence: 0.9",
+    "recommended-action: promote",
+    "overlap-analysis: none",
+    "---",
+    "",
+  ].join("\n");
+
   it("moves a file from candidate/ to active/ and strips the candidate marker", () => {
     const candidatePath = join(repoRoot, "docs", "doctrine", "candidate", "my-doctrine.md");
-    writeFileSync(candidatePath, `${CANDIDATE_MARKER}\n# My Doctrine\n\nContent.`);
+    writeFileSync(
+      candidatePath,
+      `${CANDIDATE_MARKER}\n${governanceFrontMatter}# My Doctrine\n\nContent.`,
+    );
 
     const result = doctrinePromote(candidatePath, { repoRoot, runId: "test-run-002" });
 
@@ -117,13 +132,18 @@ describe("doctrinePromote", () => {
 
   it("emits a doctrine-promote event to lifecycle.jsonl", () => {
     const candidatePath = join(repoRoot, "docs", "doctrine", "candidate", "promoted.md");
-    writeFileSync(candidatePath, `${CANDIDATE_MARKER}\n# Promoted`);
+    writeFileSync(
+      candidatePath,
+      `${CANDIDATE_MARKER}\n${governanceFrontMatter}# Promoted`,
+    );
 
     const result = doctrinePromote(candidatePath, { repoRoot, runId: "test-run-002" });
 
-    const event = JSON.parse(readFileSync(result.lifecyclePath, "utf-8").trim().split("\n")[0]);
-    expect(event.event).toBe("doctrine-promote");
-    expect(event.run_id).toBe("test-run-002");
+    const lines = readFileSync(result.lifecyclePath, "utf-8").trim().split("\n");
+    const promoteEvent = lines.map((l) => JSON.parse(l)).find((e) => e.event === "doctrine-promote");
+    expect(promoteEvent).toBeDefined();
+    expect(promoteEvent.event).toBe("doctrine-promote");
+    expect(promoteEvent.run_id).toBe("test-run-002");
   });
 
   it("throws if source is not in docs/doctrine/candidate/", () => {
@@ -149,6 +169,147 @@ describe("doctrinePromote", () => {
         { repoRoot },
       ),
     ).toThrow("Source file not found");
+  });
+
+  it("rejects file missing governance fields", () => {
+    const candidatePath = join(repoRoot, "docs", "doctrine", "candidate", "no-gov.md");
+    writeFileSync(candidatePath, `${CANDIDATE_MARKER}\n# Missing governance`);
+
+    expect(() => doctrinePromote(candidatePath, { repoRoot })).toThrow(
+      'missing required governance field "doc-type"',
+    );
+  });
+
+  it("rejects file with recommended-action: hold", () => {
+    const candidatePath = join(repoRoot, "docs", "doctrine", "candidate", "on-hold.md");
+    const content = [
+      CANDIDATE_MARKER,
+      "---",
+      "doc-type: doctrine",
+      "confidence: 0.5",
+      "recommended-action: hold",
+      "overlap-analysis: none",
+      "---",
+      "",
+      "# On hold",
+    ].join("\n");
+    writeFileSync(candidatePath, content);
+
+    expect(() => doctrinePromote(candidatePath, { repoRoot })).toThrow(
+      'recommended-action must be "promote" but got "hold"',
+    );
+  });
+
+  it("succeeds with all required governance fields present", () => {
+    const candidatePath = join(repoRoot, "docs", "doctrine", "candidate", "governed.md");
+    const content = [
+      CANDIDATE_MARKER,
+      "---",
+      "doc-type: doctrine",
+      "confidence: 0.95",
+      "recommended-action: promote",
+      "overlap-analysis: none",
+      "---",
+      "",
+      "# Governed doc",
+    ].join("\n");
+    writeFileSync(candidatePath, content);
+
+    const result = doctrinePromote(candidatePath, { repoRoot, runId: "test-run-gov" });
+    expect(existsSync(result.destination)).toBe(true);
+    expect(existsSync(candidatePath)).toBe(false);
+  });
+
+  it("emits audit.jsonl event on successful promotion", () => {
+    const candidatePath = join(repoRoot, "docs", "doctrine", "candidate", "audited.md");
+    const content = [
+      CANDIDATE_MARKER,
+      "---",
+      "doc-type: doctrine",
+      "confidence: 0.9",
+      "recommended-action: promote",
+      "overlap-analysis: minimal overlap with existing docs",
+      "---",
+      "",
+      "# Audited doc",
+    ].join("\n");
+    writeFileSync(candidatePath, content);
+
+    const result = doctrinePromote(candidatePath, { repoRoot, runId: "test-run-audit" });
+
+    const auditPath = join(
+      repoRoot,
+      ".taskchain_artifacts",
+      "polaris-doctrine",
+      "test-run-audit",
+      "audit.jsonl",
+    );
+    expect(existsSync(auditPath)).toBe(true);
+    const auditEvent = JSON.parse(readFileSync(auditPath, "utf-8").trim());
+    expect(auditEvent.event).toBe("doctrine-promoted");
+    expect(auditEvent.run_id).toBe("test-run-audit");
+    expect(auditEvent.doc_type).toBe("doctrine");
+    expect(auditEvent.confidence).toBe(0.9);
+    expect(auditEvent.recommended_action).toBe("promote");
+    expect(auditEvent.overlap_analysis).toBe("minimal overlap with existing docs");
+    expect(auditEvent.promoted_by).toBe("polaris-cli");
+    expect(result.destination).toBeDefined();
+  });
+
+  it("skipGovernance: true logs governance-override to lifecycle.jsonl and skips governance check", () => {
+    const candidatePath = join(repoRoot, "docs", "doctrine", "candidate", "skip-gov.md");
+    // No governance front matter at all — would normally be rejected
+    writeFileSync(candidatePath, `${CANDIDATE_MARKER}\n# No governance fields`);
+
+    const result = doctrinePromote(candidatePath, {
+      repoRoot,
+      runId: "test-run-skip",
+      skipGovernance: true,
+    });
+
+    expect(existsSync(result.destination)).toBe(true);
+
+    const lifecycleLines = readFileSync(result.lifecyclePath, "utf-8").trim().split("\n");
+    const events = lifecycleLines.map((l) => JSON.parse(l));
+    const overrideEvent = events.find((e) => e.event === "governance-override");
+    expect(overrideEvent).toBeDefined();
+    expect(overrideEvent.run_id).toBe("test-run-skip");
+  });
+});
+
+describe("addCandidateGovernanceMetadata", () => {
+  it("adds governance fields to content without front matter", () => {
+    const result = addCandidateGovernanceMetadata("# Hello", "doctrine");
+    expect(result).toContain("doc-type: doctrine");
+    expect(result).toContain("confidence: 0.0");
+    expect(result).toContain("recommended-action: hold");
+    expect(result).toContain("overlap-analysis: pending");
+    expect(result).toContain("# Hello");
+  });
+
+  it("merges governance fields into existing front matter without overwriting existing keys", () => {
+    const content = "---\nstatus: candidate\ndoc-type: existing-type\n---\n\n# Hello";
+    const result = addCandidateGovernanceMetadata(content, "doctrine");
+    expect(result).toContain("doc-type: existing-type");
+    expect(result).not.toContain("doc-type: doctrine");
+    expect(result).toContain("confidence: 0.0");
+    expect(result).toContain("recommended-action: hold");
+    expect(result).toContain("overlap-analysis: pending");
+  });
+
+  it("does not modify content when all governance fields already present", () => {
+    const content = [
+      "---",
+      "doc-type: doctrine",
+      "confidence: 0.9",
+      "recommended-action: promote",
+      "overlap-analysis: none",
+      "---",
+      "",
+      "# Hello",
+    ].join("\n");
+    const result = addCandidateGovernanceMetadata(content, "other");
+    expect(result).toBe(content);
   });
 });
 
