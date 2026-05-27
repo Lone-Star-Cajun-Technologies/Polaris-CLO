@@ -21,17 +21,6 @@
     "tags": [],
     "instructionFile": "POLARIS.md"
   },
-  ".claude/settings.local.json": {
-    "domain": "unknown",
-    "route": ".claude/settings.local.json",
-    "taskchain": "polaris-core",
-    "confidence": 0,
-    "classification": "needs-review",
-    "last_updated": "2026-05-26T15:04:43.304Z",
-    "updated_by": "polaris-map-index",
-    "tags": [],
-    "instructionFile": "POLARIS.md"
-  },
   ".claude/skills/polaris-loop.md": {
     "domain": "unknown",
     "route": ".claude/skills/polaris-loop.md",
