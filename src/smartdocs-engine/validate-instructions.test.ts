@@ -151,6 +151,48 @@ describe("validateDir - OK", () => {
 });
 
 // ---------------------------------------------------------------------------
+// validateDir — SUMMARY.md (WARN/ERROR)
+// ---------------------------------------------------------------------------
+
+describe("validateDir - SUMMARY.md", () => {
+  beforeEach(setup);
+  afterEach(teardown);
+
+  it("reports WARN when SUMMARY.md is missing", () => {
+    writeFileSync(join(TMP, "src/map/POLARIS.md"), validPolarisContent());
+    // Add 5 files to atlas to trigger Signal 5
+    const routes: Record<string, FileRouteEntry> = {
+      "src/map/f1.ts": makeEntry(),
+      "src/map/f2.ts": makeEntry(),
+      "src/map/f3.ts": makeEntry(),
+      "src/map/f4.ts": makeEntry(),
+      "src/map/f5.ts": makeEntry(),
+    };
+    const result = validateDir("src/map", TMP, routes);
+    expect(result.status).toBe("WARN");
+    const warnFinding = result.findings.find((f) => f.severity === "WARN");
+    expect(warnFinding?.message).toContain("Missing SUMMARY.md");
+  });
+
+  it("reports OK when SUMMARY.md exists and is clean", () => {
+    writeFileSync(join(TMP, "src/map/POLARIS.md"), validPolarisContent());
+    writeFileSync(join(TMP, "src/map/SUMMARY.md"), "# Summary\nNo modal verbs here.");
+    const result = validateDir("src/map", TMP, {});
+    expect(result.status).toBe("OK");
+  });
+
+  it("reports ERROR when SUMMARY.md has doctrine bleed (must/never/always)", () => {
+    writeFileSync(join(TMP, "src/map/POLARIS.md"), validPolarisContent());
+    writeFileSync(join(TMP, "src/map/SUMMARY.md"), "# Summary\nAgents must always be polite.");
+    const result = validateDir("src/map", TMP, {});
+    expect(result.status).toBe("ERROR");
+    const errorFindings = result.findings.filter((f) => f.severity === "ERROR");
+    expect(errorFindings).toHaveLength(2); // must and always
+    expect(errorFindings[0]?.message).toContain("doctrine bleed risk");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // validateDir — broken links (ERROR)
 // ---------------------------------------------------------------------------
 

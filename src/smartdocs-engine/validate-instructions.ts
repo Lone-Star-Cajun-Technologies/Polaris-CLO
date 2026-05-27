@@ -263,6 +263,38 @@ export function validateDir(
     }
   }
 
+  // Signal 5: SUMMARY.md presence
+  const summaryFile = join(absDir, "SUMMARY.md");
+  if (!existsSync(summaryFile)) {
+    // Only warn if the directory has >= 5 files in the atlas
+    const atlasFiles = Object.keys(allRoutes).filter((filePath) => {
+      const fileDir = dirname(filePath).replace(/\\/g, "/");
+      return fileDir === normRelDir || (normRelDir === "." && !filePath.includes("/"));
+    });
+    if (atlasFiles.length >= 5) {
+      findings.push({
+        severity: "WARN",
+        message: `Missing SUMMARY.md in ${relDir || "."}`,
+      });
+    }
+  } else {
+    // Signal 6: SUMMARY.md doctrine-bleed scan
+    const summaryContent = readFileSync(summaryFile, "utf-8");
+    const modalVerbs = ["must", "never", "always"];
+    const lines = summaryContent.split("\n");
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].toLowerCase();
+      for (const verb of modalVerbs) {
+        if (line.includes(verb)) {
+          findings.push({
+            severity: "ERROR",
+            message: `SUMMARY.md doctrine bleed risk: found "${verb}" on line ${i + 1}`,
+          });
+        }
+      }
+    }
+  }
+
   if (findings.length === 0) {
     return { dir: relDir, polarisFile: polarisRel, status: "OK", findings: [] };
   }
