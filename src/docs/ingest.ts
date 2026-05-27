@@ -48,6 +48,12 @@ export interface IngestResult {
   dryRun: boolean;
 }
 
+export interface DocsScaffoldResult {
+  created: string[];
+  existing: string[];
+  dryRun: boolean;
+}
+
 interface DocsIngestState {
   run_id?: string;
   prior_run_id?: string | null;
@@ -73,6 +79,19 @@ const TARGET_DIRS: Record<DocsClassification, string> = {
   decision: `${CANONICAL_TARGET}/decisions`,
   "deprecated-noise": `${CANONICAL_TARGET}/runtime/generated`,
 };
+
+export const SMART_DOCS_SCAFFOLD_DIRS = [
+  CANONICAL_TARGET,
+  ...Object.values(TARGET_DIRS),
+  `${CANONICAL_TARGET}/raw`,
+  `${CANONICAL_TARGET}/specs/implemented`,
+  `${CANONICAL_TARGET}/specs/superseded`,
+  `${CANONICAL_TARGET}/audits/raw`,
+  `${CANONICAL_TARGET}/audits/resolved`,
+  `${CANONICAL_TARGET}/doctrine/raw`,
+  `${CANONICAL_TARGET}/doctrine/active`,
+  `${CANONICAL_TARGET}/doctrine/deprecated`,
+];
 
 const APPROVAL_REQUIRED = new Set<DocsClassification>(["spec-active", "architecture", "decision"]);
 
@@ -191,22 +210,21 @@ function writeDocsIngestState(repoRoot: string, state: DocsIngestState): void {
   writeFileSync(statePath, JSON.stringify(state, null, 2) + "\n", "utf-8");
 }
 
-function ensureDocsScaffold(repoRoot: string): void {
-  for (const dir of Object.values(TARGET_DIRS)) {
-    mkdirSync(resolve(repoRoot, dir), { recursive: true });
+export function ensureDocsScaffold(repoRoot: string, options: { dryRun?: boolean } = {}): DocsScaffoldResult {
+  const created = SMART_DOCS_SCAFFOLD_DIRS.filter((dir) => !existsSync(resolve(repoRoot, dir)));
+  const existing = SMART_DOCS_SCAFFOLD_DIRS.filter((dir) => existsSync(resolve(repoRoot, dir)));
+
+  if (!options.dryRun) {
+    for (const dir of created) {
+      mkdirSync(resolve(repoRoot, dir), { recursive: true });
+    }
   }
-  for (const dir of [
-    `${CANONICAL_TARGET}/raw`,
-    `${CANONICAL_TARGET}/specs/implemented`,
-    `${CANONICAL_TARGET}/specs/superseded`,
-    `${CANONICAL_TARGET}/audits/raw`,
-    `${CANONICAL_TARGET}/audits/resolved`,
-    `${CANONICAL_TARGET}/doctrine/raw`,
-    `${CANONICAL_TARGET}/doctrine/active`,
-    `${CANONICAL_TARGET}/doctrine/deprecated`,
-  ]) {
-    mkdirSync(resolve(repoRoot, dir), { recursive: true });
-  }
+
+  return {
+    created,
+    existing,
+    dryRun: Boolean(options.dryRun),
+  };
 }
 
 function uniqueDestination(filePath: string): string {

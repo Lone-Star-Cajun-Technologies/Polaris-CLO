@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs";
 import * as child_process from "node:child_process";
-import { detectCaveman, detectGitNexus, detectCompactionProviders } from "./provider-detect.js";
+import {
+  detectCaveman,
+  detectGitNexus,
+  detectCompactionProviders,
+  detectRepoAnalysisProviders,
+} from "./provider-detect.js";
 
 vi.mock("node:fs", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:fs")>();
@@ -77,5 +82,19 @@ describe("detectCompactionProviders", () => {
     mockedExistsSync.mockReturnValue(true);
     mockedExecFileSync.mockReturnValue(Buffer.from("/usr/bin/gitnexus\n"));
     expect(detectCompactionProviders("/repo")).toEqual(["caveman", "gitnexus"]);
+  });
+});
+
+describe("detectRepoAnalysisProviders", () => {
+  it("returns empty array when no repo-analysis providers are detected", () => {
+    mockedExecFileSync.mockImplementation(() => {
+      throw new Error("not found");
+    });
+    expect(detectRepoAnalysisProviders()).toEqual([]);
+  });
+
+  it("returns ['gitnexus'] when GitNexus is detected", () => {
+    mockedExecFileSync.mockReturnValue(Buffer.from("/usr/bin/gitnexus\n"));
+    expect(detectRepoAnalysisProviders()).toEqual(["gitnexus"]);
   });
 });

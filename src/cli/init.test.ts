@@ -41,7 +41,11 @@ describe("runInit — no existing config", () => {
     mockedExistsSync.mockReturnValue(false);
     const detect = vi.fn().mockReturnValue(["caveman"]);
 
-    runInit({ repoRoot: REPO_ROOT, detectProviders: detect });
+    runInit({
+      repoRoot: REPO_ROOT,
+      detectProviders: detect,
+      detectRepoAnalysisProviders: vi.fn().mockReturnValue([]),
+    });
 
     expect(mockedWriteFileSync).toHaveBeenCalledOnce();
     const [path, content] = mockedWriteFileSync.mock.calls[0] as [string, string, string];
@@ -57,7 +61,11 @@ describe("runInit — no existing config", () => {
     mockedExistsSync.mockReturnValue(false);
     const detect = vi.fn().mockReturnValue([]);
 
-    runInit({ repoRoot: REPO_ROOT, detectProviders: detect });
+    runInit({
+      repoRoot: REPO_ROOT,
+      detectProviders: detect,
+      detectRepoAnalysisProviders: vi.fn().mockReturnValue([]),
+    });
 
     expect(mockedWriteFileSync).toHaveBeenCalledOnce();
     const [, content] = mockedWriteFileSync.mock.calls[0] as [string, string, string];
@@ -69,7 +77,11 @@ describe("runInit — no existing config", () => {
     mockedExistsSync.mockReturnValue(false);
     const detect = vi.fn().mockReturnValue(["caveman", "gitnexus"]);
 
-    runInit({ repoRoot: REPO_ROOT, detectProviders: detect });
+    runInit({
+      repoRoot: REPO_ROOT,
+      detectProviders: detect,
+      detectRepoAnalysisProviders: vi.fn().mockReturnValue([]),
+    });
 
     const [, content] = mockedWriteFileSync.mock.calls[0] as [string, string, string];
     const written = JSON.parse(content) as Record<string, unknown>;
@@ -77,6 +89,24 @@ describe("runInit — no existing config", () => {
       "caveman",
       "gitnexus",
     ]);
+  });
+
+  it("writes repoAnalysis.preferred when a repo-analysis provider is detected", () => {
+    mockedExistsSync.mockReturnValue(false);
+    const detectCompaction = vi.fn().mockReturnValue([]);
+    const detectRepoAnalysis = vi.fn().mockReturnValue(["gitnexus"]);
+
+    runInit({
+      repoRoot: REPO_ROOT,
+      detectProviders: detectCompaction,
+      detectRepoAnalysisProviders: detectRepoAnalysis,
+    });
+
+    const [, content] = mockedWriteFileSync.mock.calls[0] as [string, string, string];
+    const written = JSON.parse(content) as Record<string, unknown>;
+    expect(written).toMatchObject({
+      providers: { repoAnalysis: { preferred: "gitnexus" } },
+    });
   });
 });
 
@@ -90,7 +120,11 @@ describe("runInit — existing config", () => {
     mockedReadFileSync.mockReturnValue(JSON.stringify(existingConfig));
     const detect = vi.fn().mockReturnValue(["gitnexus"]);
 
-    runInit({ repoRoot: REPO_ROOT, detectProviders: detect });
+    runInit({
+      repoRoot: REPO_ROOT,
+      detectProviders: detect,
+      detectRepoAnalysisProviders: vi.fn().mockReturnValue([]),
+    });
 
     const [, content] = mockedWriteFileSync.mock.calls[0] as [string, string, string];
     const written = JSON.parse(content) as Record<string, unknown>;
@@ -110,13 +144,39 @@ describe("runInit — existing config", () => {
     mockedReadFileSync.mockReturnValue(JSON.stringify(existingConfig));
     const detect = vi.fn().mockReturnValue(["caveman"]);
 
-    runInit({ repoRoot: REPO_ROOT, detectProviders: detect });
+    runInit({
+      repoRoot: REPO_ROOT,
+      detectProviders: detect,
+      detectRepoAnalysisProviders: vi.fn().mockReturnValue(["gitnexus"]),
+    });
 
     const [, content] = mockedWriteFileSync.mock.calls[0] as [string, string, string];
     const written = JSON.parse(content) as Record<string, unknown>;
     const providers = written.providers as Record<string, unknown>;
-    expect(providers.repoAnalysis).toEqual({ preferred: "polaris-map" });
+    expect(providers.repoAnalysis).toEqual({ preferred: "gitnexus" });
     expect(providers.compactionProviders).toEqual(["caveman"]);
+  });
+
+  it("preserves repoAnalysis fallback while omitting preferred when no repo-analysis provider is detected", () => {
+    const existingConfig = {
+      version: "1.0",
+      providers: {
+        repoAnalysis: { preferred: "gitnexus", fallback: ["polaris-map", "ripgrep"] },
+      },
+    };
+    mockedExistsSync.mockReturnValue(true);
+    mockedReadFileSync.mockReturnValue(JSON.stringify(existingConfig));
+
+    runInit({
+      repoRoot: REPO_ROOT,
+      detectProviders: vi.fn().mockReturnValue([]),
+      detectRepoAnalysisProviders: vi.fn().mockReturnValue([]),
+    });
+
+    const [, content] = mockedWriteFileSync.mock.calls[0] as [string, string, string];
+    const written = JSON.parse(content) as Record<string, unknown>;
+    const providers = written.providers as Record<string, unknown>;
+    expect(providers.repoAnalysis).toEqual({ fallback: ["polaris-map", "ripgrep"] });
   });
 
   it("removes compactionProviders from existing config when none detected", () => {
@@ -128,7 +188,11 @@ describe("runInit — existing config", () => {
     mockedReadFileSync.mockReturnValue(JSON.stringify(existingConfig));
     const detect = vi.fn().mockReturnValue([]);
 
-    runInit({ repoRoot: REPO_ROOT, detectProviders: detect });
+    runInit({
+      repoRoot: REPO_ROOT,
+      detectProviders: detect,
+      detectRepoAnalysisProviders: vi.fn().mockReturnValue([]),
+    });
 
     const [, content] = mockedWriteFileSync.mock.calls[0] as [string, string, string];
     const written = JSON.parse(content) as Record<string, unknown>;
@@ -144,7 +208,12 @@ describe("runInit — dry-run", () => {
     mockedExistsSync.mockReturnValue(false);
     const detect = vi.fn().mockReturnValue(["caveman"]);
 
-    runInit({ repoRoot: REPO_ROOT, dryRun: true, detectProviders: detect });
+    runInit({
+      repoRoot: REPO_ROOT,
+      dryRun: true,
+      detectProviders: detect,
+      detectRepoAnalysisProviders: vi.fn().mockReturnValue([]),
+    });
 
     expect(mockedWriteFileSync).not.toHaveBeenCalled();
   });
@@ -153,7 +222,12 @@ describe("runInit — dry-run", () => {
     mockedExistsSync.mockReturnValue(false);
     const detect = vi.fn().mockReturnValue(["caveman"]);
 
-    runInit({ repoRoot: REPO_ROOT, dryRun: true, detectProviders: detect });
+    runInit({
+      repoRoot: REPO_ROOT,
+      dryRun: true,
+      detectProviders: detect,
+      detectRepoAnalysisProviders: vi.fn().mockReturnValue([]),
+    });
 
     const parsed = JSON.parse(stdoutOutput) as Record<string, unknown>;
     expect(parsed).toMatchObject({
@@ -167,7 +241,11 @@ describe("runInit — stdout messaging", () => {
     mockedExistsSync.mockReturnValue(false);
     const detect = vi.fn().mockReturnValue(["caveman", "gitnexus"]);
 
-    runInit({ repoRoot: REPO_ROOT, detectProviders: detect });
+    runInit({
+      repoRoot: REPO_ROOT,
+      detectProviders: detect,
+      detectRepoAnalysisProviders: vi.fn().mockReturnValue([]),
+    });
 
     expect(stdoutOutput).toContain("caveman");
     expect(stdoutOutput).toContain("gitnexus");
@@ -177,7 +255,11 @@ describe("runInit — stdout messaging", () => {
     mockedExistsSync.mockReturnValue(false);
     const detect = vi.fn().mockReturnValue([]);
 
-    runInit({ repoRoot: REPO_ROOT, detectProviders: detect });
+    runInit({
+      repoRoot: REPO_ROOT,
+      detectProviders: detect,
+      detectRepoAnalysisProviders: vi.fn().mockReturnValue([]),
+    });
 
     expect(stdoutOutput).toContain("No compaction providers detected");
   });

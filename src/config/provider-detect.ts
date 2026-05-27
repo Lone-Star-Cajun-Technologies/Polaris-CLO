@@ -44,3 +44,12 @@ export function detectCompactionProviders(repoRoot: string): string[] {
   }
   return detected;
 }
+
+/**
+ * Runs repo-analysis provider detection and returns detected provider IDs.
+ *
+ * Recognised repo-analysis provider names: "gitnexus".
+ */
+export function detectRepoAnalysisProviders(): string[] {
+  return detectGitNexus() ? ["gitnexus"] : [];
+}

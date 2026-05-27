@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { Command } from "commander";
-import { ingestDocs, printIngestResults } from "./ingest.js";
+import { ensureDocsScaffold, ingestDocs, printIngestResults } from "./ingest.js";
 import { migrateDocs, printMigrateResults } from "./migrate.js";
 import { seedInstructions, seedInstructionsAll } from "./seed-instructions.js";
 import { validateInstructions, printReport } from "./validate-instructions.js";
@@ -14,6 +14,29 @@ export interface DocsCommandOptions {
 export function createDocsCommand(options: DocsCommandOptions = {}): Command {
   const defaultRepoRoot = options.repoRoot ?? process.cwd();
   const docs = new Command("docs").description("Polaris docs lifecycle commands");
+
+  docs
+    .command("init")
+    .description("Create the Smart Docs canonical scaffold under Polaris-Docs/docs/")
+    .option("--dry-run", "Print what would be created without writing directories")
+    .option("-r, --repo-root <path>", "Repository root", defaultRepoRoot)
+    .action((options: { dryRun?: boolean; repoRoot: string }) => {
+      try {
+        const result = ensureDocsScaffold(options.repoRoot, { dryRun: options.dryRun });
+        const createLabel = options.dryRun ? "[dry-run] would create" : "created";
+
+        for (const dir of result.created) {
+          console.log(`${createLabel}: ${dir}`);
+        }
+        for (const dir of result.existing) {
+          console.log(`already exists: ${dir}`);
+        }
+        console.log(`\nDone. ${result.created.length} ${options.dryRun ? "would be created" : "created"}, ${result.existing.length} already exists.`);
+      } catch (err) {
+        console.error(`polaris docs init: ${err instanceof Error ? err.message : String(err)}`);
+        process.exit(1);
+      }
+    });
 
   docs
     .command("ingest [path]")

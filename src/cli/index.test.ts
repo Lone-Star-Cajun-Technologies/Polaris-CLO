@@ -25,12 +25,14 @@ async function runCommand(argv: string[]) {
   const continueLoop = vi.fn();
   const queryMap = vi.fn();
   const finalize = vi.fn();
+  const configShow = vi.fn();
   const program = createPolarisCommand({
     repoRoot: "/repo",
     runLoopStatus: status,
     runLoopContinue: continueLoop,
     runMapQuery: queryMap,
     runFinalize: finalize,
+    runConfigShow: configShow,
   });
 
   configureForTest(program, output);
@@ -45,7 +47,7 @@ async function runCommand(argv: string[]) {
     }
   }
 
-  return { ...output, exitCode, status, continueLoop, queryMap, finalize };
+  return { ...output, exitCode, status, continueLoop, queryMap, finalize, configShow };
 }
 
 describe("polaris public CLI", () => {
@@ -58,9 +60,9 @@ describe("polaris public CLI", () => {
     expect(result.stdout).toContain("map");
     expect(result.stdout).toContain("finalize");
     expect(result.stdout).toContain("docs");
+    expect(result.stdout).toContain("doctrine");
     expect(result.stdout).toContain("safe/read-only");
-    // config command remains deferred in 1.0
-    expect(result.stdout).toContain("deferred");
+    expect(result.stdout).toContain("config");
   });
 
   it("exposes docs ingest command with expected flags", async () => {
@@ -73,6 +75,17 @@ describe("polaris public CLI", () => {
     expect(result.stdout).toContain("--dry-run");
     expect(result.stdout).toContain("Polaris-Docs/docs");
   });
+
+  it.each(["draft", "promote", "deprecate"])(
+    "exposes doctrine %s command through the public entrypoint",
+    async (subcommand) => {
+      const result = await runCommand(["doctrine", subcommand, "--help"]);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).not.toContain("unknown command");
+      expect(result.stdout).toContain(`Usage: polaris doctrine ${subcommand}`);
+    },
+  );
 
   it("prints the package version", async () => {
     const result = await runCommand(["--version"]);
@@ -119,6 +132,24 @@ describe("polaris public CLI", () => {
     expect(result.stdout).toContain("Usage: polaris finalize run");
     expect(result.stdout).toContain("--dry-run");
     expect(result.stdout).toContain("--skip-delivery");
+  });
+
+  it("prints config help without failing", async () => {
+    const result = await runCommand(["config"]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("Usage: polaris config");
+    expect(result.stdout).toContain("show");
+    expect(result.stderr).not.toContain("deferred");
+  });
+
+  it("routes config show through the public entrypoint", async () => {
+    const result = await runCommand(["config", "show"]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.configShow).toHaveBeenCalledWith({
+      repoRoot: "/repo",
+    });
   });
 
   it("marks safe previews and mutating commands in subsystem help", async () => {
