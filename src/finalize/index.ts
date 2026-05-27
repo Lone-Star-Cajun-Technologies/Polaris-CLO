@@ -3,7 +3,7 @@ import { join, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 import { loadConfig } from "../config/loader.js";
 import { readState } from "../loop/checkpoint.js";
-import { runCanonCheck } from "../smartdocs/canon-check.js";
+import { runCanonCheck } from "../smartdocs-engine/canon-check.js";
 import { stepMapUpdate } from "./steps/01-map-update.js";
 import { stepMapValidate } from "./steps/02-map-validate.js";
 import { stepSchemaValidate } from "./steps/03-schema-validate.js";

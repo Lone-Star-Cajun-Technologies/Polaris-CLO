@@ -12,7 +12,7 @@ The CLI entry point for Polaris. It registers all top-level commands (`map`, `lo
 
 ## What does not belong here
 
-- Command implementation logic — belongs in the respective subsystem (`src/map/`, `src/loop/`, `src/finalize/`, `src/smartdocs/`, `src/config/`)
+- Command implementation logic — belongs in the respective subsystem (`src/map/`, `src/loop/`, `src/finalize/`, `src/smartdocs-engine/`, `src/config/`)
 - Business logic, file I/O, or state management of any kind
 
 ## Editing rules
