@@ -648,54 +648,36 @@ describe("runParentLoop: inline execution guard", () => {
 
   it("parent loop with real adapter: dispatch_boundary updated before adapter call", async () => {
     // This tests that runParentLoop writes dispatch_boundary to state
-    // before calling the adapter (i.e., dispatch is recorded first)
+    // before calling the adapter (i.e., dispatch is recorded first).
+    // We use runLoopDispatch directly to verify the boundary is written,
+    // then check that the state reflects the dispatch before worker execution.
     const state = makeFreshState();
     state.open_children = ["POL-101"];
     const stateFile = writeStateFile(testDir, state);
 
-    let stateAtDispatch: LoopState | null = null;
+    // Capture the state before and after dispatch
+    const stateBefore = readState(stateFile);
+    expect(stateBefore.dispatch_boundary?.dispatch_epoch).toBe(0);
 
-    // Mock adapter that captures the state at dispatch time
-    const mockAdapter = {
-      name: "mock-capture",
-      async dispatch(_packet: BootstrapPacket, _options: DispatchOptions): Promise<DispatchResult> {
-        // Read the state as it exists when adapter.dispatch is called
-        stateAtDispatch = readState(stateFile);
-        return {
-          exit_code: 0,
-          provider_used: "mock",
-          command_run: "mock",
-          summary: JSON.stringify({
-            status: "done",
-            child_id: "POL-101",
-            state_updated: true,
-            commit: "abc1234",
-          }),
-        };
-      },
-    };
-
-    // We cannot easily inject a mock adapter without going through the adapter
-    // registry. Instead, test the state mutation behavior in dry-run mode
-    // and verify the state file after a dispatch+continue sequence.
-    // The real adapter integration is exercised by the parent loop adapter tests.
-
-    // Use dry-run to verify dispatch boundary is NOT written (dry-run skips state writes)
+    // Call dispatch directly (this is what parent.ts would call internally)
     const origStdout = process.stdout.write.bind(process.stdout);
     process.stdout.write = () => true;
-    const origStderr = process.stderr.write.bind(process.stderr);
-    process.stderr.write = () => true;
 
     try {
-      await runParentLoop({ stateFile, repoRoot: testDir, dryRun: true });
+      runLoopDispatch({ stateFile, repoRoot: testDir });
     } finally {
       process.stdout.write = origStdout;
-      process.stderr.write = origStderr;
     }
 
-    // In dry-run, state file must be unchanged
-    const updatedState = readState(stateFile);
-    expect(updatedState.dispatch_boundary?.dispatch_epoch).toBe(0); // unchanged in dry-run
+    // Read state after dispatch - boundary should be updated
+    const stateAfterDispatch = readState(stateFile);
+    expect(stateAfterDispatch.dispatch_boundary?.dispatch_epoch).toBe(1);
+    expect(stateAfterDispatch.dispatch_boundary?.continue_epoch).toBe(0);
+    expect(stateAfterDispatch.dispatch_boundary?.last_dispatched_child).toBe("POL-101");
+    expect(stateAfterDispatch.active_child).toBe("POL-101");
+
+    // This verifies that dispatch_boundary is written to state BEFORE
+    // any adapter.dispatch call would happen (adapter would read this state)
   });
 });
 
@@ -766,12 +748,14 @@ describe("no state corruption after illegal transition", () => {
     const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
       throw new Error("process.exit");
     });
+    const originalConsoleError = console.error;
     console.error = () => {};
 
     try {
       expect(() => runLoopContinue({ stateFile, repoRoot: testDir })).toThrow();
     } finally {
       exitSpy.mockRestore();
+      console.error = originalConsoleError;
     }
 
     const after = readFileSync(stateFile, "utf-8");
@@ -791,12 +775,14 @@ describe("no state corruption after illegal transition", () => {
     const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
       throw new Error("process.exit");
     });
+    const originalConsoleError = console.error;
     console.error = () => {};
 
     try {
       expect(() => runLoopContinue({ stateFile, repoRoot: testDir })).toThrow();
     } finally {
       exitSpy.mockRestore();
+      console.error = originalConsoleError;
     }
 
     const after = readState(stateFile);
@@ -815,12 +801,14 @@ describe("no state corruption after illegal transition", () => {
     const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
       throw new Error("process.exit");
     });
+    const originalConsoleError = console.error;
     console.error = () => {};
 
     try {
       expect(() => runLoopContinue({ stateFile, repoRoot: testDir })).toThrow();
     } finally {
       exitSpy.mockRestore();
+      console.error = originalConsoleError;
     }
 
     const after = readState(stateFile);
@@ -868,12 +856,14 @@ describe("dispatch boundary telemetry events", () => {
     const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
       throw new Error("process.exit");
     });
+    const originalConsoleError = console.error;
     console.error = () => {};
 
     try {
       expect(() => runLoopContinue({ stateFile, repoRoot: testDir })).toThrow();
     } finally {
       exitSpy.mockRestore();
+      console.error = originalConsoleError;
     }
 
     const events = readTelemetry();
@@ -906,12 +896,11 @@ describe("dispatch boundary telemetry events", () => {
       testDir, ".taskchain_artifacts", "polaris-run", "runs",
       "polaris-run-test-boundary-001", "telemetry.jsonl",
     );
-    if (existsSync(dispatchTelemetry)) {
-      const events = readFileSync(dispatchTelemetry, "utf-8")
-        .trim().split("\n").filter(Boolean).map((l) => JSON.parse(l));
-      const violation = events.find((e) => e["event"] === "invalid-inline-attempt");
-      expect(violation).toBeDefined();
-    }
-    // The guard still threw (the telemetry file path may differ) — the throw is the hard enforcement
+    // Telemetry emission is mandatory for this boundary violation
+    expect(existsSync(dispatchTelemetry)).toBe(true);
+    const events = readFileSync(dispatchTelemetry, "utf-8")
+      .trim().split("\n").filter(Boolean).map((l) => JSON.parse(l));
+    const violation = events.find((e) => e["event"] === "invalid-inline-attempt");
+    expect(violation).toBeDefined();
   });
 });

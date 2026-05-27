@@ -52,9 +52,8 @@ function getCurrentBranch(repoRoot: string): string {
 }
 
 function selectChild(state: LoopState, requestedChild?: string): string {
-  if (state.active_child) {
-    fail(`active_child already set: ${state.active_child}`);
-  }
+  // Note: active_child check now handled by assertNoActiveChildBeforeDispatch
+  // before this function is called
   if (state.status === "blocked") {
     fail("current-state.json status is blocked");
   }
@@ -119,8 +118,6 @@ export function runLoopDispatch(options: DispatchOptions): void {
     );
   }
 
-  const childId = selectChild(state, options.childId);
-
   const telemetryFile = resolveTelemetryFile(state, options.repoRoot);
 
   // ── Bootstrap seal enforcement ─────────────────────────────────────────────
@@ -136,6 +133,8 @@ export function runLoopDispatch(options: DispatchOptions): void {
   // Halt immediately if active_child is already set (orphaned dispatch).
   // The parent/orchestrator MUST NOT re-dispatch or complete inline.
   assertNoActiveChildBeforeDispatch(state, telemetryFile);
+
+  const childId = selectChild(state, options.childId);
 
   const updatedState: LoopState = {
     ...state,

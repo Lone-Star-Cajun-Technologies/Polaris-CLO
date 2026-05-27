@@ -396,10 +396,13 @@ export function advanceDispatchEpoch(
 export function advanceContinueEpoch(
   current: LoopState["dispatch_boundary"],
 ): NonNullable<LoopState["dispatch_boundary"]> {
-  const base = current ?? initialDispatchBoundary()!;
+  // If no boundary exists yet, return a fresh one without incrementing
+  if (current === undefined || current === null) {
+    return initialDispatchBoundary()!;
+  }
   return {
-    dispatch_epoch: base.dispatch_epoch,
-    continue_epoch: base.continue_epoch + 1,
-    last_dispatched_child: base.last_dispatched_child,
+    dispatch_epoch: current.dispatch_epoch,
+    continue_epoch: current.continue_epoch + 1,
+    last_dispatched_child: current.last_dispatched_child,
   };
 }

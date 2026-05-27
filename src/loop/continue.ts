@@ -83,7 +83,17 @@ export function runLoopContinue(options: ContinueOptions): void {
     process.exit(1);
   }
 
-  const completedChild = state.active_child;
+  // Identify the completed child:
+  // - If active_child is set, use it (standard case)
+  // - If dispatch_epoch > continue_epoch but active_child is empty,
+  //   resolve from dispatch_boundary.last_dispatched_child
+  let completedChild = state.active_child;
+  if (!completedChild && state.dispatch_boundary) {
+    const { dispatch_epoch, continue_epoch, last_dispatched_child } = state.dispatch_boundary;
+    if (dispatch_epoch > continue_epoch && last_dispatched_child) {
+      completedChild = last_dispatched_child;
+    }
+  }
   const remainingOpenChildren = completedChild
     ? state.open_children.filter((child) => child !== completedChild)
     : state.open_children;
