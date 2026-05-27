@@ -26,7 +26,8 @@ import type { BootstrapPacket, WorkerSummary } from "./adapters/types.js";
 import { checkBudget, policyFromConfig } from "./budget.js";
 import { loadConfig } from "../config/loader.js";
 import { WorkerLifecycleManager } from "./lifecycle.js";
-import { compileImplPacket } from "./worker-packet.js";
+import { compileImplPacket, type WorkerPacket } from "./worker-packet.js";
+import { selectPromptMode } from "./worker-prompt.js";
 import { execFileSync } from "node:child_process";
 
 export interface ParentLoopOptions {
@@ -155,7 +156,7 @@ function buildPacket(
   stateFile: string,
   telemetryFile: string,
   repoRoot: string,
-): BootstrapPacket {
+): WorkerPacket {
   const branch = state.branch ?? getCurrentBranch(repoRoot);
 
   const childMeta = state.open_children_meta?.[activeChild];
@@ -167,6 +168,8 @@ function buildPacket(
       }
     : undefined;
 
+  const promptMode = selectPromptMode(activeChild, state);
+
   return compileImplPacket({
     runId: state.run_id,
     clusterId: state.cluster_id,
@@ -176,6 +179,7 @@ function buildPacket(
     telemetryFile,
     issueContext,
     maxConcurrentWorkers: 1,
+    promptMode,
   });
 }
 
@@ -416,6 +420,8 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
         adapter: adapterName,
         orchestration_mode: orchestrationMode,
         provider: providerName,
+        prompt_mode: packet.prompt_mode,
+        prompt_estimated_tokens: packet.prompt_metrics.estimated_tokens,
         dry_run: dryRun,
         timestamp: new Date().toISOString(),
       });

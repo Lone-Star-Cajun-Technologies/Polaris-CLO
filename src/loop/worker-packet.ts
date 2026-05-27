@@ -11,6 +11,11 @@
  */
 
 import type { BootstrapPacket } from "./adapters/types.js";
+import {
+  buildPromptFromPacketInput,
+  type WorkerPromptMode,
+  type WorkerPromptMetrics,
+} from "./worker-prompt.js";
 
 // ── Worker roles ─────────────────────────────────────────────────────────────
 
@@ -68,6 +73,10 @@ export interface WorkerPacket extends BootstrapPacket {
   lifecycle: WorkerLifecycleContract;
   /** Fields the worker MUST include in its compact return JSON. */
   return_contract: string[];
+  /** Prompt dispatch mode: compact (default for narrow children) or full. */
+  prompt_mode: WorkerPromptMode;
+  /** Lightweight prompt size metrics recorded at compile time. */
+  prompt_metrics: WorkerPromptMetrics;
 }
 
 /** Type guard: returns true when packet is a compiled WorkerPacket. */
@@ -133,6 +142,11 @@ export interface CompileImplPacketInput {
   allowedScope?: string[];
   validationCommands?: string[];
   maxConcurrentWorkers?: number;
+  /**
+   * Prompt dispatch mode. Defaults to 'compact' for narrow children.
+   * Pass 'full' for cross-cutting or architectural children.
+   */
+  promptMode?: WorkerPromptMode;
 }
 
 /**
@@ -142,6 +156,7 @@ export interface CompileImplPacketInput {
 export function compileImplPacket(input: CompileImplPacketInput): WorkerPacket {
   const childRef = input.issueContext?.id ?? input.childId;
   const childTitle = input.issueContext?.title ?? input.childId;
+  const promptMode = input.promptMode ?? 'compact';
 
   const requirementLines =
     input.issueContext?.key_requirements.map((r, i) => `   ${i + 1}. ${r}`) ?? [];
@@ -158,6 +173,20 @@ export function compileImplPacket(input: CompileImplPacketInput): WorkerPacket {
     `TERMINATE SESSION IMMEDIATELY. Do not select or execute the next child.`,
   ];
 
+  // Build compact or full prompt; primary_goal uses the structured template.
+  const promptResult = buildPromptFromPacketInput({
+    issueId: input.childId,
+    title: childTitle,
+    worktree: '.',
+    branch: input.branch,
+    stateFile: input.stateFile,
+    telemetryFile: input.telemetryFile,
+    issueContext: input.issueContext,
+    allowedScope: input.allowedScope,
+    validationCommands: input.validationCommands,
+    mode: promptMode,
+  });
+
   return {
     schema_version: '2.0',
     worker_role: 'impl',
@@ -167,9 +196,7 @@ export function compileImplPacket(input: CompileImplPacketInput): WorkerPacket {
     state_file: input.stateFile,
     telemetry_file: input.telemetryFile,
     instructions: {
-      primary_goal:
-        `Execute exactly ONE child: ${childRef} ("${childTitle}"). ` +
-        `Commit, update state, and terminate. Do not continue to the next child.`,
+      primary_goal: promptResult.prompt,
       steps,
       allowed_scope: input.allowedScope ?? [],
       validation_commands: input.validationCommands ?? [],
@@ -177,6 +204,8 @@ export function compileImplPacket(input: CompileImplPacketInput): WorkerPacket {
     },
     lifecycle: defaultLifecycle(input.maxConcurrentWorkers ?? 1, 'commit-and-exit'),
     return_contract: IMPL_RETURN_CONTRACT,
+    prompt_mode: promptMode,
+    prompt_metrics: promptResult.metrics,
     context: {
       branch: input.branch,
       worker_role: 'impl',
@@ -234,6 +263,8 @@ export function compileFinalizePacket(input: CompileFinalizePacketInput): Worker
     },
     lifecycle: defaultLifecycle(input.maxConcurrentWorkers ?? 1, 'commit-and-exit'),
     return_contract: FINALIZE_RETURN_CONTRACT,
+    prompt_mode: 'full',
+    prompt_metrics: { mode: 'full', char_count: 0, estimated_tokens: 0 },
     context: {
       branch: input.branch,
       worker_role: 'finalize',
@@ -285,6 +316,8 @@ export function compilePreflightPacket(input: CompilePreflightPacketInput): Work
     },
     lifecycle: defaultLifecycle(input.maxConcurrentWorkers ?? 1, 'exit-immediately'),
     return_contract: PREFLIGHT_RETURN_CONTRACT,
+    prompt_mode: 'full',
+    prompt_metrics: { mode: 'full', char_count: 0, estimated_tokens: 0 },
     context: {
       branch: input.branch,
       worker_role: 'preflight',
