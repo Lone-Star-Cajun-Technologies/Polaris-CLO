@@ -63,7 +63,7 @@ function makeBaseInput(overrides: Partial<WorkerPromptInput> = {}): WorkerPrompt
     worktree: "/repo",
     branch: "feat/test",
     goal: "Parse .smartdocignore and enforce it during docs ingest.",
-    scopeTouch: ["src/docs/ingest.ts", "src/docs/ignore-parser.ts"],
+    scopeTouch: ["src/smartdocs/ingest.ts", "src/smartdocs/ignore-parser.ts"],
     scopeAvoid: ["src/loop/", "src/finalize/"],
     acceptanceCriteria: [
       "Parser reads .smartdocignore from repo root",
@@ -160,7 +160,7 @@ describe("buildWorkerPrompt", () => {
 
   it("scope touch and avoid lines are included", () => {
     const { prompt } = buildWorkerPrompt(makeBaseInput());
-    expect(prompt).toContain("src/docs/ingest.ts");
+    expect(prompt).toContain("src/smartdocs/ingest.ts");
     expect(prompt).toContain("src/loop/");
   });
 

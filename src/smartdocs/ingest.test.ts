@@ -18,16 +18,16 @@ function makeRepo(): string {
   writeFileSync(
     join(repoRoot, ".polaris", "map", "file-routes.json"),
     JSON.stringify({
-      "src/docs/index.ts": {
+      "src/smartdocs/index.ts": {
         domain: "docs",
-        route: "src/docs",
+        route: "src/smartdocs",
         taskchain: "polaris-docs",
         confidence: 0.95,
         classification: "indexed",
         last_updated: "",
         updated_by: "",
         tags: ["docs"],
-        instructionFile: "src/docs/POLARIS.md",
+        instructionFile: "src/smartdocs/POLARIS.md",
       },
     }),
     "utf-8",
@@ -63,7 +63,7 @@ describe("ingestDocs", () => {
     const repoRoot = makeRepo();
     writeFileSync(
       join(repoRoot, "docs", "raw", "ingest-plan.md"),
-      "# Ingest Spec\n\nAcceptance Criteria\n\nTouches src/docs/index.ts.",
+      "# Ingest Spec\n\nAcceptance Criteria\n\nTouches src/smartdocs/index.ts.",
       "utf-8",
     );
 
@@ -71,7 +71,7 @@ describe("ingestDocs", () => {
 
     expect(result.classification).toBe("spec-raw");
     expect(result.destinationPath).toBe(`${CANONICAL_TARGET}/specs/raw/ingest-plan.md`);
-    expect(result.linkedMapArea).toBe("src/docs");
+    expect(result.linkedMapArea).toBe("src/smartdocs");
     expect(existsSync(join(repoRoot, CANONICAL_TARGET, "specs", "raw", "ingest-plan.md"))).toBe(true);
     expect(existsSync(join(repoRoot, CANONICAL_TARGET, "specs", "raw", "ingest-plan.provenance.json"))).toBe(true);
 

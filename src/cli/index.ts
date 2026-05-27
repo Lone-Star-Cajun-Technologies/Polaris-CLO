@@ -12,7 +12,7 @@ import { runMapQuery } from "../map/query.js";
 import { createFinalizeCommand } from "../finalize/index.js";
 import { runFinalize } from "../finalize/index.js";
 import { createInitCommand, runInit } from "./init.js";
-import { createDocsCommand, createDoctrineCommand } from "../docs/index.js";
+import { createDocsCommand, createDoctrineCommand } from "../smartdocs/index.js";
 import { createConfigCommand, runConfigShow } from "../config/show.js";
 
 export interface PolarisCommandHandlers {

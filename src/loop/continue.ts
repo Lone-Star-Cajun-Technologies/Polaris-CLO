@@ -11,7 +11,7 @@ import {
 import { buildBootstrapPacket, writeBootstrapPacket } from "./bootstrap-packet.js";
 import { loadConfig } from "../config/loader.js";
 import type { ExecutionAdapterMode } from "./execution-adapter.js";
-import { runCanonCheck } from "../docs/canon-check.js";
+import { runCanonCheck } from "../smartdocs/canon-check.js";
 
 export interface ContinueOptions {
   stateFile: string;
