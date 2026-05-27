@@ -195,4 +195,36 @@ describe("ingestDocs", () => {
     expect(state.status).toBe("complete");
     expect(state.files_ingested).toBe(1);
   });
+
+  it("rejects ignored endpoint artifacts before ingesting and emits telemetry", () => {
+    const repoRoot = makeRepo();
+    mkdirSync(join(repoRoot, ".taskchain_artifacts", "polaris-run"), { recursive: true });
+    writeFileSync(
+      join(repoRoot, ".taskchain_artifacts", "polaris-run", "current-state.json"),
+      JSON.stringify({ run_id: "test-run" }),
+      "utf-8",
+    );
+
+    expect(() =>
+      ingestDocs([".taskchain_artifacts/polaris-run/current-state.json"], { repoRoot }),
+    ).toThrow("ineligible for docs ingest");
+
+    const runsDir = join(repoRoot, ".taskchain_artifacts", "polaris-docs-ingest", "runs");
+    const runDirs = readdirSync(runsDir);
+    expect(runDirs).toHaveLength(1);
+    const telemetry = readFileSync(join(runsDir, runDirs[0], "telemetry.jsonl"), "utf-8");
+    expect(telemetry).toContain('"event":"docs-ingest-skipped-endpoint-artifact"');
+    expect(telemetry).toContain('"file":".taskchain_artifacts/polaris-run/current-state.json"');
+  });
+
+  it("rejects paths ignored by a custom .smartdocignore pattern", () => {
+    const repoRoot = makeRepo();
+    mkdirSync(join(repoRoot, "scratch"), { recursive: true });
+    writeFileSync(join(repoRoot, ".smartdocignore"), "scratch/*.md\n", "utf-8");
+    writeFileSync(join(repoRoot, "scratch", "draft.md"), "# Spec\n\nAcceptance Criteria", "utf-8");
+
+    expect(() => ingestDocs(["scratch/draft.md"], { repoRoot })).toThrow(
+      "ignored by .smartdocignore/defaults: scratch/draft.md",
+    );
+  });
 });

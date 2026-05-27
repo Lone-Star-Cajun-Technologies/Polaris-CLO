@@ -1107,7 +1107,7 @@
     "taskchain": "polaris-core",
     "confidence": 0,
     "classification": "needs-review",
-    "last_updated": "2026-05-26T15:07:16.440Z",
+    "last_updated": "2026-05-27T03:54:38.138Z",
     "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": "POLARIS.md"
@@ -1887,6 +1887,28 @@
     "classification": "needs-review",
     "last_updated": "2026-05-26T15:04:43.304Z",
     "updated_by": "polaris-map-index",
+    "tags": [],
+    "instructionFile": "POLARIS.md"
+  },
+  ".polaris/clusters/POL-130/clusters.json": {
+    "domain": "unknown",
+    "route": ".polaris/clusters/POL-130/clusters.json",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-27T03:54:38.138Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": "POLARIS.md"
+  },
+  ".taskchain_artifacts/polaris-run/runs/polaris-run-endpoint-artifact-protection-2026-05-27-001/telemetry.jsonl": {
+    "domain": "unknown",
+    "route": ".taskchain_artifacts/polaris-run/runs/polaris-run-endpoint-artifact-protection-2026-05-27-001/telemetry.jsonl",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-27T03:54:38.138Z",
+    "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": "POLARIS.md"
   }
