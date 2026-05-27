@@ -977,8 +977,8 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-05-26T15:04:43.304Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-05-27T15:36:12.175Z",
+    "updated_by": "polaris-map-update",
     "tags": [
       "loop",
       "entry-point"
@@ -1854,5 +1854,32 @@
       "docs"
     ],
     "instructionFile": "POLARIS.md"
+  },
+  "src/loop/dispatch.test.ts": {
+    "domain": "loop",
+    "route": "src/loop",
+    "taskchain": "polaris-loop",
+    "confidence": 0.9,
+    "classification": "indexed",
+    "last_updated": "2026-05-27T15:36:12.175Z",
+    "updated_by": "polaris-map-update",
+    "tags": [
+      "loop",
+      "test"
+    ],
+    "instructionFile": "src/loop/POLARIS.md"
+  },
+  "src/loop/dispatch.ts": {
+    "domain": "loop",
+    "route": "src/loop",
+    "taskchain": "polaris-loop",
+    "confidence": 0.9,
+    "classification": "indexed",
+    "last_updated": "2026-05-27T15:36:12.175Z",
+    "updated_by": "polaris-map-update",
+    "tags": [
+      "loop"
+    ],
+    "instructionFile": "src/loop/POLARIS.md"
   }
 }

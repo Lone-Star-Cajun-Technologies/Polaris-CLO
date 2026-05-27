@@ -1096,7 +1096,7 @@
     "taskchain": "polaris-core",
     "confidence": 0,
     "classification": "needs-review",
-    "last_updated": "2026-05-27T15:27:08.288Z",
+    "last_updated": "2026-05-27T15:36:12.175Z",
     "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": "POLARIS.md"
@@ -1907,7 +1907,7 @@
     "taskchain": "polaris-core",
     "confidence": 0,
     "classification": "needs-review",
-    "last_updated": "2026-05-27T15:27:08.288Z",
+    "last_updated": "2026-05-27T15:36:12.175Z",
     "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": "POLARIS.md"
@@ -1930,6 +1930,17 @@
     "confidence": 0,
     "classification": "needs-review",
     "last_updated": "2026-05-27T15:27:08.288Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": "POLARIS.md"
+  },
+  ".polaris/bootstrap/polaris-run-subagent-dispatch-2026-05-27-003-2026-05-27T15-28-10-762Z.json": {
+    "domain": "unknown",
+    "route": ".polaris/bootstrap/polaris-run-subagent-dispatch-2026-05-27-003-2026-05-27T15-28-10-762Z.json",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-27T15:36:12.175Z",
     "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": "POLARIS.md"
