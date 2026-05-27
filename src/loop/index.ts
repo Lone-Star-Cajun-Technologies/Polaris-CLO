@@ -7,6 +7,7 @@ import { runLoopStatus } from "./status.js";
 import { runLoopAbort } from "./abort.js";
 import { runLoopDispatch } from "./dispatch.js";
 import { runParentLoop } from "./parent.js";
+import { runLoopBootstrapInit, type BootstrapInitOptions } from "./run-bootstrap.js";
 import type { ExecutionAdapterMode } from "./execution-adapter.js";
 
 export interface LoopCommandHandlers {
@@ -16,6 +17,7 @@ export interface LoopCommandHandlers {
   runLoopAbort?: typeof runLoopAbort;
   runLoopDispatch?: typeof runLoopDispatch;
   runParentLoop?: typeof runParentLoop;
+  runLoopBootstrapInit?: typeof runLoopBootstrapInit;
   repoRoot?: string;
 }
 
@@ -59,6 +61,7 @@ export function createLoopCommand(handlers: LoopCommandHandlers = {}): Command {
   const abortHandler = handlers.runLoopAbort ?? runLoopAbort;
   const dispatchHandler = handlers.runLoopDispatch ?? runLoopDispatch;
   const parentHandler = handlers.runParentLoop ?? runParentLoop;
+  const bootstrapHandler = handlers.runLoopBootstrapInit ?? runLoopBootstrapInit;
   const repoRootDefault = handlers.repoRoot ?? process.cwd();
   const loop = new Command("loop")
     .description("Polaris loop commands: status is safe/read-only; continue is mutating")
@@ -215,6 +218,62 @@ export function createLoopCommand(handlers: LoopCommandHandlers = {}): Command {
           repoRoot: options.repoRoot,
           stateFile: defaultStateFile(options.repoRoot, options.stateFile),
         });
+      },
+    );
+
+  loop
+    .command("bootstrap")
+    .description(
+      "mutating: initialize a new run — the ONLY valid way to create run state. " +
+      "Parent sessions may not hand-create current-state.json; this command issues " +
+      "a bootstrap seal that dispatch and run commands verify before proceeding.",
+    )
+    .requiredOption("--cluster-id <id>", "Parent cluster issue ID (e.g. POL-100)")
+    .requiredOption(
+      "--children <csv>",
+      "Comma-separated ordered list of child issue IDs to execute (e.g. POL-101,POL-102)",
+    )
+    .option("-r, --repo-root <path>", "Repository root", repoRootDefault)
+    .option("--state-file <path>", "Override path to write current-state.json")
+    .option("--run-id <id>", "Override auto-generated run ID")
+    .option(
+      "--session-type <type>",
+      "Session type: analyze | implement (default: implement)",
+      "implement",
+    )
+    .option("--max-children <n>", "Max children per dispatch session (default: 1)", "1")
+    .option("--branch <name>", "Git branch for this run")
+    .option("--artifact-dir <path>", "Override artifact directory")
+    .action(
+      (options: {
+        clusterId: string;
+        children: string;
+        repoRoot: string;
+        stateFile?: string;
+        runId?: string;
+        sessionType: string;
+        maxChildren: string;
+        branch?: string;
+        artifactDir?: string;
+      }) => {
+        const openChildren = options.children
+          .split(",")
+          .map((c) => c.trim())
+          .filter(Boolean);
+
+        const bootstrapOptions: BootstrapInitOptions = {
+          clusterId: options.clusterId,
+          runId: options.runId,
+          openChildren,
+          stateFile: defaultStateFile(options.repoRoot, options.stateFile),
+          repoRoot: options.repoRoot,
+          branch: options.branch,
+          sessionType: options.sessionType === "analyze" ? "analyze" : "implement",
+          maxChildrenPerSession: parseInt(options.maxChildren, 10) || 1,
+          artifactDir: options.artifactDir,
+        };
+
+        bootstrapHandler(bootstrapOptions);
       },
     );
 

@@ -8,6 +8,7 @@ import {
   advanceDispatchEpoch,
   assertNoActiveChildBeforeDispatch,
 } from "./dispatch-boundary.js";
+import { assertBootstrapSeal } from "./run-bootstrap.js";
 
 export interface DispatchOptions {
   stateFile: string;
@@ -121,6 +122,15 @@ export function runLoopDispatch(options: DispatchOptions): void {
   const childId = selectChild(state, options.childId);
 
   const telemetryFile = resolveTelemetryFile(state, options.repoRoot);
+
+  // ── Bootstrap seal enforcement ─────────────────────────────────────────────
+  // The run MUST have been initialized through `polaris loop bootstrap`.
+  // Hand-crafted state (no seal) is refused before any child is dispatched.
+  try {
+    assertBootstrapSeal(state, telemetryFile);
+  } catch (err) {
+    fail(err instanceof Error ? err.message : String(err));
+  }
 
   // ── Dispatch boundary enforcement ─────────────────────────────────────────
   // Halt immediately if active_child is already set (orphaned dispatch).

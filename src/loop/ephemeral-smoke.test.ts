@@ -3,6 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { runParentLoop } from "./parent.js";
+import { createBootstrapSeal } from "./run-bootstrap.js";
 import type { BootstrapPacket, DispatchOptions, DispatchResult, ExecutionAdapter } from "./adapters/types.js";
 
 interface AdapterCall {
@@ -32,10 +33,13 @@ import { createAdapter } from "./adapters/registry.js";
 
 function writeState(dir: string, overrides: Record<string, unknown>): string {
   const stateFile = join(dir, "current-state.json");
+  const runId = "ephemeral-smoke-run";
+  const clusterId = (overrides["cluster_id"] as string | undefined) ?? "POL-105";
+  const openChildren = (overrides["open_children"] as string[] | undefined) ?? [];
   const state = {
     schema_version: "1.0",
-    run_id: "ephemeral-smoke-run",
-    cluster_id: "POL-105",
+    run_id: runId,
+    cluster_id: clusterId,
     skill: "polaris-run",
     artifact_dir: dir,
     branch: "feature/pol-105",
@@ -54,6 +58,8 @@ function writeState(dir: string, overrides: Record<string, unknown>): string {
       files_touched_total: 0,
       max_children_per_session: 5,
     },
+    dispatch_boundary: { dispatch_epoch: 0, continue_epoch: 0, last_dispatched_child: null },
+    run_bootstrap_seal: createBootstrapSeal(runId, clusterId, openChildren),
     updated_at: "2026-05-26T00:00:00.000Z",
     ...overrides,
   };

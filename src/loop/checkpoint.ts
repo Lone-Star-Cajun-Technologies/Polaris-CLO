@@ -8,6 +8,7 @@ import {
 import { createHash } from "node:crypto";
 import { dirname } from "node:path";
 import { getMonotonicTimestamp } from "../utils/monotonic-timestamp.js";
+import type { RunBootstrapSeal } from "./run-bootstrap.js";
 
 export interface BlockerRecord {
   reason: string;
@@ -66,6 +67,15 @@ export interface LoopState {
    * they fall back to step_cursor-based heuristics.
    */
   dispatch_boundary?: DispatchBoundaryRecord;
+  /**
+   * Bootstrap seal — proof that this run state was created by the runtime
+   * via `polaris loop bootstrap`, not hand-crafted by a parent session.
+   *
+   * Required before any `polaris loop dispatch` or `polaris loop run` call.
+   * Absent from states created before this feature; those states are refused
+   * by dispatch with a hard error directing the operator to re-bootstrap.
+   */
+  run_bootstrap_seal?: RunBootstrapSeal;
 }
 
 export interface CheckpointEvent {
@@ -126,6 +136,30 @@ export function validateState(state: unknown): string[] {
             errors.push(`open_children_meta["${childId}"].labels must be an array of strings`);
           }
         }
+      }
+    }
+  }
+
+  // Validate run_bootstrap_seal if present
+  if ("run_bootstrap_seal" in s && s["run_bootstrap_seal"] !== undefined) {
+    if (typeof s["run_bootstrap_seal"] !== "object" || s["run_bootstrap_seal"] === null || Array.isArray(s["run_bootstrap_seal"])) {
+      errors.push("run_bootstrap_seal must be an object");
+    } else {
+      const seal = s["run_bootstrap_seal"] as Record<string, unknown>;
+      if (seal["sealer"] !== "polaris-loop-bootstrap") {
+        errors.push(`run_bootstrap_seal.sealer must be "polaris-loop-bootstrap"`);
+      }
+      if (typeof seal["run_id"] !== "string" || !seal["run_id"]) {
+        errors.push("run_bootstrap_seal.run_id must be a non-empty string");
+      }
+      if (typeof seal["cluster_id"] !== "string" || !seal["cluster_id"]) {
+        errors.push("run_bootstrap_seal.cluster_id must be a non-empty string");
+      }
+      if (typeof seal["open_children_sha"] !== "string") {
+        errors.push("run_bootstrap_seal.open_children_sha must be a string");
+      }
+      if (typeof seal["sealed_at"] !== "string") {
+        errors.push("run_bootstrap_seal.sealed_at must be a string");
       }
     }
   }

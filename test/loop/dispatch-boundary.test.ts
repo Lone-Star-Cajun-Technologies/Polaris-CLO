@@ -37,6 +37,7 @@ import {
   DISPATCH_REQUIRED_ERROR,
   type DispatchMachineState,
 } from "../../src/loop/dispatch-boundary.js";
+import { createBootstrapSeal } from "../../src/loop/run-bootstrap.js";
 import type { ExecutionAdapter, BootstrapPacket, DispatchOptions, DispatchResult } from "../../src/loop/adapters/types.js";
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -60,10 +61,12 @@ function writeStateFile(dir: string, state: Partial<LoopState> & { run_id: strin
 }
 
 function makeFreshState(overrides: Partial<LoopState> = {}): LoopState {
+  const runId = "polaris-run-test-boundary-001";
+  const clusterId = "POL-100";
   return {
     schema_version: "1.0",
-    run_id: "polaris-run-test-boundary-001",
-    cluster_id: "POL-100",
+    run_id: runId,
+    cluster_id: clusterId,
     active_child: "",
     completed_children: [],
     open_children: ["POL-101", "POL-102"],
@@ -72,6 +75,7 @@ function makeFreshState(overrides: Partial<LoopState> = {}): LoopState {
     status: "running",
     next_open_child: "POL-101",
     dispatch_boundary: initialDispatchBoundary(),
+    run_bootstrap_seal: createBootstrapSeal(runId, clusterId, ["POL-101", "POL-102"]),
     ...overrides,
   };
 }

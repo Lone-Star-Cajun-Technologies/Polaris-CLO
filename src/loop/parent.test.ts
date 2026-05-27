@@ -15,6 +15,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { runParentLoop } from "./parent.js";
 import { createLoopCommand } from "./index.js";
+import { createBootstrapSeal } from "./run-bootstrap.js";
 import type { BootstrapPacket, DispatchOptions, DispatchResult, ExecutionAdapter } from "./adapters/types.js";
 import type { Command } from "commander";
 
@@ -90,6 +91,7 @@ function makeStateFile(
   }> = {},
 ): string {
   const stateFile = join(dir, "current-state.json");
+  const openChildren = overrides.open_children ?? ["POL-100", "POL-101", "POL-102"];
   const state = {
     schema_version: "1.0",
     run_id: "test-run-001",
@@ -103,15 +105,17 @@ function makeStateFile(
     session_type: "implementation",
     active_child: "",
     last_commit: "",
-    next_open_child: (overrides.open_children ?? ["POL-100", "POL-101", "POL-102"])[0] ?? null,
+    next_open_child: openChildren[0] ?? null,
     completed_children: overrides.completed_children ?? [],
-    open_children: overrides.open_children ?? ["POL-100", "POL-101", "POL-102"],
+    open_children: openChildren,
     open_children_meta: {},
     context_budget: {
       children_completed: overrides.children_completed ?? 0,
       files_touched_total: 0,
       max_children_per_session: overrides.max_children_per_session ?? 3,
     },
+    dispatch_boundary: { dispatch_epoch: 0, continue_epoch: 0, last_dispatched_child: null },
+    run_bootstrap_seal: createBootstrapSeal("test-run-001", "POL-99", openChildren),
     updated_at: new Date().toISOString(),
   };
   writeFileSync(stateFile, JSON.stringify(state, null, 2), "utf-8");
@@ -147,6 +151,8 @@ function makeStateFileWithMeta(
       files_touched_total: 0,
       max_children_per_session: maxChildren,
     },
+    dispatch_boundary: { dispatch_epoch: 0, continue_epoch: 0, last_dispatched_child: null },
+    run_bootstrap_seal: createBootstrapSeal("test-run-001", "POL-99", openChildren),
     updated_at: new Date().toISOString(),
   };
   writeFileSync(stateFile, JSON.stringify(state, null, 2), "utf-8");

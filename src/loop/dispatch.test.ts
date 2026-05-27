@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { runLoopDispatch } from "./dispatch.js";
 import { readState } from "./checkpoint.js";
+import { createBootstrapSeal } from "./run-bootstrap.js";
 
 function makeTestDir(): string {
   const dir = join(tmpdir(), `polaris-dispatch-test-${Date.now()}-${Math.random().toString(16).slice(2)}`);
@@ -31,6 +32,8 @@ function baseState(overrides: Partial<Record<string, unknown>> = {}) {
     context_budget: { children_completed: 1, max_children_per_session: 3 },
     status: "running",
     next_open_child: "POL-145",
+    dispatch_boundary: { dispatch_epoch: 1, continue_epoch: 1, last_dispatched_child: "POL-144" },
+    run_bootstrap_seal: createBootstrapSeal("pol-142-session-1", "POL-142", ["POL-145", "POL-146"]),
     ...overrides,
   };
 }

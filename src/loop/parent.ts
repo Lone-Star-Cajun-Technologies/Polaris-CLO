@@ -36,6 +36,7 @@ import {
   advanceDispatchEpoch,
   advanceContinueEpoch,
 } from "./dispatch-boundary.js";
+import { assertBootstrapSeal } from "./run-bootstrap.js";
 
 export interface ParentLoopOptions {
   /** Absolute path to current-state.json. */
@@ -272,6 +273,29 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
       haltReason: 'analyze-parent',
       childrenDispatched: 0,
       message: "polaris-run targets IMPLEMENT parents, not ANALYZE issues. Run polaris-analyze first to create an IMPLEMENT parent.",
+    };
+  }
+
+  // ── Bootstrap seal enforcement ─────────────────────────────────────────────
+  // The run MUST have been initialized through `polaris loop bootstrap`.
+  // Refuse to enter the dispatch loop if the state was hand-crafted.
+  const earlyTelemetry = resolveTelemetryFile(state, repoRoot);
+  try {
+    assertBootstrapSeal(state, earlyTelemetry);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (!dryRun) {
+      appendTelemetry(earlyTelemetry, {
+        event: "bootstrap-seal-missing",
+        run_id: state.run_id,
+        error: msg,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    return {
+      haltReason: 'state-invalid',
+      childrenDispatched: 0,
+      message: msg,
     };
   }
 
