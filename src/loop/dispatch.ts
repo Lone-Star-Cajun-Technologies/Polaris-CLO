@@ -4,6 +4,11 @@ import { dirname, join } from "node:path";
 import { readState, validateState, writeStateAtomic, type LoopState } from "./checkpoint.js";
 import { compileImplPacket, type WorkerPacket } from "./worker-packet.js";
 import { selectPromptMode } from "./worker-prompt.js";
+import {
+  advanceDispatchEpoch,
+  assertNoActiveChildBeforeDispatch,
+} from "./dispatch-boundary.js";
+import { assertBootstrapSeal } from "./run-bootstrap.js";
 
 export interface DispatchOptions {
   stateFile: string;
@@ -47,9 +52,8 @@ function getCurrentBranch(repoRoot: string): string {
 }
 
 function selectChild(state: LoopState, requestedChild?: string): string {
-  if (state.active_child) {
-    fail(`active_child already set: ${state.active_child}`);
-  }
+  // Note: active_child check now handled by assertNoActiveChildBeforeDispatch
+  // before this function is called
   if (state.status === "blocked") {
     fail("current-state.json status is blocked");
   }
@@ -114,16 +118,37 @@ export function runLoopDispatch(options: DispatchOptions): void {
     );
   }
 
+  const telemetryFile = resolveTelemetryFile(state, options.repoRoot);
+
+  // ── Bootstrap seal enforcement ─────────────────────────────────────────────
+  // The run MUST have been initialized through `polaris loop bootstrap`.
+  // Hand-crafted state (no seal) is refused before any child is dispatched.
+  try {
+    assertBootstrapSeal(state, telemetryFile);
+  } catch (err) {
+    fail(err instanceof Error ? err.message : String(err));
+  }
+
+  // ── Dispatch boundary enforcement ─────────────────────────────────────────
+  // Halt immediately if active_child is already set (orphaned dispatch).
+  // The parent/orchestrator MUST NOT re-dispatch or complete inline.
+  try {
+    assertNoActiveChildBeforeDispatch(state, telemetryFile);
+  } catch (err) {
+    fail(err instanceof Error ? err.message : String(err));
+  }
+
   const childId = selectChild(state, options.childId);
+
   const updatedState: LoopState = {
     ...state,
     active_child: childId,
     next_open_child: childId,
     step_cursor: "dispatch",
+    dispatch_boundary: advanceDispatchEpoch(state.dispatch_boundary, childId),
   };
   writeStateAtomic(options.stateFile, updatedState);
 
-  const telemetryFile = resolveTelemetryFile(updatedState, options.repoRoot);
   const packet = buildPacket(
     updatedState,
     childId,

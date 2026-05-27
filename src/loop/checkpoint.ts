@@ -8,12 +8,31 @@ import {
 import { createHash } from "node:crypto";
 import { dirname } from "node:path";
 import { getMonotonicTimestamp } from "../utils/monotonic-timestamp.js";
+import type { RunBootstrapSeal } from "./run-bootstrap.js";
 
 export interface BlockerRecord {
   reason: string;
   child_id: string;
   timestamp: string;
   resolved: boolean;
+}
+
+/**
+ * Dispatch boundary tracking record.
+ *
+ * Tracks the epoch counters used to enforce the hard dispatch boundary.
+ * The invariant is: dispatch_epoch > continue_epoch means a dispatch was
+ * called and has not yet been matched by a polaris loop continue call.
+ *
+ * These counters are monotonically increasing; they are never reset.
+ */
+export interface DispatchBoundaryRecord {
+  /** Incremented by every `polaris loop dispatch` (or parent-loop dispatch). */
+  dispatch_epoch: number;
+  /** Incremented by every `polaris loop continue` after successful dispatch. */
+  continue_epoch: number;
+  /** The child ID that was most recently dispatched. */
+  last_dispatched_child: string | null;
 }
 
 export interface LoopState {
@@ -39,6 +58,24 @@ export interface LoopState {
   next_open_child: string | null;
   artifact_dir?: string;
   blocker?: BlockerRecord;
+  /**
+   * Dispatch boundary tracking.
+   *
+   * When present, this record enforces the hard constraint that
+   * `polaris loop continue` may only be called after `polaris loop dispatch`.
+   * States written before this field was introduced (legacy) do not have it;
+   * they fall back to step_cursor-based heuristics.
+   */
+  dispatch_boundary?: DispatchBoundaryRecord;
+  /**
+   * Bootstrap seal — proof that this run state was created by the runtime
+   * via `polaris loop bootstrap`, not hand-crafted by a parent session.
+   *
+   * Required before any `polaris loop dispatch` or `polaris loop run` call.
+   * Absent from states created before this feature; those states are refused
+   * by dispatch with a hard error directing the operator to re-bootstrap.
+   */
+  run_bootstrap_seal?: RunBootstrapSeal;
 }
 
 export interface CheckpointEvent {
@@ -99,6 +136,53 @@ export function validateState(state: unknown): string[] {
             errors.push(`open_children_meta["${childId}"].labels must be an array of strings`);
           }
         }
+      }
+    }
+  }
+
+  // Validate run_bootstrap_seal if present
+  if ("run_bootstrap_seal" in s && s["run_bootstrap_seal"] !== undefined) {
+    if (typeof s["run_bootstrap_seal"] !== "object" || s["run_bootstrap_seal"] === null || Array.isArray(s["run_bootstrap_seal"])) {
+      errors.push("run_bootstrap_seal must be an object");
+    } else {
+      const seal = s["run_bootstrap_seal"] as Record<string, unknown>;
+      if (seal["sealer"] !== "polaris-loop-bootstrap") {
+        errors.push(`run_bootstrap_seal.sealer must be "polaris-loop-bootstrap"`);
+      }
+      if (typeof seal["run_id"] !== "string" || !seal["run_id"]) {
+        errors.push("run_bootstrap_seal.run_id must be a non-empty string");
+      }
+      if (typeof seal["cluster_id"] !== "string" || !seal["cluster_id"]) {
+        errors.push("run_bootstrap_seal.cluster_id must be a non-empty string");
+      }
+      if (typeof seal["open_children_sha"] !== "string") {
+        errors.push("run_bootstrap_seal.open_children_sha must be a string");
+      }
+      if (typeof seal["sealed_at"] !== "string") {
+        errors.push("run_bootstrap_seal.sealed_at must be a string");
+      }
+    }
+  }
+
+  // Validate dispatch_boundary if present
+  if ("dispatch_boundary" in s && s["dispatch_boundary"] !== undefined) {
+    if (typeof s["dispatch_boundary"] !== "object" || s["dispatch_boundary"] === null || Array.isArray(s["dispatch_boundary"])) {
+      errors.push("dispatch_boundary must be an object");
+    } else {
+      const db = s["dispatch_boundary"] as Record<string, unknown>;
+      if (typeof db["dispatch_epoch"] !== "number" || !Number.isInteger(db["dispatch_epoch"]) || (db["dispatch_epoch"] as number) < 0) {
+        errors.push("dispatch_boundary.dispatch_epoch must be a non-negative integer");
+      }
+      if (typeof db["continue_epoch"] !== "number" || !Number.isInteger(db["continue_epoch"]) || (db["continue_epoch"] as number) < 0) {
+        errors.push("dispatch_boundary.continue_epoch must be a non-negative integer");
+      }
+      if (db["dispatch_epoch"] !== undefined && db["continue_epoch"] !== undefined) {
+        if ((db["dispatch_epoch"] as number) < (db["continue_epoch"] as number)) {
+          errors.push("dispatch_boundary.dispatch_epoch must be >= continue_epoch");
+        }
+      }
+      if (db["last_dispatched_child"] !== null && typeof db["last_dispatched_child"] !== "string") {
+        errors.push("dispatch_boundary.last_dispatched_child must be a string or null");
       }
     }
   }

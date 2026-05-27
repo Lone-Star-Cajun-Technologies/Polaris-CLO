@@ -12,6 +12,10 @@ import { buildBootstrapPacket, writeBootstrapPacket } from "./bootstrap-packet.j
 import { loadConfig } from "../config/loader.js";
 import type { ExecutionAdapterMode } from "./execution-adapter.js";
 import { runCanonCheck } from "../smartdocs-engine/canon-check.js";
+import {
+  assertContinueRequiresDispatch,
+  advanceContinueEpoch,
+} from "./dispatch-boundary.js";
 
 export interface ContinueOptions {
   stateFile: string;
@@ -62,7 +66,34 @@ export function runLoopContinue(options: ContinueOptions): void {
   }
 
   const state = rawState as ReturnType<typeof readState>;
-  const completedChild = state.active_child;
+
+  // ── Dispatch boundary enforcement ─────────────────────────────────────────
+  // continue MUST be preceded by a `polaris loop dispatch` call.
+  // If no dispatch was recorded (dispatch_epoch === continue_epoch),
+  // reject immediately and do NOT mutate any state.
+  const artifactDirForTelemetry =
+    state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "bootstrap-run");
+  const telemetryFileForCheck = join(artifactDirForTelemetry, "runs", state.run_id, "telemetry.jsonl");
+
+  try {
+    assertContinueRequiresDispatch(state, telemetryFileForCheck);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`Error: ${msg}`);
+    process.exit(1);
+  }
+
+  // Identify the completed child:
+  // - If active_child is set, use it (standard case)
+  // - If dispatch_epoch > continue_epoch but active_child is empty,
+  //   resolve from dispatch_boundary.last_dispatched_child
+  let completedChild = state.active_child;
+  if (!completedChild && state.dispatch_boundary) {
+    const { dispatch_epoch, continue_epoch, last_dispatched_child } = state.dispatch_boundary;
+    if (dispatch_epoch > continue_epoch && last_dispatched_child) {
+      completedChild = last_dispatched_child;
+    }
+  }
   const remainingOpenChildren = completedChild
     ? state.open_children.filter((child) => child !== completedChild)
     : state.open_children;
@@ -91,6 +122,8 @@ export function runLoopContinue(options: ContinueOptions): void {
       ...state.context_budget,
       children_completed: newCompletedChildren.length,
     },
+    // Advance continue_epoch to match the consumed dispatch_epoch
+    dispatch_boundary: advanceContinueEpoch(state.dispatch_boundary),
   };
 
   // Step 1 (cont): Atomic write of updated current-state.json
