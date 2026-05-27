@@ -1,13 +1,13 @@
 ---
 name: polaris-run-step-05-validate-child
-description: Run narrow validation scoped only to files changed in step 04; no broad builds or test suites.
+description: Validate the worker-returned child evidence and validation summary without re-implementing child work in the parent.
 ---
 
 # Step 05 — Validate child
 
 ## Purpose
 
-Confirm the current child's changes are correct without generating broad validation noise.
+Confirm the worker's returned child evidence is correct without re-implementing child work in the parent.
 
 ## Scope declarations
 
@@ -30,11 +30,12 @@ stop_rules:
 
 ## Actions
 
-1. Run narrow validation scoped only to the files changed in step 04.
-2. Do not run broad test suites — those belong in step 08.
-3. If validation fails: investigate within the child's scope, fix, and re-validate narrowly.
-4. If the failure is outside the child's scope: note it as a follow-up and proceed.
-5. Record the validation result:
+1. Validate the worker return packet for the active child (child ID, status, commit hash when applicable, and validation summary).
+2. Do not implement fixes inline in the parent session. If changes are needed, dispatch a worker for the child scope.
+3. Do not run broad test suites — those belong in step 08.
+4. If validation fails and is within child scope: return to dispatch flow for worker remediation.
+5. If the failure is outside child scope: note it as a follow-up and proceed.
+6. Record the validation result:
    - **Status**: `passed` | `failed` | `skipped`
    - **Commands run**: names only (e.g., `npm run lint`, `npm test -- <file>`)
    - **Count**: N passed / M failed
@@ -49,7 +50,7 @@ Update `.taskchain_artifacts/polaris-run/current-state.json`:
 - `status: validating`
 - `updated_at: <timestamp>`
 
-Emit `step-complete` for `05-validate-child` to telemetry JSONL.
+Telemetry remains checkpoint-only. Do not emit per-step `step-complete` events.
 
 ## Next step
 

@@ -1,13 +1,13 @@
 ---
 name: polaris-run-step-07-decide-continuation
-description: Run polaris loop continue to checkpoint state and generate the bootstrap packet, then route to adapter handoff, STOP, or DELIVER.
+description: Dispatch the next child through polaris loop dispatch when eligible, then run polaris loop continue only after the worker returns.
 ---
 
 # Step 07 — Decide continuation
 
 ## Purpose
 
-Checkpoint session state via the Polaris runtime. After a child completes, preserve the token boundary by dispatching any next child through the configured execution adapter instead of continuing implementation inline.
+Preserve the parent/worker boundary via the Polaris runtime. The parent dispatches child work with `polaris loop dispatch`, waits for the worker's compact return, and only then checkpoints with `polaris loop continue`.
 
 ## Scope declarations
 
@@ -20,10 +20,14 @@ allowed_routes:
   - CLAUDE.md
   - .codex/skills/polaris-run/chain.md
 expected_evidence:
+  - polaris loop dispatch executed when a next child exists
+  - worker compact return received before checkpoint
   - polaris loop continue executed
   - bootstrap packet emitted
-  - adapter handoff, STOP, or DELIVER decision recorded
+  - dispatch, STOP, or DELIVER decision recorded
 stop_rules:
+  - polaris loop dispatch exits non-zero
+  - worker compact return is missing or invalid
   - polaris loop continue exits non-zero (excluding expected boundary event)
   - child just completed (always)
   - all children Done but delivery not yet requested
@@ -31,24 +35,33 @@ stop_rules:
 
 ## Actions
 
-1. Run:
+1. If another child is eligible, dispatch that child:
+   ```bash
+   npm run polaris -- loop dispatch
+   ```
+   This invokes the configured execution adapter with exactly one child worker prompt. The parent/orchestrator must not implement the child inline.
+
+2. Wait for the worker compact return. Require child ID, status, commit hash when applicable, validation summary, and next action. Do not ingest worker transcript content.
+
+3. Then run:
    ```bash
    npm run polaris -- loop continue
    ```
-   This checkpoints `.polaris/runs/current-state.json`, emits a `loop-checkpoint` JSONL event, runs `npm run polaris -- map update --changed` (idempotent), checks the analyze→implement boundary, and writes a bootstrap packet to `.polaris/bootstrap/`.
+   This post-child checkpoint updates `.polaris/runs/current-state.json`, emits a `loop-checkpoint` JSONL event, checks the analyze→implement boundary, and writes a bootstrap packet to `.polaris/bootstrap/`.
 
-2. Evaluate the output to determine the decision:
+4. Evaluate the output to determine the decision:
 
-### ADAPTER HANDOFF (child-complete) — default after every child
+### DISPATCH (next-child) — default when another child remains
 
-After any child completes and another child remains open:
+When another child remains open:
 - Report only compact state: last completed child ID, commit hash, next open child ID and title.
-- Dispatch the next child via the configured execution adapter.
+- Dispatch the next child with `npm run polaris -- loop dispatch` or the execution adapter directly.
 - In interactive-agent mode, use the agent/subtask adapter; do not shell out to a nested CLI session.
 - In terminal mode, `scripts/polaris-run.sh` is the `terminal-cli` adapter and may invoke the configured CLI command.
+- Wait for the worker compact return before calling `npm run polaris -- loop continue`.
 - Do not push. Do not create a PR.
 
-This is the normal case. The adapter boundary is the token boundary.
+This is the normal case. The dispatch boundary is the token boundary.
 
 ### STOP (boundary_enforcement)
 

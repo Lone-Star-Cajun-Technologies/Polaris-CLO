@@ -2,11 +2,13 @@
 
 ## Purpose
 
-The loop subsystem manages the session lifecycle for Polaris cluster runs. It handles checkpointing state between child executions, generating bootstrap packets for session resume, enforcing session boundaries (one child per session), and providing `continue`, `resume`, `status`, and `abort` commands.
+The loop subsystem manages the session lifecycle for Polaris cluster runs. It handles checkpointing state between child executions, generating bootstrap packets for session resume, enforcing session boundaries (one child per session), and providing `run`, `dispatch`, `continue`, `resume`, `status`, and `abort` commands.
 
 ## What belongs here
 
 - `index.ts` — `polaris loop` command registration
+- `parent.ts` — `polaris loop run`: automated parent-loop orchestration for an IMPLEMENT cluster
+- `dispatch.ts` — `polaris loop dispatch`: claim one open child and emit a compiled WorkerPacket
 - `continue.ts` — `polaris loop continue`: checkpoint state, emit JSONL event, generate bootstrap packet, enforce one-child-per-session boundary
 - `resume.ts` — `polaris loop resume`: verify branch and state integrity before a new session begins
 - `status.ts` — `polaris loop status`: print current run state summary
@@ -24,8 +26,8 @@ The loop subsystem manages the session lifecycle for Polaris cluster runs. It ha
 ## Editing rules
 
 - `polaris loop continue` always halts after one child completes (STOP rule). Do not add CONTINUE paths that execute multiple children in a single session.
-- `polaris loop continue` is mutating: it writes `current-state.json`, appends telemetry, may update the atlas map, runs canon checks, and writes a bootstrap packet. Do not use it as a smoke test.
-- `polaris loop status` is the safe/read-only loop command for operator checks and smoke tests.
+- `polaris loop continue` is mutating: it writes `current-state.json`, appends telemetry, runs canon checks, and writes a bootstrap packet after worker return.
+- Use `polaris loop status` for safe/read-only operator checks and smoke tests.
 - State writes must use `checkpoint.ts` helpers — never write `current-state.json` directly with `fs`.
 - The JSONL telemetry file is append-only. Never truncate or overwrite it.
 - Bootstrap packets include enough context for a cold-start agent to resume without replaying JSONL history.

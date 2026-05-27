@@ -413,7 +413,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
 
     if (!dryRun) {
       appendTelemetry(telemetryFile, {
-        event: "child-dispatch",
+        event: "child-dispatched",
         run_id: state.run_id,
         child_id: nextChild,
         worker_id: workerId,
@@ -436,7 +436,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
       const msg = err instanceof Error ? err.message : String(err);
       if (!dryRun) {
         appendTelemetry(telemetryFile, {
-          event: "child-dispatch-error",
+          event: "child-dispatched-error",
           run_id: state.run_id,
           child_id: nextChild,
           worker_id: workerId,

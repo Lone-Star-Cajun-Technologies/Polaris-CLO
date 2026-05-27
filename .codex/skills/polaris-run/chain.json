@@ -13,8 +13,7 @@
   "loop_re_entry": "03-select-child",
   "terminal_steps": ["08-final-delivery"],
   "polaris_calls": {
-    "06-commit-and-update-linear": ["polaris map update --changed"],
-    "07-decide-continuation": ["polaris loop continue"],
+    "07-decide-continuation": ["polaris loop dispatch", "polaris loop continue"],
     "08-final-delivery": ["polaris finalize"]
   }
 }

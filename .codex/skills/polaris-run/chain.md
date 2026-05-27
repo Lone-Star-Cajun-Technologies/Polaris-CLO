@@ -27,10 +27,10 @@ Never assume a globally linked `polaris` command exists.
 01-orient-cluster
 02-prepare-branch
 03-select-child
-04-execute-child
-05-validate-child
-06-commit-and-update-linear
-07-decide-continuation   → CHECKPOINT + adapter handoff | STOP (blocked/all-done) | DELIVER: go to 08
+04-execute-child              ← worker/adapter-owned execution phase
+05-validate-child             ← worker-owned validation phase
+06-commit-and-update-linear   ← worker-return validation and completion recording
+07-decide-continuation   → DISPATCH boundary | CHECKPOINT after worker return | STOP (blocked/all-done) | DELIVER: go to 08
 08-final-delivery        ← reached when all children Done and delivery requested
 ```
 
@@ -38,7 +38,8 @@ Never assume a globally linked `polaris` command exists.
 
 After step 07 evaluates the session:
 
-- **ADAPTER HANDOFF (child-complete)**: after one child completes, checkpoint state and hand the next child to the configured execution adapter. The parent/orchestrator reads only the compact state/telemetry summary; worker transcripts do not flow back into parent context.
+- **DISPATCH boundary (next-child)**: when another child is eligible, run `npm run polaris -- loop dispatch` or invoke the execution adapter directly. The parent/orchestrator must not implement child work inline. State updates occur only at CHECKPOINT boundaries, not between steps.
+- **CHECKPOINT (worker-returned)**: after the dispatched worker returns compact state, run `npm run polaris -- loop continue` to checkpoint state, emit telemetry, and generate or refresh the bootstrap packet. Worker transcripts must not merge back into parent context. This is the only boundary where state updates occur.
 - **STOP (blocked)**: halt immediately on blocker. Report unblock condition.
 - **STOP (all-done, awaiting delivery)**: all children Done but delivery not yet requested. Report branch and last commit. Provide delivery command: `Use polaris-run on <PARENT-ID>. Finalize delivery.`
 - **DELIVER**: proceed to step 08 only when all children are Done and the user explicitly requests delivery in this session invocation.
@@ -51,11 +52,13 @@ polaris-run augments the evo-run pattern with three Polaris-specific calls:
 
 | Step | Polaris call | Purpose |
 |---|---|---|
-| 06 | `npm run polaris -- map update --changed` | Index files changed by the committed child |
-| 07 | `npm run polaris -- loop continue` | Checkpoint state, emit JSONL event, generate bootstrap packet, enforce boundary |
+| 07 | `npm run polaris -- loop dispatch` | Dispatch exactly one selected child through the configured execution adapter; this starts child execution |
+| 07 | `npm run polaris -- loop continue` | Post-child checkpoint: emit checkpoint telemetry, update state at checkpoint boundary, generate bootstrap packet, enforce boundary. This is the only time state updates occur between DISPATCH boundaries. |
 | 08 | `npm run polaris -- finalize` | Push branch, open PR, append JSONL closeout events, archive run snapshot |
 
-`npm run polaris -- loop continue` replaces manual STOP/CONTINUE evaluation — it reads `.polaris/session-type` and `current-state.json`, runs the boundary check, and emits the bootstrap packet. The skill reads the packet's compact output to determine whether to halt, deliver, or dispatch the next child through the configured execution adapter.
+`npm run polaris -- loop dispatch` is the dispatch command. It selects the configured execution adapter and sends one child worker prompt across the parent/worker boundary.
+
+`npm run polaris -- loop continue` is post-child only. It reads `.polaris/session-type` and `current-state.json` after the worker has returned, runs the boundary check, checkpoints state, and emits the bootstrap packet. State updates occur only at this explicit checkpoint boundary. The skill reads the packet's compact output to determine whether to halt, deliver, or begin another explicit dispatch phase.
 
 ## Context budget
 
@@ -85,9 +88,10 @@ Telemetry file: `.taskchain_artifacts/polaris-run/runs/<run-id>/telemetry.jsonl`
 | Event | Emitted by | Step |
 |---|---|---|
 | `run-start` | agent | 01 — before any Linear access |
-| `step-complete` | agent | end of every step |
+| `child-dispatched` | `npm run polaris -- loop dispatch` | 07 — when one child is accepted by the execution adapter |
+| `child-complete` | parent runtime | 07 — after worker return validation and completion recording |
 | `loop-checkpoint` | `npm run polaris -- loop continue` | 07 — after each child |
-| `analyze-impl-boundary-enforced` | `npm run polaris -- loop continue` | 07 — if boundary fires |
+| `analyze-impl-boundary-enforced` | `npm run polaris -- loop continue` | 07 — blocker/state-repair boundary event only |
 | `loop-aborted` | `npm run polaris -- loop abort` | any blocker halt |
 | `pr-opened` | `npm run polaris -- finalize` | 08 |
 | `run-complete` | `npm run polaris -- finalize` | 08 |
@@ -98,14 +102,14 @@ Required fields on every event: `event`, `run_id`, `timestamp`.
 
 `.taskchain_artifacts/polaris-run/current-state.json` is the sole authoritative live state surface.
 
-- Update after every completed step — before advancing.
-- A step is NOT complete until the state update succeeds.
-- If the update fails: stop and report the persistence failure.
+- Update only at explicit checkpoint boundaries via `npm run polaris -- loop continue` after worker returns, or when DISPATCH boundaries mandate bootstrapping.
+- Parent agents must not update state inline between steps.
+- If the checkpoint fails: stop and report the persistence failure.
 
 ## Machine snapshot
 
 - **Path**: `.taskchain_artifacts/polaris-run/current-state.json`
-- **Update requirement**: after every step
+- **Update requirement**: only at checkpoint boundaries (via `npm run polaris -- loop continue`)
 - **Purpose**: fast agent resume without replaying JSONL or markdown history
 
 ## Completion rule
@@ -121,7 +125,7 @@ Do not report workflow completion until `.taskchain_artifacts/polaris-run/curren
 
 ## Execution reporting
 
-After each completed step, emit a checkpoint:
+At checkpoint boundaries (worker returns), emit a checkpoint report:
 
 ```text
 **[step-name]** done | blocked | needs-input

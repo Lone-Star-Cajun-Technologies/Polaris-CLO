@@ -5,6 +5,8 @@ import { runLoopContinue } from "./continue.js";
 import { runLoopResume } from "./resume.js";
 import { runLoopStatus } from "./status.js";
 import { runLoopAbort } from "./abort.js";
+import { runLoopDispatch } from "./dispatch.js";
+import { runParentLoop } from "./parent.js";
 import type { ExecutionAdapterMode } from "./execution-adapter.js";
 
 export interface LoopCommandHandlers {
@@ -12,6 +14,8 @@ export interface LoopCommandHandlers {
   runLoopResume?: typeof runLoopResume;
   runLoopStatus?: typeof runLoopStatus;
   runLoopAbort?: typeof runLoopAbort;
+  runLoopDispatch?: typeof runLoopDispatch;
+  runParentLoop?: typeof runParentLoop;
   repoRoot?: string;
 }
 
@@ -53,12 +57,73 @@ export function createLoopCommand(handlers: LoopCommandHandlers = {}): Command {
   const resumeHandler = handlers.runLoopResume ?? runLoopResume;
   const statusHandler = handlers.runLoopStatus ?? runLoopStatus;
   const abortHandler = handlers.runLoopAbort ?? runLoopAbort;
+  const dispatchHandler = handlers.runLoopDispatch ?? runLoopDispatch;
+  const parentHandler = handlers.runParentLoop ?? runParentLoop;
   const repoRootDefault = handlers.repoRoot ?? process.cwd();
   const loop = new Command("loop")
     .description("Polaris loop commands: status is safe/read-only; continue is mutating")
     .showHelpAfterError()
     .showSuggestionAfterError();
   loop.action(() => failMissingSubcommand(loop, "polaris loop"));
+
+  loop
+    .command("run")
+    .description("mutating: run the automated parent loop for a cluster")
+    .argument("<cluster-id>", "Parent cluster ID")
+    .option("-r, --repo-root <path>", "Repository root", repoRootDefault)
+    .option("--state-file <path>", "Path to current-state.json")
+    .option(
+      "--adapter <mode>",
+      "Execution adapter: agent-subtask, terminal-cli, ci, ssh, remote-worker, cross-agent",
+    )
+    .option(
+      "--provider <name>",
+      "AI provider for worker dispatch (e.g. claude, openai, gemini)",
+    )
+    .option("--dry-run", "Log dispatches without executing workers")
+    .option(
+      "--allow-analyze-children",
+      "Allow analyze-type children to be dispatched (overrides budget.allow_analyze_children)",
+    )
+    .action(
+      async (
+        clusterId: string,
+        options: {
+          repoRoot: string;
+          stateFile?: string;
+          adapter?: string;
+          provider?: string;
+          dryRun?: boolean;
+          allowAnalyzeChildren?: boolean;
+        },
+      ) => {
+        const repoRoot = options.repoRoot;
+        const stateFile = defaultStateFile(repoRoot, options.stateFile);
+        const result = await parentHandler({
+          stateFile,
+          repoRoot,
+          adapter: options.adapter,
+          provider: options.provider,
+          dryRun: options.dryRun,
+          allowAnalyzeChildren: options.allowAnalyzeChildren,
+        });
+        const summary = [
+          `Polaris parent loop halted: ${result.haltReason}`,
+          `Cluster: ${clusterId}`,
+          `Children dispatched: ${result.childrenDispatched}`,
+          result.haltingChild ? `Halting child: ${result.haltingChild}` : undefined,
+          result.message,
+        ].filter((line): line is string => Boolean(line)).join("\n");
+
+        if (result.haltReason === "cluster-complete") {
+          process.stdout.write(`${summary}\n`);
+          return;
+        }
+
+        process.stderr.write(`${summary}\n`);
+        process.exit(1);
+      },
+    );
 
   loop
     .command("continue")
@@ -86,6 +151,20 @@ export function createLoopCommand(handlers: LoopCommandHandlers = {}): Command {
       const repoRoot = options.repoRoot;
       const stateFile = defaultStateFile(repoRoot, options.stateFile);
       continueHandler({ stateFile, repoRoot, adapter: options.adapter, provider: options.provider, allowAnalyzeChildren: options.allowAnalyzeChildren });
+    });
+
+  loop
+    .command("dispatch")
+    .description("mutating: claim the next open child and emit a compiled WorkerPacket")
+    .option("-r, --repo-root <path>", "Repository root", repoRootDefault)
+    .option("--state-file <path>", "Override path to current-state.json")
+    .option("--child <id>", "Open child issue ID to dispatch instead of the first open child")
+    .action((options: { repoRoot: string; stateFile?: string; child?: string }) => {
+      dispatchHandler({
+        repoRoot: options.repoRoot,
+        stateFile: defaultStateFile(options.repoRoot, options.stateFile),
+        childId: options.child,
+      });
     });
 
   loop

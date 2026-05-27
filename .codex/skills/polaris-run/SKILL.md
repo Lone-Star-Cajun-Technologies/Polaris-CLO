@@ -1,6 +1,6 @@
 ---
 name: polaris-run
-description: Execute one governed Polaris Linear parent cluster per fresh session, with bounded child execution, Polaris loop checkpointing, and map indexing after each child.
+description: Execute one governed Polaris Linear parent cluster per fresh session, with explicit child dispatch boundaries and post-child checkpointing.
 ---
 
 # polaris-run
@@ -20,7 +20,7 @@ See `docs/Polaris/spec/polaris-implementation-plan.md` for the Polaris architect
 1. Read `chain.md` — it is the route map for this workflow.
 2. Read `.taskchain_artifacts/polaris-run/current-state.json` — it holds shared runtime state across sessions.
 3. Execute one step at a time in the order `chain.md` specifies.
-4. After each step completes, update `.taskchain_artifacts/polaris-run/current-state.json` before advancing.
+4. After each durable checkpoint, update `.taskchain_artifacts/polaris-run/current-state.json` before advancing.
 5. Do not skip steps.
 6. Do not report completion until `.taskchain_artifacts/polaris-run/current-state.json` has `status: complete`.
 
@@ -36,5 +36,7 @@ If the artifact update fails or cannot be verified, stop and report the artifact
 
 - Implementation work only — source code, tests, config changes.
 - One child per commit. Never batch multiple children into one commit.
+- Do not implement child work inline in the parent. Use `polaris loop dispatch` to dispatch a worker.
+- `polaris loop continue` is post-child only. Do not call it before the worker has returned.
 - Do not call `polaris loop continue` without a preceding commit.
 - `polaris finalize` replaces manual push and PR — do not push or open PRs directly.

@@ -166,7 +166,7 @@ describe("ephemeral execution smoke", () => {
     expect(telemetry).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          event: "child-dispatch",
+          event: "child-dispatched",
           child_id: "POL-112",
           adapter: "agent-subtask",
           orchestration_mode: "ephemeral",
