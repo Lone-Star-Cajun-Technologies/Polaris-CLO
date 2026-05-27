@@ -1,0 +1,4 @@
+{"event":"run-start","run_id":"polaris-run-smart-docs-summary-arch-2026-05-27-001","timestamp":"2026-05-27T00:00:00Z","cluster_id":"POL-136","branch":"claude/clever-meitner-u6x5x","children":["POL-137","POL-138","POL-139","POL-140"]}
+{"event":"loop-checkpoint","run_id":"polaris-run-smart-docs-summary-arch-2026-05-27-001","child_id":"POL-137","next_child":"POL-138","timestamp":"2026-05-27T16:34:40.521Z"}
+{"event":"canon-check-start","run_id":"polaris-run-smart-docs-summary-arch-2026-05-27-001","child_id":"POL-138","canon_files_inspected":0,"changed_files_count":0,"timestamp":"2026-05-27T16:34:40.522Z"}
+{"event":"canon-check-result","run_id":"polaris-run-smart-docs-summary-arch-2026-05-27-001","child_id":"POL-138","outcome":"aligned","conflicts":[],"timestamp":"2026-05-27T16:34:40.522Z"}
