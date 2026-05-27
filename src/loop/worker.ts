@@ -161,10 +161,17 @@ export async function executeOneChild(
   let commit: string | null = null;
   let validation: CompactReturn['validation'] = 'skipped';
 
+  // Create a new packet with absolute paths for child execution
+  const newPacket: BootstrapPacket = {
+    ...packet,
+    state_file: stateFile,
+    telemetry_file: telemetryFile,
+  };
+
   // ── Step 04: Execute child ──────────────────────────────────────────────
   try {
     if (options.executeChild) {
-      options.executeChild(childId, packet);
+      options.executeChild(childId, newPacket);
     }
     // If no executeChild hook is provided, the worker is acting as a thin
     // wrapper — real child work was done in the agent session itself before
