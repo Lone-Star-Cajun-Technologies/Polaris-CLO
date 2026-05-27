@@ -22,7 +22,7 @@
  */
 
 import { createHash } from "node:crypto";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { writeStateAtomic, type LoopState } from "./checkpoint.js";
 import {
@@ -252,6 +252,17 @@ export function runLoopBootstrapInit(options: BootstrapInitOptions): void {
   //  avoid circular deps; validateState is called by dispatch which is downstream)
 
   mkdirSync(dirname(stateFile), { recursive: true });
+
+  if (existsSync(stateFile)) {
+    process.stderr.write(
+      `Error: State file already exists at ${stateFile}\n` +
+      `Cannot overwrite existing run state. Either:\n` +
+      `  1. Use a different --state-file path, or\n` +
+      `  2. Remove the existing state file if you want to start fresh\n`
+    );
+    process.exit(1);
+  }
+
   const sha = writeStateAtomic(stateFile, initialState);
 
   const summary = {

@@ -132,7 +132,11 @@ export function runLoopDispatch(options: DispatchOptions): void {
   // ── Dispatch boundary enforcement ─────────────────────────────────────────
   // Halt immediately if active_child is already set (orphaned dispatch).
   // The parent/orchestrator MUST NOT re-dispatch or complete inline.
-  assertNoActiveChildBeforeDispatch(state, telemetryFile);
+  try {
+    assertNoActiveChildBeforeDispatch(state, telemetryFile);
+  } catch (err) {
+    fail(err instanceof Error ? err.message : String(err));
+  }
 
   const childId = selectChild(state, options.childId);
 

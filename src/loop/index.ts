@@ -261,6 +261,11 @@ export function createLoopCommand(handlers: LoopCommandHandlers = {}): Command {
           .map((c) => c.trim())
           .filter(Boolean);
 
+        const parsedMaxChildren = parseInt(options.maxChildren, 10);
+        const maxChildrenPerSession = Number.isInteger(parsedMaxChildren) && parsedMaxChildren > 0
+          ? parsedMaxChildren
+          : 1;
+
         const bootstrapOptions: BootstrapInitOptions = {
           clusterId: options.clusterId,
           runId: options.runId,
@@ -269,7 +274,7 @@ export function createLoopCommand(handlers: LoopCommandHandlers = {}): Command {
           repoRoot: options.repoRoot,
           branch: options.branch,
           sessionType: options.sessionType === "analyze" ? "analyze" : "implement",
-          maxChildrenPerSession: parseInt(options.maxChildren, 10) || 1,
+          maxChildrenPerSession,
           artifactDir: options.artifactDir,
         };
 
