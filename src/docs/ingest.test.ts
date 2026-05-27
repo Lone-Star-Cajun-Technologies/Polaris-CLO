@@ -115,12 +115,12 @@ describe("ingestDocs", () => {
     expect(() => ingestDocs(["docs/raw/architecture.md"], { repoRoot })).toThrow("requires explicit approval");
   });
 
-  it("halts when Polaris-Docs/docs/ canonical target is missing", () => {
+  it("halts when smartdocs/docs/ canonical target is missing", () => {
     const repoRoot = makeRepoWithoutCanonical();
     writeFileSync(join(repoRoot, "test.md"), "# Spec\n\nAcceptance Criteria", "utf-8");
 
     expect(() => ingestDocs(["test.md"], { repoRoot })).toThrow("canonical target");
-    expect(() => ingestDocs(["test.md"], { repoRoot })).toThrow("Polaris-Docs/docs");
+    expect(() => ingestDocs(["test.md"], { repoRoot })).toThrow("smartdocs/docs");
   });
 
   it("dry-run classifies and reports placement without moving files", () => {

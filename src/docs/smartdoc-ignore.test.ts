@@ -40,7 +40,7 @@ describe("parseSmartDocIgnore", () => {
       "docs/generated/report.md",
       "summaries/run.md",
       "docs/summaries/run.md",
-      "Polaris-Docs/docs/specs/active/example.md",
+      "smartdocs/docs/specs/active/example.md",
     ]) {
       expect(isIngestIneligible(path, repoRoot).ineligible, path).toBe(true);
     }

@@ -18,7 +18,7 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
 
   docs
     .command("init")
-    .description("Create the Smart Docs canonical scaffold under Polaris-Docs/docs/")
+    .description("Create the Smart Docs canonical scaffold under smartdocs/docs/")
     .option("--dry-run", "Print what would be created without writing directories")
     .option("-r, --repo-root <path>", "Repository root", defaultRepoRoot)
     .action((options: { dryRun?: boolean; repoRoot: string }) => {
@@ -41,7 +41,7 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
 
   docs
     .command("ingest [path]")
-    .description("Classify and place docs into the Polaris-Docs/docs/ canonical authority structure")
+    .description("Classify and place docs into the smartdocs/docs/ canonical authority structure")
     .option("--file <path>", "Single file to ingest")
     .option("--batch <cluster-id>", "Cluster ID for bounded batch ingest (reads .polaris/docs-ingest/<cluster-id>.json)")
     .option("--cluster <id>", "Alias for --batch")

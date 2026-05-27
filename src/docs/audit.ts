@@ -59,9 +59,9 @@ export function auditIngestRiskSurface(repoRoot: string): AuditResult {
     const absPath = resolve(absRoot, relPath);
     const eligibility = isIngestIneligible(relPath, absRoot);
 
-    // MEDIUM: file is in Polaris-Docs/ canonical output dirs
+    // MEDIUM: file is in smartdocs/ canonical output dirs
     // Check this BEFORE the ineligible branch so these findings are always emitted
-    if (relPath.startsWith("Polaris-Docs/")) {
+    if (relPath.startsWith("smartdocs/")) {
       const protection = eligibility.ineligible
         ? "isIngestIneligible"
         : null;
@@ -69,7 +69,7 @@ export function auditIngestRiskSurface(repoRoot: string): AuditResult {
         filePath: relPath,
         risk: "MEDIUM",
         reason:
-          "File in Polaris-Docs/ canonical output — migrateDocs() would attempt to move it back",
+          "File in smartdocs/ canonical output — migrateDocs() would attempt to move it back",
         pipelineStage: "migrate",
         currentProtection: protection,
         proposedEnforcementPoint: "endpoint artifact protection in migrateDocs()",

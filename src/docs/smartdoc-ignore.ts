@@ -10,7 +10,7 @@ export const DEFAULT_SMARTDOCIGNORE_PATTERNS = [
   ".github/**",
   ".windsurf/**",
   ".agents/**",
-  "Polaris-Docs/**",
+  "smartdocs/**",
   "generated/**",
   "**/generated/**",
   "summaries/**",

@@ -73,7 +73,7 @@ describe("polaris public CLI", () => {
     expect(result.stdout).toContain("--file");
     expect(result.stdout).toContain("--batch");
     expect(result.stdout).toContain("--dry-run");
-    expect(result.stdout).toContain("Polaris-Docs/docs");
+    expect(result.stdout).toContain("smartdocs/docs");
   });
 
   it.each(["draft", "promote", "deprecate"])(

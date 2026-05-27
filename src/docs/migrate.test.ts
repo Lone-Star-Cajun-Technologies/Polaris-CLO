@@ -55,8 +55,8 @@ describe("isAllowedException", () => {
     expect(isAllowedException("COPILOT.md").allowed).toBe(true);
   });
 
-  it("allows files in Polaris-Docs/, generated/, summaries/", () => {
-    expect(isAllowedException("Polaris-Docs/some-doc.md").allowed).toBe(true);
+  it("allows files in smartdocs/, generated/, summaries/", () => {
+    expect(isAllowedException("smartdocs/some-doc.md").allowed).toBe(true);
     expect(isAllowedException("generated/output.md").allowed).toBe(true);
     expect(isAllowedException("summaries/summary.md").allowed).toBe(true);
   });
@@ -192,8 +192,8 @@ describe("migrateDocs (live)", () => {
     expect(exceptionPaths).toContain("GEMINI.md");
   });
 
-  it("does not re-migrate files in Polaris-Docs/", () => {
-    addTrackedFile(repoRoot, "Polaris-Docs/smart-doc.md", "# Smart Doc");
+  it("does not re-migrate files in smartdocs/", () => {
+    addTrackedFile(repoRoot, "smartdocs/smart-doc.md", "# Smart Doc");
     addTrackedFile(repoRoot, "scratch/notes.md", "# Notes");
 
     const result = migrateDocs({ repoRoot, dryRun: true, migrationRunId: "test-endpoint-002" });
@@ -205,7 +205,7 @@ describe("migrateDocs (live)", () => {
     expect(migrated[0].originalPath).toBe("scratch/notes.md");
 
     const exceptionPaths = exceptions.map((r) => r.originalPath);
-    expect(exceptionPaths).toContain("Polaris-Docs/smart-doc.md");
+    expect(exceptionPaths).toContain("smartdocs/smart-doc.md");
   });
 
   it("respects .smartdocignore custom patterns in migrate", () => {

@@ -50,7 +50,7 @@ const ALLOWED_DIR_PREFIXES = [
   ".taskchain_artifacts/",
   "generated/",
   "summaries/",
-  "Polaris-Docs/",
+  "smartdocs/",
 ];
 
 export function isAllowedException(
