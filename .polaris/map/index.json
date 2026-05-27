@@ -1,10 +1,10 @@
 {
-  "scan_date": "2026-05-27T15:42:45.470Z",
-  "file_count": 318,
-  "coverage_pct": 44,
+  "scan_date": "2026-05-27T15:46:43.433Z",
+  "file_count": 257,
+  "coverage_pct": 48,
   "instructionCoverage": {
-    "routesCovered": 318,
-    "routesTotal": 318,
+    "routesCovered": 257,
+    "routesTotal": 257,
     "coveragePercent": 100
   },
   "entries": {
@@ -234,182 +234,6 @@
         "config"
       ],
       "instructionFile": "src/config/POLARIS.md"
-    },
-    "src/docs/canon-check.test.ts": {
-      "domain": "docs",
-      "route": "src/docs",
-      "taskchain": "polaris-docs",
-      "confidence": 0.9,
-      "classification": "indexed",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [
-        "docs",
-        "test"
-      ],
-      "instructionFile": "POLARIS.md"
-    },
-    "src/docs/canon-check.ts": {
-      "domain": "docs",
-      "route": "src/docs",
-      "taskchain": "polaris-docs",
-      "confidence": 0.9,
-      "classification": "indexed",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [
-        "docs"
-      ],
-      "instructionFile": "POLARIS.md"
-    },
-    "src/docs/doctrine.test.ts": {
-      "domain": "docs",
-      "route": "src/docs",
-      "taskchain": "polaris-docs",
-      "confidence": 0.9,
-      "classification": "indexed",
-      "last_updated": "2026-05-27T04:40:07.939Z",
-      "updated_by": "polaris-map-update",
-      "tags": [
-        "docs",
-        "test"
-      ],
-      "instructionFile": "POLARIS.md"
-    },
-    "src/docs/doctrine.ts": {
-      "domain": "docs",
-      "route": "src/docs",
-      "taskchain": "polaris-docs",
-      "confidence": 0.9,
-      "classification": "indexed",
-      "last_updated": "2026-05-27T04:40:07.939Z",
-      "updated_by": "polaris-map-update",
-      "tags": [
-        "docs"
-      ],
-      "instructionFile": "POLARIS.md"
-    },
-    "src/docs/index.ts": {
-      "domain": "docs",
-      "route": "src/docs",
-      "taskchain": "polaris-docs",
-      "confidence": 0.9,
-      "classification": "indexed",
-      "last_updated": "2026-05-27T04:53:56.541Z",
-      "updated_by": "polaris-map-update",
-      "tags": [
-        "docs",
-        "entry-point"
-      ],
-      "instructionFile": "POLARIS.md"
-    },
-    "src/docs/ingest.test.ts": {
-      "domain": "docs",
-      "route": "src/docs",
-      "taskchain": "polaris-docs",
-      "confidence": 0.9,
-      "classification": "indexed",
-      "last_updated": "2026-05-27T03:54:38.138Z",
-      "updated_by": "polaris-map-update",
-      "tags": [
-        "docs",
-        "test"
-      ],
-      "instructionFile": "POLARIS.md"
-    },
-    "src/docs/ingest.ts": {
-      "domain": "docs",
-      "route": "src/docs",
-      "taskchain": "polaris-docs",
-      "confidence": 0.9,
-      "classification": "indexed",
-      "last_updated": "2026-05-27T04:40:07.939Z",
-      "updated_by": "polaris-map-update",
-      "tags": [
-        "docs"
-      ],
-      "instructionFile": "POLARIS.md"
-    },
-    "src/docs/migrate.test.ts": {
-      "domain": "docs",
-      "route": "src/docs",
-      "taskchain": "polaris-docs",
-      "confidence": 0.9,
-      "classification": "indexed",
-      "last_updated": "2026-05-27T04:41:36.027Z",
-      "updated_by": "polaris-map-update",
-      "tags": [
-        "docs",
-        "test"
-      ],
-      "instructionFile": "POLARIS.md"
-    },
-    "src/docs/migrate.ts": {
-      "domain": "docs",
-      "route": "src/docs",
-      "taskchain": "polaris-docs",
-      "confidence": 0.9,
-      "classification": "indexed",
-      "last_updated": "2026-05-27T04:41:36.027Z",
-      "updated_by": "polaris-map-update",
-      "tags": [
-        "docs"
-      ],
-      "instructionFile": "POLARIS.md"
-    },
-    "src/docs/seed-instructions.test.ts": {
-      "domain": "docs",
-      "route": "src/docs",
-      "taskchain": "polaris-docs",
-      "confidence": 0.9,
-      "classification": "indexed",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [
-        "docs",
-        "test"
-      ],
-      "instructionFile": "POLARIS.md"
-    },
-    "src/docs/seed-instructions.ts": {
-      "domain": "docs",
-      "route": "src/docs",
-      "taskchain": "polaris-docs",
-      "confidence": 0.9,
-      "classification": "indexed",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [
-        "docs"
-      ],
-      "instructionFile": "POLARIS.md"
-    },
-    "src/docs/validate-instructions.test.ts": {
-      "domain": "docs",
-      "route": "src/docs",
-      "taskchain": "polaris-docs",
-      "confidence": 0.9,
-      "classification": "indexed",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [
-        "docs",
-        "test"
-      ],
-      "instructionFile": "POLARIS.md"
-    },
-    "src/docs/validate-instructions.ts": {
-      "domain": "docs",
-      "route": "src/docs",
-      "taskchain": "polaris-docs",
-      "confidence": 0.9,
-      "classification": "indexed",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [
-        "docs"
-      ],
-      "instructionFile": "POLARIS.md"
     },
     "src/finalize/.gitkeep": {
       "domain": "finalize",
@@ -986,7 +810,7 @@
       "taskchain": "polaris-loop",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-05-27T15:42:45.470Z",
+      "last_updated": "2026-05-27T15:46:43.433Z",
       "updated_by": "polaris-map-update",
       "tags": [
         "loop",
@@ -1000,7 +824,7 @@
       "taskchain": "polaris-loop",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-05-27T15:42:45.470Z",
+      "last_updated": "2026-05-27T15:46:43.433Z",
       "updated_by": "polaris-map-update",
       "tags": [
         "loop",
@@ -1715,20 +1539,6 @@
       ],
       "instructionFile": "POLARIS.md"
     },
-    "src/docs/index.test.ts": {
-      "domain": "docs",
-      "route": "src/docs",
-      "taskchain": "polaris-docs",
-      "confidence": 0.9,
-      "classification": "indexed",
-      "last_updated": "2026-05-26T23:29:22.095Z",
-      "updated_by": "polaris-map-update",
-      "tags": [
-        "docs",
-        "test"
-      ],
-      "instructionFile": "POLARIS.md"
-    },
     "src/cli/init.test.ts": {
       "domain": "cli",
       "route": "src/cli",
@@ -1809,60 +1619,6 @@
         "config"
       ],
       "instructionFile": "src/config/POLARIS.md"
-    },
-    "src/docs/smartdoc-ignore.test.ts": {
-      "domain": "docs",
-      "route": "src/docs",
-      "taskchain": "polaris-docs",
-      "confidence": 0.9500000000000001,
-      "classification": "indexed",
-      "last_updated": "2026-05-27T03:54:38.138Z",
-      "updated_by": "polaris-map-update",
-      "tags": [
-        "docs",
-        "test"
-      ],
-      "instructionFile": "POLARIS.md"
-    },
-    "src/docs/smartdoc-ignore.ts": {
-      "domain": "docs",
-      "route": "src/docs",
-      "taskchain": "polaris-docs",
-      "confidence": 0.9500000000000001,
-      "classification": "indexed",
-      "last_updated": "2026-05-27T03:54:38.138Z",
-      "updated_by": "polaris-map-update",
-      "tags": [
-        "docs"
-      ],
-      "instructionFile": "POLARIS.md"
-    },
-    "src/docs/audit.test.ts": {
-      "domain": "docs",
-      "route": "src/docs",
-      "taskchain": "polaris-docs",
-      "confidence": 0.9500000000000001,
-      "classification": "indexed",
-      "last_updated": "2026-05-27T04:53:56.541Z",
-      "updated_by": "polaris-map-update",
-      "tags": [
-        "docs",
-        "test"
-      ],
-      "instructionFile": "POLARIS.md"
-    },
-    "src/docs/audit.ts": {
-      "domain": "docs",
-      "route": "src/docs",
-      "taskchain": "polaris-docs",
-      "confidence": 0.9500000000000001,
-      "classification": "indexed",
-      "last_updated": "2026-05-27T04:53:56.541Z",
-      "updated_by": "polaris-map-update",
-      "tags": [
-        "docs"
-      ],
-      "instructionFile": "POLARIS.md"
     },
     "src/loop/dispatch.test.ts": {
       "domain": "loop",
@@ -2669,8 +2425,8 @@
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
+      "last_updated": "2026-05-27T15:46:43.433Z",
+      "updated_by": "polaris-map-update",
       "tags": [],
       "instructionFile": "POLARIS.md"
     },
@@ -2680,8 +2436,8 @@
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
+      "last_updated": "2026-05-27T15:46:43.433Z",
+      "updated_by": "polaris-map-update",
       "tags": [],
       "instructionFile": "POLARIS.md"
     },
@@ -2691,8 +2447,8 @@
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
+      "last_updated": "2026-05-27T15:46:43.433Z",
+      "updated_by": "polaris-map-update",
       "tags": [],
       "instructionFile": "POLARIS.md"
     },
@@ -2988,7 +2744,7 @@
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
-      "last_updated": "2026-05-27T15:42:45.470Z",
+      "last_updated": "2026-05-27T15:46:43.433Z",
       "updated_by": "polaris-map-update",
       "tags": [],
       "instructionFile": "POLARIS.md"
@@ -3128,479 +2884,6 @@
     "POLARIS.md": {
       "domain": "unknown",
       "route": "POLARIS.md",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/.obsidian/app.json": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/.obsidian/app.json",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/.obsidian/appearance.json": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/.obsidian/appearance.json",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/.obsidian/core-plugins.json": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/.obsidian/core-plugins.json",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/.obsidian/graph.json": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/.obsidian/graph.json",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/.obsidian/workspace.json": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/.obsidian/workspace.json",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/.DS_Store": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/.DS_Store",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/architecture/.gitkeep": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/architecture/.gitkeep",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/audits/findings/.gitkeep": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/audits/findings/.gitkeep",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/audits/resolved/.gitkeep": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/audits/resolved/.gitkeep",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/decisions/.gitkeep": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/decisions/.gitkeep",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/doctrine/active/.gitkeep": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/doctrine/active/.gitkeep",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/doctrine/candidate/.gitkeep": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/doctrine/candidate/.gitkeep",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/doctrine/deprecated/.gitkeep": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/doctrine/deprecated/.gitkeep",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/doctrine/raw/.gitkeep": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/doctrine/raw/.gitkeep",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/integrations/claude-desktop-mcp.md": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/integrations/claude-desktop-mcp.md",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/integrations/claude-plugin.md": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/integrations/claude-plugin.md",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/planning/.gitkeep": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/planning/.gitkeep",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/planning/cluster-map.md": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/planning/cluster-map.md",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/raw/.gitkeep": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/raw/.gitkeep",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/runtime/generated/.gitkeep": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/runtime/generated/.gitkeep",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/runtime/run-reports/.gitkeep": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/runtime/run-reports/.gitkeep",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/runtime/summaries/.gitkeep": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/runtime/summaries/.gitkeep",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/specs/active/.gitkeep": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/specs/active/.gitkeep",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/specs/active/Claude Plugin Runtime Integration Spec.md": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/specs/active/Claude Plugin Runtime Integration Spec.md",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/specs/active/canon-reconciliation-protocol.md": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/specs/active/canon-reconciliation-protocol.md",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/specs/active/current-state-schema.md": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/specs/active/current-state-schema.md",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/specs/active/docs-authority-model.md": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/specs/active/docs-authority-model.md",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/specs/active/execution-adapters.md": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/specs/active/execution-adapters.md",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/specs/active/mcp-confirmed-dispatch-architecture.md": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/specs/active/mcp-confirmed-dispatch-architecture.md",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/specs/active/mcp-mutation-safety-model.md": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/specs/active/mcp-mutation-safety-model.md",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/specs/active/pol-76-mcp-bridge-analysis.md": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/specs/active/pol-76-mcp-bridge-analysis.md",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/specs/active/pol-97-cli-operator-surface-analysis.md": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/specs/active/pol-97-cli-operator-surface-analysis.md",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/specs/active/polaris-implementation-plan.md": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/specs/active/polaris-implementation-plan.md",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/specs/active/provider-capability-matrix.md": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/specs/active/provider-capability-matrix.md",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/specs/active/taskchain-authoring.md": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/specs/active/taskchain-authoring.md",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/specs/active/taskchain-format.md": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/specs/active/taskchain-format.md",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/specs/active/windsurf-orchestrator.md": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/specs/active/windsurf-orchestrator.md",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/specs/implemented/.gitkeep": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/specs/implemented/.gitkeep",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/specs/raw/.gitkeep": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/specs/raw/.gitkeep",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/specs/raw/Polaris-Smart-Docs-Doctrine.md": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/specs/raw/Polaris-Smart-Docs-Doctrine.md",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/specs/superseded/.gitkeep": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/specs/superseded/.gitkeep",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/superpowers/plans/2026-05-23-provider-capability-abstraction.md": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/superpowers/plans/2026-05-23-provider-capability-abstraction.md",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "POLARIS.md"
-    },
-    "Polaris-Docs/docs/superpowers/plans/2026-05-25-claude-plugin-runtime-integration.md": {
-      "domain": "unknown",
-      "route": "Polaris-Docs/docs/superpowers/plans/2026-05-25-claude-plugin-runtime-integration.md",
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
@@ -3799,7 +3082,7 @@
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
-      "last_updated": "2026-05-27T15:42:45.470Z",
+      "last_updated": "2026-05-27T15:46:43.433Z",
       "updated_by": "polaris-map-update",
       "tags": [],
       "instructionFile": "POLARIS.md"
@@ -3843,7 +3126,7 @@
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
-      "last_updated": "2026-05-27T15:42:45.470Z",
+      "last_updated": "2026-05-27T15:46:43.433Z",
       "updated_by": "polaris-map-update",
       "tags": [],
       "instructionFile": "POLARIS.md"
