@@ -1,0 +1,59 @@
+{
+  "implement_parent": "POL-136",
+  "analyze_source": "POL-135",
+  "created_at": "2026-05-27T00:05:00.000Z",
+  "clusters": [
+    {
+      "id": "POL-137",
+      "title": "IMPLEMENT: Write Smart Docs summary architecture spec",
+      "order": 1,
+      "blockedBy": [],
+      "files": [
+        "docs/spec/smartdocs-summary-architecture.md"
+      ],
+      "description": "Write the canonical Smart Docs summary architecture spec. Foundational cluster — all others depend on its decisions."
+    },
+    {
+      "id": "POL-138",
+      "title": "IMPLEMENT: Clarify and enforce POLARIS.md role boundaries in seed/validate tooling",
+      "order": 2,
+      "blockedBy": ["POL-137"],
+      "files": [
+        "src/smartdocs-engine/seed-instructions.ts",
+        "src/smartdocs-engine/validate-instructions.ts",
+        "src/smartdocs-engine/seed-instructions.test.ts",
+        "src/smartdocs-engine/validate-instructions.test.ts"
+      ],
+      "description": "Update generateDraft() template and validateDir() to enforce POLARIS.md responsibility boundaries and detect doctrine bleed."
+    },
+    {
+      "id": "POL-139",
+      "title": "IMPLEMENT: Add SUMMARY.md generation, validation, and ignore tooling",
+      "order": 3,
+      "blockedBy": ["POL-137"],
+      "files": [
+        "src/smartdocs-engine/smartdoc-ignore.ts",
+        "src/smartdocs-engine/seed-instructions.ts",
+        "src/smartdocs-engine/index.ts",
+        "src/smartdocs-engine/validate-instructions.ts",
+        "src/smartdocs-engine/seed-instructions.test.ts",
+        "src/smartdocs-engine/validate-instructions.test.ts",
+        "src/smartdocs-engine/smartdoc-ignore.test.ts"
+      ],
+      "description": "Add SUMMARY.md to DEFAULT_SMARTDOCIGNORE_PATTERNS, implement polaris docs seed-summary CLI command, and add SUMMARY.md validation signals."
+    },
+    {
+      "id": "POL-140",
+      "title": "IMPLEMENT: Add SUMMARY.md ingest governance and canon-check safeguards",
+      "order": 4,
+      "blockedBy": ["POL-139"],
+      "files": [
+        "src/smartdocs-engine/ingest.ts",
+        "src/smartdocs-engine/canon-check.ts",
+        "src/smartdocs-engine/ingest.test.ts",
+        "src/smartdocs-engine/canon-check.test.ts"
+      ],
+      "description": "Belt-and-suspenders: hard guards in ingestDocs() and classifyDoc() rejecting SUMMARY.md ingest; explicit exclusion from locateCanonFiles() and checkDocFile()."
+    }
+  ]
+}
