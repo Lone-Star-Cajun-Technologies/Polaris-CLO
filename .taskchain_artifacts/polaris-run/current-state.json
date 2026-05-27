@@ -46,8 +46,8 @@
     },
     "POL-140": {
       "title": "IMPLEMENT: Add SUMMARY.md ingest governance and canon-check safeguards",
-      "state": "Todo",
-      "status_type": "unstarted",
+      "state": "Done",
+      "status_type": "completed",
       "blocked_by": [
         "POL-139"
       ]

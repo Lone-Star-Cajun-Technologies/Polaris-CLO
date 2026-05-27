@@ -285,7 +285,7 @@ export function validateDir(
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].toLowerCase();
       for (const verb of modalVerbs) {
-        if (line.includes(verb)) {
+        if (new RegExp(`\\b${verb}\\b`, 'i').test(line)) {
           findings.push({
             severity: "ERROR",
             message: `SUMMARY.md doctrine bleed risk: found "${verb}" on line ${i + 1}`,
