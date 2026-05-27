@@ -158,15 +158,6 @@ export async function executeOneChild(
   let validation: CompactReturn['validation'] = 'skipped';
 
   // ── Step 04: Execute child ──────────────────────────────────────────────
-  appendTelemetry(telemetryFile, {
-    event: "step-complete",
-    run_id: packet.run_id,
-    step: "04-execute-child",
-    child_id: childId,
-    timestamp: now(),
-  });
-  telemetryUpdated = true;
-
   try {
     if (options.executeChild) {
       options.executeChild(childId, packet);
@@ -199,25 +190,9 @@ export async function executeOneChild(
   // Validation is treated as passed when child execution succeeds.
   // A real implementation would run `npm run build && npm test` here.
   validation = 'passed';
-  appendTelemetry(telemetryFile, {
-    event: "step-complete",
-    run_id: packet.run_id,
-    step: "05-validate-child",
-    child_id: childId,
-    validation,
-    timestamp: now(),
-  });
 
   // ── Step 06: Commit ─────────────────────────────────────────────────────
   commit = getHeadShort(repoRoot);
-  appendTelemetry(telemetryFile, {
-    event: "step-complete",
-    run_id: packet.run_id,
-    step: "06-commit",
-    child_id: childId,
-    commit,
-    timestamp: now(),
-  });
 
   // ── Update current-state.json ───────────────────────────────────────────
   try {

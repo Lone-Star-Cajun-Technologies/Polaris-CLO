@@ -1,6 +1,5 @@
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import { readFileSync } from "node:fs";
-import { spawnSync } from "node:child_process";
 import {
   readState,
   validateState,
@@ -135,17 +134,7 @@ export function runLoopContinue(options: ContinueOptions): void {
     allow_analyze_children: effectiveConfig.budget?.allow_analyze_children,
   };
 
-  // Step 3: Run polaris map update --changed (non-fatal if not yet implemented)
-  const mapResult = spawnSync(
-    process.execPath,
-    [resolve(repoRoot, "dist/cli/index.js"), "map", "update", "--changed"],
-    { cwd: repoRoot, encoding: "utf-8" },
-  );
-  if (mapResult.status !== 0) {
-    console.warn(
-      "Warning: polaris map update --changed failed (map not yet implemented). Continuing.",
-    );
-  }
+  // Map update runs once at session end (step 08 / polaris finalize), not per checkpoint.
 
   // Step 3.5: Canon reconciliation check
   const canonCheckEnabled = effectiveConfig.canon?.checkOnContinue !== false;

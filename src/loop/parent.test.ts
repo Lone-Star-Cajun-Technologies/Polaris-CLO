@@ -356,7 +356,7 @@ describe("runParentLoop", () => {
     };
 
     expect(result.haltReason).toBe("cluster-complete");
-    expect(result.childrenDispatched).toBe(0);
+    expect(result.childrenDispatched).toBe(1);
     expect(finalState.completed_children).toEqual(["POL-100"]);
     expect(finalState.context_budget.children_completed).toBe(1);
   });

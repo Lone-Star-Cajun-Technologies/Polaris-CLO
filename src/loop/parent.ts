@@ -603,19 +603,27 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
       (workerSummary as Record<string, unknown>)?.['commit'] as string | undefined ??
       (workerSummary as Record<string, unknown>)?.['commit_hash'] as string | undefined;
 
-    const childAlreadyRecorded =
+    // workerStatus === "done" has already been validated upstream.
+    // If the reloaded state already reflects the completed child,
+    // the worker owns the completion checkpoint and the parent
+    // must not rewrite it.
+    const workerWroteCompletion =
       state.completed_children.includes(nextChild) ||
       state.context_budget.children_completed > childrenCompletedBeforeDispatch;
 
-    if (!childAlreadyRecorded) {
+    if (!workerWroteCompletion) {
       state = advanceState(state, nextChild, lastCommit);
+      childrenDispatched += 1;
+      // Worker did not write its own completion — orchestrator fills the gap.
+      if (!dryRun) {
+        writeStateAtomic(stateFile, state);
+      }
+    } else {
       childrenDispatched += 1;
     }
 
-    // Persist updated state after each successful child
+    // Orchestrator checkpoint event — always emitted after a successful child.
     if (!dryRun) {
-      writeStateAtomic(stateFile, state);
-
       appendTelemetry(telemetryFile, {
         event: "child-complete",
         run_id: state.run_id,
