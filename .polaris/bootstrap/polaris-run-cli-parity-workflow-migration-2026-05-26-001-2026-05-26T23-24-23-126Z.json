@@ -34,7 +34,7 @@
       "run_id": "polaris-run-cli-parity-workflow-migration-2026-05-26-001",
       "cluster_id": "POL-123",
       "child_id": "POL-125",
-      "state_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json",
+      "state_file": ".taskchain_artifacts/polaris-run/current-state.json",
       "telemetry_file": ".taskchain_artifacts/polaris-run/runs/polaris-run-cli-parity-workflow-migration-2026-05-26-001/telemetry.jsonl",
       "current_state_sha": "f5c0c14500c16151996f3b85eac125acfcdf66e903f06d998687ba0c90244fad",
       "branch": "philmeaux/pol-123-implement-polaris-runtime-cli-parity-and-deferred-workflow",

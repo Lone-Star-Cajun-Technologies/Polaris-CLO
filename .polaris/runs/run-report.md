@@ -2,11 +2,11 @@
 
 **Status:** cluster-complete
 **Branch:** philmeaux/pol-123-implement-polaris-runtime-cli-parity-and-deferred-workflow
-**PR:** TBD — set at delivery step 9
+**PR:** https://github.com/ItIsYeBananaduck/Polaris/pull/39
 **Children completed:** 5 of 5
 **Validation:** passed
 
-**Blocker:** Blocked: POL-124 validation cannot run because src/loop/checkpoint.ts and src/docs/ingest.ts import missing ../utils/monotonic-timestamp.js on main; fixing it is outside POL-124 allowed changes. (child: POL-124)
+**Blocker:** Resolved: POL-124 validation cannot run because src/loop/checkpoint.ts and src/docs/ingest.ts import missing ../utils/monotonic-timestamp.js on main; fixing it is outside POL-124 allowed changes. (child: POL-124)
 
 ## Children
 
