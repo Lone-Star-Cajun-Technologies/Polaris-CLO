@@ -18,8 +18,7 @@ npm link
 Verify:
 
 ```bash
-polaris run
-# → [polaris] run — not yet implemented (Cluster 4)
+polaris status --json
 ```
 
 ### Option B — local path (no global install)
@@ -46,12 +45,15 @@ The skills fall back to `polaris` if `POLARIS_BIN` is not set.
 npm unlink -g polaris
 ```
 
-## Skills
+## Skill canonicality
 
-| Skill file | Slash command | What it does |
+`.codex/skills/` is the canonical source for all Polaris runtime workflow doctrine (step order, telemetry cadence, worker spawn rules, map update rules, checkpoint boundaries). Claude skill files in `.claude/skills/` are **thin invocation wrappers** only — they route Claude to the correct canonical Codex skill and carry the CLI invocation mechanics. Do not duplicate Polaris doctrine in Claude skill files.
+
+| Claude skill | Canonical Codex skill | Purpose |
 |---|---|---|
-| `skills/polaris-run.md` | `/polaris-run` | Invoke `polaris run` |
-| `skills/polaris-loop.md` | `/polaris-loop` | Invoke `polaris loop continue` or `polaris loop status` |
+| `skills/polaris-run.md` | `.codex/skills/polaris-run/SKILL.md` | Invoke `polaris run`; runtime doctrine in Codex |
+| `skills/polaris-loop.md` | `.codex/skills/polaris-run/SKILL.md` | Invoke `polaris loop continue/status`; checkpoint doctrine in Codex |
+| `skills/polaris-status.md` | `.codex/skills/polaris-tools/SKILL.md` | Invoke `polaris status`; tool behaviour in Codex |
 
 ## Rebuild after changes
 

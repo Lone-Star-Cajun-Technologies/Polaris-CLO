@@ -1,32 +1,36 @@
 # polaris-run
 
-Start or resume a Polaris run for the current taskchain.
+> **Canonical skill**: `.codex/skills/polaris-run/SKILL.md` (+ `chain.md`)
+> This file is a Claude-specific invocation wrapper. All Polaris runtime doctrine lives in the Codex skill.
 
-## Steps
+Use this skill when the user asks to run a governed Polaris implementation cluster.
+Before proceeding, read `.codex/skills/polaris-run/SKILL.md` and `.codex/skills/polaris-run/chain.md` — they are the authoritative instructions.
 
-1. Determine the Polaris binary to use:
-   - If `$POLARIS_BIN` is set, use that value as the command prefix.
-   - Otherwise, use `polaris`.
+## Invocation
 
-2. Run the command:
+1. Build the CLI if `dist/cli/index.js` is missing or stale:
    ```
-   polaris run
+   npm run build
    ```
-   or, if `$POLARIS_BIN` is set:
+
+2. Run via `npm run polaris` (preferred) or the binary directly:
+   ```
+   npm run polaris -- run
+   ```
+   With `$POLARIS_BIN` override:
    ```
    $POLARIS_BIN run
    ```
 
 3. If the command exits non-zero, report the error output and stop.
 
-4. If the command succeeds, display the output to the user.
+4. If the command succeeds, follow the step-by-step instructions in `chain.md`.
 
-## Preconditions
+## Hard rules (from canonical Codex skill)
 
-- The Polaris CLI must be built and reachable. See `.claude/README.md` for setup.
-- Run `npm run build` in the Polaris repo if `dist/cli/index.js` is missing or stale.
-
-## Notes
-
-- `polaris run` is a stub until Cluster 4 (POL-5) is implemented.
+- Checkpoint-only state writes: session-start, child-complete (via `polaris loop continue`), session-end, blocker.
+- Worker spawn guard: narrow single-repo children execute directly — no worker spawn by default.
+- Map update: `polaris map update --changed` runs **once at session end**, never per child.
+- Worker owns child completion state; orchestrator does not rewrite it.
+- Linear updates only at child completion or blocker. No mid-step churn.
 - Do not fabricate run output; relay exactly what the CLI prints.
