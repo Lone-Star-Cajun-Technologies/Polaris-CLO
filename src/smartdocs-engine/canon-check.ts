@@ -57,6 +57,7 @@ function locateCanonFiles(changedFiles: string[], repoRoot: string): Set<string>
 
   // POLARIS.md files — nearest ancestor for each changed file
   for (const f of changedFiles) {
+    if (basename(f).toLowerCase() === "summary.md") continue;
     const absFile = resolve(repoRoot, f);
     const startDir = dirname(absFile);
     const polarisMd = findNearestPolarisMd(startDir, repoRoot);
@@ -67,13 +68,14 @@ function locateCanonFiles(changedFiles: string[], repoRoot: string): Set<string>
   const doctrineDir = join(repoRoot, "docs", "doctrine", "active");
   if (existsSync(doctrineDir)) {
     for (const f of readdirSync(doctrineDir)) {
-      if (f.endsWith(".md")) canon.add(join(doctrineDir, f));
+      if (f.endsWith(".md") && basename(f).toLowerCase() !== "summary.md") canon.add(join(doctrineDir, f));
     }
   }
 
   // Active and implemented specs — filtered by domain keyword overlap
   const changedDomains = new Set<string>();
   for (const f of changedFiles) {
+    if (basename(f).toLowerCase() === "summary.md") continue;
     for (const kw of DOMAIN_KEYWORDS) {
       if (f.toLowerCase().includes(kw)) changedDomains.add(kw);
     }
@@ -83,7 +85,7 @@ function locateCanonFiles(changedFiles: string[], repoRoot: string): Set<string>
     const specDir = join(repoRoot, "docs", "specs", specSubdir);
     if (!existsSync(specDir)) continue;
     for (const f of readdirSync(specDir)) {
-      if (!f.endsWith(".md")) continue;
+      if (!f.endsWith(".md") || basename(f).toLowerCase() === "summary.md") continue;
       const lower = f.toLowerCase();
       const matches = changedDomains.size === 0 || Array.from(changedDomains).some((kw) => lower.includes(kw));
       if (matches) canon.add(join(specDir, f));
@@ -181,6 +183,7 @@ function checkDocFile(
   changedFiles: string[],
   repoRoot: string,
 ): CanonConflict[] {
+  if (basename(canonFile).toLowerCase() === "summary.md") return [];
   const conflicts: CanonConflict[] = [];
   let content: string;
   try {

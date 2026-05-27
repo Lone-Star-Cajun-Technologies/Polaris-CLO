@@ -129,6 +129,10 @@ export function classifyDoc(content: string, filePath = ""): DocsClassification 
   const status = frontMatterValue(content, "status")?.toLowerCase();
   const authority = frontMatterValue(content, "authority")?.toLowerCase();
 
+  if (basename(filePath).toLowerCase() === "summary.md") {
+    return "deprecated-noise";
+  }
+
   if (status === "deprecated" || lower.includes("deprecated noise") || lower.includes("obsolete")) {
     return "deprecated-noise";
   }
@@ -413,6 +417,11 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
       throw new Error(`polaris docs ingest: path traversal detected, file outside repo: ${source}`);
     }
     const relSource = relative(repoRoot, absSource).replace(/\\/g, "/");
+
+    if (basename(relSource).toLowerCase() === "summary.md") {
+      throw new Error(`polaris docs ingest: SUMMARY.md is an endpoint artifact and cannot be ingested`);
+    }
+
     const eligibility = isIngestIneligible(relSource, repoRoot);
     if (eligibility.ineligible) {
       emitTelemetry(telPath, runId, {

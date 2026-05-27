@@ -56,9 +56,22 @@ describe("classifyDoc", () => {
     expect(classifyDoc("# Doctrine\n\nAgents must always preserve state")).toBe("doctrine-candidate");
     expect(classifyDoc("# Feature Spec\n\nAcceptance Criteria")).toBe("spec-raw");
   });
+
+  it("classifies SUMMARY.md as deprecated-noise regardless of content", () => {
+    expect(classifyDoc("# Authoritative Doctrine\nAgents must always X.", "SUMMARY.md")).toBe("deprecated-noise");
+  });
 });
 
 describe("ingestDocs", () => {
+  it("rejects SUMMARY.md ingest with a hard guard", () => {
+    const repoRoot = makeRepo();
+    writeFileSync(join(repoRoot, "SUMMARY.md"), "# Summary\n", "utf-8");
+
+    expect(() => ingestDocs(["SUMMARY.md"], { repoRoot })).toThrow(
+      "polaris docs ingest: SUMMARY.md is an endpoint artifact and cannot be ingested",
+    );
+  });
+
   it("moves a raw spec, writes provenance, links map area, and emits telemetry", () => {
     const repoRoot = makeRepo();
     writeFileSync(
