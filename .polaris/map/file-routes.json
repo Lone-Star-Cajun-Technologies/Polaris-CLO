@@ -226,182 +226,6 @@
     ],
     "instructionFile": "src/config/POLARIS.md"
   },
-  "src/docs/canon-check.test.ts": {
-    "domain": "docs",
-    "route": "src/docs",
-    "taskchain": "polaris-docs",
-    "confidence": 0.9,
-    "classification": "indexed",
-    "last_updated": "2026-05-26T15:04:43.304Z",
-    "updated_by": "polaris-map-index",
-    "tags": [
-      "docs",
-      "test"
-    ],
-    "instructionFile": "POLARIS.md"
-  },
-  "src/docs/canon-check.ts": {
-    "domain": "docs",
-    "route": "src/docs",
-    "taskchain": "polaris-docs",
-    "confidence": 0.9,
-    "classification": "indexed",
-    "last_updated": "2026-05-26T15:04:43.304Z",
-    "updated_by": "polaris-map-index",
-    "tags": [
-      "docs"
-    ],
-    "instructionFile": "POLARIS.md"
-  },
-  "src/docs/doctrine.test.ts": {
-    "domain": "docs",
-    "route": "src/docs",
-    "taskchain": "polaris-docs",
-    "confidence": 0.9,
-    "classification": "indexed",
-    "last_updated": "2026-05-27T04:40:07.939Z",
-    "updated_by": "polaris-map-update",
-    "tags": [
-      "docs",
-      "test"
-    ],
-    "instructionFile": "POLARIS.md"
-  },
-  "src/docs/doctrine.ts": {
-    "domain": "docs",
-    "route": "src/docs",
-    "taskchain": "polaris-docs",
-    "confidence": 0.9,
-    "classification": "indexed",
-    "last_updated": "2026-05-27T04:40:07.939Z",
-    "updated_by": "polaris-map-update",
-    "tags": [
-      "docs"
-    ],
-    "instructionFile": "POLARIS.md"
-  },
-  "src/docs/index.ts": {
-    "domain": "docs",
-    "route": "src/docs",
-    "taskchain": "polaris-docs",
-    "confidence": 0.9,
-    "classification": "indexed",
-    "last_updated": "2026-05-27T04:53:56.541Z",
-    "updated_by": "polaris-map-update",
-    "tags": [
-      "docs",
-      "entry-point"
-    ],
-    "instructionFile": "POLARIS.md"
-  },
-  "src/docs/ingest.test.ts": {
-    "domain": "docs",
-    "route": "src/docs",
-    "taskchain": "polaris-docs",
-    "confidence": 0.9,
-    "classification": "indexed",
-    "last_updated": "2026-05-27T03:54:38.138Z",
-    "updated_by": "polaris-map-update",
-    "tags": [
-      "docs",
-      "test"
-    ],
-    "instructionFile": "POLARIS.md"
-  },
-  "src/docs/ingest.ts": {
-    "domain": "docs",
-    "route": "src/docs",
-    "taskchain": "polaris-docs",
-    "confidence": 0.9,
-    "classification": "indexed",
-    "last_updated": "2026-05-27T04:40:07.939Z",
-    "updated_by": "polaris-map-update",
-    "tags": [
-      "docs"
-    ],
-    "instructionFile": "POLARIS.md"
-  },
-  "src/docs/migrate.test.ts": {
-    "domain": "docs",
-    "route": "src/docs",
-    "taskchain": "polaris-docs",
-    "confidence": 0.9,
-    "classification": "indexed",
-    "last_updated": "2026-05-27T04:41:36.027Z",
-    "updated_by": "polaris-map-update",
-    "tags": [
-      "docs",
-      "test"
-    ],
-    "instructionFile": "POLARIS.md"
-  },
-  "src/docs/migrate.ts": {
-    "domain": "docs",
-    "route": "src/docs",
-    "taskchain": "polaris-docs",
-    "confidence": 0.9,
-    "classification": "indexed",
-    "last_updated": "2026-05-27T04:41:36.027Z",
-    "updated_by": "polaris-map-update",
-    "tags": [
-      "docs"
-    ],
-    "instructionFile": "POLARIS.md"
-  },
-  "src/docs/seed-instructions.test.ts": {
-    "domain": "docs",
-    "route": "src/docs",
-    "taskchain": "polaris-docs",
-    "confidence": 0.9,
-    "classification": "indexed",
-    "last_updated": "2026-05-26T15:04:43.304Z",
-    "updated_by": "polaris-map-index",
-    "tags": [
-      "docs",
-      "test"
-    ],
-    "instructionFile": "POLARIS.md"
-  },
-  "src/docs/seed-instructions.ts": {
-    "domain": "docs",
-    "route": "src/docs",
-    "taskchain": "polaris-docs",
-    "confidence": 0.9,
-    "classification": "indexed",
-    "last_updated": "2026-05-26T15:04:43.304Z",
-    "updated_by": "polaris-map-index",
-    "tags": [
-      "docs"
-    ],
-    "instructionFile": "POLARIS.md"
-  },
-  "src/docs/validate-instructions.test.ts": {
-    "domain": "docs",
-    "route": "src/docs",
-    "taskchain": "polaris-docs",
-    "confidence": 0.9,
-    "classification": "indexed",
-    "last_updated": "2026-05-26T15:04:43.304Z",
-    "updated_by": "polaris-map-index",
-    "tags": [
-      "docs",
-      "test"
-    ],
-    "instructionFile": "POLARIS.md"
-  },
-  "src/docs/validate-instructions.ts": {
-    "domain": "docs",
-    "route": "src/docs",
-    "taskchain": "polaris-docs",
-    "confidence": 0.9,
-    "classification": "indexed",
-    "last_updated": "2026-05-26T15:04:43.304Z",
-    "updated_by": "polaris-map-index",
-    "tags": [
-      "docs"
-    ],
-    "instructionFile": "POLARIS.md"
-  },
   "src/finalize/.gitkeep": {
     "domain": "finalize",
     "route": "src/finalize",
@@ -1706,20 +1530,6 @@
     ],
     "instructionFile": "POLARIS.md"
   },
-  "src/docs/index.test.ts": {
-    "domain": "docs",
-    "route": "src/docs",
-    "taskchain": "polaris-docs",
-    "confidence": 0.9,
-    "classification": "indexed",
-    "last_updated": "2026-05-26T23:29:22.095Z",
-    "updated_by": "polaris-map-update",
-    "tags": [
-      "docs",
-      "test"
-    ],
-    "instructionFile": "POLARIS.md"
-  },
   "src/cli/init.test.ts": {
     "domain": "cli",
     "route": "src/cli",
@@ -1801,57 +1611,57 @@
     ],
     "instructionFile": "src/config/POLARIS.md"
   },
-  "src/docs/smartdoc-ignore.test.ts": {
-    "domain": "docs",
-    "route": "src/docs",
-    "taskchain": "polaris-docs",
-    "confidence": 0.9500000000000001,
+  "src/smartdocs-engine/canon-check.test.ts": {
+    "domain": "smartdocs-engine",
+    "route": "src/smartdocs-engine",
+    "taskchain": "polaris-smartdocs-engine",
+    "confidence": 0.85,
     "classification": "indexed",
-    "last_updated": "2026-05-27T03:54:38.138Z",
+    "last_updated": "2026-05-27T20:50:48.413Z",
     "updated_by": "polaris-map-update",
     "tags": [
-      "docs",
+      "smartdocs-engine",
       "test"
     ],
     "instructionFile": "POLARIS.md"
   },
-  "src/docs/smartdoc-ignore.ts": {
-    "domain": "docs",
-    "route": "src/docs",
-    "taskchain": "polaris-docs",
-    "confidence": 0.9500000000000001,
+  "src/smartdocs-engine/canon-check.ts": {
+    "domain": "smartdocs-engine",
+    "route": "src/smartdocs-engine",
+    "taskchain": "polaris-smartdocs-engine",
+    "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-05-27T03:54:38.138Z",
+    "last_updated": "2026-05-27T20:50:48.413Z",
     "updated_by": "polaris-map-update",
     "tags": [
-      "docs"
+      "smartdocs-engine"
     ],
     "instructionFile": "POLARIS.md"
   },
-  "src/docs/audit.test.ts": {
-    "domain": "docs",
-    "route": "src/docs",
-    "taskchain": "polaris-docs",
-    "confidence": 0.9500000000000001,
+  "src/smartdocs-engine/ingest.test.ts": {
+    "domain": "smartdocs-engine",
+    "route": "src/smartdocs-engine",
+    "taskchain": "polaris-smartdocs-engine",
+    "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-05-27T04:53:56.541Z",
+    "last_updated": "2026-05-27T20:50:48.413Z",
     "updated_by": "polaris-map-update",
     "tags": [
-      "docs",
+      "smartdocs-engine",
       "test"
     ],
     "instructionFile": "POLARIS.md"
   },
-  "src/docs/audit.ts": {
-    "domain": "docs",
-    "route": "src/docs",
-    "taskchain": "polaris-docs",
-    "confidence": 0.9500000000000001,
+  "src/smartdocs-engine/ingest.ts": {
+    "domain": "smartdocs-engine",
+    "route": "src/smartdocs-engine",
+    "taskchain": "polaris-smartdocs-engine",
+    "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-05-27T04:53:56.541Z",
+    "last_updated": "2026-05-27T20:50:48.413Z",
     "updated_by": "polaris-map-update",
     "tags": [
-      "docs"
+      "smartdocs-engine"
     ],
     "instructionFile": "POLARIS.md"
   }
