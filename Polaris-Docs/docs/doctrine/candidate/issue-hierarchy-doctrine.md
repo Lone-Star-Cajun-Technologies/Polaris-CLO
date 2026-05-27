@@ -1,3 +1,9 @@
+---
+status: candidate
+candidate-since: 2026-05-27
+source: Polaris-Docs/docs/raw/issue-hierarchy-doctrine.md
+---
+
 # Issue Hierarchy Doctrine
 
 ## Purpose

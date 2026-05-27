@@ -1,3 +1,9 @@
+---
+status: candidate
+candidate-since: 2026-05-27
+source: Polaris-Docs/docs/raw/polaris-implementation-plan.md
+---
+
 # Polaris Implementation Plan
 
 ## Issue Hierarchy

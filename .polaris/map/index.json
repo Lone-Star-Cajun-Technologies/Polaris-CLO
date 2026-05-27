@@ -1,11 +1,11 @@
 {
-  "scan_date": "2026-05-27T03:12:15.406Z",
-  "file_count": 308,
-  "coverage_pct": 44,
+  "scan_date": "2026-05-27T03:14:31.803Z",
+  "file_count": 312,
+  "coverage_pct": 45,
   "instructionCoverage": {
-    "routesCovered": 308,
-    "routesTotal": 308,
-    "coveragePercent": 100
+    "routesCovered": 310,
+    "routesTotal": 312,
+    "coveragePercent": 99
   },
   "entries": {
     "src/cli/.gitkeep": {
@@ -1831,6 +1831,60 @@
       "confidence": 0.85,
       "classification": "indexed",
       "last_updated": "2026-05-27T03:12:15.406Z",
+      "updated_by": "polaris-docs-ingest",
+      "tags": [
+        "docs",
+        "ingested"
+      ],
+      "instructionFile": "POLARIS.md"
+    },
+    "Polaris-Docs/docs/specs/raw/ephemeral-validation-plan.md": {
+      "domain": "docs",
+      "route": "Polaris-Docs/docs/specs/raw",
+      "taskchain": "polaris-docs",
+      "confidence": 0.7,
+      "classification": "indexed",
+      "last_updated": "2026-05-27T03:14:31.796Z",
+      "updated_by": "polaris-docs-ingest",
+      "tags": [
+        "docs",
+        "ingested"
+      ]
+    },
+    "Polaris-Docs/docs/doctrine/candidate/issue-hierarchy-doctrine.md": {
+      "domain": "docs",
+      "route": "Polaris-Docs/docs/doctrine/candidate",
+      "taskchain": "polaris-docs",
+      "confidence": 0.7,
+      "classification": "indexed",
+      "last_updated": "2026-05-27T03:14:31.798Z",
+      "updated_by": "polaris-docs-ingest",
+      "tags": [
+        "docs",
+        "ingested"
+      ]
+    },
+    "Polaris-Docs/docs/specs/raw/polaris-compact-contracts.md": {
+      "domain": "loop",
+      "route": "src/loop",
+      "taskchain": "polaris-loop",
+      "confidence": 0.85,
+      "classification": "indexed",
+      "last_updated": "2026-05-27T03:14:31.801Z",
+      "updated_by": "polaris-docs-ingest",
+      "tags": [
+        "docs",
+        "ingested"
+      ],
+      "instructionFile": "src/loop/POLARIS.md"
+    },
+    "Polaris-Docs/docs/doctrine/candidate/polaris-implementation-plan.md": {
+      "domain": "unknown",
+      "route": "docs/spec/issue-hierarchy-doctrine.md",
+      "taskchain": "polaris-core",
+      "confidence": 0.85,
+      "classification": "indexed",
+      "last_updated": "2026-05-27T03:14:31.803Z",
       "updated_by": "polaris-docs-ingest",
       "tags": [
         "docs",
