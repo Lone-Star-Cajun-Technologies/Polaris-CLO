@@ -1814,5 +1814,19 @@
       "ingested"
     ],
     "instructionFile": "POLARIS.md"
+  },
+  "Polaris-Docs/docs/architecture/ephemeral-execution-architecture.md": {
+    "domain": "unknown",
+    "route": ".taskchain_artifacts/polaris-run/current-state.json",
+    "taskchain": "polaris-core",
+    "confidence": 0.85,
+    "classification": "indexed",
+    "last_updated": "2026-05-27T03:12:15.406Z",
+    "updated_by": "polaris-docs-ingest",
+    "tags": [
+      "docs",
+      "ingested"
+    ],
+    "instructionFile": "POLARIS.md"
   }
 }

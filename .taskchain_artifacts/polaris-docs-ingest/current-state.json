@@ -1,7 +1,7 @@
 {
-  "run_id": "polaris-docs-ingest-docs-ingest-2026-05-27-001",
-  "prior_run_id": null,
+  "run_id": "polaris-docs-ingest-docs-ingest-2026-05-27-003",
+  "prior_run_id": "polaris-docs-ingest-docs-ingest-2026-05-27-001",
   "status": "complete",
   "files_ingested": 1,
-  "last_run_at": "2026-05-27T03:06:43.751Z"
+  "last_run_at": "2026-05-27T03:12:15.406Z"
 }
