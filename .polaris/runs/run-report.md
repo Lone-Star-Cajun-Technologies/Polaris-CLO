@@ -1,19 +1,19 @@
-# Run Report: pol-5-session-1
+# Run Report: polaris-run-smart-docs-summary-arch-2026-05-27-003
 
-**Status:** running
-**Branch:** philmeaux/pol-130-implement-endpoint-artifact-protection-for-smart-docs-ingest
+**Status:** cluster-complete
+**Branch:** claude/clever-meitner-u6x5x
 **PR:** TBD — set at delivery step 9
-**Children completed:** 0 of 4
+**Children completed:** 4 of 4
 **Validation:** passed
 
 ## Children
 
 | ID | Title | Commit | Status |
 |---|---|---|---|
-| POL-131 | — | — | Open |
-| POL-132 | — | — | Open |
-| POL-133 | — | — | Open |
-| POL-134 | — | — | Open |
+| POL-137 | — | — | Done |
+| POL-138 | — | — | Done |
+| POL-139 | — | — | Done |
+| POL-140 | — | — | Done |
 
 ## Artifacts produced
 

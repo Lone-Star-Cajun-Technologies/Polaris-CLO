@@ -2,3 +2,11 @@
 {"event":"loop-checkpoint","run_id":"polaris-run-smart-docs-summary-arch-2026-05-27-001","child_id":"POL-137","next_child":"POL-138","timestamp":"2026-05-27T16:34:40.521Z"}
 {"event":"canon-check-start","run_id":"polaris-run-smart-docs-summary-arch-2026-05-27-001","child_id":"POL-138","canon_files_inspected":0,"changed_files_count":0,"timestamp":"2026-05-27T16:34:40.522Z"}
 {"event":"canon-check-result","run_id":"polaris-run-smart-docs-summary-arch-2026-05-27-001","child_id":"POL-138","outcome":"aligned","conflicts":[],"timestamp":"2026-05-27T16:34:40.522Z"}
+{"event":"loop-checkpoint","run_id":"polaris-run-smart-docs-summary-arch-2026-05-27-001","child_id":"","next_child":"POL-138","timestamp":"2026-05-27T18:41:08.409Z"}
+{"event":"canon-check-start","run_id":"polaris-run-smart-docs-summary-arch-2026-05-27-001","child_id":"POL-138","canon_files_inspected":0,"changed_files_count":0,"timestamp":"2026-05-27T18:41:08.410Z"}
+{"event":"canon-check-result","run_id":"polaris-run-smart-docs-summary-arch-2026-05-27-001","child_id":"POL-138","outcome":"aligned","conflicts":[],"timestamp":"2026-05-27T18:41:08.410Z"}
+{"event":"dispatch-required","run_id":"polaris-run-smart-docs-summary-arch-2026-05-27-001","from_state":"unbootstrapped","to_state":"dispatched","reason":"No run_bootstrap_seal found in state. Run state must be initialized through 'polaris loop bootstrap' before dispatch. Parent sessions may not hand-create run state. Use: npm run polaris -- loop bootstrap --cluster-id <ID> --children <CSV>","timestamp":"2026-05-27T18:41:32.427Z"}
+{"event":"child-dispatched","run_id":"polaris-run-smart-docs-summary-arch-2026-05-27-001","child_id":"POL-138","prompt_mode":"compact","prompt_estimated_tokens":217,"timestamp":"2026-05-27T18:42:59.599Z"}
+{"event":"loop-checkpoint","run_id":"polaris-run-smart-docs-summary-arch-2026-05-27-001","child_id":"POL-138","next_child":"POL-139","timestamp":"2026-05-27T18:47:09.991Z"}
+{"event":"canon-check-start","run_id":"polaris-run-smart-docs-summary-arch-2026-05-27-001","child_id":"POL-139","canon_files_inspected":0,"changed_files_count":0,"timestamp":"2026-05-27T18:47:09.991Z"}
+{"event":"canon-check-result","run_id":"polaris-run-smart-docs-summary-arch-2026-05-27-001","child_id":"POL-139","outcome":"aligned","conflicts":[],"timestamp":"2026-05-27T18:47:09.991Z"}

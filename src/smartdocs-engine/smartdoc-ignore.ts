@@ -25,6 +25,8 @@ export const DEFAULT_SMARTDOCIGNORE_PATTERNS = [
   "**/GEMINI.md",
   "POLARIS.md",
   "**/POLARIS.md",
+  "SUMMARY.md",
+  "**/SUMMARY.md",
 ];
 
 export interface IngestEligibility {

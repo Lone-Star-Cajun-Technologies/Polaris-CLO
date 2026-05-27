@@ -97,6 +97,39 @@ describe("runCanonCheck", () => {
     });
   });
 
+  describe("SUMMARY.md exclusion", () => {
+    it("excludes SUMMARY.md from triggering canon lookup", () => {
+      // Create a POLARIS.md that would normally be found
+      writeFileSync(join(testDir, "POLARIS.md"), "# POLARIS.md\n");
+
+      const result = runCanonCheck({
+        repoRoot: testDir,
+        changedFiles: ["SUMMARY.md"],
+        runId: "test-summary-exclude",
+        telemetryFile,
+      });
+
+      // Should not find any canon files because SUMMARY.md was ignored
+      expect(result.canonFilesInspected).toBe(0);
+      expect(result.outcome).toBe("aligned");
+    });
+
+    it("does not report conflicts for SUMMARY.md even if it contains 'must' and 'deleted'", () => {
+      // Create a SUMMARY.md with modal verbs that would normally trigger checkDocFile
+      writeFileSync(join(testDir, "SUMMARY.md"), "Agents must not use old-file.ts as it is deleted.");
+      mkdirSync(join(testDir, "docs", "doctrine", "active"), { recursive: true });
+
+      const result = runCanonCheck({
+        repoRoot: testDir,
+        changedFiles: ["src/some-file.ts"],
+        runId: "test-summary-no-conflict",
+        telemetryFile,
+      });
+
+      expect(result.conflicts).toHaveLength(0);
+    });
+  });
+
   describe("stale-implementation outcome", () => {
     it("returns stale-implementation when POLARIS.md says a file is deleted but it still exists", () => {
       mkdirSync(join(testDir, "src", "loop"), { recursive: true });

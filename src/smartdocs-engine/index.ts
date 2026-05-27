@@ -3,7 +3,7 @@ import { join, resolve } from "node:path";
 import { Command } from "commander";
 import { ensureDocsScaffold, ingestDocs, printIngestResults } from "./ingest.js";
 import { migrateDocs, printMigrateResults } from "./migrate.js";
-import { seedInstructions, seedInstructionsAll } from "./seed-instructions.js";
+import { seedInstructions, seedInstructionsAll, seedSummary, seedSummaryAll } from "./seed-instructions.js";
 import { validateInstructions, printReport } from "./validate-instructions.js";
 import { doctrineDraft, doctrinePromote, doctrineDeprecate } from "./doctrine.js";
 import { auditIngestRiskSurface, formatAuditMarkdown, formatAuditSummaryTable } from "./audit.js";
@@ -191,6 +191,44 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
         console.warn(`warning: ${pathArg}/POLARIS.md already exists (no draft marker) — skipped`);
       } else {
         console.log(`skipped (draft exists): ${pathArg}/POLARIS.md`);
+      }
+    });
+
+  docs
+    .command("seed-summary [path]")
+    .description("Generate a draft SUMMARY.md for a directory using atlas signals")
+    .option("-r, --repo-root <path>", "Repository root", defaultRepoRoot)
+    .option("--all", "Generate drafts for all directories lacking a SUMMARY.md")
+    .option("--dry-run", "Print what would be written without writing files")
+    .action((pathArg: string | undefined, options: { repoRoot: string; all?: boolean; dryRun?: boolean }) => {
+      if (options.all) {
+        const { written, skippedExists, skippedDraft } = seedSummaryAll(options.repoRoot, { dryRun: options.dryRun });
+        for (const dir of written) {
+          console.log(`${options.dryRun ? "[dry-run] would write" : "written"}: ${dir}/SUMMARY.md`);
+        }
+        for (const dir of skippedExists) {
+          console.log(`skipped (human-edited): ${dir}/SUMMARY.md`);
+        }
+        for (const dir of skippedDraft) {
+          console.log(`skipped (draft exists): ${dir}/SUMMARY.md`);
+        }
+        console.log(`\nDone. ${written.length} written, ${skippedExists.length} skipped (exists), ${skippedDraft.length} skipped (draft).`);
+        return;
+      }
+
+      if (!pathArg) {
+        console.error("Error: provide a <path> argument or use --all");
+        process.exit(1);
+      }
+
+      const result = seedSummary(pathArg, options.repoRoot, { dryRun: options.dryRun });
+      if (result === "written") {
+        const label = options.dryRun ? "[dry-run] would write" : "written";
+        console.log(`${label}: ${pathArg}/SUMMARY.md`);
+      } else if (result === "skipped-exists") {
+        console.warn(`warning: ${pathArg}/SUMMARY.md already exists (no draft marker) — skipped`);
+      } else {
+        console.log(`skipped (draft exists): ${pathArg}/SUMMARY.md`);
       }
     });
 

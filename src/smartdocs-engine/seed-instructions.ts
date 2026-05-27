@@ -63,7 +63,7 @@ export function generateDraft(
     "",
     "## Purpose",
     "",
-    "<!-- Replace with a description of what this directory does and its key responsibilities. -->",
+    "<!-- One paragraph describing what this folder does. -->",
     "",
   ];
 
@@ -72,21 +72,84 @@ export function generateDraft(
   if (taskchains.length > 0) lines.push(`**Taskchain:** ${taskchains.join(", ")}`);
   if (domains.length + routes.length + taskchains.length > 0) lines.push("");
 
+  lines.push("## What belongs here", "");
   if (filesInDir.length > 0) {
-    lines.push("## Files", "");
     for (const [filePath, entry] of filesInDir) {
       lines.push(`- \`${basename(filePath)}\` — ${entry.route} (${entry.domain})`);
     }
-    lines.push("");
+  } else {
+    lines.push("<!-- Bulleted file list of contents. -->");
   }
+  lines.push("");
 
+  lines.push("## What does not belong here", "");
+  lines.push("<!-- Explicit exclusions of files or responsibilities. -->");
+  lines.push("");
+
+  lines.push("## Editing rules", "");
+  lines.push("<!-- Behavioral constraints for agents and humans. -->");
+  lines.push("");
+
+  lines.push("## Architecture assumptions", "");
+  lines.push("<!-- What the code assumes about the world. -->");
+  lines.push("");
+
+  lines.push("## Read before editing", "");
   if (nearbyDocs.length > 0) {
-    lines.push("## Nearby docs", "");
     for (const docPath of nearbyDocs) {
-      lines.push(`- \`${docPath}\``);
+      lines.push(`- [${basename(docPath)}](${docPath})`);
     }
-    lines.push("");
+  } else {
+    lines.push("<!-- Links to canonical sources (doctrine, specs). -->");
   }
+  lines.push("");
+
+  lines.push("## Related routes", "");
+  lines.push("<!-- Atlas route pointer to sibling or parent folders. -->");
+  lines.push("");
+
+  return lines.join("\n");
+}
+
+export function generateSummaryDraft(
+  targetDir: string,
+  repoRoot: string,
+  _allRoutes: Record<string, FileRouteEntry>,
+): string {
+  const dirLabel = basename(targetDir) || basename(repoRoot);
+
+  const lines: string[] = [
+    DRAFT_MARKER,
+    `# Summary: ${dirLabel}`,
+    "",
+    "> Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.",
+    "",
+    "## Purpose",
+    "<!-- One-line statement of what this folder does. -->",
+    "",
+    "## Core Concepts",
+    "<!-- 3–7 key concepts a reader needs before diving into source. -->",
+    "",
+    "## Architectural Role",
+    "<!-- How this folder fits into the larger system. -->",
+    "",
+    "## Key Constraints",
+    "<!-- The most important non-obvious behavioral limits. -->",
+    "",
+    "## Important Relationships",
+    "<!-- Upstream/downstream dependencies on other folders. -->",
+    "",
+    "## Current State",
+    "<!-- What is implemented, what is not yet, known gaps. -->",
+    "",
+    "## Known Drift",
+    "<!-- Places where the summary may be stale (honesty field. -->",
+    "",
+    "## Linked Canonical Sources",
+    "- [POLARIS.md](POLARIS.md)",
+    "<!-- Links to spec files, doctrine, etc. -->",
+    "",
+  ];
 
   return lines.join("\n");
 }
@@ -127,6 +190,41 @@ export function seedInstructions(
   return "written";
 }
 
+export function seedSummary(
+  targetPath: string,
+  repoRoot: string,
+  opts: { dryRun?: boolean } = {},
+): "written" | "skipped-exists" | "skipped-draft" {
+  const absTarget = resolve(repoRoot, targetPath);
+  const relCheck = relative(repoRoot, absTarget);
+  if (relCheck.startsWith("..") || relCheck.startsWith("/")) {
+    throw new Error(`Path traversal detected: target path is outside repo root`);
+  }
+  const outFile = join(absTarget, "SUMMARY.md");
+
+  if (existsSync(outFile)) {
+    if (hasDraftMarker(outFile)) {
+      return "skipped-draft";
+    }
+    return "skipped-exists";
+  }
+
+  const config = loadConfig(repoRoot);
+  const atlasPath = resolve(repoRoot, config.repo.sidecarOutputPath ?? ".polaris/map");
+  const allRoutes = {
+    ...readFileRoutes(atlasPath),
+    ...readNeedsReview(atlasPath),
+  };
+
+  const relTarget = relative(repoRoot, absTarget).replace(/\\/g, "/");
+  const content = generateSummaryDraft(relTarget, repoRoot, allRoutes);
+
+  if (!opts.dryRun) {
+    writeFileSync(outFile, content, "utf-8");
+  }
+  return "written";
+}
+
 export function seedInstructionsAll(
   repoRoot: string,
   opts: { dryRun?: boolean } = {},
@@ -157,6 +255,46 @@ export function seedInstructionsAll(
     }
 
     const content = generateDraft(relDir, repoRoot, allRoutes);
+    if (!opts.dryRun) {
+      writeFileSync(outFile, content, "utf-8");
+    }
+    written.push(relDir);
+  }
+
+  return { written, skippedExists, skippedDraft };
+}
+
+export function seedSummaryAll(
+  repoRoot: string,
+  opts: { dryRun?: boolean } = {},
+): { written: string[]; skippedExists: string[]; skippedDraft: string[] } {
+  const config = loadConfig(repoRoot);
+  const atlasPath = resolve(repoRoot, config.repo.sidecarOutputPath ?? ".polaris/map");
+  const allRoutes = {
+    ...readFileRoutes(atlasPath),
+    ...readNeedsReview(atlasPath),
+  };
+
+  const dirs = collectDirs(repoRoot, repoRoot);
+  const allDirs = [".", ...dirs];
+  const written: string[] = [];
+  const skippedExists: string[] = [];
+  const skippedDraft: string[] = [];
+
+  for (const relDir of allDirs) {
+    const absDir = resolve(repoRoot, relDir);
+    const outFile = join(absDir, "SUMMARY.md");
+
+    if (existsSync(outFile)) {
+      if (hasDraftMarker(outFile)) {
+        skippedDraft.push(relDir);
+      } else {
+        skippedExists.push(relDir);
+      }
+      continue;
+    }
+
+    const content = generateSummaryDraft(relDir, repoRoot, allRoutes);
     if (!opts.dryRun) {
       writeFileSync(outFile, content, "utf-8");
     }

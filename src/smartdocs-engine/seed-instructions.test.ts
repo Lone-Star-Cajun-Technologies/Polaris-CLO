@@ -1,7 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { DRAFT_MARKER, hasDraftMarker, generateDraft, seedInstructions, seedInstructionsAll } from "./seed-instructions.js";
+import {
+  DRAFT_MARKER,
+  hasDraftMarker,
+  generateDraft,
+  seedInstructions,
+  seedInstructionsAll,
+  generateSummaryDraft,
+  seedSummary,
+  seedSummaryAll,
+} from "./seed-instructions.js";
 import type { FileRouteEntry } from "../map/atlas.js";
 
 const TMP = join(process.cwd(), ".test-docs-seed-tmp");
@@ -155,5 +164,87 @@ describe("seedInstructionsAll", () => {
     for (const dir of written) {
       expect(existsSync(join(TMP, dir, "POLARIS.md"))).toBe(false);
     }
+  });
+});
+
+describe("generateSummaryDraft", () => {
+  it("includes draft marker at top", () => {
+    const content = generateSummaryDraft("src/map", TMP, {});
+    expect(content.startsWith(DRAFT_MARKER)).toBe(true);
+  });
+
+  it("uses directory basename in heading", () => {
+    const content = generateSummaryDraft("src/map", TMP, {});
+    expect(content).toContain("# Summary: map");
+  });
+
+  it("includes all standard schema sections", () => {
+    const content = generateSummaryDraft("src/map", TMP, {});
+    expect(content).toContain("## Purpose");
+    expect(content).toContain("## Core Concepts");
+    expect(content).toContain("## Architectural Role");
+    expect(content).toContain("## Key Constraints");
+    expect(content).toContain("## Important Relationships");
+    expect(content).toContain("## Current State");
+    expect(content).toContain("## Known Drift");
+    expect(content).toContain("## Linked Canonical Sources");
+  });
+});
+
+describe("seedSummary", () => {
+  beforeEach(setup);
+  afterEach(teardown);
+
+  it("writes a SUMMARY.md draft and returns written", () => {
+    const result = seedSummary("src/map", TMP);
+    expect(result).toBe("written");
+    const outPath = join(TMP, "src/map/SUMMARY.md");
+    expect(existsSync(outPath)).toBe(true);
+    const content = readFileSync(outPath, "utf-8");
+    expect(content).toContain(DRAFT_MARKER);
+    expect(content).toContain("# Summary: map");
+  });
+
+  it("returns skipped-exists when human-edited SUMMARY.md present", () => {
+    writeFileSync(join(TMP, "src/map/SUMMARY.md"), "# Human-edited");
+    const result = seedSummary("src/map", TMP);
+    expect(result).toBe("skipped-exists");
+  });
+
+  it("returns skipped-draft when draft SUMMARY.md already present", () => {
+    writeFileSync(join(TMP, "src/map/SUMMARY.md"), `${DRAFT_MARKER}\n# Draft`);
+    const result = seedSummary("src/map", TMP);
+    expect(result).toBe("skipped-draft");
+  });
+
+  it("does not write file in dry-run mode", () => {
+    const result = seedSummary("src/map", TMP, { dryRun: true });
+    expect(result).toBe("written");
+    expect(existsSync(join(TMP, "src/map/SUMMARY.md"))).toBe(false);
+  });
+});
+
+describe("seedSummaryAll", () => {
+  beforeEach(setup);
+  afterEach(teardown);
+
+  it("generates drafts for directories without SUMMARY.md", () => {
+    const { written } = seedSummaryAll(TMP);
+    expect(written).toContain("src/map");
+    expect(written).toContain("src/cli");
+    expect(written).toContain("."); // root included for SUMMARY.md
+  });
+
+  it("skips directories with human-edited SUMMARY.md", () => {
+    writeFileSync(join(TMP, "src/map/SUMMARY.md"), "# Human-edited");
+    const { written, skippedExists } = seedSummaryAll(TMP);
+    expect(skippedExists).toContain("src/map");
+    expect(written).not.toContain("src/map");
+  });
+
+  it("skips directories with draft SUMMARY.md", () => {
+    writeFileSync(join(TMP, "src/map/SUMMARY.md"), `${DRAFT_MARKER}\n# Draft`);
+    const { skippedDraft } = seedSummaryAll(TMP);
+    expect(skippedDraft).toContain("src/map");
   });
 });
