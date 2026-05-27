@@ -1,10 +1,10 @@
 {
-  "scan_date": "2026-05-27T15:36:12.175Z",
-  "file_count": 317,
+  "scan_date": "2026-05-27T15:42:45.470Z",
+  "file_count": 318,
   "coverage_pct": 44,
   "instructionCoverage": {
-    "routesCovered": 317,
-    "routesTotal": 317,
+    "routesCovered": 318,
+    "routesTotal": 318,
     "coveragePercent": 100
   },
   "entries": {
@@ -986,7 +986,7 @@
       "taskchain": "polaris-loop",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-05-27T15:36:12.175Z",
+      "last_updated": "2026-05-27T15:42:45.470Z",
       "updated_by": "polaris-map-update",
       "tags": [
         "loop",
@@ -1000,8 +1000,8 @@
       "taskchain": "polaris-loop",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
+      "last_updated": "2026-05-27T15:42:45.470Z",
+      "updated_by": "polaris-map-update",
       "tags": [
         "loop",
         "test"
@@ -2988,7 +2988,7 @@
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
-      "last_updated": "2026-05-27T15:36:12.175Z",
+      "last_updated": "2026-05-27T15:42:45.470Z",
       "updated_by": "polaris-map-update",
       "tags": [],
       "instructionFile": "POLARIS.md"
@@ -3799,7 +3799,7 @@
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
-      "last_updated": "2026-05-27T15:36:12.175Z",
+      "last_updated": "2026-05-27T15:42:45.470Z",
       "updated_by": "polaris-map-update",
       "tags": [],
       "instructionFile": "POLARIS.md"
@@ -3833,6 +3833,17 @@
       "confidence": 0,
       "classification": "needs-review",
       "last_updated": "2026-05-27T15:36:12.175Z",
+      "updated_by": "polaris-map-update",
+      "tags": [],
+      "instructionFile": "POLARIS.md"
+    },
+    ".polaris/bootstrap/polaris-run-subagent-dispatch-2026-05-27-003-2026-05-27T15-37-25-860Z.json": {
+      "domain": "unknown",
+      "route": ".polaris/bootstrap/polaris-run-subagent-dispatch-2026-05-27-003-2026-05-27T15-37-25-860Z.json",
+      "taskchain": "polaris-core",
+      "confidence": 0,
+      "classification": "needs-review",
+      "last_updated": "2026-05-27T15:42:45.470Z",
       "updated_by": "polaris-map-update",
       "tags": [],
       "instructionFile": "POLARIS.md"

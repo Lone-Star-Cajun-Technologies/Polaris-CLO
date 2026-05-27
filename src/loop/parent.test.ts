@@ -14,7 +14,9 @@ import { mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "no
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { runParentLoop } from "./parent.js";
+import { createLoopCommand } from "./index.js";
 import type { BootstrapPacket, DispatchOptions, DispatchResult, ExecutionAdapter } from "./adapters/types.js";
+import type { Command } from "commander";
 
 // ── Mock adapter factory ─────────────────────────────────────────────────────
 
@@ -149,6 +151,63 @@ function makeStateFileWithMeta(
   };
   writeFileSync(stateFile, JSON.stringify(state, null, 2), "utf-8");
   return stateFile;
+}
+
+function configureCommandForTest(command: Command, output: { stdout: string; stderr: string }): void {
+  command.exitOverride();
+  command.configureOutput({
+    writeOut: (value) => {
+      output.stdout += value;
+    },
+    writeErr: (value) => {
+      output.stderr += value;
+    },
+  });
+  for (const child of command.commands) {
+    configureCommandForTest(child, output);
+  }
+}
+
+async function runLoopCommand(command: Command, argv: string[]): Promise<{ stdout: string; stderr: string; exitCode: number }> {
+  const output = { stdout: "", stderr: "" };
+  let exitCode = 0;
+  const originalExit = process.exit;
+  const originalStdoutWrite = process.stdout.write;
+  const originalStderrWrite = process.stderr.write;
+
+  configureCommandForTest(command, output);
+  process.stdout.write = ((chunk: string | Uint8Array) => {
+    output.stdout += String(chunk);
+    return true;
+  }) as typeof process.stdout.write;
+  process.stderr.write = ((chunk: string | Uint8Array) => {
+    output.stderr += String(chunk);
+    return true;
+  }) as typeof process.stderr.write;
+  process.exit = ((code?: string | number | null | undefined) => {
+    exitCode = typeof code === "number" ? code : 0;
+    throw new Error("process.exit called");
+  }) as typeof process.exit;
+
+  try {
+    await command.parseAsync(["node", "polaris", ...argv], { from: "node" });
+  } catch (error) {
+    if (
+      !(error instanceof Error && "exitCode" in error) &&
+      !(error instanceof Error && error.message === "process.exit called")
+    ) {
+      throw error;
+    }
+    if (error instanceof Error && "exitCode" in error) {
+      exitCode = Number(error.exitCode);
+    }
+  } finally {
+    process.exit = originalExit;
+    process.stdout.write = originalStdoutWrite;
+    process.stderr.write = originalStderrWrite;
+  }
+
+  return { ...output, exitCode };
 }
 
 // ── Mock registry so tests can inject a mock adapter ────────────────────────
@@ -609,5 +668,78 @@ describe("runParentLoop", () => {
       expect.objectContaining({ adapter: "mock" }),
     );
     expect(calls[0].options.provider).toBe("mock");
+  });
+
+  it("CLI loop run dry-run with a valid state file runs to cluster-complete and exits 0", async () => {
+    const calls: MockCall[] = [];
+    const mockAdapter = makeMockAdapter([SUCCESS_RESULT], calls);
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+    const command = createLoopCommand({ repoRoot: tmpDir });
+
+    const result = await runLoopCommand(command, [
+      "run",
+      "POL-99",
+      "--state-file",
+      stateFile,
+      "--adapter",
+      "mock",
+      "--provider",
+      "mock",
+      "--dry-run",
+    ]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("Polaris parent loop halted: cluster-complete");
+    expect(result.stdout).toContain("Cluster complete");
+    expect(calls).toHaveLength(1);
+    expect(calls[0].options).toMatchObject({ provider: "mock", dryRun: true });
+  });
+
+  it("CLI loop run exits 1 when state file is invalid", async () => {
+    vi.mocked(createAdapter).mockReturnValue(makeMockAdapter([SUCCESS_RESULT]));
+    const stateFile = join(tmpDir, "current-state.json");
+    writeFileSync(stateFile, '{"not_valid": true}', "utf-8");
+    const command = createLoopCommand({ repoRoot: tmpDir });
+
+    const result = await runLoopCommand(command, [
+      "run",
+      "POL-99",
+      "--state-file",
+      stateFile,
+      "--dry-run",
+    ]);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("Polaris parent loop halted: state-invalid");
+    expect(result.stderr).toContain("current-state.json is invalid");
+  });
+
+  it("CLI loop run exits 1 with an ANALYZE parent message", async () => {
+    const calls: MockCall[] = [];
+    vi.mocked(createAdapter).mockReturnValue(makeMockAdapter([SUCCESS_RESULT], calls));
+    const stateFile = makeStateFileWithMeta(
+      tmpDir,
+      ["POL-100"],
+      { "POL-99": { title: "ANALYZE: Split execution architecture" } },
+    );
+    const command = createLoopCommand({ repoRoot: tmpDir });
+
+    const result = await runLoopCommand(command, [
+      "run",
+      "POL-99",
+      "--state-file",
+      stateFile,
+      "--dry-run",
+    ]);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("Polaris parent loop halted: analyze-parent");
+    expect(result.stderr).toContain("polaris-run targets IMPLEMENT parents");
+    expect(calls).toHaveLength(0);
   });
 });

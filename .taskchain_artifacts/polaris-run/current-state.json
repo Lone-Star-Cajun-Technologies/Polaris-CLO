@@ -6,22 +6,21 @@
   "skill": "polaris-run",
   "artifact_dir": ".taskchain_artifacts/polaris-run",
   "branch": "philmeaux/pol-142-implement-add-explicit-polaris-subagent-dispatch-boundary",
-  "current_step_id": "05-validate-child",
+  "current_step_id": "06-commit-and-update-linear",
   "step_cursor": "checkpoint",
   "status": "running",
   "session_type": "implementation",
-  "active_child": "POL-145",
-  "last_commit": "d1b99024e957d8c7be8928309ff1273305285c8a",
+  "active_child": "",
+  "last_commit": "e8d72a4475133456794e2220d98461706b71ab57",
   "pr_url": "",
-  "next_open_child": "POL-145",
+  "next_open_child": null,
   "completed_children": [
     "POL-143",
-    "POL-144"
-  ],
-  "open_children": [
+    "POL-144",
     "POL-145",
     "POL-146"
   ],
+  "open_children": [],
   "open_children_meta": {
     "POL-143": {
       "title": "IMPLEMENT: Write polaris-dispatch-contract spec",
@@ -39,8 +38,8 @@
     },
     "POL-145": {
       "title": "IMPLEMENT: Add polaris loop dispatch CLI command",
-      "state": "Backlog",
-      "status_type": "backlog",
+      "state": "Done",
+      "status_type": "completed",
       "blocked_by": [
         "POL-143",
         "POL-144"
@@ -48,19 +47,19 @@
     },
     "POL-146": {
       "title": "IMPLEMENT: Expose runParentLoop as polaris loop run CLI command",
-      "state": "Backlog",
-      "status_type": "backlog",
+      "state": "Done",
+      "status_type": "completed",
       "blocked_by": [
         "POL-145"
       ]
     }
   },
   "context_budget": {
-    "children_completed": 2,
-    "files_touched_total": 8,
-    "last_child_files_touched": 3
+    "children_completed": 4,
+    "files_touched_total": 10,
+    "last_child_files_touched": 2
   },
   "validation_status": "passed",
-  "updated_at": "2026-05-27T15:35:31Z",
+  "updated_at": "2026-05-27T15:43:00Z",
   "blocker": null
 }
