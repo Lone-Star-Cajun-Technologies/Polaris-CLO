@@ -18,6 +18,8 @@ import {
   type FileRouteEntry,
 } from "../map/atlas.js";
 import { getMonotonicTimestamp } from "../utils/monotonic-timestamp.js";
+import { isIngestIneligible } from "./smartdoc-ignore.js";
+import { addCandidateGovernanceMetadata } from "./doctrine.js";
 
 export type DocsClassification =
   | "runtime-summary"
@@ -410,9 +412,19 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
     if (relCheck.startsWith("..") || relCheck.startsWith("/")) {
       throw new Error(`polaris docs ingest: path traversal detected, file outside repo: ${source}`);
     }
+    const relSource = relative(repoRoot, absSource).replace(/\\/g, "/");
+    const eligibility = isIngestIneligible(relSource, repoRoot);
+    if (eligibility.ineligible) {
+      emitTelemetry(telPath, runId, {
+        event: "docs-ingest-skipped-endpoint-artifact",
+        file: relSource,
+        reason: eligibility.reason,
+        cluster_id: clusterId,
+      });
+      throw new Error(`polaris docs ingest: ${relSource} is ineligible for docs ingest - ${eligibility.reason}`);
+    }
     if (!existsSync(absSource)) throw new Error(`polaris docs ingest: file not found: ${source}`);
     const content = readFileSync(absSource, "utf-8");
-    const relSource = relative(repoRoot, absSource).replace(/\\/g, "/");
     const classification = classifyDoc(content, relSource);
 
     if (APPROVAL_REQUIRED.has(classification) && !options.approveAuthority) {
@@ -451,7 +463,10 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
     });
 
     if (!options.dryRun) {
-      const output = classification === "doctrine-candidate" ? addCandidateFrontMatter(content, relSource) : content;
+      let output = classification === "doctrine-candidate" ? addCandidateFrontMatter(content, relSource) : content;
+      if (classification === "doctrine-candidate") {
+        output = addCandidateGovernanceMetadata(output, classification);
+      }
       if (output !== content) {
         writeFileSync(absSource, output, "utf-8");
       }

@@ -1,6 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, renameSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve } from "node:path";
+import { isIngestIneligible } from "./smartdoc-ignore.js";
 
 export interface MigrateOptions {
   repoRoot: string;
@@ -13,6 +14,7 @@ export interface MigrateFileResult {
   currentPath: string;
   classification: "allowed-exception" | "migrated";
   exceptionReason?: string;
+  endpointArtifactReason?: string;
   destination?: string;
 }
 
@@ -25,7 +27,16 @@ export interface MigrateResult {
 }
 
 /** Basenames that are always allowed regardless of location. */
-const ALLOWED_BASENAMES = new Set(["README.md", "POLARIS.md", "CHANGELOG.md", "LICENSE.md"]);
+const ALLOWED_BASENAMES = new Set([
+  "README.md",
+  "POLARIS.md",
+  "CHANGELOG.md",
+  "LICENSE.md",
+  "AGENTS.md",
+  "CLAUDE.md",
+  "GEMINI.md",
+  "COPILOT.md",
+]);
 
 /**
  * Directory prefixes (relative to repo root, forward-slash notation) where
@@ -37,9 +48,15 @@ const ALLOWED_DIR_PREFIXES = [
   ".codex/",
   ".claude/",
   ".taskchain_artifacts/",
+  "generated/",
+  "summaries/",
+  "Polaris-Docs/",
 ];
 
-export function isAllowedException(relPath: string): { allowed: boolean; reason?: string } {
+export function isAllowedException(
+  relPath: string,
+  repoRoot?: string,
+): { allowed: boolean; reason?: string; endpointArtifactReason?: string } {
   const name = basename(relPath);
 
   if (ALLOWED_BASENAMES.has(name)) {
@@ -49,6 +66,17 @@ export function isAllowedException(relPath: string): { allowed: boolean; reason?
   for (const prefix of ALLOWED_DIR_PREFIXES) {
     if (relPath.startsWith(prefix)) {
       return { allowed: true, reason: `in allowed directory: ${prefix}` };
+    }
+  }
+
+  if (repoRoot) {
+    const eligibility = isIngestIneligible(relPath, repoRoot);
+    if (eligibility.ineligible) {
+      return {
+        allowed: true,
+        reason: eligibility.reason,
+        endpointArtifactReason: "smartdocignore-endpoint-artifact",
+      };
     }
   }
 
@@ -117,13 +145,14 @@ export function migrateDocs(options: MigrateOptions): MigrateResult {
   const toMigrate: string[] = [];
 
   for (const relPath of allMd) {
-    const check = isAllowedException(relPath);
+    const check = isAllowedException(relPath, repoRoot);
     if (check.allowed) {
       results.push({
         originalPath: relPath,
         currentPath: relPath,
         classification: "allowed-exception",
         exceptionReason: check.reason,
+        endpointArtifactReason: check.endpointArtifactReason,
       });
     } else {
       toMigrate.push(relPath);

@@ -44,6 +44,22 @@ describe("isAllowedException", () => {
     expect(isAllowedException("planning/ideas.md").allowed).toBe(false);
     expect(isAllowedException("scratch.md").allowed).toBe(false);
   });
+
+  it("allows AGENTS.md, CLAUDE.md, GEMINI.md, COPILOT.md in any directory", () => {
+    expect(isAllowedException("AGENTS.md").allowed).toBe(true);
+    expect(isAllowedException("src/AGENTS.md").allowed).toBe(true);
+    expect(isAllowedException("CLAUDE.md").allowed).toBe(true);
+    expect(isAllowedException("src/CLAUDE.md").allowed).toBe(true);
+    expect(isAllowedException("GEMINI.md").allowed).toBe(true);
+    expect(isAllowedException("src/GEMINI.md").allowed).toBe(true);
+    expect(isAllowedException("COPILOT.md").allowed).toBe(true);
+  });
+
+  it("allows files in Polaris-Docs/, generated/, summaries/", () => {
+    expect(isAllowedException("Polaris-Docs/some-doc.md").allowed).toBe(true);
+    expect(isAllowedException("generated/output.md").allowed).toBe(true);
+    expect(isAllowedException("summaries/summary.md").allowed).toBe(true);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -152,6 +168,68 @@ describe("migrateDocs (live)", () => {
     expect(provContent[0].currentPath).toBe("docs/raw/notes.md");
     expect(provContent[0].migrationRunId).toBe("test-migrate-live-001");
     expect(provContent[0].migratedAt).toBeTruthy();
+  });
+
+  it("excludes AGENTS.md, CLAUDE.md, GEMINI.md from migration queue by default", () => {
+    addTrackedFile(repoRoot, "AGENTS.md", "# Agents");
+    addTrackedFile(repoRoot, "CLAUDE.md", "# Claude");
+    addTrackedFile(repoRoot, "GEMINI.md", "# Gemini");
+    addTrackedFile(repoRoot, "scratch/notes.md", "# Notes");
+
+    const result = migrateDocs({ repoRoot, dryRun: true, migrationRunId: "test-endpoint-001" });
+
+    const migrated = result.results.filter((r) => r.classification === "migrated");
+    const exceptions = result.results.filter((r) => r.classification === "allowed-exception");
+
+    // Only scratch/notes.md should be migrated
+    expect(migrated).toHaveLength(1);
+    expect(migrated[0].originalPath).toBe("scratch/notes.md");
+
+    // AGENTS.md, CLAUDE.md, GEMINI.md should be exceptions
+    const exceptionPaths = exceptions.map((r) => r.originalPath);
+    expect(exceptionPaths).toContain("AGENTS.md");
+    expect(exceptionPaths).toContain("CLAUDE.md");
+    expect(exceptionPaths).toContain("GEMINI.md");
+  });
+
+  it("does not re-migrate files in Polaris-Docs/", () => {
+    addTrackedFile(repoRoot, "Polaris-Docs/smart-doc.md", "# Smart Doc");
+    addTrackedFile(repoRoot, "scratch/notes.md", "# Notes");
+
+    const result = migrateDocs({ repoRoot, dryRun: true, migrationRunId: "test-endpoint-002" });
+
+    const migrated = result.results.filter((r) => r.classification === "migrated");
+    const exceptions = result.results.filter((r) => r.classification === "allowed-exception");
+
+    expect(migrated).toHaveLength(1);
+    expect(migrated[0].originalPath).toBe("scratch/notes.md");
+
+    const exceptionPaths = exceptions.map((r) => r.originalPath);
+    expect(exceptionPaths).toContain("Polaris-Docs/smart-doc.md");
+  });
+
+  it("respects .smartdocignore custom patterns in migrate", () => {
+    // Write a .smartdocignore with a custom pattern
+    writeFileSync(join(repoRoot, ".smartdocignore"), "custom-ignore/**\n", "utf-8");
+    execFileSync("git", ["add", ".smartdocignore"], { cwd: repoRoot });
+
+    addTrackedFile(repoRoot, "custom-ignore/secret.md", "# Secret");
+    addTrackedFile(repoRoot, "scratch/notes.md", "# Notes");
+
+    const result = migrateDocs({ repoRoot, dryRun: true, migrationRunId: "test-endpoint-003" });
+
+    const migrated = result.results.filter((r) => r.classification === "migrated");
+    const exceptions = result.results.filter((r) => r.classification === "allowed-exception");
+
+    expect(migrated).toHaveLength(1);
+    expect(migrated[0].originalPath).toBe("scratch/notes.md");
+
+    const smartdocExceptions = exceptions.filter(
+      (r) => r.endpointArtifactReason === "smartdocignore-endpoint-artifact",
+    );
+    expect(smartdocExceptions.length).toBeGreaterThanOrEqual(1);
+    const ignoredPaths = smartdocExceptions.map((r) => r.originalPath);
+    expect(ignoredPaths).toContain("custom-ignore/secret.md");
   });
 
   it("handles filename collisions by uniquifying destination", () => {

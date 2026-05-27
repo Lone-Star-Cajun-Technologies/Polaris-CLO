@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { Command } from "commander";
 import { ensureDocsScaffold, ingestDocs, printIngestResults } from "./ingest.js";
@@ -6,6 +6,7 @@ import { migrateDocs, printMigrateResults } from "./migrate.js";
 import { seedInstructions, seedInstructionsAll } from "./seed-instructions.js";
 import { validateInstructions, printReport } from "./validate-instructions.js";
 import { doctrineDraft, doctrinePromote, doctrineDeprecate } from "./doctrine.js";
+import { auditIngestRiskSurface, formatAuditMarkdown, formatAuditSummaryTable } from "./audit.js";
 
 export interface DocsCommandOptions {
   repoRoot?: string;
@@ -194,6 +195,33 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
     });
 
   docs
+    .command("audit")
+    .description("Scan repo for files at risk of recursive ingestion")
+    .option("--json", "Emit AuditResult as JSON")
+    .option("--output <path>", "Write markdown findings report to file")
+    .option("-r, --repo-root <path>", "Repository root", defaultRepoRoot)
+    .action((options: { json?: boolean; output?: string; repoRoot: string }) => {
+      if (options.json && options.output) {
+        console.error("Error: --json and --output are mutually exclusive; provide only one");
+        process.exit(1);
+      }
+      try {
+        const result = auditIngestRiskSurface(options.repoRoot);
+        if (options.json) {
+          console.log(JSON.stringify(result, null, 2));
+        } else if (options.output) {
+          writeFileSync(options.output, formatAuditMarkdown(result), "utf-8");
+          console.log(`written: ${options.output}`);
+        } else {
+          console.log(formatAuditSummaryTable(result));
+        }
+      } catch (err) {
+        console.error(err instanceof Error ? err.message : String(err));
+        process.exit(1);
+      }
+    });
+
+  docs
     .command("validate-instructions")
     .description("Check all POLARIS.md files for staleness, broken links, and missing coverage")
     .option("--path <dir>", "Validate only the given directory")
@@ -240,7 +268,10 @@ export function createDoctrineCommand(): Command {
     .option("--run-id <id>", "Override the generated doctrine run ID")
     .action((path: string, options: { repoRoot: string; runId?: string }) => {
       try {
-        const result = doctrinePromote(path, { repoRoot: options.repoRoot, runId: options.runId });
+        const result = doctrinePromote(path, {
+          repoRoot: options.repoRoot,
+          runId: options.runId
+        });
         console.log(`promoted: ${result.destination}`);
         console.log(`provenance: ${result.lifecyclePath}`);
       } catch (err) {
