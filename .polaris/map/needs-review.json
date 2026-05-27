@@ -1096,7 +1096,7 @@
     "taskchain": "polaris-core",
     "confidence": 0,
     "classification": "needs-review",
-    "last_updated": "2026-05-27T03:54:38.138Z",
+    "last_updated": "2026-05-27T15:20:07.531Z",
     "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": "POLARIS.md"
@@ -1897,6 +1897,28 @@
     "confidence": 0,
     "classification": "needs-review",
     "last_updated": "2026-05-27T03:54:38.138Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": "POLARIS.md"
+  },
+  ".taskchain_artifacts/polaris-run/runs/polaris-run-subagent-dispatch-2026-05-27-003/telemetry.jsonl": {
+    "domain": "unknown",
+    "route": ".taskchain_artifacts/polaris-run/runs/polaris-run-subagent-dispatch-2026-05-27-003/telemetry.jsonl",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-27T15:20:07.531Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": "POLARIS.md"
+  },
+  "docs/spec/polaris-dispatch-contract.md": {
+    "domain": "unknown",
+    "route": "docs/spec/polaris-dispatch-contract.md",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-27T15:20:07.531Z",
     "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": "POLARIS.md"

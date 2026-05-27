@@ -1,0 +1,7 @@
+{"event":"run-start","run_id":"polaris-run-subagent-dispatch-2026-05-27-003","prior_run_id":"polaris-run-endpoint-artifact-protection-2026-05-27-001","timestamp":"2026-05-27T15:12:20Z"}
+{"event":"step-complete","run_id":"polaris-run-subagent-dispatch-2026-05-27-003","step":"01-orient-cluster","timestamp":"2026-05-27T15:12:20Z"}
+{"event":"step-complete","run_id":"polaris-run-subagent-dispatch-2026-05-27-003","step":"02-prepare-branch","timestamp":"2026-05-27T15:12:20Z"}
+{"event":"step-complete","run_id":"polaris-run-subagent-dispatch-2026-05-27-003","step":"03-select-child","timestamp":"2026-05-27T15:12:20Z","active_child":"POL-143"}
+{"event":"step-start","run_id":"polaris-run-subagent-dispatch-2026-05-27-003","step":"04-execute-child","timestamp":"2026-05-27T15:13:45Z","active_child":"POL-143","worker":"019e69ff-82ea-7173-827a-e61687bf50ae"}
+{"event":"step-complete","run_id":"polaris-run-subagent-dispatch-2026-05-27-003","step":"04-execute-child","timestamp":"2026-05-27T15:19:13Z","active_child":"POL-143","files_changed":["docs/spec/polaris-dispatch-contract.md"]}
+{"event":"step-complete","run_id":"polaris-run-subagent-dispatch-2026-05-27-003","step":"05-validate-child","timestamp":"2026-05-27T15:19:13Z","active_child":"POL-143","validation":["test -f docs/spec/polaris-dispatch-contract.md","rg -F required phrases","npm run lint"]}
