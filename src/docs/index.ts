@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { Command } from "commander";
 import { ensureDocsScaffold, ingestDocs, printIngestResults } from "./ingest.js";
@@ -6,6 +6,7 @@ import { migrateDocs, printMigrateResults } from "./migrate.js";
 import { seedInstructions, seedInstructionsAll } from "./seed-instructions.js";
 import { validateInstructions, printReport } from "./validate-instructions.js";
 import { doctrineDraft, doctrinePromote, doctrineDeprecate } from "./doctrine.js";
+import { auditIngestRiskSurface, formatAuditMarkdown, formatAuditSummaryTable } from "./audit.js";
 
 export interface DocsCommandOptions {
   repoRoot?: string;
@@ -190,6 +191,29 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
         console.warn(`warning: ${pathArg}/POLARIS.md already exists (no draft marker) — skipped`);
       } else {
         console.log(`skipped (draft exists): ${pathArg}/POLARIS.md`);
+      }
+    });
+
+  docs
+    .command("audit")
+    .description("Scan repo for files at risk of recursive ingestion")
+    .option("--json", "Emit AuditResult as JSON")
+    .option("--output <path>", "Write markdown findings report to file")
+    .option("-r, --repo-root <path>", "Repository root", defaultRepoRoot)
+    .action((options: { json?: boolean; output?: string; repoRoot: string }) => {
+      try {
+        const result = auditIngestRiskSurface(options.repoRoot);
+        if (options.json) {
+          console.log(JSON.stringify(result, null, 2));
+        } else if (options.output) {
+          writeFileSync(options.output, formatAuditMarkdown(result), "utf-8");
+          console.log(`written: ${options.output}`);
+        } else {
+          console.log(formatAuditSummaryTable(result));
+        }
+      } catch (err) {
+        console.error(err instanceof Error ? err.message : String(err));
+        process.exit(1);
       }
     });
 
