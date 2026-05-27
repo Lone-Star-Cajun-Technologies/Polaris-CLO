@@ -266,13 +266,11 @@ export function createDoctrineCommand(): Command {
     .description("Move a doc from docs/doctrine/candidate/ to docs/doctrine/active/")
     .option("-r, --repo-root <path>", "Repository root", process.cwd())
     .option("--run-id <id>", "Override the generated doctrine run ID")
-    .option("--skip-governance", "Skip governance validation (bypass required front-matter fields)")
-    .action((path: string, options: { repoRoot: string; runId?: string; skipGovernance?: boolean }) => {
+    .action((path: string, options: { repoRoot: string; runId?: string }) => {
       try {
         const result = doctrinePromote(path, {
           repoRoot: options.repoRoot,
-          runId: options.runId,
-          skipGovernance: options.skipGovernance
+          runId: options.runId
         });
         console.log(`promoted: ${result.destination}`);
         console.log(`provenance: ${result.lifecyclePath}`);

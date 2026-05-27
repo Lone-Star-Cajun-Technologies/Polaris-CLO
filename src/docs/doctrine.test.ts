@@ -255,26 +255,6 @@ describe("doctrinePromote", () => {
     expect(auditEvent.promoted_by).toBe("polaris-cli");
     expect(result.destination).toBeDefined();
   });
-
-  it("skipGovernance: true logs governance-override to lifecycle.jsonl and skips governance check", () => {
-    const candidatePath = join(repoRoot, "docs", "doctrine", "candidate", "skip-gov.md");
-    // No governance front matter at all — would normally be rejected
-    writeFileSync(candidatePath, `${CANDIDATE_MARKER}\n# No governance fields`);
-
-    const result = doctrinePromote(candidatePath, {
-      repoRoot,
-      runId: "test-run-skip",
-      skipGovernance: true,
-    });
-
-    expect(existsSync(result.destination)).toBe(true);
-
-    const lifecycleLines = readFileSync(result.lifecyclePath, "utf-8").trim().split("\n");
-    const events = lifecycleLines.map((l) => JSON.parse(l));
-    const overrideEvent = events.find((e) => e.event === "governance-override");
-    expect(overrideEvent).toBeDefined();
-    expect(overrideEvent.run_id).toBe("test-run-skip");
-  });
 });
 
 describe("addCandidateGovernanceMetadata", () => {

@@ -13,7 +13,6 @@ export const CANDIDATE_MARKER = "<!-- polaris:doctrine-candidate -->";
 export interface DoctrineOptions {
   repoRoot: string;
   runId?: string;
-  skipGovernance?: boolean;
 }
 
 export interface DoctrineResult {
@@ -191,29 +190,20 @@ export function doctrinePromote(path: string, options: DoctrineOptions): Doctrin
   const lifecyclePath = lifecycleFilePath(repoRoot, runId);
 
   // Governance check
-  if (options.skipGovernance) {
-    appendLifecycle(lifecyclePath, {
-      event: "governance-override",
-      run_id: runId,
-      source,
-      timestamp: new Date().toISOString(),
-    });
-  } else {
-    const fm = parseFrontMatter(content);
-    const requiredFields = ["doc-type", "confidence", "recommended-action", "overlap-analysis"];
-    for (const field of requiredFields) {
-      if (!fm.has(field)) {
-        throw new Error(
-          `doctrinePromote: missing required governance field "${field}" in ${source}`,
-        );
-      }
-    }
-    const recommendedAction = fm.get("recommended-action");
-    if (recommendedAction !== "promote") {
+  const fm = parseFrontMatter(content);
+  const requiredFields = ["doc-type", "confidence", "recommended-action", "overlap-analysis"];
+  for (const field of requiredFields) {
+    if (!fm.has(field)) {
       throw new Error(
-        `doctrinePromote: recommended-action must be "promote" but got "${recommendedAction}" in ${source}`,
+        `doctrinePromote: missing required governance field "${field}" in ${source}`,
       );
     }
+  }
+  const recommendedAction = fm.get("recommended-action");
+  if (recommendedAction !== "promote") {
+    throw new Error(
+      `doctrinePromote: recommended-action must be "promote" but got "${recommendedAction}" in ${source}`,
+    );
   }
 
   const activeDir = join(repoRoot, "docs", "doctrine", "active");
@@ -229,7 +219,6 @@ export function doctrinePromote(path: string, options: DoctrineOptions): Doctrin
   unlinkSync(source);
 
   // Write audit record
-  const fm = parseFrontMatter(content);
   const auditPath = auditFilePath(repoRoot, runId);
   mkdirSync(dirname(auditPath), { recursive: true });
   appendFileSync(
