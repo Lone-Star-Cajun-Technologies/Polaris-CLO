@@ -260,8 +260,8 @@
     "taskchain": "polaris-core",
     "confidence": 0,
     "classification": "needs-review",
-    "last_updated": "2026-05-26T15:04:43.304Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-05-27T15:27:08.288Z",
+    "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": "POLARIS.md"
   },
@@ -282,8 +282,8 @@
     "taskchain": "polaris-core",
     "confidence": 0,
     "classification": "needs-review",
-    "last_updated": "2026-05-26T15:04:43.304Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-05-27T15:27:08.288Z",
+    "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": "POLARIS.md"
   },
@@ -293,8 +293,8 @@
     "taskchain": "polaris-core",
     "confidence": 0,
     "classification": "needs-review",
-    "last_updated": "2026-05-26T15:04:43.304Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-05-27T15:27:08.288Z",
+    "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": "POLARIS.md"
   },
@@ -381,8 +381,8 @@
     "taskchain": "polaris-core",
     "confidence": 0,
     "classification": "needs-review",
-    "last_updated": "2026-05-26T15:04:43.304Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-05-27T15:27:08.288Z",
+    "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": "POLARIS.md"
   },
@@ -1096,7 +1096,7 @@
     "taskchain": "polaris-core",
     "confidence": 0,
     "classification": "needs-review",
-    "last_updated": "2026-05-27T15:20:07.531Z",
+    "last_updated": "2026-05-27T15:27:08.288Z",
     "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": "POLARIS.md"
@@ -1907,7 +1907,7 @@
     "taskchain": "polaris-core",
     "confidence": 0,
     "classification": "needs-review",
-    "last_updated": "2026-05-27T15:20:07.531Z",
+    "last_updated": "2026-05-27T15:27:08.288Z",
     "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": "POLARIS.md"
@@ -1919,6 +1919,17 @@
     "confidence": 0,
     "classification": "needs-review",
     "last_updated": "2026-05-27T15:20:07.531Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": "POLARIS.md"
+  },
+  ".polaris/bootstrap/polaris-run-subagent-dispatch-2026-05-27-003-2026-05-27T15-21-29-347Z.json": {
+    "domain": "unknown",
+    "route": ".polaris/bootstrap/polaris-run-subagent-dispatch-2026-05-27-003-2026-05-27T15-21-29-347Z.json",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-27T15:27:08.288Z",
     "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": "POLARIS.md"

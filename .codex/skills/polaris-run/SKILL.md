@@ -36,5 +36,7 @@ If the artifact update fails or cannot be verified, stop and report the artifact
 
 - Implementation work only — source code, tests, config changes.
 - One child per commit. Never batch multiple children into one commit.
+- Do not implement child work inline in the parent. Use `polaris loop dispatch` to dispatch a worker.
+- `polaris loop continue` is post-child only. Do not call it before the worker has returned.
 - Do not call `polaris loop continue` without a preceding commit.
 - `polaris finalize` replaces manual push and PR — do not push or open PRs directly.

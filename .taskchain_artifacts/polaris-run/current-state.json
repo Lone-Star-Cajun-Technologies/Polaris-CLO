@@ -7,16 +7,17 @@
   "artifact_dir": ".taskchain_artifacts/polaris-run",
   "branch": "philmeaux/pol-142-implement-add-explicit-polaris-subagent-dispatch-boundary",
   "current_step_id": "05-validate-child",
-  "step_cursor": "complete",
-  "status": "validating",
+  "step_cursor": "checkpoint",
+  "status": "running",
   "session_type": "implementation",
-  "active_child": "POL-143",
-  "last_commit": "",
+  "active_child": "POL-144",
+  "last_commit": "785d382fb8ccb0be9469efe45806bec95917debe",
   "pr_url": "",
-  "next_open_child": "POL-143",
-  "completed_children": [],
+  "next_open_child": "POL-144",
+  "completed_children": [
+    "POL-143"
+  ],
   "open_children": [
-    "POL-143",
     "POL-144",
     "POL-145",
     "POL-146"
@@ -24,8 +25,8 @@
   "open_children_meta": {
     "POL-143": {
       "title": "IMPLEMENT: Write polaris-dispatch-contract spec",
-      "state": "Backlog",
-      "status_type": "backlog",
+      "state": "Done",
+      "status_type": "completed",
       "blocked_by": []
     },
     "POL-144": {
@@ -55,11 +56,11 @@
     }
   },
   "context_budget": {
-    "children_completed": 0,
-    "files_touched_total": 1,
-    "last_child_files_touched": 1
+    "children_completed": 1,
+  "files_touched_total": 5,
+  "last_child_files_touched": 4
   },
   "validation_status": "passed",
-  "updated_at": "2026-05-27T15:19:13Z",
+  "updated_at": "2026-05-27T15:26:22Z",
   "blocker": null
 }
