@@ -1,65 +1,53 @@
 {
   "schema_version": "1.0",
-  "run_id": "polaris-run-cli-parity-workflow-migration-2026-05-26-001",
-  "related_run_id": "polaris-run-pol-121-2026-05-26-001",
-  "cluster_id": "POL-123",
+  "run_id": "polaris-run-endpoint-artifact-protection-2026-05-26-001",
+  "related_run_id": null,
+  "cluster_id": "POL-130",
   "skill": "polaris-run",
   "artifact_dir": ".taskchain_artifacts/polaris-run",
-  "branch": "philmeaux/pol-123-implement-polaris-runtime-cli-parity-and-deferred-workflow",
-  "current_step_id": "08-final-delivery",
-  "step_cursor": "checkpoint",
-  "status": "complete",
+  "branch": "philmeaux/pol-130-implement-endpoint-artifact-protection-for-smart-docs-ingest",
+  "current_step_id": "03-select-child",
+  "step_cursor": "ready",
+  "status": "running",
   "session_type": "implementation",
-  "active_child": "",
-  "last_commit": "d62cb22",
-  "pr_url": "https://github.com/ItIsYeBananaduck/Polaris/pull/39",
-  "next_open_child": null,
-  "completed_children": [
-    "POL-128",
-    "POL-124",
-    "POL-125",
-    "POL-126",
-    "POL-127"
-  ],
-  "open_children": [],
+  "active_child": "POL-133",
+  "last_commit": "e4618ec",
+  "pr_url": null,
+  "next_open_child": "POL-133",
+  "completed_children": ["POL-131"],
+  "open_children": ["POL-133", "POL-132", "POL-134"],
   "open_children_meta": {
-    "POL-124": {
-      "title": "IMPLEMENT: Wire polaris doctrine subcommand into CLI",
+    "POL-131": {
+      "title": "IMPLEMENT: Add .smartdocignore parser and enforce in polaris docs ingest",
       "state": "Done",
       "status_type": "completed",
       "blocked_by": []
     },
-    "POL-125": {
-      "title": "IMPLEMENT: Add polaris docs init for Smart Docs scaffold bootstrap",
-      "state": "Done",
-      "status_type": "completed",
+    "POL-133": {
+      "title": "IMPLEMENT: Add candidate promotion governance with audit logging",
+      "state": "Backlog",
+      "status_type": "backlog",
       "blocked_by": []
     },
-    "POL-126": {
-      "title": "IMPLEMENT: Extend polaris init with repoAnalysis provider detection",
-      "state": "Done",
-      "status_type": "completed",
+    "POL-132": {
+      "title": "IMPLEMENT: Add endpoint artifact protection to polaris docs migrate",
+      "state": "Backlog",
+      "status_type": "backlog",
       "blocked_by": []
     },
-    "POL-127": {
-      "title": "IMPLEMENT: Add read-only polaris config show subcommand",
-      "state": "Done",
-      "status_type": "completed",
+    "POL-134": {
+      "title": "IMPLEMENT: Add polaris docs audit subcommand for recursive ingest risk report",
+      "state": "Backlog",
+      "status_type": "backlog",
       "blocked_by": []
     }
   },
   "context_budget": {
-    "children_completed": 5,
-    "files_touched_total": 16,
-    "last_child_files_touched": 5
+    "children_completed": 0,
+    "files_touched_total": 0,
+    "last_child_files_touched": 0
   },
-  "validation_status": "passed",
-  "updated_at": "2026-05-26T23:40:54Z",
-  "blocker": {
-    "reason": "Blocked: POL-124 validation cannot run because src/loop/checkpoint.ts and src/docs/ingest.ts import missing ../utils/monotonic-timestamp.js on main; fixing it is outside POL-124 allowed changes.",
-    "child_id": "POL-124",
-    "timestamp": "2026-05-26T23:14:30.870Z",
-    "resolved": true,
-    "follow_up_issue": "POL-128"
-  }
+  "validation_status": null,
+  "updated_at": "2026-05-26T23:53:00Z",
+  "blocker": null
 }
