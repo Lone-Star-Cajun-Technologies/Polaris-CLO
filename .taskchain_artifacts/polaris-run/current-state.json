@@ -1,27 +1,26 @@
 {
   "schema_version": "1.0",
-  "run_id": "polaris-run-smart-docs-summary-arch-2026-05-27-001",
-  "related_run_id": null,
+  "run_id": "polaris-run-smart-docs-summary-arch-2026-05-27-003",
+  "related_run_id": "polaris-run-smart-docs-summary-arch-2026-05-27-002",
   "cluster_id": "POL-136",
   "skill": "polaris-run",
   "artifact_dir": ".taskchain_artifacts/polaris-run",
   "branch": "claude/clever-meitner-u6x5x",
-  "current_step_id": "01-orient-cluster",
+  "current_step_id": "03-select-child",
   "step_cursor": "checkpoint",
-  "status": "running",
+  "status": "cluster-complete",
   "session_type": "implementation",
   "active_child": "",
-  "last_commit": "6c67e1a4bbbd1aeff508e519cbd5195812ba6f1f",
+  "last_commit": "a42e70ef6f5820578e49f9b65748548d3c4fa5e0",
   "pr_url": "",
-  "next_open_child": "POL-138",
+  "next_open_child": null,
   "completed_children": [
-    "POL-137"
-  ],
-  "open_children": [
+    "POL-137",
     "POL-138",
     "POL-139",
     "POL-140"
   ],
+  "open_children": [],
   "open_children_meta": {
     "POL-137": {
       "title": "IMPLEMENT: Write Smart Docs summary architecture spec",
@@ -31,16 +30,16 @@
     },
     "POL-138": {
       "title": "IMPLEMENT: Clarify and enforce POLARIS.md role boundaries in seed/validate tooling",
-      "state": "Todo",
-      "status_type": "unstarted",
+      "state": "Done",
+      "status_type": "completed",
       "blocked_by": [
         "POL-137"
       ]
     },
     "POL-139": {
       "title": "IMPLEMENT: Add SUMMARY.md generation, validation, and ignore tooling",
-      "state": "Todo",
-      "status_type": "unstarted",
+      "state": "Done",
+      "status_type": "completed",
       "blocked_by": [
         "POL-138"
       ]
@@ -55,11 +54,16 @@
     }
   },
   "context_budget": {
-    "children_completed": 1,
-    "files_touched_total": 0,
-    "last_child_files_touched": 0
+    "children_completed": 4,
+    "files_touched_total": 6,
+    "last_child_files_touched": 6
   },
   "validation_status": "pending",
-  "updated_at": "2026-05-27T00:00:00Z",
-  "blocker": null
+  "updated_at": "2026-05-27T21:00:00Z",
+  "blocker": null,
+  "dispatch_boundary": {
+    "dispatch_epoch": 0,
+    "continue_epoch": 0,
+    "last_dispatched_child": null
+  }
 }
