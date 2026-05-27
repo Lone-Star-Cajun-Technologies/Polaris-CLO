@@ -1800,5 +1800,19 @@
       "config"
     ],
     "instructionFile": "src/config/POLARIS.md"
+  },
+  "Polaris-Docs/docs/doctrine/candidate/Polaris-Smart-Docs-Doctrine.md": {
+    "domain": "unknown",
+    "route": "POLARIS.md",
+    "taskchain": "polaris-core",
+    "confidence": 0.85,
+    "classification": "indexed",
+    "last_updated": "2026-05-27T03:06:43.749Z",
+    "updated_by": "polaris-docs-ingest",
+    "tags": [
+      "docs",
+      "ingested"
+    ],
+    "instructionFile": "POLARIS.md"
   }
 }

@@ -1,3 +1,9 @@
+---
+status: candidate
+candidate-since: 2026-05-27
+source: Polaris-Docs/docs/specs/raw/Polaris-Smart-Docs-Doctrine.md
+---
+
 # Polaris Smart Docs Doctrine
 
 ## Purpose

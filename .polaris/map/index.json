@@ -1,10 +1,10 @@
 {
-  "scan_date": "2026-05-26T23:40:17.037Z",
-  "file_count": 306,
+  "scan_date": "2026-05-27T03:06:43.749Z",
+  "file_count": 307,
   "coverage_pct": 44,
   "instructionCoverage": {
-    "routesCovered": 306,
-    "routesTotal": 306,
+    "routesCovered": 307,
+    "routesTotal": 307,
     "coveragePercent": 100
   },
   "entries": {
@@ -1809,6 +1809,20 @@
         "config"
       ],
       "instructionFile": "src/config/POLARIS.md"
+    },
+    "Polaris-Docs/docs/doctrine/candidate/Polaris-Smart-Docs-Doctrine.md": {
+      "domain": "unknown",
+      "route": "POLARIS.md",
+      "taskchain": "polaris-core",
+      "confidence": 0.85,
+      "classification": "indexed",
+      "last_updated": "2026-05-27T03:06:43.749Z",
+      "updated_by": "polaris-docs-ingest",
+      "tags": [
+        "docs",
+        "ingested"
+      ],
+      "instructionFile": "POLARIS.md"
     },
     ".DS_Store": {
       "domain": "unknown",
