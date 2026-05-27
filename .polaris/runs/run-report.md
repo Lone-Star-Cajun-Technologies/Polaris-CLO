@@ -1,20 +1,19 @@
-# Run Report: pol-5-session-1
+# Run Report: polaris-run-smart-docs-summary-arch-2026-05-27-003
 
-**Status:** running
+**Status:** cluster-complete
 **Branch:** claude/clever-meitner-u6x5x
 **PR:** TBD — set at delivery step 9
-**Children completed:** 3 of 5
+**Children completed:** 4 of 4
 **Validation:** passed
 
 ## Children
 
 | ID | Title | Commit | Status |
 |---|---|---|---|
-| POL-23 | — | — | Done |
-| POL-24 | — | — | Done |
-| POL-25 | — | — | Done |
-| POL-26 | — | — | Open |
-| POL-27 | — | — | Open |
+| POL-137 | — | — | Done |
+| POL-138 | — | — | Done |
+| POL-139 | — | — | Done |
+| POL-140 | — | — | Done |
 
 ## Artifacts produced
 

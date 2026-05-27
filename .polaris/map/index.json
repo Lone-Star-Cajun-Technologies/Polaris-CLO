@@ -1,10 +1,10 @@
 {
-  "scan_date": "2026-05-27T20:51:17.690Z",
-  "file_count": 254,
+  "scan_date": "2026-05-27T20:51:58.796Z",
+  "file_count": 255,
   "coverage_pct": 49,
   "instructionCoverage": {
-    "routesCovered": 254,
-    "routesTotal": 254,
+    "routesCovered": 255,
+    "routesTotal": 255,
     "coveragePercent": 100
   },
   "entries": {
@@ -2463,7 +2463,7 @@
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
-      "last_updated": "2026-05-27T20:51:17.690Z",
+      "last_updated": "2026-05-27T20:51:58.796Z",
       "updated_by": "polaris-map-update",
       "tags": [],
       "instructionFile": "POLARIS.md"
@@ -2474,7 +2474,7 @@
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
-      "last_updated": "2026-05-27T20:51:17.690Z",
+      "last_updated": "2026-05-27T20:51:58.796Z",
       "updated_by": "polaris-map-update",
       "tags": [],
       "instructionFile": "POLARIS.md"
@@ -2606,8 +2606,8 @@
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
-      "last_updated": "2026-05-26T15:04:43.304Z",
-      "updated_by": "polaris-map-index",
+      "last_updated": "2026-05-27T20:51:58.796Z",
+      "updated_by": "polaris-map-update",
       "tags": [],
       "instructionFile": "POLARIS.md"
     },
@@ -2771,7 +2771,7 @@
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
-      "last_updated": "2026-05-27T03:54:38.138Z",
+      "last_updated": "2026-05-27T20:51:58.796Z",
       "updated_by": "polaris-map-update",
       "tags": [],
       "instructionFile": "POLARIS.md"
@@ -3099,6 +3099,17 @@
       "confidence": 0,
       "classification": "needs-review",
       "last_updated": "2026-05-27T03:54:38.138Z",
+      "updated_by": "polaris-map-update",
+      "tags": [],
+      "instructionFile": "POLARIS.md"
+    },
+    ".taskchain_artifacts/polaris-run/runs/polaris-run-smart-docs-summary-arch-2026-05-27-001/telemetry.jsonl": {
+      "domain": "unknown",
+      "route": ".taskchain_artifacts/polaris-run/runs/polaris-run-smart-docs-summary-arch-2026-05-27-001/telemetry.jsonl",
+      "taskchain": "polaris-core",
+      "confidence": 0,
+      "classification": "needs-review",
+      "last_updated": "2026-05-27T20:51:58.796Z",
       "updated_by": "polaris-map-update",
       "tags": [],
       "instructionFile": "POLARIS.md"
