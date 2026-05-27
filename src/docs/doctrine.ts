@@ -42,14 +42,16 @@ function auditFilePath(repoRoot: string, runId: string): string {
  */
 function parseFrontMatter(content: string): Map<string, string> {
   const result = new Map<string, string>();
+  // Normalize line endings to Unix style
+  const normalized = content.replace(/\r\n/g, "\n");
   // Strip candidate marker line if it's at the start
-  const stripped = content.startsWith(CANDIDATE_MARKER)
-    ? content.slice(CANDIDATE_MARKER.length).replace(/^\n/, "")
-    : content;
+  const stripped = normalized.startsWith(CANDIDATE_MARKER)
+    ? normalized.slice(CANDIDATE_MARKER.length).replace(/^\n/, "")
+    : normalized;
   if (!stripped.startsWith("---\n")) return result;
   const end = stripped.indexOf("\n---", 4);
   if (end === -1) return result;
-  const lines = stripped.slice(4, end).split(/\r?\n/);
+  const lines = stripped.slice(4, end).split("\n");
   for (const line of lines) {
     const colonIdx = line.indexOf(":");
     if (colonIdx === -1) continue;
@@ -72,12 +74,15 @@ export function addCandidateGovernanceMetadata(content: string, docType: string)
     "overlap-analysis": "pending",
   };
 
-  if (content.startsWith("---\n")) {
-    const end = content.indexOf("\n---", 4);
+  // Normalize line endings to Unix style
+  const normalized = content.replace(/\r\n/g, "\n");
+
+  if (normalized.startsWith("---\n")) {
+    const end = normalized.indexOf("\n---", 4);
     if (end !== -1) {
-      const frontMatter = content.slice(4, end);
-      const afterFrontMatter = content.slice(end + 4);
-      const lines = frontMatter.split(/\r?\n/);
+      const frontMatter = normalized.slice(4, end);
+      const afterFrontMatter = normalized.slice(end + 4);
+      const lines = frontMatter.split("\n");
       const existingKeys = new Set(
         lines
           .filter((l) => l.includes(":"))
@@ -87,7 +92,7 @@ export function addCandidateGovernanceMetadata(content: string, docType: string)
       for (const [key, val] of Object.entries(govDefaults)) {
         if (!existingKeys.has(key)) additions.push(`${key}: ${val}`);
       }
-      if (additions.length === 0) return content;
+      if (additions.length === 0) return normalized;
       return `---\n${frontMatter}\n${additions.join("\n")}\n---${afterFrontMatter}`;
     }
   }
@@ -96,7 +101,7 @@ export function addCandidateGovernanceMetadata(content: string, docType: string)
   const fields = Object.entries(govDefaults)
     .map(([k, v]) => `${k}: ${v}`)
     .join("\n");
-  return `---\n${fields}\n---\n\n${content}`;
+  return `---\n${fields}\n---\n\n${normalized}`;
 }
 
 function appendLifecycle(lifecyclePath: string, event: Record<string, unknown>): void {

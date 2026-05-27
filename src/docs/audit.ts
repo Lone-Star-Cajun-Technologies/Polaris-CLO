@@ -43,8 +43,9 @@ export function auditIngestRiskSurface(repoRoot: string): AuditResult {
       cwd: absRoot,
       encoding: "utf-8",
     });
-  } catch {
-    rawOutput = "";
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    throw new Error(`Failed to list tracked markdown files via git: ${message}`);
   }
 
   const trackedFiles = rawOutput
@@ -57,6 +58,24 @@ export function auditIngestRiskSurface(repoRoot: string): AuditResult {
   for (const relPath of trackedFiles) {
     const absPath = resolve(absRoot, relPath);
     const eligibility = isIngestIneligible(relPath, absRoot);
+
+    // MEDIUM: file is in Polaris-Docs/ canonical output dirs
+    // Check this BEFORE the ineligible branch so these findings are always emitted
+    if (relPath.startsWith("Polaris-Docs/")) {
+      const protection = eligibility.ineligible
+        ? "isIngestIneligible"
+        : null;
+      findings.push({
+        filePath: relPath,
+        risk: "MEDIUM",
+        reason:
+          "File in Polaris-Docs/ canonical output — migrateDocs() would attempt to move it back",
+        pipelineStage: "migrate",
+        currentProtection: protection,
+        proposedEnforcementPoint: "endpoint artifact protection in migrateDocs()",
+      });
+      // Don't continue yet - still need to check ineligible for HIGH findings
+    }
 
     if (eligibility.ineligible) {
       // HIGH: endpoint artifact that could be ingested
@@ -92,23 +111,6 @@ export function auditIngestRiskSurface(repoRoot: string): AuditResult {
         }
       }
 
-      continue;
-    }
-
-    // MEDIUM: file is in Polaris-Docs/ canonical output dirs
-    if (relPath.startsWith("Polaris-Docs/")) {
-      const protection = isIngestIneligible(relPath, absRoot).ineligible
-        ? "isIngestIneligible"
-        : null;
-      findings.push({
-        filePath: relPath,
-        risk: "MEDIUM",
-        reason:
-          "File in Polaris-Docs/ canonical output — migrateDocs() would attempt to move it back",
-        pipelineStage: "migrate",
-        currentProtection: protection,
-        proposedEnforcementPoint: "endpoint artifact protection in migrateDocs()",
-      });
       continue;
     }
 

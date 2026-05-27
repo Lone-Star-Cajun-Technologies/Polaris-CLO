@@ -201,6 +201,10 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
     .option("--output <path>", "Write markdown findings report to file")
     .option("-r, --repo-root <path>", "Repository root", defaultRepoRoot)
     .action((options: { json?: boolean; output?: string; repoRoot: string }) => {
+      if (options.json && options.output) {
+        console.error("Error: --json and --output are mutually exclusive; provide only one");
+        process.exit(1);
+      }
       try {
         const result = auditIngestRiskSurface(options.repoRoot);
         if (options.json) {
@@ -262,9 +266,14 @@ export function createDoctrineCommand(): Command {
     .description("Move a doc from docs/doctrine/candidate/ to docs/doctrine/active/")
     .option("-r, --repo-root <path>", "Repository root", process.cwd())
     .option("--run-id <id>", "Override the generated doctrine run ID")
-    .action((path: string, options: { repoRoot: string; runId?: string }) => {
+    .option("--skip-governance", "Skip governance validation (bypass required front-matter fields)")
+    .action((path: string, options: { repoRoot: string; runId?: string; skipGovernance?: boolean }) => {
       try {
-        const result = doctrinePromote(path, { repoRoot: options.repoRoot, runId: options.runId });
+        const result = doctrinePromote(path, {
+          repoRoot: options.repoRoot,
+          runId: options.runId,
+          skipGovernance: options.skipGovernance
+        });
         console.log(`promoted: ${result.destination}`);
         console.log(`provenance: ${result.lifecyclePath}`);
       } catch (err) {
