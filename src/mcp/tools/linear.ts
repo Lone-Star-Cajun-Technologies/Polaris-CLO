@@ -1,5 +1,8 @@
 import type { Tool } from "@modelcontextprotocol/sdk/types.js";
-import { mcp_linear_list_issues, mcp_linear_save_issue } from "@tool-server/linear";
+
+async function loadLinearTools() {
+  return import("@tool-server/linear");
+}
 
 // Handler for listing Linear issues
 export async function handleLinearListIssues(
@@ -11,6 +14,7 @@ export async function handleLinearListIssues(
   }
 ) {
   try {
+    const { mcp_linear_list_issues } = await loadLinearTools();
     const issues = await mcp_linear_list_issues({
       team: args.team,
       project: args.project,
@@ -41,6 +45,7 @@ export async function handleLinearSaveIssue(args: {
   dueDate?: string;
 }) {
   try {
+    const { mcp_linear_save_issue } = await loadLinearTools();
     const issue = await mcp_linear_save_issue(args);
     return { ok: true, data: issue };
   } catch (error) {

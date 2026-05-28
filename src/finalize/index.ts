@@ -16,7 +16,6 @@ import { stepUpdateState } from "./steps/09-update-state.js";
 import { stepAppendJsonl } from "./steps/10-append-jsonl.js";
 import { stepUpdateLinear } from "./steps/11-update-linear.js";
 import { stepArchive } from "./steps/12-archive.js";
-import { McpBridgeAdapter } from "../tracker/adapters/mcp-bridge.js";
 import { LocalGraph } from "../tracker/local-graph.js";
 import { TrackerSyncService } from "../tracker/sync/index.js";
 
@@ -143,6 +142,7 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
     console.log("[6/13] Running tracker reconciliation...");
     try {
       const localGraph = await LocalGraph.load(state.cluster_id, repoRoot);
+      const { McpBridgeAdapter } = await import("../tracker/adapters/mcp-bridge.js");
       const trackerAdapter = new McpBridgeAdapter();
       const trackerSyncService = new TrackerSyncService(trackerAdapter, localGraph);
       await trackerSyncService.ready;

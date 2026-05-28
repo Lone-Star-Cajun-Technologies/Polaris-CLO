@@ -1,17 +1,140 @@
 import { LocalGraph } from "../../local-graph.js";
 import { PolarisConfig } from "../../../config/schema.js";
-import { mcp_linear_list_issues, mcp_linear_get_issue_status, mcp_linear_list_teams, mcp_linear_list_projects } from "@tool-server/linear";
 import { ExecutionGraphV2, ExecutionNode, ExecutionCluster } from "../../types.js";
 import { executionGraphV2Schema } from "../../schema.js";
+import { request } from "node:https";
+
+interface LinearTeam {
+  id: string;
+  name: string;
+}
+
+interface LinearProject {
+  id: string;
+  name: string;
+}
+
+interface LinearIssue {
+  id: string;
+  title: string;
+  state?: { id: string; name: string };
+  blockedBy?: Array<{ id: string }>;
+}
+
+interface LinearApiClient {
+  listTeams(): Promise<LinearTeam[]>;
+  listProjects(teamId: string): Promise<LinearProject[]>;
+  listIssues(filters: { teamId?: string; projectId?: string }): Promise<LinearIssue[]>;
+}
+
+class LinearGraphqlClient implements LinearApiClient {
+  constructor(private readonly apiKey: string | undefined) {}
+
+  private async graphql<T>(query: string, variables: Record<string, unknown>): Promise<T> {
+    if (!this.apiKey) {
+      throw new Error("LINEAR_API_KEY is required for the 'linear' tracker adapter.");
+    }
+
+    const payload = JSON.stringify({ query, variables });
+    const raw = await new Promise<string>((resolve, reject) => {
+      const req = request(
+        {
+          hostname: "api.linear.app",
+          path: "/graphql",
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: this.apiKey,
+          },
+        },
+        (res) => {
+          const chunks: Buffer[] = [];
+          res.on("data", (chunk: Buffer) => chunks.push(chunk));
+          res.on("end", () => {
+            if ((res.statusCode ?? 0) >= 400) {
+              reject(new Error(`Linear API returned ${res.statusCode}`));
+              return;
+            }
+            resolve(Buffer.concat(chunks).toString("utf-8"));
+          });
+        },
+      );
+      req.on("error", reject);
+      req.write(payload);
+      req.end();
+    });
+
+    const parsed = JSON.parse(raw) as { data?: T; errors?: unknown[] };
+    if (parsed.errors && parsed.errors.length > 0) {
+      throw new Error(`Linear API GraphQL errors: ${JSON.stringify(parsed.errors)}`);
+    }
+    if (!parsed.data) {
+      throw new Error("Linear API returned no data.");
+    }
+    return parsed.data;
+  }
+
+  async listTeams(): Promise<LinearTeam[]> {
+    const data = await this.graphql<{ teams: { nodes: LinearTeam[] } }>(
+      "query PolarisLinearTeams { teams(first: 250) { nodes { id name } } }",
+      {},
+    );
+    return data.teams.nodes;
+  }
+
+  async listProjects(teamId: string): Promise<LinearProject[]> {
+    const data = await this.graphql<{ projects: { nodes: LinearProject[] } }>(
+      `
+        query PolarisLinearProjects($teamId: String!) {
+          projects(filter: { teams: { some: { id: { eq: $teamId } } } }, first: 250) {
+            nodes { id name }
+          }
+        }
+      `,
+      { teamId },
+    );
+    return data.projects.nodes;
+  }
+
+  async listIssues(filters: { teamId?: string; projectId?: string }): Promise<LinearIssue[]> {
+    const data = await this.graphql<{ issues: { nodes: LinearIssue[] } }>(
+      `
+        query PolarisLinearIssues($teamId: String, $projectId: String) {
+          issues(
+            first: 250
+            filter: {
+              team: { id: { eq: $teamId } }
+              project: { id: { eq: $projectId } }
+            }
+          ) {
+            nodes {
+              id
+              title
+              state { id name }
+              blockedBy { id }
+            }
+          }
+        }
+      `,
+      {
+        teamId: filters.teamId ?? null,
+        projectId: filters.projectId ?? null,
+      },
+    );
+    return data.issues.nodes;
+  }
+}
 
 /**
  * Implements the Linear direct adapter for synchronizing issues.
  */
 export class LinearAdapter {
   private config: PolarisConfig;
+  private linearClient: LinearApiClient;
 
-  constructor(config: PolarisConfig) {
+  constructor(config: PolarisConfig, linearClient?: LinearApiClient) {
     this.config = config;
+    this.linearClient = linearClient ?? new LinearGraphqlClient(process.env["LINEAR_API_KEY"]);
   }
 
   /**
@@ -27,35 +150,35 @@ export class LinearAdapter {
     const teamId = linearConfig.teamId;
     const projectId = linearConfig.projectId;
 
-    let issues: any[] = [];
-    let allTeamStatuses: any[] = [];
+    let issues: LinearIssue[] = [];
     let teamName: string | undefined;
+    let resolvedTeamId: string | undefined;
 
     if (teamId) {
-      const teamsResponse = await mcp_linear_list_teams({});
+      const teamsResponse = await this.linearClient.listTeams();
       const team = teamsResponse.find(t => t.id === teamId || t.name === teamId);
       if (!team) {
         throw new Error(`Linear team with ID or name '${teamId}' not found.`);
       }
       teamName = team.name;
-      allTeamStatuses = await mcp_linear_get_issue_status({ team: team.id });
+      resolvedTeamId = team.id;
       
-      const listIssuesArgs: { team: string; project?: string; } = { team: team.id };
+      const listIssuesArgs: { teamId: string; projectId?: string; } = { teamId: team.id };
       if (projectId) {
-        const projectsResponse = await mcp_linear_list_projects({ team: team.id });
+        const projectsResponse = await this.linearClient.listProjects(team.id);
         const project = projectsResponse.find(p => p.id === projectId || p.name === projectId);
         if (!project) {
           throw new Error(`Linear project with ID or name '${projectId}' not found in team '${team.name}'.`);
         }
-        listIssuesArgs.project = project.id;
+        listIssuesArgs.projectId = project.id;
       }
 
-      issues = await mcp_linear_list_issues(listIssuesArgs);
+      issues = await this.linearClient.listIssues(listIssuesArgs);
     } else {
       // If no teamId is specified, fetch all issues accessible to the current user.
       // This might return a lot of issues, so a warning is appropriate.
       console.warn("No Linear teamId specified in config. Fetching all accessible Linear issues. Consider specifying 'teamId' for better scope.");
-      issues = await mcp_linear_list_issues({});
+      issues = await this.linearClient.listIssues({});
     }
 
     const nodes: Record<string, ExecutionNode> = {};
@@ -87,7 +210,7 @@ export class LinearAdapter {
     }
 
     for (const issue of issues) {
-      const statusName = allTeamStatuses.find(s => s.id === issue.status)?.name || issue.status;
+      const statusName = issue.state?.name ?? issue.state?.id ?? "Unknown";
       
       nodes[issue.id] = {
         id: issue.id,
@@ -103,8 +226,8 @@ export class LinearAdapter {
       // Populate dependencies
       const issueDependencies: string[] = [];
       if (issue.blockedBy) {
-        issue.blockedBy.forEach((blockerId: string) => {
-          issueDependencies.push(blockerId);
+        issue.blockedBy.forEach((blocker) => {
+          issueDependencies.push(blocker.id);
         });
       }
       // Linear also has `blocks` field, which means this issue is blocking others.
@@ -117,7 +240,7 @@ export class LinearAdapter {
     const graph: ExecutionGraphV2 = {
       schemaVersion: "v2",
       source: {
-        id: teamId || "all-linear-issues",
+        id: resolvedTeamId ?? teamId ?? "all-linear-issues",
         type: "Linear",
         analysis: {
           id: "initial-sync",

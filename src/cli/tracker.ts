@@ -4,7 +4,6 @@ import { resolve } from 'node:path';
 import { LocalGraph } from '../tracker/local-graph.js';
 import { TrackerSyncService } from '../tracker/sync/index.js';
 import { LinearAdapter } from '../tracker/adapters/linear/index.js';
-import { McpBridgeAdapter } from '../tracker/adapters/mcp-bridge.js';
 import { loadConfig } from '../config/loader.js';
 
 export interface TrackerCommandOptions {
@@ -55,6 +54,7 @@ export function createTrackerCommand(options: TrackerCommandOptions): Command {
           process.exit(1);
         }
 
+        const { McpBridgeAdapter } = await import('../tracker/adapters/mcp-bridge.js');
         const adapter = new McpBridgeAdapter();
         const service = new TrackerSyncService(adapter, localGraph);
         await service.ready;
@@ -97,6 +97,7 @@ export function createTrackerCommand(options: TrackerCommandOptions): Command {
         process.exit(1);
       }
 
+      const { McpBridgeAdapter } = await import('../tracker/adapters/mcp-bridge.js');
       const adapter = new McpBridgeAdapter();
       const service = new TrackerSyncService(adapter, localGraph);
       await service.ready;
