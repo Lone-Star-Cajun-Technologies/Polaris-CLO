@@ -43,7 +43,6 @@ const ALLOWED_BASENAMES = new Set([
  * markdown files may live without being migrated.
  */
 const ALLOWED_DIR_PREFIXES = [
-  "docs/",
   ".agents/",
   ".codex/",
   ".claude/",
@@ -138,7 +137,7 @@ function batchFiles(files: string[], batchSize = 4): string[][] {
 export function migrateDocs(options: MigrateOptions): MigrateResult {
   const repoRoot = resolve(options.repoRoot);
   const migrationRunId = options.migrationRunId ?? makeMigrationRunId();
-  const rawDir = resolve(repoRoot, "docs/raw");
+  const rawDir = resolve(repoRoot, "smartdocs/docs/raw");
 
   const allMd = findMarkdownFiles(repoRoot);
   const results: MigrateFileResult[] = [];
@@ -213,10 +212,10 @@ export function migrateDocs(options: MigrateOptions): MigrateResult {
     provenancePath = relative(repoRoot, absProvPath).replace(/\\/g, "/");
   }
 
-  // Build ingest batch paths: where files will land in docs/raw/
+  // Build ingest batch paths: where files will land in smartdocs/docs/raw/
   const migratedDestPaths: string[] = results
     .filter((r) => r.classification === "migrated")
-    .map((r) => r.destination ?? `docs/raw/${basename(r.originalPath)}`);
+    .map((r) => r.destination ?? `smartdocs/docs/raw/${basename(r.originalPath)}`);
 
   const ingestBatches = batchFiles(migratedDestPaths, 4);
 

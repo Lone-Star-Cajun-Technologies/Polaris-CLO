@@ -20,7 +20,7 @@ import {
 import { getMonotonicTimestamp } from "../utils/monotonic-timestamp.js";
 import { isIngestIneligible } from "./smartdoc-ignore.js";
 import { addCandidateGovernanceMetadata } from "./doctrine.js";
-import { applySummaryDelta, findNearestSummarymd } from "../cognition/summary-delta.js";
+import { applySummaryDelta, findNearestSummarymd, detectPrecedenceLevel } from "../cognition/summary-delta.js";
 
 export type DocsClassification =
   | "runtime-summary"
@@ -540,9 +540,29 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
         event: "summary-delta-warranted",
         file: relDestination,
         reasons: summaryDelta.reasons,
+        precedence_source: summaryDelta.precedenceSource,
         summary_target: nearestSummary,
         cluster_id: clusterId,
       });
+    }
+
+    // ── Promoted-doc route detection ──────────────────────────────────────
+    // When a doc lands in an active doctrine or spec path, it becomes the
+    // preferred cognition source for nearby routes. Emit a lightweight
+    // cognition-maintenance-needed event so operators/workers can act.
+    // Does NOT write any file; informational only.
+    const precedence = detectPrecedenceLevel([relDestination]);
+    if (precedence === "promoted-doctrine" || precedence === "spec-or-arch") {
+      if (nearestSummary) {
+        emitTelemetry(telPath, runId, {
+          event: "cognition-maintenance-needed",
+          trigger: "doc-promotion",
+          promoted_file: relDestination,
+          precedence_source: precedence,
+          affected_summary: nearestSummary,
+          cluster_id: clusterId,
+        });
+      }
     }
 
     results.push({

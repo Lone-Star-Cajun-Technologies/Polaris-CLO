@@ -10,7 +10,18 @@ export const DEFAULT_SMARTDOCIGNORE_PATTERNS = [
   ".github/**",
   ".windsurf/**",
   ".agents/**",
-  "smartdocs/**",
+  "smartdocs/docs/doctrine/**",
+  "smartdocs/docs/specs/active/**",
+  "smartdocs/docs/specs/implemented/**",
+  "smartdocs/docs/specs/superseded/**",
+  "smartdocs/docs/architecture/**",
+  "smartdocs/docs/decisions/**",
+  "smartdocs/docs/audits/**",
+  "smartdocs/docs/runtime/**",
+  "smartdocs/docs/planning/**",
+  "smartdocs/docs/integrations/**",
+  "smartdocs/docs/superpowers/**",
+  "smartdocs/.obsidian/**",
   "generated/**",
   "**/generated/**",
   "summaries/**",
@@ -104,7 +115,6 @@ export const RUNTIME_EXCLUDED_DIR_PATTERNS = [
   ".idea",
   ".vscode",
   ".nova",
-  "smartdocs",
 ];
 
 /**

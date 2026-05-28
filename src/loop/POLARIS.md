@@ -6,16 +6,14 @@ The loop subsystem manages the session lifecycle for Polaris cluster runs. It ha
 
 ## What belongs here
 
-- `index.ts` — `polaris loop` command registration
-- `parent.ts` — `polaris loop run`: automated parent-loop orchestration for an IMPLEMENT cluster
-- `dispatch.ts` — `polaris loop dispatch`: claim one open child and emit a compiled WorkerPacket
-- `continue.ts` — `polaris loop continue`: checkpoint state, emit JSONL event, generate bootstrap packet, enforce one-child-per-session boundary
-- `resume.ts` — `polaris loop resume`: verify branch and state integrity before a new session begins
-- `status.ts` — `polaris loop status`: print current run state summary
-- `abort.ts` — `polaris loop abort`: record a blocker, set status to blocked, halt cleanly
-- `checkpoint.ts` — shared state read/write utilities (`readState`, `writeState`)
-- `bootstrap-packet.ts` — bootstrap packet generation logic
-- `*.test.ts` — unit tests for loop commands
+- `parent.ts` — automated parent-loop orchestration (`polaris loop run`)
+- `dispatch.ts` — child claim and WorkerPacket emission (`polaris loop dispatch`)
+- `continue.ts` — state checkpoint, telemetry, bootstrap packet, one-child boundary (`polaris loop continue`)
+- `resume.ts` — branch and state integrity verification before a new session
+- `abort.ts` — blocker record and clean halt (`polaris loop abort`)
+- `checkpoint.ts` — sole owner of `current-state.json` reads/writes
+- `bootstrap-packet.ts` — self-contained bootstrap packet generation
+- `index.ts`, `status.ts`, `*.test.ts` — command registration, status query, tests
 
 ## What does not belong here
 
@@ -33,7 +31,7 @@ The loop subsystem manages the session lifecycle for Polaris cluster runs. It ha
 - Bootstrap packets include enough context for a cold-start agent to resume without replaying JSONL history.
 - `polaris loop abort` must set `status: blocked` and emit a `loop-aborted` JSONL event before exiting.
 
-## Architecture assumptions
+## Route model
 
 - The session boundary is enforced by `context_budget.children_completed >= 1` in `current-state.json`.
 - `polaris loop continue` reads `.polaris/session-type` and `current-state.json` to determine boundary behavior.

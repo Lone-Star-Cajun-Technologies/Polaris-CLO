@@ -10,7 +10,6 @@ import { createDocsCommand } from "./index.js";
 function makeRepo(): string {
   const repoRoot = mkdtempSync(join(tmpdir(), "polaris-docs-init-"));
   mkdirSync(join(repoRoot, ".polaris", "map"), { recursive: true });
-  mkdirSync(join(repoRoot, "docs", "raw"), { recursive: true });
   writeFileSync(
     join(repoRoot, "polaris.config.json"),
     JSON.stringify({ repo: { sidecarOutputPath: ".polaris/map" } }),
@@ -88,14 +87,13 @@ describe("docs init command", () => {
 
   it("unblocks docs ingest after initialization", async () => {
     const repoRoot = makeRepo();
+    await runDocsCommand(repoRoot, ["init"]);
     writeFileSync(
-      join(repoRoot, "docs", "raw", "smart-docs.md"),
+      join(repoRoot, "smartdocs", "docs", "raw", "smart-docs.md"),
       "# Smart Docs Spec\n\nAcceptance Criteria\n",
       "utf-8",
     );
-
-    await runDocsCommand(repoRoot, ["init"]);
-    const output = await runDocsCommand(repoRoot, ["ingest", "--file", "docs/raw/smart-docs.md"]);
+    const output = await runDocsCommand(repoRoot, ["ingest", "--file", "smartdocs/docs/raw/smart-docs.md"]);
 
     expect(output.stdout).toContain(`${CANONICAL_TARGET}/specs/raw/smart-docs.md`);
     expect(existsSync(join(repoRoot, CANONICAL_TARGET, "specs", "raw", "smart-docs.md"))).toBe(true);

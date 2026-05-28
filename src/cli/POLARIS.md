@@ -6,9 +6,8 @@ The CLI entry point for Polaris. It registers all top-level commands (`map`, `lo
 
 ## What belongs here
 
-- `index.ts` — `#!/usr/bin/env node` entry point, command registration, `program.parse()`
-- `version.ts` — `getVersion()` helper (reads from `package.json`)
-- `version.test.ts` — unit test for version helper
+- `index.ts` — binary entry point; registers subsystem commands via `addCommand()`
+- `version.ts`, `version.test.ts` — version helper and test
 
 ## What does not belong here
 
@@ -24,7 +23,7 @@ The CLI entry point for Polaris. It registers all top-level commands (`map`, `lo
 - Keep `index.ts` short — it should remain a thin wiring file.
 - Version string comes from `getVersion()` only — do not hardcode version strings elsewhere.
 
-## Architecture assumptions
+## Route model
 
 - The binary name is `polaris` (set via `program.name("polaris")`).
 - Commander.js is the only CLI framework used. Do not introduce alternatives (yargs, meow, etc.).

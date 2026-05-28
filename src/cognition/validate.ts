@@ -154,7 +154,7 @@ export function validateSummaryFile(
   summaryPath: string,
   repoRoot: string,
 ): CognitionViolation[] {
-  const abs = existsSync(summaryPath) ? summaryPath : resolve(repoRoot, summaryPath);
+  const abs = summaryPath.startsWith("/") ? summaryPath : resolve(repoRoot, summaryPath);
   const rel = relative(repoRoot, abs).replace(/\\/g, "/");
   const results: CognitionViolation[] = [];
 

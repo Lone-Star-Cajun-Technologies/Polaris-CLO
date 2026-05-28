@@ -1,0 +1,4 @@
+{"event":"run-start","run_id":"polaris-docs-ingest-docs-ingest-2026-05-28-001","prior_run_id":null,"timestamp":"2026-05-28T06:22:24.130Z"}
+{"event":"docs-ingest-classified","file":"smartdocs/docs/raw/polaris-compact-contracts.md","classification":"spec-raw","destination":"smartdocs/docs/specs/raw/polaris-compact-contracts.md","linked_map_area":"src/loop","cluster_id":null,"run_id":"polaris-docs-ingest-docs-ingest-2026-05-28-001","timestamp":"2026-05-28T06:22:24.135Z"}
+{"event":"docs-ingest","file":"smartdocs/docs/raw/polaris-compact-contracts.md","classification":"spec-raw","destination":"smartdocs/docs/specs/raw/polaris-compact-contracts.md","linked_map_area":"src/loop","cluster_id":null,"run_id":"polaris-docs-ingest-docs-ingest-2026-05-28-001","timestamp":"2026-05-28T06:22:24.137Z"}
+{"event":"docs-ingest-complete","count":1,"cluster_id":null,"run_id":"polaris-docs-ingest-docs-ingest-2026-05-28-001","timestamp":"2026-05-28T06:22:24.139Z"}

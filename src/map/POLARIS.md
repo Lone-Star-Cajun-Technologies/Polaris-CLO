@@ -6,14 +6,12 @@ The map subsystem is the Polaris sidecar atlas. It scans the repository, infers 
 
 ## What belongs here
 
-- `atlas.ts` — core data types (`FileRouteEntry`, `AtlasIndex`), read/write helpers, `resolveInstructionFile`, `computeInstructionCoverage`
-- `index.ts` — `polaris map` command registration and `runMapIndex` implementation
-- `update.ts` — incremental `polaris map update --changed` logic
+- `atlas.ts` — atlas data types and all JSON read/write helpers (single source of truth)
+- `inference.ts` — route/domain/taskchain inference engine
+- `update.ts` — incremental changed-file mapping (`polaris map update --changed`)
 - `validate.ts` — atlas integrity checks and stale-entry detection
-- `inference.ts` — route inference engine (confidence scoring, domain/taskchain assignment)
-- `backfill.ts` — gap-fill for already-indexed repos
-- `query.ts` — `polaris map query` lookup, including `--include-instructions` output
-- `*.test.ts` — unit tests for map subsystem modules
+- `index.ts`, `backfill.ts`, `query.ts` — command registration, gap-fill, query lookup
+- `*.test.ts` — unit tests
 
 ## What does not belong here
 
@@ -30,7 +28,7 @@ The map subsystem is the Polaris sidecar atlas. It scans the repository, infers 
 - All atlas JSON writes go through the helpers in `atlas.ts` (`writeFileRoutes`, `writeAtlasIndex`, etc.) — never write directly with `fs`.
 - `needs-review.json` entries must not silently overwrite `file-routes.json` entries on subsequent index runs.
 
-## Architecture assumptions
+## Route model
 
 - The atlas is append-safe: incremental `update --changed` merges into existing entries rather than replacing the whole file.
 - `instructionFile` is resolved at index/update time, not at query time.

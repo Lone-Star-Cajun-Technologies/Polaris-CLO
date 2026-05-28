@@ -23,11 +23,13 @@ export type {
   SummaryDeltaOptions,
   SummaryDeltaResult,
   SummaryDeltaReason,
+  SummaryPrecedenceLevel,
 } from "./summary-delta.js";
 
 export {
   applySummaryDelta,
   detectSummaryReasons,
+  detectPrecedenceLevel,
   findNearestSummarymd,
   detectMissingSummaries,
   isSummaryOversized,

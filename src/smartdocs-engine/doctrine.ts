@@ -113,7 +113,7 @@ function resolvePath(path: string, repoRoot: string): string {
   return join(resolve(repoRoot), path);
 }
 
-/** Move a doc from docs/raw/ or docs/doctrine/raw/ to docs/doctrine/candidate/ */
+/** Move a doc from smartdocs/docs/raw/ or smartdocs/docs/doctrine/raw/ to docs/doctrine/candidate/ */
 export function doctrineDraft(path: string, options: DoctrineOptions): DoctrineResult {
   const repoRoot = resolve(options.repoRoot);
   const runId = options.runId ?? generateRunId();
@@ -123,8 +123,8 @@ export function doctrineDraft(path: string, options: DoctrineOptions): DoctrineR
     throw new Error(`Source file not found: ${source}`);
   }
 
-  const rawDir = resolve(repoRoot, "docs", "raw");
-  const doctrineRawDir = resolve(repoRoot, "docs", "doctrine", "raw");
+  const rawDir = resolve(repoRoot, "smartdocs", "docs", "raw");
+  const doctrineRawDir = resolve(repoRoot, "smartdocs", "docs", "doctrine", "raw");
   const relToRaw = relative(rawDir, source);
   const relToDoctrineRaw = relative(doctrineRawDir, source);
   const isInRaw = !relToRaw.startsWith("..") && !relToRaw.startsWith("/");
@@ -132,11 +132,11 @@ export function doctrineDraft(path: string, options: DoctrineOptions): DoctrineR
 
   if (!isInRaw && !isInDoctrineRaw) {
     throw new Error(
-      `doctrineDraft source must be in docs/raw/ or docs/doctrine/raw/ — got: ${source}`,
+      `doctrineDraft source must be in smartdocs/docs/raw/ or smartdocs/docs/doctrine/raw/ — got: ${source}`,
     );
   }
 
-  const candidateDir = join(repoRoot, "docs", "doctrine", "candidate");
+  const candidateDir = join(repoRoot, "smartdocs", "docs", "doctrine", "candidate");
   mkdirSync(candidateDir, { recursive: true });
 
   const destination = join(candidateDir, basename(source));
@@ -160,7 +160,7 @@ export function doctrineDraft(path: string, options: DoctrineOptions): DoctrineR
   return { source, destination, runId, lifecyclePath };
 }
 
-/** Move a doc from docs/doctrine/candidate/ to docs/doctrine/active/ */
+/** Move a doc from smartdocs/docs/doctrine/candidate/ to smartdocs/docs/doctrine/active/ */
 export function doctrinePromote(path: string, options: DoctrineOptions): DoctrineResult {
   const repoRoot = resolve(options.repoRoot);
   const runId = options.runId ?? generateRunId();
@@ -170,13 +170,13 @@ export function doctrinePromote(path: string, options: DoctrineOptions): Doctrin
     throw new Error(`Source file not found: ${source}`);
   }
 
-  const candidateDir = resolve(repoRoot, "docs", "doctrine", "candidate");
+  const candidateDir = resolve(repoRoot, "smartdocs", "docs", "doctrine", "candidate");
   const relToCandidate = relative(candidateDir, source);
   const isInCandidate = !relToCandidate.startsWith("..") && !relToCandidate.startsWith("/");
 
   if (!isInCandidate) {
     throw new Error(
-      `doctrinePromote source must be in docs/doctrine/candidate/ — got: ${source}`,
+      `doctrinePromote source must be in smartdocs/docs/doctrine/candidate/ — got: ${source}`,
     );
   }
 
@@ -206,7 +206,7 @@ export function doctrinePromote(path: string, options: DoctrineOptions): Doctrin
     );
   }
 
-  const activeDir = join(repoRoot, "docs", "doctrine", "active");
+  const activeDir = join(repoRoot, "smartdocs", "docs", "doctrine", "active");
   mkdirSync(activeDir, { recursive: true });
 
   const destination = join(activeDir, basename(source));
@@ -249,7 +249,7 @@ export function doctrinePromote(path: string, options: DoctrineOptions): Doctrin
   return { source, destination, runId, lifecyclePath };
 }
 
-/** Move a doc from docs/doctrine/active/ to docs/doctrine/deprecated/ */
+/** Move a doc from smartdocs/docs/doctrine/active/ to smartdocs/docs/doctrine/deprecated/ */
 export function doctrineDeprecate(path: string, options: DoctrineOptions): DoctrineResult {
   const repoRoot = resolve(options.repoRoot);
   const runId = options.runId ?? generateRunId();
@@ -259,17 +259,17 @@ export function doctrineDeprecate(path: string, options: DoctrineOptions): Doctr
     throw new Error(`Source file not found: ${source}`);
   }
 
-  const activeDir = resolve(repoRoot, "docs", "doctrine", "active");
+  const activeDir = resolve(repoRoot, "smartdocs", "docs", "doctrine", "active");
   const relToActive = relative(activeDir, source);
   const isInActive = !relToActive.startsWith("..") && !relToActive.startsWith("/");
 
   if (!isInActive) {
     throw new Error(
-      `doctrineDeprecate source must be in docs/doctrine/active/ — got: ${source}`,
+      `doctrineDeprecate source must be in smartdocs/docs/doctrine/active/ — got: ${source}`,
     );
   }
 
-  const deprecatedDir = join(repoRoot, "docs", "doctrine", "deprecated");
+  const deprecatedDir = join(repoRoot, "smartdocs", "docs", "doctrine", "deprecated");
   mkdirSync(deprecatedDir, { recursive: true });
 
   const destination = join(deprecatedDir, basename(source));

@@ -6,11 +6,10 @@ The config subsystem loads, validates, and provides the resolved `PolarisConfig`
 
 ## What belongs here
 
-- `schema.ts` — TypeScript types for `PolarisConfig` (generated or hand-authored from `schema.json`)
-- `schema.json` — JSON Schema definition for `polaris.config.json`
-- `defaults.ts` — `DEFAULT_CONFIG` constant (the compiled baseline configuration)
-- `loader.ts` — `loadConfig(repoRoot)` function and `PolarisConfigError` class
-- `validator.ts` — JSON Schema validation logic
+- `loader.ts` — `loadConfig(repoRoot)`: loads, merges, and validates config
+- `defaults.ts` — `DEFAULT_CONFIG` baseline (must always pass schema validation)
+- `schema.ts`, `schema.json` — TypeScript types and JSON Schema definition
+- `validator.ts` — schema validation logic
 
 ## What does not belong here
 
@@ -26,7 +25,7 @@ The config subsystem loads, validates, and provides the resolved `PolarisConfig`
 - When adding a new config field: (1) update `schema.json`, (2) update `schema.ts`, (3) add a default to `DEFAULT_CONFIG`, (4) update `validator.ts` if needed.
 - All subsystems call `loadConfig(repoRoot)` — never read `polaris.config.json` directly with `fs` outside this module.
 
-## Architecture assumptions
+## Route model
 
 - `polaris.config.json` is optional at the repo root. Missing file = use all defaults.
 - Deep merge means nested objects are combined key-by-key; a user config that sets `map.autoWriteAbove` does not clobber other `map.*` keys.

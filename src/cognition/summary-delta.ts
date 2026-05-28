@@ -24,6 +24,19 @@ export type SummaryDeltaReason =
   | "architecture-meaning-changed"
   | "doctrine-spec-linkage-changed";
 
+/**
+ * Precedence levels for SUMMARY.md generation source, highest to lowest:
+ * 1. promoted-doctrine  — active doctrine files in smartdocs/docs/doctrine/active/
+ * 2. spec-or-arch       — linked specs or architecture docs (active or otherwise)
+ * 3. route-polaris-md   — route-local POLARIS.md
+ * 4. source-inference   — local source structure (fallback only)
+ */
+export type SummaryPrecedenceLevel =
+  | "promoted-doctrine"
+  | "spec-or-arch"
+  | "route-polaris-md"
+  | "source-inference";
+
 export interface SummaryDeltaOptions {
   repoRoot: string;
   /** Files touched during this child's implementation or ingest. */
@@ -44,6 +57,12 @@ export interface SummaryDeltaResult {
   summaryTargets: string[];
   /** Folders missing SUMMARY.md that are eligible for one. */
   missingSummaries: string[];
+  /**
+   * Highest-precedence cognition source detected for the touched files.
+   * Promoted doctrine overrides spec/arch, which overrides route POLARIS.md,
+   * which overrides source-code inference (the fallback).
+   */
+  precedenceSource: SummaryPrecedenceLevel;
 }
 
 // ── Signals that trigger SUMMARY.md delta ─────────────────────────────────────
@@ -62,6 +81,37 @@ const SUMMARY_SIGNALS: Array<{ pattern: RegExp; reason: SummaryDeltaReason }> = 
   { pattern: /CLAUDE\.md$/,            reason: "canon-relationships-changed" },
   { pattern: /polaris\.config\.json$/, reason: "canon-relationships-changed" },
 ];
+
+/**
+ * Determine the highest-precedence cognition source for the given touched files.
+ *
+ * Priority (highest first):
+ * 1. promoted-doctrine — active doctrine files in smartdocs/docs/doctrine/active/
+ * 2. spec-or-arch      — linked specs, architecture, or decision docs
+ * 3. route-polaris-md  — a route-local POLARIS.md was touched
+ * 4. source-inference  — no above signals; fallback
+ */
+export function detectPrecedenceLevel(
+  touchedFiles: string[],
+): SummaryPrecedenceLevel {
+  for (const file of touchedFiles) {
+    if (/smartdocs\/docs\/doctrine\/active\//.test(file)) return "promoted-doctrine";
+  }
+  for (const file of touchedFiles) {
+    if (
+      /smartdocs\/docs\/specs\/active\//.test(file) ||
+      /smartdocs\/docs\/architecture\//.test(file) ||
+      /smartdocs\/docs\/decisions\//.test(file) ||
+      /docs\/spec\//.test(file) ||
+      /docs\/architecture\//.test(file) ||
+      /docs\/decisions\//.test(file)
+    ) return "spec-or-arch";
+  }
+  for (const file of touchedFiles) {
+    if (/POLARIS\.md$/.test(file)) return "route-polaris-md";
+  }
+  return "source-inference";
+}
 
 /**
  * Detect which SUMMARY.md-relevant signals fire for the given touched files.
@@ -94,7 +144,7 @@ export function findNearestSummarymd(
   const parts = filePath.split("/");
   for (let i = parts.length - 1; i >= 1; i--) {
     const dir = parts.slice(0, i).join("/");
-    if (isCognitionSkippedFolder(dir)) continue;
+    if (isCognitionSkippedFolder(dir, repoRoot)) continue;
     const candidate = join(repoRoot, dir, "SUMMARY.md");
     if (existsSync(candidate)) {
       return relative(repoRoot, candidate).replace(/\\/g, "/");
@@ -126,7 +176,7 @@ export function detectMissingSummaries(
     const parts = file.split("/");
     for (let i = parts.length - 1; i >= 1; i--) {
       const dir = parts.slice(0, i).join("/");
-      if (isCognitionSkippedFolder(dir)) continue;
+      if (isCognitionSkippedFolder(dir, repoRoot)) continue;
       const hasPolarismd = existsSync(join(repoRoot, dir, "POLARIS.md"));
       const hasSummarymd = existsSync(join(repoRoot, dir, "SUMMARY.md"));
       if (hasPolarismd && !hasSummarymd) {
@@ -158,6 +208,7 @@ export function applySummaryDelta(options: SummaryDeltaOptions): SummaryDeltaRes
 
   const reasons = detectSummaryReasons(touchedFiles);
   const updateWarranted = reasons.length > 0;
+  const precedenceSource = detectPrecedenceLevel(touchedFiles);
 
   const summaryTargets = new Set<string>();
   for (const file of touchedFiles) {
@@ -172,6 +223,7 @@ export function applySummaryDelta(options: SummaryDeltaOptions): SummaryDeltaRes
     reasons,
     summaryTargets: Array.from(summaryTargets),
     missingSummaries,
+    precedenceSource,
   };
 }
 

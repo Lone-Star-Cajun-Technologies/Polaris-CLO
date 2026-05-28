@@ -145,7 +145,7 @@ export function detectMissingCognitionSurfaces(
     let foundAncestor = false;
     for (let i = parts.length - 1; i >= 1; i--) {
       const dir = parts.slice(0, i).join("/");
-      if (isCognitionSkippedFolder(dir)) continue;
+      if (isCognitionSkippedFolder(dir, repoRoot)) continue;
       const hasPolarismd = existsSync(resolve(repoRoot, dir, "POLARIS.md"));
       const hasSummarymd = existsSync(resolve(repoRoot, dir, "SUMMARY.md"));
       if (!hasPolarismd) missingPolaris.add(dir);
@@ -185,7 +185,7 @@ export function seedCognitionDrafts(
   for (const dir of folders.polaris) {
     // Root (empty string) is only seeded when explicitly opted in
     if (!includeRoot && !dir) continue;
-    if (dir && (isCognitionSkippedFolder(dir) || isCognitionSkippedFolder(dir + "/"))) continue;
+    if (dir && isCognitionSkippedFolder(dir, repoRoot)) continue;
     const target = dir ? resolve(repoRoot, dir, "POLARIS.md") : resolve(repoRoot, "POLARIS.md");
     if (!existsSync(target)) {
       mkdirSync(dirname(target), { recursive: true });
@@ -196,7 +196,7 @@ export function seedCognitionDrafts(
 
   for (const dir of folders.summary) {
     if (!includeRoot && !dir) continue;
-    if (dir && (isCognitionSkippedFolder(dir) || isCognitionSkippedFolder(dir + "/"))) continue;
+    if (dir && isCognitionSkippedFolder(dir, repoRoot)) continue;
     const target = dir ? resolve(repoRoot, dir, "SUMMARY.md") : resolve(repoRoot, "SUMMARY.md");
     if (!existsSync(target)) {
       mkdirSync(dirname(target), { recursive: true });

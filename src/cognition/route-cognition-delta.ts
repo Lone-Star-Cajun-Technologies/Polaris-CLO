@@ -11,6 +11,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
+import { isDirectoryEligible, parseSmartDocIgnore } from "../smartdocs-engine/smartdoc-ignore.js";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -61,16 +62,35 @@ const AGENT_OPT_IN_FOLDERS = new Set([".claude", ".codex"]);
 /**
  * Returns true when a folder is skipped for route-local cognition:
  * generated, runtime, ignored, or agent-only-with-no-opt-in.
+ *
+ * When repoRoot is provided, also consults .smartdocignore and the shared
+ * smartdoc-ignore eligibility rules (RUNTIME_EXCLUDED_DIR_PATTERNS,
+ * AGENT_COGNITION_FOLDERS, HIDDEN_SYSTEM_FOLDERS). This ensures cognition
+ * scanning honours the same boundaries as Smart Docs ingest.
  */
-export function isCognitionSkippedFolder(folderRel: string): boolean {
+export function isCognitionSkippedFolder(folderRel: string, repoRoot?: string): boolean {
+  // Fast-path: hardcoded runtime/bootstrap prefixes (no fs needed)
   for (const prefix of SKIP_FOLDER_PREFIXES) {
     if (folderRel === prefix.slice(0, -1) || folderRel.startsWith(prefix)) {
       return true;
     }
   }
-  // Agent folders are opt-in only (not automatically scanned)
+  // Agent folders are opt-in only
   const topLevel = folderRel.split("/")[0] ?? folderRel;
   if (AGENT_OPT_IN_FOLDERS.has(topLevel)) return true;
+
+  // When repoRoot is available, defer to the smartdoc-ignore authority.
+  // This ensures .smartdocignore patterns and shared exclusion lists are
+  // honoured — POLARIS.md and SUMMARY.md are bounded agent/context files,
+  // not ingest candidates.
+  if (repoRoot) {
+    const eligibility = isDirectoryEligible(folderRel, repoRoot);
+    if (!eligibility.eligible) return true;
+    // Also check .smartdocignore patterns directly for directory paths
+    const ig = parseSmartDocIgnore(repoRoot);
+    if (ig.ignores(folderRel) || ig.ignores(`${folderRel}/`)) return true;
+  }
+
   return false;
 }
 
@@ -89,7 +109,7 @@ export function findNearestRoutePolarismd(
   // Walk from deepest dir upward, excluding the root level when skipRoot=true
   for (let i = parts.length - 1; i >= 1; i--) {
     const dir = parts.slice(0, i).join("/");
-    if (isCognitionSkippedFolder(dir)) continue;
+    if (isCognitionSkippedFolder(dir, repoRoot)) continue;
     const candidate = join(repoRoot, dir, "POLARIS.md");
     if (existsSync(candidate)) {
       return relative(repoRoot, candidate).replace(/\\/g, "/");
@@ -166,7 +186,7 @@ function detectMissingCognitionSurfaces(
     const parts = file.split("/");
     for (let i = parts.length - 1; i >= 1; i--) {
       const dir = parts.slice(0, i).join("/");
-      if (isCognitionSkippedFolder(dir)) continue;
+      if (isCognitionSkippedFolder(dir, repoRoot)) continue;
       const candidate = join(repoRoot, dir, "POLARIS.md");
       if (!existsSync(candidate)) {
         // Only report if there are source files in this folder (not empty dirs)

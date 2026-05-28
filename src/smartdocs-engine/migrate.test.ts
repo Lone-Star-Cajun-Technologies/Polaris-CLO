@@ -27,9 +27,9 @@ describe("isAllowedException", () => {
     expect(isAllowedException("LICENSE.md").allowed).toBe(true);
   });
 
-  it("allows anything under docs/", () => {
-    expect(isAllowedException("docs/spec/foo.md").allowed).toBe(true);
-    expect(isAllowedException("docs/raw/bar.md").allowed).toBe(true);
+  it("does NOT allow arbitrary docs/ files (docs/ is a migration source, not an exception)", () => {
+    expect(isAllowedException("docs/spec/foo.md").allowed).toBe(false);
+    expect(isAllowedException("docs/raw/bar.md").allowed).toBe(false);
   });
 
   it("allows anything under .agents/, .codex/, .claude/, .taskchain_artifacts/", () => {
@@ -101,15 +101,16 @@ describe("migrateDocs --dry-run", () => {
     const migrated = result.results.filter((r) => r.classification === "migrated");
     const exceptions = result.results.filter((r) => r.classification === "allowed-exception");
 
-    expect(migrated).toHaveLength(1);
-    expect(migrated[0].originalPath).toBe("planning/ideas.md");
-    expect(migrated[0].destination).toBe("docs/raw/ideas.md");
+    expect(migrated).toHaveLength(2);
+    const migratedPaths = migrated.map((r) => r.originalPath);
+    expect(migratedPaths).toContain("planning/ideas.md");
+    expect(migratedPaths).toContain("docs/spec/existing.md");
 
-    expect(exceptions.length).toBeGreaterThanOrEqual(2);
+    expect(exceptions.length).toBeGreaterThanOrEqual(1);
 
-    // File must NOT have been moved
+    // Files must NOT have been moved
     expect(existsSync(join(repoRoot, "planning/ideas.md"))).toBe(true);
-    expect(existsSync(join(repoRoot, "docs/raw/ideas.md"))).toBe(false);
+    expect(existsSync(join(repoRoot, "smartdocs/docs/raw/ideas.md"))).toBe(false);
 
     // No provenance written in dry-run
     expect(result.provenancePath).toBeNull();
@@ -140,7 +141,7 @@ describe("migrateDocs (live)", () => {
     repoRoot = makeGitRepo();
   });
 
-  it("moves files to docs/raw/, writes provenance JSON", () => {
+  it("moves files to smartdocs/docs/raw/, writes provenance JSON", () => {
     addTrackedFile(repoRoot, "README.md");
     addTrackedFile(repoRoot, "scratch/notes.md", "# Notes");
 
@@ -151,10 +152,10 @@ describe("migrateDocs (live)", () => {
     const migrated = result.results.filter((r) => r.classification === "migrated");
     expect(migrated).toHaveLength(1);
     expect(migrated[0].originalPath).toBe("scratch/notes.md");
-    expect(migrated[0].currentPath).toBe("docs/raw/notes.md");
+    expect(migrated[0].currentPath).toBe("smartdocs/docs/raw/notes.md");
 
-    // File should now exist in docs/raw/
-    expect(existsSync(join(repoRoot, "docs/raw/notes.md"))).toBe(true);
+    // File should now exist in smartdocs/docs/raw/
+    expect(existsSync(join(repoRoot, "smartdocs/docs/raw/notes.md"))).toBe(true);
     // File should no longer exist at original location
     expect(existsSync(join(repoRoot, "scratch/notes.md"))).toBe(false);
 
@@ -165,7 +166,7 @@ describe("migrateDocs (live)", () => {
     ) as Array<{ originalPath: string; currentPath: string; migratedAt: string; migrationRunId: string }>;
     expect(provContent).toHaveLength(1);
     expect(provContent[0].originalPath).toBe("scratch/notes.md");
-    expect(provContent[0].currentPath).toBe("docs/raw/notes.md");
+    expect(provContent[0].currentPath).toBe("smartdocs/docs/raw/notes.md");
     expect(provContent[0].migrationRunId).toBe("test-migrate-live-001");
     expect(provContent[0].migratedAt).toBeTruthy();
   });
@@ -233,16 +234,16 @@ describe("migrateDocs (live)", () => {
   });
 
   it("handles filename collisions by uniquifying destination", () => {
-    mkdirSync(join(repoRoot, "docs/raw"), { recursive: true });
-    writeFileSync(join(repoRoot, "docs/raw/notes.md"), "# Existing", "utf-8");
-    execFileSync("git", ["add", "docs/raw/notes.md"], { cwd: repoRoot });
+    mkdirSync(join(repoRoot, "smartdocs/docs/raw"), { recursive: true });
+    writeFileSync(join(repoRoot, "smartdocs/docs/raw/notes.md"), "# Existing", "utf-8");
+    execFileSync("git", ["add", "smartdocs/docs/raw/notes.md"], { cwd: repoRoot });
 
     addTrackedFile(repoRoot, "scratch/notes.md", "# Incoming");
 
     const result = migrateDocs({ repoRoot, dryRun: false, migrationRunId: "test-migrate-live-002" });
     const migrated = result.results.filter((r) => r.classification === "migrated");
     expect(migrated).toHaveLength(1);
-    expect(migrated[0].currentPath).toBe("docs/raw/notes-2.md");
-    expect(existsSync(join(repoRoot, "docs/raw/notes-2.md"))).toBe(true);
+    expect(migrated[0].currentPath).toBe("smartdocs/docs/raw/notes-2.md");
+    expect(existsSync(join(repoRoot, "smartdocs/docs/raw/notes-2.md"))).toBe(true);
   });
 });

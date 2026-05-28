@@ -13,11 +13,11 @@ import {
 
 function makeTempDir(): string {
   const root = mkdtempSync(join(tmpdir(), "polaris-doctrine-"));
-  mkdirSync(join(root, "docs", "raw"), { recursive: true });
-  mkdirSync(join(root, "docs", "doctrine", "raw"), { recursive: true });
-  mkdirSync(join(root, "docs", "doctrine", "candidate"), { recursive: true });
-  mkdirSync(join(root, "docs", "doctrine", "active"), { recursive: true });
-  mkdirSync(join(root, "docs", "doctrine", "deprecated"), { recursive: true });
+  mkdirSync(join(root, "smartdocs", "docs", "raw"), { recursive: true });
+  mkdirSync(join(root, "smartdocs", "docs", "doctrine", "raw"), { recursive: true });
+  mkdirSync(join(root, "smartdocs", "docs", "doctrine", "candidate"), { recursive: true });
+  mkdirSync(join(root, "smartdocs", "docs", "doctrine", "active"), { recursive: true });
+  mkdirSync(join(root, "smartdocs", "docs", "doctrine", "deprecated"), { recursive: true });
   return root;
 }
 
@@ -28,13 +28,13 @@ describe("doctrineDraft", () => {
     repoRoot = makeTempDir();
   });
 
-  it("moves a file from docs/raw/ to docs/doctrine/candidate/ with candidate marker", () => {
-    const source = join(repoRoot, "docs", "raw", "some-doc.md");
+  it("moves a file from smartdocs/docs/raw/ to smartdocs/docs/doctrine/candidate/ with candidate marker", () => {
+    const source = join(repoRoot, "smartdocs", "docs", "raw", "some-doc.md");
     writeFileSync(source, "# Some Doc\n\nContent here.");
 
     const result = doctrineDraft(source, { repoRoot, runId: "test-run-001" });
 
-    expect(result.destination).toBe(join(repoRoot, "docs", "doctrine", "candidate", "some-doc.md"));
+    expect(result.destination).toBe(join(repoRoot, "smartdocs", "docs", "doctrine", "candidate", "some-doc.md"));
     expect(existsSync(result.destination)).toBe(true);
     expect(existsSync(source)).toBe(false);
 
@@ -43,8 +43,8 @@ describe("doctrineDraft", () => {
     expect(content).toContain("# Some Doc");
   });
 
-  it("moves a file from docs/doctrine/raw/ to docs/doctrine/candidate/", () => {
-    const source = join(repoRoot, "docs", "doctrine", "raw", "draft-doc.md");
+  it("moves a file from smartdocs/docs/doctrine/raw/ to smartdocs/docs/doctrine/candidate/", () => {
+    const source = join(repoRoot, "smartdocs", "docs", "doctrine", "raw", "draft-doc.md");
     writeFileSync(source, "# Draft");
 
     const result = doctrineDraft(source, { repoRoot, runId: "test-run-001" });
@@ -54,7 +54,7 @@ describe("doctrineDraft", () => {
   });
 
   it("emits a doctrine-draft event to lifecycle.jsonl", () => {
-    const source = join(repoRoot, "docs", "raw", "event-doc.md");
+    const source = join(repoRoot, "smartdocs", "docs", "raw", "event-doc.md");
     writeFileSync(source, "# Event Doc");
 
     const result = doctrineDraft(source, { repoRoot, runId: "test-run-001" });
@@ -69,23 +69,23 @@ describe("doctrineDraft", () => {
 
   it("throws if source does not exist", () => {
     expect(() =>
-      doctrineDraft(join(repoRoot, "docs", "raw", "nonexistent.md"), { repoRoot }),
+      doctrineDraft(join(repoRoot, "smartdocs", "docs", "raw", "nonexistent.md"), { repoRoot }),
     ).toThrow("Source file not found");
   });
 
-  it("throws if source is not in docs/raw/ or docs/doctrine/raw/", () => {
-    const source = join(repoRoot, "docs", "doctrine", "active", "wrong.md");
+  it("throws if source is not in smartdocs/docs/raw/ or smartdocs/docs/doctrine/raw/", () => {
+    const source = join(repoRoot, "smartdocs", "docs", "doctrine", "active", "wrong.md");
     writeFileSync(source, "# Wrong location");
 
     expect(() => doctrineDraft(source, { repoRoot })).toThrow(
-      "doctrineDraft source must be in docs/raw/ or docs/doctrine/raw/",
+      "doctrineDraft source must be in smartdocs/docs/raw/ or smartdocs/docs/doctrine/raw/",
     );
   });
 
   it("throws if destination already exists", () => {
-    const source = join(repoRoot, "docs", "raw", "dupe.md");
+    const source = join(repoRoot, "smartdocs", "docs", "raw", "dupe.md");
     writeFileSync(source, "# Dupe");
-    const dest = join(repoRoot, "docs", "doctrine", "candidate", "dupe.md");
+    const dest = join(repoRoot, "smartdocs", "docs", "doctrine", "candidate", "dupe.md");
     writeFileSync(dest, "# Already there");
 
     expect(() => doctrineDraft(source, { repoRoot })).toThrow("Destination already exists");
@@ -111,7 +111,7 @@ describe("doctrinePromote", () => {
   ].join("\n");
 
   it("moves a file from candidate/ to active/ and strips the candidate marker", () => {
-    const candidatePath = join(repoRoot, "docs", "doctrine", "candidate", "my-doctrine.md");
+    const candidatePath = join(repoRoot, "smartdocs", "docs", "doctrine", "candidate", "my-doctrine.md");
     writeFileSync(
       candidatePath,
       `${CANDIDATE_MARKER}\n${governanceFrontMatter}# My Doctrine\n\nContent.`,
@@ -120,7 +120,7 @@ describe("doctrinePromote", () => {
     const result = doctrinePromote(candidatePath, { repoRoot, runId: "test-run-002" });
 
     expect(result.destination).toBe(
-      join(repoRoot, "docs", "doctrine", "active", "my-doctrine.md"),
+      join(repoRoot, "smartdocs", "docs", "doctrine", "active", "my-doctrine.md"),
     );
     expect(existsSync(result.destination)).toBe(true);
     expect(existsSync(candidatePath)).toBe(false);
@@ -131,7 +131,7 @@ describe("doctrinePromote", () => {
   });
 
   it("emits a doctrine-promote event to lifecycle.jsonl", () => {
-    const candidatePath = join(repoRoot, "docs", "doctrine", "candidate", "promoted.md");
+    const candidatePath = join(repoRoot, "smartdocs", "docs", "doctrine", "candidate", "promoted.md");
     writeFileSync(
       candidatePath,
       `${CANDIDATE_MARKER}\n${governanceFrontMatter}# Promoted`,
@@ -146,17 +146,17 @@ describe("doctrinePromote", () => {
     expect(promoteEvent.run_id).toBe("test-run-002");
   });
 
-  it("throws if source is not in docs/doctrine/candidate/", () => {
-    const source = join(repoRoot, "docs", "raw", "wrong.md");
+  it("throws if source is not in smartdocs/docs/doctrine/candidate/", () => {
+    const source = join(repoRoot, "smartdocs", "docs", "raw", "wrong.md");
     writeFileSync(source, `${CANDIDATE_MARKER}\n# Wrong`);
 
     expect(() => doctrinePromote(source, { repoRoot })).toThrow(
-      "doctrinePromote source must be in docs/doctrine/candidate/",
+      "doctrinePromote source must be in smartdocs/docs/doctrine/candidate/",
     );
   });
 
   it("throws if file is missing the candidate marker", () => {
-    const source = join(repoRoot, "docs", "doctrine", "candidate", "unmarked.md");
+    const source = join(repoRoot, "smartdocs", "docs", "doctrine", "candidate", "unmarked.md");
     writeFileSync(source, "# No marker");
 
     expect(() => doctrinePromote(source, { repoRoot })).toThrow("not in candidate state");
@@ -165,14 +165,14 @@ describe("doctrinePromote", () => {
   it("throws if source does not exist", () => {
     expect(() =>
       doctrinePromote(
-        join(repoRoot, "docs", "doctrine", "candidate", "ghost.md"),
+        join(repoRoot, "smartdocs", "docs", "doctrine", "candidate", "ghost.md"),
         { repoRoot },
       ),
     ).toThrow("Source file not found");
   });
 
   it("rejects file missing governance fields", () => {
-    const candidatePath = join(repoRoot, "docs", "doctrine", "candidate", "no-gov.md");
+    const candidatePath = join(repoRoot, "smartdocs", "docs", "doctrine", "candidate", "no-gov.md");
     writeFileSync(candidatePath, `${CANDIDATE_MARKER}\n# Missing governance`);
 
     expect(() => doctrinePromote(candidatePath, { repoRoot })).toThrow(
@@ -181,7 +181,7 @@ describe("doctrinePromote", () => {
   });
 
   it("rejects file with recommended-action: hold", () => {
-    const candidatePath = join(repoRoot, "docs", "doctrine", "candidate", "on-hold.md");
+    const candidatePath = join(repoRoot, "smartdocs", "docs", "doctrine", "candidate", "on-hold.md");
     const content = [
       CANDIDATE_MARKER,
       "---",
@@ -201,7 +201,7 @@ describe("doctrinePromote", () => {
   });
 
   it("succeeds with all required governance fields present", () => {
-    const candidatePath = join(repoRoot, "docs", "doctrine", "candidate", "governed.md");
+    const candidatePath = join(repoRoot, "smartdocs", "docs", "doctrine", "candidate", "governed.md");
     const content = [
       CANDIDATE_MARKER,
       "---",
@@ -221,7 +221,7 @@ describe("doctrinePromote", () => {
   });
 
   it("emits audit.jsonl event on successful promotion", () => {
-    const candidatePath = join(repoRoot, "docs", "doctrine", "candidate", "audited.md");
+    const candidatePath = join(repoRoot, "smartdocs", "docs", "doctrine", "candidate", "audited.md");
     const content = [
       CANDIDATE_MARKER,
       "---",
@@ -301,13 +301,13 @@ describe("doctrineDeprecate", () => {
   });
 
   it("moves a file from active/ to deprecated/ with deprecation provenance header", () => {
-    const activePath = join(repoRoot, "docs", "doctrine", "active", "old-doctrine.md");
+    const activePath = join(repoRoot, "smartdocs", "docs", "doctrine", "active", "old-doctrine.md");
     writeFileSync(activePath, "# Old Doctrine\n\nOriginal content.");
 
     const result = doctrineDeprecate(activePath, { repoRoot, runId: "test-run-003" });
 
     expect(result.destination).toBe(
-      join(repoRoot, "docs", "doctrine", "deprecated", "old-doctrine.md"),
+      join(repoRoot, "smartdocs", "docs", "doctrine", "deprecated", "old-doctrine.md"),
     );
     expect(existsSync(result.destination)).toBe(true);
     expect(existsSync(activePath)).toBe(false);
@@ -318,7 +318,7 @@ describe("doctrineDeprecate", () => {
   });
 
   it("emits a doctrine-deprecate event to lifecycle.jsonl", () => {
-    const activePath = join(repoRoot, "docs", "doctrine", "active", "deprecated.md");
+    const activePath = join(repoRoot, "smartdocs", "docs", "doctrine", "active", "deprecated.md");
     writeFileSync(activePath, "# Deprecated");
 
     const result = doctrineDeprecate(activePath, { repoRoot, runId: "test-run-003" });
@@ -329,19 +329,19 @@ describe("doctrineDeprecate", () => {
     expect(event.deprecated_at).toBeDefined();
   });
 
-  it("throws if source is not in docs/doctrine/active/", () => {
-    const source = join(repoRoot, "docs", "doctrine", "candidate", "wrong.md");
+  it("throws if source is not in smartdocs/docs/doctrine/active/", () => {
+    const source = join(repoRoot, "smartdocs", "docs", "doctrine", "candidate", "wrong.md");
     writeFileSync(source, `${CANDIDATE_MARKER}\n# Wrong`);
 
     expect(() => doctrineDeprecate(source, { repoRoot })).toThrow(
-      "doctrineDeprecate source must be in docs/doctrine/active/",
+      "doctrineDeprecate source must be in smartdocs/docs/doctrine/active/",
     );
   });
 
   it("throws if source does not exist", () => {
     expect(() =>
       doctrineDeprecate(
-        join(repoRoot, "docs", "doctrine", "active", "ghost.md"),
+        join(repoRoot, "smartdocs", "docs", "doctrine", "active", "ghost.md"),
         { repoRoot },
       ),
     ).toThrow("Source file not found");

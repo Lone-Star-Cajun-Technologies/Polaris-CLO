@@ -59,11 +59,11 @@ describe("parseSmartDocIgnore", () => {
 
   it("allows non-ignored paths", () => {
     const repoRoot = makeRepo();
-    mkdirSync(join(repoRoot, "docs", "raw"), { recursive: true });
+    mkdirSync(join(repoRoot, "smartdocs", "docs", "raw"), { recursive: true });
     writeFileSync(join(repoRoot, ".smartdocignore"), "tmp/\n", "utf-8");
 
-    expect(isIngestIneligible("docs/raw/spec.md", repoRoot)).toEqual({ ineligible: false });
-    expect(parseSmartDocIgnore(repoRoot).ignores("docs/raw/spec.md")).toBe(false);
+    expect(isIngestIneligible("smartdocs/docs/raw/spec.md", repoRoot)).toEqual({ ineligible: false });
+    expect(parseSmartDocIgnore(repoRoot).ignores("smartdocs/docs/raw/spec.md")).toBe(false);
   });
 });
 
@@ -132,7 +132,7 @@ describe("isDirectoryEligible", () => {
     expect(RUNTIME_EXCLUDED_DIR_PATTERNS).toContain(".git");
     expect(RUNTIME_EXCLUDED_DIR_PATTERNS).toContain(".polaris");
     expect(RUNTIME_EXCLUDED_DIR_PATTERNS).toContain("generated");
-    expect(RUNTIME_EXCLUDED_DIR_PATTERNS).toContain("smartdocs");
+    expect(RUNTIME_EXCLUDED_DIR_PATTERNS).not.toContain("smartdocs"); // smartdocs/ protected via targeted DEFAULT_SMARTDOCIGNORE_PATTERNS
   });
 
   it("marks agent cognition folders as temporarily skipped with agent-cognition category", () => {

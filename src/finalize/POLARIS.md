@@ -6,12 +6,10 @@ The finalize subsystem implements the atomic 12-step final delivery sequence for
 
 ## What belongs here
 
-- `index.ts` — `polaris finalize run` command registration and `runFinalize` orchestrator
-- `github.ts` — GitHub PR creation helper
-- `linear.ts` — Linear issue update helper
-- `run-report.ts` — run report markdown generation
-- `steps/` — one file per finalize step (01 through 12)
-- `finalize.test.ts` — integration tests for the finalize sequence
+- `index.ts` — `polaris finalize run` orchestrator
+- `steps/` — one file per step (01–12); each exports a single named function
+- `github.ts`, `linear.ts` — PR creation and Linear update helpers
+- `run-report.ts`, `finalize.test.ts` — report generation and integration tests
 
 ## What does not belong here
 
@@ -29,7 +27,7 @@ The finalize subsystem implements the atomic 12-step final delivery sequence for
 - JSONL telemetry events (`pr-opened`, `run-complete`) are emitted by `polaris finalize` via step 10. Do not emit them elsewhere.
 - `polaris finalize` is the only command that pushes to remote. No other subsystem may call `git push`.
 
-## Architecture assumptions
+## Route model
 
 - Delivery is atomic: if any step fails, the session does not report completion.
 - The PR is created as a draft (`prDraft: true` by default in config).

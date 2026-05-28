@@ -30,6 +30,7 @@ import {
 import {
   detectSummaryReasons,
   applySummaryDelta,
+  detectPrecedenceLevel,
   isSummaryOversized,
   hasDoctrineBled,
   SUMMARY_MAX_BYTES,
@@ -300,6 +301,48 @@ describe("applySummaryDelta", () => {
       skipRoot: true,
     });
     expect(result.missingSummaries).toContain("src/map");
+  });
+});
+
+// ── detectPrecedenceLevel ─────────────────────────────────────────────────────
+
+describe("detectPrecedenceLevel", () => {
+  it("returns promoted-doctrine for active doctrine path", () => {
+    expect(detectPrecedenceLevel(["smartdocs/docs/doctrine/active/foo.md"])).toBe("promoted-doctrine");
+  });
+
+  it("returns spec-or-arch for active spec path", () => {
+    expect(detectPrecedenceLevel(["smartdocs/docs/specs/active/bar.md"])).toBe("spec-or-arch");
+  });
+
+  it("returns spec-or-arch for architecture doc", () => {
+    expect(detectPrecedenceLevel(["smartdocs/docs/architecture/overview.md"])).toBe("spec-or-arch");
+  });
+
+  it("returns spec-or-arch for docs/spec/ path", () => {
+    expect(detectPrecedenceLevel(["docs/spec/polaris-spec.md"])).toBe("spec-or-arch");
+  });
+
+  it("returns route-polaris-md when only a POLARIS.md is touched", () => {
+    expect(detectPrecedenceLevel(["src/loop/POLARIS.md"])).toBe("route-polaris-md");
+  });
+
+  it("returns source-inference for plain source files", () => {
+    expect(detectPrecedenceLevel(["src/loop/worker.ts"])).toBe("source-inference");
+  });
+
+  it("promoted-doctrine wins over spec-or-arch in same batch", () => {
+    expect(detectPrecedenceLevel([
+      "docs/spec/polaris-spec.md",
+      "smartdocs/docs/doctrine/active/core.md",
+    ])).toBe("promoted-doctrine");
+  });
+
+  it("spec-or-arch wins over route-polaris-md in same batch", () => {
+    expect(detectPrecedenceLevel([
+      "src/map/POLARIS.md",
+      "docs/architecture/overview.md",
+    ])).toBe("spec-or-arch");
   });
 });
 
