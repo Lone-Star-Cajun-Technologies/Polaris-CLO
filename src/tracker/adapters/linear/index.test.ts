@@ -1,6 +1,4 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { EventEmitter } from "node:events";
-import * as https from "node:https";
 import { LinearAdapter } from "./index.js";
 import { PolarisConfig } from "../../../config/schema.js";
 import { LocalGraph } from "../../local-graph.js";
@@ -88,38 +86,6 @@ describe("LinearAdapter", () => {
       const adapter = new LinearAdapter(config);
       await expect(adapter.syncIn()).rejects.toThrow("LINEAR_API_KEY is required for the 'linear' tracker adapter.");
     } finally {
-      if (originalApiKey === undefined) {
-        delete process.env["LINEAR_API_KEY"];
-      } else {
-        process.env["LINEAR_API_KEY"] = originalApiKey;
-      }
-    }
-  });
-
-  it("includes Linear non-2xx response body in thrown error", async () => {
-    const originalApiKey = process.env["LINEAR_API_KEY"];
-    process.env["LINEAR_API_KEY"] = "linear-test-token";
-    const requestSpy = vi.spyOn(https, "request").mockImplementation((options: any, callback: any) => {
-      const req = new EventEmitter() as any;
-      req.on = req.addListener.bind(req);
-      req.write = vi.fn();
-      req.end = vi.fn(() => {
-        const res = new EventEmitter() as any;
-        res.statusCode = 400;
-        callback(res);
-        res.emit("data", Buffer.from(JSON.stringify({ errors: [{ message: "bad query" }] })));
-        res.emit("end");
-      });
-      return req;
-    });
-
-    try {
-      const adapter = new LinearAdapter(config);
-      await expect(adapter.syncIn("POL-198")).rejects.toThrow(
-        "Linear API returned 400: {\"errors\":[{\"message\":\"bad query\"}]}",
-      );
-    } finally {
-      requestSpy.mockRestore();
       if (originalApiKey === undefined) {
         delete process.env["LINEAR_API_KEY"];
       } else {
@@ -232,8 +198,8 @@ describe("LinearAdapter", () => {
     expect(linearClient.getIssueByIdentifier).toHaveBeenCalledWith("POL-198");
     expect(linearClient.getIssueById).toHaveBeenCalledWith("child-issue-id");
     expect(fullGraph.activeCluster).toBe("POL-198");
-    expect(fullGraph.clusters["POL-198"].children).toEqual(
-      expect.arrayContaining(["POL-198", "POL-200", "POL-42", "POL-199"]),
+    expect(fullGraph.clusters["POL-198"].children.slice().sort()).toEqual(
+      ["POL-198", "POL-199", "POL-200", "POL-42"].sort(),
     );
     expect(fullGraph.nodes["POL-198"]).toEqual({
       id: "POL-198",

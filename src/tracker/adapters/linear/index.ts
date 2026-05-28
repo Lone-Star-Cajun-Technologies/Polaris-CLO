@@ -269,7 +269,12 @@ export class LinearAdapter {
       return nodeId;
     }
 
-    if (!nodes[nodeId].title && issue.title) {
+    if (
+      issue.title &&
+      (!nodes[nodeId].title ||
+        nodes[nodeId].title === issue.identifier ||
+        nodes[nodeId].title === issue.id)
+    ) {
       nodes[nodeId].title = issue.title;
     }
     if ((nodes[nodeId].status === "Unknown" || !nodes[nodeId].status) && issue.state) {
@@ -309,9 +314,11 @@ export class LinearAdapter {
     const issueMap = new Map<string, LinearIssue>([[rootIssue.id, rootIssue]]);
     const pendingChildIds: string[] = (rootIssue.children ?? []).map((child) => child.id);
     const fetchedChildIds = new Set<string>();
+    let queueIndex = 0;
 
-    while (pendingChildIds.length > 0) {
-      const childId = pendingChildIds.shift();
+    while (queueIndex < pendingChildIds.length) {
+      const childId = pendingChildIds[queueIndex];
+      queueIndex += 1;
       if (!childId || fetchedChildIds.has(childId)) {
         continue;
       }
