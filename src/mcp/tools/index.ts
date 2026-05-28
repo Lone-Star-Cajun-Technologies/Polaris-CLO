@@ -5,8 +5,10 @@ import { handleLoopContinueDryRun } from "./loop-dry-run.js";
 import { handleLoopContinueConfirmed } from "./loop-continue.js";
 import { handlePolarisClaimChild } from "./claim-child.js";
 import { handlePolarisDispatchResult } from "./dispatch-result.js";
+import { LINEAR_TOOLS, handleLinearListIssues, handleLinearSaveIssue } from "./linear.js";
 
 export const TOOLS: Tool[] = [
+  ...LINEAR_TOOLS, // Add Linear tools here
   {
     name: "polaris_status",
     description:
@@ -217,6 +219,12 @@ export async function dispatchTool(
       break;
     case "polaris_dispatch_result":
       result = await handlePolarisDispatchResult(args);
+      break;
+    case "linear_list_issues":
+      result = await handleLinearListIssues(args);
+      break;
+    case "linear_save_issue":
+      result = await handleLinearSaveIssue(args);
       break;
     default:
       result = { ok: false, error: "unknown_tool", message: `Unhandled tool: ${name}` };

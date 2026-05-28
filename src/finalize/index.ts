@@ -16,6 +16,9 @@ import { stepUpdateState } from "./steps/09-update-state.js";
 import { stepAppendJsonl } from "./steps/10-append-jsonl.js";
 import { stepUpdateLinear } from "./steps/11-update-linear.js";
 import { stepArchive } from "./steps/12-archive.js";
+import { McpBridgeAdapter } from "../tracker/adapters/mcp-bridge.js";
+import { LocalGraph } from "../tracker/local-graph.js";
+import { TrackerSyncService } from "../tracker/sync/index.js";
 
 export interface FinalizeOptions {
   repoRoot: string;
@@ -41,15 +44,15 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
   const config = loadConfig(repoRoot);
 
   // Step 1: polaris map update --changed
-  console.log("[1/12] Updating map...");
+  console.log("[1/13] Updating map..."); // Step count updated
   stepMapUpdate(repoRoot);
 
   // Step 2: polaris map validate — fail fast
-  console.log("[2/12] Validating map...");
+  console.log("[2/13] Validating map..."); // Step count updated
   stepMapValidate(repoRoot);
 
   // Step 3: Validate current-state.json schema
-  console.log("[3/12] Validating current-state.json schema...");
+  console.log("[3/13] Validating current-state.json schema..."); // Step count updated
   let rawState: unknown;
   try {
     rawState = readState(stateFile);
@@ -65,16 +68,16 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
   // Step 4: Run configured checks
   const checks = config.finalize?.runChecks ?? [];
   if (checks.length > 0) {
-    console.log(`[4/12] Running ${checks.length} configured check(s)...`);
+    console.log(`[4/13] Running ${checks.length} configured check(s)...`); // Step count updated
     stepRunChecks(repoRoot, checks);
   } else {
-    console.log("[4/12] No finalize.runChecks configured — skipping.");
+    console.log("[4/13] No finalize.runChecks configured — skipping."); // Step count updated
   }
 
   // Step 4.5: Canon reconciliation check
   const canonCheckEnabled = config.canon?.checkOnFinalize !== false;
   if (canonCheckEnabled) {
-    console.log("[4.5/12] Running canon reconciliation check...");
+    console.log("[4.5/13] Running canon reconciliation check..."); // Step count updated
     let changedFiles: string[] = [];
     try {
       const baseBranch = config.finalize?.targetBranch ?? "main";
@@ -119,53 +122,82 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
   }
 
   // Step 5: Generate run-report.md (written once, never updated)
-  console.log("[5/12] Generating run-report.md...");
+  console.log("[5/13] Generating run-report.md..."); // Step count updated
   const branch = getBranch(repoRoot);
   const reportPath = stepGenerateReport(repoRoot, state, branch, true);
 
   if (dryRun) {
-    console.log("[6–12/12] Dry run — skipping commit and delivery.");
+    console.log("[6–13/13] Dry run — skipping reconciliation, commit and delivery."); // Step count updated
     console.log("Finalize dry run complete.");
     return;
   }
 
-  // Step 6: Single final commit: state + map + run-report
-  console.log("[6/12] Committing state + map + run-report...");
+  // Step 6: Tracker Reconciliation
+  // LinearAdapter is sync-in only; only McpBridgeAdapter supports full reconciliation.
+  const trackerType = config.tracker?.adapter;
+  if (!trackerType) {
+    console.log("[6/13] Tracker not configured — skipping reconciliation.");
+  } else if (trackerType === "linear") {
+    console.log("[6/13] Linear adapter is sync-in only — skipping reconciliation (use mcp-bridge for two-way sync).");
+  } else if (trackerType === "mcp-bridge") {
+    console.log("[6/13] Running tracker reconciliation...");
+    try {
+      const localGraph = await LocalGraph.load(state.cluster_id, repoRoot);
+      const trackerAdapter = new McpBridgeAdapter();
+      const trackerSyncService = new TrackerSyncService(trackerAdapter, localGraph);
+      await trackerSyncService.ready;
+      const reconciliationReport = await trackerSyncService.reconcile(dryRun);
+      console.log("Tracker Reconciliation Report:", reconciliationReport);
+      if (reconciliationReport.conflictsDetectedCount > 0 || reconciliationReport.failedMutationsCount > 0) {
+        console.warn("Tracker reconciliation detected conflicts or failed mutations. Review the report above.");
+      }
+    } catch (error) {
+      console.error("Error during tracker reconciliation:", error);
+      process.stderr.write(`finalize aborted: tracker reconciliation failed: ${error instanceof Error ? error.message : String(error)}\n`);
+      process.exit(1);
+    }
+  } else {
+    console.warn(`[6/13] Unknown tracker adapter '${trackerType}' — skipping reconciliation.`);
+  }
+
+
+  // Step 7: Single final commit: state + map + run-report
+  console.log("[7/13] Committing state + map + run-report..."); // Step count updated
   const resolvedStateFile = resolve(stateFile);
   stepCommit(repoRoot, state, resolvedStateFile, reportPath);
 
   if (skipDelivery) {
-    console.log("[7–12/12] Delivery skipped (--skip-delivery).");
-    console.log("polaris finalize steps 1–6 complete.");
+    console.log("[8–13/13] Delivery skipped (--skip-delivery)."); // Step count updated
+    console.log("polaris finalize steps 1–7 complete."); // Step count updated
     return;
   }
 
-  // Step 7: git push
-  console.log("[7/12] Pushing branch...");
+  // Step 8: git push
+  console.log("[8/13] Pushing branch..."); // Step count updated
   stepPush(repoRoot, branch);
 
-  // Step 8: Create draft PR
+  // Step 9: Create draft PR
   const prDraft = config.finalize?.prDraft ?? true;
-  console.log("[8/12] Creating draft PR...");
+  console.log("[9/13] Creating draft PR..."); // Step count updated
   const prUrl = stepCreatePr(repoRoot, branch, state, prDraft);
 
-  // Step 9: Write PR URL to current-state.json
-  console.log("[9/12] Writing PR URL to state...");
+  // Step 10: Write PR URL to current-state.json
+  console.log("[10/13] Writing PR URL to state..."); // Step count updated
   state = stepUpdateState(resolvedStateFile, state, prUrl);
 
-  // Step 10: Append JSONL events
-  console.log("[10/12] Appending JSONL events...");
+  // Step 11: Append JSONL events
+  console.log("[11/13] Appending JSONL events..."); // Step count updated
   const artifactDir = state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "bootstrap-run");
   const telemetryFile = join(artifactDir, "runs", state.run_id, "telemetry.jsonl");
   stepAppendJsonl(telemetryFile, state, prUrl);
 
-  // Step 11: Update Linear parent issue
-  console.log("[11/12] Updating Linear...");
+  // Step 12: Update Linear parent issue
+  console.log("[12/13] Updating Linear..."); // Step count updated
   const linearEnabled = config.tracker?.linear?.enabled ?? false;
   await stepUpdateLinear(state, branch, prUrl, true, linearEnabled, state.cluster_id);
 
-  // Step 12: Archive run snapshot
-  console.log("[12/12] Archiving run snapshot...");
+  // Step 13: Archive run snapshot
+  console.log("[13/13] Archiving run snapshot..."); // Step count updated
   stepArchive(repoRoot, state, resolvedStateFile, reportPath);
 
   console.log("polaris finalize complete.");

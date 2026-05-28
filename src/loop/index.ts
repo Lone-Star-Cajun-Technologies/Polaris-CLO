@@ -119,11 +119,13 @@ export function createLoopCommand(handlers: LoopCommandHandlers = {}): Command {
         ].filter((line): line is string => Boolean(line)).join("\n");
 
         if (result.haltReason === "cluster-complete") {
-          process.stdout.write(`${summary}\n`);
+          process.stdout.write(`${summary}
+`);
           return;
         }
 
-        process.stderr.write(`${summary}\n`);
+        process.stderr.write(`${summary}
+`);
         process.exit(1);
       },
     );
@@ -162,11 +164,13 @@ export function createLoopCommand(handlers: LoopCommandHandlers = {}): Command {
     .option("-r, --repo-root <path>", "Repository root", repoRootDefault)
     .option("--state-file <path>", "Override path to current-state.json")
     .option("--child <id>", "Open child issue ID to dispatch instead of the first open child")
-    .action((options: { repoRoot: string; stateFile?: string; child?: string }) => {
+    .option("--result-file <path>", "Path to write the sealed result file")
+    .action((options: { repoRoot: string; stateFile?: string; child?: string; resultFile?: string }) => {
       dispatchHandler({
         repoRoot: options.repoRoot,
         stateFile: defaultStateFile(options.repoRoot, options.stateFile),
         childId: options.child,
+        resultFile: options.resultFile,
       });
     });
 

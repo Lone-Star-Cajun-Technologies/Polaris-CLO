@@ -94,10 +94,18 @@ export interface PolarisConfig {
     archiveRunSnapshot?: boolean;
   };
   tracker?: {
+    /** Which remote tracker adapter to use. Omit to disable remote reconciliation. */
+    adapter?: "linear" | "mcp-bridge";
+    'local-file'?: {
+      enabled?: boolean;
+    };
     linear?: {
       enabled?: boolean;
       teamId?: string;
       projectId?: string;
+    };
+    mcpBridge?: {
+      enabled?: boolean;
     };
   };
   integrations?: {

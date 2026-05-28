@@ -47,6 +47,21 @@ describe("isWorkerPacket", () => {
     const packet = compileImplPacket({ ...BASE, childId: "POL-121" });
     expect(isWorkerPacket(packet)).toBe(true);
   });
+
+  it("returns true for a compiled WorkerPacket with result_file_contract", () => {
+    const packet = compileImplPacket({
+      ...BASE,
+      childId: "POL-121",
+      resultFile: "/tmp/result.json",
+    });
+    expect(isWorkerPacket(packet)).toBe(true);
+  });
+
+  it("returns false if result_file_contract is malformed", () => {
+    const packet = compileImplPacket({ ...BASE, childId: "POL-121" });
+    (packet as any).result_file_contract = { result_file: 123 };
+    expect(isWorkerPacket(packet)).toBe(false);
+  });
 });
 
 // ── compileImplPacket ─────────────────────────────────────────────────────────
@@ -126,6 +141,15 @@ describe("compileImplPacket", () => {
     expect(p.return_contract).toEqual(IMPL_RETURN_CONTRACT);
   });
 
+  it("populates result_file_contract when resultFile is provided", () => {
+    const p = compileImplPacket({
+      ...BASE,
+      childId: "POL-121",
+      resultFile: "/tmp/result.json",
+    });
+    expect(p.result_file_contract).toEqual({ result_file: "/tmp/result.json" });
+  });
+
   it("is a valid BootstrapPacket (has all required v1 fields)", () => {
     const p = compileImplPacket({ ...BASE, childId: "POL-121" });
     expect(typeof p.run_id).toBe("string");
@@ -166,6 +190,11 @@ describe("compileFinalizePacket", () => {
     expect(p.return_contract).toEqual(FINALIZE_RETURN_CONTRACT);
   });
 
+  it("populates result_file_contract when resultFile is provided", () => {
+    const p = compileFinalizePacket({ ...BASE, resultFile: "/tmp/result.json" });
+    expect(p.result_file_contract).toEqual({ result_file: "/tmp/result.json" });
+  });
+
   it("does not reference skill files", () => {
     const p = compileFinalizePacket(BASE);
     const stepsText = p.instructions.steps.join(" ");
@@ -199,6 +228,11 @@ describe("compilePreflightPacket", () => {
   it("return_contract matches PREFLIGHT_RETURN_CONTRACT", () => {
     const p = compilePreflightPacket(BASE);
     expect(p.return_contract).toEqual(PREFLIGHT_RETURN_CONTRACT);
+  });
+
+  it("populates result_file_contract when resultFile is provided", () => {
+    const p = compilePreflightPacket({ ...BASE, resultFile: "/tmp/result.json" });
+    expect(p.result_file_contract).toEqual({ result_file: "/tmp/result.json" });
   });
 });
 
