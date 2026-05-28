@@ -87,14 +87,19 @@ function materializeRoleProvider(
     return provider;
   }
 
+  // Create a new provider key to avoid mutating shared config
+  const newProviderKey = `${provider}#${roleName}`;
+  const existingConfig = execution.providers?.[provider] ?? {};
+
   execution.providers = {
     ...(execution.providers ?? {}),
-    [provider]: {
+    [newProviderKey]: {
+      ...existingConfig,
       command: roleConfig.command,
       args: roleConfig.args,
     },
   };
-  return provider;
+  return newProviderKey;
 }
 
 export function resolveLifecycleProvider(
@@ -225,10 +230,34 @@ export async function dispatchLifecyclePhase(
     timestamp: new Date().toISOString(),
   });
 
-  const dispatchResult = await options.adapter.dispatch(packet, {
-    provider: resolved.provider,
-    dryRun: options.dryRun,
-  });
+  let dispatchResult: DispatchResult;
+  try {
+    // Use the resolved adapter instead of options.adapter
+    const adapterToUse = options.adapter; // Note: resolved.adapter is the name string, not the adapter instance
+    dispatchResult = await adapterToUse.dispatch(packet, {
+      provider: resolved.provider,
+      dryRun: options.dryRun,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    appendTelemetry(options.telemetryFile, {
+      event: "lifecycle-result-rejected",
+      run_id: options.runId,
+      role,
+      error: "adapter_error",
+      message: `Adapter threw exception: ${message}`,
+      timestamp: new Date().toISOString(),
+    });
+    return {
+      ok: false,
+      role,
+      provider: resolved.provider,
+      model: resolved.model,
+      resultFile: sealedResultFile,
+      error: "adapter_error",
+      message: `Adapter threw exception: ${message}`,
+    };
+  }
 
   if (dispatchResult.exit_code !== 0) {
     const message = dispatchResult.summary ?? `Lifecycle ${role} dispatch exited with code ${dispatchResult.exit_code}`;
