@@ -1,5 +1,5 @@
 {
-  "scan_date": "2026-05-28T15:02:27.937Z",
+  "scan_date": "2026-05-28T15:03:32.511Z",
   "file_count": 465,
   "coverage_pct": 43,
   "instructionCoverage": {
@@ -3661,8 +3661,8 @@
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
-      "last_updated": "2026-05-28T15:02:13.253Z",
-      "updated_by": "polaris-map-index",
+      "last_updated": "2026-05-28T15:03:32.511Z",
+      "updated_by": "polaris-map-update",
       "tags": []
     },
     ".polaris/map/index.json": {
@@ -3671,8 +3671,8 @@
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
-      "last_updated": "2026-05-28T15:02:13.253Z",
-      "updated_by": "polaris-map-index",
+      "last_updated": "2026-05-28T15:03:32.511Z",
+      "updated_by": "polaris-map-update",
       "tags": []
     },
     ".polaris/map/needs-review.json": {
@@ -3681,8 +3681,8 @@
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
-      "last_updated": "2026-05-28T15:02:13.253Z",
-      "updated_by": "polaris-map-index",
+      "last_updated": "2026-05-28T15:03:32.511Z",
+      "updated_by": "polaris-map-update",
       "tags": []
     },
     ".polaris/runs/.gitkeep": {
@@ -3871,8 +3871,8 @@
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
-      "last_updated": "2026-05-28T15:02:13.253Z",
-      "updated_by": "polaris-map-index",
+      "last_updated": "2026-05-28T15:03:32.511Z",
+      "updated_by": "polaris-map-update",
       "tags": []
     },
     ".polaris/session-type": {
@@ -4221,8 +4221,8 @@
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
-      "last_updated": "2026-05-28T15:02:13.253Z",
-      "updated_by": "polaris-map-index",
+      "last_updated": "2026-05-28T15:03:32.511Z",
+      "updated_by": "polaris-map-update",
       "tags": []
     },
     ".taskchain_artifacts/polaris-run/run-report.md": {

@@ -1,7 +1,7 @@
 # Run Report: polaris-run-pol-156-2026-05-28-001
 
 **Status:** cluster-complete
-**Branch:** main
+**Branch:** philmeaux/pol-156-implement-thin-parent-orchestration-mode-and-sealed-parent
 **PR:** TBD — set at delivery step 9
 **Children completed:** 4 of 4
 **Validation:** passed
