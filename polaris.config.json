@@ -3,5 +3,8 @@
     "mode": "auto",
     "auto_finalize": false,
     "notification_format": "terse"
+  },
+  "tracker":{
+    "adapter":"linear"
   }
 }
