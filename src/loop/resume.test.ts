@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createHash } from "node:crypto";
@@ -133,6 +133,56 @@ describe("runLoopResume", () => {
     }
 
     expect(logs.join("")).toContain("pol-5-session-1");
+  });
+
+  it("appends run-resumed to the global ledger and creates it when absent", () => {
+    const stateContent = {
+      schema_version: "1.0",
+      run_id: "pol-5-session-1",
+      cluster_id: "POL-5",
+      branch: getCurrentBranch(testDir),
+      active_child: "",
+      completed_children: ["POL-23"],
+      open_children: ["POL-24"],
+      step_cursor: "checkpoint",
+      context_budget: { children_completed: 1 },
+      status: "running",
+      next_open_child: "POL-24",
+      last_commit: "abc1234",
+    };
+    const stateFile = writeState(testDir, stateContent);
+    const packet = makePacket(stateFile, stateContent, testDir);
+    writePacket(testDir, packet);
+
+    const origLog = console.log;
+    console.log = () => {};
+    try {
+      runLoopResume({ runId: "pol-5-session-1", repoRoot: testDir, stateFile });
+    } finally {
+      console.log = origLog;
+    }
+
+    const ledgerFile = join(testDir, ".polaris", "runs", "ledger.jsonl");
+    expect(existsSync(ledgerFile)).toBe(true);
+    const events = readFileSync(ledgerFile, "utf-8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    expect(events[0]).toMatchObject({
+      event: "run-resumed",
+      run_id: "pol-5-session-1",
+      run_type: "implement",
+      cluster_id: "POL-5",
+      issue_id: null,
+      status: "running",
+      completed_children: ["POL-23"],
+      open_children: ["POL-24"],
+      next_child: "POL-24",
+      last_commit: "abc1234",
+      pr_url: null,
+      resume_source: "bootstrap",
+      resume_reason: "polaris loop resume selected bootstrap packet",
+    });
   });
 
   it("halts with exit 1 when current-state SHA does not match packet", () => {

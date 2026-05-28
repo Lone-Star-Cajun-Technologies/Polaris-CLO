@@ -1,5 +1,6 @@
 import { appendFileSync, mkdirSync, realpathSync } from "node:fs";
 import { execFileSync } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import { dirname, join } from "node:path";
 import { readState, validateState, writeStateAtomic, type LoopState } from "./checkpoint.js";
 import { compileImplPacket, type WorkerPacket } from "./worker-packet.js";
@@ -9,6 +10,12 @@ import {
   assertNoActiveChildBeforeDispatch,
 } from "./dispatch-boundary.js";
 import { assertBootstrapSeal } from "./run-bootstrap.js";
+import {
+  DEFAULT_LEDGER_PATH,
+  LedgerWriter,
+  type ChildDispatchedEvent,
+  type LedgerRunType,
+} from "./ledger.js";
 
 export interface DispatchOptions {
   stateFile: string;
@@ -49,6 +56,35 @@ function getCurrentBranch(repoRoot: string): string {
   } catch {
     return (process.env["POLARIS_BRANCH"] as string | undefined) ?? "unknown";
   }
+}
+
+function normalizeRunType(sessionType: string | undefined): LedgerRunType {
+  return sessionType === "analyze" ? "analyze" : "implement";
+}
+
+function ledgerLastCommit(state: LoopState): string | null {
+  return state.last_commit && state.last_commit.length > 0 ? state.last_commit : null;
+}
+
+function appendDispatchLedgerEvent(repoRoot: string, state: LoopState, childId: string): void {
+  new LedgerWriter(join(repoRoot, DEFAULT_LEDGER_PATH)).append({
+    schema_version: 1,
+    event_id: randomUUID(),
+    event: "child-dispatched",
+    run_id: state.run_id,
+    run_type: normalizeRunType(state.session_type),
+    cluster_id: state.cluster_id,
+    issue_id: childId,
+    branch: state.branch ?? getCurrentBranch(repoRoot),
+    status: "child-dispatched",
+    completed_children: state.completed_children,
+    open_children: state.open_children,
+    next_child: childId,
+    last_commit: ledgerLastCommit(state),
+    pr_url: null,
+    timestamp: new Date().toISOString(),
+    dispatch_epoch: state.dispatch_boundary?.dispatch_epoch ?? 0,
+  } satisfies ChildDispatchedEvent);
 }
 
 function selectChild(state: LoopState, requestedChild?: string): string {
@@ -135,7 +171,27 @@ export function runLoopDispatch(options: DispatchOptions): void {
   try {
     assertNoActiveChildBeforeDispatch(state, telemetryFile);
   } catch (err) {
-    fail(err instanceof Error ? err.message : String(err));
+    const msg = err instanceof Error ? err.message : String(err);
+    const event = {
+      event: "invalid-inline-attempt",
+      run_id: state.run_id,
+      child_id: state.active_child,
+      error: msg,
+      timestamp: new Date().toISOString(),
+    };
+    appendTelemetry(telemetryFile, event);
+    const defaultTelemetryFile = join(
+      options.repoRoot,
+      ".taskchain_artifacts",
+      "polaris-run",
+      "runs",
+      state.run_id,
+      "telemetry.jsonl",
+    );
+    if (defaultTelemetryFile !== telemetryFile) {
+      appendTelemetry(defaultTelemetryFile, event);
+    }
+    fail(msg);
   }
 
   const childId = selectChild(state, options.childId);
@@ -148,6 +204,7 @@ export function runLoopDispatch(options: DispatchOptions): void {
     dispatch_boundary: advanceDispatchEpoch(state.dispatch_boundary, childId),
   };
   writeStateAtomic(options.stateFile, updatedState);
+  appendDispatchLedgerEvent(options.repoRoot, updatedState, childId);
 
   const packet = buildPacket(
     updatedState,

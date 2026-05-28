@@ -19,6 +19,7 @@
  */
 
 import { appendFileSync, mkdirSync, realpathSync } from "node:fs";
+import { randomUUID } from "node:crypto";
 import { dirname, join } from "node:path";
 import { readState, validateState, writeStateAtomic, type LoopState } from "./checkpoint.js";
 import { createAdapter } from "./adapters/registry.js";
@@ -37,6 +38,12 @@ import {
   advanceContinueEpoch,
 } from "./dispatch-boundary.js";
 import { assertBootstrapSeal } from "./run-bootstrap.js";
+import {
+  DEFAULT_LEDGER_PATH,
+  LedgerWriter,
+  type LedgerRunType,
+  type RunStartedEvent,
+} from "./ledger.js";
 
 export interface ParentLoopOptions {
   /** Absolute path to current-state.json. */
@@ -152,6 +159,34 @@ function getCurrentBranch(cwd: string): string {
   } catch {
     return (process.env["POLARIS_BRANCH"] as string | undefined) ?? "unknown";
   }
+}
+
+function normalizeRunType(sessionType: string | undefined): LedgerRunType {
+  return sessionType === "analyze" ? "analyze" : "implement";
+}
+
+function ledgerLastCommit(state: LoopState): string | null {
+  return state.last_commit && state.last_commit.length > 0 ? state.last_commit : null;
+}
+
+function appendRunStartedLedgerEvent(repoRoot: string, state: LoopState): void {
+  new LedgerWriter(join(repoRoot, DEFAULT_LEDGER_PATH)).append({
+    schema_version: 1,
+    event_id: randomUUID(),
+    event: "run-started",
+    run_id: state.run_id,
+    run_type: normalizeRunType(state.session_type),
+    cluster_id: state.cluster_id,
+    issue_id: state.active_child || null,
+    branch: state.branch ?? getCurrentBranch(repoRoot),
+    status: "running",
+    completed_children: state.completed_children,
+    open_children: state.open_children,
+    next_child: state.next_open_child,
+    last_commit: ledgerLastCommit(state),
+    pr_url: null,
+    timestamp: new Date().toISOString(),
+  } satisfies RunStartedEvent);
 }
 
 /**
@@ -297,6 +332,10 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
       childrenDispatched: 0,
       message: msg,
     };
+  }
+
+  if (!dryRun) {
+    appendRunStartedLedgerEvent(repoRoot, state);
   }
 
   // Load config for adapter and provider resolution

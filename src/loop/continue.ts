@@ -1,5 +1,6 @@
 import { join } from "node:path";
 import { readFileSync } from "node:fs";
+import { randomUUID } from "node:crypto";
 import {
   readState,
   validateState,
@@ -16,6 +17,13 @@ import {
   assertContinueRequiresDispatch,
   advanceContinueEpoch,
 } from "./dispatch-boundary.js";
+import {
+  DEFAULT_LEDGER_PATH,
+  LedgerWriter,
+  type ClusterCompleteEvent,
+  type ChildCompletedEvent,
+  type LedgerRunType,
+} from "./ledger.js";
 
 export interface ContinueOptions {
   stateFile: string;
@@ -42,6 +50,60 @@ function getNextChildType(state: LoopState, nextChild: string | null): string | 
 
 function isAnalyzeImplBoundary(sessionType: string | undefined, nextChildType: string | undefined): boolean {
   return sessionType === "analyze" && nextChildType === "implement";
+}
+
+function normalizeRunType(sessionType: string | undefined): LedgerRunType {
+  return sessionType === "analyze" ? "analyze" : "implement";
+}
+
+function ledgerBranch(state: LoopState): string {
+  return state.branch ?? "unknown";
+}
+
+function ledgerLastCommit(state: LoopState): string | null {
+  return state.last_commit && state.last_commit.length > 0 ? state.last_commit : null;
+}
+
+function appendContinueLedgerEvents(repoRoot: string, state: LoopState, completedChild: string | null): void {
+  if (!completedChild) return;
+
+  const writer = new LedgerWriter(join(repoRoot, DEFAULT_LEDGER_PATH));
+  const timestamp = new Date().toISOString();
+  const base = {
+    schema_version: 1 as const,
+    event_id: randomUUID(),
+    run_id: state.run_id,
+    run_type: normalizeRunType(state.session_type),
+    cluster_id: state.cluster_id,
+    branch: ledgerBranch(state),
+    completed_children: Array.from(new Set(state.completed_children)),
+    open_children: state.open_children,
+    next_child: state.next_open_child,
+    last_commit: ledgerLastCommit(state),
+    pr_url: null,
+    timestamp,
+  };
+
+  writer.append({
+    ...base,
+    event: "child-completed",
+    issue_id: completedChild,
+    status: state.status === "cluster-complete" ? "cluster-complete" : "running",
+    last_commit: ledgerLastCommit(state),
+    validation: { status: "complete" },
+  } satisfies ChildCompletedEvent);
+
+  if (state.open_children.length === 0) {
+    writer.append({
+      ...base,
+      event_id: randomUUID(),
+      event: "cluster-complete",
+      issue_id: null,
+      status: "cluster-complete",
+      open_children: [],
+      next_child: null,
+    } satisfies ClusterCompleteEvent);
+  }
 }
 
 export function runLoopContinue(options: ContinueOptions): void {
@@ -128,6 +190,7 @@ export function runLoopContinue(options: ContinueOptions): void {
 
   // Step 1 (cont): Atomic write of updated current-state.json
   const sha = writeStateAtomic(stateFile, updatedState);
+  appendContinueLedgerEvents(repoRoot, updatedState, completedChild);
 
   // Step 2: Append JSONL checkpoint event
   const artifactDir =

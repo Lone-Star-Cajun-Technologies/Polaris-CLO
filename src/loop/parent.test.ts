@@ -298,6 +298,39 @@ describe("runParentLoop", () => {
     expect(dispatchedIds).toEqual(["POL-100", "POL-101", "POL-102"]);
   });
 
+  it("appends run-started to the global ledger on entry", async () => {
+    const calls: MockCall[] = [];
+    const mockAdapter = makeMockAdapter([SUCCESS_RESULT], calls);
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+
+    await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    const events = readFileSync(join(tmpDir, ".polaris", "runs", "ledger.jsonl"), "utf-8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    expect(events[0]).toMatchObject({
+      event: "run-started",
+      run_id: "test-run-001",
+      run_type: "implement",
+      cluster_id: "POL-99",
+      issue_id: null,
+      branch: "feature/test",
+      status: "running",
+      completed_children: [],
+      open_children: ["POL-100"],
+      next_child: "POL-100",
+      last_commit: null,
+      pr_url: null,
+    });
+  });
+
   it("ADAPTER HANDOFF: dispatch + continue, not halt", async () => {
     // Verify that after each dispatch the loop continues to the next child
     const calls: MockCall[] = [];
