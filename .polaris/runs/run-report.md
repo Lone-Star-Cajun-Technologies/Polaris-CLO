@@ -1,19 +1,16 @@
-# Run Report: polaris-run-global-run-ledger-2026-05-28-001
+# Run Report: polaris-run-pol-187-2026-05-28-001
 
-**Status:** complete
-**Branch:** philmeaux/pol-151-implement-add-global-polaris-run-ledger-for-cross-agent
-**PR:** https://github.com/ItIsYeBananaduck/Polaris/pull/47
-**Children completed:** 4 of 4
+**Status:** cluster-complete
+**Branch:** philmeaux/pol-156-implement-thin-parent-orchestration-mode-and-sealed-parent
+**PR:** TBD — set at delivery step 9
+**Children completed:** 1 of 1
 **Validation:** passed
 
 ## Children
 
 | ID | Title | Commit | Status |
 |---|---|---|---|
-| POL-152 | — | — | Done |
-| POL-153 | — | — | Done |
-| POL-154 | — | — | Done |
-| POL-155 | — | — | Done |
+| POL-187 | — | — | Done |
 
 ## Artifacts produced
 
