@@ -11,6 +11,7 @@ import { createMapCommand } from "../map/index.js";
 import { runMapQuery } from "../map/query.js";
 import { createFinalizeCommand } from "../finalize/index.js";
 import { runFinalize } from "../finalize/index.js";
+import { createRunsCommand } from "../runs/index.js";
 import { createInitCommand, runInit } from "./init.js";
 import { createDocsCommand, createDoctrineCommand } from "../smartdocs-engine/index.js";
 import { createConfigCommand, runConfigShow } from "../config/show.js";
@@ -82,6 +83,8 @@ export function createPolarisCommand(options: PolarisCommandOptions = {}): Comma
       runFinalize: options.runFinalize,
     }),
   );
+
+  program.addCommand(createRunsCommand({ repoRoot }));
 
   program.addCommand(
     createInitCommand({
