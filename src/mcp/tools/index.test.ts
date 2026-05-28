@@ -35,6 +35,15 @@ vi.mock("./loop-continue.js", () => ({
   }),
 }));
 
+vi.mock("./linear.js", () => ({
+  LINEAR_TOOLS: [
+    { name: "linear_list_issues", description: "List Linear issues", inputSchema: { type: "object", properties: {}, required: [] } },
+    { name: "linear_save_issue", description: "Save a Linear issue", inputSchema: { type: "object", properties: {}, required: [] } },
+  ],
+  handleLinearListIssues: vi.fn().mockResolvedValue({ ok: true, issues: [] }),
+  handleLinearSaveIssue: vi.fn().mockResolvedValue({ ok: true }),
+}));
+
 import { TOOLS, dispatchTool } from "./index.js";
 import { handlePolarisStatus, handlePolarisLoopStatus } from "./status.js";
 import { handlePolarisCurrentState } from "./current-state.js";
@@ -46,8 +55,8 @@ const mockHandlePolarisCurrentState = vi.mocked(handlePolarisCurrentState);
 const mockHandleLoopContinueConfirmed = vi.mocked(handleLoopContinueConfirmed);
 
 describe("TOOLS array", () => {
-  it("has exactly 7 tools", () => {
-    expect(TOOLS).toHaveLength(7);
+  it("has exactly 9 tools", () => {
+    expect(TOOLS).toHaveLength(9);
   });
 
   it("contains polaris_status", () => {
@@ -78,6 +87,8 @@ describe("TOOLS array", () => {
   it("has the exact set of tools", () => {
     const names = TOOLS.map((t) => t.name).sort();
     expect(names).toEqual([
+      "linear_list_issues",
+      "linear_save_issue",
       "polaris_claim_child",
       "polaris_current_state",
       "polaris_dispatch_result",

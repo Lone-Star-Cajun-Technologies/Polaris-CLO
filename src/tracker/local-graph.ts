@@ -41,6 +41,17 @@ export class LocalGraph {
 
     return new LocalGraph(v2Graph);
   }
+
+  /**
+   * Creates a LocalGraph instance directly from an already-validated v2 graph.
+   * Use this when the graph has been built in memory (e.g., by a tracker adapter).
+   *
+   * @param graph A validated ExecutionGraphV2 object.
+   * @returns A new LocalGraph instance.
+   */
+  static fromGraph(graph: ExecutionGraphV2): LocalGraph {
+    return new LocalGraph(graph);
+  }
   
   /**
    * Returns the full v2 execution graph.

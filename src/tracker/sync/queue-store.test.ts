@@ -1,7 +1,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { join } from 'node:path';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, mkdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { readFile } from 'node:fs/promises';
 
@@ -111,7 +111,7 @@ describe('queue-store', () => {
 
   it('should throw an error for malformed JSON content', async () => {
     // Manually create a malformed JSON file
-    await mkdtemp(join(testDir, '.polaris', 'runs'), { recursive: true });
+    await mkdir(join(testDir, '.polaris', 'runs'), { recursive: true });
     await writeFile(testFilePath, '{"id": "malformed",', 'utf-8');
 
     await expect(loadMutationQueue(testFilePath)).rejects.toThrow(SyntaxError);

@@ -7,6 +7,10 @@ import type { ExecutionGraphV1, ExecutionGraphV2 } from "./types.js";
  * @returns The migrated v2 execution graph.
  */
 export function migrateV1toV2(v1Graph: ExecutionGraphV1): ExecutionGraphV2 {
+  if (!v1Graph.clusters || v1Graph.clusters.length === 0) {
+    throw new Error("Cannot migrate v1 execution graph: clusters array is empty or missing.");
+  }
+
   const v2Graph: ExecutionGraphV2 = {
     schemaVersion: "v2",
     source: {

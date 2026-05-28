@@ -1,5 +1,6 @@
 import { LocalGraph } from "./local-graph.js";
 import { LinearAdapter } from "./adapters/linear/index.js";
+import type { PolarisConfig } from "../config/schema.js";
 
 /**
  * Loads the execution graph from the configured tracker.

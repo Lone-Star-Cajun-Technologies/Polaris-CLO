@@ -1,7 +1,7 @@
 
-import { TrackerAdapter, TrackerSyncInput, MutationRecord } from '../sync';
-import { mcp_linear_list_issues, mcp_linear_save_issue, mcp_linear_get_issue } from '../../../index'; // Adjust path and imports as needed
-import { LinearIssue } from '../../types/linear'; // Assuming a type definition for Linear issues
+import { TrackerAdapter, TrackerSyncInput, MutationRecord } from '../sync/index.js';
+import { mcp_linear_list_issues, mcp_linear_save_issue, mcp_linear_get_issue } from '@tool-server/linear';
+import { LinearIssue } from '../../types/linear.js';
 
 /**
  * MCP Bridge Adapter for interacting with Linear via the MCP.

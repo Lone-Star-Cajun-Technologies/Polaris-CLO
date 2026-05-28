@@ -46,6 +46,14 @@ export const executionGraphV2Schema = z.object({
 
   /** The active cluster ID to be used for execution. */
   activeCluster: z.string(),
+}).superRefine((data, ctx) => {
+  if (data.activeCluster && !data.clusters[data.activeCluster]) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["activeCluster"],
+      message: `activeCluster '${data.activeCluster}' does not exist in the clusters map`,
+    });
+  }
 });
 
 /**

@@ -139,9 +139,16 @@ export function isWorkerPacket(packet: BootstrapPacket): packet is WorkerPacket 
   }
 
   // If result_file_contract is present, validate its shape.
-  if ('result_file_contract' in p && p.result_file_contract) {
-    const rfc = p.result_file_contract as Record<string, unknown>;
-    return typeof rfc.result_file === 'string';
+  if ('result_file_contract' in p) {
+    const rfc = p.result_file_contract;
+    // undefined means no contract — that's valid (resultFile was not specified)
+    if (rfc !== undefined) {
+      if (rfc === null || typeof rfc !== 'object' || Array.isArray(rfc)) {
+        return false;
+      }
+      const rfcRecord = rfc as Record<string, unknown>;
+      return typeof rfcRecord.result_file === 'string';
+    }
   }
 
   return true;

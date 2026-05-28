@@ -602,7 +602,19 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     if (packet.result_file_contract?.result_file && !dryRun) {
       try {
         sealedFileContent = readFileSync(packet.result_file_contract.result_file, 'utf-8');
-        finalWorkerSummary = JSON.parse(sealedFileContent) as WorkerSummary;
+        const parsed = JSON.parse(sealedFileContent) as unknown;
+        if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+          throw new Error(`Sealed result file has unexpected shape (expected object, got ${Array.isArray(parsed) ? 'array' : typeof parsed})`);
+        }
+        const sealedResult = parsed as Record<string, unknown>;
+        // Translate SealedWorkerResult status values to WorkerSummary status values.
+        // SealedWorkerResult uses "success"/"failure"; WorkerSummary uses "done"/"failed".
+        if (sealedResult['status'] === 'success') {
+          sealedResult['status'] = 'done';
+        } else if (sealedResult['status'] === 'failure') {
+          sealedResult['status'] = 'failed';
+        }
+        finalWorkerSummary = sealedResult as WorkerSummary;
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
         if (!dryRun) {
@@ -628,9 +640,11 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     
     const workerStatus = finalWorkerSummary?.status ?? (dispatchResult.exit_code === 0 ? 'done' : 'error');
 
-    // Verify child_id matches if present in worker summary
-    if (finalWorkerSummary && 'child_id' in finalWorkerSummary && finalWorkerSummary.child_id !== nextChild) {
-      const errMsg = `Worker returned mismatched child_id: expected ${nextChild}, got ${finalWorkerSummary.child_id}`;
+    // Verify active_child or child_id matches if present in worker summary
+    const summaryAsRecord = finalWorkerSummary as Record<string, unknown> | null;
+    const summaryChild = summaryAsRecord?.['active_child'] ?? summaryAsRecord?.['child_id'];
+    if (summaryChild !== undefined && summaryChild !== nextChild) {
+      const errMsg = `Worker returned mismatched child identifier: expected ${nextChild}, got ${String(summaryChild)}`;
       if (!dryRun) {
         appendTelemetry(telemetryFile, {
           event: "child-error",
@@ -860,38 +874,6 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     const postBudgetCheck = checkBudget({
       childrenCompleted: state.context_budget.children_completed,
       lastChildStatus: workerStatus,
-      policy: budgetPolicy,
-    });
-    if (postBudgetCheck.status === 'exhausted') {
-      const nextPending = state.open_children[0] ?? null;
-      if (!dryRun) {
-        writeStateAtomic(stateFile, {
-          ...state,
-          status: "budget-exhausted",
-          step_cursor: "budget-check",
-          next_open_child: nextPending,
-        });
-        appendTelemetry(telemetryFile, {
-          event: "budget-exhausted",
-          run_id: state.run_id,
-          children_completed: state.context_budget.children_completed,
-          next_child: nextPending,
-          reason: postBudgetCheck.reason,
-          timestamp: new Date().toISOString(),
-        });
-      }
-      return {
-        haltReason: 'budget-exhausted',
-        childrenDispatched,
-        haltingChild: nextPending ?? undefined,
-        message: postBudgetCheck.reason,
-      };
-    }
-
-    // ── Step 06: CONTINUE (back to step 02) ─────────────────────────────
-  }
-}
-hildStatus: workerStatus,
       policy: budgetPolicy,
     });
     if (postBudgetCheck.status === 'exhausted') {

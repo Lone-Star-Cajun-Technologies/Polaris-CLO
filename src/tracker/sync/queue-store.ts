@@ -1,18 +1,7 @@
 
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import * as path from 'node:path';
-import { MutationRecord } from './index';
-
-/**
- * Ensures the necessary directories exist for storing the mutation queue.
- * @param baseDir The base directory where .polaris/runs will be created. Defaults to process.cwd().
- */
-async function ensureQueueDirs(baseDir: string = process.cwd()): Promise<void> {
-  const polarisDir = path.join(baseDir, '.polaris');
-  const runsDir = path.join(polarisDir, 'runs');
-  await mkdir(polarisDir, { recursive: true });
-  await mkdir(runsDir, { recursive: true });
-}
+import { MutationRecord } from './index.js';
 
 /**
  * Loads the mutation queue from a JSON file.
@@ -22,13 +11,12 @@ async function ensureQueueDirs(baseDir: string = process.cwd()): Promise<void> {
  */
 export async function loadMutationQueue(filePath: string = path.join(process.cwd(), '.polaris', 'runs', 'mutation-queue.json')): Promise<MutationRecord[]> {
   try {
-    await ensureQueueDirs(path.dirname(path.dirname(filePath))); // Ensure based on the file path provided
+    await mkdir(path.dirname(filePath), { recursive: true });
     const fileContent = await readFile(filePath, 'utf-8');
     return JSON.parse(fileContent);
   } catch (error: any) {
     if (error.code === 'ENOENT') {
-      // console.log('Mutation queue file not found, starting with empty queue.'); // Commented for cleaner test output
-      return []; // Return empty array if file does not exist
+      return [];
     }
     console.error('Error loading mutation queue:', error);
     throw error;
@@ -43,9 +31,8 @@ export async function loadMutationQueue(filePath: string = path.join(process.cwd
  */
 export async function saveMutationQueue(queue: MutationRecord[], filePath: string = path.join(process.cwd(), '.polaris', 'runs', 'mutation-queue.json')): Promise<void> {
   try {
-    await ensureQueueDirs(path.dirname(path.dirname(filePath))); // Ensure based on the file path provided
+    await mkdir(path.dirname(filePath), { recursive: true });
     await writeFile(filePath, JSON.stringify(queue, null, 2), 'utf-8');
-    // console.log(`Mutation queue saved to ${filePath}`); // Commented for cleaner test output
   } catch (error) {
     console.error('Error saving mutation queue:', error);
     throw error;

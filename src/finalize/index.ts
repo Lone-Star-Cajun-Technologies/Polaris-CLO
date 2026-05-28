@@ -16,7 +16,9 @@ import { stepUpdateState } from "./steps/09-update-state.js";
 import { stepAppendJsonl } from "./steps/10-append-jsonl.js";
 import { stepUpdateLinear } from "./steps/11-update-linear.js";
 import { stepArchive } from "./steps/12-archive.js";
-import { McpBridgeAdapter } from "../tracker/adapters/mcp-bridge.js"; // Import McpBridgeAdapter
+import { McpBridgeAdapter } from "../tracker/adapters/mcp-bridge.js";
+import { LocalGraph } from "../tracker/local-graph.js";
+import { TrackerSyncService } from "../tracker/sync/index.js";
 
 export interface FinalizeOptions {
   repoRoot: string;
@@ -131,48 +133,31 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
   }
 
   // Step 6: Tracker Reconciliation
-  console.log("[6/13] Running tracker reconciliation..."); // New step
-  try {
-    const localGraph = await LocalGraph.load(state.cluster_id, repoRoot); 
-    
-    let trackerAdapter;
-    const trackerType = config.tracker?.adapter ?? 'linear'; // Default to linear
-    let trackerConfig;
-
-    switch (trackerType) {
-      case 'linear':
-        trackerAdapter = new LinearAdapter();
-        trackerConfig = config.tracker?.linear;
-        break;
-      case 'mcp-bridge':
-        trackerAdapter = new McpBridgeAdapter();
-        trackerConfig = config.tracker?.mcpBridge;
-        break;
-      default:
-        throw new Error(`Unsupported tracker adapter configured: ${trackerType}`);
+  // LinearAdapter is sync-in only; only McpBridgeAdapter supports full reconciliation.
+  const trackerType = config.tracker?.adapter;
+  if (!trackerType) {
+    console.log("[6/13] Tracker not configured — skipping reconciliation.");
+  } else if (trackerType === "linear") {
+    console.log("[6/13] Linear adapter is sync-in only — skipping reconciliation (use mcp-bridge for two-way sync).");
+  } else if (trackerType === "mcp-bridge") {
+    console.log("[6/13] Running tracker reconciliation...");
+    try {
+      const localGraph = await LocalGraph.load(state.cluster_id, repoRoot);
+      const trackerAdapter = new McpBridgeAdapter();
+      const trackerSyncService = new TrackerSyncService(trackerAdapter, localGraph);
+      await trackerSyncService.ready;
+      const reconciliationReport = await trackerSyncService.reconcile(dryRun);
+      console.log("Tracker Reconciliation Report:", reconciliationReport);
+      if (reconciliationReport.conflictsDetectedCount > 0 || reconciliationReport.failedMutationsCount > 0) {
+        console.warn("Tracker reconciliation detected conflicts or failed mutations. Review the report above.");
+      }
+    } catch (error) {
+      console.error("Error during tracker reconciliation:", error);
+      process.stderr.write(`finalize aborted: tracker reconciliation failed: ${error instanceof Error ? error.message : String(error)}\n`);
+      process.exit(1);
     }
-
-    if (!trackerAdapter) {
-      throw new Error('Tracker adapter could not be initialized.');
-    }
-
-    // Pass teamId and projectId if available from config to the trackerSyncService or directly to adapter if needed.
-    // For now, we'll assume the adapter can pick up its config internally or through initialization.
-    // If we need to pass these directly to fetchData/applyMutation, TrackerSyncInput would need to be extended.
-    // For now, fetchData uses input.trackerId for teamId, so ensure trackerConfig.teamId is passed to syncIn.
-    const trackerIdForSync = trackerConfig?.teamId || 'default-team'; // Placeholder, should be resolved from config
-
-    const trackerSyncService = new TrackerSyncService(trackerAdapter, localGraph);
-    const reconciliationReport = await trackerSyncService.reconcile(dryRun); // reconcile also uses fetchData indirectly
-    console.log("Tracker Reconciliation Report:", reconciliationReport);
-    if (reconciliationReport.conflictsDetectedCount > 0 || reconciliationReport.failedMutationsCount > 0) {
-      console.warn("Tracker reconciliation detected conflicts or failed mutations. Review the report above.");
-      // Depending on policy, might want to exit here or continue with a warning.
-    }
-  } catch (error) {
-    console.error("Error during tracker reconciliation:", error);
-    process.stderr.write(`finalize aborted: tracker reconciliation failed: ${error instanceof Error ? error.message : String(error)}\n`);
-    process.exit(1);
+  } else {
+    console.warn(`[6/13] Unknown tracker adapter '${trackerType}' — skipping reconciliation.`);
   }
 
 

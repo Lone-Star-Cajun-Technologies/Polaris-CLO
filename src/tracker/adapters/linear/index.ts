@@ -38,7 +38,7 @@ export class LinearAdapter {
         throw new Error(`Linear team with ID or name '${teamId}' not found.`);
       }
       teamName = team.name;
-      allTeamStatuses = await mcp_linear_list_issue_statuses({ team: team.id });
+      allTeamStatuses = await mcp_linear_get_issue_status({ team: team.id });
       
       const listIssuesArgs: { team: string; project?: string; } = { team: team.id };
       if (projectId) {
@@ -131,7 +131,7 @@ export class LinearAdapter {
     };
 
     const validatedGraph = executionGraphV2Schema.parse(graph);
-    return new LocalGraph(validatedGraph);
+    return LocalGraph.fromGraph(validatedGraph);
   }
 
   /**

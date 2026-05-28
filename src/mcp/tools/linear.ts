@@ -1,5 +1,5 @@
 import type { Tool } from "@modelcontextprotocol/sdk/types.js";
-import { mcp_linear_list_issues, mcp_linear_save_issue } from "../../mcp/index.js";
+import { mcp_linear_list_issues, mcp_linear_save_issue } from "@tool-server/linear";
 
 // Handler for listing Linear issues
 export async function handleLinearListIssues(
@@ -19,15 +19,15 @@ export async function handleLinearListIssues(
     });
     return { ok: true, data: issues };
   } catch (error) {
-    return { ok: false, error: error.message };
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
 // Handler for creating/updating Linear issues
 export async function handleLinearSaveIssue(args: {
   id?: string;
-  title: string;
-  team: string;
+  title?: string;
+  team?: string;
   description?: string;
   project?: string;
   assignee?: string;
@@ -44,7 +44,7 @@ export async function handleLinearSaveIssue(args: {
     const issue = await mcp_linear_save_issue(args);
     return { ok: true, data: issue };
   } catch (error) {
-    return { ok: false, error: error.message };
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -83,7 +83,7 @@ export const LINEAR_TOOLS: Tool[] = [
         relatedTo: { type: "array", items: { type: "string" }, description: "Related issue IDs" },
         dueDate: { type: "string", format: "date", description: "Due date (ISO format)" },
       },
-      required: ["title", "team"],
+      required: [],
     },
   },
 ];

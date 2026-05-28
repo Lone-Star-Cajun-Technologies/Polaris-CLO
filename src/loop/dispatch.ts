@@ -1,7 +1,7 @@
 import { appendFileSync, mkdirSync, realpathSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { dirname, join } from "node:path";
+import { dirname, join, isAbsolute, resolve } from "node:path";
 import { readState, validateState, writeStateAtomic, type LoopState } from "./checkpoint.js";
 import { compileImplPacket, type WorkerPacket } from "./worker-packet.js";
 import { selectPromptMode } from "./worker-prompt.js";
@@ -47,6 +47,10 @@ function canonicalPath(path: string): string {
   } catch {
     return path;
   }
+}
+
+function absoluteResultFile(repoRoot: string, filePath: string): string {
+  return isAbsolute(filePath) ? filePath : resolve(repoRoot, filePath);
 }
 
 function getCurrentBranch(repoRoot: string): string {
@@ -137,7 +141,7 @@ function buildPacket(
     issueContext,
     maxConcurrentWorkers: 1,
     promptMode: selectPromptMode(childId, state),
-    resultFile: resultFile ? canonicalPath(resultFile) : undefined,
+    resultFile: resultFile ? canonicalPath(absoluteResultFile(repoRoot, resultFile)) : undefined,
   });
 }
 

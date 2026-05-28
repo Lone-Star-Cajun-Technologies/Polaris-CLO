@@ -3,9 +3,8 @@
  * @file This module defines interfaces and types for tracker synchronization and reconciliation.
  */
 
-import { LocalGraph } from '../local-graph';
-import { TrackerSchema } from '../schema';
-import { loadMutationQueue, saveMutationQueue } from './queue-store'; // New import for queue persistence
+import { LocalGraph } from '../local-graph.js';
+import { loadMutationQueue, saveMutationQueue } from './queue-store.js';
 
 /**
  * Represents a record of a mutation operation to be applied to a tracker.
@@ -90,14 +89,14 @@ export interface TrackerAdapter {
 export class TrackerSyncService {
   private adapter: TrackerAdapter;
   private mutationQueue: MutationRecord[] = [];
-  // localGraph is now used as a type for reference, but actual modification
-  // will likely happen through a separate local graph manager or directly.
-  private localGraphRef: LocalGraph; 
+  private localGraphRef: LocalGraph;
+  /** Resolves when the persisted mutation queue has been loaded. Await before any mutation. */
+  readonly ready: Promise<void>;
 
   constructor(adapter: TrackerAdapter, localGraph: LocalGraph) {
     this.adapter = adapter;
     this.localGraphRef = localGraph;
-    this.loadQueue(); // Load queue on service initialization
+    this.ready = this.loadQueue();
   }
 
   private async loadQueue() {
@@ -145,6 +144,7 @@ export class TrackerSyncService {
    * Adds a mutation to the queue.
    */
   async addMutation(mutation: Omit<MutationRecord, 'id' | 'status' | 'timestamp' | 'retries'>): Promise<void> {
+    await this.ready;
     const newMutation: MutationRecord = {
       ...mutation,
       id: `mut-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Unique ID
@@ -162,6 +162,7 @@ export class TrackerSyncService {
    * Handles idempotency, retries, and conflict detection.
    */
   async reconcile(dryRun: boolean = false): Promise<ReconciliationReport> {
+    await this.ready;
     console.log(`Starting reconciliation (dryRun: ${dryRun})`);
     let mutationsAppliedCount = 0;
     let conflictsDetectedCount = 0;
@@ -180,33 +181,28 @@ export class TrackerSyncService {
       }
 
       try {
-        // TODO: This is a placeholder for fetching the remote entity and local entity
-        // The actual implementation would require a concrete way to fetch an entity
-        // by its ID from the adapter and from the local graph.
-        const remoteEntity = await this.adapter.fetchData({
-          trackerId: 'some-tracker', // Placeholder: needs actual tracker ID from config
-          // For fetching a single entity, the adapter's fetchData might need to support entity-specific queries
-          // or a separate method like fetchEntity(id: string, type: string).
-        });
-
-        // Placeholder for getting a local entity. LocalGraph.getNode might be suitable
-        // if `entityId` corresponds to a node ID and `entityType` can be inferred.
-        // If the `entityId` is not a node ID, then a different lookup is needed.
         const localEntity = this.localGraphRef.getNode(mutation.entityId);
 
-        if (localEntity && remoteEntity && this.adapter.detectConflict(localEntity, remoteEntity)) {
-          mutation.status = 'conflicted';
-          conflictsDetectedCount++;
-          details.push(`Conflict detected for mutation ${mutation.id}. Remote entity changed.`);
-          console.warn(`Conflict detected for mutation ${mutation.id}`);
-          continue; // Skip applying this mutation
+        if (localEntity) {
+          const remoteEntity = await this.adapter.fetchData({
+            trackerId: mutation.entityId,
+          });
+
+          if (remoteEntity && this.adapter.detectConflict(localEntity, remoteEntity)) {
+            mutation.status = 'conflicted';
+            conflictsDetectedCount++;
+            details.push(`Conflict detected for mutation ${mutation.id}. Remote entity changed.`);
+            console.warn(`Conflict detected for mutation ${mutation.id}`);
+            continue;
+          }
         }
 
         mutation.status = 'sent';
         const updatedMutation = await this.adapter.applyMutation(mutation);
         Object.assign(mutation, updatedMutation); // Update status, remoteId, etc.
 
-        if (mutation.status === 'succeeded') {
+        const finalStatus = (mutation as MutationRecord).status;
+        if (finalStatus === 'succeeded') {
           mutationsAppliedCount++;
           details.push(`Successfully applied mutation ${mutation.id}`);
           console.log(`Successfully applied mutation ${mutation.id}`);

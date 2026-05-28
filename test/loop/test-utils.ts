@@ -51,6 +51,5 @@ export function captureConsoleError(fn: () => void): string {
   } finally {
     console.error = orig;
   }
-  return chunks.join("
-");
+  return chunks.join("\n");
 }

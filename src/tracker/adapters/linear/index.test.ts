@@ -1,20 +1,27 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { LinearAdapter } from "./index.js";
 import { PolarisConfig } from "../../../config/schema.js";
 import { LocalGraph } from "../../local-graph.js";
 
 // Mock the @tool-server/linear module
-jest.mock("@tool-server/linear", () => ({
-  mcp_linear_list_teams: jest.fn(),
-  mcp_linear_list_projects: jest.fn(),
-  mcp_linear_list_issues: jest.fn(),
-  mcp_linear_get_issue_status: jest.fn(),
+vi.mock("@tool-server/linear", () => ({
+  mcp_linear_list_teams: vi.fn(),
+  mcp_linear_list_projects: vi.fn(),
+  mcp_linear_list_issues: vi.fn(),
+  mcp_linear_get_issue_status: vi.fn(),
 }));
 
-const mock_mcp_linear_list_teams = require("@tool-server/linear").mcp_linear_list_teams as jest.Mock;
-const mock_mcp_linear_list_projects = require("@tool-server/linear").mcp_linear_list_projects as jest.Mock;
-const mock_mcp_linear_list_issues = require("@tool-server/linear").mcp_linear_list_issues as jest.Mock;
-const mock_mcp_linear_get_issue_status = require("@tool-server/linear").mcp_linear_get_issue_status as jest.Mock;
+import {
+  mcp_linear_list_teams,
+  mcp_linear_list_projects,
+  mcp_linear_list_issues,
+  mcp_linear_get_issue_status,
+} from "@tool-server/linear";
 
+const mock_mcp_linear_list_teams = vi.mocked(mcp_linear_list_teams);
+const mock_mcp_linear_list_projects = vi.mocked(mcp_linear_list_projects);
+const mock_mcp_linear_list_issues = vi.mocked(mcp_linear_list_issues);
+const mock_mcp_linear_get_issue_status = vi.mocked(mcp_linear_get_issue_status);
 
 describe("LinearAdapter", () => {
   let config: PolarisConfig;
@@ -50,19 +57,19 @@ describe("LinearAdapter", () => {
         blockedBy: [],
       },
     ]);
-    mock_mcp_linear_get_issue_status.mockImplementation(({ team }) => {
+    mock_mcp_linear_get_issue_status.mockImplementation(({ team }: { team: string }) => {
       if (team === "mock-team-id") {
-        return [
+        return Promise.resolve([
           { id: "status-id-1", name: "Todo" },
           { id: "status-id-2", name: "In Progress" },
-        ];
+        ]);
       }
-      return [];
+      return Promise.resolve([]);
     });
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it("should return a LocalGraph instance", async () => {
@@ -94,7 +101,7 @@ describe("LinearAdapter", () => {
     const fullGraph = graph.fullGraph;
 
     expect(fullGraph.dependencies["issue-1"]).toEqual(["issue-2"]);
-    expect(fullGraph.dependencies["issue-2"]).toEqual(undefined); // No dependencies
+    expect(fullGraph.dependencies["issue-2"]).toBeUndefined();
   });
 
   it("should create a cluster based on project and team IDs", async () => {
@@ -137,7 +144,7 @@ describe("LinearAdapter", () => {
 
   it("should warn and fetch all issues if no teamId is specified", async () => {
     config.tracker!.linear!.teamId = undefined;
-    const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     mock_mcp_linear_list_issues.mockResolvedValueOnce([
       {
@@ -146,9 +153,6 @@ describe("LinearAdapter", () => {
         status: "status-id-3",
         blockedBy: [],
       },
-    ]);
-    mock_mcp_linear_get_issue_status.mockResolvedValueOnce([
-      { id: "status-id-3", name: "New" },
     ]);
 
     const adapter = new LinearAdapter(config);
