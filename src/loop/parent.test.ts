@@ -79,6 +79,13 @@ const ERROR_RESULT: DispatchResult = {
   summary: "Worker process exited with code 1",
 };
 
+const SUCCESS_RESULT_NO_COMMIT: DispatchResult = {
+  exit_code: 0,
+  provider_used: "mock",
+  command_run: "mock-worker",
+  summary: JSON.stringify({ child_id: "POL-99", status: "done" }),
+};
+
 // ── Test helpers ─────────────────────────────────────────────────────────────
 
 function makeStateFile(
@@ -159,6 +166,14 @@ function makeStateFileWithMeta(
   return stateFile;
 }
 
+function readJsonLines(path: string): Array<Record<string, unknown>> {
+  return readFileSync(path, "utf-8")
+    .trim()
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => JSON.parse(line) as Record<string, unknown>);
+}
+
 function configureCommandForTest(command: Command, output: { stdout: string; stderr: string }): void {
   command.exitOverride();
   command.configureOutput({
@@ -223,6 +238,11 @@ vi.mock("./adapters/registry.js", () => ({
 }));
 vi.mock("../config/loader.js", () => ({
   loadConfig: vi.fn(() => ({
+    orchestration: {
+      mode: "auto",
+      notification_format: "verbose",
+      auto_finalize: false,
+    },
     execution: {
       adapter: "mock",
       providers: { mock: { command: "mock-worker" } },
@@ -347,6 +367,68 @@ describe("runParentLoop", () => {
 
     // The loop continued after the first dispatch (ADAPTER HANDOFF = continue)
     expect(result.haltReason).toBe("cluster-complete");
+    expect(calls).toHaveLength(2);
+  });
+
+  it("halts after one successful child in supervised mode", async () => {
+    const calls: MockCall[] = [];
+    vi.mocked(createAdapter).mockReturnValue(makeMockAdapter([SUCCESS_RESULT, SUCCESS_RESULT], calls));
+
+    const { loadConfig } = await import("../config/loader.js");
+    vi.mocked(loadConfig).mockReturnValueOnce({
+      orchestration: {
+        mode: "supervised",
+        notification_format: "verbose",
+        auto_finalize: false,
+      },
+      execution: {
+        adapter: "mock",
+        providers: { mock: { command: "mock-worker" } },
+        rotation: ["mock"],
+      },
+    } as unknown as Required<import("../config/schema.js").PolarisConfig>);
+
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100", "POL-101"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(result.haltReason).toBe("supervised-mode-child-complete");
+    expect(result.childrenDispatched).toBe(1);
+    expect(calls).toHaveLength(1);
+  });
+
+  it("continues through eligible children in auto mode", async () => {
+    const calls: MockCall[] = [];
+    vi.mocked(createAdapter).mockReturnValue(makeMockAdapter([SUCCESS_RESULT, SUCCESS_RESULT], calls));
+
+    const { loadConfig } = await import("../config/loader.js");
+    vi.mocked(loadConfig).mockReturnValueOnce({
+      orchestration: {
+        mode: "auto",
+        notification_format: "verbose",
+        auto_finalize: false,
+      },
+      execution: {
+        adapter: "mock",
+        providers: { mock: { command: "mock-worker" } },
+        rotation: ["mock"],
+      },
+    } as unknown as Required<import("../config/schema.js").PolarisConfig>);
+
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100", "POL-101"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(result.haltReason).toBe("cluster-complete");
+    expect(result.childrenDispatched).toBe(2);
     expect(calls).toHaveLength(2);
   });
 
@@ -627,6 +709,11 @@ describe("runParentLoop", () => {
     // Override config mock to include allow_analyze_children: true
     const { loadConfig } = await import("../config/loader.js");
     vi.mocked(loadConfig).mockReturnValueOnce({
+      orchestration: {
+        mode: "auto",
+        notification_format: "verbose",
+        auto_finalize: false,
+      },
       execution: {
         adapter: "mock",
         providers: { mock: { command: "mock-worker" } },
@@ -655,6 +742,11 @@ describe("runParentLoop", () => {
 
     const { loadConfig } = await import("../config/loader.js");
     vi.mocked(loadConfig).mockReturnValueOnce({
+      orchestration: {
+        mode: "auto",
+        notification_format: "verbose",
+        auto_finalize: false,
+      },
       execution: {
         adapter: "terminal-cli",
         providers: { terminal: { command: "terminal-worker" } },
@@ -707,6 +799,87 @@ describe("runParentLoop", () => {
       expect.objectContaining({ adapter: "mock" }),
     );
     expect(calls[0].options.provider).toBe("mock");
+  });
+
+  it("omits undefined commit hashes from terse completion output", async () => {
+    const calls: MockCall[] = [];
+    vi.mocked(createAdapter).mockReturnValue(makeMockAdapter([SUCCESS_RESULT_NO_COMMIT], calls));
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+
+    let stdout = "";
+    const originalStdoutWrite = process.stdout.write;
+    process.stdout.write = ((chunk: string | Uint8Array) => {
+      stdout += String(chunk);
+      return true;
+    }) as typeof process.stdout.write;
+
+    try {
+      const { loadConfig } = await import("../config/loader.js");
+      vi.mocked(loadConfig).mockReturnValueOnce({
+        orchestration: {
+          mode: "auto",
+          notification_format: "terse",
+          auto_finalize: false,
+        },
+        execution: {
+          adapter: "mock",
+          providers: { mock: { command: "mock-worker" } },
+          rotation: ["mock"],
+        },
+      } as unknown as Required<import("../config/schema.js").PolarisConfig>);
+
+      await runParentLoop({ stateFile, repoRoot: tmpDir });
+    } finally {
+      process.stdout.write = originalStdoutWrite;
+    }
+
+    expect(stdout).toContain("[POLARIS] COMPLETE POL-100");
+    expect(stdout).not.toContain("undefined");
+    expect(stdout).not.toContain("(commit:");
+  });
+
+  it("records an explicit auto-finalize handoff in auto mode", async () => {
+    vi.mocked(createAdapter).mockReturnValue(makeMockAdapter([SUCCESS_RESULT]));
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: [],
+      completed_children: ["POL-100"],
+      children_completed: 1,
+      max_children_per_session: 10,
+    });
+
+    const { loadConfig } = await import("../config/loader.js");
+    vi.mocked(loadConfig).mockReturnValueOnce({
+      orchestration: {
+        mode: "auto",
+        notification_format: "verbose",
+        auto_finalize: true,
+      },
+      execution: {
+        adapter: "mock",
+        providers: { mock: { command: "mock-worker" } },
+        rotation: ["mock"],
+      },
+    } as unknown as Required<import("../config/schema.js").PolarisConfig>);
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(result.haltReason).toBe("cluster-complete");
+    expect(result.message).toContain("Auto-finalize handoff requested");
+
+    const telemetry = readJsonLines(join(tmpDir, "runs", "test-run-001", "telemetry.jsonl"));
+    expect(telemetry).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ event: "cluster-complete" }),
+        expect.objectContaining({
+          event: "auto-finalize-requested",
+          next_action: "polaris finalize run",
+        }),
+      ]),
+    );
   });
 
   it("CLI loop run dry-run with a valid state file runs to cluster-complete and exits 0", async () => {

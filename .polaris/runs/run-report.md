@@ -1,8 +1,8 @@
-# Run Report: polaris-run-pol-156-2026-05-28-001
+# Run Report: polaris-run-global-run-ledger-2026-05-28-001
 
-**Status:** cluster-complete
-**Branch:** philmeaux/pol-156-implement-thin-parent-orchestration-mode-and-sealed-parent
-**PR:** https://github.com/ItIsYeBananaduck/Polaris/pull/48
+**Status:** complete
+**Branch:** philmeaux/pol-151-implement-add-global-polaris-run-ledger-for-cross-agent
+**PR:** https://github.com/ItIsYeBananaduck/Polaris/pull/47
 **Children completed:** 4 of 4
 **Validation:** passed
 
@@ -10,10 +10,10 @@
 
 | ID | Title | Commit | Status |
 |---|---|---|---|
-| POL-157 | — | — | Done |
-| POL-158 | — | — | Done |
-| POL-159 | — | — | Done |
-| POL-160 | — | — | Done |
+| POL-152 | — | — | Done |
+| POL-153 | — | — | Done |
+| POL-154 | — | — | Done |
+| POL-155 | — | — | Done |
 
 ## Artifacts produced
 

@@ -58,6 +58,12 @@ Designed for unattended, end-to-end execution (e.g., in CI/CD or for long-runnin
 - The run proceeds from the first child to final delivery without operator intervention.
 - Notifications are compact and designed for logs rather than interactive chat.
 
+#### Auto Finalize Handoff
+
+When `orchestration.mode` is `auto` and `orchestration.auto_finalize` is `true`, the parent emits an explicit **auto-finalize handoff** after cluster completion. This handoff records that the next step is `polaris finalize run`.
+
+The parent still does not inspect repository content or perform implementation cognition. Worker sessions own repository cognition; the parent only dispatches, checkpoints, reports high-level status, and signals/permits finalization according to configuration.
+
 ## 3. Worker Packets
 
 Communication from parent to child is done via a `WorkerPacket`. This is a self-contained JSON object that provides the worker with everything it needs.

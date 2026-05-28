@@ -31,7 +31,7 @@ Polaris distinguishes between two primary agent roles: **Parent/Orchestrator** a
 ### Parent/Orchestrator Role
 
 An agent acting as a Parent is an orchestrator. Its responsibilities are strictly limited to:
-- Managing the lifecycle of a run (bootstrap, checkpoint, finalize).
+- Managing the lifecycle of a run (bootstrap, checkpoint, and finalize handoff/trigger when configured and allowed).
 - Dispatching child tasks to workers.
 - Reporting high-level status.
 

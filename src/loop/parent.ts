@@ -350,10 +350,13 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
 
   // Load config for adapter and provider resolution
   const config = loadConfig(repoRoot);
-  const orchestrationMode = config.orchestration?.mode ?? 'supervised';
+  const legacyOrchestrationMode = (state as unknown as Record<string, unknown>)["orchestration_mode"];
+  const legacyEphemeralMode = options.adapter === undefined && legacyOrchestrationMode === "ephemeral";
+  const orchestrationMode = config.orchestration?.mode ?? (legacyOrchestrationMode === "ephemeral" ? "auto" : "supervised");
+  const telemetryOrchestrationMode = legacyOrchestrationMode === "ephemeral" ? "ephemeral" : orchestrationMode;
   const notificationFormat = config.orchestration?.notification_format ?? (orchestrationMode === 'auto' ? 'terse' : 'verbose');
   const adapterName =
-    options.adapter ?? config.execution?.adapter ?? "terminal-cli";
+    legacyEphemeralMode ? "agent-subtask" : (options.adapter ?? config.execution?.adapter ?? "terminal-cli");
   const providerName =
     adapterName === "agent-subtask"
       ? "agent-subtask"
@@ -386,6 +389,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     const nextChild = selectNextChild(state);
 
     if (nextChild === null) {
+      const autoFinalizeRequested = orchestrationMode === "auto" && config.orchestration?.auto_finalize === true;
       // All children completed — write final state and halt
       if (!dryRun) {
         logStatus(notificationFormat, "COMPLETE");
@@ -396,11 +400,22 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
           children_completed: state.completed_children.length,
           timestamp: new Date().toISOString(),
         });
+        if (autoFinalizeRequested) {
+          appendTelemetry(telemetryFile, {
+            event: "auto-finalize-requested",
+            run_id: state.run_id,
+            next_action: "polaris finalize run",
+            timestamp: new Date().toISOString(),
+          });
+        }
       }
+      const messageSuffix = autoFinalizeRequested
+        ? " Auto-finalize handoff requested; run `polaris finalize run` to complete delivery."
+        : "";
       return {
         haltReason: 'cluster-complete',
         childrenDispatched,
-        message: `Cluster complete. All ${state.completed_children.length} children dispatched.`,
+        message: `Cluster complete. All ${state.completed_children.length} children dispatched.${messageSuffix}`,
       };
     }
 
@@ -542,7 +557,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
         child_id: nextChild,
         worker_id: workerId,
         adapter: adapterName,
-        orchestration_mode: orchestrationMode,
+        orchestration_mode: telemetryOrchestrationMode,
         provider: providerName,
         prompt_mode: packet.prompt_mode,
         prompt_estimated_tokens: packet.prompt_metrics.estimated_tokens,
@@ -791,7 +806,8 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
       const lastCommit =
         (workerSummary as Record<string, unknown>)?.['commit'] as string | undefined ??
         (workerSummary as Record<string, unknown>)?.['commit_hash'] as string | undefined;
-      logStatus(notificationFormat, `COMPLETE ${nextChild} (commit: ${String(lastCommit ?? "")})`);
+      const commitSuffix = lastCommit && lastCommit.length > 0 ? ` (commit: ${lastCommit})` : "";
+      logStatus(notificationFormat, `COMPLETE ${nextChild}${commitSuffix}`);
       appendTelemetry(telemetryFile, {
         event: "child-complete",
         run_id: state.run_id,
@@ -801,7 +817,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
       });
     }
 
-    if (config.orchestration?.mode === 'supervised') {
+    if (orchestrationMode === 'supervised') {
       return {
         haltReason: 'supervised-mode-child-complete',
         childrenDispatched,
