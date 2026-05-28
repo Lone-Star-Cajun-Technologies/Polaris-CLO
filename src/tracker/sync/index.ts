@@ -201,8 +201,7 @@ export class TrackerSyncService {
         const updatedMutation = await this.adapter.applyMutation(mutation);
         Object.assign(mutation, updatedMutation); // Update status, remoteId, etc.
 
-        const finalStatus = (mutation as MutationRecord).status;
-        if (finalStatus === 'succeeded') {
+        if (updatedMutation.status === 'succeeded') {
           mutationsAppliedCount++;
           details.push(`Successfully applied mutation ${mutation.id}`);
           console.log(`Successfully applied mutation ${mutation.id}`);

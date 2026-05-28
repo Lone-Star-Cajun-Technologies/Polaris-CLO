@@ -82,6 +82,9 @@ export function createTrackerCommand(options: TrackerCommandOptions): Command {
       if (adapterName === 'linear') {
         console.error("The 'linear' adapter is sync-in only and does not support reconciliation. Use 'mcp-bridge' for reconciliation.");
         process.exit(1);
+      } else if (adapterName !== 'mcp-bridge') {
+        console.error(`Unknown adapter: ${adapterName}`);
+        process.exit(1);
       }
 
       console.log(`Executing 'tracker reconcile' for cluster '${trackerId}' (dryRun: ${commandOptions.dryRun}) using adapter: ${adapterName}`);
@@ -91,11 +94,6 @@ export function createTrackerCommand(options: TrackerCommandOptions): Command {
         localGraph = await LocalGraph.load(trackerId, repoRoot);
       } catch (err) {
         console.error(`Failed to load local graph for cluster '${trackerId}': ${err instanceof Error ? err.message : String(err)}`);
-        process.exit(1);
-      }
-
-      if (adapterName !== 'mcp-bridge') {
-        console.error(`Unknown adapter: ${adapterName}`);
         process.exit(1);
       }
 
