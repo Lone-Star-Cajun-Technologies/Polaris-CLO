@@ -5,8 +5,10 @@ import { LinearIssue } from '../../types/linear.js';
 type McpLinearTools = {
   mcp_linear_list_issues: (args: Record<string, unknown>) => Promise<unknown[]>;
   mcp_linear_save_issue: (args: Record<string, unknown>) => Promise<{ id: string }>;
-  mcp_linear_get_issue?: (args: Record<string, unknown>) => Promise<unknown>;
 };
+
+const MCP_BRIDGE_UNAVAILABLE_MESSAGE =
+  "MCP bridge adapter is unavailable because '@tool-server/linear' is not installed. Install MCP bridge dependencies or switch tracker.adapter to 'linear'.";
 
 function isMissingModuleError(error: unknown): boolean {
   if (!(error instanceof Error)) {
@@ -25,13 +27,10 @@ async function loadMcpLinearTools(): Promise<McpLinearTools> {
     return {
       mcp_linear_list_issues: tools.mcp_linear_list_issues,
       mcp_linear_save_issue: tools.mcp_linear_save_issue,
-      mcp_linear_get_issue: tools.mcp_linear_get_issue,
     };
   } catch (error) {
     if (isMissingModuleError(error)) {
-      throw new Error(
-        "MCP bridge adapter is unavailable because '@tool-server/linear' is not installed. Install MCP bridge dependencies or switch tracker.adapter to 'linear'.",
-      );
+      throw new Error(MCP_BRIDGE_UNAVAILABLE_MESSAGE);
     }
     throw error;
   }
@@ -50,7 +49,13 @@ export class McpBridgeAdapter implements TrackerAdapter {
   }
 
   private async getTools(): Promise<McpLinearTools> {
-    this.toolsPromise ??= this.toolsLoader();
+    this.toolsPromise ??= this.toolsLoader().catch((error) => {
+      this.toolsPromise = undefined;
+      if (isMissingModuleError(error)) {
+        throw new Error(MCP_BRIDGE_UNAVAILABLE_MESSAGE);
+      }
+      throw error;
+    });
     return this.toolsPromise;
   }
 
