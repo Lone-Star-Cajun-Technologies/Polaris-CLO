@@ -73,13 +73,14 @@ export interface ParentLoopOptions {
 }
 
 export type ParentLoopHaltReason =
-  | 'cluster-complete'     // All children done
-  | 'budget-exhausted'     // Budget cap reached
-  | 'blocked'              // A child reported a blocker
-  | 'worker-error'         // Worker returned a non-zero exit code or error status
-  | 'state-invalid'        // current-state.json failed validation
-  | 'analyze-parent'       // Cluster root is an ANALYZE issue
-  | 'analyze-drift';       // Next child is an analyze issue and allow_analyze_children is false
+  | 'cluster-complete' // All children done
+  | 'budget-exhausted' // Budget cap reached
+  | 'blocked' // A child reported a blocker
+  | 'worker-error' // Worker returned a non-zero exit code or error status
+  | 'state-invalid' // current-state.json failed validation
+  | 'analyze-parent' // Cluster root is an ANALYZE issue
+  | 'analyze-drift' // Next child is an analyze issue and allow_analyze_children is false
+  | 'supervised-mode-child-complete'; // Child completed in supervised mode
 
 export interface ParentLoopResult {
   /** Final halt reason. */
@@ -784,6 +785,14 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
         children_completed: state.context_budget.children_completed,
         timestamp: new Date().toISOString(),
       });
+    }
+
+    if (config.orchestration?.mode === 'supervised') {
+      return {
+        haltReason: 'supervised-mode-child-complete',
+        childrenDispatched,
+        message: `Child ${nextChild} complete. Re-run to continue.`,
+      };
     }
 
     // ── Step 05 (post-dispatch): Re-check budget before next iteration ───

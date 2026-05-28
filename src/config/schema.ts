@@ -64,6 +64,25 @@ export interface PolarisConfig {
     sessionTerminationMode?: "emit-marker" | "exit-0";
     allowBranchDivergence?: boolean;
   };
+  orchestration?: {
+    /**
+     * Orchestration mode.
+     * - "supervised": stop after each child and wait for operator confirmation (default)
+     * - "auto": run the entire cluster from start to finish without interruption
+     */
+    mode?: "supervised" | "auto";
+    /**
+     * If true, automatically finalize the run after all children are complete (only in auto mode).
+     * Default: false.
+     */
+    auto_finalize?: boolean;
+    /**
+     * Notification format for orchestration events.
+     * - "verbose": detailed, human-readable status updates (default for supervised mode)
+     * - "terse": compact, single-line status updates for logs (default for auto mode)
+     */
+    notification_format?: "verbose" | "terse";
+  };
   /** Configuration for external agent dispatch via terminal-cli adapter. */
   execution?: ExecutionConfig;
   finalize?: {
