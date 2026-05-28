@@ -13,7 +13,7 @@ export const mcp_linear_get_issue = async (..._args: unknown[]) => ({
   description: '',
   state: { id: 'stub-state', name: 'Todo', type: 'unstarted' },
   assignee: null,
-  createdAt: new Date().toISOString(),
+  createdAt: '2023-01-01T00:00:00.000Z',
 });
 export const mcp_linear_save_issue = async (..._args: unknown[]) => ({
   id: 'stub-issue',
@@ -21,5 +21,5 @@ export const mcp_linear_save_issue = async (..._args: unknown[]) => ({
   description: '',
   state: { id: 'stub-state', name: 'Todo', type: 'unstarted' },
   assignee: null,
-  createdAt: new Date().toISOString(),
+  createdAt: '2023-01-01T00:00:00.000Z',
 });
