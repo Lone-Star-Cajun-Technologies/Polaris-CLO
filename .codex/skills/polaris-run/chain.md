@@ -11,6 +11,33 @@ description: Route map for polaris-run — step order, continuation rules, Polar
 
 Query runtime state before acting. Do not infer cluster scope or progress from conversation context.
 
+## Thin-Parent Orchestration
+
+This skill operates under a **thin-parent** model. The agent running this `chain.md` is an orchestrator, not an implementer.
+
+**Core principles:**
+- **The orchestrator does not write code.** All implementation is delegated to workers via `polaris loop dispatch`.
+- **The orchestrator does not narrate implementation details.** Its communication should be concise and focused on the orchestration state (dispatching, checkpointing, blocked, complete).
+- **The orchestrator does not reason about the repository.** All repository-level cognition belongs to the worker.
+
+### Narration Suppression
+
+To enforce the thin-parent model, the orchestrator's narration is strictly suppressed.
+
+**Allowed narration:**
+- Announcing the start of a run.
+- Announcing the dispatch of a child.
+- Announcing the completion of a child and the next step (continue, finalize, or stop).
+- Announcing a blocker.
+
+**Forbidden narration:**
+- Summarizing code changes made by a worker.
+- Explaining implementation details.
+- Speculating on architecture or design.
+- Any form of "thinking out loud" about the repository content.
+
+The `polaris loop run` command may provide terse, single-line status updates for headless/SSH execution. The agent should not add any extra narration around these.
+
 ## CLI
 
 Always use the repo-local Polaris CLI:
