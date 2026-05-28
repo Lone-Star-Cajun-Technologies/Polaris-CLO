@@ -33,6 +33,7 @@ export const DEFAULT_CONFIG: Omit<Required<PolarisConfig>, "canon" | "providers"
     providers: {},
     rotation: [],
     allowCrossAgentFallback: false,
+    roles: {},
   },
   finalize: {
     targetBranch: "main",

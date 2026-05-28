@@ -134,7 +134,7 @@ function validateSummary(summary: string, packet: BootstrapPacket): string | nul
         return `Native subtask returned mismatched child_id: expected ${packet.active_child}, got ${String(returnedChild)}`;
       }
     }
-    if (!["done", "blocked", "error"].includes(String(parsed.status))) {
+    if (!["done", "blocked", "error", "success", "failure"].includes(String(parsed.status))) {
       return `Native subtask returned invalid status: ${String(parsed.status)}`;
     }
     return null;

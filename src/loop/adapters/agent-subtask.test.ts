@@ -147,6 +147,23 @@ describe("AgentSubtaskAdapter — compiled WorkerPacket", () => {
     expect(result.exit_code).toBe(0);
   });
 
+  it("accepts lifecycle sealed-result status values for finalize workers", async () => {
+    const packet = compileFinalizePacket(WORKER_PACKET_BASE);
+    const adapter = new AgentSubtaskAdapter(async () => ({
+      run_id: "run-001",
+      role: "finalize",
+      status: "success",
+      tracker_reconciliation_ready: true,
+    }));
+
+    const result = await adapter.dispatch(packet, { provider: "agent-subtask" });
+    expect(result.exit_code).toBe(0);
+    expect(JSON.parse(result.summary ?? "{}")).toMatchObject({
+      role: "finalize",
+      status: "success",
+    });
+  });
+
   it("returns exit_code 1 with error when no dispatcher is configured", async () => {
     const packet = compileImplPacket({ ...WORKER_PACKET_BASE, childId: "POL-121" });
     const adapter = new AgentSubtaskAdapter(undefined);
