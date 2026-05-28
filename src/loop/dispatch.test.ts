@@ -123,7 +123,7 @@ describe("runLoopDispatch", () => {
 
     const stderr = expectDispatchError(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
 
-    expect(stderr).toContain("active_child already set");
+    expect(stderr).toContain("active_child is already set");
   });
 
   it("errors when open_children is empty", () => {
@@ -166,6 +166,36 @@ describe("runLoopDispatch", () => {
     expect(events[0]).toMatchObject({
       run_id: "pol-142-session-1",
       child_id: "POL-145",
+    });
+  });
+
+  it("appends child-dispatched to the global ledger and creates it when absent", () => {
+    const artifactDir = join(testDir, ".taskchain_artifacts", "polaris-run");
+    const stateFile = writeState(testDir, baseState({ artifact_dir: artifactDir }));
+
+    captureStdout(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+
+    const ledgerFile = join(testDir, ".polaris", "runs", "ledger.jsonl");
+    expect(existsSync(ledgerFile)).toBe(true);
+    const events = readFileSync(ledgerFile, "utf-8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({
+      event: "child-dispatched",
+      run_id: "pol-142-session-1",
+      run_type: "implement",
+      cluster_id: "POL-142",
+      issue_id: "POL-145",
+      branch: "test-branch",
+      status: "child-dispatched",
+      completed_children: ["POL-144"],
+      open_children: ["POL-145", "POL-146"],
+      next_child: "POL-145",
+      last_commit: null,
+      pr_url: null,
+      dispatch_epoch: 2,
     });
   });
 });

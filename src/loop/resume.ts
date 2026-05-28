@@ -1,10 +1,16 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { loadConfig } from "../config/loader.js";
-import { readState, writeStateAtomic } from "./checkpoint.js";
+import { readState, writeStateAtomic, type LoopState } from "./checkpoint.js";
 import type { BootstrapPacket } from "./bootstrap-packet.js";
+import {
+  DEFAULT_LEDGER_PATH,
+  LedgerWriter,
+  type LedgerRunType,
+  type RunResumedEvent,
+} from "./ledger.js";
 
 function readPacket(bootstrapDir: string, runId?: string): BootstrapPacket {
   let entries: string[];
@@ -59,6 +65,47 @@ function getHeadSha(repoRoot: string): string {
   } catch {
     return "";
   }
+}
+
+function normalizeRunType(sessionType: string | undefined): LedgerRunType {
+  return sessionType === "analyze" ? "analyze" : "implement";
+}
+
+function ledgerLastCommit(state: Partial<LoopState>): string | null {
+  return state.last_commit && state.last_commit.length > 0 ? state.last_commit : null;
+}
+
+function appendResumedLedgerEvent(
+  repoRoot: string,
+  packet: BootstrapPacket,
+  state: Partial<LoopState>,
+): void {
+  const completedChildren = Array.isArray(state.completed_children)
+    ? state.completed_children
+    : [];
+  const openChildren = Array.isArray(state.open_children)
+    ? state.open_children
+    : packet.open_children;
+
+  new LedgerWriter(join(repoRoot, DEFAULT_LEDGER_PATH)).append({
+    schema_version: 1,
+    event_id: randomUUID(),
+    event: "run-resumed",
+    run_id: packet.run_id,
+    run_type: normalizeRunType(state.session_type),
+    cluster_id: state.cluster_id ?? null,
+    issue_id: state.active_child || null,
+    branch: state.branch ?? packet.branch,
+    status: "running",
+    completed_children: completedChildren,
+    open_children: openChildren,
+    next_child: state.next_open_child ?? openChildren[0] ?? null,
+    last_commit: ledgerLastCommit(state),
+    pr_url: null,
+    timestamp: new Date().toISOString(),
+    resume_source: "bootstrap",
+    resume_reason: "polaris loop resume selected bootstrap packet",
+  } satisfies RunResumedEvent);
 }
 
 export interface ResumeOptions {
@@ -125,18 +172,24 @@ export function runLoopResume(options: ResumeOptions): void {
   }
 
   // Step 5: Clear blocked status if state was blocked
+  let resumeState: Partial<LoopState> = {};
   try {
     const currentState = readState(stateFile);
     if (currentState.status === "blocked") {
-      writeStateAtomic(stateFile, {
+      resumeState = {
         ...currentState,
         status: "running",
         blocker: undefined,
-      });
+      };
+      writeStateAtomic(stateFile, resumeState as LoopState);
+    } else {
+      resumeState = currentState;
     }
   } catch {
     // Non-fatal: state read for clearing blocked status failed; proceed
   }
+
+  appendResumedLedgerEvent(repoRoot, packet, resumeState);
 
   // Step 6: Emit bootstrap packet to stdout, exit 0
   console.log(JSON.stringify(packet, null, 2));
