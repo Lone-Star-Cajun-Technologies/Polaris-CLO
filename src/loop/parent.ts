@@ -45,6 +45,15 @@ import {
   type RunStartedEvent,
 } from "./ledger.js";
 
+function logStatus(
+  format: "verbose" | "terse" | undefined,
+  message: string,
+) {
+  if (format === "terse") {
+    process.stdout.write(`[POLARIS] ${message}\n`);
+  }
+}
+
 export interface ParentLoopOptions {
   /** Absolute path to current-state.json. */
   stateFile: string;
@@ -341,12 +350,10 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
 
   // Load config for adapter and provider resolution
   const config = loadConfig(repoRoot);
-  const orchestrationMode =
-    (state as { orchestration_mode?: string }).orchestration_mode ?? "persistent-parent";
+  const orchestrationMode = config.orchestration?.mode ?? 'supervised';
+  const notificationFormat = config.orchestration?.notification_format ?? (orchestrationMode === 'auto' ? 'terse' : 'verbose');
   const adapterName =
-    orchestrationMode === "ephemeral"
-      ? "agent-subtask"
-      : options.adapter ?? config.execution?.adapter ?? "terminal-cli";
+    options.adapter ?? config.execution?.adapter ?? "terminal-cli";
   const providerName =
     adapterName === "agent-subtask"
       ? "agent-subtask"
@@ -381,6 +388,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     if (nextChild === null) {
       // All children completed — write final state and halt
       if (!dryRun) {
+        logStatus(notificationFormat, "COMPLETE");
         writeStateAtomic(stateFile, { ...state, status: "cluster-complete" });
         appendTelemetry(telemetryFile, {
           event: "cluster-complete",
@@ -527,6 +535,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     }
 
     if (!dryRun) {
+      logStatus(notificationFormat, `DISPATCH ${nextChild}`);
       appendTelemetry(telemetryFile, {
         event: "child-dispatched",
         run_id: state.run_id,
@@ -600,6 +609,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
         dispatchResult.summary ??
         `Worker reported blocked for ${nextChild}`;
       if (!dryRun) {
+        logStatus(notificationFormat, `BLOCKED ${nextChild}: ${blockerMsg}`);
         appendTelemetry(telemetryFile, {
           event: "child-blocked",
           run_id: state.run_id,
@@ -778,6 +788,10 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
 
     // Orchestrator checkpoint event — always emitted after a successful child.
     if (!dryRun) {
+      const lastCommit =
+        (workerSummary as Record<string, unknown>)?.['commit'] as string | undefined ??
+        (workerSummary as Record<string, unknown>)?.['commit_hash'] as string | undefined;
+      logStatus(notificationFormat, `COMPLETE ${nextChild} (commit: ${lastCommit})`);
       appendTelemetry(telemetryFile, {
         event: "child-complete",
         run_id: state.run_id,
