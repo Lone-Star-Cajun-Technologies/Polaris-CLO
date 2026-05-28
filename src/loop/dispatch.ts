@@ -21,10 +21,12 @@ export interface DispatchOptions {
   stateFile: string;
   repoRoot: string;
   childId?: string;
+  resultFile?: string;
 }
 
 function fail(message: string): never {
-  process.stderr.write(`Error: ${message}\n`);
+  process.stderr.write(`Error: ${message}
+`);
   process.exit(1);
 }
 
@@ -114,6 +116,7 @@ function buildPacket(
   stateFile: string,
   telemetryFile: string,
   repoRoot: string,
+  resultFile?: string,
 ): WorkerPacket {
   const childMeta = state.open_children_meta?.[childId];
   const issueContext = childMeta
@@ -134,6 +137,7 @@ function buildPacket(
     issueContext,
     maxConcurrentWorkers: 1,
     promptMode: selectPromptMode(childId, state),
+    resultFile: resultFile ? canonicalPath(resultFile) : undefined,
   });
 }
 
@@ -212,6 +216,7 @@ export function runLoopDispatch(options: DispatchOptions): void {
     options.stateFile,
     telemetryFile,
     options.repoRoot,
+    options.resultFile,
   );
 
   appendTelemetry(telemetryFile, {

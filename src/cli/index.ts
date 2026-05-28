@@ -16,6 +16,8 @@ import { createInitCommand, runInit } from "./init.js";
 import { createDocsCommand, createDoctrineCommand } from "../smartdocs-engine/index.js";
 import { createConfigCommand, runConfigShow } from "../config/show.js";
 
+import { createTrackerCommand } from "./tracker.js";
+
 export interface PolarisCommandHandlers {
   runLoopStatus?: typeof runLoopStatus;
   runLoopContinue?: typeof runLoopContinue;
@@ -103,6 +105,12 @@ export function createPolarisCommand(options: PolarisCommandOptions = {}): Comma
     }),
   );
 
+  program.addCommand(
+    createTrackerCommand({
+      repoRoot,
+    }),
+  );
+
   return program;
 }
 
@@ -112,3 +120,4 @@ if (require.main === module) {
     process.exit(1);
   });
 }
+

@@ -18,7 +18,7 @@
  *   06 – CONTINUE (back to step 02) or halt (STOP / CLUSTER COMPLETE)
  */
 
-import { appendFileSync, mkdirSync, realpathSync } from "node:fs";
+import { appendFileSync, mkdirSync, readFileSync, realpathSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { dirname, join } from "node:path";
 import { readState, validateState, writeStateAtomic, type LoopState } from "./checkpoint.js";
@@ -233,6 +233,7 @@ function buildPacket(
     issueContext,
     maxConcurrentWorkers: 1,
     promptMode,
+    resultFile: childMeta?.result_file,
   });
 }
 
@@ -595,12 +596,41 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     lifecycle.release(workerId);
 
     // ── Step 04: Receive and validate compact worker return JSON ─────────
-    const workerSummary = parseWorkerSummary(dispatchResult.summary);
-    const workerStatus = workerSummary?.status ?? (dispatchResult.exit_code === 0 ? 'done' : 'error');
+    let finalWorkerSummary: WorkerSummary | null = null;
+    let sealedFileContent: string | undefined;
+
+    if (packet.result_file_contract?.result_file && !dryRun) {
+      try {
+        sealedFileContent = readFileSync(packet.result_file_contract.result_file, 'utf-8');
+        finalWorkerSummary = JSON.parse(sealedFileContent) as WorkerSummary;
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        if (!dryRun) {
+          appendTelemetry(telemetryFile, {
+            event: "sealed-result-read-error",
+            run_id: state.run_id,
+            child_id: nextChild,
+            error: msg,
+            result_file: packet.result_file_contract.result_file,
+            timestamp: new Date().toISOString(),
+          });
+        }
+        return {
+          haltReason: 'worker-error',
+          childrenDispatched,
+          haltingChild: nextChild,
+          message: `Failed to read sealed result file for ${nextChild}: ${msg}`,
+        };
+      }
+    } else {
+      finalWorkerSummary = parseWorkerSummary(dispatchResult.summary);
+    }
+    
+    const workerStatus = finalWorkerSummary?.status ?? (dispatchResult.exit_code === 0 ? 'done' : 'error');
 
     // Verify child_id matches if present in worker summary
-    if (workerSummary && 'child_id' in workerSummary && workerSummary.child_id !== nextChild) {
-      const errMsg = `Worker returned mismatched child_id: expected ${nextChild}, got ${workerSummary.child_id}`;
+    if (finalWorkerSummary && 'child_id' in finalWorkerSummary && finalWorkerSummary.child_id !== nextChild) {
+      const errMsg = `Worker returned mismatched child_id: expected ${nextChild}, got ${finalWorkerSummary.child_id}`;
       if (!dryRun) {
         appendTelemetry(telemetryFile, {
           event: "child-error",
@@ -620,7 +650,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
 
     if (workerStatus === 'blocked') {
       const blockerMsg =
-        ((workerSummary as Record<string, unknown> | null)?.['blocker'] as string | undefined) ??
+        ((finalWorkerSummary as Record<string, unknown> | null)?.['blocker'] as string | undefined) ??
         dispatchResult.summary ??
         `Worker reported blocked for ${nextChild}`;
       if (!dryRun) {
@@ -740,8 +770,10 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     }
 
     const lastCommit =
-      (workerSummary as Record<string, unknown>)?.['commit'] as string | undefined ??
-      (workerSummary as Record<string, unknown>)?.['commit_hash'] as string | undefined;
+      (finalWorkerSummary as Record<string, unknown>)?.['commit'] as string | undefined ??
+      (finalWorkerSummary as Record<string, unknown>)?.['commit_hash'] as string | undefined;
+
+    const validationSummary = (finalWorkerSummary as Record<string, unknown>)?.['validation'];
 
     // workerStatus === "done" has already been validated upstream.
     // If the reloaded state already reflects the completed child,
@@ -803,9 +835,6 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
 
     // Orchestrator checkpoint event — always emitted after a successful child.
     if (!dryRun) {
-      const lastCommit =
-        (workerSummary as Record<string, unknown>)?.['commit'] as string | undefined ??
-        (workerSummary as Record<string, unknown>)?.['commit_hash'] as string | undefined;
       const commitSuffix = lastCommit && lastCommit.length > 0 ? ` (commit: ${lastCommit})` : "";
       logStatus(notificationFormat, `COMPLETE ${nextChild}${commitSuffix}`);
       appendTelemetry(telemetryFile, {
@@ -813,6 +842,8 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
         run_id: state.run_id,
         child_id: nextChild,
         children_completed: state.context_budget.children_completed,
+        validation_summary: validationSummary,
+        commit_hash: lastCommit,
         timestamp: new Date().toISOString(),
       });
     }
@@ -829,6 +860,38 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     const postBudgetCheck = checkBudget({
       childrenCompleted: state.context_budget.children_completed,
       lastChildStatus: workerStatus,
+      policy: budgetPolicy,
+    });
+    if (postBudgetCheck.status === 'exhausted') {
+      const nextPending = state.open_children[0] ?? null;
+      if (!dryRun) {
+        writeStateAtomic(stateFile, {
+          ...state,
+          status: "budget-exhausted",
+          step_cursor: "budget-check",
+          next_open_child: nextPending,
+        });
+        appendTelemetry(telemetryFile, {
+          event: "budget-exhausted",
+          run_id: state.run_id,
+          children_completed: state.context_budget.children_completed,
+          next_child: nextPending,
+          reason: postBudgetCheck.reason,
+          timestamp: new Date().toISOString(),
+        });
+      }
+      return {
+        haltReason: 'budget-exhausted',
+        childrenDispatched,
+        haltingChild: nextPending ?? undefined,
+        message: postBudgetCheck.reason,
+      };
+    }
+
+    // ── Step 06: CONTINUE (back to step 02) ─────────────────────────────
+  }
+}
+hildStatus: workerStatus,
       policy: budgetPolicy,
     });
     if (postBudgetCheck.status === 'exhausted') {

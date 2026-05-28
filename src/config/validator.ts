@@ -251,6 +251,12 @@ export function validateConfig(config: unknown): ValidationResult {
       result.valid = false;
       result.errors.push("tracker must be an object");
     } else {
+      if ("adapter" in config.tracker && config.tracker.adapter !== undefined) {
+        if (!isString(config.tracker.adapter) || !["linear", "mcp-bridge"].includes(config.tracker.adapter)) {
+          result.valid = false;
+          result.errors.push('tracker.adapter must be either "linear" or "mcp-bridge"');
+        }
+      }
       if ("linear" in config.tracker && config.tracker.linear !== undefined) {
         if (!isPlainObject(config.tracker.linear)) {
           result.valid = false;
@@ -272,6 +278,31 @@ export function validateConfig(config: unknown): ValidationResult {
             if (!isString(config.tracker.linear.projectId)) {
               result.valid = false;
               result.errors.push("tracker.linear.projectId must be a string");
+            }
+          }
+        }
+      }
+      if ("mcpBridge" in config.tracker && config.tracker.mcpBridge !== undefined) {
+        if (!isPlainObject(config.tracker.mcpBridge)) {
+          result.valid = false;
+          result.errors.push("tracker.mcpBridge must be an object");
+        } else {
+          if ("enabled" in config.tracker.mcpBridge && config.tracker.mcpBridge.enabled !== undefined) {
+            if (!isBoolean(config.tracker.mcpBridge.enabled)) {
+              result.valid = false;
+              result.errors.push("tracker.mcpBridge.enabled must be a boolean");
+            }
+          }
+          if ("teamId" in config.tracker.mcpBridge && config.tracker.mcpBridge.teamId !== undefined) {
+            if (!isString(config.tracker.mcpBridge.teamId)) {
+              result.valid = false;
+              result.errors.push("tracker.mcpBridge.teamId must be a string");
+            }
+          }
+          if ("projectId" in config.tracker.mcpBridge && config.tracker.mcpBridge.projectId !== undefined) {
+            if (!isString(config.tracker.mcpBridge.projectId)) {
+              result.valid = false;
+              result.errors.push("tracker.mcpBridge.projectId must be a string");
             }
           }
         }

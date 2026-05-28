@@ -53,6 +53,49 @@ export interface WorkerLifecycleContract {
   cleanup_on_exit: 'commit-and-exit' | 'exit-immediately';
 }
 
+// ── Sealed result file ────────────────────────────────────────────────────────
+
+/**
+ * When a worker completes, it MUST write a result file with this shape.
+ * The path is specified in the SealedResultFileContract.
+ */
+export interface SealedWorkerResult {
+  /** Matches the run_id from the dispatched WorkerPacket. */
+  run_id: string;
+
+  /** Matches the active_child from the dispatched WorkerPacket. */
+  child_id: string;
+
+  /** Final status of the worker execution. */
+  status: "success" | "failure" | "in-progress";
+
+  /** The git commit hash produced by this worker. Only for 'impl' role. */
+  commit?: string;
+
+  /** For 'impl' role, validation results. */
+  validation?: unknown;
+
+  /** For 'finalize' role, the PR URL. */
+  pr_url?: string;
+
+  /** If status is 'failure', a descriptive error message. */
+  error_message?: string;
+
+  /** Any other fields from the return_contract. */
+  [key: string]: unknown;
+}
+
+/**
+ * Contract for the sealed result file a worker MUST write on completion.
+ */
+export interface SealedResultFileContract {
+  /**
+   * Path where the worker MUST write its SealedWorkerResult.
+   * If not present, worker returns compact JSON to stdout (legacy).
+   */
+  result_file: string;
+}
+
 // ── WorkerPacket ──────────────────────────────────────────────────────────────
 
 /**
@@ -73,6 +116,8 @@ export interface WorkerPacket extends BootstrapPacket {
   lifecycle: WorkerLifecycleContract;
   /** Fields the worker MUST include in its compact return JSON. */
   return_contract: string[];
+  /** Optional contract for writing a sealed result file instead of stdout. */
+  result_file_contract?: SealedResultFileContract;
   /** Prompt dispatch mode: compact (default for narrow children) or full. */
   prompt_mode: WorkerPromptMode;
   /** Lightweight prompt size metrics recorded at compile time. */
@@ -82,13 +127,24 @@ export interface WorkerPacket extends BootstrapPacket {
 /** Type guard: returns true when packet is a compiled WorkerPacket. */
 export function isWorkerPacket(packet: BootstrapPacket): packet is WorkerPacket {
   const p = packet as unknown as Record<string, unknown>;
-  return (
+  const isV2 =
     packet.schema_version === '2.0' &&
     typeof p['worker_role'] === 'string' &&
     typeof p['instructions'] === 'object' && p['instructions'] !== null && !Array.isArray(p['instructions']) &&
     typeof p['lifecycle'] === 'object' && p['lifecycle'] !== null &&
-    Array.isArray(p['return_contract'])
-  );
+    Array.isArray(p['return_contract']);
+
+  if (!isV2) {
+    return false;
+  }
+
+  // If result_file_contract is present, validate its shape.
+  if ('result_file_contract' in p && p.result_file_contract) {
+    const rfc = p.result_file_contract as Record<string, unknown>;
+    return typeof rfc.result_file === 'string';
+  }
+
+  return true;
 }
 
 // ── Return contracts ──────────────────────────────────────────────────────────
@@ -142,6 +198,7 @@ export interface CompileImplPacketInput {
   allowedScope?: string[];
   validationCommands?: string[];
   maxConcurrentWorkers?: number;
+  resultFile?: string;
   /**
    * Prompt dispatch mode. Defaults to 'compact' for narrow children.
    * Pass 'full' for cross-cutting or architectural children.
@@ -206,6 +263,7 @@ export function compileImplPacket(input: CompileImplPacketInput): WorkerPacket {
     return_contract: IMPL_RETURN_CONTRACT,
     prompt_mode: promptMode,
     prompt_metrics: promptResult.metrics,
+    result_file_contract: input.resultFile ? { result_file: input.resultFile } : undefined,
     context: {
       branch: input.branch,
       worker_role: 'impl',
@@ -223,6 +281,7 @@ export interface CompileFinalizePacketInput {
   telemetryFile: string;
   targetBranch?: string;
   maxConcurrentWorkers?: number;
+  resultFile?: string;
 }
 
 /**
@@ -265,6 +324,7 @@ export function compileFinalizePacket(input: CompileFinalizePacketInput): Worker
     return_contract: FINALIZE_RETURN_CONTRACT,
     prompt_mode: 'full',
     prompt_metrics: { mode: 'full', char_count: 0, estimated_tokens: 0 },
+    result_file_contract: input.resultFile ? { result_file: input.resultFile } : undefined,
     context: {
       branch: input.branch,
       worker_role: 'finalize',
@@ -282,6 +342,7 @@ export interface CompilePreflightPacketInput {
   stateFile: string;
   telemetryFile: string;
   maxConcurrentWorkers?: number;
+  resultFile?: string;
 }
 
 /**
@@ -318,6 +379,7 @@ export function compilePreflightPacket(input: CompilePreflightPacketInput): Work
     return_contract: PREFLIGHT_RETURN_CONTRACT,
     prompt_mode: 'full',
     prompt_metrics: { mode: 'full', char_count: 0, estimated_tokens: 0 },
+    result_file_contract: input.resultFile ? { result_file: input.resultFile } : undefined,
     context: {
       branch: input.branch,
       worker_role: 'preflight',

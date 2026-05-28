@@ -94,6 +94,9 @@ export interface PolarisConfig {
     archiveRunSnapshot?: boolean;
   };
   tracker?: {
+    'local-file'?: {
+      enabled?: boolean;
+    };
     linear?: {
       enabled?: boolean;
       teamId?: string;

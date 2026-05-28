@@ -35,6 +35,14 @@ export interface DispatchBoundaryRecord {
   last_dispatched_child: string | null;
 }
 
+export interface ChildResultSummary {
+  status: "done" | "failed" | "blocked" | "error";
+  validation: "passed" | "failed" | "skipped";
+  commit: string | null;
+  next_recommended_action: "continue" | "stop" | "investigate";
+  result_data?: Record<string, unknown>;
+}
+
 export interface LoopState {
   schema_version: string;
   run_id: string;
@@ -45,6 +53,7 @@ export interface LoopState {
   session_type?: "analyze" | "implement" | string;
   active_child: string;
   completed_children: string[];
+  completed_children_results?: Record<string, ChildResultSummary>;
   open_children: string[];
   open_children_meta?: Record<string, { type?: string; title?: string; labels?: string[] }>;
   step_cursor: string | null;
@@ -112,6 +121,31 @@ export function validateState(state: unknown): string[] {
       errors.push("missing or invalid context_budget.children_completed");
   }
   if (typeof s["status"] !== "string") errors.push("missing status");
+
+  // Validate completed_children_results if present
+  if ("completed_children_results" in s && s["completed_children_results"] !== undefined) {
+    if (typeof s["completed_children_results"] !== "object" || s["completed_children_results"] === null || Array.isArray(s["completed_children_results"])) {
+      errors.push("completed_children_results must be an object");
+    } else {
+      const results = s["completed_children_results"] as Record<string, unknown>;
+      for (const [childId, value] of Object.entries(results)) {
+        if (typeof value !== "object" || value === null || Array.isArray(value)) {
+          errors.push(`completed_children_results["${childId}"] must be an object`);
+          continue;
+        }
+        const childResult = value as Record<string, unknown>;
+        if (typeof childResult["status"] !== "string" || !["done", "failed", "blocked", "error"].includes(childResult["status"] as string)) errors.push(`completed_children_results["${childId}"].status must be "done", "failed", "blocked", or "error"`);
+        if (typeof childResult["validation"] !== "string" || !["passed", "failed", "skipped"].includes(childResult["validation"] as string)) errors.push(`completed_children_results["${childId}"].validation must be "passed", "failed", or "skipped"`);
+        if (childResult["commit"] !== null && typeof childResult["commit"] !== "string") errors.push(`completed_children_results["${childId}"].commit must be a string or null`);
+        if (typeof childResult["next_recommended_action"] !== "string" || !["continue", "stop", "investigate"].includes(childResult["next_recommended_action"] as string)) errors.push(`completed_children_results["${childId}"].next_recommended_action must be "continue", "stop", or "investigate"`);
+        if ("result_data" in childResult && childResult["result_data"] !== undefined) {
+          if (typeof childResult["result_data"] !== "object" || childResult["result_data"] === null || Array.isArray(childResult["result_data"])) {
+            errors.push(`completed_children_results["${childId}"].result_data must be an object`);
+          }
+        }
+      }
+    }
+  }
 
   // Validate open_children_meta if present
   if ("open_children_meta" in s && s["open_children_meta"] !== undefined) {

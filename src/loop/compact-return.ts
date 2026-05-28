@@ -23,6 +23,8 @@ export interface CompactReturn {
   telemetry_updated: boolean;
   /** Recommended next action for the parent loop or operator. */
   next_recommended_action: 'continue' | 'stop' | 'investigate';
+  /** Optional results from the child execution. */
+  result_data?: Record<string, unknown>;
 }
 
 /**
@@ -63,6 +65,11 @@ export function validateCompactReturn(value: unknown): string[] {
     r['next_recommended_action'] !== 'investigate'
   ) {
     errors.push('next_recommended_action must be "continue", "stop", or "investigate"');
+  }
+  if ('result_data' in r && r['result_data'] !== undefined) {
+    if (typeof r['result_data'] !== 'object' || r['result_data'] === null || Array.isArray(r['result_data'])) {
+      errors.push('result_data must be an object');
+    }
   }
 
   return errors;

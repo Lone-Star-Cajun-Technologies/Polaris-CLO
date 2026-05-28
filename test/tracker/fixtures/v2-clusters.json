@@ -1,0 +1,42 @@
+{
+  "schemaVersion": "v2",
+  "source": {
+    "id": "POL-105",
+    "type": "linear",
+    "analysis": {
+      "id": "POL-104",
+      "doc": null
+    }
+  },
+  "nodes": {
+    "POL-106": {
+      "id": "POL-106",
+      "title": "IMPLEMENT: Write issue-hierarchy-doctrine.md and migration guide",
+      "status": "Todo",
+      "sessionType": "implement"
+    },
+    "POL-107": {
+      "id": "POL-107",
+      "title": "IMPLEMENT: Write ephemeral-execution-architecture.md (Claude, Codex, manual fallback, test plan)",
+      "status": "Todo",
+      "sessionType": "implement"
+    },
+    "POL-108": {
+      "id": "POL-108",
+      "title": "IMPLEMENT: Update polaris-analyze step 05 to create separate IMPLEMENT parent issue",
+      "status": "In Progress",
+      "sessionType": "implement"
+    }
+  },
+  "dependencies": {
+    "POL-108": ["POL-106"]
+  },
+  "clusters": {
+    "cluster-01": {
+      "id": "cluster-01",
+      "title": "Tracks A and B: Issue hierarchy doctrine and tooling (POL-106 → POL-108, POL-109; includes POL-107, POL-110, POL-111, POL-112)",
+      "children": ["POL-106", "POL-107", "POL-108"]
+    }
+  },
+  "activeCluster": "cluster-01"
+}

@@ -142,6 +142,7 @@ function blockedReturn(childId: string, _reason: string): CompactReturn {
     state_updated: false,
     telemetry_updated: false,
     next_recommended_action: 'stop',
+    result_data: {},
   };
 }
 
@@ -204,6 +205,7 @@ export async function executeOneChild(
       state_updated: false,
       telemetry_updated: true,
       next_recommended_action: 'investigate',
+      result_data: {},
     };
   }
 
@@ -293,6 +295,7 @@ export async function executeOneChild(
       state_updated: false,
       telemetry_updated: telemetryUpdated,
       next_recommended_action: 'investigate',
+      result_data: {},
     };
   }
 
@@ -310,6 +313,7 @@ export async function executeOneChild(
     state_updated: stateUpdated,
     telemetry_updated: telemetryUpdated,
     next_recommended_action: 'continue',
+    result_data: {},
   };
 }
 
@@ -343,6 +347,7 @@ export async function runWorker(options: WorkerOptions = {}): Promise<void> {
       state_updated: false,
       telemetry_updated: false,
       next_recommended_action: 'investigate',
+      result_data: {},
     };
     process.stdout.write(JSON.stringify(ret) + "\n");
     process.stderr.write(`[polaris-worker] Failed to read bootstrap packet: ${msg}\n`);
