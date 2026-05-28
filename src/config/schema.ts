@@ -17,6 +17,41 @@ export interface ProviderConfig {
   args?: string[];
 }
 
+export type ExecutionRole =
+  | "orchestrator"
+  | "startup"
+  | "worker"
+  | "analyst"
+  | "analysis"
+  | "repair"
+  | "librarian"
+  | "docs"
+  | "finalizer";
+
+export interface RoleExecutionConfig {
+  /**
+   * Optional adapter override for this role.
+   * Defaults to execution.adapter when omitted.
+   */
+  adapter?: string;
+  /**
+   * Provider key used for this role.
+   * Defaults to execution.rotation[0] or the first configured provider.
+   */
+  provider?: string;
+  /**
+   * Optional model identifier passed to provider command templates as {{model}}.
+   */
+  model?: string;
+  /**
+   * Optional command override for this role. When present, it is materialized
+   * as a provider config before dispatch.
+   */
+  command?: string;
+  /** Optional command args override for this role. */
+  args?: string[];
+}
+
 export interface ExecutionConfig {
   /**
    * Adapter to use for external dispatch. Currently supported: "terminal-cli"
@@ -39,6 +74,12 @@ export interface ExecutionConfig {
    * If false (default), a failed provider does not automatically retry with another.
    */
   allowCrossAgentFallback?: boolean;
+
+  /**
+   * Role-specific provider selection. Polaris owns dispatch and state; each
+   * role entry only selects the adapter/provider/model used to invoke an agent.
+   */
+  roles?: Partial<Record<ExecutionRole, RoleExecutionConfig>>;
 }
 
 export interface PolarisConfig {

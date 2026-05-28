@@ -1,12 +1,12 @@
 {
   "schema_version": "1.0",
-  "run_id": "polaris-run-pol-187-2026-05-28-001",
-  "cluster_id": "POL-187",
-  "branch": "philmeaux/pol-156-implement-thin-parent-orchestration-mode-and-sealed-parent",
+  "run_id": "polaris-run-pol-198-2026-05-28-001",
+  "cluster_id": "POL-198",
+  "branch": "polaris/POL-198",
   "session_type": "implement",
   "active_child": "",
   "completed_children": [
-    "POL-187"
+    "POL-198"
   ],
   "open_children": [],
   "step_cursor": "checkpoint",
@@ -19,13 +19,13 @@
   "dispatch_boundary": {
     "dispatch_epoch": 1,
     "continue_epoch": 1,
-    "last_dispatched_child": "POL-187"
+    "last_dispatched_child": "POL-198"
   },
   "run_bootstrap_seal": {
     "sealer": "polaris-loop-bootstrap",
-    "run_id": "polaris-run-pol-187-2026-05-28-001",
-    "cluster_id": "POL-187",
-    "open_children_sha": "3401772a34c324b38452ae4aa0c03726ce9a3184e03739928651d9ab3bcefe1a",
-    "sealed_at": "2026-05-28T17:41:02.504Z"
+    "run_id": "polaris-run-pol-198-2026-05-28-001",
+    "cluster_id": "POL-198",
+    "open_children_sha": "2562cebc6dd5df4d81b06ad18e0462ce99a7d2736117d5a079681ee85316b173",
+    "sealed_at": "2026-05-28T20:34:05.609Z"
   }
 }

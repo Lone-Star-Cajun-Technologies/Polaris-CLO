@@ -8,10 +8,12 @@
 import { describe, expect, it } from "vitest";
 import {
   compileImplPacket,
+  compileStartupPacket,
   compileFinalizePacket,
   compilePreflightPacket,
   isWorkerPacket,
   IMPL_RETURN_CONTRACT,
+  STARTUP_RETURN_CONTRACT,
   FINALIZE_RETURN_CONTRACT,
   PREFLIGHT_RETURN_CONTRACT,
   type WorkerPacket,
@@ -199,6 +201,21 @@ describe("compileFinalizePacket", () => {
     const p = compileFinalizePacket(BASE);
     const stepsText = p.instructions.steps.join(" ");
     expect(stepsText).not.toContain(".codex/skills");
+  });
+});
+
+// ── compileStartupPacket ──────────────────────────────────────────────────────
+
+describe("compileStartupPacket", () => {
+  it("produces worker_role startup with empty active_child", () => {
+    const p = compileStartupPacket(BASE);
+    expect(p.worker_role).toBe("startup");
+    expect(p.active_child).toBe("");
+  });
+
+  it("return_contract matches STARTUP_RETURN_CONTRACT", () => {
+    const p = compileStartupPacket(BASE);
+    expect(p.return_contract).toEqual(STARTUP_RETURN_CONTRACT);
   });
 });
 

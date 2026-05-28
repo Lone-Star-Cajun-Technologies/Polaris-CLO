@@ -19,7 +19,15 @@ import {
 
 // ── Worker roles ─────────────────────────────────────────────────────────────
 
-export type WorkerRole = 'impl' | 'finalize' | 'preflight' | 'validation';
+export type WorkerRole =
+  | 'startup'
+  | 'impl'
+  | 'finalize'
+  | 'preflight'
+  | 'validation'
+  | 'repair'
+  | 'analysis'
+  | 'librarian';
 
 // ── Compiled instructions ─────────────────────────────────────────────────────
 
@@ -179,6 +187,14 @@ export const PREFLIGHT_RETURN_CONTRACT: string[] = [
   'next_recommended_action',
 ];
 
+export const STARTUP_RETURN_CONTRACT: string[] = [
+  'run_id',
+  'status',
+  'execution_plan',
+  'first_child',
+  'next_recommended_action',
+];
+
 // ── Lifecycle helpers ─────────────────────────────────────────────────────────
 
 function defaultLifecycle(
@@ -193,6 +209,64 @@ function defaultLifecycle(
 }
 
 // ── Impl worker packet compiler ───────────────────────────────────────────────
+
+export interface CompileStartupPacketInput {
+  runId: string;
+  clusterId: string;
+  branch: string;
+  stateFile: string;
+  telemetryFile: string;
+  maxConcurrentWorkers?: number;
+  resultFile?: string;
+}
+
+/**
+ * Build a compiled startup worker packet.
+ * Startup workers prepare tracker/graph/config/run-state evidence; the parent
+ * consumes the sealed result before selecting the first implementation child.
+ */
+export function compileStartupPacket(input: CompileStartupPacketInput): WorkerPacket {
+  const steps = [
+    `Sync or import tracker data for cluster ${input.clusterId} when configured.`,
+    `Build or refresh the local execution graph for ${input.clusterId}.`,
+    `Validate Polaris config and the execution provider roster.`,
+    `Prepare run ledger/state evidence for ${input.runId}.`,
+    `Select the execution plan and first child without implementing it.`,
+    `Write compact startup JSON to stdout (fields: ${STARTUP_RETURN_CONTRACT.join(', ')}).`,
+    `TERMINATE SESSION IMMEDIATELY.`,
+  ];
+
+  return {
+    schema_version: '2.0',
+    worker_role: 'startup',
+    run_id: input.runId,
+    cluster_id: input.clusterId,
+    active_child: '',
+    state_file: input.stateFile,
+    telemetry_file: input.telemetryFile,
+    instructions: {
+      primary_goal:
+        `Startup cluster ${input.clusterId} for run ${input.runId}: sync tracker data, refresh graph, ` +
+        `validate config/providers, and return the first executable dispatch plan.`,
+      steps,
+      allowed_scope: [
+        '.taskchain_artifacts/**',
+        '.polaris/runs/**',
+        '.polaris/map/**',
+      ],
+      validation_commands: [],
+    },
+    lifecycle: defaultLifecycle(input.maxConcurrentWorkers ?? 1, 'commit-and-exit'),
+    return_contract: STARTUP_RETURN_CONTRACT,
+    prompt_mode: 'full',
+    prompt_metrics: { mode: 'full', char_count: 0, estimated_tokens: 0 },
+    result_file_contract: input.resultFile ? { result_file: input.resultFile } : undefined,
+    context: {
+      branch: input.branch,
+      worker_role: 'startup',
+    },
+  };
+}
 
 export interface CompileImplPacketInput {
   runId: string;

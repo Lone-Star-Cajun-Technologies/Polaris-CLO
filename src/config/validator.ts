@@ -29,6 +29,25 @@ function inRange(value: number, min: number, max: number): boolean {
 }
 
 const SUPPORTED_COMPACTION_PROVIDER_IDS = ["caveman", "gitnexus"] as const;
+const SUPPORTED_EXECUTION_ROLES = [
+  "orchestrator",
+  "startup",
+  "worker",
+  "analyst",
+  "analysis",
+  "repair",
+  "librarian",
+  "docs",
+  "finalizer",
+] as const;
+const SUPPORTED_EXECUTION_ADAPTERS = [
+  "agent-subtask",
+  "terminal-cli",
+  "ci",
+  "ssh",
+  "remote-worker",
+  "cross-agent",
+] as const;
 
 export function validateConfig(config: unknown): ValidationResult {
   const result: ValidationResult = { valid: true, errors: [], warnings: [] };
@@ -173,7 +192,7 @@ export function validateConfig(config: unknown): ValidationResult {
       if ("adapter" in config.execution && config.execution.adapter !== undefined) {
         if (
           !isString(config.execution.adapter) ||
-          !["agent-subtask", "terminal-cli", "ci", "ssh", "remote-worker", "cross-agent"].includes(config.execution.adapter)
+          !SUPPORTED_EXECUTION_ADAPTERS.includes(config.execution.adapter as typeof SUPPORTED_EXECUTION_ADAPTERS[number])
         ) {
           result.valid = false;
           result.errors.push("execution.adapter must be one of agent-subtask, terminal-cli, ci, ssh, remote-worker, cross-agent");
@@ -195,6 +214,47 @@ export function validateConfig(config: unknown): ValidationResult {
         if (!isBoolean(config.execution.allowCrossAgentFallback)) {
           result.valid = false;
           result.errors.push("execution.allowCrossAgentFallback must be a boolean");
+        }
+      }
+      if ("roles" in config.execution && config.execution.roles !== undefined) {
+        if (!isPlainObject(config.execution.roles)) {
+          result.valid = false;
+          result.errors.push("execution.roles must be a plain object");
+        } else {
+          for (const [roleName, roleConfig] of Object.entries(config.execution.roles)) {
+            if (!SUPPORTED_EXECUTION_ROLES.includes(roleName as typeof SUPPORTED_EXECUTION_ROLES[number])) {
+              result.valid = false;
+              result.errors.push(`execution.roles contains unsupported role: ${roleName}`);
+              continue;
+            }
+            if (!isPlainObject(roleConfig)) {
+              result.valid = false;
+              result.errors.push(`execution.roles.${roleName} must be a plain object`);
+              continue;
+            }
+            if ("adapter" in roleConfig && roleConfig.adapter !== undefined) {
+              if (!isString(roleConfig.adapter) || !SUPPORTED_EXECUTION_ADAPTERS.includes(roleConfig.adapter as typeof SUPPORTED_EXECUTION_ADAPTERS[number])) {
+                result.valid = false;
+                result.errors.push(`execution.roles.${roleName}.adapter must be one of agent-subtask, terminal-cli, ci, ssh, remote-worker, cross-agent`);
+              }
+            }
+            if ("provider" in roleConfig && roleConfig.provider !== undefined && !isString(roleConfig.provider)) {
+              result.valid = false;
+              result.errors.push(`execution.roles.${roleName}.provider must be a string`);
+            }
+            if ("model" in roleConfig && roleConfig.model !== undefined && !isString(roleConfig.model)) {
+              result.valid = false;
+              result.errors.push(`execution.roles.${roleName}.model must be a string`);
+            }
+            if ("command" in roleConfig && roleConfig.command !== undefined && !isString(roleConfig.command)) {
+              result.valid = false;
+              result.errors.push(`execution.roles.${roleName}.command must be a string`);
+            }
+            if ("args" in roleConfig && roleConfig.args !== undefined && !isStringArray(roleConfig.args)) {
+              result.valid = false;
+              result.errors.push(`execution.roles.${roleName}.args must be an array of strings`);
+            }
+          }
         }
       }
     }

@@ -73,6 +73,7 @@ export class TerminalCliAdapter implements ExecutionAdapter {
       cluster_id: packet.cluster_id,
       state_file: packet.state_file,
       telemetry_file: packet.telemetry_file,
+      model: String(packet.context?.["model"] ?? ""),
       packet_json: JSON.stringify(packet),
       packet_file: packetFile,
     };

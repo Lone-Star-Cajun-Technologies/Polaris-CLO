@@ -200,3 +200,47 @@ describe("validateConfig — compact", () => {
     expect(result.warnings).not.toContain('Unknown config field: "compact"');
   });
 });
+
+describe("validateConfig — execution roles", () => {
+  it("accepts role-specific provider, adapter, command, args, and model assignments", () => {
+    const result = validateConfig({
+      execution: {
+        adapter: "terminal-cli",
+        providers: {
+          worker: { command: "codex" },
+          finalizer: { command: "codex", args: ["--model", "{{model}}"] },
+        },
+        roles: {
+          orchestrator: { provider: "worker", model: "gpt-5.4" },
+          worker: { provider: "worker" },
+          analyst: { provider: "worker" },
+          repair: { provider: "worker" },
+          librarian: { provider: "worker" },
+          finalizer: {
+            adapter: "terminal-cli",
+            provider: "finalizer",
+            command: "codex",
+            args: ["--model", "gpt-5.4"],
+            model: "gpt-5.4",
+          },
+        },
+      },
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it("rejects unknown execution role names", () => {
+    const result = validateConfig({
+      execution: {
+        roles: {
+          madeUpRole: { provider: "worker" },
+        },
+      },
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("execution.roles contains unsupported role: madeUpRole");
+  });
+});
