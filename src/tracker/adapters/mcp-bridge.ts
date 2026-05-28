@@ -1,19 +1,71 @@
 
 import { TrackerAdapter, TrackerSyncInput, MutationRecord } from '../sync/index.js';
-import { mcp_linear_list_issues, mcp_linear_save_issue, mcp_linear_get_issue } from '@tool-server/linear';
 import { LinearIssue } from '../../types/linear.js';
+
+type McpLinearTools = {
+  mcp_linear_list_issues: (args: Record<string, unknown>) => Promise<unknown[]>;
+  mcp_linear_save_issue: (args: Record<string, unknown>) => Promise<{ id: string }>;
+};
+
+const MCP_BRIDGE_UNAVAILABLE_MESSAGE =
+  "MCP bridge adapter is unavailable because '@tool-server/linear' is not installed. Install MCP bridge dependencies or switch tracker.adapter to 'linear'.";
+
+function isMissingModuleError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  return (
+    error.message.includes("Cannot find module '@tool-server/linear'") ||
+    error.message.includes("Cannot find package '@tool-server/linear'") ||
+    error.message.includes("ERR_MODULE_NOT_FOUND")
+  );
+}
+
+async function loadMcpLinearTools(): Promise<McpLinearTools> {
+  try {
+    const tools = await import("@tool-server/linear");
+    return {
+      mcp_linear_list_issues: tools.mcp_linear_list_issues,
+      mcp_linear_save_issue: tools.mcp_linear_save_issue,
+    };
+  } catch (error) {
+    if (isMissingModuleError(error)) {
+      throw new Error(MCP_BRIDGE_UNAVAILABLE_MESSAGE);
+    }
+    throw error;
+  }
+}
 
 /**
  * MCP Bridge Adapter for interacting with Linear via the MCP.
  * This adapter fetches issues from Linear and applies mutations (e.g., status updates) to Linear issues.
  */
 export class McpBridgeAdapter implements TrackerAdapter {
+  private readonly toolsLoader: () => Promise<McpLinearTools>;
+  private toolsPromise: Promise<McpLinearTools> | undefined;
+  
+  constructor(toolsLoader: () => Promise<McpLinearTools> = loadMcpLinearTools) {
+    this.toolsLoader = toolsLoader;
+  }
+
+  private async getTools(): Promise<McpLinearTools> {
+    this.toolsPromise ??= this.toolsLoader().catch((error) => {
+      this.toolsPromise = undefined;
+      if (isMissingModuleError(error)) {
+        throw new Error(MCP_BRIDGE_UNAVAILABLE_MESSAGE);
+      }
+      throw error;
+    });
+    return this.toolsPromise;
+  }
+
   /**
    * Fetches data (issues) from Linear using the MCP bridge.
    * @param input - The sync input parameters, including the Linear team ID.
    * @returns A promise resolving to an array of Linear issues.
    */
   async fetchData(input: TrackerSyncInput): Promise<LinearIssue[]> {
+    const { mcp_linear_list_issues } = await this.getTools();
     console.log(`McpBridgeAdapter: Fetching data for trackerId: ${input.trackerId}`);
     // Assuming input.trackerId contains the Linear team ID or can be derived from config
     // For now, let's assume we need a team ID to list issues. This will need to come from configuration.
@@ -40,6 +92,7 @@ export class McpBridgeAdapter implements TrackerAdapter {
    * @returns A promise resolving to the updated mutation record.
    */
   async applyMutation(mutation: MutationRecord): Promise<MutationRecord> {
+    const { mcp_linear_save_issue } = await this.getTools();
     console.log(`McpBridgeAdapter: Applying mutation for ID: ${mutation.id}, entityType: ${mutation.entityType}, entityId: ${mutation.entityId}`);
 
     if (mutation.entityType === 'issue' && mutation.type === 'update') {
