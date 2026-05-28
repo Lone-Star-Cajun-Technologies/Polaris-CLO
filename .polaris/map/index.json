@@ -5141,11 +5141,12 @@
       "tags": []
     },
     "polaris.config.json": {
-      "domain": "unknown",
+      "domain": "config",
       "route": "polaris.config.json",
-      "taskchain": "polaris-core",
+      "taskchain": "polaris-config",
       "confidence": 0,
-      "classification": "needs-review",
+      "classification": "indexed",
+      "instructionFile": "src/config/POLARIS.md",
       "last_updated": "2026-05-28T17:44:28.197Z",
       "updated_by": "polaris-map-update",
       "tags": []

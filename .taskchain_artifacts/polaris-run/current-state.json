@@ -2,7 +2,7 @@
   "schema_version": "1.0",
   "run_id": "polaris-run-pol-187-2026-05-28-001",
   "cluster_id": "POL-187",
-  "branch": "",
+  "branch": "philmeaux/pol-156-implement-thin-parent-orchestration-mode-and-sealed-parent",
   "session_type": "implement",
   "active_child": "",
   "completed_children": [
