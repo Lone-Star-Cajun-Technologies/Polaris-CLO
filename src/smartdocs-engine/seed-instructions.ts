@@ -2,6 +2,7 @@ import { existsSync, readFileSync, writeFileSync, readdirSync } from "node:fs";
 import { resolve, relative, join, dirname, basename } from "node:path";
 import { loadConfig } from "../config/loader.js";
 import { readFileRoutes, readNeedsReview, type FileRouteEntry } from "../map/atlas.js";
+import { isDirectoryEligible, type DirectoryEligibilityOptions } from "./smartdoc-ignore.js";
 
 export const DRAFT_MARKER = "<!-- polaris:draft -->";
 
@@ -14,21 +15,48 @@ export function hasDraftMarker(filePath: string): boolean {
   }
 }
 
-function collectDirs(dir: string, root: string): string[] {
-  const dirs: string[] = [];
+export interface IneligibleEntry {
+  path: string;
+  reason: string;
+  category?: "runtime" | "agent-cognition" | "hidden" | "ignored" | "root";
+}
+
+export interface CollectDirsResult {
+  eligible: string[];
+  ineligible: IneligibleEntry[];
+}
+
+function collectDirs(
+  dir: string,
+  root: string,
+  eligibilityOpts: DirectoryEligibilityOptions = {},
+  result: CollectDirsResult = { eligible: [], ineligible: [] },
+): CollectDirsResult {
   try {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      if (entry.isDirectory() && !entry.name.startsWith(".") && entry.name !== "node_modules" && entry.name !== "dist") {
-        const full = join(dir, entry.name);
-        const rel = relative(root, full).replace(/\\/g, "/");
-        dirs.push(rel);
-        dirs.push(...collectDirs(full, root));
+      if (!entry.isDirectory()) continue;
+
+      const full = join(dir, entry.name);
+      const rel = relative(root, full).replace(/\\/g, "/");
+
+      // Check if directory is eligible for Smart Docs coverage
+      const eligibility = isDirectoryEligible(full, root, eligibilityOpts);
+      if (!eligibility.eligible) {
+        result.ineligible.push({
+          path: rel,
+          reason: eligibility.reason || "unknown",
+          category: eligibility.category === "eligible" ? undefined : eligibility.category,
+        });
+        continue;
       }
+
+      result.eligible.push(rel);
+      collectDirs(full, root, eligibilityOpts, result);
     }
   } catch {
     // ignore unreadable dirs
   }
-  return dirs;
+  return result;
 }
 
 export function generateDraft(
@@ -225,10 +253,25 @@ export function seedSummary(
   return "written";
 }
 
+export interface SeedAllOptions {
+  dryRun?: boolean;
+  includeAgentFolders?: boolean;
+  includeHidden?: boolean;
+  includeRoot?: boolean;
+}
+
+export interface SeedAllResult {
+  written: string[];
+  skippedExists: string[];
+  skippedDraft: string[];
+  skippedIneligible: IneligibleEntry[];
+  skippedRoot?: { path: string; reason: string };
+}
+
 export function seedInstructionsAll(
   repoRoot: string,
-  opts: { dryRun?: boolean } = {},
-): { written: string[]; skippedExists: string[]; skippedDraft: string[] } {
+  opts: SeedAllOptions = {},
+): SeedAllResult {
   const config = loadConfig(repoRoot);
   const atlasPath = resolve(repoRoot, config.repo.sidecarOutputPath ?? ".polaris/map");
   const allRoutes = {
@@ -236,12 +279,38 @@ export function seedInstructionsAll(
     ...readNeedsReview(atlasPath),
   };
 
-  const dirs = collectDirs(repoRoot, repoRoot);
+  // Root handling: skipped by default for POLARIS.md (root uses AGENTS.md/CLAUDE.md)
+  const rootEligibility = isDirectoryEligible(repoRoot, repoRoot, {
+    isRoot: true,
+    skipRoot: opts.includeRoot ? false : true,
+  });
+
+  let skippedRoot: { path: string; reason: string } | undefined;
+  if (!rootEligibility.eligible) {
+    skippedRoot = { path: ".", reason: rootEligibility.reason || "root skipped" };
+  }
+
+  // Collect eligible subdirectories
+  const eligibilityOpts: DirectoryEligibilityOptions = {
+    includeAgentFolders: opts.includeAgentFolders,
+    includeHidden: opts.includeHidden,
+    skipRoot: true, // Always skip root in collectDirs, we handle it separately
+  };
+
+  const { eligible: dirs, ineligible: skippedIneligible } = collectDirs(repoRoot, repoRoot, eligibilityOpts);
+
+  // Build the list of dirs to process
+  const dirsToProcess: string[] = [];
+  if (rootEligibility.eligible) {
+    dirsToProcess.push(".");
+  }
+  dirsToProcess.push(...dirs);
+
   const written: string[] = [];
   const skippedExists: string[] = [];
   const skippedDraft: string[] = [];
 
-  for (const relDir of dirs) {
+  for (const relDir of dirsToProcess) {
     const absDir = resolve(repoRoot, relDir);
     const outFile = join(absDir, "POLARIS.md");
 
@@ -261,13 +330,13 @@ export function seedInstructionsAll(
     written.push(relDir);
   }
 
-  return { written, skippedExists, skippedDraft };
+  return { written, skippedExists, skippedDraft, skippedIneligible, skippedRoot };
 }
 
 export function seedSummaryAll(
   repoRoot: string,
-  opts: { dryRun?: boolean } = {},
-): { written: string[]; skippedExists: string[]; skippedDraft: string[] } {
+  opts: SeedAllOptions = {},
+): SeedAllResult {
   const config = loadConfig(repoRoot);
   const atlasPath = resolve(repoRoot, config.repo.sidecarOutputPath ?? ".polaris/map");
   const allRoutes = {
@@ -275,13 +344,38 @@ export function seedSummaryAll(
     ...readNeedsReview(atlasPath),
   };
 
-  const dirs = collectDirs(repoRoot, repoRoot);
-  const allDirs = [".", ...dirs];
+  // Root handling: skipped by default for SUMMARY.md (match POLARIS.md behavior)
+  const rootEligibility = isDirectoryEligible(repoRoot, repoRoot, {
+    isRoot: true,
+    skipRoot: opts.includeRoot ? false : true,
+  });
+
+  let skippedRoot: { path: string; reason: string } | undefined;
+  if (!rootEligibility.eligible) {
+    skippedRoot = { path: ".", reason: rootEligibility.reason || "root skipped" };
+  }
+
+  // Collect eligible subdirectories
+  const eligibilityOpts: DirectoryEligibilityOptions = {
+    includeAgentFolders: opts.includeAgentFolders,
+    includeHidden: opts.includeHidden,
+    skipRoot: true, // Always skip root in collectDirs, we handle it separately
+  };
+
+  const { eligible: dirs, ineligible: skippedIneligible } = collectDirs(repoRoot, repoRoot, eligibilityOpts);
+
+  // Build the list of dirs to process
+  const dirsToProcess: string[] = [];
+  if (rootEligibility.eligible) {
+    dirsToProcess.push(".");
+  }
+  dirsToProcess.push(...dirs);
+
   const written: string[] = [];
   const skippedExists: string[] = [];
   const skippedDraft: string[] = [];
 
-  for (const relDir of allDirs) {
+  for (const relDir of dirsToProcess) {
     const absDir = resolve(repoRoot, relDir);
     const outFile = join(absDir, "SUMMARY.md");
 
@@ -301,5 +395,5 @@ export function seedSummaryAll(
     written.push(relDir);
   }
 
-  return { written, skippedExists, skippedDraft };
+  return { written, skippedExists, skippedDraft, skippedIneligible, skippedRoot };
 }

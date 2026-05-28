@@ -140,30 +140,71 @@ describe("seedInstructionsAll", () => {
   afterEach(teardown);
 
   it("generates drafts for directories without POLARIS.md", () => {
-    const { written } = seedInstructionsAll(TMP);
+    const { written, skippedIneligible } = seedInstructionsAll(TMP);
     expect(written).toContain("src/map");
     expect(written).toContain("src/cli");
+    expect(skippedIneligible).toBeDefined();
   });
 
   it("skips directories with human-edited POLARIS.md", () => {
     writeFileSync(join(TMP, "src/map/POLARIS.md"), "# Human-edited");
-    const { written, skippedExists } = seedInstructionsAll(TMP);
+    const { written, skippedExists, skippedIneligible } = seedInstructionsAll(TMP);
     expect(skippedExists).toContain("src/map");
     expect(written).not.toContain("src/map");
+    expect(skippedIneligible).toBeDefined();
   });
 
   it("skips directories with draft POLARIS.md", () => {
     writeFileSync(join(TMP, "src/map/POLARIS.md"), `${DRAFT_MARKER}\n# Draft`);
-    const { skippedDraft } = seedInstructionsAll(TMP);
+    const { skippedDraft, skippedIneligible } = seedInstructionsAll(TMP);
     expect(skippedDraft).toContain("src/map");
+    expect(skippedIneligible).toBeDefined();
   });
 
   it("does not write files in dry-run mode", () => {
-    const { written } = seedInstructionsAll(TMP, { dryRun: true });
+    const { written, skippedIneligible } = seedInstructionsAll(TMP, { dryRun: true });
     expect(written.length).toBeGreaterThan(0);
     for (const dir of written) {
       expect(existsSync(join(TMP, dir, "POLARIS.md"))).toBe(false);
     }
+    expect(skippedIneligible).toBeDefined();
+  });
+
+  it("skips ineligible directories like node_modules and dist", () => {
+    // Create ineligible directories
+    mkdirSync(join(TMP, "node_modules"), { recursive: true });
+    mkdirSync(join(TMP, "dist"), { recursive: true });
+    mkdirSync(join(TMP, "src/node_modules"), { recursive: true });
+
+    const { written, skippedIneligible } = seedInstructionsAll(TMP);
+
+    // node_modules and dist should be in skippedIneligible
+    const ineligiblePaths = skippedIneligible.map((s) => s.path);
+    expect(ineligiblePaths).toContain("node_modules");
+    expect(ineligiblePaths).toContain("dist");
+    expect(ineligiblePaths).toContain("src/node_modules");
+
+    // node_modules and dist should NOT be in written
+    expect(written).not.toContain("node_modules");
+    expect(written).not.toContain("dist");
+    expect(written).not.toContain("src/node_modules");
+  });
+
+  it("skips root by default for POLARIS.md", () => {
+    const { written, skippedRoot } = seedInstructionsAll(TMP);
+    // Root should not be in written
+    expect(written).not.toContain(".");
+    // Root should be in skippedRoot
+    expect(skippedRoot).toBeDefined();
+    expect(skippedRoot?.path).toBe(".");
+  });
+
+  it("includes root when includeRoot option is set", () => {
+    const { written, skippedRoot } = seedInstructionsAll(TMP, { includeRoot: true });
+    // Root should be in written
+    expect(written).toContain(".");
+    // Root should not be in skippedRoot
+    expect(skippedRoot).toBeUndefined();
   });
 });
 
@@ -229,22 +270,61 @@ describe("seedSummaryAll", () => {
   afterEach(teardown);
 
   it("generates drafts for directories without SUMMARY.md", () => {
-    const { written } = seedSummaryAll(TMP);
+    const { written, skippedIneligible } = seedSummaryAll(TMP);
     expect(written).toContain("src/map");
     expect(written).toContain("src/cli");
-    expect(written).toContain("."); // root included for SUMMARY.md
+    expect(skippedIneligible).toBeDefined();
+  });
+
+  it("skips root by default for SUMMARY.md", () => {
+    const { written, skippedRoot } = seedSummaryAll(TMP);
+    // Root should not be in written
+    expect(written).not.toContain(".");
+    // Root should be in skippedRoot
+    expect(skippedRoot).toBeDefined();
+    expect(skippedRoot?.path).toBe(".");
+  });
+
+  it("includes root when includeRoot option is set for SUMMARY.md", () => {
+    const { written, skippedRoot } = seedSummaryAll(TMP, { includeRoot: true });
+    // Root should be in written
+    expect(written).toContain(".");
+    // Root should not be in skippedRoot
+    expect(skippedRoot).toBeUndefined();
   });
 
   it("skips directories with human-edited SUMMARY.md", () => {
     writeFileSync(join(TMP, "src/map/SUMMARY.md"), "# Human-edited");
-    const { written, skippedExists } = seedSummaryAll(TMP);
+    const { written, skippedExists, skippedIneligible } = seedSummaryAll(TMP);
     expect(skippedExists).toContain("src/map");
     expect(written).not.toContain("src/map");
+    expect(skippedIneligible).toBeDefined();
   });
 
   it("skips directories with draft SUMMARY.md", () => {
     writeFileSync(join(TMP, "src/map/SUMMARY.md"), `${DRAFT_MARKER}\n# Draft`);
-    const { skippedDraft } = seedSummaryAll(TMP);
+    const { skippedDraft, skippedIneligible } = seedSummaryAll(TMP);
     expect(skippedDraft).toContain("src/map");
+    expect(skippedIneligible).toBeDefined();
+  });
+
+  it("skips ineligible directories like node_modules and dist", () => {
+    // Create ineligible directories
+    mkdirSync(join(TMP, "node_modules"), { recursive: true });
+    mkdirSync(join(TMP, "dist"), { recursive: true });
+    mkdirSync(join(TMP, "coverage"), { recursive: true });
+
+    const { written, skippedIneligible } = seedSummaryAll(TMP);
+
+    // node_modules, dist, coverage should be in skippedIneligible
+    const ineligiblePaths = skippedIneligible.map((s) => s.path);
+    expect(ineligiblePaths).toContain("node_modules");
+    expect(ineligiblePaths).toContain("dist");
+    expect(ineligiblePaths).toContain("coverage");
+
+    // node_modules, dist, coverage should NOT be in written
+    expect(written).not.toContain("node_modules");
+    expect(written).not.toContain("dist");
+    expect(written).not.toContain("coverage");
   });
 });

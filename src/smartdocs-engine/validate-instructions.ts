@@ -3,7 +3,8 @@ import { resolve, relative, join, dirname } from "node:path";
 import { execFileSync } from "node:child_process";
 import { loadConfig } from "../config/loader.js";
 import { readFileRoutes, readNeedsReview } from "../map/atlas.js";
-import { generateDraft } from "./seed-instructions.js";
+import { generateDraft, type CollectDirsResult, type IneligibleEntry } from "./seed-instructions.js";
+import { isDirectoryEligible, type DirectoryEligibilityOptions } from "./smartdoc-ignore.js";
 
 export type FindingSeverity = "OK" | "WARN" | "ERROR" | "MISSING";
 
@@ -113,26 +114,37 @@ function getRequiredDirs(repoRoot: string): string[] {
   return docsConfig?.instructionFiles?.required ?? [];
 }
 
-function collectDirs(dir: string, root: string): string[] {
-  const dirs: string[] = [];
+function collectDirs(
+  dir: string,
+  root: string,
+  eligibilityOpts: DirectoryEligibilityOptions = {},
+  result: CollectDirsResult = { eligible: [], ineligible: [] },
+): CollectDirsResult {
   try {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      if (
-        entry.isDirectory() &&
-        !entry.name.startsWith(".") &&
-        entry.name !== "node_modules" &&
-        entry.name !== "dist"
-      ) {
-        const full = join(dir, entry.name);
-        const rel = relative(root, full).replace(/\\/g, "/");
-        dirs.push(rel);
-        dirs.push(...collectDirs(full, root));
+      if (!entry.isDirectory()) continue;
+
+      const full = join(dir, entry.name);
+      const rel = relative(root, full).replace(/\\/g, "/");
+
+      // Check if directory is eligible for Smart Docs coverage
+      const eligibility = isDirectoryEligible(full, root, eligibilityOpts);
+      if (!eligibility.eligible) {
+        result.ineligible.push({
+          path: rel,
+          reason: eligibility.reason || "unknown",
+          category: eligibility.category === "eligible" ? undefined : eligibility.category,
+        });
+        continue;
       }
+
+      result.eligible.push(rel);
+      collectDirs(full, root, eligibilityOpts, result);
     }
   } catch {
     // ignore unreadable dirs
   }
-  return dirs;
+  return result;
 }
 
 /**
@@ -341,8 +353,14 @@ export function validateInstructions(
     }
     dirsToCheck = [relPath];
   } else {
-    // Include root dir and all subdirs
-    dirsToCheck = [".", ...collectDirs(repoRoot, repoRoot)];
+    // Include root dir and all eligible subdirs
+    // Note: for validation, we include root and use default eligibility (skip agent folders, etc.)
+    const { eligible: dirs } = collectDirs(repoRoot, repoRoot, {
+      includeAgentFolders: false,
+      includeHidden: false,
+      skipRoot: true,
+    });
+    dirsToCheck = [".", ...dirs];
   }
 
   const results: ValidationResult[] = [];

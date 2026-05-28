@@ -20,6 +20,7 @@ import {
 import { getMonotonicTimestamp } from "../utils/monotonic-timestamp.js";
 import { isIngestIneligible } from "./smartdoc-ignore.js";
 import { addCandidateGovernanceMetadata } from "./doctrine.js";
+import { applySummaryDelta, findNearestSummarymd } from "../cognition/summary-delta.js";
 
 export type DocsClassification =
   | "runtime-summary"
@@ -48,6 +49,10 @@ export interface IngestResult {
   runId: string;
   provenancePath: string | null;
   dryRun: boolean;
+  /** Relative path of the nearest route SUMMARY.md that may need updating. */
+  nearestSummary: string | null;
+  /** Whether the ingest triggered a SUMMARY.md delta (informational only). */
+  summaryDeltaWarranted: boolean;
 }
 
 export interface DocsScaffoldResult {
@@ -520,6 +525,26 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
       cluster_id: clusterId,
     });
 
+    // ── SUMMARY.md delta check ────────────────────────────────────────────
+    // Associate the ingested doc with its nearest route SUMMARY.md and
+    // determine whether a SUMMARY.md update is warranted. Informational only —
+    // never promotes SUMMARY.md into canon or doctrine.
+    const summaryDelta = applySummaryDelta({
+      repoRoot,
+      touchedFiles: [relDestination],
+      skipRoot: true,
+    });
+    const nearestSummary = findNearestSummarymd(relDestination, repoRoot, true);
+    if (summaryDelta.updateWarranted) {
+      emitTelemetry(telPath, runId, {
+        event: "summary-delta-warranted",
+        file: relDestination,
+        reasons: summaryDelta.reasons,
+        summary_target: nearestSummary,
+        cluster_id: clusterId,
+      });
+    }
+
     results.push({
       sourcePath: relSource,
       destinationPath: relDestination,
@@ -528,6 +553,8 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
       runId,
       provenancePath: options.dryRun ? null : relative(repoRoot, provenancePath).replace(/\\/g, "/"),
       dryRun: Boolean(options.dryRun),
+      nearestSummary,
+      summaryDeltaWarranted: summaryDelta.updateWarranted,
     });
   }
 
@@ -559,5 +586,6 @@ export function printIngestResults(results: IngestResult[]): void {
     console.log(`linked_map_area: ${result.linkedMapArea ?? "none"}`);
     console.log(`run_id: ${result.runId}`);
     if (result.provenancePath) console.log(`provenance: ${result.provenancePath}`);
+    if (result.nearestSummary) console.log(`nearest_summary: ${result.nearestSummary}${result.summaryDeltaWarranted ? " (delta warranted)" : ""}`);
   }
 }

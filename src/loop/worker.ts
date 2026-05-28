@@ -22,6 +22,8 @@ import { readState, writeStateAtomic } from "./checkpoint.js";
 import type { CompactReturn } from "./compact-return.js";
 import type { BootstrapPacket } from "./adapters/types.js";
 import { getMonotonicTimestamp } from "../utils/monotonic-timestamp.js";
+import { applyRouteCognitionDelta, applySummaryDelta } from "../cognition/index.js";
+import type { CognitionDeltaResult, SummaryDeltaResult } from "../cognition/index.js";
 
 // ────────────────────────────────────────────────────────────────────────────
 // Bootstrap packet reading
@@ -119,6 +121,12 @@ export interface WorkerOptions {
    * Used in tests to simulate child task execution without actual side effects.
    */
   executeChild?: (_childId: string, _packet: BootstrapPacket) => void;
+  /**
+   * Files touched by this child's implementation. When provided, enables the
+   * route cognition delta phase: worker reports which POLARIS.md / SUMMARY.md
+   * surfaces need updating without performing repo-wide regeneration.
+   */
+  touchedFiles?: string[];
 }
 
 /**
@@ -160,6 +168,8 @@ export async function executeOneChild(
   let telemetryUpdated = false;
   let commit: string | null = null;
   let validation: CompactReturn['validation'] = 'skipped';
+  let cognitionDelta: CognitionDeltaResult | null = null;
+  let summaryDelta: SummaryDeltaResult | null = null;
 
   // Create a new packet with absolute paths for child execution
   const newPacket: BootstrapPacket = {
@@ -201,6 +211,43 @@ export async function executeOneChild(
   // Validation is treated as passed when child execution succeeds.
   // A real implementation would run `npm run build && npm test` here.
   validation = 'passed';
+
+  // ── Step 05b: Route cognition delta ─────────────────────────────────────
+  // Inspect touched files and determine whether route-local POLARIS.md /
+  // SUMMARY.md surfaces need updating. Bounded by locality — no repo-wide
+  // regeneration. Parent runtime is never involved in cognition reconciliation.
+  const touchedFiles = options.touchedFiles ?? [];
+  if (touchedFiles.length > 0) {
+    try {
+      cognitionDelta = applyRouteCognitionDelta({
+        repoRoot,
+        touchedFiles,
+        skipRoot: true,
+      });
+      summaryDelta = applySummaryDelta({
+        repoRoot,
+        touchedFiles,
+        skipRoot: true,
+      });
+      appendTelemetry(telemetryFile, {
+        event: "cognition-delta",
+        run_id: packet.run_id,
+        child_id: childId,
+        polaris_update_warranted: cognitionDelta.updateWarranted,
+        polaris_reasons: cognitionDelta.reasons,
+        polaris_targets: cognitionDelta.routeLocalTargets,
+        polaris_missing: cognitionDelta.missingCognitionSurfaces,
+        summary_update_warranted: summaryDelta.updateWarranted,
+        summary_reasons: summaryDelta.reasons,
+        summary_targets: summaryDelta.summaryTargets,
+        summary_missing: summaryDelta.missingSummaries,
+        timestamp: now(),
+      });
+      telemetryUpdated = true;
+    } catch {
+      // Cognition delta failure is non-fatal — implementation already done
+    }
+  }
 
   // ── Step 06: Commit ─────────────────────────────────────────────────────
   commit = getHeadShort(repoRoot);

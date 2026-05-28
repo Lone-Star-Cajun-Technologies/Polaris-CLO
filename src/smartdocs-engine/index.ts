@@ -3,7 +3,7 @@ import { join, resolve } from "node:path";
 import { Command } from "commander";
 import { ensureDocsScaffold, ingestDocs, printIngestResults } from "./ingest.js";
 import { migrateDocs, printMigrateResults } from "./migrate.js";
-import { seedInstructions, seedInstructionsAll, seedSummary, seedSummaryAll } from "./seed-instructions.js";
+import { seedInstructions, seedInstructionsAll, seedSummary, seedSummaryAll, type IneligibleEntry } from "./seed-instructions.js";
 import { validateInstructions, printReport } from "./validate-instructions.js";
 import { doctrineDraft, doctrinePromote, doctrineDeprecate } from "./doctrine.js";
 import { auditIngestRiskSurface, formatAuditMarkdown, formatAuditSummaryTable } from "./audit.js";
@@ -162,9 +162,30 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
     .option("-r, --repo-root <path>", "Repository root", defaultRepoRoot)
     .option("--all", "Generate drafts for all directories lacking a POLARIS.md")
     .option("--dry-run", "Print what would be written without writing files")
-    .action((pathArg: string | undefined, options: { repoRoot: string; all?: boolean; dryRun?: boolean }) => {
+    .option("--include-agent-folders", "Include .codex, .claude, .agents folders (default: skip)")
+    .option("--include-hidden", "Include all hidden directories starting with . (default: skip)")
+    .option("--include-root", "Include root directory (default: skip for POLARIS.md)")
+    .action((pathArg: string | undefined, options: {
+      repoRoot: string;
+      all?: boolean;
+      dryRun?: boolean;
+      includeAgentFolders?: boolean;
+      includeHidden?: boolean;
+      includeRoot?: boolean;
+    }) => {
       if (options.all) {
-        const { written, skippedExists, skippedDraft } = seedInstructionsAll(options.repoRoot, { dryRun: options.dryRun });
+        const {
+          written,
+          skippedExists,
+          skippedDraft,
+          skippedIneligible,
+          skippedRoot,
+        } = seedInstructionsAll(options.repoRoot, {
+          dryRun: options.dryRun,
+          includeAgentFolders: options.includeAgentFolders,
+          includeHidden: options.includeHidden,
+          includeRoot: options.includeRoot,
+        });
         for (const dir of written) {
           console.log(`${options.dryRun ? "[dry-run] would write" : "written"}: ${dir}/POLARIS.md`);
         }
@@ -174,7 +195,29 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
         for (const dir of skippedDraft) {
           console.log(`skipped (draft exists): ${dir}/POLARIS.md`);
         }
-        console.log(`\nDone. ${written.length} written, ${skippedExists.length} skipped (exists), ${skippedDraft.length} skipped (draft).`);
+        if (options.dryRun) {
+          if (skippedRoot) {
+            console.log(`\nSkipped (root):`);
+            console.log(`  ${skippedRoot.path}/ (${skippedRoot.reason})`);
+          }
+          if (skippedIneligible.length > 0) {
+            // Group by category
+            const byCategory: Record<string, IneligibleEntry[]> = {};
+            for (const entry of skippedIneligible) {
+              const cat = entry.category || "other";
+              if (!byCategory[cat]) byCategory[cat] = [];
+              byCategory[cat].push(entry);
+            }
+            for (const [category, entries] of Object.entries(byCategory)) {
+              console.log(`\nSkipped (${category}):`);
+              for (const entry of entries) {
+                console.log(`  ${entry.path}/ (${entry.reason})`);
+              }
+            }
+          }
+        }
+        const rootCount = skippedRoot ? 1 : 0;
+        console.log(`\nDone. ${written.length} written, ${skippedExists.length} skipped (exists), ${skippedDraft.length} skipped (draft), ${rootCount} skipped (root), ${skippedIneligible.length} skipped (ineligible).`);
         return;
       }
 
@@ -200,9 +243,30 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
     .option("-r, --repo-root <path>", "Repository root", defaultRepoRoot)
     .option("--all", "Generate drafts for all directories lacking a SUMMARY.md")
     .option("--dry-run", "Print what would be written without writing files")
-    .action((pathArg: string | undefined, options: { repoRoot: string; all?: boolean; dryRun?: boolean }) => {
+    .option("--include-agent-folders", "Include .codex, .claude, .agents folders (default: skip)")
+    .option("--include-hidden", "Include all hidden directories starting with . (default: skip)")
+    .option("--include-root", "Include root directory (default: skip)")
+    .action((pathArg: string | undefined, options: {
+      repoRoot: string;
+      all?: boolean;
+      dryRun?: boolean;
+      includeAgentFolders?: boolean;
+      includeHidden?: boolean;
+      includeRoot?: boolean;
+    }) => {
       if (options.all) {
-        const { written, skippedExists, skippedDraft } = seedSummaryAll(options.repoRoot, { dryRun: options.dryRun });
+        const {
+          written,
+          skippedExists,
+          skippedDraft,
+          skippedIneligible,
+          skippedRoot,
+        } = seedSummaryAll(options.repoRoot, {
+          dryRun: options.dryRun,
+          includeAgentFolders: options.includeAgentFolders,
+          includeHidden: options.includeHidden,
+          includeRoot: options.includeRoot,
+        });
         for (const dir of written) {
           console.log(`${options.dryRun ? "[dry-run] would write" : "written"}: ${dir}/SUMMARY.md`);
         }
@@ -212,7 +276,29 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
         for (const dir of skippedDraft) {
           console.log(`skipped (draft exists): ${dir}/SUMMARY.md`);
         }
-        console.log(`\nDone. ${written.length} written, ${skippedExists.length} skipped (exists), ${skippedDraft.length} skipped (draft).`);
+        if (options.dryRun) {
+          if (skippedRoot) {
+            console.log(`\nSkipped (root):`);
+            console.log(`  ${skippedRoot.path}/ (${skippedRoot.reason})`);
+          }
+          if (skippedIneligible.length > 0) {
+            // Group by category
+            const byCategory: Record<string, IneligibleEntry[]> = {};
+            for (const entry of skippedIneligible) {
+              const cat = entry.category || "other";
+              if (!byCategory[cat]) byCategory[cat] = [];
+              byCategory[cat].push(entry);
+            }
+            for (const [category, entries] of Object.entries(byCategory)) {
+              console.log(`\nSkipped (${category}):`);
+              for (const entry of entries) {
+                console.log(`  ${entry.path}/ (${entry.reason})`);
+              }
+            }
+          }
+        }
+        const rootCount = skippedRoot ? 1 : 0;
+        console.log(`\nDone. ${written.length} written, ${skippedExists.length} skipped (exists), ${skippedDraft.length} skipped (draft), ${rootCount} skipped (root), ${skippedIneligible.length} skipped (ineligible).`);
         return;
       }
 

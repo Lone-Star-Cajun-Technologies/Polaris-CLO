@@ -167,6 +167,28 @@ export function buildWorkerPrompt(input: WorkerPromptInput): WorkerPromptResult 
   lines.push(`- Append a telemetry event to ${input.telemetryFile}.`);
   lines.push('');
 
+  // ── Route cognition delta (always present) ────────────────────────────────
+  lines.push('## Route Cognition Delta');
+  lines.push('After implementation, apply route-local cognition delta — only if something materially changed.');
+  lines.push('');
+  lines.push('**POLARIS.md** — update only when ALL of the following are true:');
+  lines.push('  - You touched a file in that folder (not a distant folder).');
+  lines.push('  - The change materially affects: folder responsibilities, commands/workflows,');
+  lines.push('    execution constraints, ownership/routing, or operational behavior.');
+  lines.push('  - The current POLARIS.md content is actually wrong or incomplete as a result.');
+  lines.push('  DO NOT update POLARIS.md for: formatting fixes, comment changes, tiny refactors,');
+  lines.push('  internal implementation details, or any change that leaves the operational guidance');
+  lines.push('  still accurate. When in doubt, do not update.');
+  lines.push('');
+  lines.push('**SUMMARY.md** — update only when: linked docs/specs changed, canon relationships');
+  lines.push('  changed, architecture meaning changed, or doctrine/spec linkage changed.');
+  lines.push('  SUMMARY.md is informational only. Do not create it if missing — that is a hint for');
+  lines.push('  operators, not a task for workers. Keep it short. Never add operational doctrine.');
+  lines.push('');
+  lines.push('**Never** scan unrelated folders. **Never** regenerate all route docs.');
+  lines.push('If no material change occurred, skip this section entirely.');
+  lines.push('');
+
   // ── Report Back ───────────────────────────────────────────────────────────
   lines.push('## Report Back');
   lines.push('- files changed');

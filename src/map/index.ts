@@ -234,9 +234,11 @@ export function createMapCommand(handlers: MapCommandHandlers = {}): Command {
     .option("--changed [files...]", "Changed files (omit to detect from git diff)")
     .option("--from-commit <sha>", "Start commit for diff (default: HEAD~1)")
     .option("--to-commit <sha>", "End commit for diff (default: HEAD)")
-    .action((options: { repoRoot: string; changed?: string[]; fromCommit?: string; toCommit?: string }) => {
+    .option("--seed-cognition", "Create draft POLARIS.md and SUMMARY.md for newly eligible folders (default: report only)")
+    .option("--include-root", "Include root folder in cognition surface detection/seeding (skipped by default)")
+    .action((options: { repoRoot: string; changed?: string[]; fromCommit?: string; toCommit?: string; seedCognition?: boolean; includeRoot?: boolean }) => {
       const files = Array.isArray(options.changed) ? options.changed : [];
-      const { hasNeedsReview } = updateHandler(options.repoRoot, files, options.fromCommit, options.toCommit);
+      const { hasNeedsReview } = updateHandler(options.repoRoot, files, options.fromCommit, options.toCommit, options.seedCognition, options.includeRoot);
       const onLowConfidence = loadConfig(options.repoRoot).map.onLowConfidence ?? "warn";
       if (hasNeedsReview && onLowConfidence === "fail") process.exit(1);
     });
