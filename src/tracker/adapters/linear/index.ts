@@ -16,15 +16,27 @@ interface LinearProject {
 
 interface LinearIssue {
   id: string;
+  identifier?: string;
   title: string;
   state?: { id: string; name: string };
-  blockedBy?: Array<{ id: string }>;
+  blockedBy?: Array<LinearIssueRef>;
+  blocks?: Array<LinearIssueRef>;
+  children?: Array<LinearIssueRef>;
+}
+
+interface LinearIssueRef {
+  id: string;
+  identifier?: string;
+  title?: string;
+  state?: { id: string; name: string };
 }
 
 interface LinearApiClient {
   listTeams(): Promise<LinearTeam[]>;
   listProjects(teamId: string): Promise<LinearProject[]>;
   listIssues(filters: { teamId?: string; projectId?: string }): Promise<LinearIssue[]>;
+  getIssueByIdentifier(identifier: string): Promise<LinearIssue | null>;
+  getIssueById(id: string): Promise<LinearIssue | null>;
 }
 
 class LinearGraphqlClient implements LinearApiClient {
@@ -51,11 +63,16 @@ class LinearGraphqlClient implements LinearApiClient {
           const chunks: Buffer[] = [];
           res.on("data", (chunk: Buffer) => chunks.push(chunk));
           res.on("end", () => {
+            const responseBody = Buffer.concat(chunks).toString("utf-8");
             if ((res.statusCode ?? 0) >= 400) {
-              reject(new Error(`Linear API returned ${res.statusCode}`));
+              reject(
+                new Error(
+                  `Linear API returned ${res.statusCode}: ${responseBody || "<empty response body>"}`,
+                ),
+              );
               return;
             }
-            resolve(Buffer.concat(chunks).toString("utf-8"));
+            resolve(responseBody);
           });
         },
       );
@@ -109,9 +126,27 @@ class LinearGraphqlClient implements LinearApiClient {
           ) {
             nodes {
               id
+              identifier
               title
               state { id name }
-              blockedBy { id }
+              blockedBy {
+                id
+                identifier
+                title
+                state { id name }
+              }
+              blocks {
+                id
+                identifier
+                title
+                state { id name }
+              }
+              children {
+                id
+                identifier
+                title
+                state { id name }
+              }
             }
           }
         }
@@ -122,6 +157,78 @@ class LinearGraphqlClient implements LinearApiClient {
       },
     );
     return data.issues.nodes;
+  }
+
+  async getIssueByIdentifier(identifier: string): Promise<LinearIssue | null> {
+    const data = await this.graphql<{ issues: { nodes: LinearIssue[] } }>(
+      `
+        query PolarisLinearIssueByIdentifier($identifier: String!) {
+          issues(first: 1, filter: { identifier: { eq: $identifier } }) {
+            nodes {
+              id
+              identifier
+              title
+              state { id name }
+              blockedBy {
+                id
+                identifier
+                title
+                state { id name }
+              }
+              blocks {
+                id
+                identifier
+                title
+                state { id name }
+              }
+              children {
+                id
+                identifier
+                title
+                state { id name }
+              }
+            }
+          }
+        }
+      `,
+      { identifier },
+    );
+    return data.issues.nodes[0] ?? null;
+  }
+
+  async getIssueById(id: string): Promise<LinearIssue | null> {
+    const data = await this.graphql<{ issue: LinearIssue | null }>(
+      `
+        query PolarisLinearIssueById($id: String!) {
+          issue(id: $id) {
+            id
+            identifier
+            title
+            state { id name }
+            blockedBy {
+              id
+              identifier
+              title
+              state { id name }
+            }
+            blocks {
+              id
+              identifier
+              title
+              state { id name }
+            }
+            children {
+              id
+              identifier
+              title
+              state { id name }
+            }
+          }
+        }
+      `,
+      { id },
+    );
+    return data.issue;
   }
 }
 
@@ -137,11 +244,100 @@ export class LinearAdapter {
     this.linearClient = linearClient ?? new LinearGraphqlClient(process.env["LINEAR_API_KEY"]);
   }
 
+  private issueNodeId(issue: Pick<LinearIssueRef, "id" | "identifier">): string {
+    return issue.identifier ?? issue.id;
+  }
+
+  private addDependency(dependencies: Record<string, string[]>, nodeId: string, dependsOnNodeId: string): void {
+    if (!dependencies[nodeId]) {
+      dependencies[nodeId] = [];
+    }
+    if (!dependencies[nodeId].includes(dependsOnNodeId)) {
+      dependencies[nodeId].push(dependsOnNodeId);
+    }
+  }
+
+  private upsertNode(nodes: Record<string, ExecutionNode>, issue: LinearIssueRef): string {
+    const nodeId = this.issueNodeId(issue);
+    const statusName = issue.state?.name ?? issue.state?.id ?? "Unknown";
+    if (!nodes[nodeId]) {
+      nodes[nodeId] = {
+        id: nodeId,
+        title: issue.title ?? issue.identifier ?? issue.id,
+        status: statusName,
+      };
+      return nodeId;
+    }
+
+    if (!nodes[nodeId].title && issue.title) {
+      nodes[nodeId].title = issue.title;
+    }
+    if ((nodes[nodeId].status === "Unknown" || !nodes[nodeId].status) && issue.state) {
+      nodes[nodeId].status = statusName;
+    }
+    return nodeId;
+  }
+
+  private mapIssueRelations(
+    issue: LinearIssue,
+    nodes: Record<string, ExecutionNode>,
+    dependencies: Record<string, string[]>,
+  ): void {
+    const issueNodeId = this.upsertNode(nodes, issue);
+
+    for (const blocker of issue.blockedBy ?? []) {
+      const blockerNodeId = this.upsertNode(nodes, blocker);
+      this.addDependency(dependencies, issueNodeId, blockerNodeId);
+    }
+
+    for (const blockedIssue of issue.blocks ?? []) {
+      const blockedIssueNodeId = this.upsertNode(nodes, blockedIssue);
+      this.addDependency(dependencies, blockedIssueNodeId, issueNodeId);
+    }
+
+    for (const childIssue of issue.children ?? []) {
+      this.upsertNode(nodes, childIssue);
+    }
+  }
+
+  private async collectIssueAndChildren(issueIdentifier: string): Promise<LinearIssue[]> {
+    const rootIssue = await this.linearClient.getIssueByIdentifier(issueIdentifier);
+    if (!rootIssue) {
+      throw new Error(`Linear issue identifier '${issueIdentifier}' not found.`);
+    }
+
+    const issueMap = new Map<string, LinearIssue>([[rootIssue.id, rootIssue]]);
+    const pendingChildIds: string[] = (rootIssue.children ?? []).map((child) => child.id);
+    const fetchedChildIds = new Set<string>();
+
+    while (pendingChildIds.length > 0) {
+      const childId = pendingChildIds.shift();
+      if (!childId || fetchedChildIds.has(childId)) {
+        continue;
+      }
+
+      fetchedChildIds.add(childId);
+      const childIssue = await this.linearClient.getIssueById(childId);
+      if (!childIssue) {
+        continue;
+      }
+
+      issueMap.set(childIssue.id, childIssue);
+      for (const grandchild of childIssue.children ?? []) {
+        if (!fetchedChildIds.has(grandchild.id)) {
+          pendingChildIds.push(grandchild.id);
+        }
+      }
+    }
+
+    return Array.from(issueMap.values());
+  }
+
   /**
    * Synchronizes issues from Linear into a LocalGraph format.
    * @returns A promise that resolves to a LocalGraph instance.
    */
-  async syncIn(): Promise<LocalGraph> {
+  async syncIn(issueIdentifier?: string): Promise<LocalGraph> {
     const linearConfig = this.config.tracker?.linear;
     if (!linearConfig || !linearConfig.enabled) {
       throw new Error("Linear tracker not enabled in config.");
@@ -153,8 +349,18 @@ export class LinearAdapter {
     let issues: LinearIssue[] = [];
     let teamName: string | undefined;
     let resolvedTeamId: string | undefined;
+    let sourceId: string;
+    let sourceDoc: string;
+    let activeClusterId: string;
+    let clusterTitle: string;
 
-    if (teamId) {
+    if (issueIdentifier) {
+      issues = await this.collectIssueAndChildren(issueIdentifier);
+      sourceId = issueIdentifier;
+      sourceDoc = `Synchronized from Linear issue identifier: ${issueIdentifier}`;
+      activeClusterId = issueIdentifier;
+      clusterTitle = `Linear Issue: ${issueIdentifier}`;
+    } else if (teamId) {
       const teamsResponse = await this.linearClient.listTeams();
       const team = teamsResponse.find(t => t.id === teamId || t.name === teamId);
       if (!team) {
@@ -162,7 +368,7 @@ export class LinearAdapter {
       }
       teamName = team.name;
       resolvedTeamId = team.id;
-      
+
       const listIssuesArgs: { teamId: string; projectId?: string; } = { teamId: team.id };
       if (projectId) {
         const projectsResponse = await this.linearClient.listProjects(team.id);
@@ -174,77 +380,57 @@ export class LinearAdapter {
       }
 
       issues = await this.linearClient.listIssues(listIssuesArgs);
+      sourceId = resolvedTeamId ?? teamId;
+      sourceDoc = `Synchronized from Linear team: ${teamName}${projectId ? `, project: ${projectId}` : ''}`;
+      if (projectId && teamName) {
+        activeClusterId = `${teamName}-${projectId}`;
+        clusterTitle = `Linear Project: ${projectId} (${teamName})`;
+      } else {
+        activeClusterId = teamName;
+        clusterTitle = `Linear Team: ${teamName}`;
+      }
     } else {
-      // If no teamId is specified, fetch all issues accessible to the current user.
-      // This might return a lot of issues, so a warning is appropriate.
       console.warn("No Linear teamId specified in config. Fetching all accessible Linear issues. Consider specifying 'teamId' for better scope.");
       issues = await this.linearClient.listIssues({});
+      sourceId = "all-linear-issues";
+      sourceDoc = "Synchronized from Linear team: all";
+      activeClusterId = "default";
+      clusterTitle = "All Linear Issues";
     }
 
     const nodes: Record<string, ExecutionNode> = {};
     const dependencies: Record<string, string[]> = {};
     const clusters: Record<string, ExecutionCluster> = {};
-    let activeClusterId: string = "default"; // Default cluster ID
-
-    // Create a default cluster or use project ID as cluster ID
-    if (projectId && teamName) {
-      activeClusterId = `${teamName}-${projectId}`;
-      clusters[activeClusterId] = {
-        id: activeClusterId,
-        title: `Linear Project: ${projectId} (${teamName})`,
-        children: [],
-      };
-    } else if (teamName) {
-      activeClusterId = teamName;
-      clusters[activeClusterId] = {
-        id: activeClusterId,
-        title: `Linear Team: ${teamName}`,
-        children: [],
-      };
-    } else {
-      clusters[activeClusterId] = {
-        id: activeClusterId,
-        title: "All Linear Issues",
-        children: [],
-      };
-    }
+    clusters[activeClusterId] = {
+      id: activeClusterId,
+      title: clusterTitle,
+      children: [],
+    };
+    const clusterChildren = new Set<string>();
 
     for (const issue of issues) {
-      const statusName = issue.state?.name ?? issue.state?.id ?? "Unknown";
-      
-      nodes[issue.id] = {
-        id: issue.id,
-        title: issue.title,
-        status: statusName,
-        // sessionType can be inferred later or set based on other Linear fields
-        // For now, it's optional in ExecutionNode, so we can omit it.
-      };
-      
-      // Add issue to the active cluster
-      clusters[activeClusterId].children.push(issue.id);
-
-      // Populate dependencies
-      const issueDependencies: string[] = [];
-      if (issue.blockedBy) {
-        issue.blockedBy.forEach((blocker) => {
-          issueDependencies.push(blocker.id);
-        });
+      this.mapIssueRelations(issue, nodes, dependencies);
+      clusterChildren.add(this.issueNodeId(issue));
+      for (const blocker of issue.blockedBy ?? []) {
+        clusterChildren.add(this.issueNodeId(blocker));
       }
-      // Linear also has `blocks` field, which means this issue is blocking others.
-      // For `dependencies`, we only care about what *this* issue is blocked by.
-      if (issueDependencies.length > 0) {
-        dependencies[issue.id] = issueDependencies;
+      for (const blockedIssue of issue.blocks ?? []) {
+        clusterChildren.add(this.issueNodeId(blockedIssue));
+      }
+      for (const childIssue of issue.children ?? []) {
+        clusterChildren.add(this.issueNodeId(childIssue));
       }
     }
+    clusters[activeClusterId].children = Array.from(clusterChildren);
 
     const graph: ExecutionGraphV2 = {
       schemaVersion: "v2",
       source: {
-        id: resolvedTeamId ?? teamId ?? "all-linear-issues",
+        id: sourceId,
         type: "Linear",
         analysis: {
           id: "initial-sync",
-          doc: `Synchronized from Linear team: ${teamName || 'all'}${projectId ? `, project: ${projectId}` : ''}`,
+          doc: sourceDoc,
         },
       },
       nodes: nodes,

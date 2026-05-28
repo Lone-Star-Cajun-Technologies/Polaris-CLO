@@ -1,4 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { EventEmitter } from "node:events";
+import * as https from "node:https";
 import { LinearAdapter } from "./index.js";
 import { PolarisConfig } from "../../../config/schema.js";
 import { LocalGraph } from "../../local-graph.js";
@@ -9,6 +11,8 @@ describe("LinearAdapter", () => {
     listTeams: ReturnType<typeof vi.fn>;
     listProjects: ReturnType<typeof vi.fn>;
     listIssues: ReturnType<typeof vi.fn>;
+    getIssueByIdentifier: ReturnType<typeof vi.fn>;
+    getIssueById: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
@@ -26,6 +30,8 @@ describe("LinearAdapter", () => {
       listTeams: vi.fn(),
       listProjects: vi.fn(),
       listIssues: vi.fn(),
+      getIssueByIdentifier: vi.fn(),
+      getIssueById: vi.fn(),
     };
 
     linearClient.listTeams.mockResolvedValue([
@@ -48,10 +54,78 @@ describe("LinearAdapter", () => {
         blockedBy: [],
       },
     ]);
+
+    linearClient.getIssueByIdentifier.mockResolvedValue({
+      id: "root-issue-id",
+      identifier: "POL-198",
+      title: "Root issue",
+      state: { id: "status-id-3", name: "Todo" },
+      blockedBy: [{ id: "blocker-id", identifier: "POL-42", title: "Blocking issue" }],
+      blocks: [{ id: "blocked-id", identifier: "POL-199", title: "Blocked issue" }],
+      children: [{ id: "child-issue-id", identifier: "POL-200", title: "Child issue" }],
+    });
+    linearClient.getIssueById.mockResolvedValue({
+      id: "child-issue-id",
+      identifier: "POL-200",
+      title: "Child issue",
+      state: { id: "status-id-4", name: "In Progress" },
+      blockedBy: [],
+      blocks: [],
+      children: [],
+    });
   });
 
   afterEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("throws when LINEAR_API_KEY is missing for direct Linear API usage", async () => {
+    const originalApiKey = process.env["LINEAR_API_KEY"];
+    delete process.env["LINEAR_API_KEY"];
+    config.tracker!.linear!.teamId = "mock-team-id";
+
+    try {
+      const adapter = new LinearAdapter(config);
+      await expect(adapter.syncIn()).rejects.toThrow("LINEAR_API_KEY is required for the 'linear' tracker adapter.");
+    } finally {
+      if (originalApiKey === undefined) {
+        delete process.env["LINEAR_API_KEY"];
+      } else {
+        process.env["LINEAR_API_KEY"] = originalApiKey;
+      }
+    }
+  });
+
+  it("includes Linear non-2xx response body in thrown error", async () => {
+    const originalApiKey = process.env["LINEAR_API_KEY"];
+    process.env["LINEAR_API_KEY"] = "linear-test-token";
+    const requestSpy = vi.spyOn(https, "request").mockImplementation((options: any, callback: any) => {
+      const req = new EventEmitter() as any;
+      req.on = req.addListener.bind(req);
+      req.write = vi.fn();
+      req.end = vi.fn(() => {
+        const res = new EventEmitter() as any;
+        res.statusCode = 400;
+        callback(res);
+        res.emit("data", Buffer.from(JSON.stringify({ errors: [{ message: "bad query" }] })));
+        res.emit("end");
+      });
+      return req;
+    });
+
+    try {
+      const adapter = new LinearAdapter(config);
+      await expect(adapter.syncIn("POL-198")).rejects.toThrow(
+        "Linear API returned 400: {\"errors\":[{\"message\":\"bad query\"}]}",
+      );
+    } finally {
+      requestSpy.mockRestore();
+      if (originalApiKey === undefined) {
+        delete process.env["LINEAR_API_KEY"];
+      } else {
+        process.env["LINEAR_API_KEY"] = originalApiKey;
+      }
+    }
   });
 
   it("should return a LocalGraph instance", async () => {
@@ -148,5 +222,30 @@ describe("LinearAdapter", () => {
     expect(fullGraph.activeCluster).toBe("default");
     expect(fullGraph.clusters["default"].title).toBe("All Linear Issues");
     consoleWarnSpy.mockRestore();
+  });
+
+  it("syncs by Linear issue identifier including children and dependency relations", async () => {
+    const adapter = new LinearAdapter(config, linearClient);
+    const graph = await adapter.syncIn("POL-198");
+    const fullGraph = graph.fullGraph;
+
+    expect(linearClient.getIssueByIdentifier).toHaveBeenCalledWith("POL-198");
+    expect(linearClient.getIssueById).toHaveBeenCalledWith("child-issue-id");
+    expect(fullGraph.activeCluster).toBe("POL-198");
+    expect(fullGraph.clusters["POL-198"].children).toEqual(
+      expect.arrayContaining(["POL-198", "POL-200", "POL-42", "POL-199"]),
+    );
+    expect(fullGraph.nodes["POL-198"]).toEqual({
+      id: "POL-198",
+      title: "Root issue",
+      status: "Todo",
+    });
+    expect(fullGraph.nodes["POL-200"]).toEqual({
+      id: "POL-200",
+      title: "Child issue",
+      status: "In Progress",
+    });
+    expect(fullGraph.dependencies["POL-198"]).toEqual(["POL-42"]);
+    expect(fullGraph.dependencies["POL-199"]).toEqual(["POL-198"]);
   });
 });

@@ -25,7 +25,7 @@ export function createTrackerCommand(options: TrackerCommandOptions): Command {
       const adapterName = commandOptions.adapter ?? config.tracker?.adapter ?? 'linear';
 
       if (!trackerId) {
-        console.error("Error: trackerId is required (e.g., 'polaris tracker sync-in POL-105').");
+        console.error("Error: trackerId is required (e.g., 'polaris tracker sync-in POL-198').");
         process.exit(1);
       }
 
@@ -36,7 +36,7 @@ export function createTrackerCommand(options: TrackerCommandOptions): Command {
         const adapter = new LinearAdapter(config);
         let graph: LocalGraph;
         try {
-          graph = await adapter.syncIn();
+          graph = await adapter.syncIn(trackerId);
         } catch (err) {
           console.error(`sync-in failed: ${err instanceof Error ? err.message : String(err)}`);
           process.exit(1);
