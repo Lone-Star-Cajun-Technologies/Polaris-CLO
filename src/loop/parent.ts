@@ -45,6 +45,15 @@ import {
   type RunStartedEvent,
 } from "./ledger.js";
 
+function logStatus(
+  format: "verbose" | "terse" | undefined,
+  message: string,
+) {
+  if (format === "terse") {
+    process.stdout.write(`[POLARIS] ${message}\n`);
+  }
+}
+
 export interface ParentLoopOptions {
   /** Absolute path to current-state.json. */
   stateFile: string;
@@ -73,13 +82,14 @@ export interface ParentLoopOptions {
 }
 
 export type ParentLoopHaltReason =
-  | 'cluster-complete'     // All children done
-  | 'budget-exhausted'     // Budget cap reached
-  | 'blocked'              // A child reported a blocker
-  | 'worker-error'         // Worker returned a non-zero exit code or error status
-  | 'state-invalid'        // current-state.json failed validation
-  | 'analyze-parent'       // Cluster root is an ANALYZE issue
-  | 'analyze-drift';       // Next child is an analyze issue and allow_analyze_children is false
+  | 'cluster-complete' // All children done
+  | 'budget-exhausted' // Budget cap reached
+  | 'blocked' // A child reported a blocker
+  | 'worker-error' // Worker returned a non-zero exit code or error status
+  | 'state-invalid' // current-state.json failed validation
+  | 'analyze-parent' // Cluster root is an ANALYZE issue
+  | 'analyze-drift' // Next child is an analyze issue and allow_analyze_children is false
+  | 'supervised-mode-child-complete'; // Child completed in supervised mode
 
 export interface ParentLoopResult {
   /** Final halt reason. */
@@ -340,12 +350,13 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
 
   // Load config for adapter and provider resolution
   const config = loadConfig(repoRoot);
-  const orchestrationMode =
-    (state as { orchestration_mode?: string }).orchestration_mode ?? "persistent-parent";
+  const legacyOrchestrationMode = (state as unknown as Record<string, unknown>)["orchestration_mode"];
+  const legacyEphemeralMode = options.adapter === undefined && legacyOrchestrationMode === "ephemeral";
+  const orchestrationMode = config.orchestration?.mode ?? (legacyOrchestrationMode === "ephemeral" ? "auto" : "supervised");
+  const telemetryOrchestrationMode = legacyOrchestrationMode === "ephemeral" ? "ephemeral" : orchestrationMode;
+  const notificationFormat = config.orchestration?.notification_format ?? (orchestrationMode === 'auto' ? 'terse' : 'verbose');
   const adapterName =
-    orchestrationMode === "ephemeral"
-      ? "agent-subtask"
-      : options.adapter ?? config.execution?.adapter ?? "terminal-cli";
+    legacyEphemeralMode ? "agent-subtask" : (options.adapter ?? config.execution?.adapter ?? "terminal-cli");
   const providerName =
     adapterName === "agent-subtask"
       ? "agent-subtask"
@@ -378,8 +389,10 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     const nextChild = selectNextChild(state);
 
     if (nextChild === null) {
+      const autoFinalizeRequested = orchestrationMode === "auto" && config.orchestration?.auto_finalize === true;
       // All children completed — write final state and halt
       if (!dryRun) {
+        logStatus(notificationFormat, "COMPLETE");
         writeStateAtomic(stateFile, { ...state, status: "cluster-complete" });
         appendTelemetry(telemetryFile, {
           event: "cluster-complete",
@@ -387,11 +400,22 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
           children_completed: state.completed_children.length,
           timestamp: new Date().toISOString(),
         });
+        if (autoFinalizeRequested) {
+          appendTelemetry(telemetryFile, {
+            event: "auto-finalize-requested",
+            run_id: state.run_id,
+            next_action: "polaris finalize run",
+            timestamp: new Date().toISOString(),
+          });
+        }
       }
+      const messageSuffix = autoFinalizeRequested
+        ? " Auto-finalize handoff requested; run `polaris finalize run` to complete delivery."
+        : "";
       return {
         haltReason: 'cluster-complete',
         childrenDispatched,
-        message: `Cluster complete. All ${state.completed_children.length} children dispatched.`,
+        message: `Cluster complete. All ${state.completed_children.length} children dispatched.${messageSuffix}`,
       };
     }
 
@@ -526,13 +550,14 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     }
 
     if (!dryRun) {
+      logStatus(notificationFormat, `DISPATCH ${nextChild}`);
       appendTelemetry(telemetryFile, {
         event: "child-dispatched",
         run_id: state.run_id,
         child_id: nextChild,
         worker_id: workerId,
         adapter: adapterName,
-        orchestration_mode: orchestrationMode,
+        orchestration_mode: telemetryOrchestrationMode,
         provider: providerName,
         prompt_mode: packet.prompt_mode,
         prompt_estimated_tokens: packet.prompt_metrics.estimated_tokens,
@@ -599,11 +624,12 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
         dispatchResult.summary ??
         `Worker reported blocked for ${nextChild}`;
       if (!dryRun) {
+        logStatus(notificationFormat, `BLOCKED ${nextChild}: ${blockerMsg.replace(/\n/g, ' ')}`);
         appendTelemetry(telemetryFile, {
           event: "child-blocked",
           run_id: state.run_id,
           child_id: nextChild,
-          blocker: blockerMsg,
+          blocker: blockerMsg.replace(/\n/g, ' '),
           timestamp: new Date().toISOString(),
         });
         // Write checkpoint with blocker information
@@ -777,6 +803,11 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
 
     // Orchestrator checkpoint event — always emitted after a successful child.
     if (!dryRun) {
+      const lastCommit =
+        (workerSummary as Record<string, unknown>)?.['commit'] as string | undefined ??
+        (workerSummary as Record<string, unknown>)?.['commit_hash'] as string | undefined;
+      const commitSuffix = lastCommit && lastCommit.length > 0 ? ` (commit: ${lastCommit})` : "";
+      logStatus(notificationFormat, `COMPLETE ${nextChild}${commitSuffix}`);
       appendTelemetry(telemetryFile, {
         event: "child-complete",
         run_id: state.run_id,
@@ -784,6 +815,14 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
         children_completed: state.context_budget.children_completed,
         timestamp: new Date().toISOString(),
       });
+    }
+
+    if (orchestrationMode === 'supervised') {
+      return {
+        haltReason: 'supervised-mode-child-complete',
+        childrenDispatched,
+        message: `Child ${nextChild} complete. Re-run to continue.`,
+      };
     }
 
     // ── Step 05 (post-dispatch): Re-check budget before next iteration ───

@@ -24,8 +24,30 @@ Use:
 
 Do not assume global repository context unless explicitly provided by the runtime.
 
-## Execution model
+## Agent Roles
 
-Parent/orchestrator sessions coordinate execution state and worker dispatch.
+Polaris distinguishes between two primary agent roles: **Parent/Orchestrator** and **Worker**. Adherence to these roles is critical for predictable and efficient execution.
 
-Worker sessions perform implementation, analysis, validation, and delivery tasks within bounded scope.
+### Parent/Orchestrator Role
+
+An agent acting as a Parent is an orchestrator. Its responsibilities are strictly limited to:
+- Managing the lifecycle of a run (bootstrap, checkpoint, and finalize handoff/trigger when configured and allowed).
+- Dispatching child tasks to workers.
+- Reporting high-level status.
+
+**Parents MUST NOT:**
+- Implement features or write code.
+- Browse the repository or read files unrelated to orchestration.
+- Make decisions outside the defined state machine.
+
+The parent's posture is **orchestration-only**.
+
+### Worker Role
+
+An agent acting as a Worker receives a focused task from the Parent. Its responsibilities are:
+- Implementing the assigned task within the defined scope.
+- Running validation checks.
+- Committing its work.
+- Reporting a compact summary of its results back to the parent.
+
+Workers own all repository cognition and implementation for their assigned task.
