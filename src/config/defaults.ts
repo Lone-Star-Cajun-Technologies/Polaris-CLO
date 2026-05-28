@@ -24,9 +24,9 @@ export const DEFAULT_CONFIG: Omit<Required<PolarisConfig>, "canon" | "providers"
     allowBranchDivergence: false,
   },
   orchestration: {
-    mode: "supervised",
+    mode: "auto",
     auto_finalize: false,
-    notification_format: "verbose",
+    notification_format: "terse",
   },
   execution: {
     adapter: "terminal-cli",
