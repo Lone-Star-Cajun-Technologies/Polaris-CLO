@@ -285,8 +285,8 @@
     "taskchain": "polaris-config",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-05-28T05:46:12.628Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-05-28T17:41:54.579Z",
+    "updated_by": "polaris-map-update",
     "tags": [
       "config"
     ],
@@ -2724,19 +2724,6 @@
       "ingested"
     ]
   },
-  "smartdocs/docs/doctrine/candidate/issue-hierarchy-doctrine.md": {
-    "domain": "docs",
-    "route": "smartdocs/docs/doctrine/candidate",
-    "taskchain": "polaris-docs",
-    "confidence": 0.7,
-    "classification": "indexed",
-    "last_updated": "2026-05-28T06:22:37.642Z",
-    "updated_by": "polaris-docs-ingest",
-    "tags": [
-      "docs",
-      "ingested"
-    ]
-  },
   "smartdocs/docs/specs/raw/polaris-dispatch-contract.md": {
     "domain": "loop",
     "route": "src/loop",
@@ -2751,20 +2738,6 @@
     ],
     "instructionFile": "src/loop/POLARIS.md"
   },
-  "smartdocs/docs/doctrine/candidate/polaris-implementation-plan.md": {
-    "domain": "unknown",
-    "route": "docs/spec/issue-hierarchy-doctrine.md",
-    "taskchain": "polaris-core",
-    "confidence": 0.85,
-    "classification": "indexed",
-    "last_updated": "2026-05-28T06:23:01.671Z",
-    "updated_by": "polaris-docs-ingest",
-    "tags": [
-      "docs",
-      "ingested"
-    ],
-    "instructionFile": "docs/spec/POLARIS.md"
-  },
   "smartdocs/docs/architecture/polaris-run-ledger.md": {
     "domain": "unknown",
     "route": ".polaris/runs/ledger.jsonl",
@@ -2772,19 +2745,6 @@
     "confidence": 0.85,
     "classification": "indexed",
     "last_updated": "2026-05-28T06:23:01.677Z",
-    "updated_by": "polaris-docs-ingest",
-    "tags": [
-      "docs",
-      "ingested"
-    ]
-  },
-  "smartdocs/docs/doctrine/candidate/smartdocs-summary-architecture.md": {
-    "domain": "unknown",
-    "route": ".codex/skills/polaris-run/chain.md",
-    "taskchain": "polaris-core",
-    "confidence": 0.85,
-    "classification": "indexed",
-    "last_updated": "2026-05-28T06:23:01.681Z",
     "updated_by": "polaris-docs-ingest",
     "tags": [
       "docs",
