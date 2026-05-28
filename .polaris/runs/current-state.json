@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0",
+  "run_id": "polaris-run-pol-198-2026-05-28-001",
+  "cluster_id": "POL-198",
+  "branch": "polaris/POL-198",
+  "session_type": "implement",
+  "active_child": "",
+  "completed_children": [
+    "POL-198"
+  ],
+  "open_children": [],
+  "step_cursor": "checkpoint",
+  "context_budget": {
+    "children_completed": 1,
+    "max_children_per_session": 1
+  },
+  "status": "cluster-complete",
+  "next_open_child": null,
+  "dispatch_boundary": {
+    "dispatch_epoch": 1,
+    "continue_epoch": 1,
+    "last_dispatched_child": "POL-198"
+  },
+  "run_bootstrap_seal": {
+    "sealer": "polaris-loop-bootstrap",
+    "run_id": "polaris-run-pol-198-2026-05-28-001",
+    "cluster_id": "POL-198",
+    "open_children_sha": "2562cebc6dd5df4d81b06ad18e0462ce99a7d2736117d5a079681ee85316b173",
+    "sealed_at": "2026-05-28T20:34:05.609Z"
+  }
+}

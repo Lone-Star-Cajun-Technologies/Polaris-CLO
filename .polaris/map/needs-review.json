@@ -19,16 +19,6 @@
     "updated_by": "polaris-map-index",
     "tags": []
   },
-  ".claude/settings.local.json": {
-    "domain": "unknown",
-    "route": ".claude/settings.local.json",
-    "taskchain": "polaris-core",
-    "confidence": 0,
-    "classification": "needs-review",
-    "last_updated": "2026-05-28T05:46:12.628Z",
-    "updated_by": "polaris-map-index",
-    "tags": []
-  },
   ".claude/skills/polaris-loop.md": {
     "domain": "unknown",
     "route": ".claude/skills/polaris-loop.md",
@@ -987,8 +977,8 @@
     "taskchain": "polaris-core",
     "confidence": 0,
     "classification": "needs-review",
-    "last_updated": "2026-05-28T05:46:12.628Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-05-28T20:45:27.380Z",
+    "updated_by": "polaris-map-update",
     "tags": []
   },
   ".polaris/runs/pol-5-session-1/current-state.json": {
@@ -1417,8 +1407,8 @@
     "taskchain": "polaris-core",
     "confidence": 0,
     "classification": "needs-review",
-    "last_updated": "2026-05-28T05:46:12.628Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-05-28T20:45:27.380Z",
+    "updated_by": "polaris-map-update",
     "tags": []
   },
   ".taskchain_artifacts/polaris-run/run-report.md": {
@@ -2386,6 +2376,36 @@
     "confidence": 0,
     "classification": "needs-review",
     "last_updated": "2026-05-28T17:44:28.197Z",
+    "updated_by": "polaris-map-update",
+    "tags": []
+  },
+  ".polaris/runs/current-state.pre-pol-198.json": {
+    "domain": "unknown",
+    "route": ".polaris/runs/current-state.pre-pol-198.json",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-28T20:45:27.380Z",
+    "updated_by": "polaris-map-update",
+    "tags": []
+  },
+  ".taskchain_artifacts/polaris-run/current-state.pre-pol-198.json": {
+    "domain": "unknown",
+    "route": ".taskchain_artifacts/polaris-run/current-state.pre-pol-198.json",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-28T20:45:27.380Z",
+    "updated_by": "polaris-map-update",
+    "tags": []
+  },
+  ".taskchain_artifacts/polaris-run/runs/polaris-run-pol-198-2026-05-28-001/telemetry.jsonl": {
+    "domain": "unknown",
+    "route": ".taskchain_artifacts/polaris-run/runs/polaris-run-pol-198-2026-05-28-001/telemetry.jsonl",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-05-28T20:45:27.380Z",
     "updated_by": "polaris-map-update",
     "tags": []
   }

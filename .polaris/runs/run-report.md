@@ -1,7 +1,7 @@
-# Run Report: polaris-run-pol-187-2026-05-28-001
+# Run Report: polaris-run-pol-198-2026-05-28-001
 
 **Status:** cluster-complete
-**Branch:** philmeaux/pol-156-implement-thin-parent-orchestration-mode-and-sealed-parent
+**Branch:** polaris/POL-198
 **PR:** TBD — set at delivery step 9
 **Children completed:** 1 of 1
 **Validation:** passed
@@ -10,7 +10,7 @@
 
 | ID | Title | Commit | Status |
 |---|---|---|---|
-| POL-187 | — | — | Done |
+| POL-198 | — | — | Done |
 
 ## Artifacts produced
 
