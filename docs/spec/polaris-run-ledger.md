@@ -355,16 +355,16 @@ polaris runs resume <issue-or-run-id> [--branch <branch>] [--worktree <path>] [-
 Runs the five-step resume lookup algorithm and either restores current-state for a resumable run or bootstraps a new run.
 
 ```text
-polaris runs ledger tail [--lines <n>] [--event <event>] [--run-id <run-id>] [--json]
+polaris runs ledger tail [--n <n>] [--event <event>] [--run-id <run-id>] [--json]
 ```
 
 Reads recent ledger events without mutating state.
 
 ```text
-polaris runs reconcile [--issue <issue-id>] [--run-id <run-id>] [--write] [--json]
+polaris runs reconcile [--issue <issue-id>] [--run-id <run-id>] [--json]
 ```
 
-Compares current-state, ledger, Linear, and git. Without `--write`, it is read-only and prints the proposed reconciliation. With `--write`, it may append reconciliation events and refresh current-state after explicit operator approval.
+Compares current-state, ledger, Linear, and git. This is a read-only command that prints the proposed reconciliation.
 
 ---
 

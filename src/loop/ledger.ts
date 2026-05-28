@@ -96,7 +96,7 @@ export interface ChildCompletedEvent extends LedgerBaseEvent {
   event: "child-completed";
   issue_id: string;
   status: "running" | "paused" | "cluster-complete";
-  last_commit: string;
+  last_commit: string | null;
   validation: LedgerValidation;
 }
 
@@ -157,7 +157,7 @@ export type LedgerEvent =
   | PrCreatedEvent
   | RunCompleteEvent;
 
-const TERMINAL_OPEN_RUN_STATUSES = new Set<LedgerStatus>(["complete", "finalized"]);
+const TERMINAL_OPEN_RUN_STATUSES = new Set<LedgerStatus>(["complete", "finalized", "canceled"]);
 
 export class LedgerWriter {
   constructor(private readonly ledgerPath = DEFAULT_LEDGER_PATH) {}
@@ -177,7 +177,17 @@ export class LedgerWriter {
       return [];
     }
 
-    return content.split("\n").map((line) => JSON.parse(line) as LedgerEvent);
+    const lines = content.split("\n");
+    const events: LedgerEvent[] = [];
+    for (let i = 0; i < lines.length; i++) {
+      try {
+        events.push(JSON.parse(lines[i]) as LedgerEvent);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(`Warning: skipping malformed ledger line ${i + 1}: ${msg}\nContent: ${lines[i]}`);
+      }
+    }
+    return events;
   }
 
   queryByIssue(issueId: string): LedgerEvent[] {

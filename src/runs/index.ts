@@ -37,10 +37,19 @@ export function readLedger(repoRoot: string): RunsReadResult | null {
 
   const raw = readFileSync(ledgerPath, "utf-8");
   const rawLines = raw.split(/\r?\n/).filter((line) => line.length > 0);
+  const events: LedgerEvent[] = [];
+  for (let i = 0; i < rawLines.length; i++) {
+    try {
+      events.push(JSON.parse(rawLines[i]) as LedgerEvent);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`Warning: skipping malformed ledger line ${i + 1} in ${ledgerPath}: ${msg}\nContent: ${rawLines[i]}`);
+    }
+  }
   return {
     ledgerPath,
     rawLines,
-    events: rawLines.map((line) => JSON.parse(line) as LedgerEvent),
+    events,
   };
 }
 

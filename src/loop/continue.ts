@@ -76,7 +76,7 @@ function appendContinueLedgerEvents(repoRoot: string, state: LoopState, complete
     run_type: normalizeRunType(state.session_type),
     cluster_id: state.cluster_id,
     branch: ledgerBranch(state),
-    completed_children: state.completed_children,
+    completed_children: Array.from(new Set(state.completed_children)),
     open_children: state.open_children,
     next_child: state.next_open_child,
     last_commit: ledgerLastCommit(state),
@@ -89,7 +89,7 @@ function appendContinueLedgerEvents(repoRoot: string, state: LoopState, complete
     event: "child-completed",
     issue_id: completedChild,
     status: state.status === "cluster-complete" ? "cluster-complete" : "running",
-    last_commit: ledgerLastCommit(state) ?? "unknown",
+    last_commit: ledgerLastCommit(state),
     validation: { status: "complete" },
   } satisfies ChildCompletedEvent);
 

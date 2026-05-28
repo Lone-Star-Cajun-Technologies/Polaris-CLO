@@ -72,7 +72,14 @@ export function runRunsReconcile(events: LedgerEvent[], options: RunsReconcileOp
     return;
   }
 
-  const state = JSON.parse(readFileSync(options.stateFile, "utf-8")) as CurrentState;
+  let state: CurrentState;
+  try {
+    state = JSON.parse(readFileSync(options.stateFile, "utf-8")) as CurrentState;
+  } catch (err) {
+    process.stdout.write("read-only: current-state.json has no run_id\n");
+    return;
+  }
+
   if (!state.run_id) {
     process.stdout.write("read-only: current-state.json has no run_id\n");
     return;

@@ -16,7 +16,7 @@
     "telemetry": ".taskchain_artifacts/polaris-run/runs/polaris-run-global-run-ledger-2026-05-28-001/telemetry.jsonl"
   },
   "context_budget": {
-    "children_completed": 2,
+    "children_completed": 1,
     "files_touched_total": 0,
     "stop_threshold_remaining": -1
   },
