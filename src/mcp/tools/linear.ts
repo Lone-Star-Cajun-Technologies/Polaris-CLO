@@ -83,7 +83,7 @@ export const LINEAR_TOOLS: Tool[] = [
         relatedTo: { type: "array", items: { type: "string" }, description: "Related issue IDs" },
         dueDate: { type: "string", format: "date", description: "Due date (ISO format)" },
       },
-      required: [],
+      oneOf: [{ required: ["id"] }, { required: ["title", "team"] }],
     },
   },
 ];

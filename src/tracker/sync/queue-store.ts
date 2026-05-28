@@ -13,7 +13,32 @@ export async function loadMutationQueue(filePath: string = path.join(process.cwd
   try {
     await mkdir(path.dirname(filePath), { recursive: true });
     const fileContent = await readFile(filePath, 'utf-8');
-    return JSON.parse(fileContent);
+    const parsed = JSON.parse(fileContent);
+
+    // Validate that the parsed result is the expected queue shape
+    if (!Array.isArray(parsed)) {
+      throw new Error('Mutation queue file must contain an array');
+    }
+
+    for (const item of parsed) {
+      if (
+        typeof item !== 'object' ||
+        item === null ||
+        typeof item.id !== 'string' ||
+        typeof item.operationId !== 'string' ||
+        typeof item.type !== 'string' ||
+        typeof item.entityType !== 'string' ||
+        typeof item.entityId !== 'string' ||
+        typeof item.payload !== 'object' ||
+        typeof item.status !== 'string' ||
+        typeof item.timestamp !== 'string' ||
+        typeof item.retries !== 'number'
+      ) {
+        throw new Error('Invalid mutation record format in queue file');
+      }
+    }
+
+    return parsed;
   } catch (error: any) {
     if (error.code === 'ENOENT') {
       return [];
