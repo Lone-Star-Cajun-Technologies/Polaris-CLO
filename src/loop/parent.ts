@@ -609,12 +609,12 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
         dispatchResult.summary ??
         `Worker reported blocked for ${nextChild}`;
       if (!dryRun) {
-        logStatus(notificationFormat, `BLOCKED ${nextChild}: ${blockerMsg}`);
+        logStatus(notificationFormat, `BLOCKED ${nextChild}: ${blockerMsg.replace(/\n/g, ' ')}`);
         appendTelemetry(telemetryFile, {
           event: "child-blocked",
           run_id: state.run_id,
           child_id: nextChild,
-          blocker: blockerMsg,
+          blocker: blockerMsg.replace(/\n/g, ' '),
           timestamp: new Date().toISOString(),
         });
         // Write checkpoint with blocker information
@@ -791,7 +791,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
       const lastCommit =
         (workerSummary as Record<string, unknown>)?.['commit'] as string | undefined ??
         (workerSummary as Record<string, unknown>)?.['commit_hash'] as string | undefined;
-      logStatus(notificationFormat, `COMPLETE ${nextChild} (commit: ${lastCommit})`);
+      logStatus(notificationFormat, `COMPLETE ${nextChild} (commit: ${String(lastCommit ?? "")})`);
       appendTelemetry(telemetryFile, {
         event: "child-complete",
         run_id: state.run_id,

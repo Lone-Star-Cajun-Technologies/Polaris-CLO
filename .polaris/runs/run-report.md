@@ -2,7 +2,7 @@
 
 **Status:** cluster-complete
 **Branch:** philmeaux/pol-156-implement-thin-parent-orchestration-mode-and-sealed-parent
-**PR:** TBD — set at delivery step 9
+**PR:** https://github.com/ItIsYeBananaduck/Polaris/pull/48
 **Children completed:** 4 of 4
 **Validation:** passed
 
