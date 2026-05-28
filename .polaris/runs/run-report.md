@@ -1,7 +1,7 @@
-# Run Report: polaris-run-smart-docs-summary-arch-2026-05-27-003
+# Run Report: polaris-run-global-run-ledger-2026-05-28-001
 
 **Status:** cluster-complete
-**Branch:** claude/clever-meitner-u6x5x
+**Branch:** philmeaux/pol-151-implement-add-global-polaris-run-ledger-for-cross-agent
 **PR:** TBD — set at delivery step 9
 **Children completed:** 4 of 4
 **Validation:** passed
@@ -10,10 +10,10 @@
 
 | ID | Title | Commit | Status |
 |---|---|---|---|
-| POL-137 | — | — | Done |
-| POL-138 | — | — | Done |
-| POL-139 | — | — | Done |
-| POL-140 | — | — | Done |
+| POL-152 | — | — | Done |
+| POL-153 | — | — | Done |
+| POL-154 | — | — | Done |
+| POL-155 | — | — | Done |
 
 ## Artifacts produced
 

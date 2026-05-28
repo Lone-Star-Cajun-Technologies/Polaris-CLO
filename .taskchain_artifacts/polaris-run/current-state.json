@@ -1,69 +1,36 @@
 {
   "schema_version": "1.0",
-  "run_id": "polaris-run-smart-docs-summary-arch-2026-05-27-003",
-  "related_run_id": "polaris-run-smart-docs-summary-arch-2026-05-27-002",
-  "cluster_id": "POL-136",
-  "skill": "polaris-run",
-  "artifact_dir": ".taskchain_artifacts/polaris-run",
-  "branch": "claude/clever-meitner-u6x5x",
-  "current_step_id": "03-select-child",
-  "step_cursor": "checkpoint",
-  "status": "cluster-complete",
-  "session_type": "implementation",
+  "run_id": "polaris-run-global-run-ledger-2026-05-28-001",
+  "cluster_id": "POL-151",
+  "branch": "philmeaux/pol-151-implement-add-global-polaris-run-ledger-for-cross-agent",
+  "session_type": "implement",
   "active_child": "",
-  "last_commit": "a42e70ef6f5820578e49f9b65748548d3c4fa5e0",
-  "pr_url": "",
-  "next_open_child": null,
   "completed_children": [
-    "POL-137",
-    "POL-138",
-    "POL-139",
-    "POL-140"
+    "POL-152",
+    "POL-153",
+    "POL-154",
+    "POL-155"
   ],
   "open_children": [],
-  "open_children_meta": {
-    "POL-137": {
-      "title": "IMPLEMENT: Write Smart Docs summary architecture spec",
-      "state": "Done",
-      "status_type": "completed",
-      "blocked_by": []
-    },
-    "POL-138": {
-      "title": "IMPLEMENT: Clarify and enforce POLARIS.md role boundaries in seed/validate tooling",
-      "state": "Done",
-      "status_type": "completed",
-      "blocked_by": [
-        "POL-137"
-      ]
-    },
-    "POL-139": {
-      "title": "IMPLEMENT: Add SUMMARY.md generation, validation, and ignore tooling",
-      "state": "Done",
-      "status_type": "completed",
-      "blocked_by": [
-        "POL-138"
-      ]
-    },
-    "POL-140": {
-      "title": "IMPLEMENT: Add SUMMARY.md ingest governance and canon-check safeguards",
-      "state": "Done",
-      "status_type": "completed",
-      "blocked_by": [
-        "POL-139"
-      ]
-    }
-  },
+  "step_cursor": "checkpoint",
   "context_budget": {
     "children_completed": 4,
-    "files_touched_total": 6,
-    "last_child_files_touched": 6
+    "max_children_per_session": 1
   },
-  "validation_status": "pending",
-  "updated_at": "2026-05-27T21:00:00Z",
-  "blocker": null,
+  "status": "cluster-complete",
+  "next_open_child": null,
+  "artifact_dir": ".taskchain_artifacts/polaris-run",
   "dispatch_boundary": {
-    "dispatch_epoch": 0,
-    "continue_epoch": 0,
-    "last_dispatched_child": null
-  }
+    "dispatch_epoch": 4,
+    "continue_epoch": 4,
+    "last_dispatched_child": "POL-155"
+  },
+  "run_bootstrap_seal": {
+    "sealer": "polaris-loop-bootstrap",
+    "run_id": "polaris-run-global-run-ledger-2026-05-28-001",
+    "cluster_id": "POL-151",
+    "open_children_sha": "f0353173cede34d7ac4420b2421f328586949d8141057abc04a558338a01f39a",
+    "sealed_at": "2026-05-28T03:15:58.402Z"
+  },
+  "last_commit": "4604d638311fbd3c86b878aa32378d46295321a0"
 }
