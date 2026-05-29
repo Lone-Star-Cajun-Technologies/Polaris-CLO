@@ -14,7 +14,6 @@ import {
 function makeTempDir(): string {
   const root = mkdtempSync(join(tmpdir(), "polaris-doctrine-"));
   mkdirSync(join(root, "smartdocs", "docs", "raw"), { recursive: true });
-  mkdirSync(join(root, "smartdocs", "docs", "doctrine", "raw"), { recursive: true });
   mkdirSync(join(root, "smartdocs", "docs", "doctrine", "candidate"), { recursive: true });
   mkdirSync(join(root, "smartdocs", "docs", "doctrine", "active"), { recursive: true });
   mkdirSync(join(root, "smartdocs", "docs", "doctrine", "deprecated"), { recursive: true });
@@ -43,15 +42,6 @@ describe("doctrineDraft", () => {
     expect(content).toContain("# Some Doc");
   });
 
-  it("moves a file from smartdocs/docs/doctrine/raw/ to smartdocs/docs/doctrine/candidate/", () => {
-    const source = join(repoRoot, "smartdocs", "docs", "doctrine", "raw", "draft-doc.md");
-    writeFileSync(source, "# Draft");
-
-    const result = doctrineDraft(source, { repoRoot, runId: "test-run-001" });
-
-    expect(existsSync(result.destination)).toBe(true);
-    expect(existsSync(source)).toBe(false);
-  });
 
   it("emits a doctrine-draft event to lifecycle.jsonl", () => {
     const source = join(repoRoot, "smartdocs", "docs", "raw", "event-doc.md");
@@ -73,12 +63,12 @@ describe("doctrineDraft", () => {
     ).toThrow("Source file not found");
   });
 
-  it("throws if source is not in smartdocs/docs/raw/ or smartdocs/docs/doctrine/raw/", () => {
+  it("throws if source is not in smartdocs/docs/raw/", () => {
     const source = join(repoRoot, "smartdocs", "docs", "doctrine", "active", "wrong.md");
     writeFileSync(source, "# Wrong location");
 
     expect(() => doctrineDraft(source, { repoRoot })).toThrow(
-      "doctrineDraft source must be in smartdocs/docs/raw/ or smartdocs/docs/doctrine/raw/",
+      "doctrineDraft source must be in smartdocs/docs/raw/",
     );
   });
 

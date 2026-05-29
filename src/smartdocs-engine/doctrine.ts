@@ -114,7 +114,7 @@ function resolvePath(path: string, repoRoot: string): string {
   return join(resolve(repoRoot), path);
 }
 
-/** Move a doc from smartdocs/docs/raw/ or smartdocs/docs/doctrine/raw/ to docs/doctrine/candidate/ */
+/** Move a doc from smartdocs/docs/raw/ to smartdocs/docs/doctrine/candidate/ */
 export function doctrineDraft(path: string, options: DoctrineOptions): DoctrineResult {
   const repoRoot = resolve(options.repoRoot);
   const runId = options.runId ?? generateRunId();
@@ -125,15 +125,12 @@ export function doctrineDraft(path: string, options: DoctrineOptions): DoctrineR
   }
 
   const rawDir = resolve(repoRoot, "smartdocs", "docs", "raw");
-  const doctrineRawDir = resolve(repoRoot, "smartdocs", "docs", "doctrine", "raw");
   const relToRaw = relative(rawDir, source);
-  const relToDoctrineRaw = relative(doctrineRawDir, source);
   const isInRaw = !relToRaw.startsWith("..") && !relToRaw.startsWith("/");
-  const isInDoctrineRaw = !relToDoctrineRaw.startsWith("..") && !relToDoctrineRaw.startsWith("/");
 
-  if (!isInRaw && !isInDoctrineRaw) {
+  if (!isInRaw) {
     throw new Error(
-      `doctrineDraft source must be in smartdocs/docs/raw/ or smartdocs/docs/doctrine/raw/ — got: ${source}`,
+      `doctrineDraft source must be in smartdocs/docs/raw/ — got: ${source}`,
     );
   }
 

@@ -83,10 +83,10 @@ describe("ingestDocs", () => {
     const [result] = ingestDocs(["smartdocs/docs/raw/ingest-plan.md"], { repoRoot });
 
     expect(result.classification).toBe("spec-raw");
-    expect(result.destinationPath).toBe(`${CANONICAL_TARGET}/specs/raw/ingest-plan.md`);
+    expect(result.destinationPath).toBe(`${CANONICAL_TARGET}/raw/ingest-plan.md`);
     expect(result.linkedMapArea).toBe("src/smartdocs-engine");
-    expect(existsSync(join(repoRoot, CANONICAL_TARGET, "specs", "raw", "ingest-plan.md"))).toBe(true);
-    expect(existsSync(join(repoRoot, CANONICAL_TARGET, "specs", "raw", "ingest-plan.provenance.json"))).toBe(true);
+    expect(existsSync(join(repoRoot, CANONICAL_TARGET, "raw", "ingest-plan.md"))).toBe(true);
+    expect(existsSync(join(repoRoot, CANONICAL_TARGET, "raw", "ingest-plan.provenance.json"))).toBe(true);
 
     // Telemetry written to polaris-docs-ingest path using the generated run_id
     const runsDir = join(repoRoot, ".taskchain_artifacts", "polaris-docs-ingest", "runs");
@@ -148,7 +148,7 @@ describe("ingestDocs", () => {
 
     expect(result.dryRun).toBe(true);
     expect(result.classification).toBe("spec-raw");
-    expect(result.destinationPath).toBe(`${CANONICAL_TARGET}/specs/raw/spec-dry.md`);
+    expect(result.destinationPath).toBe(`${CANONICAL_TARGET}/raw/spec-dry.md`);
     expect(result.provenancePath).toBeNull();
 
     // Source file still exists (not moved)

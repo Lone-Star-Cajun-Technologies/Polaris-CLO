@@ -78,7 +78,7 @@ const DEFAULT_BATCH_LIMIT = 4;
 const TARGET_DIRS: Record<DocsClassification, string> = {
   "runtime-summary": `${CANONICAL_TARGET}/runtime/summaries`,
   "run-report": `${CANONICAL_TARGET}/runtime/run-reports`,
-  "spec-raw": `${CANONICAL_TARGET}/specs/raw`,
+  "spec-raw": `${CANONICAL_TARGET}/raw`,
   "spec-active": `${CANONICAL_TARGET}/specs/active`,
   "audit-finding": `${CANONICAL_TARGET}/audits/findings`,
   "doctrine-candidate": `${CANONICAL_TARGET}/doctrine/candidate`,
@@ -93,9 +93,7 @@ export const SMART_DOCS_SCAFFOLD_DIRS = [
   `${CANONICAL_TARGET}/raw`,
   `${CANONICAL_TARGET}/specs/implemented`,
   `${CANONICAL_TARGET}/specs/superseded`,
-  `${CANONICAL_TARGET}/audits/raw`,
   `${CANONICAL_TARGET}/audits/resolved`,
-  `${CANONICAL_TARGET}/doctrine/raw`,
   `${CANONICAL_TARGET}/doctrine/active`,
   `${CANONICAL_TARGET}/doctrine/deprecated`,
 ];
@@ -461,7 +459,10 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
     const { label: linkedMapArea, entry: linkedEntry } = deriveLinkedArea(content, routes);
     const targetDir = resolve(repoRoot, TARGET_DIRS[classification]);
     mkdirSync(targetDir, { recursive: true });
-    const destination = uniqueDestination(join(targetDir, basename(absSource)));
+    const rawDestination = join(targetDir, basename(absSource));
+    const destination = resolve(rawDestination) === resolve(absSource)
+      ? absSource
+      : uniqueDestination(rawDestination);
     const relDestination = relative(repoRoot, destination).replace(/\\/g, "/");
     const provenancePath = /\.md$/i.test(destination)
       ? destination.replace(/\.md$/i, ".provenance.json")
@@ -484,7 +485,9 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
       if (output !== content) {
         writeFileSync(absSource, output, "utf-8");
       }
-      renameSync(absSource, destination);
+      if (resolve(absSource) !== resolve(destination)) {
+        renameSync(absSource, destination);
+      }
       writeFileSync(
         provenancePath,
         JSON.stringify(

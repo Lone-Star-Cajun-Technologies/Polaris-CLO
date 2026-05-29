@@ -67,7 +67,7 @@ describe("docs init command", () => {
     const output = await runDocsCommand(repoRoot, ["init", "--dry-run"]);
 
     expect(output.stdout).toContain("[dry-run] would create");
-    expect(output.stdout).toContain(`${CANONICAL_TARGET}/specs/raw`);
+    expect(output.stdout).toContain(`${CANONICAL_TARGET}/raw`);
     expect(existsSync(join(repoRoot, CANONICAL_TARGET))).toBe(false);
   });
 
@@ -81,7 +81,7 @@ describe("docs init command", () => {
     expect(first.stdout).toContain(`${CANONICAL_TARGET}/doctrine/active`);
     expect(second.stdout).toContain("already exists");
     expect(existsSync(join(repoRoot, CANONICAL_TARGET, "runtime", "summaries"))).toBe(true);
-    expect(existsSync(join(repoRoot, CANONICAL_TARGET, "specs", "raw"))).toBe(true);
+    expect(existsSync(join(repoRoot, CANONICAL_TARGET, "raw"))).toBe(true);
     expect(existsSync(join(repoRoot, CANONICAL_TARGET, "doctrine", "active"))).toBe(true);
   });
 
@@ -95,7 +95,7 @@ describe("docs init command", () => {
     );
     const output = await runDocsCommand(repoRoot, ["ingest", "--file", "smartdocs/docs/raw/smart-docs.md"]);
 
-    expect(output.stdout).toContain(`${CANONICAL_TARGET}/specs/raw/smart-docs.md`);
-    expect(existsSync(join(repoRoot, CANONICAL_TARGET, "specs", "raw", "smart-docs.md"))).toBe(true);
+    expect(output.stdout).toContain(`${CANONICAL_TARGET}/raw/smart-docs.md`);
+    expect(existsSync(join(repoRoot, CANONICAL_TARGET, "raw", "smart-docs.md"))).toBe(true);
   });
 });
