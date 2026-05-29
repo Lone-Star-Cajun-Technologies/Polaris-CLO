@@ -1,0 +1,73 @@
+{
+  "schema_version": "2.0",
+  "worker_role": "impl",
+  "run_id": "polaris-run-pol-201-2026-05-29-001",
+  "cluster_id": "POL-201",
+  "active_child": "POL-203",
+  "state_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json",
+  "telemetry_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-201-2026-05-29-001/telemetry.jsonl",
+  "instructions": {
+    "primary_goal": "Add cluster-state schema and atomic state store for POL-203.\n\nImplement the cluster-state.json schema with runtime-state fields (run_id, cluster_id, branch, children_completed, children_total, status, sealed, last_dispatch, last_result), add atomic write operations (writeStateAtomic), and implement the completed_children_meta structure for tracking finished child dispatch records with migration path from legacy current-state.json.\n\nBranch: philmeaux/pol-201-implement-runtime-state-consolidation-and-cluster-state",
+    "steps": [
+      "Verify: read /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json and confirm active_child === \"POL-203\".",
+      "EMIT HEARTBEAT: Append worker-start event to telemetry with step_cursor: \"start\".",
+      "Create src/loop/cluster-state.ts with ClusterState interface and schema validation.",
+      "EMIT HEARTBEAT: step_cursor: \"implement\", files_changed: 1, current_file: \"src/loop/cluster-state.ts\".",
+      "Add atomic write utilities: writeStateAtomic with temp file + rename pattern.",
+      "Update checkpoint.ts: Add completed_children_meta type and integrate with LoopState.",
+      "Add migration helper: migrateLegacyState() to convert current-state.json to cluster-state format.",
+      "Update dispatch.ts: When child completes, migrate dispatch_record from open_children_meta to completed_children_meta with status 'completed' and completed_at timestamp.",
+      "Add tests in src/loop/cluster-state.test.ts for schema validation and atomic writes.",
+      "Run validation commands: npm run build, npm test -- src/loop/cluster-state.test.ts.",
+      "EMIT HEARTBEAT: step_cursor: \"validate\", validation: \"passed\".",
+      "Create exactly ONE git commit: [POL-203] Add cluster-state schema and atomic state store.",
+      "Update /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json: move \"POL-203\" from open_children to completed_children, add completed_children_meta entry.",
+      "Append telemetry event: {\"event\":\"child-completed\",\"child_id\":\"POL-203\",...}.",
+      "EMIT HEARTBEAT: step_cursor: \"complete\".",
+      "Write compact return JSON to stdout (fields: child_id, status, commit, validation, next_recommended_action).",
+      "TERMINATE SESSION IMMEDIATELY. Do not select or execute the next child."
+    ],
+    "allowed_scope": [
+      "src/loop/cluster-state.ts",
+      "src/loop/checkpoint.ts",
+      "src/loop/dispatch.ts",
+      "src/loop/cluster-state.test.ts",
+      ".taskchain_artifacts/polaris-run/current-state.json",
+      ".polaris/clusters/POL-201/cluster-state.json"
+    ],
+    "validation_commands": [
+      "npm run build",
+      "npm test -- src/loop/cluster-state.test.ts"
+    ],
+    "acceptance_criteria": [
+      "ClusterState interface defined with all required runtime-state fields",
+      "writeStateAtomic implements atomic temp file + rename pattern",
+      "completed_children_meta structure stores finished child dispatch records",
+      "Dispatch migration logic moves records from open_children_meta to completed_children_meta",
+      "All 311 tests pass",
+      "Build succeeds with no TypeScript errors"
+    ]
+  },
+  "lifecycle": {
+    "terminate_after_completion": true,
+    "max_concurrent": 1,
+    "cleanup_on_exit": "commit-and-exit"
+  },
+  "return_contract": [
+    "child_id",
+    "status",
+    "commit",
+    "validation",
+    "next_recommended_action"
+  ],
+  "prompt_mode": "compact",
+  "prompt_metrics": {
+    "mode": "compact",
+    "char_count": 1863,
+    "estimated_tokens": 466
+  },
+  "context": {
+    "branch": "philmeaux/pol-201-implement-runtime-state-consolidation-and-cluster-state",
+    "worker_role": "impl"
+  }
+}
