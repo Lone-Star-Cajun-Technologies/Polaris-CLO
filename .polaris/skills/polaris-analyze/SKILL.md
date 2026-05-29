@@ -1,6 +1,8 @@
 ---
 name: polaris-analyze
 description: Audit one Polaris issue against the actual repo using a configured repo-analysis provider (if available) and targeted inspection, then produce an ordered execution plan and cluster artifacts. Analysis and planning only — no code changes, no implementation execution.
+role: analyst
+role_file: .polaris/roles/analyst.md
 ---
 
 # polaris-analyze

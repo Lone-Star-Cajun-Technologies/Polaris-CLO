@@ -29,6 +29,91 @@ export type WorkerRole =
   | 'analysis'
   | 'librarian';
 
+// ── Role system ───────────────────────────────────────────────────────────────
+
+export type PolarisRoleName = 'worker' | 'foreman' | 'analyst' | 'librarian';
+
+export type RoleAuthority = 'implementation' | 'coordination-only' | 'analysis' | 'documentation';
+
+export interface WorkerRoleContext {
+  role: PolarisRoleName;
+  role_authority: RoleAuthority;
+  may_implement: boolean;
+  may_assign_workers: boolean;
+  prohibited_actions: string[];
+}
+
+const WORKER_ROLE_CONTEXT: WorkerRoleContext = {
+  role: 'worker',
+  role_authority: 'implementation',
+  may_implement: true,
+  may_assign_workers: false,
+  prohibited_actions: [
+    'modify-cluster-plan',
+    'dispatch-children',
+    'polaris-loop-dispatch',
+    'polaris-loop-continue',
+  ],
+};
+
+const FOREMAN_ROLE_CONTEXT: WorkerRoleContext = {
+  role: 'foreman',
+  role_authority: 'coordination-only',
+  may_implement: false,
+  may_assign_workers: true,
+  prohibited_actions: [
+    'inline-implementation',
+    'scope-expansion',
+    'skip-checkpoint',
+  ],
+};
+
+const ANALYSIS_ROLE_CONTEXT: WorkerRoleContext = {
+  role: 'analyst',
+  role_authority: 'analysis',
+  may_implement: false,
+  may_assign_workers: false,
+  prohibited_actions: [
+    'modify-cluster-plan',
+    'dispatch-children',
+    'polaris-loop-dispatch',
+    'polaris-loop-continue',
+    'inline-implementation',
+  ],
+};
+
+const LIBRARIAN_ROLE_CONTEXT: WorkerRoleContext = {
+  role: 'librarian',
+  role_authority: 'documentation',
+  may_implement: false,
+  may_assign_workers: false,
+  prohibited_actions: [
+    'modify-cluster-plan',
+    'dispatch-children',
+    'polaris-loop-dispatch',
+    'polaris-loop-continue',
+    'inline-implementation',
+  ],
+};
+
+export function roleContextForWorkerRole(workerRole: WorkerRole): WorkerRoleContext {
+  switch (workerRole) {
+    case 'impl':
+    case 'validation':
+    case 'repair':
+      return WORKER_ROLE_CONTEXT;
+    case 'analysis':
+      return ANALYSIS_ROLE_CONTEXT;
+    case 'librarian':
+      return LIBRARIAN_ROLE_CONTEXT;
+    case 'startup':
+    case 'finalize':
+    case 'preflight':
+    default:
+      return FOREMAN_ROLE_CONTEXT;
+  }
+}
+
 // ── Compiled instructions ─────────────────────────────────────────────────────
 
 export interface IssueContext {
@@ -132,12 +217,15 @@ export interface WorkerPacket extends BootstrapPacket {
   prompt_mode: WorkerPromptMode;
   /** Lightweight prompt size metrics recorded at compile time. */
   prompt_metrics: WorkerPromptMetrics;
+  /** Role context injected at compile time — identifies authority boundaries. */
+  role_context: WorkerRoleContext;
 }
 
 /** Type guard: returns true when packet is a compiled WorkerPacket. */
 export function isWorkerPacket(packet: BootstrapPacket): packet is WorkerPacket {
   const p = packet as unknown as Record<string, unknown>;
   // Accept both '2.0' (legacy) and '2.1' (dispatch contract) schema versions
+  // role_context is not required for backward compat with packets that predate this field
   const isV2 =
     (packet.schema_version === '2.0' || packet.schema_version === '2.1') &&
     typeof p['worker_role'] === 'string' &&
@@ -263,6 +351,7 @@ export function compileStartupPacket(input: CompileStartupPacketInput): WorkerPa
     return_contract: STARTUP_RETURN_CONTRACT,
     prompt_mode: 'full',
     prompt_metrics: { mode: 'full', char_count: 0, estimated_tokens: 0 },
+    role_context: roleContextForWorkerRole('startup'),
     result_file_contract: input.resultFile ? { result_file: input.resultFile } : undefined,
     context: {
       branch: input.branch,
@@ -353,6 +442,7 @@ export function compileImplPacket(input: CompileImplPacketInput): WorkerPacket {
     return_contract: IMPL_RETURN_CONTRACT,
     prompt_mode: promptMode,
     prompt_metrics: promptResult.metrics,
+    role_context: roleContextForWorkerRole('impl'),
     result_file_contract: input.resultFile ? { result_file: input.resultFile } : undefined,
     context: {
       branch: input.branch,
@@ -414,6 +504,7 @@ export function compileFinalizePacket(input: CompileFinalizePacketInput): Worker
     return_contract: FINALIZE_RETURN_CONTRACT,
     prompt_mode: 'full',
     prompt_metrics: { mode: 'full', char_count: 0, estimated_tokens: 0 },
+    role_context: roleContextForWorkerRole('finalize'),
     result_file_contract: input.resultFile ? { result_file: input.resultFile } : undefined,
     context: {
       branch: input.branch,
@@ -469,6 +560,7 @@ export function compilePreflightPacket(input: CompilePreflightPacketInput): Work
     return_contract: PREFLIGHT_RETURN_CONTRACT,
     prompt_mode: 'full',
     prompt_metrics: { mode: 'full', char_count: 0, estimated_tokens: 0 },
+    role_context: roleContextForWorkerRole('preflight'),
     result_file_contract: input.resultFile ? { result_file: input.resultFile } : undefined,
     context: {
       branch: input.branch,

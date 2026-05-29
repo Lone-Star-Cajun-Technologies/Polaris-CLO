@@ -493,6 +493,9 @@ export function runLoopStatus(options: StatusOptions): void {
   const workerHeartbeat = findWorkerHeartbeat(telemetryFile, state.active_child || null);
   const workerBlocked = findWorkerBlocked(telemetryFile, state.active_child || null);
 
+  // ── Role context from active dispatch record ───────────────────────────────
+  const activeDispatch = state.open_children_meta?.[state.active_child]?.dispatch_record;
+
   if (options.json) {
     console.log(
       JSON.stringify(
@@ -513,6 +516,12 @@ export function runLoopStatus(options: StatusOptions): void {
             ? { path: packetPathDisplay, fresh: packetFresh }
             : null,
           state_sha: stateSha ? stateSha.slice(0, 12) : null,
+          role_context: activeDispatch?.role ? {
+            role: activeDispatch.role,
+            role_authority: activeDispatch.role_authority ?? null,
+            may_implement: activeDispatch.may_implement ?? null,
+            session_type: activeDispatch.session_type ?? null,
+          } : null,
           dispatch: dispatchEvidence
             ? {
                 child_id: dispatchEvidence.child_id,
@@ -564,6 +573,20 @@ export function runLoopStatus(options: StatusOptions): void {
   const completed = state.context_budget.children_completed;
   const remaining = Math.max(0, maxChildren - completed);
 
+  // ── Role block ────────────────────────────────────────────────────────────
+  const roleLines: string[] = [];
+  if (activeDispatch?.role) {
+    const roleName = activeDispatch.role.charAt(0).toUpperCase() + activeDispatch.role.slice(1);
+    const authorityLabel = activeDispatch.role_authority ?? "(unknown)";
+    const mayImpl = activeDispatch.may_implement === true ? "Yes" : activeDispatch.may_implement === false ? "No" : "(unknown)";
+    const mayAssign = activeDispatch.role === "foreman" ? "Yes" : activeDispatch.role === "worker" ? "No" : "(unknown)";
+    roleLines.push("", "Role Context:");
+    roleLines.push(`  Role:               ${roleName}`);
+    roleLines.push(`  Authority:          ${authorityLabel}`);
+    roleLines.push(`  May Implement:      ${mayImpl}`);
+    roleLines.push(`  May Assign Workers: ${mayAssign}`);
+  }
+
   const lines: string[] = [
     "Polaris Loop Status",
     "───────────────────",
@@ -579,6 +602,8 @@ export function runLoopStatus(options: StatusOptions): void {
     `Open:            ${openChildren.length > 0 ? openChildren.join(", ") + ` (${openChildren.length})` : "none"}`,
     `Blocked:         ${blockedChildren.length > 0 ? blockedChildren.join(", ") : "none"}`,
   ];
+
+  lines.push(...roleLines);
 
   if (packetPathDisplay) {
     const freshLabel = packetFresh

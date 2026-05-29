@@ -1,6 +1,10 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 
+export type RoleOwner = "worker" | "foreman" | "analyst" | "librarian" | "any";
+
+export const VALID_ROLE_OWNERS: readonly RoleOwner[] = ["worker", "foreman", "analyst", "librarian", "any"];
+
 export interface FileRouteEntry {
   domain: string;
   route: string;
@@ -11,6 +15,8 @@ export interface FileRouteEntry {
   updated_by: string;
   tags: string[];
   instructionFile?: string;
+  /** Which Polaris role owns cognition for this domain */
+  role_owner?: RoleOwner;
 }
 
 export interface InstructionCoverage {
