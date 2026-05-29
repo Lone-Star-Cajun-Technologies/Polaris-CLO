@@ -1,10 +1,110 @@
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { readState, validateState } from "./checkpoint.js";
+import { readState, validateState, type ChildDispatchRecord } from "./checkpoint.js";
 import { loadConfig } from "../config/loader.js";
 import type { BootstrapPacket } from "./bootstrap-packet.js";
+
+/**
+ * Dispatch evidence for status reporting.
+ */
+export interface DispatchEvidence {
+  /** Child ID */
+  child_id: string;
+  /** Dispatch ID */
+  dispatch_id: string;
+  /** Path to the packet file */
+  packet_path: string;
+  /** Expected result path */
+  expected_result_path: string;
+  /** Whether result file exists */
+  result_present: boolean;
+  /** Dispatch status */
+  dispatch_status: "dispatched" | "completed" | "failed";
+  /** Provider if known */
+  provider?: string;
+  /** Dispatch timestamp */
+  dispatched_at: string;
+}
+
+/**
+ * Find dispatch evidence for the active child.
+ * Searches cluster-scoped layout and open_children_meta.
+ */
+function findDispatchEvidence(
+  repoRoot: string,
+  clusterId: string,
+  activeChild: string | null,
+  openChildrenMeta?: Record<string, { type?: string; title?: string; labels?: string[]; result_file?: string; dispatch_record?: ChildDispatchRecord }>,
+): DispatchEvidence | null {
+  if (!activeChild) return null;
+
+  // First check open_children_meta for dispatch_record
+  const childMeta = openChildrenMeta?.[activeChild];
+  const dispatchRecord = childMeta?.dispatch_record;
+
+  if (dispatchRecord) {
+    // Check if result file exists
+    const resultPresent = existsSync(dispatchRecord.expected_result_path);
+
+    return {
+      child_id: dispatchRecord.child_id,
+      dispatch_id: dispatchRecord.dispatch_id,
+      packet_path: dispatchRecord.packet_path,
+      expected_result_path: dispatchRecord.expected_result_path,
+      result_present: resultPresent,
+      dispatch_status: dispatchRecord.status,
+      provider: dispatchRecord.provider,
+      dispatched_at: dispatchRecord.dispatched_at,
+    };
+  }
+
+  // Fallback: scan cluster packets directory for matching files
+  const packetDir = join(repoRoot, ".polaris", "clusters", clusterId, "packets");
+  if (!existsSync(packetDir)) return null;
+
+  // Look for files matching <child-id>-*.json pattern
+  const files = readdirSync(packetDir).filter((f) =>
+    f.startsWith(`${activeChild}-`) && f.endsWith(".json")
+  );
+
+  if (files.length === 0) return null;
+
+  // Use the most recent file (sorted by name, which includes timestamp/UUID)
+  const latestFile = files.sort().at(-1)!;
+  const packetPath = join(packetDir, latestFile);
+
+  // Derive result path from packet path
+  const resultDir = join(repoRoot, ".polaris", "clusters", clusterId, "results");
+  const resultPath = join(resultDir, latestFile);
+
+  // Check if result exists
+  const resultPresent = existsSync(resultPath);
+
+  // Extract dispatch ID from filename (format: <child-id>-<dispatch-id>.json)
+  const dispatchId = latestFile.replace(`${activeChild}-`, "").replace(".json", "");
+
+  return {
+    child_id: activeChild,
+    dispatch_id: dispatchId,
+    packet_path: packetPath,
+    expected_result_path: resultPath,
+    result_present: resultPresent,
+    dispatch_status: resultPresent ? "completed" : "dispatched",
+    dispatched_at: "unknown", // Cannot determine from file alone
+  };
+}
+
+/**
+ * Get relative path from repo root if path is inside repo.
+ */
+function getRelativePath(repoRoot: string, absolutePath: string): string {
+  if (absolutePath.startsWith(repoRoot + "/")) {
+    return absolutePath.slice(repoRoot.length + 1);
+  }
+  return absolutePath;
+}
 
 export interface StatusOptions {
   stateFile?: string;
@@ -105,6 +205,14 @@ export function runLoopStatus(options: StatusOptions): void {
     blockedChildren.length > 0 &&
     openChildren.every((c) => blockedChildren.includes(c));
 
+  // ── Find dispatch evidence for active child ────────────────────────────────
+  const dispatchEvidence = findDispatchEvidence(
+    repoRoot,
+    state.cluster_id,
+    state.active_child || null,
+    state.open_children_meta,
+  );
+
   if (options.json) {
     console.log(
       JSON.stringify(
@@ -125,6 +233,17 @@ export function runLoopStatus(options: StatusOptions): void {
             ? { path: packetPathDisplay, fresh: packetFresh }
             : null,
           state_sha: stateSha ? stateSha.slice(0, 12) : null,
+          dispatch: dispatchEvidence
+            ? {
+                child_id: dispatchEvidence.child_id,
+                dispatch_status: dispatchEvidence.dispatch_status,
+                packet_path: getRelativePath(repoRoot, dispatchEvidence.packet_path),
+                expected_result_path: getRelativePath(repoRoot, dispatchEvidence.expected_result_path),
+                result_present: dispatchEvidence.result_present,
+                provider: dispatchEvidence.provider ?? null,
+                dispatched_at: dispatchEvidence.dispatched_at,
+              }
+            : null,
         },
         null,
         2,
@@ -168,6 +287,26 @@ export function runLoopStatus(options: StatusOptions): void {
   } else {
     lines.push("");
     lines.push("Bootstrap packet: (none found)");
+  }
+
+  // ── Dispatch evidence ─────────────────────────────────────────────────────
+  if (dispatchEvidence) {
+    lines.push("");
+    lines.push("Dispatch Evidence:");
+    lines.push(`  Child:            ${dispatchEvidence.child_id}`);
+    lines.push(`  Status:           ${dispatchEvidence.dispatch_status}`);
+    lines.push(`  Packet:           ${getRelativePath(repoRoot, dispatchEvidence.packet_path)}`);
+    lines.push(`  Expected result:  ${getRelativePath(repoRoot, dispatchEvidence.expected_result_path)}`);
+    lines.push(`  Result present:   ${dispatchEvidence.result_present ? "✓ yes" : "✗ no (worker still running)"}`);
+    if (dispatchEvidence.provider) {
+      lines.push(`  Provider:         ${dispatchEvidence.provider}`);
+    }
+    lines.push(`  Dispatched at:    ${dispatchEvidence.dispatched_at}`);
+  } else if (state.active_child) {
+    lines.push("");
+    lines.push("⚠ No dispatch evidence found for active child");
+    lines.push(`  Child ${state.active_child} is active but no packet/result artifacts exist.`);
+    lines.push("  This may indicate a dispatch failure or orphaned state.");
   }
 
   if (isDeadlock) {

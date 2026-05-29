@@ -1,8 +1,8 @@
-import { appendFileSync, mkdirSync, realpathSync } from "node:fs";
+import { appendFileSync, mkdirSync, realpathSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { dirname, join, isAbsolute, resolve } from "node:path";
-import { readState, validateState, writeStateAtomic, type LoopState } from "./checkpoint.js";
+import { readState, validateState, writeStateAtomic, type LoopState, type ChildDispatchRecord } from "./checkpoint.js";
 import { compileImplPacket, type WorkerPacket } from "./worker-packet.js";
 import { selectPromptMode } from "./worker-prompt.js";
 import {
@@ -62,6 +62,74 @@ function getCurrentBranch(repoRoot: string): string {
   } catch {
     return (process.env["POLARIS_BRANCH"] as string | undefined) ?? "unknown";
   }
+}
+
+/**
+ * Get cluster-scoped packet directory path.
+ * Format: .polaris/clusters/<cluster-id>/packets/
+ */
+function getClusterPacketDir(repoRoot: string, clusterId: string): string {
+  return join(repoRoot, ".polaris", "clusters", clusterId, "packets");
+}
+
+/**
+ * Get cluster-scoped results directory path.
+ * Format: .polaris/clusters/<cluster-id>/results/
+ */
+function getClusterResultDir(repoRoot: string, clusterId: string): string {
+  return join(repoRoot, ".polaris", "clusters", clusterId, "results");
+}
+
+/**
+ * Build dispatch artifact paths in cluster-scoped layout.
+ * Returns packet path and expected result path.
+ */
+function buildClusterArtifactPaths(
+  repoRoot: string,
+  clusterId: string,
+  childId: string,
+  dispatchId: string,
+): { packetPath: string; resultPath: string } {
+  const packetDir = getClusterPacketDir(repoRoot, clusterId);
+  const resultDir = getClusterResultDir(repoRoot, clusterId);
+  const filename = `${childId}-${dispatchId}.json`;
+  return {
+    packetPath: join(packetDir, filename),
+    resultPath: join(resultDir, filename),
+  };
+}
+
+/**
+ * Write packet artifact to cluster-scoped layout.
+ * Creates directories if needed.
+ */
+function writePacketArtifact(packetPath: string, packet: WorkerPacket): void {
+  mkdirSync(dirname(packetPath), { recursive: true });
+  writeFileSync(packetPath, JSON.stringify(packet, null, 2), "utf-8");
+}
+
+/**
+ * Create a dispatch record with all required evidence.
+ */
+function createDispatchRecord(
+  runId: string,
+  clusterId: string,
+  childId: string,
+  packetPath: string,
+  resultPath: string,
+  provider?: string,
+): ChildDispatchRecord {
+  return {
+    dispatch_id: randomUUID(),
+    child_id: childId,
+    run_id: runId,
+    cluster_id: clusterId,
+    packet_path: packetPath,
+    expected_result_path: resultPath,
+    provider,
+    dispatched_at: new Date().toISOString(),
+    status: "dispatched",
+  };
 }
 
 function normalizeRunType(sessionType: string | undefined): LedgerRunType {
@@ -204,18 +272,19 @@ export function runLoopDispatch(options: DispatchOptions): void {
 
   const childId = selectChild(state, options.childId);
 
-  const updatedState: LoopState = {
+  // ── Build packet before writing state ───────────────────────────────────────
+  // We need to build the packet first to know its content for the artifact.
+  // Use a preliminary state to build the packet (we'll update state after).
+  const preliminaryState: LoopState = {
     ...state,
     active_child: childId,
     next_open_child: childId,
     step_cursor: "dispatch",
     dispatch_boundary: advanceDispatchEpoch(state.dispatch_boundary, childId),
   };
-  writeStateAtomic(options.stateFile, updatedState);
-  appendDispatchLedgerEvent(options.repoRoot, updatedState, childId);
 
   const packet = buildPacket(
-    updatedState,
+    preliminaryState,
     childId,
     options.stateFile,
     telemetryFile,
@@ -223,12 +292,67 @@ export function runLoopDispatch(options: DispatchOptions): void {
     options.resultFile,
   );
 
+  // ── Write durable dispatch evidence ────────────────────────────────────────
+  // Create cluster-scoped packet artifact BEFORE updating state.
+  // This ensures "dispatched" only means a durable record exists.
+  const dispatchId = randomUUID();
+  const { packetPath, resultPath } = buildClusterArtifactPaths(
+    options.repoRoot,
+    state.cluster_id,
+    childId,
+    dispatchId,
+  );
+
+  // Write packet artifact - this MUST succeed before we report dispatch success
+  try {
+    writePacketArtifact(packetPath, packet);
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    // Record the failure in telemetry
+    appendTelemetry(telemetryFile, {
+      event: "dispatch-failed",
+      run_id: state.run_id,
+      child_id: childId,
+      error: `Failed to write packet artifact: ${errorMsg}`,
+      timestamp: new Date().toISOString(),
+    });
+    fail(`Failed to write packet artifact to ${packetPath}: ${errorMsg}`);
+  }
+
+  // Create dispatch record with all evidence
+  const dispatchRecord = createDispatchRecord(
+    state.run_id,
+    state.cluster_id,
+    childId,
+    packetPath,
+    resultPath,
+    undefined, // provider not known at this point
+  );
+
+  // ── Update state atomically with dispatch record ───────────────────────────
+  const updatedState: LoopState = {
+    ...preliminaryState,
+    // Store the dispatch record in open_children_meta for the child
+    open_children_meta: {
+      ...state.open_children_meta,
+      [childId]: {
+        ...state.open_children_meta?.[childId],
+        dispatch_record: dispatchRecord,
+      },
+    },
+  };
+
+  writeStateAtomic(options.stateFile, updatedState);
+  appendDispatchLedgerEvent(options.repoRoot, updatedState, childId);
+
   appendTelemetry(telemetryFile, {
     event: "child-dispatched",
     run_id: updatedState.run_id,
     child_id: childId,
     prompt_mode: packet.prompt_mode,
     prompt_estimated_tokens: packet.prompt_metrics.estimated_tokens,
+    packet_path: packetPath,
+    expected_result_path: resultPath,
     timestamp: new Date().toISOString(),
   });
 

@@ -244,4 +244,149 @@ describe("runLoopStatus", () => {
     expect(parsed.deadlock).toBe(true);
     expect(parsed.blocked_children).toEqual(["POL-26"]);
   });
+
+  // ── REGRESSION TESTS: Status dispatch evidence ─────────────────────────────
+
+  it("reports dispatch evidence in JSON output when dispatch_record exists", () => {
+    const stateWithDispatch = {
+      ...baseState,
+      active_child: "POL-26",
+      step_cursor: "dispatch",
+      open_children_meta: {
+        "POL-26": {
+          title: "Test child",
+          dispatch_record: {
+            dispatch_id: "test-dispatch-123",
+            child_id: "POL-26",
+            run_id: "pol-5-session-1",
+            cluster_id: "POL-5",
+            packet_path: "/tmp/test/packet.json",
+            expected_result_path: "/tmp/test/result.json",
+            provider: "terminal-cli",
+            dispatched_at: "2026-01-15T10:30:00.000Z",
+            status: "dispatched",
+          },
+        },
+      },
+    };
+    const stateFile = writeState(testDir, stateWithDispatch);
+    const logs: string[] = [];
+    const orig = console.log;
+    console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
+    try {
+      runLoopStatus({ repoRoot: testDir, stateFile, json: true });
+    } finally {
+      console.log = orig;
+    }
+    const parsed = JSON.parse(logs.join("\n"));
+    expect(parsed.dispatch).toBeDefined();
+    expect(parsed.dispatch.child_id).toBe("POL-26");
+    expect(parsed.dispatch.dispatch_status).toBe("dispatched");
+    expect(parsed.dispatch.packet_path).toContain("packet.json");
+    expect(parsed.dispatch.expected_result_path).toContain("result.json");
+    expect(parsed.dispatch.provider).toBe("terminal-cli");
+    expect(parsed.dispatch.dispatched_at).toBe("2026-01-15T10:30:00.000Z");
+    expect(parsed.dispatch.result_present).toBe(false); // Result file doesn't exist
+  });
+
+  it("reports dispatch evidence in human-readable output", () => {
+    const stateWithDispatch = {
+      ...baseState,
+      active_child: "POL-26",
+      step_cursor: "dispatch",
+      open_children_meta: {
+        "POL-26": {
+          title: "Test child",
+          dispatch_record: {
+            dispatch_id: "test-dispatch-456",
+            child_id: "POL-26",
+            run_id: "pol-5-session-1",
+            cluster_id: "POL-5",
+            packet_path: join(testDir, ".polaris", "clusters", "POL-5", "packets", "POL-26-dispatch.json"),
+            expected_result_path: join(testDir, ".polaris", "clusters", "POL-5", "results", "POL-26-dispatch.json"),
+            dispatched_at: "2026-01-15T10:30:00.000Z",
+            status: "dispatched",
+          },
+        },
+      },
+    };
+    const stateFile = writeState(testDir, stateWithDispatch);
+    const logs: string[] = [];
+    const orig = console.log;
+    console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
+    try {
+      runLoopStatus({ repoRoot: testDir, stateFile });
+    } finally {
+      console.log = orig;
+    }
+    const output = logs.join("\n");
+    expect(output).toContain("Dispatch Evidence:");
+    expect(output).toContain("POL-26");
+    expect(output).toContain("dispatched");
+    expect(output).toContain("packets");
+    expect(output).toContain("results");
+    expect(output).toContain("no (worker still running)"); // Result not present
+  });
+
+  it("reports result_present=true when result file exists", () => {
+    // Create result file
+    const resultDir = join(testDir, ".polaris", "clusters", "POL-5", "results");
+    mkdirSync(resultDir, { recursive: true });
+    const resultPath = join(resultDir, "POL-26-completed.json");
+    writeFileSync(resultPath, JSON.stringify({ status: "success" }), "utf-8");
+
+    const stateWithDispatch = {
+      ...baseState,
+      active_child: "POL-26",
+      step_cursor: "checkpoint",
+      open_children_meta: {
+        "POL-26": {
+          title: "Test child",
+          dispatch_record: {
+            dispatch_id: "test-dispatch-789",
+            child_id: "POL-26",
+            run_id: "pol-5-session-1",
+            cluster_id: "POL-5",
+            packet_path: join(testDir, ".polaris", "clusters", "POL-5", "packets", "POL-26-completed.json"),
+            expected_result_path: resultPath,
+            dispatched_at: "2026-01-15T10:30:00.000Z",
+            status: "completed",
+          },
+        },
+      },
+    };
+    const stateFile = writeState(testDir, stateWithDispatch);
+    const logs: string[] = [];
+    const orig = console.log;
+    console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
+    try {
+      runLoopStatus({ repoRoot: testDir, stateFile, json: true });
+    } finally {
+      console.log = orig;
+    }
+    const parsed = JSON.parse(logs.join("\n"));
+    expect(parsed.dispatch.result_present).toBe(true);
+  });
+
+  it("warns when active_child set but no dispatch evidence found", () => {
+    const stateWithActiveChild = {
+      ...baseState,
+      active_child: "POL-26",
+      step_cursor: "dispatch",
+      // No dispatch_record in open_children_meta
+      open_children_meta: {},
+    };
+    const stateFile = writeState(testDir, stateWithActiveChild);
+    const logs: string[] = [];
+    const orig = console.log;
+    console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
+    try {
+      runLoopStatus({ repoRoot: testDir, stateFile });
+    } finally {
+      console.log = orig;
+    }
+    const output = logs.join("\n");
+    expect(output).toContain("No dispatch evidence found for active child");
+    expect(output).toContain("POL-26 is active but no packet/result artifacts exist");
+  });
 });

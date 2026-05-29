@@ -198,4 +198,79 @@ describe("runLoopDispatch", () => {
       dispatch_epoch: 2,
     });
   });
+
+  // ── REGRESSION TESTS: Dispatch durable evidence ─────────────────────────────
+
+  it("writes packet artifact to cluster-scoped layout", () => {
+    const stateFile = writeState(testDir, baseState());
+
+    captureStdout(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+
+    // Check that packet was written to cluster-scoped directory
+    const clusterPacketDir = join(testDir, ".polaris", "clusters", "POL-142", "packets");
+    expect(existsSync(clusterPacketDir)).toBe(true);
+
+    // Get the actual dispatched state to find the packet path
+    const updated = readState(stateFile);
+    const dispatchRecord = updated.open_children_meta?.["POL-145"]?.dispatch_record;
+    expect(dispatchRecord).toBeDefined();
+    expect(dispatchRecord?.packet_path).toBeDefined();
+    expect(existsSync(dispatchRecord?.packet_path!)).toBe(true);
+
+    // Read the packet and verify it contains expected fields
+    const packet = JSON.parse(readFileSync(dispatchRecord?.packet_path!, "utf-8"));
+    expect(packet.schema_version).toBe("2.0");
+    expect(packet.active_child).toBe("POL-145");
+    expect(packet.run_id).toBe("pol-142-session-1");
+    expect(packet.cluster_id).toBe("POL-142");
+  });
+
+  it("records dispatch_record with packet and result paths in open_children_meta", () => {
+    const stateFile = writeState(testDir, baseState());
+
+    captureStdout(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+
+    const updated = readState(stateFile);
+    const childMeta = updated.open_children_meta?.["POL-145"];
+
+    expect(childMeta).toBeDefined();
+    expect(childMeta?.dispatch_record).toBeDefined();
+
+    const dispatchRecord = childMeta?.dispatch_record;
+    expect(dispatchRecord?.child_id).toBe("POL-145");
+    expect(dispatchRecord?.run_id).toBe("pol-142-session-1");
+    expect(dispatchRecord?.cluster_id).toBe("POL-142");
+    expect(dispatchRecord?.status).toBe("dispatched");
+
+    // Verify paths are set and exist
+    expect(dispatchRecord?.packet_path).toBeDefined();
+    expect(existsSync(dispatchRecord?.packet_path!)).toBe(true);
+
+    // Verify expected result path is set (won't exist yet - worker creates it)
+    expect(dispatchRecord?.expected_result_path).toBeDefined();
+    expect(dispatchRecord?.expected_result_path).toContain("results");
+    expect(dispatchRecord?.expected_result_path).toContain("POL-145");
+  });
+
+  it("telemetry includes packet_path and expected_result_path", () => {
+    const artifactDir = join(testDir, ".taskchain_artifacts", "polaris-run");
+    const stateFile = writeState(testDir, baseState({ artifact_dir: artifactDir }));
+
+    captureStdout(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+
+    const telemetryFile = join(artifactDir, "runs", "pol-142-session-1", "telemetry.jsonl");
+    expect(existsSync(telemetryFile)).toBe(true);
+
+    const events = readFileSync(telemetryFile, "utf-8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line))
+      .filter((event) => event.event === "child-dispatched");
+
+    expect(events).toHaveLength(1);
+    expect(events[0].packet_path).toBeDefined();
+    expect(events[0].expected_result_path).toBeDefined();
+    expect(events[0].packet_path).toContain("POL-142");
+    expect(events[0].packet_path).toContain("packets");
+  });
 });

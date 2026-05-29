@@ -18,6 +18,30 @@ export interface BlockerRecord {
 }
 
 /**
+ * Dispatch record stored in child meta for durable dispatch evidence.
+ */
+export interface ChildDispatchRecord {
+  /** Unique dispatch ID for this dispatch event */
+  dispatch_id: string;
+  /** Child ID being dispatched */
+  child_id: string;
+  /** Run ID */
+  run_id: string;
+  /** Cluster ID */
+  cluster_id: string;
+  /** Path to the packet file */
+  packet_path: string;
+  /** Expected path where worker should write result */
+  expected_result_path: string;
+  /** Provider/adapter if known */
+  provider?: string;
+  /** Dispatch timestamp */
+  dispatched_at: string;
+  /** Dispatch status */
+  status: "dispatched" | "completed" | "failed";
+}
+
+/**
  * Dispatch boundary tracking record.
  *
  * Tracks the epoch counters used to enforce the hard dispatch boundary.
@@ -55,7 +79,7 @@ export interface LoopState {
   completed_children: string[];
   completed_children_results?: Record<string, ChildResultSummary>;
   open_children: string[];
-  open_children_meta?: Record<string, { type?: string; title?: string; labels?: string[]; result_file?: string }>;
+  open_children_meta?: Record<string, { type?: string; title?: string; labels?: string[]; result_file?: string; dispatch_record?: ChildDispatchRecord }>;
   step_cursor: string | null;
   context_budget: {
     children_completed: number;
