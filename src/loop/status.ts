@@ -106,6 +106,65 @@ function getRelativePath(repoRoot: string, absolutePath: string): string {
   return absolutePath;
 }
 
+/**
+ * Worker heartbeat telemetry entry.
+ */
+interface WorkerHeartbeat {
+  event: "worker-heartbeat";
+  run_id: string;
+  child_id: string;
+  step_cursor: string;
+  timestamp: string;
+  progress_pct?: number;
+  files_changed?: number;
+  current_file?: string;
+}
+
+/**
+ * Find latest worker heartbeat for active child from telemetry.
+ */
+function findWorkerHeartbeat(
+  telemetryFile: string,
+  activeChild: string | null,
+): WorkerHeartbeat | null {
+  if (!activeChild || !existsSync(telemetryFile)) return null;
+
+  try {
+    const content = readFileSync(telemetryFile, "utf-8");
+    const lines = content.trim().split("\n").filter(Boolean);
+
+    // Parse from most recent to find latest heartbeat for this child
+    for (let i = lines.length - 1; i >= 0; i--) {
+      try {
+        const event = JSON.parse(lines[i]) as WorkerHeartbeat;
+        if (event.event === "worker-heartbeat" && event.child_id === activeChild) {
+          return event;
+        }
+      } catch {
+        continue; // Skip malformed lines
+      }
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+/**
+ * Format heartbeat for display.
+ */
+function formatHeartbeat(heartbeat: WorkerHeartbeat): string {
+  const time = new Date(heartbeat.timestamp).toLocaleTimeString();
+  let status = heartbeat.step_cursor;
+  if (heartbeat.progress_pct !== undefined) {
+    status += ` (${heartbeat.progress_pct}%)`;
+  }
+  if (heartbeat.current_file) {
+    status += ` - ${heartbeat.current_file}`;
+  }
+  return `${time}: ${status}`;
+}
+
 export interface StatusOptions {
   stateFile?: string;
   repoRoot: string;
@@ -213,6 +272,12 @@ export function runLoopStatus(options: StatusOptions): void {
     state.open_children_meta,
   );
 
+  // ── Find worker heartbeat for active child ──────────────────────────────────
+  const artifactDir =
+    state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "polaris-run");
+  const telemetryFile = join(artifactDir, "runs", state.run_id, "telemetry.jsonl");
+  const workerHeartbeat = findWorkerHeartbeat(telemetryFile, state.active_child || null);
+
   if (options.json) {
     console.log(
       JSON.stringify(
@@ -242,6 +307,16 @@ export function runLoopStatus(options: StatusOptions): void {
                 result_present: dispatchEvidence.result_present,
                 provider: dispatchEvidence.provider ?? null,
                 dispatched_at: dispatchEvidence.dispatched_at,
+              }
+            : null,
+          worker: workerHeartbeat
+            ? {
+                child_id: workerHeartbeat.child_id,
+                step_cursor: workerHeartbeat.step_cursor,
+                last_seen: workerHeartbeat.timestamp,
+                progress_pct: workerHeartbeat.progress_pct ?? null,
+                files_changed: workerHeartbeat.files_changed ?? null,
+                current_file: workerHeartbeat.current_file ?? null,
               }
             : null,
         },
@@ -307,6 +382,31 @@ export function runLoopStatus(options: StatusOptions): void {
     lines.push("⚠ No dispatch evidence found for active child");
     lines.push(`  Child ${state.active_child} is active but no packet/result artifacts exist.`);
     lines.push("  This may indicate a dispatch failure or orphaned state.");
+  }
+
+  // ── Worker heartbeat (progress) ───────────────────────────────────────────
+  if (workerHeartbeat) {
+    lines.push("");
+    lines.push("Worker Progress (last heartbeat):");
+    lines.push(`  Step:      ${workerHeartbeat.step_cursor}`);
+    if (workerHeartbeat.progress_pct !== undefined) {
+      lines.push(`  Progress:  ${workerHeartbeat.progress_pct}%`);
+    }
+    if (workerHeartbeat.files_changed !== undefined) {
+      lines.push(`  Files:     ${workerHeartbeat.files_changed} changed`);
+    }
+    if (workerHeartbeat.current_file) {
+      lines.push(`  Current:   ${workerHeartbeat.current_file}`);
+    }
+    lines.push(`  Last seen: ${formatHeartbeat(workerHeartbeat)}`);
+  } else if (dispatchEvidence && !dispatchEvidence.result_present) {
+    lines.push("");
+    lines.push("⚠ No worker heartbeats detected");
+    lines.push(`  Worker for ${dispatchEvidence.child_id} has not emitted any progress telemetry.`);
+    lines.push("  Worker may be:");
+    lines.push("    - Starting up (heartbeats start after packet read)");
+    lines.push("    - Stuck or crashed (no heartbeats in telemetry.jsonl)");
+    lines.push("    - Running without heartbeat compliance (old worker version)");
   }
 
   if (isDeadlock) {

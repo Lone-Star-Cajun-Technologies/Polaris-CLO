@@ -167,6 +167,26 @@ export function buildWorkerPrompt(input: WorkerPromptInput): WorkerPromptResult 
   lines.push(`- Append a telemetry event to ${input.telemetryFile}.`);
   lines.push('');
 
+  // ── Worker Heartbeat Telemetry (observability — always present) ────────────
+  lines.push('## Worker Progress Telemetry (MANDATORY)');
+  lines.push('The parent CANNOT see your work. You MUST emit heartbeat events so the parent knows you are alive and making progress.');
+  lines.push('');
+  lines.push(`After EVERY step, append a JSONL event to ${input.telemetryFile}:`);
+  lines.push('```jsonl');
+  lines.push(`{"event":"worker-heartbeat","run_id":"<from packet>","child_id":"${input.issueId}","step_cursor":"<current step>","timestamp":"<ISO8601>","progress_pct":<0-100>,"files_changed":<count>,"current_file":"<file being edited>"}`);
+  lines.push('```');
+  lines.push('');
+  lines.push('Required heartbeat points:');
+  lines.push('  1. Immediately after reading this packet (step_cursor: "start")');
+  lines.push('  2. After verifying state file (step_cursor: "verify")');
+  lines.push('  3. After EACH file edit (step_cursor: "implement")');
+  lines.push('  4. After running validation (step_cursor: "validate")');
+  lines.push('  5. After creating commit (step_cursor: "commit")');
+  lines.push('  6. Before terminating (step_cursor: "complete" or "failed")');
+  lines.push('');
+  lines.push('If heartbeats stop, the parent will assume you crashed and may dispatch a replacement worker.');
+  lines.push('');
+
   // ── Route cognition delta (always present) ────────────────────────────────
   lines.push('## Route Cognition Delta');
   lines.push('After implementation, apply route-local cognition delta — only if something materially changed.');

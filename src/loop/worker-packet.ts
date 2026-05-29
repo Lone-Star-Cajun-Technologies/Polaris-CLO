@@ -300,14 +300,20 @@ export function compileImplPacket(input: CompileImplPacketInput): WorkerPacket {
     input.issueContext?.key_requirements.map((r, i) => `   ${i + 1}. ${r}`) ?? [];
 
   const steps = [
+    `EMIT HEARTBEAT: Append worker-start event to ${input.telemetryFile} with timestamp and step_cursor: "start".`,
     `Verify: read ${input.stateFile} and confirm active_child === "${input.childId}".`,
+    `EMIT HEARTBEAT: Append progress event to ${input.telemetryFile} with step_cursor: "verify" and current file being worked.`,
     `Implement ${childRef}: "${childTitle}".`,
     ...(requirementLines.length > 0 ? [`Requirements:`, ...requirementLines] : []),
+    `EMIT HEARTBEAT: After each file change, append progress event to ${input.telemetryFile} with step_cursor: "implement" and files_changed count.`,
     `Run validation commands and confirm all pass.`,
+    `EMIT HEARTBEAT: Append progress event to ${input.telemetryFile} with step_cursor: "validate" and validation status.`,
     `Create exactly ONE git commit: [${input.childId}] ${childTitle}.`,
+    `EMIT HEARTBEAT: Append progress event to ${input.telemetryFile} with step_cursor: "commit" and commit_hash.`,
     `Update ${input.stateFile}: move "${input.childId}" from open_children to completed_children.`,
     `Append a telemetry event to ${input.telemetryFile}.`,
     `Write compact return JSON to stdout (fields: ${IMPL_RETURN_CONTRACT.join(', ')}).`,
+    `EMIT HEARTBEAT: Append worker-complete event to ${input.telemetryFile} with timestamp and final status.`,
     `TERMINATE SESSION IMMEDIATELY. Do not select or execute the next child.`,
   ];
 
