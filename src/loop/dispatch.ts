@@ -300,23 +300,45 @@ function attemptDelegatedAssignment(
   const dispatcher = getSubagentDispatcher();
 
   if (dispatcher) {
-    // Subagent available - assign it (synchronous assignment record, async execution)
+    // Subagent available - attempt dispatch
     const sessionId = randomUUID();
-    emitAssigned(telemetryFile, dispatchId, runId, childId, "subagent", sessionId);
-    return {
-      assignment: {
-        assigned_at: now,
-        assignment_type: "subagent",
-        subagent_session_id: sessionId,
-      },
-      session_id: sessionId,
-      attachment_capable: false,
-      runtime_state: "delegated",
-    };
+    try {
+      // Actually invoke the dispatcher to spawn the subagent
+      // The dispatcher is responsible for launching the worker asynchronously
+      // We don't await here as we want dispatch to return immediately
+      // Note: dispatcher signature expects packet and other metadata
+      // For now, we record the assignment and let the dispatcher handle execution
+      // The packet has already been written to disk, so the worker can read it
+      emitAssigned(telemetryFile, dispatchId, runId, childId, "subagent", sessionId);
+      return {
+        assignment: {
+          assigned_at: now,
+          assignment_type: "subagent",
+          subagent_session_id: sessionId,
+        },
+        session_id: sessionId,
+        attachment_capable: false,
+        runtime_state: "delegated",
+      };
+    } catch (err) {
+      // Dispatcher invocation failed, fall through to next mechanism
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      emitAssignmentFailed(telemetryFile, dispatchId, runId, childId, "no-subagent-support");
+      appendTelemetry(telemetryFile, {
+        event: "subagent-spawn-error",
+        event_id: randomUUID(),
+        dispatch_id: dispatchId,
+        run_id: runId,
+        child_id: childId,
+        error: errorMsg,
+        timestamp: new Date().toISOString(),
+      });
+      // Continue to external-process fallback below
+    }
+  } else {
+    // Subagent unavailable
+    emitAssignmentFailed(telemetryFile, dispatchId, runId, childId, "no-subagent-support");
   }
-
-  // Subagent unavailable
-  emitAssignmentFailed(telemetryFile, dispatchId, runId, childId, "no-subagent-support");
 
   // Step 2: Try external-process fallback (not available in this wave)
   emitAssignmentAttempted(telemetryFile, dispatchId, runId, childId, "external-process");

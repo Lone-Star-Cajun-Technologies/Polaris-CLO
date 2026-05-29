@@ -16,7 +16,7 @@
  */
 
 import { readFileSync, appendFileSync, mkdirSync } from "node:fs";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { dirname, resolve, isAbsolute } from "node:path";
 import { execFileSync } from "node:child_process";
 import { readState, writeStateAtomic } from "./checkpoint.js";
@@ -205,6 +205,7 @@ export async function executeOneChild(
     }
     appendTelemetry(telemetryFile, {
       event: "worker-acknowledged",
+      event_id: randomUUID(),
       run_id: packet.run_id,
       child_id: childId,
       dispatch_id: packet.dispatch_id ?? "",

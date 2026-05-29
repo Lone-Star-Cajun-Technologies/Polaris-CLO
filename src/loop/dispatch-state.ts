@@ -62,6 +62,9 @@ export interface WorkerTimeoutConfig {
 
   /** Time waiting for approval before auto-fail (default: 3600000ms) */
   approval_timeout_ms: number;
+
+  /** Time after acknowledgement before first heartbeat expected (default: 120000ms) */
+  ack_to_first_heartbeat_ms: number;
 }
 
 /**
@@ -72,6 +75,7 @@ export const DEFAULT_TIMEOUTS: WorkerTimeoutConfig = {
   heartbeat_interval_ms: 300000,         // 5 minutes
   orphan_timeout_ms: 600000,             // 10 minutes
   approval_timeout_ms: 3600000,          // 1 hour
+  ack_to_first_heartbeat_ms: 120000,     // 2 minutes
 };
 
 /**
@@ -328,6 +332,8 @@ export function resolveTimeoutConfig(
       config?.orphan_timeout_ms ?? DEFAULT_TIMEOUTS.orphan_timeout_ms,
     approval_timeout_ms:
       config?.approval_timeout_ms ?? DEFAULT_TIMEOUTS.approval_timeout_ms,
+    ack_to_first_heartbeat_ms:
+      config?.ack_to_first_heartbeat_ms ?? DEFAULT_TIMEOUTS.ack_to_first_heartbeat_ms,
   };
 }
 
@@ -460,6 +466,12 @@ export function deriveDispatchState(
   );
   if (acknowledgedEvent) {
     // Worker acknowledged packet but has not yet sent a heartbeat
+    // Check if the acknowledgement has aged out
+    const msSinceAck = now.getTime() - new Date(acknowledgedEvent.timestamp).getTime();
+    if (msSinceAck > config.ack_to_first_heartbeat_ms) {
+      // Ack timeout — worker never started actual work
+      return "failed";
+    }
     return "acknowledged";
   }
 

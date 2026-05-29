@@ -315,6 +315,32 @@ export function validateState(state: unknown): string[] {
                 }
               }
             }
+            // Validate new ChildDispatchRecord fields
+            if ("worker_id" in dr && dr["worker_id"] !== undefined) {
+              if (typeof dr["worker_id"] !== "string" || (dr["worker_id"] as string).length === 0) {
+                errors.push(`open_children_meta["${childId}"].dispatch_record.worker_id must be a non-empty string if present`);
+              }
+            }
+            if ("session_id" in dr && dr["session_id"] !== undefined) {
+              if (dr["session_id"] !== null && typeof dr["session_id"] !== "string") {
+                errors.push(`open_children_meta["${childId}"].dispatch_record.session_id must be a string or null`);
+              }
+            }
+            if ("attachment_capable" in dr && dr["attachment_capable"] !== undefined) {
+              if (typeof dr["attachment_capable"] !== "boolean") {
+                errors.push(`open_children_meta["${childId}"].dispatch_record.attachment_capable must be a boolean`);
+              }
+            }
+            if ("heartbeat_count" in dr && dr["heartbeat_count"] !== undefined) {
+              if (typeof dr["heartbeat_count"] !== "number" || !Number.isInteger(dr["heartbeat_count"]) || (dr["heartbeat_count"] as number) < 0) {
+                errors.push(`open_children_meta["${childId}"].dispatch_record.heartbeat_count must be a non-negative integer`);
+              }
+            }
+            if ("first_heartbeat_at" in dr && dr["first_heartbeat_at"] !== undefined) {
+              if (typeof dr["first_heartbeat_at"] !== "string") {
+                errors.push(`open_children_meta["${childId}"].dispatch_record.first_heartbeat_at must be a string (ISO timestamp) if present`);
+              }
+            }
           }
         }
       }

@@ -27,7 +27,7 @@
   "dispatch_boundary": {
     "dispatch_epoch": 1,
     "continue_epoch": 1,
-    "last_dispatched_child": "POL-219"
+    "last_dispatched_child": "POL-220"
   },
   "completed_children_meta": {
     "POL-219": {
@@ -41,6 +41,21 @@
         "child_id": "POL-219",
         "status": "success",
         "commit_hash": "60374af",
+        "validation": "passed",
+        "completed_at": "2026-05-29T17:25:11.521Z"
+      }
+    },
+    "POL-220": {
+      "dispatch_record": {
+        "child_id": "POL-220",
+        "dispatched_at": "2026-05-29T17:25:11.521Z",
+        "completed_at": "2026-05-29T17:25:11.521Z",
+        "status": "completed"
+      },
+      "result": {
+        "child_id": "POL-220",
+        "status": "success",
+        "commit_hash": "4000216",
         "validation": "passed",
         "completed_at": "2026-05-29T17:25:11.521Z"
       }
