@@ -33,7 +33,7 @@ The telemetry system must always be able to answer five operational questions:
 
 All telemetry events share a common base schema.
 
-```
+```typescript
 WorkerTelemetryEventBase {
   event:        string        // Event type discriminator (required)
   event_id:     string        // UUID, unique per event emission (required)
@@ -58,7 +58,7 @@ All fields in `WorkerTelemetryEventBase` are **required** on every event. An eve
 
 **Lifecycle transition driven:**
 
-```
+```text
 packet-created / delegated  →  launching
 ```
 
@@ -91,7 +91,7 @@ Retained for the full run lifetime. Indexed on `dispatch_id`.
 
 **Lifecycle transition driven:**
 
-```
+```text
 launching / handoff-pending  →  acknowledged
 ```
 
@@ -132,7 +132,7 @@ Retained for the full run lifetime. Indexed on `dispatch_id` and `worker_id`. Th
 
 **Lifecycle transition driven:**
 
-```
+```text
 launching  →  running     (on first heartbeat)
 blocked    →  running     (heartbeat received after staleness)
 running    →  running     (steady-state, refreshes last_heartbeat_at)
@@ -194,9 +194,17 @@ Retained for the full run lifetime. The most recent heartbeat per `dispatch_id` 
 
 **Lifecycle transition driven:**
 
-```
+```text
 running  →  waiting-for-approval
 ```
+
+`waiting-for-approval` is an implementation runtime label, not a canonical lifecycle state. The canonical lifecycle in `worker-lifecycle-state-machine.md` defines 9 states, and this condition is modeled as the `blocked` state with approval-required semantics.
+
+`deriveDispatchState()` in `src/loop/dispatch-state.ts` reconciles implementation-only names under timeout/reconciliation logic:
+- `waiting-for-approval` → `blocked`
+- `packet-created` → `capability-detected`
+- `delegated` → `handoff-pending`
+- `launching` → `assigned`
 
 #### Required Fields
 
@@ -232,7 +240,7 @@ Retained for the full run lifetime. Indexed on `dispatch_id` and `blocker_id`.
 
 **Lifecycle transition driven:**
 
-```
+```text
 waiting-for-approval  →  running
 ```
 
@@ -264,7 +272,7 @@ Retained for the full run lifetime. Indexed on `dispatch_id` and `blocker_id`. T
 
 **Lifecycle transition driven:**
 
-```
+```text
 waiting-for-approval  →  failed
 ```
 
@@ -296,7 +304,7 @@ Retained for the full run lifetime. Indexed on `dispatch_id` and `blocker_id`. T
 
 **Lifecycle transition driven:**
 
-```
+```text
 running / waiting-for-approval / blocked  →  completed   (when status = "success")
 running / waiting-for-approval / blocked  →  failed      (when status = "failure" or "blocked")
 ```
@@ -331,7 +339,7 @@ Retained for the full run lifetime and beyond (result events are part of the per
 
 **Lifecycle transition driven:**
 
-```
+```text
 packet-created / delegated  →  delegated   (or remains in pre-launch)
 ```
 
@@ -361,7 +369,7 @@ Retained for the full run lifetime. Indexed on `dispatch_id`.
 
 **Lifecycle transition driven:**
 
-```
+```text
 delegated  →  launching
 ```
 
@@ -393,7 +401,7 @@ Retained for the full run lifetime. The `session_id` and `process_pid` fields MU
 
 **Lifecycle transition driven:**
 
-```
+```text
 delegated  →  failed          (if no retry path exists)
 delegated  →  delegated       (if Foreman retries with another mechanism)
 ```
@@ -422,7 +430,7 @@ Retained for the full run lifetime. Indexed on `dispatch_id`.
 
 **Lifecycle transition driven:**
 
-```
+```text
 delegated  →  blocked    (advisory; no automatic work can proceed)
 ```
 
