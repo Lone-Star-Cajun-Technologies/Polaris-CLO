@@ -89,6 +89,19 @@ export interface ChildDispatchRecord {
   last_heartbeat_step?: string;
   /** Worker assignment record (for delegated mode) */
   worker_assignment?: WorkerAssignmentRecord;
+  /**
+   * Unique worker identity for this dispatch.
+   * Required on new records; for backward compat, falls back to dispatch_id.
+   */
+  worker_id?: string;
+  /** Session ID of the active worker session, or null if not yet known */
+  session_id?: string | null;
+  /** Whether the worker supports attachment-based communication */
+  attachment_capable?: boolean;
+  /** Number of heartbeats received from this worker */
+  heartbeat_count?: number;
+  /** Timestamp of the first heartbeat received */
+  first_heartbeat_at?: string;
 }
 
 /**

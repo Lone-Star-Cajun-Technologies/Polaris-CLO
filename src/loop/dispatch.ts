@@ -150,6 +150,9 @@ function createDispatchRecord(
     status: "dispatched",
     dispatch_mode: dispatchMode,
     runtime_state: runtimeState,
+    worker_id: randomUUID(),
+    session_id: null,
+    attachment_capable: false,
   };
 }
 

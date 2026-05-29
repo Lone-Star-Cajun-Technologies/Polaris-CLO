@@ -474,10 +474,10 @@ export function isValidTransition(
 
   // Define valid transitions
   const validTransitions: Record<WorkerDispatchState, WorkerDispatchState[]> = {
-    "packet-created": ["delegated", "launching", "running"],
-    "delegated": ["launching", "running", "completed", "failed"],
+    "packet-created": ["delegated", "launching", "running", "failed"],
+    "delegated": ["launching", "running", "completed", "failed", "blocked"],
     "launching": ["running", "waiting-for-approval", "blocked", "completed", "failed"],
-    "running": ["waiting-for-approval", "blocked", "completed", "failed"],
+    "running": ["waiting-for-approval", "blocked", "completed", "failed", "orphaned"],
     "waiting-for-approval": ["running", "completed", "failed"],
     "blocked": ["running", "completed", "failed", "orphaned"],
     "completed": [],
