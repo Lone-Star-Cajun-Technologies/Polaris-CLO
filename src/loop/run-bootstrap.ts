@@ -29,6 +29,7 @@ import {
   appendDispatchViolationEvent,
 } from "./dispatch-boundary.js";
 import { initialDispatchBoundary } from "./dispatch-boundary.js";
+import { initializeClusterState, readClusterState } from "../cluster-state/store.js";
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Types
@@ -199,7 +200,7 @@ export function assertBootstrapSeal(state: LoopState, telemetryFile: string): vo
  * legitimate path to creating a new current-state.json. Any state file
  * that was not written by this function will be refused by dispatch.
  */
-export function runLoopBootstrapInit(options: BootstrapInitOptions): void {
+export async function runLoopBootstrapInit(options: BootstrapInitOptions): Promise<void> {
   const {
     clusterId,
     openChildren,
@@ -246,6 +247,18 @@ export function runLoopBootstrapInit(options: BootstrapInitOptions): void {
     dispatch_boundary: initialDispatchBoundary()!,
     run_bootstrap_seal: seal,
   };
+
+  // Initialize cluster-state.json if it doesn't exist.
+  try {
+    const existingClusterState = await readClusterState(clusterId);
+    if (!existingClusterState) {
+      process.stderr.write(`Initializing new cluster-state.json for ${clusterId}...\n`);
+      await initializeClusterState(clusterId);
+    }
+  } catch (error) {
+    process.stderr.write(`Warning: Failed to initialize cluster-state.json for ${clusterId}: ${error instanceof Error ? error.message : String(error)}\n`);
+    // Continue without hard-failing bootstrap.
+  }
 
   // Validate the state we're about to write
   // (uses validateState from checkpoint.ts — but we don't import it here to
