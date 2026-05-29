@@ -3,6 +3,7 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  renameSync,
   unlinkSync,
   writeFileSync,
 } from "node:fs";
@@ -218,6 +219,13 @@ export function doctrinePromote(path: string, options: DoctrineOptions): Doctrin
   writeFileSync(destination, activeContent, "utf-8");
   unlinkSync(source);
 
+  // Move co-located provenance sidecar if present
+  const provenanceSrc = source.replace(/\.md$/, ".provenance.json");
+  if (existsSync(provenanceSrc)) {
+    const provenanceDest = destination.replace(/\.md$/, ".provenance.json");
+    renameSync(provenanceSrc, provenanceDest);
+  }
+
   // Write audit record
   const auditPath = auditFilePath(repoRoot, runId);
   mkdirSync(dirname(auditPath), { recursive: true });
@@ -283,6 +291,13 @@ export function doctrineDeprecate(path: string, options: DoctrineOptions): Doctr
     `<!-- polaris:doctrine-deprecated deprecatedAt="${deprecatedAt}" runId="${runId}" -->\n${content}`;
   writeFileSync(destination, deprecatedContent, "utf-8");
   unlinkSync(source);
+
+  // Move co-located provenance sidecar if present
+  const provenanceSrc = source.replace(/\.md$/, ".provenance.json");
+  if (existsSync(provenanceSrc)) {
+    const provenanceDest = destination.replace(/\.md$/, ".provenance.json");
+    renameSync(provenanceSrc, provenanceDest);
+  }
 
   const lifecyclePath = lifecycleFilePath(repoRoot, runId);
   appendLifecycle(lifecyclePath, {

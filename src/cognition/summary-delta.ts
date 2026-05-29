@@ -68,9 +68,7 @@ export interface SummaryDeltaResult {
 // ── Signals that trigger SUMMARY.md delta ─────────────────────────────────────
 
 const SUMMARY_SIGNALS: Array<{ pattern: RegExp; reason: SummaryDeltaReason }> = [
-  { pattern: /docs\/spec\//,           reason: "linked-docs-changed" },
-  { pattern: /docs\/architecture\//,   reason: "architecture-meaning-changed" },
-  { pattern: /docs\/decisions\//,      reason: "doctrine-spec-linkage-changed" },
+  { pattern: /smartdocs\/docs\/specs\/raw\//,    reason: "linked-docs-changed" },
   { pattern: /smartdocs\/docs\/specs\/active\//, reason: "linked-docs-changed" },
   { pattern: /smartdocs\/docs\/doctrine\/active\//, reason: "doctrine-spec-linkage-changed" },
   { pattern: /smartdocs\/docs\/architecture\//, reason: "architecture-meaning-changed" },
@@ -102,9 +100,7 @@ export function detectPrecedenceLevel(
       /smartdocs\/docs\/specs\/active\//.test(file) ||
       /smartdocs\/docs\/architecture\//.test(file) ||
       /smartdocs\/docs\/decisions\//.test(file) ||
-      /docs\/spec\//.test(file) ||
-      /docs\/architecture\//.test(file) ||
-      /docs\/decisions\//.test(file)
+      /smartdocs\/docs\/specs\/raw\//.test(file)
     ) return "spec-or-arch";
   }
   for (const file of touchedFiles) {

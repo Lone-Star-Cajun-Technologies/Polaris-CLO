@@ -227,8 +227,8 @@ describe("applyRouteCognitionDelta", () => {
 // ── detectSummaryReasons ──────────────────────────────────────────────────────
 
 describe("detectSummaryReasons", () => {
-  it("detects linked-docs-changed for spec path", () => {
-    const reasons = detectSummaryReasons(["docs/spec/arch.md"]);
+  it("detects linked-docs-changed for spec raw path", () => {
+    const reasons = detectSummaryReasons(["smartdocs/docs/specs/raw/arch.md"]);
     expect(reasons).toContain("linked-docs-changed");
   });
 
@@ -238,7 +238,7 @@ describe("detectSummaryReasons", () => {
   });
 
   it("detects architecture-meaning-changed for architecture docs", () => {
-    const reasons = detectSummaryReasons(["docs/architecture/overview.md"]);
+    const reasons = detectSummaryReasons(["smartdocs/docs/architecture/overview.md"]);
     expect(reasons).toContain("architecture-meaning-changed");
   });
 
@@ -263,7 +263,7 @@ describe("applySummaryDelta", () => {
   it("reports updateWarranted for spec changes", () => {
     const result = applySummaryDelta({
       repoRoot: tmp,
-      touchedFiles: ["docs/spec/some-spec.md"],
+      touchedFiles: ["smartdocs/docs/specs/raw/some-spec.md"],
       skipRoot: true,
     });
     expect(result.updateWarranted).toBe(true);
@@ -279,16 +279,16 @@ describe("applySummaryDelta", () => {
   });
 
   it("finds existing SUMMARY.md targets", () => {
-    mkdirSync(join(tmp, "docs", "spec"), { recursive: true });
-    mkdirSync(join(tmp, "docs"), { recursive: true });
-    writeFileSync(join(tmp, "docs", "SUMMARY.md"), "# docs summary", "utf-8");
+    mkdirSync(join(tmp, "smartdocs", "docs", "specs", "raw"), { recursive: true });
+    mkdirSync(join(tmp, "smartdocs", "docs", "specs"), { recursive: true });
+    writeFileSync(join(tmp, "smartdocs", "docs", "specs", "SUMMARY.md"), "# specs summary", "utf-8");
 
     const result = applySummaryDelta({
       repoRoot: tmp,
-      touchedFiles: ["docs/spec/some.md"],
+      touchedFiles: ["smartdocs/docs/specs/raw/some.md"],
       skipRoot: true,
     });
-    expect(result.summaryTargets).toContain("docs/SUMMARY.md");
+    expect(result.summaryTargets).toContain("smartdocs/docs/specs/SUMMARY.md");
   });
 
   it("detects folders with POLARIS.md but no SUMMARY.md", () => {
@@ -319,8 +319,8 @@ describe("detectPrecedenceLevel", () => {
     expect(detectPrecedenceLevel(["smartdocs/docs/architecture/overview.md"])).toBe("spec-or-arch");
   });
 
-  it("returns spec-or-arch for docs/spec/ path", () => {
-    expect(detectPrecedenceLevel(["docs/spec/polaris-spec.md"])).toBe("spec-or-arch");
+  it("returns spec-or-arch for specs/raw/ path", () => {
+    expect(detectPrecedenceLevel(["smartdocs/docs/specs/raw/polaris-spec.md"])).toBe("spec-or-arch");
   });
 
   it("returns route-polaris-md when only a POLARIS.md is touched", () => {
@@ -333,7 +333,7 @@ describe("detectPrecedenceLevel", () => {
 
   it("promoted-doctrine wins over spec-or-arch in same batch", () => {
     expect(detectPrecedenceLevel([
-      "docs/spec/polaris-spec.md",
+      "smartdocs/docs/specs/raw/polaris-spec.md",
       "smartdocs/docs/doctrine/active/core.md",
     ])).toBe("promoted-doctrine");
   });
@@ -341,7 +341,7 @@ describe("detectPrecedenceLevel", () => {
   it("spec-or-arch wins over route-polaris-md in same batch", () => {
     expect(detectPrecedenceLevel([
       "src/map/POLARIS.md",
-      "docs/architecture/overview.md",
+      "smartdocs/docs/architecture/overview.md",
     ])).toBe("spec-or-arch");
   });
 });

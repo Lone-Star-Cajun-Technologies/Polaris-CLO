@@ -1,0 +1,71 @@
+{
+  "run_id": "polaris-run-pol-188-2026-05-28-001",
+  "skill": "bootstrap-run",
+  "branch": "main",
+  "base_commit_sha": "c7884697d68522bd6af75ef2fd6cc92bcffc7a2c",
+  "last_completed_step": "checkpoint",
+  "last_completed_child": "POL-189",
+  "next_step": "03-execute-child",
+  "open_children": [
+    "POL-190",
+    "POL-191",
+    "POL-192",
+    "POL-193",
+    "POL-194",
+    "POL-195",
+    "POL-196",
+    "POL-197"
+  ],
+  "artifact_pointers": {
+    "current_state": ".taskchain_artifacts/polaris-run/current-state.json",
+    "telemetry": ".taskchain_artifacts/bootstrap-run/runs/polaris-run-pol-188-2026-05-28-001/telemetry.jsonl"
+  },
+  "context_budget": {
+    "children_completed": 1,
+    "files_touched_total": 0,
+    "stop_threshold_remaining": 0
+  },
+  "current_state_sha": "08c48603358bc385eb0b668ec3cd0343052733f477514190629cbe978ab5136d",
+  "resume_instructions": "Run `polaris loop resume polaris-run-pol-188-2026-05-28-001` on branch `main` to continue with POL-190.",
+  "compact_mode": "standard",
+  "execution_adapter": {
+    "mode": "terminal-cli",
+    "autoDispatch": false,
+    "providerCoupling": "shell-process",
+    "priority": 2,
+    "warnings": [],
+    "reason": "terminal CLI worker adapter configured",
+    "compact_bootstrap_state": {
+      "run_id": "polaris-run-pol-188-2026-05-28-001",
+      "cluster_id": "POL-188",
+      "child_id": "POL-190",
+      "state_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json",
+      "telemetry_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/bootstrap-run/runs/polaris-run-pol-188-2026-05-28-001/telemetry.jsonl",
+      "current_state_sha": "08c48603358bc385eb0b668ec3cd0343052733f477514190629cbe978ab5136d",
+      "branch": "main",
+      "compact_mode": "standard",
+      "return_summary_contract": [
+        "child_id",
+        "status",
+        "commit_hash",
+        "validation_summary",
+        "next_action"
+      ],
+      "allow_analyze_children": false
+    },
+    "dispatch_contract": {
+      "one_child_per_worker": true,
+      "parent_receives_compact_summary_only": true,
+      "child_transcript_retained_by_worker": true,
+      "updates_current_state_and_telemetry": true
+    },
+    "fallback_order": [
+      "agent-subtask",
+      "terminal-cli",
+      "ci",
+      "ssh",
+      "remote-worker",
+      "cross-agent"
+    ]
+  }
+}

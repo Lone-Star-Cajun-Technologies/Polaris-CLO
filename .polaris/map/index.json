@@ -1,10 +1,10 @@
 {
-  "scan_date": "2026-05-28T20:45:27.380Z",
-  "file_count": 446,
+  "scan_date": "2026-05-29T04:49:43.561Z",
+  "file_count": 448,
   "coverage_pct": 47,
   "instructionCoverage": {
-    "routesCovered": 232,
-    "routesTotal": 446,
+    "routesCovered": 233,
+    "routesTotal": 448,
     "coveragePercent": 52
   },
   "entries": {
@@ -2786,6 +2786,33 @@
         "loop"
       ],
       "instructionFile": "src/loop/POLARIS.md"
+    },
+    "smartdocs/docs/doctrine/candidate/pol-199-runtime-state-consolidation-analysis.md": {
+      "domain": "finalize",
+      "route": "src/finalize",
+      "taskchain": "polaris-finalize",
+      "confidence": 0.85,
+      "classification": "indexed",
+      "last_updated": "2026-05-29T04:47:58.189Z",
+      "updated_by": "polaris-docs-ingest",
+      "tags": [
+        "docs",
+        "ingested"
+      ],
+      "instructionFile": "src/finalize/steps/POLARIS.md"
+    },
+    "smartdocs/docs/architecture/thin-parent-orchestration.md": {
+      "domain": "unknown",
+      "route": "AGENTS.md",
+      "taskchain": "polaris-core",
+      "confidence": 0.85,
+      "classification": "indexed",
+      "last_updated": "2026-05-29T04:49:43.561Z",
+      "updated_by": "polaris-docs-ingest",
+      "tags": [
+        "docs",
+        "ingested"
+      ]
     },
     ".DS_Store": {
       "domain": "unknown",

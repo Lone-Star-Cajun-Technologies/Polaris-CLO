@@ -220,6 +220,49 @@ describe("doctrinePromote", () => {
     expect(existsSync(candidatePath)).toBe(false);
   });
 
+  it("moves co-located .provenance.json sidecar alongside the .md", () => {
+    const candidatePath = join(repoRoot, "smartdocs", "docs", "doctrine", "candidate", "with-prov.md");
+    const provenanceSrc = join(repoRoot, "smartdocs", "docs", "doctrine", "candidate", "with-prov.provenance.json");
+    const content = [
+      CANDIDATE_MARKER,
+      "---",
+      "doc-type: doctrine",
+      "confidence: 0.9",
+      "recommended-action: promote",
+      "overlap-analysis: none",
+      "---",
+      "",
+      "# With Provenance",
+    ].join("\n");
+    writeFileSync(candidatePath, content);
+    writeFileSync(provenanceSrc, JSON.stringify({ classifiedAs: "doctrine-candidate" }));
+
+    const result = doctrinePromote(candidatePath, { repoRoot, runId: "test-run-prov" });
+
+    const provenanceDest = result.destination.replace(/\.md$/, ".provenance.json");
+    expect(existsSync(provenanceDest)).toBe(true);
+    expect(existsSync(provenanceSrc)).toBe(false);
+  });
+
+  it("succeeds without error when no .provenance.json sidecar exists", () => {
+    const candidatePath = join(repoRoot, "smartdocs", "docs", "doctrine", "candidate", "no-prov.md");
+    const content = [
+      CANDIDATE_MARKER,
+      "---",
+      "doc-type: doctrine",
+      "confidence: 0.9",
+      "recommended-action: promote",
+      "overlap-analysis: none",
+      "---",
+      "",
+      "# No Provenance",
+    ].join("\n");
+    writeFileSync(candidatePath, content);
+
+    const result = doctrinePromote(candidatePath, { repoRoot, runId: "test-run-noprov" });
+    expect(existsSync(result.destination)).toBe(true);
+  });
+
   it("emits audit.jsonl event on successful promotion", () => {
     const candidatePath = join(repoRoot, "smartdocs", "docs", "doctrine", "candidate", "audited.md");
     const content = [
@@ -345,5 +388,26 @@ describe("doctrineDeprecate", () => {
         { repoRoot },
       ),
     ).toThrow("Source file not found");
+  });
+
+  it("moves co-located .provenance.json sidecar alongside the .md", () => {
+    const activePath = join(repoRoot, "smartdocs", "docs", "doctrine", "active", "prov-dep.md");
+    const provenanceSrc = join(repoRoot, "smartdocs", "docs", "doctrine", "active", "prov-dep.provenance.json");
+    writeFileSync(activePath, "# Prov Dep\n\nContent.");
+    writeFileSync(provenanceSrc, JSON.stringify({ classifiedAs: "doctrine-candidate" }));
+
+    const result = doctrineDeprecate(activePath, { repoRoot, runId: "test-run-dep-prov" });
+
+    const provenanceDest = result.destination.replace(/\.md$/, ".provenance.json");
+    expect(existsSync(provenanceDest)).toBe(true);
+    expect(existsSync(provenanceSrc)).toBe(false);
+  });
+
+  it("succeeds without error when no .provenance.json sidecar exists", () => {
+    const activePath = join(repoRoot, "smartdocs", "docs", "doctrine", "active", "no-prov-dep.md");
+    writeFileSync(activePath, "# No Prov\n\nContent.");
+
+    const result = doctrineDeprecate(activePath, { repoRoot, runId: "test-run-dep-noprov" });
+    expect(existsSync(result.destination)).toBe(true);
   });
 });

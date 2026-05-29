@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "v2",
+  "source": {
+    "id": "POL-198",
+    "type": "Linear",
+    "analysis": {
+      "id": "initial-sync",
+      "doc": "Synchronized from Linear issue identifier: POL-198"
+    }
+  },
+  "nodes": {
+    "POL-198": {
+      "id": "POL-198",
+      "title": "IMPLEMENT: Dispatch-only orchestration lifecycle with startup and finalize dispatchers",
+      "status": "Done"
+    },
+    "POL-188": {
+      "id": "POL-188",
+      "title": "IMPLEMENT: Tracker-owned sealed worker dispatch and provider-agnostic local execution graph",
+      "status": "Done"
+    }
+  },
+  "dependencies": {},
+  "clusters": {
+    "POL-198": {
+      "id": "POL-198",
+      "title": "Linear Issue: POL-198",
+      "children": [
+        "POL-198",
+        "POL-188"
+      ]
+    }
+  },
+  "activeCluster": "POL-198"
+}
