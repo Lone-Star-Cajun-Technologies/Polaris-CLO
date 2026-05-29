@@ -10,7 +10,8 @@
     "tags": [
       "cli"
     ],
-    "instructionFile": "src/cli/POLARIS.md"
+    "instructionFile": "src/cli/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/cli/POLARIS.md": {
     "domain": "cli",
@@ -23,7 +24,8 @@
     "tags": [
       "cli"
     ],
-    "instructionFile": "src/cli/POLARIS.md"
+    "instructionFile": "src/cli/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/cli/SUMMARY.md": {
     "domain": "cli",
@@ -36,7 +38,8 @@
     "tags": [
       "cli"
     ],
-    "instructionFile": "src/cli/POLARIS.md"
+    "instructionFile": "src/cli/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/cli/args.test.ts": {
     "domain": "cli",
@@ -50,7 +53,8 @@
       "cli",
       "test"
     ],
-    "instructionFile": "src/cli/POLARIS.md"
+    "instructionFile": "src/cli/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/cli/args.ts": {
     "domain": "cli",
@@ -63,7 +67,8 @@
     "tags": [
       "cli"
     ],
-    "instructionFile": "src/cli/POLARIS.md"
+    "instructionFile": "src/cli/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/cli/index.test.ts": {
     "domain": "cli",
@@ -77,7 +82,8 @@
       "cli",
       "test"
     ],
-    "instructionFile": "src/cli/POLARIS.md"
+    "instructionFile": "src/cli/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/cli/index.ts": {
     "domain": "cli",
@@ -91,7 +97,8 @@
       "cli",
       "entry-point"
     ],
-    "instructionFile": "src/cli/POLARIS.md"
+    "instructionFile": "src/cli/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/cli/init.test.ts": {
     "domain": "cli",
@@ -105,7 +112,8 @@
       "cli",
       "test"
     ],
-    "instructionFile": "src/cli/POLARIS.md"
+    "instructionFile": "src/cli/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/cli/init.ts": {
     "domain": "cli",
@@ -118,7 +126,8 @@
     "tags": [
       "cli"
     ],
-    "instructionFile": "src/cli/POLARIS.md"
+    "instructionFile": "src/cli/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/cli/version.test.ts": {
     "domain": "cli",
@@ -132,7 +141,8 @@
       "cli",
       "test"
     ],
-    "instructionFile": "src/cli/POLARIS.md"
+    "instructionFile": "src/cli/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/cli/version.ts": {
     "domain": "cli",
@@ -145,7 +155,8 @@
     "tags": [
       "cli"
     ],
-    "instructionFile": "src/cli/POLARIS.md"
+    "instructionFile": "src/cli/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/cognition/POLARIS.md": {
     "domain": "cognition",
@@ -158,7 +169,8 @@
     "tags": [
       "cognition"
     ],
-    "instructionFile": "src/cognition/POLARIS.md"
+    "instructionFile": "src/cognition/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/cognition/SUMMARY.md": {
     "domain": "cognition",
@@ -171,7 +183,8 @@
     "tags": [
       "cognition"
     ],
-    "instructionFile": "src/cognition/POLARIS.md"
+    "instructionFile": "src/cognition/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/cognition/cognition.test.ts": {
     "domain": "cognition",
@@ -185,7 +198,8 @@
       "cognition",
       "test"
     ],
-    "instructionFile": "src/cognition/POLARIS.md"
+    "instructionFile": "src/cognition/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/cognition/index.ts": {
     "domain": "cognition",
@@ -199,7 +213,8 @@
       "cognition",
       "entry-point"
     ],
-    "instructionFile": "src/cognition/POLARIS.md"
+    "instructionFile": "src/cognition/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/cognition/route-cognition-delta.ts": {
     "domain": "cognition",
@@ -212,7 +227,8 @@
     "tags": [
       "cognition"
     ],
-    "instructionFile": "src/cognition/POLARIS.md"
+    "instructionFile": "src/cognition/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/cognition/summary-delta.ts": {
     "domain": "cognition",
@@ -225,7 +241,8 @@
     "tags": [
       "cognition"
     ],
-    "instructionFile": "src/cognition/POLARIS.md"
+    "instructionFile": "src/cognition/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/cognition/validate.ts": {
     "domain": "cognition",
@@ -238,7 +255,8 @@
     "tags": [
       "cognition"
     ],
-    "instructionFile": "src/cognition/POLARIS.md"
+    "instructionFile": "src/cognition/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/config/.gitkeep": {
     "domain": "config",
@@ -251,7 +269,8 @@
     "tags": [
       "config"
     ],
-    "instructionFile": "src/config/POLARIS.md"
+    "instructionFile": "src/config/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/config/POLARIS.md": {
     "domain": "config",
@@ -264,7 +283,8 @@
     "tags": [
       "config"
     ],
-    "instructionFile": "src/config/POLARIS.md"
+    "instructionFile": "src/config/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/config/SUMMARY.md": {
     "domain": "config",
@@ -277,7 +297,8 @@
     "tags": [
       "config"
     ],
-    "instructionFile": "src/config/POLARIS.md"
+    "instructionFile": "src/config/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/config/defaults.ts": {
     "domain": "config",
@@ -290,7 +311,8 @@
     "tags": [
       "config"
     ],
-    "instructionFile": "src/config/POLARIS.md"
+    "instructionFile": "src/config/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/config/index.ts": {
     "domain": "config",
@@ -304,7 +326,8 @@
       "config",
       "entry-point"
     ],
-    "instructionFile": "src/config/POLARIS.md"
+    "instructionFile": "src/config/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/config/loader.ts": {
     "domain": "config",
@@ -317,7 +340,8 @@
     "tags": [
       "config"
     ],
-    "instructionFile": "src/config/POLARIS.md"
+    "instructionFile": "src/config/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/config/provider-detect.test.ts": {
     "domain": "config",
@@ -331,7 +355,8 @@
       "config",
       "test"
     ],
-    "instructionFile": "src/config/POLARIS.md"
+    "instructionFile": "src/config/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/config/provider-detect.ts": {
     "domain": "config",
@@ -344,7 +369,8 @@
     "tags": [
       "config"
     ],
-    "instructionFile": "src/config/POLARIS.md"
+    "instructionFile": "src/config/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/config/schema.json": {
     "domain": "config",
@@ -357,7 +383,8 @@
     "tags": [
       "config"
     ],
-    "instructionFile": "src/config/POLARIS.md"
+    "instructionFile": "src/config/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/config/schema.ts": {
     "domain": "config",
@@ -370,7 +397,8 @@
     "tags": [
       "config"
     ],
-    "instructionFile": "src/config/POLARIS.md"
+    "instructionFile": "src/config/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/config/show.test.ts": {
     "domain": "config",
@@ -384,7 +412,8 @@
       "config",
       "test"
     ],
-    "instructionFile": "src/config/POLARIS.md"
+    "instructionFile": "src/config/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/config/show.ts": {
     "domain": "config",
@@ -397,7 +426,8 @@
     "tags": [
       "config"
     ],
-    "instructionFile": "src/config/POLARIS.md"
+    "instructionFile": "src/config/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/config/validator.test.ts": {
     "domain": "config",
@@ -411,7 +441,8 @@
       "config",
       "test"
     ],
-    "instructionFile": "src/config/POLARIS.md"
+    "instructionFile": "src/config/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/config/validator.ts": {
     "domain": "config",
@@ -424,7 +455,8 @@
     "tags": [
       "config"
     ],
-    "instructionFile": "src/config/POLARIS.md"
+    "instructionFile": "src/config/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/finalize/.gitkeep": {
     "domain": "finalize",
@@ -437,7 +469,8 @@
     "tags": [
       "finalize"
     ],
-    "instructionFile": "src/finalize/POLARIS.md"
+    "instructionFile": "src/finalize/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/finalize/POLARIS.md": {
     "domain": "finalize",
@@ -450,7 +483,8 @@
     "tags": [
       "finalize"
     ],
-    "instructionFile": "src/finalize/POLARIS.md"
+    "instructionFile": "src/finalize/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/finalize/SUMMARY.md": {
     "domain": "finalize",
@@ -463,7 +497,8 @@
     "tags": [
       "finalize"
     ],
-    "instructionFile": "src/finalize/POLARIS.md"
+    "instructionFile": "src/finalize/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/finalize/finalize.test.ts": {
     "domain": "finalize",
@@ -477,7 +512,8 @@
       "finalize",
       "test"
     ],
-    "instructionFile": "src/finalize/POLARIS.md"
+    "instructionFile": "src/finalize/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/finalize/github.ts": {
     "domain": "finalize",
@@ -490,7 +526,8 @@
     "tags": [
       "finalize"
     ],
-    "instructionFile": "src/finalize/POLARIS.md"
+    "instructionFile": "src/finalize/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/finalize/index.ts": {
     "domain": "finalize",
@@ -504,7 +541,8 @@
       "finalize",
       "entry-point"
     ],
-    "instructionFile": "src/finalize/POLARIS.md"
+    "instructionFile": "src/finalize/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/finalize/linear.ts": {
     "domain": "finalize",
@@ -517,7 +555,8 @@
     "tags": [
       "finalize"
     ],
-    "instructionFile": "src/finalize/POLARIS.md"
+    "instructionFile": "src/finalize/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/finalize/run-report.ts": {
     "domain": "finalize",
@@ -530,7 +569,8 @@
     "tags": [
       "finalize"
     ],
-    "instructionFile": "src/finalize/POLARIS.md"
+    "instructionFile": "src/finalize/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/finalize/steps/01-map-update.ts": {
     "domain": "finalize",
@@ -543,7 +583,8 @@
     "tags": [
       "finalize"
     ],
-    "instructionFile": "src/finalize/steps/POLARIS.md"
+    "instructionFile": "src/finalize/steps/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/finalize/steps/02-map-validate.ts": {
     "domain": "finalize",
@@ -556,7 +597,8 @@
     "tags": [
       "finalize"
     ],
-    "instructionFile": "src/finalize/steps/POLARIS.md"
+    "instructionFile": "src/finalize/steps/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/finalize/steps/03-schema-validate.ts": {
     "domain": "finalize",
@@ -569,7 +611,8 @@
     "tags": [
       "finalize"
     ],
-    "instructionFile": "src/finalize/steps/POLARIS.md"
+    "instructionFile": "src/finalize/steps/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/finalize/steps/04-run-checks.ts": {
     "domain": "finalize",
@@ -582,7 +625,8 @@
     "tags": [
       "finalize"
     ],
-    "instructionFile": "src/finalize/steps/POLARIS.md"
+    "instructionFile": "src/finalize/steps/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/finalize/steps/05-generate-report.ts": {
     "domain": "finalize",
@@ -595,7 +639,8 @@
     "tags": [
       "finalize"
     ],
-    "instructionFile": "src/finalize/steps/POLARIS.md"
+    "instructionFile": "src/finalize/steps/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/finalize/steps/06-commit.ts": {
     "domain": "finalize",
@@ -608,7 +653,8 @@
     "tags": [
       "finalize"
     ],
-    "instructionFile": "src/finalize/steps/POLARIS.md"
+    "instructionFile": "src/finalize/steps/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/finalize/steps/07-push.ts": {
     "domain": "finalize",
@@ -621,7 +667,8 @@
     "tags": [
       "finalize"
     ],
-    "instructionFile": "src/finalize/steps/POLARIS.md"
+    "instructionFile": "src/finalize/steps/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/finalize/steps/08-create-pr.ts": {
     "domain": "finalize",
@@ -634,7 +681,8 @@
     "tags": [
       "finalize"
     ],
-    "instructionFile": "src/finalize/steps/POLARIS.md"
+    "instructionFile": "src/finalize/steps/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/finalize/steps/09-update-state.ts": {
     "domain": "finalize",
@@ -647,7 +695,8 @@
     "tags": [
       "finalize"
     ],
-    "instructionFile": "src/finalize/steps/POLARIS.md"
+    "instructionFile": "src/finalize/steps/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/finalize/steps/10-append-jsonl.ts": {
     "domain": "finalize",
@@ -660,7 +709,8 @@
     "tags": [
       "finalize"
     ],
-    "instructionFile": "src/finalize/steps/POLARIS.md"
+    "instructionFile": "src/finalize/steps/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/finalize/steps/11-update-linear.ts": {
     "domain": "finalize",
@@ -673,7 +723,8 @@
     "tags": [
       "finalize"
     ],
-    "instructionFile": "src/finalize/steps/POLARIS.md"
+    "instructionFile": "src/finalize/steps/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/finalize/steps/12-archive.ts": {
     "domain": "finalize",
@@ -686,7 +737,8 @@
     "tags": [
       "finalize"
     ],
-    "instructionFile": "src/finalize/steps/POLARIS.md"
+    "instructionFile": "src/finalize/steps/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/finalize/steps/POLARIS.md": {
     "domain": "finalize",
@@ -699,7 +751,8 @@
     "tags": [
       "finalize"
     ],
-    "instructionFile": "src/finalize/steps/POLARIS.md"
+    "instructionFile": "src/finalize/steps/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/finalize/steps/SUMMARY.md": {
     "domain": "finalize",
@@ -712,7 +765,8 @@
     "tags": [
       "finalize"
     ],
-    "instructionFile": "src/finalize/steps/POLARIS.md"
+    "instructionFile": "src/finalize/steps/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/ignore/.gitkeep": {
     "domain": "ignore",
@@ -725,7 +779,8 @@
     "tags": [
       "ignore"
     ],
-    "instructionFile": "src/ignore/POLARIS.md"
+    "instructionFile": "src/ignore/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/ignore/POLARIS.md": {
     "domain": "ignore",
@@ -738,7 +793,8 @@
     "tags": [
       "ignore"
     ],
-    "instructionFile": "src/ignore/POLARIS.md"
+    "instructionFile": "src/ignore/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/ignore/SUMMARY.md": {
     "domain": "ignore",
@@ -751,7 +807,8 @@
     "tags": [
       "ignore"
     ],
-    "instructionFile": "src/ignore/POLARIS.md"
+    "instructionFile": "src/ignore/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/ignore/defaults.ts": {
     "domain": "ignore",
@@ -764,7 +821,8 @@
     "tags": [
       "ignore"
     ],
-    "instructionFile": "src/ignore/POLARIS.md"
+    "instructionFile": "src/ignore/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/ignore/parser.ts": {
     "domain": "ignore",
@@ -777,7 +835,8 @@
     "tags": [
       "ignore"
     ],
-    "instructionFile": "src/ignore/POLARIS.md"
+    "instructionFile": "src/ignore/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/.gitkeep": {
     "domain": "loop",
@@ -790,7 +849,8 @@
     "tags": [
       "loop"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/POLARIS.md": {
     "domain": "loop",
@@ -803,7 +863,8 @@
     "tags": [
       "loop"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/SUMMARY.md": {
     "domain": "loop",
@@ -816,7 +877,8 @@
     "tags": [
       "loop"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/abort.test.ts": {
     "domain": "loop",
@@ -830,7 +892,8 @@
       "loop",
       "test"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/abort.ts": {
     "domain": "loop",
@@ -843,7 +906,8 @@
     "tags": [
       "loop"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/adapters/POLARIS.md": {
     "domain": "loop",
@@ -856,7 +920,8 @@
     "tags": [
       "loop"
     ],
-    "instructionFile": "src/loop/adapters/POLARIS.md"
+    "instructionFile": "src/loop/adapters/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/adapters/SUMMARY.md": {
     "domain": "loop",
@@ -869,7 +934,8 @@
     "tags": [
       "loop"
     ],
-    "instructionFile": "src/loop/adapters/POLARIS.md"
+    "instructionFile": "src/loop/adapters/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/adapters/__tests__/POLARIS.md": {
     "domain": "loop",
@@ -882,7 +948,8 @@
     "tags": [
       "loop"
     ],
-    "instructionFile": "src/loop/adapters/__tests__/POLARIS.md"
+    "instructionFile": "src/loop/adapters/__tests__/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/adapters/__tests__/SUMMARY.md": {
     "domain": "loop",
@@ -895,7 +962,8 @@
     "tags": [
       "loop"
     ],
-    "instructionFile": "src/loop/adapters/__tests__/POLARIS.md"
+    "instructionFile": "src/loop/adapters/__tests__/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/adapters/__tests__/terminal-cli.test.ts": {
     "domain": "loop",
@@ -909,7 +977,8 @@
       "loop",
       "test"
     ],
-    "instructionFile": "src/loop/adapters/__tests__/POLARIS.md"
+    "instructionFile": "src/loop/adapters/__tests__/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/adapters/agent-subtask.test.ts": {
     "domain": "loop",
@@ -923,7 +992,8 @@
       "loop",
       "test"
     ],
-    "instructionFile": "src/loop/adapters/POLARIS.md"
+    "instructionFile": "src/loop/adapters/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/adapters/agent-subtask.ts": {
     "domain": "loop",
@@ -936,7 +1006,8 @@
     "tags": [
       "loop"
     ],
-    "instructionFile": "src/loop/adapters/POLARIS.md"
+    "instructionFile": "src/loop/adapters/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/adapters/index.ts": {
     "domain": "loop",
@@ -950,7 +1021,8 @@
       "loop",
       "entry-point"
     ],
-    "instructionFile": "src/loop/adapters/POLARIS.md"
+    "instructionFile": "src/loop/adapters/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/adapters/registry.ts": {
     "domain": "loop",
@@ -963,7 +1035,8 @@
     "tags": [
       "loop"
     ],
-    "instructionFile": "src/loop/adapters/POLARIS.md"
+    "instructionFile": "src/loop/adapters/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/adapters/terminal-cli.ts": {
     "domain": "loop",
@@ -976,7 +1049,8 @@
     "tags": [
       "loop"
     ],
-    "instructionFile": "src/loop/adapters/POLARIS.md"
+    "instructionFile": "src/loop/adapters/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/adapters/types.ts": {
     "domain": "loop",
@@ -989,7 +1063,8 @@
     "tags": [
       "loop"
     ],
-    "instructionFile": "src/loop/adapters/POLARIS.md"
+    "instructionFile": "src/loop/adapters/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/bootstrap-packet.test.ts": {
     "domain": "loop",
@@ -1003,7 +1078,8 @@
       "loop",
       "test"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/bootstrap-packet.ts": {
     "domain": "loop",
@@ -1016,7 +1092,8 @@
     "tags": [
       "loop"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/budget.test.ts": {
     "domain": "loop",
@@ -1030,7 +1107,8 @@
       "loop",
       "test"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/budget.ts": {
     "domain": "loop",
@@ -1043,7 +1121,8 @@
     "tags": [
       "loop"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/checkpoint.ts": {
     "domain": "loop",
@@ -1056,7 +1135,8 @@
     "tags": [
       "loop"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/compact-return.ts": {
     "domain": "loop",
@@ -1069,7 +1149,8 @@
     "tags": [
       "loop"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/continue.test.ts": {
     "domain": "loop",
@@ -1083,7 +1164,8 @@
       "loop",
       "test"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/continue.ts": {
     "domain": "loop",
@@ -1096,7 +1178,8 @@
     "tags": [
       "loop"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/dispatch-boundary.ts": {
     "domain": "loop",
@@ -1109,7 +1192,8 @@
     "tags": [
       "loop"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/dispatch.test.ts": {
     "domain": "loop",
@@ -1123,7 +1207,8 @@
       "loop",
       "test"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/dispatch.ts": {
     "domain": "loop",
@@ -1136,7 +1221,8 @@
     "tags": [
       "loop"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/ephemeral-smoke.test.ts": {
     "domain": "loop",
@@ -1150,7 +1236,8 @@
       "loop",
       "test"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/execution-adapter.test.ts": {
     "domain": "loop",
@@ -1164,7 +1251,8 @@
       "loop",
       "test"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/execution-adapter.ts": {
     "domain": "loop",
@@ -1177,7 +1265,8 @@
     "tags": [
       "loop"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/index.ts": {
     "domain": "loop",
@@ -1191,7 +1280,8 @@
       "loop",
       "entry-point"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/ledger.test.ts": {
     "domain": "loop",
@@ -1205,7 +1295,8 @@
       "loop",
       "test"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/ledger.ts": {
     "domain": "loop",
@@ -1218,7 +1309,8 @@
     "tags": [
       "loop"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/lifecycle.test.ts": {
     "domain": "loop",
@@ -1232,7 +1324,8 @@
       "loop",
       "test"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/lifecycle.ts": {
     "domain": "loop",
@@ -1245,7 +1338,8 @@
     "tags": [
       "loop"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/parent.test.ts": {
     "domain": "loop",
@@ -1259,7 +1353,8 @@
       "loop",
       "test"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/parent.ts": {
     "domain": "loop",
@@ -1272,7 +1367,8 @@
     "tags": [
       "loop"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/resume.test.ts": {
     "domain": "loop",
@@ -1286,7 +1382,8 @@
       "loop",
       "test"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/resume.ts": {
     "domain": "loop",
@@ -1299,7 +1396,8 @@
     "tags": [
       "loop"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/run-bootstrap.ts": {
     "domain": "loop",
@@ -1312,7 +1410,8 @@
     "tags": [
       "loop"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/status.test.ts": {
     "domain": "loop",
@@ -1326,7 +1425,8 @@
       "loop",
       "test"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/status.ts": {
     "domain": "loop",
@@ -1339,7 +1439,8 @@
     "tags": [
       "loop"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/worker-packet.test.ts": {
     "domain": "loop",
@@ -1353,7 +1454,8 @@
       "loop",
       "test"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/worker-packet.ts": {
     "domain": "loop",
@@ -1366,7 +1468,8 @@
     "tags": [
       "loop"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/worker-prompt.test.ts": {
     "domain": "loop",
@@ -1380,7 +1483,8 @@
       "loop",
       "test"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/worker-prompt.ts": {
     "domain": "loop",
@@ -1393,7 +1497,8 @@
     "tags": [
       "loop"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/worker.test.ts": {
     "domain": "loop",
@@ -1407,7 +1512,8 @@
       "loop",
       "test"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/worker.ts": {
     "domain": "loop",
@@ -1420,7 +1526,8 @@
     "tags": [
       "loop"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/map/.gitkeep": {
     "domain": "map",
@@ -1433,7 +1540,8 @@
     "tags": [
       "map"
     ],
-    "instructionFile": "src/map/POLARIS.md"
+    "instructionFile": "src/map/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/map/POLARIS.md": {
     "domain": "map",
@@ -1446,7 +1554,8 @@
     "tags": [
       "map"
     ],
-    "instructionFile": "src/map/POLARIS.md"
+    "instructionFile": "src/map/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/map/SUMMARY.md": {
     "domain": "map",
@@ -1459,7 +1568,8 @@
     "tags": [
       "map"
     ],
-    "instructionFile": "src/map/POLARIS.md"
+    "instructionFile": "src/map/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/map/atlas.ts": {
     "domain": "map",
@@ -1472,7 +1582,8 @@
     "tags": [
       "map"
     ],
-    "instructionFile": "src/map/POLARIS.md"
+    "instructionFile": "src/map/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/map/backfill.test.ts": {
     "domain": "map",
@@ -1486,7 +1597,8 @@
       "map",
       "test"
     ],
-    "instructionFile": "src/map/POLARIS.md"
+    "instructionFile": "src/map/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/map/backfill.ts": {
     "domain": "map",
@@ -1499,7 +1611,8 @@
     "tags": [
       "map"
     ],
-    "instructionFile": "src/map/POLARIS.md"
+    "instructionFile": "src/map/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/map/index.ts": {
     "domain": "map",
@@ -1513,7 +1626,8 @@
       "map",
       "entry-point"
     ],
-    "instructionFile": "src/map/POLARIS.md"
+    "instructionFile": "src/map/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/map/inference.test.ts": {
     "domain": "map",
@@ -1527,7 +1641,8 @@
       "map",
       "test"
     ],
-    "instructionFile": "src/map/POLARIS.md"
+    "instructionFile": "src/map/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/map/inference.ts": {
     "domain": "map",
@@ -1540,7 +1655,8 @@
     "tags": [
       "map"
     ],
-    "instructionFile": "src/map/POLARIS.md"
+    "instructionFile": "src/map/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/map/query.test.ts": {
     "domain": "map",
@@ -1554,7 +1670,8 @@
       "map",
       "test"
     ],
-    "instructionFile": "src/map/POLARIS.md"
+    "instructionFile": "src/map/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/map/query.ts": {
     "domain": "map",
@@ -1567,7 +1684,8 @@
     "tags": [
       "map"
     ],
-    "instructionFile": "src/map/POLARIS.md"
+    "instructionFile": "src/map/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/map/update.test.ts": {
     "domain": "map",
@@ -1581,7 +1699,8 @@
       "map",
       "test"
     ],
-    "instructionFile": "src/map/POLARIS.md"
+    "instructionFile": "src/map/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/map/update.ts": {
     "domain": "map",
@@ -1594,7 +1713,8 @@
     "tags": [
       "map"
     ],
-    "instructionFile": "src/map/POLARIS.md"
+    "instructionFile": "src/map/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/map/validate.ts": {
     "domain": "map",
@@ -1607,7 +1727,8 @@
     "tags": [
       "map"
     ],
-    "instructionFile": "src/map/POLARIS.md"
+    "instructionFile": "src/map/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/mcp/POLARIS.md": {
     "domain": "mcp",
@@ -1620,7 +1741,8 @@
     "tags": [
       "mcp"
     ],
-    "instructionFile": "src/mcp/POLARIS.md"
+    "instructionFile": "src/mcp/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/mcp/SUMMARY.md": {
     "domain": "mcp",
@@ -1633,7 +1755,8 @@
     "tags": [
       "mcp"
     ],
-    "instructionFile": "src/mcp/POLARIS.md"
+    "instructionFile": "src/mcp/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/mcp/lib/POLARIS.md": {
     "domain": "mcp",
@@ -1646,7 +1769,8 @@
     "tags": [
       "mcp"
     ],
-    "instructionFile": "src/mcp/lib/POLARIS.md"
+    "instructionFile": "src/mcp/lib/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/mcp/lib/SUMMARY.md": {
     "domain": "mcp",
@@ -1659,7 +1783,8 @@
     "tags": [
       "mcp"
     ],
-    "instructionFile": "src/mcp/lib/POLARIS.md"
+    "instructionFile": "src/mcp/lib/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/mcp/lib/invoke.ts": {
     "domain": "mcp",
@@ -1672,7 +1797,8 @@
     "tags": [
       "mcp"
     ],
-    "instructionFile": "src/mcp/lib/POLARIS.md"
+    "instructionFile": "src/mcp/lib/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/mcp/lib/redact.test.ts": {
     "domain": "mcp",
@@ -1686,7 +1812,8 @@
       "mcp",
       "test"
     ],
-    "instructionFile": "src/mcp/lib/POLARIS.md"
+    "instructionFile": "src/mcp/lib/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/mcp/lib/redact.ts": {
     "domain": "mcp",
@@ -1699,7 +1826,8 @@
     "tags": [
       "mcp"
     ],
-    "instructionFile": "src/mcp/lib/POLARIS.md"
+    "instructionFile": "src/mcp/lib/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/mcp/lib/root.test.ts": {
     "domain": "mcp",
@@ -1713,7 +1841,8 @@
       "mcp",
       "test"
     ],
-    "instructionFile": "src/mcp/lib/POLARIS.md"
+    "instructionFile": "src/mcp/lib/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/mcp/lib/root.ts": {
     "domain": "mcp",
@@ -1726,7 +1855,8 @@
     "tags": [
       "mcp"
     ],
-    "instructionFile": "src/mcp/lib/POLARIS.md"
+    "instructionFile": "src/mcp/lib/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/mcp/server.ts": {
     "domain": "mcp",
@@ -1739,7 +1869,8 @@
     "tags": [
       "mcp"
     ],
-    "instructionFile": "src/mcp/POLARIS.md"
+    "instructionFile": "src/mcp/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/mcp/tools/POLARIS.md": {
     "domain": "mcp",
@@ -1752,7 +1883,8 @@
     "tags": [
       "mcp"
     ],
-    "instructionFile": "src/mcp/tools/POLARIS.md"
+    "instructionFile": "src/mcp/tools/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/mcp/tools/SUMMARY.md": {
     "domain": "mcp",
@@ -1765,7 +1897,8 @@
     "tags": [
       "mcp"
     ],
-    "instructionFile": "src/mcp/tools/POLARIS.md"
+    "instructionFile": "src/mcp/tools/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/mcp/tools/claim-child.test.ts": {
     "domain": "mcp",
@@ -1779,7 +1912,8 @@
       "mcp",
       "test"
     ],
-    "instructionFile": "src/mcp/tools/POLARIS.md"
+    "instructionFile": "src/mcp/tools/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/mcp/tools/claim-child.ts": {
     "domain": "mcp",
@@ -1792,7 +1926,8 @@
     "tags": [
       "mcp"
     ],
-    "instructionFile": "src/mcp/tools/POLARIS.md"
+    "instructionFile": "src/mcp/tools/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/mcp/tools/current-state.test.ts": {
     "domain": "mcp",
@@ -1806,7 +1941,8 @@
       "mcp",
       "test"
     ],
-    "instructionFile": "src/mcp/tools/POLARIS.md"
+    "instructionFile": "src/mcp/tools/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/mcp/tools/current-state.ts": {
     "domain": "mcp",
@@ -1819,7 +1955,8 @@
     "tags": [
       "mcp"
     ],
-    "instructionFile": "src/mcp/tools/POLARIS.md"
+    "instructionFile": "src/mcp/tools/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/mcp/tools/dispatch-result.test.ts": {
     "domain": "mcp",
@@ -1833,7 +1970,8 @@
       "mcp",
       "test"
     ],
-    "instructionFile": "src/mcp/tools/POLARIS.md"
+    "instructionFile": "src/mcp/tools/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/mcp/tools/dispatch-result.ts": {
     "domain": "mcp",
@@ -1846,7 +1984,8 @@
     "tags": [
       "mcp"
     ],
-    "instructionFile": "src/mcp/tools/POLARIS.md"
+    "instructionFile": "src/mcp/tools/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/mcp/tools/index.test.ts": {
     "domain": "mcp",
@@ -1860,7 +1999,8 @@
       "mcp",
       "test"
     ],
-    "instructionFile": "src/mcp/tools/POLARIS.md"
+    "instructionFile": "src/mcp/tools/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/mcp/tools/index.ts": {
     "domain": "mcp",
@@ -1874,7 +2014,8 @@
       "mcp",
       "entry-point"
     ],
-    "instructionFile": "src/mcp/tools/POLARIS.md"
+    "instructionFile": "src/mcp/tools/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/mcp/tools/loop-continue.test.ts": {
     "domain": "mcp",
@@ -1888,7 +2029,8 @@
       "mcp",
       "test"
     ],
-    "instructionFile": "src/mcp/tools/POLARIS.md"
+    "instructionFile": "src/mcp/tools/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/mcp/tools/loop-continue.ts": {
     "domain": "mcp",
@@ -1901,7 +2043,8 @@
     "tags": [
       "mcp"
     ],
-    "instructionFile": "src/mcp/tools/POLARIS.md"
+    "instructionFile": "src/mcp/tools/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/mcp/tools/loop-dry-run.ts": {
     "domain": "mcp",
@@ -1914,7 +2057,8 @@
     "tags": [
       "mcp"
     ],
-    "instructionFile": "src/mcp/tools/POLARIS.md"
+    "instructionFile": "src/mcp/tools/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/mcp/tools/status.ts": {
     "domain": "mcp",
@@ -1927,7 +2071,8 @@
     "tags": [
       "mcp"
     ],
-    "instructionFile": "src/mcp/tools/POLARIS.md"
+    "instructionFile": "src/mcp/tools/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/runs/POLARIS.md": {
     "domain": "runs",
@@ -1940,7 +2085,8 @@
     "tags": [
       "runs"
     ],
-    "instructionFile": "src/runs/POLARIS.md"
+    "instructionFile": "src/runs/POLARIS.md",
+    "role_owner": "foreman"
   },
   "src/runs/SUMMARY.md": {
     "domain": "runs",
@@ -1953,7 +2099,8 @@
     "tags": [
       "runs"
     ],
-    "instructionFile": "src/runs/POLARIS.md"
+    "instructionFile": "src/runs/POLARIS.md",
+    "role_owner": "foreman"
   },
   "src/runs/index.test.ts": {
     "domain": "runs",
@@ -1967,7 +2114,8 @@
       "runs",
       "test"
     ],
-    "instructionFile": "src/runs/POLARIS.md"
+    "instructionFile": "src/runs/POLARIS.md",
+    "role_owner": "foreman"
   },
   "src/runs/index.ts": {
     "domain": "runs",
@@ -1981,7 +2129,8 @@
       "runs",
       "entry-point"
     ],
-    "instructionFile": "src/runs/POLARIS.md"
+    "instructionFile": "src/runs/POLARIS.md",
+    "role_owner": "foreman"
   },
   "src/runs/ledger-tail.ts": {
     "domain": "runs",
@@ -1994,7 +2143,8 @@
     "tags": [
       "runs"
     ],
-    "instructionFile": "src/runs/POLARIS.md"
+    "instructionFile": "src/runs/POLARIS.md",
+    "role_owner": "foreman"
   },
   "src/runs/list.ts": {
     "domain": "runs",
@@ -2007,7 +2157,8 @@
     "tags": [
       "runs"
     ],
-    "instructionFile": "src/runs/POLARIS.md"
+    "instructionFile": "src/runs/POLARIS.md",
+    "role_owner": "foreman"
   },
   "src/runs/reconcile.ts": {
     "domain": "runs",
@@ -2020,7 +2171,8 @@
     "tags": [
       "runs"
     ],
-    "instructionFile": "src/runs/POLARIS.md"
+    "instructionFile": "src/runs/POLARIS.md",
+    "role_owner": "foreman"
   },
   "src/runs/show.ts": {
     "domain": "runs",
@@ -2033,7 +2185,8 @@
     "tags": [
       "runs"
     ],
-    "instructionFile": "src/runs/POLARIS.md"
+    "instructionFile": "src/runs/POLARIS.md",
+    "role_owner": "foreman"
   },
   "src/runtime/POLARIS.md": {
     "domain": "runtime",
@@ -2046,7 +2199,8 @@
     "tags": [
       "runtime"
     ],
-    "instructionFile": "src/runtime/POLARIS.md"
+    "instructionFile": "src/runtime/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/runtime/SUMMARY.md": {
     "domain": "runtime",
@@ -2059,7 +2213,8 @@
     "tags": [
       "runtime"
     ],
-    "instructionFile": "src/runtime/POLARIS.md"
+    "instructionFile": "src/runtime/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/runtime/audit/POLARIS.md": {
     "domain": "runtime",
@@ -2072,7 +2227,8 @@
     "tags": [
       "runtime"
     ],
-    "instructionFile": "src/runtime/audit/POLARIS.md"
+    "instructionFile": "src/runtime/audit/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/runtime/audit/SUMMARY.md": {
     "domain": "runtime",
@@ -2085,7 +2241,8 @@
     "tags": [
       "runtime"
     ],
-    "instructionFile": "src/runtime/audit/POLARIS.md"
+    "instructionFile": "src/runtime/audit/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/runtime/audit/logger.ts": {
     "domain": "runtime",
@@ -2098,7 +2255,8 @@
     "tags": [
       "runtime"
     ],
-    "instructionFile": "src/runtime/audit/POLARIS.md"
+    "instructionFile": "src/runtime/audit/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/runtime/audit/reader.ts": {
     "domain": "runtime",
@@ -2111,7 +2269,8 @@
     "tags": [
       "runtime"
     ],
-    "instructionFile": "src/runtime/audit/POLARIS.md"
+    "instructionFile": "src/runtime/audit/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/runtime/checkpoint.ts": {
     "domain": "runtime",
@@ -2124,7 +2283,8 @@
     "tags": [
       "runtime"
     ],
-    "instructionFile": "src/runtime/POLARIS.md"
+    "instructionFile": "src/runtime/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/runtime/continuation/POLARIS.md": {
     "domain": "runtime",
@@ -2137,7 +2297,8 @@
     "tags": [
       "runtime"
     ],
-    "instructionFile": "src/runtime/continuation/POLARIS.md"
+    "instructionFile": "src/runtime/continuation/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/runtime/continuation/SUMMARY.md": {
     "domain": "runtime",
@@ -2150,7 +2311,8 @@
     "tags": [
       "runtime"
     ],
-    "instructionFile": "src/runtime/continuation/POLARIS.md"
+    "instructionFile": "src/runtime/continuation/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/runtime/continuation/confirmed.test.ts": {
     "domain": "runtime",
@@ -2164,7 +2326,8 @@
       "runtime",
       "test"
     ],
-    "instructionFile": "src/runtime/continuation/POLARIS.md"
+    "instructionFile": "src/runtime/continuation/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/runtime/continuation/confirmed.ts": {
     "domain": "runtime",
@@ -2177,7 +2340,8 @@
     "tags": [
       "runtime"
     ],
-    "instructionFile": "src/runtime/continuation/POLARIS.md"
+    "instructionFile": "src/runtime/continuation/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/runtime/continuation/dry-run.ts": {
     "domain": "runtime",
@@ -2190,7 +2354,8 @@
     "tags": [
       "runtime"
     ],
-    "instructionFile": "src/runtime/continuation/POLARIS.md"
+    "instructionFile": "src/runtime/continuation/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/runtime/execution-window.ts": {
     "domain": "runtime",
@@ -2203,7 +2368,8 @@
     "tags": [
       "runtime"
     ],
-    "instructionFile": "src/runtime/POLARIS.md"
+    "instructionFile": "src/runtime/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/runtime/scheduling/POLARIS.md": {
     "domain": "runtime",
@@ -2216,7 +2382,8 @@
     "tags": [
       "runtime"
     ],
-    "instructionFile": "src/runtime/scheduling/POLARIS.md"
+    "instructionFile": "src/runtime/scheduling/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/runtime/scheduling/SUMMARY.md": {
     "domain": "runtime",
@@ -2229,7 +2396,8 @@
     "tags": [
       "runtime"
     ],
-    "instructionFile": "src/runtime/scheduling/POLARIS.md"
+    "instructionFile": "src/runtime/scheduling/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/runtime/scheduling/child-selector.ts": {
     "domain": "runtime",
@@ -2242,7 +2410,8 @@
     "tags": [
       "runtime"
     ],
-    "instructionFile": "src/runtime/scheduling/POLARIS.md"
+    "instructionFile": "src/runtime/scheduling/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/runtime/state.ts": {
     "domain": "runtime",
@@ -2255,7 +2424,8 @@
     "tags": [
       "runtime"
     ],
-    "instructionFile": "src/runtime/POLARIS.md"
+    "instructionFile": "src/runtime/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/runtime/status.ts": {
     "domain": "runtime",
@@ -2268,7 +2438,8 @@
     "tags": [
       "runtime"
     ],
-    "instructionFile": "src/runtime/POLARIS.md"
+    "instructionFile": "src/runtime/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/runtime/verification/POLARIS.md": {
     "domain": "runtime",
@@ -2281,7 +2452,8 @@
     "tags": [
       "runtime"
     ],
-    "instructionFile": "src/runtime/verification/POLARIS.md"
+    "instructionFile": "src/runtime/verification/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/runtime/verification/SUMMARY.md": {
     "domain": "runtime",
@@ -2294,7 +2466,8 @@
     "tags": [
       "runtime"
     ],
-    "instructionFile": "src/runtime/verification/POLARIS.md"
+    "instructionFile": "src/runtime/verification/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/runtime/verification/envelope.ts": {
     "domain": "runtime",
@@ -2307,7 +2480,8 @@
     "tags": [
       "runtime"
     ],
-    "instructionFile": "src/runtime/verification/POLARIS.md"
+    "instructionFile": "src/runtime/verification/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/runtime/verification/fingerprint.ts": {
     "domain": "runtime",
@@ -2320,7 +2494,8 @@
     "tags": [
       "runtime"
     ],
-    "instructionFile": "src/runtime/verification/POLARIS.md"
+    "instructionFile": "src/runtime/verification/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/smartdocs-engine/POLARIS.md": {
     "domain": "smartdocs-engine",
@@ -2333,7 +2508,8 @@
     "tags": [
       "smartdocs-engine"
     ],
-    "instructionFile": "src/smartdocs-engine/POLARIS.md"
+    "instructionFile": "src/smartdocs-engine/POLARIS.md",
+    "role_owner": "librarian"
   },
   "src/smartdocs-engine/SUMMARY.md": {
     "domain": "smartdocs-engine",
@@ -2346,7 +2522,8 @@
     "tags": [
       "smartdocs-engine"
     ],
-    "instructionFile": "src/smartdocs-engine/POLARIS.md"
+    "instructionFile": "src/smartdocs-engine/POLARIS.md",
+    "role_owner": "librarian"
   },
   "src/smartdocs-engine/audit.test.ts": {
     "domain": "smartdocs-engine",
@@ -2360,7 +2537,8 @@
       "smartdocs-engine",
       "test"
     ],
-    "instructionFile": "src/smartdocs-engine/POLARIS.md"
+    "instructionFile": "src/smartdocs-engine/POLARIS.md",
+    "role_owner": "librarian"
   },
   "src/smartdocs-engine/audit.ts": {
     "domain": "smartdocs-engine",
@@ -2373,7 +2551,8 @@
     "tags": [
       "smartdocs-engine"
     ],
-    "instructionFile": "src/smartdocs-engine/POLARIS.md"
+    "instructionFile": "src/smartdocs-engine/POLARIS.md",
+    "role_owner": "librarian"
   },
   "src/smartdocs-engine/canon-check.test.ts": {
     "domain": "smartdocs-engine",
@@ -2387,7 +2566,8 @@
       "smartdocs-engine",
       "test"
     ],
-    "instructionFile": "src/smartdocs-engine/POLARIS.md"
+    "instructionFile": "src/smartdocs-engine/POLARIS.md",
+    "role_owner": "librarian"
   },
   "src/smartdocs-engine/canon-check.ts": {
     "domain": "smartdocs-engine",
@@ -2400,7 +2580,8 @@
     "tags": [
       "smartdocs-engine"
     ],
-    "instructionFile": "src/smartdocs-engine/POLARIS.md"
+    "instructionFile": "src/smartdocs-engine/POLARIS.md",
+    "role_owner": "librarian"
   },
   "src/smartdocs-engine/doctrine.test.ts": {
     "domain": "smartdocs-engine",
@@ -2414,7 +2595,8 @@
       "smartdocs-engine",
       "test"
     ],
-    "instructionFile": "src/smartdocs-engine/POLARIS.md"
+    "instructionFile": "src/smartdocs-engine/POLARIS.md",
+    "role_owner": "librarian"
   },
   "src/smartdocs-engine/doctrine.ts": {
     "domain": "smartdocs-engine",
@@ -2427,7 +2609,8 @@
     "tags": [
       "smartdocs-engine"
     ],
-    "instructionFile": "src/smartdocs-engine/POLARIS.md"
+    "instructionFile": "src/smartdocs-engine/POLARIS.md",
+    "role_owner": "librarian"
   },
   "src/smartdocs-engine/index.test.ts": {
     "domain": "smartdocs-engine",
@@ -2441,7 +2624,8 @@
       "smartdocs-engine",
       "test"
     ],
-    "instructionFile": "src/smartdocs-engine/POLARIS.md"
+    "instructionFile": "src/smartdocs-engine/POLARIS.md",
+    "role_owner": "librarian"
   },
   "src/smartdocs-engine/index.ts": {
     "domain": "smartdocs-engine",
@@ -2455,7 +2639,8 @@
       "smartdocs-engine",
       "entry-point"
     ],
-    "instructionFile": "src/smartdocs-engine/POLARIS.md"
+    "instructionFile": "src/smartdocs-engine/POLARIS.md",
+    "role_owner": "librarian"
   },
   "src/smartdocs-engine/ingest.test.ts": {
     "domain": "smartdocs-engine",
@@ -2469,7 +2654,8 @@
       "smartdocs-engine",
       "test"
     ],
-    "instructionFile": "src/smartdocs-engine/POLARIS.md"
+    "instructionFile": "src/smartdocs-engine/POLARIS.md",
+    "role_owner": "librarian"
   },
   "src/smartdocs-engine/ingest.ts": {
     "domain": "smartdocs-engine",
@@ -2482,7 +2668,8 @@
     "tags": [
       "smartdocs-engine"
     ],
-    "instructionFile": "src/smartdocs-engine/POLARIS.md"
+    "instructionFile": "src/smartdocs-engine/POLARIS.md",
+    "role_owner": "librarian"
   },
   "src/smartdocs-engine/migrate.test.ts": {
     "domain": "smartdocs-engine",
@@ -2496,7 +2683,8 @@
       "smartdocs-engine",
       "test"
     ],
-    "instructionFile": "src/smartdocs-engine/POLARIS.md"
+    "instructionFile": "src/smartdocs-engine/POLARIS.md",
+    "role_owner": "librarian"
   },
   "src/smartdocs-engine/migrate.ts": {
     "domain": "smartdocs-engine",
@@ -2509,7 +2697,8 @@
     "tags": [
       "smartdocs-engine"
     ],
-    "instructionFile": "src/smartdocs-engine/POLARIS.md"
+    "instructionFile": "src/smartdocs-engine/POLARIS.md",
+    "role_owner": "librarian"
   },
   "src/smartdocs-engine/seed-instructions.test.ts": {
     "domain": "smartdocs-engine",
@@ -2523,7 +2712,8 @@
       "smartdocs-engine",
       "test"
     ],
-    "instructionFile": "src/smartdocs-engine/POLARIS.md"
+    "instructionFile": "src/smartdocs-engine/POLARIS.md",
+    "role_owner": "librarian"
   },
   "src/smartdocs-engine/seed-instructions.ts": {
     "domain": "smartdocs-engine",
@@ -2536,7 +2726,8 @@
     "tags": [
       "smartdocs-engine"
     ],
-    "instructionFile": "src/smartdocs-engine/POLARIS.md"
+    "instructionFile": "src/smartdocs-engine/POLARIS.md",
+    "role_owner": "librarian"
   },
   "src/smartdocs-engine/smartdoc-ignore.test.ts": {
     "domain": "smartdocs-engine",
@@ -2550,7 +2741,8 @@
       "smartdocs-engine",
       "test"
     ],
-    "instructionFile": "src/smartdocs-engine/POLARIS.md"
+    "instructionFile": "src/smartdocs-engine/POLARIS.md",
+    "role_owner": "librarian"
   },
   "src/smartdocs-engine/smartdoc-ignore.ts": {
     "domain": "smartdocs-engine",
@@ -2563,7 +2755,8 @@
     "tags": [
       "smartdocs-engine"
     ],
-    "instructionFile": "src/smartdocs-engine/POLARIS.md"
+    "instructionFile": "src/smartdocs-engine/POLARIS.md",
+    "role_owner": "librarian"
   },
   "src/smartdocs-engine/validate-instructions.test.ts": {
     "domain": "smartdocs-engine",
@@ -2577,7 +2770,8 @@
       "smartdocs-engine",
       "test"
     ],
-    "instructionFile": "src/smartdocs-engine/POLARIS.md"
+    "instructionFile": "src/smartdocs-engine/POLARIS.md",
+    "role_owner": "librarian"
   },
   "src/smartdocs-engine/validate-instructions.ts": {
     "domain": "smartdocs-engine",
@@ -2590,7 +2784,8 @@
     "tags": [
       "smartdocs-engine"
     ],
-    "instructionFile": "src/smartdocs-engine/POLARIS.md"
+    "instructionFile": "src/smartdocs-engine/POLARIS.md",
+    "role_owner": "librarian"
   },
   "src/types/POLARIS.md": {
     "domain": "types",
@@ -2603,7 +2798,8 @@
     "tags": [
       "types"
     ],
-    "instructionFile": "src/types/POLARIS.md"
+    "instructionFile": "src/types/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/types/SUMMARY.md": {
     "domain": "types",
@@ -2616,7 +2812,8 @@
     "tags": [
       "types"
     ],
-    "instructionFile": "src/types/POLARIS.md"
+    "instructionFile": "src/types/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/types/runtime-state.ts": {
     "domain": "types",
@@ -2629,7 +2826,8 @@
     "tags": [
       "types"
     ],
-    "instructionFile": "src/types/POLARIS.md"
+    "instructionFile": "src/types/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/utils/POLARIS.md": {
     "domain": "utils",
@@ -2642,7 +2840,8 @@
     "tags": [
       "utils"
     ],
-    "instructionFile": "src/utils/POLARIS.md"
+    "instructionFile": "src/utils/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/utils/SUMMARY.md": {
     "domain": "utils",
@@ -2655,7 +2854,8 @@
     "tags": [
       "utils"
     ],
-    "instructionFile": "src/utils/POLARIS.md"
+    "instructionFile": "src/utils/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/utils/monotonic-timestamp.test.ts": {
     "domain": "utils",
@@ -2669,7 +2869,8 @@
       "utils",
       "test"
     ],
-    "instructionFile": "src/utils/POLARIS.md"
+    "instructionFile": "src/utils/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/utils/monotonic-timestamp.ts": {
     "domain": "utils",
@@ -2682,7 +2883,8 @@
     "tags": [
       "utils"
     ],
-    "instructionFile": "src/utils/POLARIS.md"
+    "instructionFile": "src/utils/POLARIS.md",
+    "role_owner": "worker"
   },
   "smartdocs/docs/specs/raw/polaris-compact-contracts.md": {
     "domain": "loop",
@@ -2696,7 +2898,8 @@
       "docs",
       "ingested"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "smartdocs/docs/architecture/ephemeral-execution-architecture.md": {
     "domain": "unknown",
@@ -2709,7 +2912,8 @@
     "tags": [
       "docs",
       "ingested"
-    ]
+    ],
+    "role_owner": "any"
   },
   "smartdocs/docs/specs/raw/ephemeral-validation-plan.md": {
     "domain": "docs",
@@ -2722,7 +2926,8 @@
     "tags": [
       "docs",
       "ingested"
-    ]
+    ],
+    "role_owner": "librarian"
   },
   "smartdocs/docs/specs/raw/polaris-dispatch-contract.md": {
     "domain": "loop",
@@ -2736,7 +2941,8 @@
       "docs",
       "ingested"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "smartdocs/docs/architecture/polaris-run-ledger.md": {
     "domain": "unknown",
@@ -2749,7 +2955,8 @@
     "tags": [
       "docs",
       "ingested"
-    ]
+    ],
+    "role_owner": "any"
   },
   "src/loop/lifecycle-dispatch.test.ts": {
     "domain": "loop",
@@ -2763,7 +2970,8 @@
       "loop",
       "test"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "src/loop/lifecycle-dispatch.ts": {
     "domain": "loop",
@@ -2776,7 +2984,8 @@
     "tags": [
       "loop"
     ],
-    "instructionFile": "src/loop/POLARIS.md"
+    "instructionFile": "src/loop/POLARIS.md",
+    "role_owner": "worker"
   },
   "smartdocs/docs/doctrine/candidate/pol-199-runtime-state-consolidation-analysis.md": {
     "domain": "finalize",
@@ -2790,7 +2999,8 @@
       "docs",
       "ingested"
     ],
-    "instructionFile": "src/finalize/steps/POLARIS.md"
+    "instructionFile": "src/finalize/steps/POLARIS.md",
+    "role_owner": "worker"
   },
   "smartdocs/docs/architecture/thin-parent-orchestration.md": {
     "domain": "unknown",
@@ -2803,6 +3013,7 @@
     "tags": [
       "docs",
       "ingested"
-    ]
+    ],
+    "role_owner": "any"
   }
 }
