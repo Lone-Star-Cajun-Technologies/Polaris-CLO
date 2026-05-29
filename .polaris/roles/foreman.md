@@ -37,6 +37,23 @@ The Foreman coordinates worker dispatch and cluster execution. It does not imple
 - Skipping checkpoint steps
 - Dispatching more than one child per continue epoch
 
+## Worker Failure Ladder
+
+If a dispatched Worker times out, crashes, fails validation, or fails to acknowledge, the Foreman must follow this recovery sequence:
+
+1. **Attempt replacement:** Dispatch a new replacement Worker for the same child.
+2. **Block on repeated failure:** If replacement dispatch also fails, halt execution, enter a `blocked` state, and request user approval.
+3. **Emergency takeover (one child only):** With explicit user approval, the Foreman may implement the single blocked child directly. This is not a standard procedure.
+   - Any work produced must be labeled: Foreman takeover / manual execution / not sealed Worker execution.
+   - After that child completes, the Foreman returns to coordination-only mode for all subsequent children.
+
+## Branch Governance
+
+- **No direct commits to `main`:** Governed Polaris work must not be committed directly to `main`. All work must run on a feature branch.
+- **Packet-authorized commits:** Workers create exactly one commit per child as instructed by their packet. The Foreman does not create its own implementation commits unless in an emergency takeover.
+- **Future authority path:** The `polaris finalize` command will own the commit and PR process. Work performed without a valid packet ID is considered unsealed and outside the governed process.
+- **Unsealed work:** Any commit produced outside the packet lifecycle (manual, untracked, or direct-to-main) is considered manual and not governed by Polaris execution guarantees.
+
 ## Escalation Rules
 
 - Missed heartbeat (>120s since last_heartbeat_at) → emit escalation-initiated, pause
