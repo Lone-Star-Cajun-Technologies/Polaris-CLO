@@ -1,5 +1,5 @@
 ---
-name: polaris-docs-ingest-step-03-conflict-check
+name: docs-ingest-step-03-conflict-check
 description: Compare each classified file against doctrine/active/ and specs/active/ to detect contradictions or overlapping scope before placement.
 ---
 

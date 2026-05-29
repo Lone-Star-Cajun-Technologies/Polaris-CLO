@@ -1,9 +1,9 @@
 ---
-name: polaris-docs-ingest-chain
-description: Route map for polaris-docs-ingest — step order, stop conditions, authority levels, canonical target doctrine, and artifact requirements.
+name: docs-ingest-chain
+description: Route map for docs-ingest — step order, stop conditions, authority levels, canonical target doctrine, and artifact requirements.
 ---
 
-# polaris-docs-ingest chain
+# docs-ingest chain
 
 ## Authority
 
@@ -80,16 +80,16 @@ Smart Docs function as architectural compression, routing context, local subsyst
 
 ## Run ID format
 
-Format: `polaris-docs-ingest-<slug>-<date>-<seq>`
+Format: `docs-ingest-<slug>-<date>-<seq>`
 - `<slug>`: 2–4 lowercase hyphenated words from the ingest context. No issue IDs.
 - `<date>`: `YYYY-MM-DD`
 - `<seq>`: zero-padded sequential number per day (`001`, `002`, …)
 
-Example: `polaris-docs-ingest-compact-contracts-2026-05-26-001`
+Example: `docs-ingest-compact-contracts-2026-05-26-001`
 
 ## Telemetry
 
-Telemetry file: `.taskchain_artifacts/polaris-docs-ingest/runs/<run-id>/telemetry.jsonl` (append-only).
+Telemetry file: `.taskchain_artifacts/docs-ingest/runs/<run-id>/telemetry.jsonl` (append-only).
 
 | Event | Trigger |
 |---|---|
@@ -115,7 +115,7 @@ Stop after completing one cluster. Bootstrap packet guidance directs the next se
 
 ## Artifact authority
 
-`.taskchain_artifacts/polaris-docs-ingest/current-state.json` is the sole authoritative live state surface.
+`.taskchain_artifacts/docs-ingest/current-state.json` is the sole authoritative live state surface.
 
 - Update after every completed step — before advancing.
 - A step is NOT complete until the state update succeeds.

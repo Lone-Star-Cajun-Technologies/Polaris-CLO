@@ -1,5 +1,5 @@
 ---
-name: polaris-docs-ingest-step-05-finalize-ingest
+name: docs-ingest-step-05-finalize-ingest
 description: Emit completion telemetry, mark the cluster complete, update current-state, and report the placement summary.
 ---
 
@@ -24,7 +24,7 @@ Close out the ingest session cleanly. Emit telemetry. Write final state. Report.
 
 4. **Report placement summary**:
    ```text
-   **polaris-docs-ingest complete**
+   **docs-ingest complete**
    Processed:           <n> files
    Placed:
      <original> → <smartdocs/docs/target>

@@ -1,9 +1,9 @@
 ---
-name: polaris-docs-ingest
+name: docs-ingest
 description: Classify, route, and link documents from the raw drop zone into the canonical smartdocs/docs/ authority structure. Docs routing only — no source code changes, no implementation execution.
 ---
 
-# polaris-docs-ingest
+# docs-ingest
 
 Use this skill when documents need to be classified and routed into the canonical Smart Docs hierarchy.
 
@@ -18,7 +18,7 @@ Use this skill when documents need to be classified and routed into the canonica
 ## How to execute
 
 1. Read `chain.md` — step order, traversal rules, authority levels, canonical target doctrine.
-2. Read `.taskchain_artifacts/polaris-docs-ingest/current-state.json` — resumable state.
+2. Read `.taskchain_artifacts/docs-ingest/current-state.json` — resumable state.
 3. Execute steps in the order `chain.md` defines. Do not skip steps.
 4. After every completed step, update `current-state.json` before advancing.
 

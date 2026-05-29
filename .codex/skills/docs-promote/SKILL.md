@@ -1,9 +1,9 @@
 ---
-name: polaris-docs-promote
+name: docs-promote
 description: Review docs in smartdocs/docs/raw/ and smartdocs/docs/doctrine/candidate/ against linked code and active doctrine, then promote or deprecate using the Polaris CLI. Requires agent judgment — reads linked source areas, surfaces conflicts, and calls promote/deprecate only with explicit confirmation.
 ---
 
-# polaris-docs-promote
+# docs-promote
 
 Use this skill when documents have been ingested and need to be reviewed for promotion to an active authority tier, or when active docs need to be deprecated in response to code changes.
 
@@ -18,7 +18,7 @@ Use this skill when documents have been ingested and need to be reviewed for pro
 ## How to execute
 
 1. Read `chain.md` — step order, review rules, CLI commands, conflict handling.
-2. Read `.taskchain_artifacts/polaris-docs-promote/current-state.json` — resumable state.
+2. Read `.taskchain_artifacts/docs-promote/current-state.json` — resumable state.
 3. Execute steps in the order `chain.md` defines. Do not skip steps.
 4. After every completed step, update `current-state.json` before advancing.
 

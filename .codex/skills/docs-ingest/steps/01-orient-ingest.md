@@ -1,5 +1,5 @@
 ---
-name: polaris-docs-ingest-step-01-orient-ingest
+name: docs-ingest-step-01-orient-ingest
 description: Generate run_id, emit run-start telemetry, confirm provider status, load batch file list, and confirm canonical ingest target.
 ---
 
@@ -13,16 +13,16 @@ Establish bounded ingest context before touching any files. Confirm what to proc
 
 ```yaml
 allowed_files:
-  - .codex/skills/polaris-docs-ingest/SKILL.md
-  - .codex/skills/polaris-docs-ingest/chain.md
-  - .taskchain_artifacts/polaris-docs-ingest/current-state.json
+  - .codex/skills/docs-ingest/SKILL.md
+  - .codex/skills/docs-ingest/chain.md
+  - .taskchain_artifacts/docs-ingest/current-state.json
   - .polaris/docs-ingest/<cluster-id>.json
   - polaris.config.json
   - .polaris/map/index.json
 allowed_routes:
   - CLAUDE.md
   - smartdocs/docs/specs/active/docs-authority-model.md
-  - .codex/skills/polaris-docs-ingest/chain.md
+  - .codex/skills/docs-ingest/chain.md
 allowed_skills:
   - repo-analysis
 expected_evidence:
@@ -41,14 +41,14 @@ stop_rules:
 ## Actions
 
 0. **Generate `run_id`**:
-   - Fresh runs: `polaris-docs-ingest-<slug>-<date>-<seq>` (see `chain.md` for format rules).
+   - Fresh runs: `docs-ingest-<slug>-<date>-<seq>` (see `chain.md` for format rules).
    - Resumed runs: generate new `run_id` first, emit run-start telemetry immediately (with `prior_run_id: null`), then read `current-state.json` to retrieve prior `run_id` for state continuity.
 
 1. **Emit `run-start` telemetry** — first I/O action, before any file access:
    ```bash
-   mkdir -p .taskchain_artifacts/polaris-docs-ingest/runs/<run-id>
+   mkdir -p .taskchain_artifacts/docs-ingest/runs/<run-id>
    echo '{"event":"run-start","run_id":"<run-id>","prior_run_id":"<prior or null>","timestamp":"<ISO>"}' \
-     >> .taskchain_artifacts/polaris-docs-ingest/runs/<run-id>/telemetry.jsonl
+     >> .taskchain_artifacts/docs-ingest/runs/<run-id>/telemetry.jsonl
    ```
    If this write fails: halt. Do not continue. For resumed runs, the `prior_run_id` is obtained after this emit by reading `current-state.json`.
 
@@ -74,7 +74,7 @@ stop_rules:
 
 ## Artifact update
 
-Update `.taskchain_artifacts/polaris-docs-ingest/current-state.json` (artifact path unchanged — skill identity is `polaris-docs-ingest`):
+Update `.taskchain_artifacts/docs-ingest/current-state.json` (artifact path unchanged — skill identity is `docs-ingest`):
 - `run_id`, `status: orienting`, `current_step_id: 01-orient-ingest`
 - `files_to_process: [...]`, `updated_at: <timestamp>`
 

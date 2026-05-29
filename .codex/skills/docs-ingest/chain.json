@@ -1,5 +1,5 @@
 {
-  "name": "polaris-docs-ingest-chain",
+  "name": "docs-ingest-chain",
   "steps": [
     "01-orient-ingest",
     "02-classify-batch",

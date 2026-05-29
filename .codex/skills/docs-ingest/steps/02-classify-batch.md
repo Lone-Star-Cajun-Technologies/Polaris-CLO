@@ -1,5 +1,5 @@
 ---
-name: polaris-docs-ingest-step-02-classify-batch
+name: docs-ingest-step-02-classify-batch
 description: Read each file in the batch, inspect front-matter and content signals, and assign exactly one classification from the docs-authority-model.
 ---
 

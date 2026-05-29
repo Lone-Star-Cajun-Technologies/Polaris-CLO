@@ -1,5 +1,5 @@
 ---
-name: polaris-docs-ingest-step-04-place-and-link
+name: docs-ingest-step-04-place-and-link
 description: Move classified files to their target authority directories within smartdocs/docs/, write provenance records, and update Polaris map entries.
 ---
 

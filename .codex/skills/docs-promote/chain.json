@@ -1,5 +1,5 @@
 {
-  "name": "polaris-docs-promote-chain",
+  "name": "docs-promote-chain",
   "steps": [
     "01-orient-promote",
     "02-review-candidates",

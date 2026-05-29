@@ -1,9 +1,9 @@
 ---
-name: polaris-docs-promote-chain
-description: Route map for polaris-docs-promote — step order, review rules, CLI commands, conflict handling, and approval gate.
+name: docs-promote-chain
+description: Route map for docs-promote — step order, review rules, CLI commands, conflict handling, and approval gate.
 ---
 
-# polaris-docs-promote chain
+# docs-promote chain
 
 ## Authority
 
@@ -61,7 +61,7 @@ Never assume a globally linked `polaris` command exists.
 ## Step rules
 
 ### 01 — orient-promote
-- Generate `run_id` using format: `polaris-docs-promote-<slug>-<date>-<seq>`
+- Generate `run_id` using format: `docs-promote-<slug>-<date>-<seq>`
 - Emit `run-start` telemetry
 - Load `current-state.json` — if a prior run is in progress, resume from last completed step
 - Confirm `smartdocs/docs/` exists; halt if missing
@@ -127,16 +127,16 @@ Never assume a globally linked `polaris` command exists.
 
 ## Run ID format
 
-Format: `polaris-docs-promote-<slug>-<date>-<seq>`
+Format: `docs-promote-<slug>-<date>-<seq>`
 - `<slug>`: 2–4 lowercase hyphenated words from the promotion context
 - `<date>`: `YYYY-MM-DD`
 - `<seq>`: zero-padded sequential number per day (`001`, `002`, …)
 
-Example: `polaris-docs-promote-dispatch-contract-2026-05-29-001`
+Example: `docs-promote-dispatch-contract-2026-05-29-001`
 
 ## Telemetry
 
-Telemetry file: `.taskchain_artifacts/polaris-docs-promote/runs/<run-id>/telemetry.jsonl` (append-only).
+Telemetry file: `.taskchain_artifacts/docs-promote/runs/<run-id>/telemetry.jsonl` (append-only).
 
 | Event | Trigger |
 |---|---|
@@ -152,7 +152,7 @@ Required fields on every event: `event`, `run_id`, `timestamp`. Add `file` where
 
 ## Artifact authority
 
-`.taskchain_artifacts/polaris-docs-promote/current-state.json` is the sole authoritative live state surface.
+`.taskchain_artifacts/docs-promote/current-state.json` is the sole authoritative live state surface.
 
 - Update after every completed step — before advancing.
 - A step is NOT complete until the state update succeeds.
