@@ -1,0 +1,4 @@
+{"event":"run-start","run_id":"polaris-run-foreman-worker-runtime-2026-05-29-001","prior_run_id":"polaris-run-pol-201-2026-05-29-001","cluster_id":"POL-218","timestamp":"2026-05-29T17:22:53.185Z"}
+{"event":"loop-checkpoint","run_id":"polaris-run-foreman-worker-runtime-2026-05-29-001","child_id":"POL-220","next_child":"POL-221","timestamp":"2026-05-29T17:25:11.736Z"}
+{"event":"canon-check-start","run_id":"polaris-run-foreman-worker-runtime-2026-05-29-001","child_id":"POL-221","canon_files_inspected":0,"changed_files_count":0,"timestamp":"2026-05-29T17:25:11.737Z"}
+{"event":"canon-check-result","run_id":"polaris-run-foreman-worker-runtime-2026-05-29-001","child_id":"POL-221","outcome":"aligned","conflicts":[],"timestamp":"2026-05-29T17:25:11.738Z"}

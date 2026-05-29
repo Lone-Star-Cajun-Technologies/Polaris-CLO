@@ -330,4 +330,166 @@ describe("runLoopDispatch", () => {
     expect(events[0].runtime_state).toBe("packet-created");
     expect(events[0].provider).toBe("gemini");
   });
+
+  // ── DELEGATED ASSIGNMENT TESTS (POL-220) ──────────────────────────────────
+
+  it("escalation path: emits all fallback telemetry events and sets pending-escalation when no subagent available", () => {
+    const artifactDir = join(testDir, ".taskchain_artifacts", "polaris-run");
+    const stateFile = writeState(testDir, baseState({ artifact_dir: artifactDir }));
+
+    // No subagent dispatcher registered — escalation path
+    captureStdout(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+
+    const telemetryFile = join(artifactDir, "runs", "pol-142-session-1", "telemetry.jsonl");
+    const allEvents = readFileSync(telemetryFile, "utf-8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+
+    const attemptedEvents = allEvents.filter((e) => e.event === "worker-assignment-attempted");
+    const failedEvents = allEvents.filter((e) => e.event === "worker-assignment-failed");
+    const escalationEvents = allEvents.filter((e) => e.event === "escalation-initiated");
+
+    // Three attempts: subagent, external-process, human-handoff
+    expect(attemptedEvents).toHaveLength(3);
+    expect(attemptedEvents[0].assignment_type).toBe("subagent");
+    expect(attemptedEvents[1].assignment_type).toBe("external-process");
+    expect(attemptedEvents[2].assignment_type).toBe("human-handoff");
+
+    // Three failures
+    expect(failedEvents).toHaveLength(3);
+    expect(failedEvents[0].reason).toBe("no-subagent-support");
+    expect(failedEvents[1].reason).toBe("provider-unavailable");
+    expect(failedEvents[2].reason).toBe("provider-unavailable");
+
+    // One escalation-initiated
+    expect(escalationEvents).toHaveLength(1);
+    expect(escalationEvents[0].reason).toBeDefined();
+    expect(escalationEvents[0].recommended_action).toBe("manual-dispatch");
+
+    // All events have required base fields
+    for (const ev of [...attemptedEvents, ...failedEvents, ...escalationEvents]) {
+      expect(ev.event_id).toBeDefined();
+      expect(ev.dispatch_id).toBeDefined();
+      expect(ev.run_id).toBe("pol-142-session-1");
+      expect(ev.child_id).toBe("POL-145");
+      expect(ev.timestamp).toBeDefined();
+    }
+  });
+
+  it("escalation path: sets pending-escalation in worker_assignment on dispatch_record", () => {
+    const stateFile = writeState(testDir, baseState());
+
+    // No subagent dispatcher registered
+    captureStdout(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+
+    const updated = readState(stateFile);
+    const dispatchRecord = updated.open_children_meta?.["POL-145"]?.dispatch_record;
+
+    expect(dispatchRecord?.worker_assignment).toBeDefined();
+    expect(dispatchRecord?.worker_assignment?.assignment_type).toBe("pending-escalation");
+    expect(dispatchRecord?.worker_assignment?.assigned_at).toBeDefined();
+    expect(dispatchRecord?.worker_assignment?.escalation_reason).toBeDefined();
+    expect(dispatchRecord?.session_id).toBeNull();
+    expect(dispatchRecord?.attachment_capable).toBe(false);
+    expect(dispatchRecord?.runtime_state).toBe("delegated");
+  });
+
+  it("successful subagent assignment: sets worker_assignment with subagent session_id", () => {
+    const stateFile = writeState(testDir, baseState());
+
+    // Register a mock subagent dispatcher
+    const mockDispatcher = vi.fn().mockResolvedValue(
+      JSON.stringify({ child_id: "POL-145", status: "done", validation_summary: "ok", next_action: "continue" })
+    );
+    (globalThis as Record<string, unknown>).__POLARIS_AGENT_SUBTASK_DISPATCH__ = mockDispatcher;
+
+    try {
+      captureStdout(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+
+      const updated = readState(stateFile);
+      const dispatchRecord = updated.open_children_meta?.["POL-145"]?.dispatch_record;
+
+      expect(dispatchRecord?.worker_assignment).toBeDefined();
+      expect(dispatchRecord?.worker_assignment?.assignment_type).toBe("subagent");
+      expect(dispatchRecord?.worker_assignment?.assigned_at).toBeDefined();
+      expect(dispatchRecord?.worker_assignment?.subagent_session_id).toBeDefined();
+      expect(typeof dispatchRecord?.worker_assignment?.subagent_session_id).toBe("string");
+      expect(dispatchRecord?.session_id).toBe(dispatchRecord?.worker_assignment?.subagent_session_id);
+      expect(dispatchRecord?.attachment_capable).toBe(false);
+      expect(dispatchRecord?.runtime_state).toBe("delegated");
+    } finally {
+      delete (globalThis as Record<string, unknown>).__POLARIS_AGENT_SUBTASK_DISPATCH__;
+    }
+  });
+
+  it("successful subagent assignment: emits worker-assignment-attempted and worker-assigned events", () => {
+    const artifactDir = join(testDir, ".taskchain_artifacts", "polaris-run");
+    const stateFile = writeState(testDir, baseState({ artifact_dir: artifactDir }));
+
+    const mockDispatcher = vi.fn().mockResolvedValue(
+      JSON.stringify({ child_id: "POL-145", status: "done", validation_summary: "ok", next_action: "continue" })
+    );
+    (globalThis as Record<string, unknown>).__POLARIS_AGENT_SUBTASK_DISPATCH__ = mockDispatcher;
+
+    try {
+      captureStdout(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+
+      const telemetryFile = join(artifactDir, "runs", "pol-142-session-1", "telemetry.jsonl");
+      const allEvents = readFileSync(telemetryFile, "utf-8")
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line));
+
+      const attemptedEvents = allEvents.filter((e) => e.event === "worker-assignment-attempted");
+      const assignedEvents = allEvents.filter((e) => e.event === "worker-assigned");
+      const failedEvents = allEvents.filter((e) => e.event === "worker-assignment-failed");
+      const escalationEvents = allEvents.filter((e) => e.event === "escalation-initiated");
+
+      // Only one attempt (subagent succeeds)
+      expect(attemptedEvents).toHaveLength(1);
+      expect(attemptedEvents[0].assignment_type).toBe("subagent");
+
+      // One assigned event
+      expect(assignedEvents).toHaveLength(1);
+      expect(assignedEvents[0].assignment_type).toBe("subagent");
+      expect(assignedEvents[0].subagent_session_id).toBeDefined();
+
+      // No failures or escalations
+      expect(failedEvents).toHaveLength(0);
+      expect(escalationEvents).toHaveLength(0);
+    } finally {
+      delete (globalThis as Record<string, unknown>).__POLARIS_AGENT_SUBTASK_DISPATCH__;
+    }
+  });
+
+  it("direct-worker mode: no assignment events emitted (provider specified)", () => {
+    const artifactDir = join(testDir, ".taskchain_artifacts", "polaris-run");
+    const stateFile = writeState(testDir, baseState({ artifact_dir: artifactDir }));
+
+    captureStdout(() => runLoopDispatch({ repoRoot: testDir, stateFile, provider: "copilot" }));
+
+    const telemetryFile = join(artifactDir, "runs", "pol-142-session-1", "telemetry.jsonl");
+    const allEvents = readFileSync(telemetryFile, "utf-8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+
+    const assignmentEvents = allEvents.filter((e) =>
+      ["worker-assignment-attempted", "worker-assigned", "worker-assignment-failed", "escalation-initiated"].includes(e.event)
+    );
+
+    expect(assignmentEvents).toHaveLength(0);
+  });
+
+  it("direct-worker mode: no worker_assignment on dispatch_record", () => {
+    const stateFile = writeState(testDir, baseState());
+
+    captureStdout(() => runLoopDispatch({ repoRoot: testDir, stateFile, provider: "copilot" }));
+
+    const updated = readState(stateFile);
+    const dispatchRecord = updated.open_children_meta?.["POL-145"]?.dispatch_record;
+
+    expect(dispatchRecord?.worker_assignment).toBeUndefined();
+  });
 });
