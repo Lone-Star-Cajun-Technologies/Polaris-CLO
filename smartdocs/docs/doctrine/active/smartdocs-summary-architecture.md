@@ -152,4 +152,4 @@ For repos with existing POLARIS.md files:
 - `docs/spec/polaris-architecture-spec.md` — loop/map/finalize architecture
 - `docs/spec/polaris-implementation-plan.md` — failure modes, recommendation, implementation tree
 - `docs/spec/polaris-dispatch-contract.md` — subagent dispatch boundary contract
-- `.codex/skills/polaris-run/chain.md` — implementation cluster execution model
+- `.polaris/skills/polaris-run/chain.md` — implementation cluster execution model

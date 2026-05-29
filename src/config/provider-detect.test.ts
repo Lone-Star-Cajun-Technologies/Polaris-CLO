@@ -26,15 +26,27 @@ beforeEach(() => {
 });
 
 describe("detectCaveman", () => {
-  it("returns true when .codex/skills/caveman/SKILL.md exists", () => {
-    mockedExistsSync.mockReturnValue(true);
+  it("returns true when .polaris/skills/caveman/SKILL.md exists (canonical)", () => {
+    mockedExistsSync.mockImplementation((p) =>
+      String(p).includes(".polaris/skills/caveman/SKILL.md"),
+    );
+    expect(detectCaveman("/repo")).toBe(true);
+    expect(mockedExistsSync).toHaveBeenCalledWith(
+      expect.stringContaining(".polaris/skills/caveman/SKILL.md"),
+    );
+  });
+
+  it("returns true when .codex/skills/caveman/SKILL.md exists (fallback)", () => {
+    mockedExistsSync.mockImplementation((p) =>
+      String(p).includes(".codex/skills/caveman/SKILL.md"),
+    );
     expect(detectCaveman("/repo")).toBe(true);
     expect(mockedExistsSync).toHaveBeenCalledWith(
       expect.stringContaining(".codex/skills/caveman/SKILL.md"),
     );
   });
 
-  it("returns false when .codex/skills/caveman/SKILL.md is absent", () => {
+  it("returns false when neither canonical nor fallback SKILL.md exists", () => {
     mockedExistsSync.mockReturnValue(false);
     expect(detectCaveman("/repo")).toBe(false);
   });

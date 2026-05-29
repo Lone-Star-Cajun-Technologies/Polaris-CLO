@@ -41,7 +41,7 @@ The loop subsystem manages the session lifecycle for Polaris cluster runs. It ha
 ## Read before editing
 
 - `docs/spec/polaris-architecture-spec.md` — full loop/map/finalize architecture
-- `.codex/skills/polaris-run/chain.md` — step traversal order, continuation rules, telemetry requirements
+- `.polaris/skills/polaris-run/chain.md` — step traversal order, continuation rules, telemetry requirements
 - `src/loop/checkpoint.ts` — state schema and read/write contract
 
 ## Related routes

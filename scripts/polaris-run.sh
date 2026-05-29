@@ -22,8 +22,10 @@
 #
 # Examples:
 #   scripts/polaris-run.sh POL-42
-#   scripts/polaris-run.sh POL-42 --agent "<configured cli worker>"
-#   POLARIS_AGENT="<configured cli worker>" scripts/polaris-run.sh POL-42
+#   scripts/polaris-run.sh POL-42 --agent "claude --print"
+#   scripts/polaris-run.sh POL-42 --agent "codex"
+#   scripts/polaris-run.sh POL-42 --agent "gemini --prompt"
+#   POLARIS_AGENT="claude --print" scripts/polaris-run.sh POL-42
 #   scripts/polaris-run.sh POL-42 --deliver
 #
 # Exit codes:

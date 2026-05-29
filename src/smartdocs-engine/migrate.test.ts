@@ -39,6 +39,12 @@ describe("isAllowedException", () => {
     expect(isAllowedException(".taskchain_artifacts/run/notes.md").allowed).toBe(true);
   });
 
+  it("allows anything under .polaris/skills/, .gemini/, .github/skills/", () => {
+    expect(isAllowedException(".polaris/skills/polaris-run/SKILL.md").allowed).toBe(true);
+    expect(isAllowedException(".gemini/skills/polaris-run/SKILL.md").allowed).toBe(true);
+    expect(isAllowedException(".github/skills/polaris-run/SKILL.md").allowed).toBe(true);
+  });
+
   it("does NOT allow arbitrary markdown files", () => {
     expect(isAllowedException("src/some-feature/NOTES.md").allowed).toBe(false);
     expect(isAllowedException("planning/ideas.md").allowed).toBe(false);

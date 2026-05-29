@@ -5,11 +5,15 @@ import { join } from "node:path";
 /**
  * Detects whether the Caveman compaction provider is available.
  *
- * Caveman is considered present when `.codex/skills/caveman/SKILL.md`
- * exists in the repository root.
+ * Caveman is considered present when `.polaris/skills/caveman/SKILL.md`
+ * exists in the repository root (canonical location). Falls back to
+ * `.codex/skills/caveman/SKILL.md` for backwards compatibility.
  */
 export function detectCaveman(repoRoot: string): boolean {
-  return existsSync(join(repoRoot, ".codex", "skills", "caveman", "SKILL.md"));
+  return (
+    existsSync(join(repoRoot, ".polaris", "skills", "caveman", "SKILL.md")) ||
+    existsSync(join(repoRoot, ".codex", "skills", "caveman", "SKILL.md"))
+  );
 }
 
 /**

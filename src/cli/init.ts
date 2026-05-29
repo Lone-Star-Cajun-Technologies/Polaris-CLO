@@ -21,7 +21,7 @@ export interface InitOptions {
  * Generates (or updates) `polaris.config.json` in the repo root.
  *
  * Compaction provider detection:
- *   - Caveman: detected when `.codex/skills/caveman/SKILL.md` is present.
+ *   - Caveman: detected when `.polaris/skills/caveman/SKILL.md` is present (falls back to `.codex/skills/caveman/SKILL.md`).
  *   - GitNexus: detected when `gitnexus` is on PATH.
  *
  * The `providers.compactionProviders` field is written only when at least

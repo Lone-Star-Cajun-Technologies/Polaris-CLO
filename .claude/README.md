@@ -47,13 +47,15 @@ npm unlink -g polaris
 
 ## Skill canonicality
 
-`.codex/skills/` is the canonical source for all Polaris runtime workflow doctrine (step order, telemetry cadence, worker spawn rules, map update rules, checkpoint boundaries). Claude skill files in `.claude/skills/` are **thin invocation wrappers** only — they route Claude to the correct canonical Codex skill and carry the CLI invocation mechanics. Do not duplicate Polaris doctrine in Claude skill files.
+`.polaris/skills/` is the canonical source for all Polaris runtime workflow doctrine (step order, telemetry cadence, worker spawn rules, map update rules, checkpoint boundaries). Claude skill files in `.claude/skills/` are **thin invocation wrappers** only — they route Claude to the correct canonical skill and carry the CLI invocation mechanics. Do not duplicate Polaris doctrine in Claude skill files.
 
-| Claude skill | Canonical Codex skill | Purpose |
+Agent-specific skill folders (`.claude/skills/`, `.codex/skills/`, `.gemini/skills/`, `.github/skills/`) all contain thin wrappers that redirect to `.polaris/skills/`.
+
+| Claude skill | Canonical skill | Purpose |
 |---|---|---|
-| `skills/polaris-run.md` | `.codex/skills/polaris-run/SKILL.md` | Invoke `polaris run`; runtime doctrine in Codex |
-| `skills/polaris-loop.md` | `.codex/skills/polaris-run/SKILL.md` | Invoke `polaris loop continue/status`; checkpoint doctrine in Codex |
-| `skills/polaris-status.md` | `.codex/skills/polaris-tools/SKILL.md` | Invoke `polaris status`; tool behaviour in Codex |
+| `skills/polaris-run.md` | `.polaris/skills/polaris-run/SKILL.md` | Invoke `polaris run`; runtime doctrine in canonical skill |
+| `skills/polaris-loop.md` | `.polaris/skills/polaris-run/SKILL.md` | Invoke `polaris loop continue/status`; checkpoint doctrine in canonical skill |
+| `skills/polaris-status.md` | `.polaris/skills/polaris-tools/SKILL.md` | Invoke `polaris status`; tool behaviour in canonical skill |
 
 ## Rebuild after changes
 

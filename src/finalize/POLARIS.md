@@ -37,7 +37,7 @@ The finalize subsystem implements the atomic 12-step final delivery sequence for
 ## Read before editing
 
 - `docs/spec/polaris-architecture-spec.md` — finalize's role in the loop/map/finalize triad
-- `.codex/skills/polaris-run/chain.md` — step 08 (final-delivery) invocation contract
+- `.polaris/skills/polaris-run/chain.md` — step 08 (final-delivery) invocation contract
 - `src/loop/checkpoint.ts` — state schema that `runFinalize` reads
 
 ## Related routes

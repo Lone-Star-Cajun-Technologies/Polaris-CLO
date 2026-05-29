@@ -1,7 +1,7 @@
 # polaris-loop
 
-> **Canonical skill**: `.codex/skills/polaris-run/SKILL.md` (+ `chain.md`)
-> This file is a Claude-specific invocation wrapper. All Polaris loop doctrine lives in the Codex skill.
+> **Canonical skill**: `.polaris/skills/polaris-run/SKILL.md` (+ `chain.md`)
+> This file is a Claude-specific invocation wrapper. All Polaris loop doctrine lives in the canonical skill.
 
 Invoke Polaris loop subcommands: `continue` or `status`.
 
@@ -43,4 +43,4 @@ Only after a child commit has been made. `polaris loop continue` is the child-co
 
 - `polaris loop status` is equivalent to `polaris status` (both supported by the CLI).
 - Do not fabricate loop state; relay exactly what the CLI prints.
-- For full runtime workflow doctrine, read `.codex/skills/polaris-run/chain.md`.
+- For full runtime workflow doctrine, read `.polaris/skills/polaris-run/chain.md`.

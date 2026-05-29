@@ -195,7 +195,7 @@ Compact behavior is injected at three points in the dispatch pipeline.
 
 The adapter receives this compact state and uses it to construct the worker's initial prompt or dispatch configuration. Workers never receive the full orchestrator state — only the fields enumerated in `CompactBootstrapState`.
 
-### 7.3 Skill instructions (`.codex/skills/polaris-run/`)
+### 7.3 Skill instructions (`.polaris/skills/polaris-run/`)
 
 Skill chain steps enforce compact behavior through scope declarations (`allowed_files`, `stop_rules`) and the chain's continuation rules. The `04-execute-child` step forbids cross-child state carry and out-of-scope file modifications. The `07-decide-continuation` step enforces the one-child-per-session adapter handoff rule.
 
@@ -211,7 +211,7 @@ Polaris-native compact behavior is fully self-contained in:
 - `src/loop/compact-return.ts` — `CompactReturn` interface and validator
 - `src/loop/execution-adapter.ts` — `CompactBootstrapState`, `ExecutionAdapterContract`
 - `src/loop/bootstrap-packet.ts` — packet assembly
-- `.codex/skills/polaris-run/` — skill-level enforcement
+- `.polaris/skills/polaris-run/` — skill-level enforcement
 
 No external provider is required. Polaris MUST function fully without any detected provider.
 

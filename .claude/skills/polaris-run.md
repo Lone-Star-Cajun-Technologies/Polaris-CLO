@@ -1,10 +1,10 @@
 # polaris-run
 
-> **Canonical skill**: `.codex/skills/polaris-run/SKILL.md` (+ `chain.md`)
-> This file is a Claude-specific invocation wrapper. All Polaris runtime doctrine lives in the Codex skill.
+> **Canonical skill**: `.polaris/skills/polaris-run/SKILL.md` (+ `chain.md`)
+> This file is a Claude-specific invocation wrapper. All Polaris runtime doctrine lives in the canonical skill.
 
 Use this skill when the user asks to run a governed Polaris implementation cluster.
-Before proceeding, read `.codex/skills/polaris-run/SKILL.md` and `.codex/skills/polaris-run/chain.md` — they are the authoritative instructions.
+Before proceeding, read `.polaris/skills/polaris-run/SKILL.md` and `.polaris/skills/polaris-run/chain.md` — they are the authoritative instructions.
 
 ## Invocation
 
@@ -26,7 +26,7 @@ Before proceeding, read `.codex/skills/polaris-run/SKILL.md` and `.codex/skills/
 
 4. If the command succeeds, follow the step-by-step instructions in `chain.md`.
 
-## Hard rules (from canonical Codex skill)
+## Hard rules (from canonical skill)
 
 - Checkpoint-only state writes: session-start, child-complete (via `polaris loop continue`), session-end, blocker.
 - Worker spawn guard: narrow single-repo children execute directly — no worker spawn by default.

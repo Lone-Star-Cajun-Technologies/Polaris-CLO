@@ -24,22 +24,25 @@ polaris --version
 From the repo root, run the dispatch script via Windsurf's command runner:
 
 ```bash
-./scripts/polaris-dispatch.sh <provider>
+./scripts/polaris-dispatch.sh [<provider>]
 ```
 
 The script executes:
 
 ```bash
-polaris loop continue --provider <provider>
+polaris loop continue --provider <provider>   # when provider is specified
+polaris loop continue                          # when omitted — uses rotation[0] from config
 ```
 
-**Provider options:**
+**Provider options (must be configured in `polaris.config.json` `execution.providers`):**
 
-| Provider   | Description                                      |
-|------------|--------------------------------------------------|
-| `claude`   | Delegates to Claude Code CLI (default)           |
-| `codex`    | Delegates to OpenAI Codex CLI                    |
-| `terminal` | Delegates to a generic terminal CLI worker       |
+| Provider   | CLI binary  | Description                                      |
+|------------|-------------|--------------------------------------------------|
+| `claude`   | `claude`    | Claude Code CLI (Anthropic)                      |
+| `codex`    | `codex`     | OpenAI Codex CLI                                 |
+| `gemini`   | `gemini`    | Google Gemini CLI                                |
+| `copilot`  | `copilot`   | GitHub Copilot CLI (`-p <prompt> --autopilot --allow-all-tools`) |
+| `custom`   | `$POLARIS_AGENT` | Any agent set via environment variable      |
 
 Windsurf does not pick the provider automatically. Provider selection is explicit and config-controlled.
 
