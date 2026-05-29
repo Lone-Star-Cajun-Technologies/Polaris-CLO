@@ -717,7 +717,7 @@ export function checkAcknowledgmentTimeout(options: {
   const telemetryFile = resolveTelemetryFile(state, options.repoRoot);
 
   // Scenario B: worker dispatched but not acknowledged within launch timeout
-  if (dr.worker_id && !dr.first_heartbeat_at && elapsed > launchTimeout) {
+  if (dr.worker_id && !dr.first_heartbeat_at && elapsed > launchTimeout && dr.runtime_state !== "orphaned") {
     const recoveryEvent = {
       event: "child-recovery-initiated",
       event_id: randomUUID(),

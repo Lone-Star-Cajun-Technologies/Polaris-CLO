@@ -68,14 +68,44 @@ const FOREMAN_ROLE_CONTEXT: WorkerRoleContext = {
   ],
 };
 
+const ANALYSIS_ROLE_CONTEXT: WorkerRoleContext = {
+  role: 'analyst',
+  role_authority: 'analysis',
+  may_implement: false,
+  may_assign_workers: false,
+  prohibited_actions: [
+    'modify-cluster-plan',
+    'dispatch-children',
+    'polaris-loop-dispatch',
+    'polaris-loop-continue',
+    'inline-implementation',
+  ],
+};
+
+const LIBRARIAN_ROLE_CONTEXT: WorkerRoleContext = {
+  role: 'librarian',
+  role_authority: 'documentation',
+  may_implement: false,
+  may_assign_workers: false,
+  prohibited_actions: [
+    'modify-cluster-plan',
+    'dispatch-children',
+    'polaris-loop-dispatch',
+    'polaris-loop-continue',
+    'inline-implementation',
+  ],
+};
+
 export function roleContextForWorkerRole(workerRole: WorkerRole): WorkerRoleContext {
   switch (workerRole) {
     case 'impl':
     case 'validation':
     case 'repair':
-    case 'analysis':
-    case 'librarian':
       return WORKER_ROLE_CONTEXT;
+    case 'analysis':
+      return ANALYSIS_ROLE_CONTEXT;
+    case 'librarian':
+      return LIBRARIAN_ROLE_CONTEXT;
     case 'startup':
     case 'finalize':
     case 'preflight':

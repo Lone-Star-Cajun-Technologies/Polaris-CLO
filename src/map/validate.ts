@@ -107,10 +107,8 @@ export function runMapValidate(
     }
 
     // 6. role_owner validation: present and a known value
-    if (entry.role_owner !== undefined) {
-      if (!(VALID_ROLE_OWNERS as readonly string[]).includes(entry.role_owner)) {
-        invalidRoleOwner.push(filePath);
-      }
+    if (entry.role_owner === undefined || !(VALID_ROLE_OWNERS as readonly string[]).includes(entry.role_owner)) {
+      invalidRoleOwner.push(filePath);
     }
 
     // 5. Conflicted routes: same route claimed by different domains

@@ -349,6 +349,27 @@ export function validateState(state: unknown): string[] {
                 errors.push(`open_children_meta["${childId}"].dispatch_record.first_heartbeat_at must be a string (ISO timestamp) if present`);
               }
             }
+            // Validate role context fields
+            if ("role" in dr && dr["role"] !== undefined) {
+              if (typeof dr["role"] !== "string") {
+                errors.push(`open_children_meta["${childId}"].dispatch_record.role must be a string if present`);
+              }
+            }
+            if ("role_authority" in dr && dr["role_authority"] !== undefined) {
+              if (typeof dr["role_authority"] !== "string") {
+                errors.push(`open_children_meta["${childId}"].dispatch_record.role_authority must be a string if present`);
+              }
+            }
+            if ("may_implement" in dr && dr["may_implement"] !== undefined) {
+              if (typeof dr["may_implement"] !== "boolean") {
+                errors.push(`open_children_meta["${childId}"].dispatch_record.may_implement must be a boolean if present`);
+              }
+            }
+            if ("session_type" in dr && dr["session_type"] !== undefined) {
+              if (typeof dr["session_type"] !== "string") {
+                errors.push(`open_children_meta["${childId}"].dispatch_record.session_type must be a string if present`);
+              }
+            }
           }
         }
       }

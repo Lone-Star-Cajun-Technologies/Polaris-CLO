@@ -299,9 +299,17 @@ export function checkOrphans(options: OrphanCheckOptions): OrphanCheckResult {
         detected.push(detection);
         emitRecoveryInitiated(telemetryFile, state.active_child, dr.dispatch_id, "no-acknowledgment");
         emitChildOrphaned(telemetryFile, state.active_child, dr.dispatch_id, null);
-        transitionToOrphaned(options.stateFile, state, state.active_child);
         const newId = randomUUID();
         emitChildRequeued(telemetryFile, state.active_child, newId, dr.dispatch_id);
+        // Update in-memory state: clear active_child and update dispatch_id
+        const updatedMeta = {
+          ...state.open_children_meta,
+          [state.active_child]: {
+            ...childMeta,
+            dispatch_record: { ...dr, dispatch_id: newId, runtime_state: "orphaned" as const },
+          },
+        };
+        writeStateAtomic(options.stateFile, { ...state, active_child: "", open_children_meta: updatedMeta });
         return { detected, checked };
       }
 
@@ -334,13 +342,13 @@ export function checkOrphans(options: OrphanCheckOptions): OrphanCheckResult {
           childId: state.active_child,
           dispatchId: dr.dispatch_id,
           reason,
-          requiresApproval: false,
+          requiresApproval: true,
         };
         detected.push(detection);
         emitRecoveryInitiated(telemetryFile, state.active_child, dr.dispatch_id, reason);
         emitChildOrphaned(telemetryFile, state.active_child, dr.dispatch_id, dr.last_heartbeat_at ?? null);
-        const newId = resetForRedispatch(options.stateFile, state, state.active_child);
-        emitChildRequeued(telemetryFile, state.active_child, newId, dr.dispatch_id);
+        emitRecoveryApprovalRequested(telemetryFile, state.active_child, dr.dispatch_id, reason);
+        transitionToOrphaned(options.stateFile, state, state.active_child);
         return { detected, checked };
       }
 
