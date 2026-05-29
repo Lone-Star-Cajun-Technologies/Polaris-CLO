@@ -10,17 +10,16 @@
     "POL-213",
     "POL-214",
     "POL-215",
-    "POL-216"
-  ],
-  "open_children": [
+    "POL-216",
     "POL-217"
   ],
+  "open_children": [],
   "step_cursor": "dispatch",
   "context_budget": {
     "children_completed": 0,
     "max_children_per_session": 1
   },
-  "status": "running",
+  "status": "all-children-complete",
   "next_open_child": "POL-212",
   "dispatch_boundary": {
     "dispatch_epoch": 1,
@@ -58,6 +57,11 @@
       "status": "success",
       "completed_at": "2026-05-29T16:30:00.000Z",
       "summary": "Wrote Connect Compatibility Specification to smartdocs/docs/specs/active/connect-compatibility.md. All 5 Connect features designed with Polaris/Connect boundary tables, feature flags, migration cost analysis, and gap analysis against current checkpoint.ts schema."
+    },
+    "POL-217": {
+      "status": "success",
+      "completed_at": "2026-05-29T17:00:00.000Z",
+      "summary": "Wrote Migration Plan to smartdocs/docs/specs/active/foreman-worker-migration-plan.md. 12 gaps catalogued from all prior specs (POL-212 through POL-216), organized into 5 implementation waves with dependency ordering. Connect readiness gate defined: minimum readiness requires Waves 1-2; full session addressability requires Waves 1-4."
     }
   },
   "open_children_meta": {}
