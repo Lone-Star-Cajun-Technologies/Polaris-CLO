@@ -280,6 +280,105 @@ function findAutoApprovedEvents(
   return events;
 }
 
+/**
+ * States that indicate the worker has acknowledged the dispatch packet.
+ * These are states at or after the "acknowledged" lifecycle stage.
+ */
+const ACKNOWLEDGED_OR_LATER_STATES: ReadonlySet<string> = new Set([
+  "acknowledged",
+  "running",
+  "waiting-for-approval",
+  "blocked",
+  "completed",
+  "failed",
+  "orphaned",
+]);
+
+/**
+ * Worker acknowledged telemetry event (minimal shape for scanning).
+ */
+interface WorkerAcknowledgedEvent {
+  event: "worker-acknowledged";
+  dispatch_id?: string;
+  run_id?: string;
+  child_id?: string;
+}
+
+/**
+ * Check whether the worker for the given dispatch has acknowledged the packet.
+ *
+ * Primary: checks runtime_state on the ChildDispatchRecord against the set of
+ * states at or after "acknowledged".
+ * Fallback: scans telemetry log for a worker-acknowledged event with a matching
+ * dispatch_id.
+ *
+ * Returns false for unknown dispatch_id (does not throw).
+ */
+export function hasWorkerAcknowledged(
+  dispatch_id: string,
+  state: ReturnType<typeof readState>,
+  telemetryFile?: string,
+): boolean {
+  // Search all open_children_meta for a matching dispatch record
+  const meta = state.open_children_meta ?? {};
+  for (const childKey of Object.keys(meta)) {
+    const record = meta[childKey]?.dispatch_record;
+    if (record && record.dispatch_id === dispatch_id) {
+      // Primary check: runtime_state
+      if (record.runtime_state && ACKNOWLEDGED_OR_LATER_STATES.has(record.runtime_state)) {
+        return true;
+      }
+      break; // Found the record but not acknowledged by state; try telemetry fallback
+    }
+  }
+
+  // Fallback: scan telemetry log for worker-acknowledged event
+  if (telemetryFile && existsSync(telemetryFile)) {
+    try {
+      const content = readFileSync(telemetryFile, "utf-8");
+      const lines = content.trim().split("\n").filter(Boolean);
+      for (const line of lines) {
+        try {
+          const event = JSON.parse(line) as WorkerAcknowledgedEvent;
+          if (event.event === "worker-acknowledged" && event.dispatch_id === dispatch_id) {
+            return true;
+          }
+        } catch {
+          continue;
+        }
+      }
+    } catch {
+      // Ignore read errors
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Check whether a session can be attached to the worker for the given dispatch.
+ *
+ * Returns true only when attachment_capable === true AND session_id is non-null/undefined
+ * on the ChildDispatchRecord. Does NOT scan telemetry.
+ *
+ * Returns false for unknown dispatch_id (does not throw).
+ */
+export function canSessionBeAttached(
+  dispatch_id: string,
+  state: ReturnType<typeof readState>,
+): boolean {
+  const meta = state.open_children_meta ?? {};
+  for (const childKey of Object.keys(meta)) {
+    const record = meta[childKey]?.dispatch_record;
+    if (record && record.dispatch_id === dispatch_id) {
+      return record.attachment_capable === true &&
+        record.session_id !== null &&
+        record.session_id !== undefined;
+    }
+  }
+  return false;
+}
+
 export interface StatusOptions {
   stateFile?: string;
   repoRoot: string;
@@ -430,6 +529,8 @@ export function runLoopStatus(options: StatusOptions): void {
                 last_heartbeat_at: dispatchEvidence.last_heartbeat_at ?? null,
                 last_heartbeat_step: dispatchEvidence.last_heartbeat_step ?? null,
                 worker_assignment: dispatchEvidence.worker_assignment ?? null,
+                worker_acknowledged: hasWorkerAcknowledged(dispatchEvidence.dispatch_id, state, telemetryFile),
+                session_attachable: canSessionBeAttached(dispatchEvidence.dispatch_id, state),
               }
             : null,
           worker: workerHeartbeat

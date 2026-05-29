@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { runLoopStatus } from "./status.js";
+import { runLoopStatus, hasWorkerAcknowledged, canSessionBeAttached } from "./status.js";
 import type { BootstrapPacket } from "./bootstrap-packet.js";
 
 function makeTestDir(): string {
@@ -429,5 +429,311 @@ describe("runLoopStatus", () => {
     expect(output).toContain("Mode:             delegated");
     expect(output).toContain("Runtime state:    delegated");
     expect(output).not.toContain("Runtime state:    unknown");
+  });
+});
+
+// ── hasWorkerAcknowledged and canSessionBeAttached ─────────────────────────────
+
+function makeStateWithDispatch(dispatchOverrides: Record<string, unknown> = {}) {
+  return {
+    schema_version: "1.0",
+    run_id: "pol-5-session-1",
+    cluster_id: "POL-5",
+    session_type: "implement",
+    active_child: "POL-26",
+    completed_children: [],
+    open_children: ["POL-26"],
+    step_cursor: "dispatch",
+    context_budget: { children_completed: 0, max_children_per_session: 3 },
+    status: "running",
+    next_open_child: "POL-26",
+    open_children_meta: {
+      "POL-26": {
+        title: "Test child",
+        dispatch_record: {
+          dispatch_id: "test-dispatch-id",
+          child_id: "POL-26",
+          run_id: "pol-5-session-1",
+          cluster_id: "POL-5",
+          packet_path: "/tmp/packet.json",
+          expected_result_path: "/tmp/result.json",
+          dispatched_at: "2026-01-15T10:30:00.000Z",
+          status: "dispatched",
+          ...dispatchOverrides,
+        },
+      },
+    },
+  };
+}
+
+describe("hasWorkerAcknowledged", () => {
+  it("returns false for unknown dispatch_id", () => {
+    const state = makeStateWithDispatch({ runtime_state: "acknowledged" });
+    expect(hasWorkerAcknowledged("unknown-id", state as ReturnType<typeof import("./checkpoint.js").readState>)).toBe(false);
+  });
+
+  it("returns true when runtime_state is acknowledged", () => {
+    const state = makeStateWithDispatch({ runtime_state: "acknowledged" });
+    expect(hasWorkerAcknowledged("test-dispatch-id", state as ReturnType<typeof import("./checkpoint.js").readState>)).toBe(true);
+  });
+
+  it("returns true when runtime_state is running", () => {
+    const state = makeStateWithDispatch({ runtime_state: "running" });
+    expect(hasWorkerAcknowledged("test-dispatch-id", state as ReturnType<typeof import("./checkpoint.js").readState>)).toBe(true);
+  });
+
+  it("returns true when runtime_state is blocked", () => {
+    const state = makeStateWithDispatch({ runtime_state: "blocked" });
+    expect(hasWorkerAcknowledged("test-dispatch-id", state as ReturnType<typeof import("./checkpoint.js").readState>)).toBe(true);
+  });
+
+  it("returns true when runtime_state is completed", () => {
+    const state = makeStateWithDispatch({ runtime_state: "completed" });
+    expect(hasWorkerAcknowledged("test-dispatch-id", state as ReturnType<typeof import("./checkpoint.js").readState>)).toBe(true);
+  });
+
+  it("returns true when runtime_state is failed", () => {
+    const state = makeStateWithDispatch({ runtime_state: "failed" });
+    expect(hasWorkerAcknowledged("test-dispatch-id", state as ReturnType<typeof import("./checkpoint.js").readState>)).toBe(true);
+  });
+
+  it("returns true when runtime_state is orphaned", () => {
+    const state = makeStateWithDispatch({ runtime_state: "orphaned" });
+    expect(hasWorkerAcknowledged("test-dispatch-id", state as ReturnType<typeof import("./checkpoint.js").readState>)).toBe(true);
+  });
+
+  it("returns false when runtime_state is launching (pre-acknowledged)", () => {
+    const state = makeStateWithDispatch({ runtime_state: "launching" });
+    expect(hasWorkerAcknowledged("test-dispatch-id", state as ReturnType<typeof import("./checkpoint.js").readState>)).toBe(false);
+  });
+
+  it("returns false when runtime_state is packet-created", () => {
+    const state = makeStateWithDispatch({ runtime_state: "packet-created" });
+    expect(hasWorkerAcknowledged("test-dispatch-id", state as ReturnType<typeof import("./checkpoint.js").readState>)).toBe(false);
+  });
+
+  it("returns false when no runtime_state set and no telemetry", () => {
+    const state = makeStateWithDispatch({});
+    expect(hasWorkerAcknowledged("test-dispatch-id", state as ReturnType<typeof import("./checkpoint.js").readState>)).toBe(false);
+  });
+
+  it("falls back to telemetry scan when runtime_state not acknowledged", () => {
+    const dir = join(tmpdir(), `polaris-ack-test-${Date.now()}`);
+    mkdirSync(dir, { recursive: true });
+    const telemetryFile = join(dir, "telemetry.jsonl");
+    writeFileSync(telemetryFile, JSON.stringify({
+      event: "worker-acknowledged",
+      dispatch_id: "test-dispatch-id",
+      run_id: "pol-5-session-1",
+      child_id: "POL-26",
+      worker_id: "w1",
+      packet_sha: "abc123",
+      timestamp: "2026-01-15T10:30:01.000Z",
+    }) + "\n");
+
+    const state = makeStateWithDispatch({ runtime_state: "launching" });
+    try {
+      expect(hasWorkerAcknowledged("test-dispatch-id", state as ReturnType<typeof import("./checkpoint.js").readState>, telemetryFile)).toBe(true);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("telemetry fallback returns false when dispatch_id does not match", () => {
+    const dir = join(tmpdir(), `polaris-ack-test-${Date.now()}`);
+    mkdirSync(dir, { recursive: true });
+    const telemetryFile = join(dir, "telemetry.jsonl");
+    writeFileSync(telemetryFile, JSON.stringify({
+      event: "worker-acknowledged",
+      dispatch_id: "other-dispatch",
+      run_id: "pol-5-session-1",
+      child_id: "POL-26",
+      worker_id: "w1",
+      packet_sha: "abc123",
+      timestamp: "2026-01-15T10:30:01.000Z",
+    }) + "\n");
+
+    const state = makeStateWithDispatch({ runtime_state: "launching" });
+    try {
+      expect(hasWorkerAcknowledged("test-dispatch-id", state as ReturnType<typeof import("./checkpoint.js").readState>, telemetryFile)).toBe(false);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("canSessionBeAttached", () => {
+  it("returns false for unknown dispatch_id", () => {
+    const state = makeStateWithDispatch({ attachment_capable: true, session_id: "sess-abc" });
+    expect(canSessionBeAttached("unknown-id", state as ReturnType<typeof import("./checkpoint.js").readState>)).toBe(false);
+  });
+
+  it("returns true when attachment_capable=true and session_id is set", () => {
+    const state = makeStateWithDispatch({ attachment_capable: true, session_id: "sess-abc" });
+    expect(canSessionBeAttached("test-dispatch-id", state as ReturnType<typeof import("./checkpoint.js").readState>)).toBe(true);
+  });
+
+  it("returns false when attachment_capable=true but session_id is null", () => {
+    const state = makeStateWithDispatch({ attachment_capable: true, session_id: null });
+    expect(canSessionBeAttached("test-dispatch-id", state as ReturnType<typeof import("./checkpoint.js").readState>)).toBe(false);
+  });
+
+  it("returns false when attachment_capable=true but session_id is undefined", () => {
+    const state = makeStateWithDispatch({ attachment_capable: true });
+    expect(canSessionBeAttached("test-dispatch-id", state as ReturnType<typeof import("./checkpoint.js").readState>)).toBe(false);
+  });
+
+  it("returns false when attachment_capable=false and session_id is set", () => {
+    const state = makeStateWithDispatch({ attachment_capable: false, session_id: "sess-abc" });
+    expect(canSessionBeAttached("test-dispatch-id", state as ReturnType<typeof import("./checkpoint.js").readState>)).toBe(false);
+  });
+
+  it("returns false when attachment_capable is not set", () => {
+    const state = makeStateWithDispatch({ session_id: "sess-abc" });
+    expect(canSessionBeAttached("test-dispatch-id", state as ReturnType<typeof import("./checkpoint.js").readState>)).toBe(false);
+  });
+});
+
+describe("JSON output includes worker_acknowledged and session_attachable", () => {
+  let testDir: string;
+
+  beforeEach(() => {
+    testDir = makeTestDir();
+  });
+
+  afterEach(() => {
+    rmSync(testDir, { recursive: true, force: true });
+  });
+
+  it("includes worker_acknowledged=true when runtime_state is acknowledged", () => {
+    const stateWithDispatch = {
+      ...baseState,
+      open_children_meta: {
+        "POL-26": {
+          dispatch_record: {
+            dispatch_id: "disp-001",
+            child_id: "POL-26",
+            run_id: "pol-5-session-1",
+            cluster_id: "POL-5",
+            packet_path: "/tmp/p.json",
+            expected_result_path: "/tmp/r.json",
+            dispatched_at: "2026-01-15T10:30:00.000Z",
+            status: "dispatched",
+            runtime_state: "acknowledged",
+          },
+        },
+      },
+    };
+    const stateFile = writeState(testDir, stateWithDispatch);
+    const logs: string[] = [];
+    const orig = console.log;
+    console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
+    try {
+      runLoopStatus({ repoRoot: testDir, stateFile, json: true });
+    } finally {
+      console.log = orig;
+    }
+    const parsed = JSON.parse(logs.join("\n"));
+    expect(parsed.dispatch.worker_acknowledged).toBe(true);
+  });
+
+  it("includes worker_acknowledged=false when runtime_state is launching", () => {
+    const stateWithDispatch = {
+      ...baseState,
+      open_children_meta: {
+        "POL-26": {
+          dispatch_record: {
+            dispatch_id: "disp-002",
+            child_id: "POL-26",
+            run_id: "pol-5-session-1",
+            cluster_id: "POL-5",
+            packet_path: "/tmp/p.json",
+            expected_result_path: "/tmp/r.json",
+            dispatched_at: "2026-01-15T10:30:00.000Z",
+            status: "dispatched",
+            runtime_state: "launching",
+          },
+        },
+      },
+    };
+    const stateFile = writeState(testDir, stateWithDispatch);
+    const logs: string[] = [];
+    const orig = console.log;
+    console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
+    try {
+      runLoopStatus({ repoRoot: testDir, stateFile, json: true });
+    } finally {
+      console.log = orig;
+    }
+    const parsed = JSON.parse(logs.join("\n"));
+    expect(parsed.dispatch.worker_acknowledged).toBe(false);
+  });
+
+  it("includes session_attachable=true when attachment_capable=true and session_id set", () => {
+    const stateWithDispatch = {
+      ...baseState,
+      open_children_meta: {
+        "POL-26": {
+          dispatch_record: {
+            dispatch_id: "disp-003",
+            child_id: "POL-26",
+            run_id: "pol-5-session-1",
+            cluster_id: "POL-5",
+            packet_path: "/tmp/p.json",
+            expected_result_path: "/tmp/r.json",
+            dispatched_at: "2026-01-15T10:30:00.000Z",
+            status: "dispatched",
+            runtime_state: "running",
+            attachment_capable: true,
+            session_id: "sess-xyz",
+          },
+        },
+      },
+    };
+    const stateFile = writeState(testDir, stateWithDispatch);
+    const logs: string[] = [];
+    const orig = console.log;
+    console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
+    try {
+      runLoopStatus({ repoRoot: testDir, stateFile, json: true });
+    } finally {
+      console.log = orig;
+    }
+    const parsed = JSON.parse(logs.join("\n"));
+    expect(parsed.dispatch.session_attachable).toBe(true);
+  });
+
+  it("includes session_attachable=false when attachment_capable=true but session_id is null", () => {
+    const stateWithDispatch = {
+      ...baseState,
+      open_children_meta: {
+        "POL-26": {
+          dispatch_record: {
+            dispatch_id: "disp-004",
+            child_id: "POL-26",
+            run_id: "pol-5-session-1",
+            cluster_id: "POL-5",
+            packet_path: "/tmp/p.json",
+            expected_result_path: "/tmp/r.json",
+            dispatched_at: "2026-01-15T10:30:00.000Z",
+            status: "dispatched",
+            runtime_state: "acknowledged",
+            attachment_capable: true,
+            session_id: null,
+          },
+        },
+      },
+    };
+    const stateFile = writeState(testDir, stateWithDispatch);
+    const logs: string[] = [];
+    const orig = console.log;
+    console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
+    try {
+      runLoopStatus({ repoRoot: testDir, stateFile, json: true });
+    } finally {
+      console.log = orig;
+    }
+    const parsed = JSON.parse(logs.join("\n"));
+    expect(parsed.dispatch.session_attachable).toBe(false);
   });
 });
