@@ -4,13 +4,13 @@
   "cluster_id": "POL-211",
   "branch": "claude/lucid-newton-IC370",
   "session_type": "implement",
-  "active_child": "POL-213",
+  "active_child": null,
   "completed_children": [
-    "POL-212"
+    "POL-212",
+    "POL-213",
+    "POL-214"
   ],
   "open_children": [
-    "POL-213",
-    "POL-214",
     "POL-215",
     "POL-216",
     "POL-217"
@@ -38,6 +38,11 @@
       "status": "success",
       "completed_at": "2026-05-29T14:30:00.000Z",
       "summary": "Wrote Foreman-to-Worker Architecture Spec to smartdocs/docs/specs/active/foreman-worker-architecture.md"
+    },
+    "POL-213": {
+      "status": "success",
+      "completed_at": "2026-05-29T15:00:00.000Z",
+      "summary": "Wrote Worker Lifecycle State Machine Spec to smartdocs/docs/specs/active/worker-lifecycle-state-machine.md"
     }
   },
   "open_children_meta": {}
