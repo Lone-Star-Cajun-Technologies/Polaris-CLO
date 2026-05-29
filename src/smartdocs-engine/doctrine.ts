@@ -2,6 +2,7 @@ import {
   appendFileSync,
   existsSync,
   mkdirSync,
+  readdirSync,
   readFileSync,
   renameSync,
   unlinkSync,
@@ -307,4 +308,170 @@ export function doctrineDeprecate(path: string, options: DoctrineOptions): Doctr
   });
 
   return { source, destination, runId, lifecyclePath };
+}
+
+// ── Spec verb-keyword conflict detection ──────────────────────────────────────
+
+const MODAL_REQUIRES = /\b(?:must\s+always|always|must)\s+(\w+)/gi;
+const MODAL_PROHIBITS = /\b(?:must\s+never|must\s+not|never)\s+(\w+)/gi;
+const CONFLICT_STOPWORDS = new Set([
+  "this", "that", "with", "from", "have", "been", "will", "when", "then",
+  "also", "only", "into", "over", "such", "each", "more", "same", "used",
+]);
+
+function extractSpecKeywords(content: string, pattern: RegExp): Set<string> {
+  const result = new Set<string>();
+  const re = new RegExp(pattern.source, pattern.flags);
+  for (const match of content.matchAll(re)) {
+    const kw = match[1]?.toLowerCase();
+    if (kw && kw.length >= 4 && !CONFLICT_STOPWORDS.has(kw)) result.add(kw);
+  }
+  return result;
+}
+
+export interface SpecConflict {
+  type: "content" | "map";
+  conflictingFile: string;
+  detail: string;
+}
+
+export interface SpecPromoteOptions extends DoctrineOptions {
+  approve?: boolean;
+}
+
+export interface SpecPromoteResult {
+  source: string;
+  destination: string;
+  runId: string;
+  lifecyclePath: string;
+  conflicts: SpecConflict[];
+  halted: boolean;
+  report: string;
+}
+
+/** Promote a raw spec from smartdocs/docs/raw/ to smartdocs/docs/specs/active/.
+ *
+ * Gate:
+ *  1. Content conflict check — verb-keyword overlap with existing active specs.
+ *  2. Map conflict check — linkedMapArea already covered by an active spec.
+ *  3. Halts with a report unless approve is true.
+ */
+export function specPromote(path: string, options: SpecPromoteOptions): SpecPromoteResult {
+  const repoRoot = resolve(options.repoRoot);
+  const runId = options.runId ?? generateRunId();
+  const source = resolvePath(path, repoRoot);
+  const lifecyclePath = lifecycleFilePath(repoRoot, runId);
+
+  if (!existsSync(source)) {
+    throw new Error(`Source file not found: ${source}`);
+  }
+
+  const rawDir = resolve(repoRoot, "smartdocs", "docs", "raw");
+  const relToRaw = relative(rawDir, source);
+  const isInRaw = !relToRaw.startsWith("..") && !relToRaw.startsWith("/");
+  if (!isInRaw) {
+    throw new Error(`specPromote source must be in smartdocs/docs/raw/ — got: ${source}`);
+  }
+
+  const content = readFileSync(source, "utf-8");
+  const conflicts: SpecConflict[] = [];
+
+  // 1. Content conflict check against specs/active/
+  const activeSpecsDir = resolve(repoRoot, "smartdocs", "docs", "specs", "active");
+  if (existsSync(activeSpecsDir)) {
+    const activeFiles = readdirSync(activeSpecsDir).filter((f) => f.endsWith(".md"));
+    const incomingRequires = extractSpecKeywords(content, MODAL_REQUIRES);
+    const incomingProhibits = extractSpecKeywords(content, MODAL_PROHIBITS);
+    for (const file of activeFiles) {
+      let activeContent: string;
+      try { activeContent = readFileSync(join(activeSpecsDir, file), "utf-8"); } catch { continue; }
+      const activeRequires = extractSpecKeywords(activeContent, MODAL_REQUIRES);
+      const activeProhibits = extractSpecKeywords(activeContent, MODAL_PROHIBITS);
+      for (const kw of incomingProhibits) {
+        if (activeRequires.has(kw)) {
+          conflicts.push({ type: "content", conflictingFile: file, detail: `incoming doc prohibits "${kw}" but ${file} requires it` });
+        }
+      }
+      for (const kw of incomingRequires) {
+        if (activeProhibits.has(kw)) {
+          conflicts.push({ type: "content", conflictingFile: file, detail: `incoming doc requires "${kw}" but ${file} prohibits it` });
+        }
+      }
+    }
+  }
+
+  // 2. Map conflict check — linkedMapArea already has an active spec
+  const provenanceSrcPath = source.replace(/\.md$/, ".provenance.json");
+  let linkedMapArea: string | null = null;
+  if (existsSync(provenanceSrcPath)) {
+    try {
+      const prov = JSON.parse(readFileSync(provenanceSrcPath, "utf-8"));
+      linkedMapArea = prov.linkedMapArea ?? null;
+    } catch { /* ignore */ }
+  }
+  if (linkedMapArea && existsSync(activeSpecsDir)) {
+    const activeFiles = readdirSync(activeSpecsDir).filter((f) => f.endsWith(".md"));
+    for (const file of activeFiles) {
+      let activeContent: string;
+      try { activeContent = readFileSync(join(activeSpecsDir, file), "utf-8"); } catch { continue; }
+      if (activeContent.includes(linkedMapArea)) {
+        conflicts.push({ type: "map", conflictingFile: file, detail: `linked map area "${linkedMapArea}" is already referenced by active spec ${file}` });
+      }
+    }
+  }
+
+  // 3. Build report
+  const reportLines: string[] = [`spec-promote: ${basename(source)}`];
+  if (conflicts.length === 0) {
+    reportLines.push("  no content conflicts detected");
+    reportLines.push("  no map area conflicts detected");
+  } else {
+    reportLines.push(`  ${conflicts.length} conflict(s) detected:`);
+    for (const c of conflicts) {
+      reportLines.push(`    [${c.type}] ${c.detail}`);
+    }
+    if (!options.approve) {
+      reportLines.push("");
+      reportLines.push("  Halted. Resolve conflicts or rerun with --approve to override.");
+    }
+  }
+  const report = reportLines.join("\n");
+
+  // 4. Halt if conflicts and not approved
+  if (conflicts.length > 0 && !options.approve) {
+    appendLifecycle(lifecyclePath, {
+      event: "spec-promote-halted",
+      run_id: runId,
+      source,
+      conflicts,
+      timestamp: new Date().toISOString(),
+    });
+    return { source, destination: "", runId, lifecyclePath, conflicts, halted: true, report };
+  }
+
+  // 5. Promote
+  const activeDir = join(repoRoot, "smartdocs", "docs", "specs", "active");
+  mkdirSync(activeDir, { recursive: true });
+  const destination = join(activeDir, basename(source));
+  if (existsSync(destination)) {
+    throw new Error(`Destination already exists: ${destination}`);
+  }
+
+  renameSync(source, destination);
+
+  if (existsSync(provenanceSrcPath)) {
+    renameSync(provenanceSrcPath, destination.replace(/\.md$/, ".provenance.json"));
+  }
+
+  appendLifecycle(lifecyclePath, {
+    event: "spec-promote",
+    run_id: runId,
+    source,
+    destination,
+    conflicts_at_promote: conflicts.length,
+    approved: options.approve ?? false,
+    timestamp: new Date().toISOString(),
+  });
+
+  return { source, destination, runId, lifecyclePath, conflicts, halted: false, report };
 }

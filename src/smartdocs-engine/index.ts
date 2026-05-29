@@ -5,7 +5,7 @@ import { ensureDocsScaffold, ingestDocs, printIngestResults } from "./ingest.js"
 import { migrateDocs, printMigrateResults } from "./migrate.js";
 import { seedInstructions, seedInstructionsAll, seedSummary, seedSummaryAll, type IneligibleEntry } from "./seed-instructions.js";
 import { validateInstructions, printReport } from "./validate-instructions.js";
-import { doctrineDraft, doctrinePromote, doctrineDeprecate } from "./doctrine.js";
+import { doctrineDraft, doctrinePromote, doctrineDeprecate, specPromote } from "./doctrine.js";
 import { auditIngestRiskSurface, formatAuditMarkdown, formatAuditSummaryTable } from "./audit.js";
 
 export interface DocsCommandOptions {
@@ -417,6 +417,30 @@ export function createDoctrineCommand(): Command {
         });
         console.log(`deprecated: ${result.destination}`);
         console.log(`provenance: ${result.lifecyclePath}`);
+      } catch (err) {
+        console.error(err instanceof Error ? err.message : String(err));
+        process.exit(1);
+      }
+    });
+
+  doctrine
+    .command("spec-promote <path>")
+    .description("Promote a raw spec from smartdocs/docs/raw/ to smartdocs/docs/specs/active/ after conflict check")
+    .option("-r, --repo-root <path>", "Repository root", process.cwd())
+    .option("--run-id <id>", "Override the generated run ID")
+    .option("--approve", "Proceed despite detected conflicts")
+    .action((path: string, options: { repoRoot: string; runId?: string; approve?: boolean }) => {
+      try {
+        const result = specPromote(path, {
+          repoRoot: options.repoRoot,
+          runId: options.runId,
+          approve: options.approve,
+        });
+        console.log(result.report);
+        if (result.halted) {
+          process.exit(1);
+        }
+        console.log(`promoted: ${result.destination}`);
       } catch (err) {
         console.error(err instanceof Error ? err.message : String(err));
         process.exit(1);

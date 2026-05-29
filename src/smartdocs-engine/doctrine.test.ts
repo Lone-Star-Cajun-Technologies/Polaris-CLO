@@ -9,6 +9,7 @@ import {
   doctrineDeprecate,
   doctrinePromote,
   addCandidateGovernanceMetadata,
+  specPromote,
 } from "./doctrine.js";
 
 function makeTempDir(): string {
@@ -17,6 +18,7 @@ function makeTempDir(): string {
   mkdirSync(join(root, "smartdocs", "docs", "doctrine", "candidate"), { recursive: true });
   mkdirSync(join(root, "smartdocs", "docs", "doctrine", "active"), { recursive: true });
   mkdirSync(join(root, "smartdocs", "docs", "doctrine", "deprecated"), { recursive: true });
+  mkdirSync(join(root, "smartdocs", "docs", "specs", "active"), { recursive: true });
   return root;
 }
 
@@ -399,5 +401,117 @@ describe("doctrineDeprecate", () => {
 
     const result = doctrineDeprecate(activePath, { repoRoot, runId: "test-run-dep-noprov" });
     expect(existsSync(result.destination)).toBe(true);
+  });
+});
+
+describe("specPromote", () => {
+  let repoRoot: string;
+
+  beforeEach(() => {
+    repoRoot = makeTempDir();
+  });
+
+  it("promotes a raw spec to specs/active/ with no conflicts", () => {
+    const src = join(repoRoot, "smartdocs", "docs", "raw", "my-spec.md");
+    writeFileSync(src, "# My Spec\n\nThis spec must use the new API.");
+
+    const result = specPromote(src, { repoRoot, runId: "spec-run-001" });
+
+    expect(result.halted).toBe(false);
+    expect(existsSync(result.destination)).toBe(true);
+    expect(existsSync(src)).toBe(false);
+    expect(result.destination).toContain("specs/active/my-spec.md");
+  });
+
+  it("moves co-located .provenance.json sidecar alongside the .md", () => {
+    const src = join(repoRoot, "smartdocs", "docs", "raw", "prov-spec.md");
+    const provSrc = join(repoRoot, "smartdocs", "docs", "raw", "prov-spec.provenance.json");
+    writeFileSync(src, "# Prov Spec\n\nMust always validate inputs.");
+    writeFileSync(provSrc, JSON.stringify({ linkedMapArea: "src/api", classifiedAs: "spec-raw" }));
+
+    const result = specPromote(src, { repoRoot, runId: "spec-run-prov" });
+
+    expect(result.halted).toBe(false);
+    const provDest = result.destination.replace(/\.md$/, ".provenance.json");
+    expect(existsSync(provDest)).toBe(true);
+    expect(existsSync(provSrc)).toBe(false);
+  });
+
+  it("halts when incoming content conflicts with an active spec", () => {
+    writeFileSync(
+      join(repoRoot, "smartdocs", "docs", "specs", "active", "existing.md"),
+      "# Existing\n\nAgents must always validate inputs.",
+    );
+    const src = join(repoRoot, "smartdocs", "docs", "raw", "conflict-spec.md");
+    writeFileSync(src, "# Conflict\n\nAgents must never validate inputs.");
+
+    const result = specPromote(src, { repoRoot, runId: "spec-run-conflict" });
+
+    expect(result.halted).toBe(true);
+    expect(result.conflicts.length).toBeGreaterThan(0);
+    expect(result.conflicts[0].type).toBe("content");
+    expect(existsSync(src)).toBe(true);
+    expect(result.destination).toBe("");
+  });
+
+  it("proceeds past content conflicts when approve is true", () => {
+    writeFileSync(
+      join(repoRoot, "smartdocs", "docs", "specs", "active", "existing.md"),
+      "# Existing\n\nAgents must always validate inputs.",
+    );
+    const src = join(repoRoot, "smartdocs", "docs", "raw", "override-spec.md");
+    writeFileSync(src, "# Override\n\nAgents must never validate inputs.");
+
+    const result = specPromote(src, { repoRoot, runId: "spec-run-approve", approve: true });
+
+    expect(result.halted).toBe(false);
+    expect(result.conflicts.length).toBeGreaterThan(0);
+    expect(existsSync(result.destination)).toBe(true);
+  });
+
+  it("halts on map conflict when linkedMapArea already covered by active spec", () => {
+    writeFileSync(
+      join(repoRoot, "smartdocs", "docs", "specs", "active", "api-spec.md"),
+      "# API Spec\n\nCovers src/api route logic.",
+    );
+    const src = join(repoRoot, "smartdocs", "docs", "raw", "map-conflict.md");
+    const provSrc = join(repoRoot, "smartdocs", "docs", "raw", "map-conflict.provenance.json");
+    writeFileSync(src, "# Map Conflict\n\nNew spec for the API.");
+    writeFileSync(provSrc, JSON.stringify({ linkedMapArea: "src/api", classifiedAs: "spec-raw" }));
+
+    const result = specPromote(src, { repoRoot, runId: "spec-run-map" });
+
+    expect(result.halted).toBe(true);
+    const mapConflict = result.conflicts.find((c) => c.type === "map");
+    expect(mapConflict).toBeDefined();
+  });
+
+  it("throws if source is not in smartdocs/docs/raw/", () => {
+    const src = join(repoRoot, "smartdocs", "docs", "specs", "active", "wrong.md");
+    writeFileSync(src, "# Wrong");
+
+    expect(() => specPromote(src, { repoRoot })).toThrow(
+      "specPromote source must be in smartdocs/docs/raw/",
+    );
+  });
+
+  it("throws if destination already exists", () => {
+    const src = join(repoRoot, "smartdocs", "docs", "raw", "dupe-spec.md");
+    writeFileSync(src, "# Dupe");
+    writeFileSync(join(repoRoot, "smartdocs", "docs", "specs", "active", "dupe-spec.md"), "# Already there");
+
+    expect(() => specPromote(src, { repoRoot })).toThrow("Destination already exists");
+  });
+
+  it("emits lifecycle event on successful promote", () => {
+    const src = join(repoRoot, "smartdocs", "docs", "raw", "lifecycle-spec.md");
+    writeFileSync(src, "# Lifecycle Spec\n\nContent here.");
+
+    const result = specPromote(src, { repoRoot, runId: "spec-lifecycle-001" });
+
+    expect(existsSync(result.lifecyclePath)).toBe(true);
+    const event = JSON.parse(readFileSync(result.lifecyclePath, "utf-8").trim().split("\n")[0]);
+    expect(event.event).toBe("spec-promote");
+    expect(event.run_id).toBe("spec-lifecycle-001");
   });
 });
