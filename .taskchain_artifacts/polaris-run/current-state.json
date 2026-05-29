@@ -16,11 +16,11 @@
   "open_children": [],
   "step_cursor": "dispatch",
   "context_budget": {
-    "children_completed": 0,
+    "children_completed": 6,
     "max_children_per_session": 1
   },
   "status": "all-children-complete",
-  "next_open_child": "POL-212",
+  "next_open_child": null,
   "dispatch_boundary": {
     "dispatch_epoch": 1,
     "continue_epoch": 0,

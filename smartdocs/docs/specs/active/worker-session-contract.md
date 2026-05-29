@@ -32,7 +32,7 @@ These fields uniquely identify a worker session within the Polaris runtime.
 
 **Definition:** A unique identifier assigned to this particular dispatch event. `worker_id` is distinct from `dispatch_id` in that it refers to the logical worker entity, while `dispatch_id` refers to the dispatch event. In practice for single-attempt dispatches, these often share the same value, but they MUST be treated as separate fields to accommodate re-dispatch (where a new `dispatch_id` is issued but the `worker_id` may be reassigned or carried forward depending on provider semantics).
 
-**Relationship to `ChildDispatchRecord.dispatch_id`:** `dispatch_id` is the event key — it identifies a specific dispatch invocation. `worker_id` is the entity key — it identifies the worker executing the work. In a first-dispatch scenario, `worker_id = dispatch_id` is an acceptable initialization. On re-dispatch, a new `dispatch_id` is always issued; a new `worker_id` SHOULD also be issued unless the same worker session is being resumed (provider-dependent).
+**Relationship to `ChildDispatchRecord.dispatch_id`:** `dispatch_id` is the event key — it identifies a specific dispatch invocation. `worker_id` is the entity key — it identifies the worker executing the work. In a first-dispatch scenario, `worker_id = dispatch_id` is an acceptable initialization. On re-dispatch, a new `dispatch_id` is always issued; `worker_id` MAY be retained when the same worker session is resumed (provider-dependent resume semantics).
 
 **Canonical name:** `worker_id`  
 **Storage location:** `ChildDispatchRecord` (see §1.5 for full record spec)
@@ -189,13 +189,13 @@ The adapter:
 When a child is re-dispatched after a `"failed"` or `"orphaned"` state:
 
 1. The Foreman issues a **new** `dispatch_id`.
-2. The Foreman issues a **new** `worker_id`.
+2. The Foreman MAY retain the prior `worker_id` if the same worker session is resumed, or issue a new `worker_id` if a new session is started. This is provider-dependent.
 3. `session_id` is reset to `null`.
 4. `attachment_capable` is reset to `false` pending new provider resolution.
 5. The prior dispatch record is archived as `previous_dispatch_record` (nested) before being replaced.
 6. `runtime_state` is reset to `"packet-created"`.
 
-The prior `dispatch_id` and `session_id` MUST NOT be reused. This enforces that each dispatch event is independently auditable.
+The prior `dispatch_id` and `session_id` MUST NOT be reused. This enforces that each dispatch event is independently auditable. The `worker_id` retention behavior allows providers with stable session semantics to maintain worker continuity across re-dispatches when appropriate.
 
 ---
 
@@ -248,14 +248,17 @@ A valid heartbeat MUST contain:
 
 ### 3.4 Staleness Thresholds
 
+Thresholds are derived from the canonical telemetry constants defined in `worker-telemetry-spec.md`:
+
 | Threshold | Value | Action |
 |---|---|---|
-| **Heartbeat frequency** | Minimum once every 60 seconds during active execution | Worker requirement |
-| **Staleness warning** | 90 seconds since `last_heartbeat_at` | Foreman logs `HEARTBEAT_STALE_WARNING` audit event; no state change |
-| **Staleness escalation** | 120 seconds since `last_heartbeat_at` | Foreman sets `runtime_state: "orphaned"` and escalates |
-| **Post-dispatch timeout** | 120 seconds since `dispatched_at` with no `first_heartbeat_at` | Treated as dispatch failure; Foreman escalates |
+| **Heartbeat frequency** | Minimum once every 300,000 ms (5 min) during active execution | Worker requirement (from `heartbeat_interval_ms`) |
+| **Staleness warning** | 225 seconds (escalation * 0.75) since `last_heartbeat_at` | Foreman logs `HEARTBEAT_STALE_WARNING` audit event; no state change |
+| **Staleness escalation** | 300,000 ms (5 min) since `last_heartbeat_at` | Foreman sets `runtime_state: "blocked"` (from `heartbeat_interval_ms`) |
+| **Orphan timeout** | 600,000 ms (10 min) since `last_heartbeat_at` | Foreman sets `runtime_state: "orphaned"` and escalates (from `orphan_timeout_ms`) |
+| **Post-dispatch timeout** | 30,000 ms (30 s) since `dispatched_at` with no `first_heartbeat_at` | Treated as dispatch failure; Foreman escalates (from `launch_to_first_heartbeat_ms`) |
 
-**Threshold override:** Provider adapters may declare a `heartbeat_timeout_override_seconds` to extend the staleness escalation threshold. This is used for providers that do not support heartbeat emission (e.g., Gemini CLI, Codex CLI), where the Foreman uses a fixed completion timeout instead. When `heartbeat_timeout_override_seconds` is set, the 120-second staleness escalation threshold is replaced by the override value; the warning threshold is set to `override * 0.75`.
+**Threshold override:** Provider adapters may declare a `heartbeat_timeout_override_seconds` to extend the staleness escalation threshold. This is used for providers that do not support heartbeat emission (e.g., Gemini CLI, Codex CLI), where the Foreman uses a fixed completion timeout instead. When `heartbeat_timeout_override_seconds` is set, it replaces the escalation threshold and the warning threshold becomes `override * 0.75`.
 
 ---
 
@@ -452,7 +455,7 @@ The `WorkerAssignmentRecord.subagent_session_id` field partially overlaps with t
 
 | Invariant | Description |
 |---|---|
-| **`worker_id` immutability** | `worker_id` is set once at packet creation and never changed. |
+| **`worker_id` persistence** | `worker_id` MAY be retained across re-dispatches when the same worker session is resumed (provider-dependent). |
 | **`session_id` null-safety** | A null `session_id` is valid and must not be treated as an error. |
 | **`attachment_capable` gating** | Connect attachment is only attempted when `attachment_capable: true` AND `session_id` is non-null. |
 | **Heartbeat-dispatch correlation** | Heartbeats with mismatched `dispatch_id` are rejected. |
@@ -466,5 +469,5 @@ The `WorkerAssignmentRecord.subagent_session_id` field partially overlaps with t
 
 - `foreman-worker-architecture.md` — Foreman and worker roles, dispatch modes, escalation paths
 - `worker-lifecycle-state-machine.md` — State transitions for `WorkerRuntimeState` (POL-213)
-- `telemetry-event-schemas.md` — Heartbeat and event schema definitions (POL-215)
+- `worker-telemetry-spec.md` — Heartbeat and event schema definitions (POL-215)
 - `current-state-schema.md` — Run state schema reference

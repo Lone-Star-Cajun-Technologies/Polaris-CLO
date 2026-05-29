@@ -4,7 +4,7 @@
 **Issue:** POL-216  
 **Cluster:** POL-211  
 **Created:** 2026-05-29  
-**Related specs:** `worker-session-contract.md` (POL-214), `worker-lifecycle-state-machine.md` (POL-213), `telemetry-event-schemas.md` (POL-215)
+**Related specs:** `worker-session-contract.md` (POL-214), `worker-lifecycle-state-machine.md` (POL-213), `worker-telemetry-spec.md` (POL-215)
 
 ---
 

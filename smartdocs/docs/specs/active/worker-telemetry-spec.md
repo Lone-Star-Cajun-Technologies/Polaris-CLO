@@ -418,15 +418,15 @@ Retained for the full run lifetime. Indexed on `dispatch_id`.
 
 **Emitter:** Foreman
 
-**Purpose:** Signals that all automatic assignment mechanisms have been exhausted and human intervention is required. This event does not transition to a terminal state — it is an advisory event that leaves the dispatch in a `delegated` or `worker-unavailable` state pending human action.
+**Purpose:** Signals that all automatic assignment mechanisms have been exhausted and human intervention is required. This event does not transition to a terminal state — it is an advisory event that leaves the dispatch in a `blocked` state pending human action.
 
 **Lifecycle transition driven:**
 
 ```
-delegated  →  worker-unavailable    (advisory; no automatic work can proceed)
+delegated  →  blocked    (advisory; no automatic work can proceed)
 ```
 
-The state `worker-unavailable` is a Foreman coordination state, not a terminal state. A human can still manually dispatch to resolve it.
+The `blocked` state in this context indicates the dispatch cannot proceed automatically. A human can still manually dispatch to resolve it.
 
 #### Required Fields
 
@@ -454,7 +454,7 @@ The following table maps each event to the state transition it drives. Time-deri
 | `worker-assignment-attempted` | `packet-created`, `delegated` | `delegated` | Intent only; no outcome implied |
 | `worker-assigned` | `delegated` | `launching` | Session/PID identity now available |
 | `worker-assignment-failed` | `delegated` | `failed` or `delegated` | Retry possible |
-| `escalation-initiated` | `delegated` | `worker-unavailable` | Advisory; human action needed |
+| `escalation-initiated` | `delegated` | `blocked` | Advisory; human action needed |
 | `worker-launch` | `packet-created`, `delegated` | `launching` | Process started |
 | `worker-acknowledged` | `launching`, `handoff-pending` | `acknowledged` | Worker identity confirmed |
 | `worker-heartbeat` (first) | `launching`, `acknowledged` | `running` | Worker active |
