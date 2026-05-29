@@ -16,6 +16,7 @@
  */
 
 import { readFileSync, appendFileSync, mkdirSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { dirname, resolve, isAbsolute } from "node:path";
 import { execFileSync } from "node:child_process";
 import { readState, writeStateAtomic } from "./checkpoint.js";
@@ -111,8 +112,16 @@ export interface WorkerOptions {
   /**
    * Path to the bootstrap packet file, or undefined to resolve from env/args.
    * When provided, takes precedence over all env vars and CLI args.
+   * Also used for SHA-256 computation in the worker-acknowledged event.
    */
   packetPath?: string;
+
+  /**
+   * Raw packet JSON string used for SHA-256 computation when no file path is
+   * available (e.g. POLARIS_PACKET_JSON env var path). If absent, SHA is
+   * computed from the packet file at packetPath.
+   */
+  packetRawJson?: string;
   /** Repository root; defaults to process.cwd(). */
   repoRoot?: string;
   /**
@@ -178,6 +187,33 @@ export async function executeOneChild(
     state_file: stateFile,
     telemetry_file: telemetryFile,
   };
+
+  // ── Step 03b: Emit worker-acknowledged event ────────────────────────────
+  // Must be emitted after packet read and SHA computation, before any work
+  // output (telemetry spec §5.1). Acknowledges receipt of the dispatch packet.
+  {
+    let packetSha = "";
+    if (options.packetPath) {
+      try {
+        const raw = readFileSync(options.packetPath, "utf-8");
+        packetSha = createHash("sha256").update(raw, "utf-8").digest("hex");
+      } catch {
+        // SHA computation failure is non-fatal; emit empty string
+      }
+    } else if (options.packetRawJson) {
+      packetSha = createHash("sha256").update(options.packetRawJson, "utf-8").digest("hex");
+    }
+    appendTelemetry(telemetryFile, {
+      event: "worker-acknowledged",
+      run_id: packet.run_id,
+      child_id: childId,
+      dispatch_id: packet.dispatch_id ?? "",
+      worker_id: packet.worker_id ?? "",
+      packet_sha: packetSha,
+      timestamp: now(),
+    });
+    telemetryUpdated = true;
+  }
 
   // ── Step 04: Execute child ──────────────────────────────────────────────
   try {
@@ -330,10 +366,31 @@ export async function executeOneChild(
 export async function runWorker(options: WorkerOptions = {}): Promise<void> {
   let packet: BootstrapPacket;
 
+  let resolvedPacketPath = options.packetPath;
+  let resolvedPacketRawJson = options.packetRawJson;
+
   try {
     if (options.packetPath) {
       packet = JSON.parse(readFileSync(options.packetPath, "utf-8")) as BootstrapPacket;
     } else {
+      // Capture raw JSON from env var sources for SHA computation
+      const cliPath = (() => {
+        const idx = process.argv.indexOf("--bootstrap");
+        return idx !== -1 && idx + 1 < process.argv.length ? process.argv[idx + 1] : null;
+      })();
+      if (cliPath) {
+        resolvedPacketPath = cliPath;
+      } else {
+        const envPath = process.env["POLARIS_BOOTSTRAP_PACKET"] ?? process.env["POLARIS_PACKET_FILE"];
+        if (envPath) {
+          resolvedPacketPath = envPath;
+        } else {
+          const packetJson = process.env["POLARIS_PACKET_JSON"];
+          if (packetJson) {
+            resolvedPacketRawJson = packetJson;
+          }
+        }
+      }
       packet = readBootstrapPacket(process.argv);
     }
   } catch (err) {
@@ -357,7 +414,11 @@ export async function runWorker(options: WorkerOptions = {}): Promise<void> {
 
   let result: CompactReturn;
   try {
-    result = await executeOneChild(packet, options);
+    result = await executeOneChild(packet, {
+      ...options,
+      packetPath: resolvedPacketPath,
+      packetRawJson: resolvedPacketRawJson,
+    });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     result = blockedReturn(packet.active_child, msg);

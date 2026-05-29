@@ -18,6 +18,7 @@ export type WorkerDispatchState =
   | "packet-created"    // Packet written, no worker associated
   | "delegated"         // Provider assigned, ready for handoff
   | "launching"         // Worker process spawn initiated
+  | "acknowledged"      // Worker read packet and emitted worker-acknowledged, no heartbeat yet
   | "running"           // Worker acknowledged, first heartbeat received
   | "waiting-for-approval"  // Worker blocked on approval
   | "blocked"           // Worker stuck, no recent heartbeat
@@ -35,6 +36,7 @@ export const TERMINAL_STATES: WorkerDispatchState[] = ["completed", "failed", "o
  */
 export const ACTIVE_STATES: WorkerDispatchState[] = [
   "launching",
+  "acknowledged",
   "running",
   "waiting-for-approval",
   "blocked",
@@ -225,6 +227,15 @@ export interface WorkerResultEvent extends WorkerTelemetryEventBase {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
+ * Worker acknowledged - worker read packet and computed SHA, emitted before any work output.
+ */
+export interface WorkerAcknowledgedEvent extends WorkerTelemetryEventBase {
+  event: "worker-acknowledged";
+  worker_id: string;
+  packet_sha: string;
+}
+
+/**
  * Worker assignment attempted - Foreman trying to assign worker.
  */
 export interface WorkerAssignmentAttemptedEvent extends WorkerTelemetryEventBase {
@@ -265,6 +276,7 @@ export interface EscalationInitiatedEvent extends WorkerTelemetryEventBase {
  */
 export type WorkerTelemetryEvent =
   | WorkerLaunchEvent
+  | WorkerAcknowledgedEvent
   | WorkerHeartbeat
   | WorkerBlockedEvent
   | WorkerApprovedEvent
@@ -442,6 +454,15 @@ export function deriveDispatchState(
     return "running";
   }
 
+  // No heartbeats yet — check for worker-acknowledged event
+  const acknowledgedEvent = sorted.find(
+    (e): e is WorkerAcknowledgedEvent => e.event === "worker-acknowledged",
+  );
+  if (acknowledgedEvent) {
+    // Worker acknowledged packet but has not yet sent a heartbeat
+    return "acknowledged";
+  }
+
   // No heartbeats yet - check for launch
   const launchEvent = sorted.find((e): e is WorkerLaunchEvent => e.event === "worker-launch");
   if (launchEvent) {
@@ -474,9 +495,10 @@ export function isValidTransition(
 
   // Define valid transitions
   const validTransitions: Record<WorkerDispatchState, WorkerDispatchState[]> = {
-    "packet-created": ["delegated", "launching", "running", "failed"],
-    "delegated": ["launching", "running", "completed", "failed", "blocked"],
-    "launching": ["running", "waiting-for-approval", "blocked", "completed", "failed"],
+    "packet-created": ["delegated", "launching", "acknowledged", "running", "failed"],
+    "delegated": ["launching", "acknowledged", "running", "completed", "failed", "blocked"],
+    "launching": ["acknowledged", "running", "waiting-for-approval", "blocked", "completed", "failed"],
+    "acknowledged": ["running", "failed"],
     "running": ["waiting-for-approval", "blocked", "completed", "failed", "orphaned"],
     "waiting-for-approval": ["running", "completed", "failed"],
     "blocked": ["running", "completed", "failed", "orphaned"],

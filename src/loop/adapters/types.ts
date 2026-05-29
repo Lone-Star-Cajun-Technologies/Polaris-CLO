@@ -22,6 +22,10 @@ export interface BootstrapPacket {
   state_file: string;
   /** Absolute path to telemetry JSONL file. Worker appends one entry per dispatch. */
   telemetry_file: string;
+  /** Dispatch record ID, used in worker-acknowledged telemetry. */
+  dispatch_id?: string;
+  /** Worker identity token, used in worker-acknowledged telemetry. */
+  worker_id?: string;
   /** Arbitrary additional context the parent wants to pass to the worker. */
   context?: Record<string, unknown>;
 }

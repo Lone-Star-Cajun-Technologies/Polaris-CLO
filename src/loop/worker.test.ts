@@ -119,7 +119,7 @@ describe("executeOneChild", () => {
     expect(result.child_id).toBe("POL-69");
     expect(result.status).toBe("done");
     expect(result.validation).toBe("passed");
-    expect(result.telemetry_updated).toBe(false);
+    expect(result.telemetry_updated).toBe(true);
     expect(result.state_updated).toBe(true);
     expect(result.next_recommended_action).toBe("continue");
   });
