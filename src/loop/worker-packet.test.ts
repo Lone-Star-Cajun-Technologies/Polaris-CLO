@@ -253,6 +253,39 @@ describe("compilePreflightPacket", () => {
   });
 });
 
+// ── Role context (POL-227) ────────────────────────────────────────────────────
+
+describe("role_context", () => {
+  it("impl packet has worker role context", () => {
+    const p = compileImplPacket({ ...BASE, childId: "POL-121" });
+    expect(p.role_context.role).toBe("worker");
+    expect(p.role_context.role_authority).toBe("implementation");
+    expect(p.role_context.may_implement).toBe(true);
+    expect(p.role_context.may_assign_workers).toBe(false);
+    expect(Array.isArray(p.role_context.prohibited_actions)).toBe(true);
+    expect(p.role_context.prohibited_actions.length).toBeGreaterThan(0);
+  });
+
+  it("startup packet has foreman role context", () => {
+    const p = compileStartupPacket(BASE);
+    expect(p.role_context.role).toBe("foreman");
+    expect(p.role_context.may_implement).toBe(false);
+    expect(p.role_context.may_assign_workers).toBe(true);
+  });
+
+  it("finalize packet has foreman role context", () => {
+    const p = compileFinalizePacket(BASE);
+    expect(p.role_context.role).toBe("foreman");
+    expect(p.role_context.may_implement).toBe(false);
+  });
+
+  it("preflight packet has foreman role context", () => {
+    const p = compilePreflightPacket(BASE);
+    expect(p.role_context.role).toBe("foreman");
+    expect(p.role_context.may_implement).toBe(false);
+  });
+});
+
 // ── WorkerPacket as BootstrapPacket ───────────────────────────────────────────
 
 describe("WorkerPacket structural compatibility", () => {
