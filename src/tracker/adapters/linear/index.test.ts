@@ -9,6 +9,7 @@ describe("LinearAdapter", () => {
     listTeams: ReturnType<typeof vi.fn>;
     listProjects: ReturnType<typeof vi.fn>;
     listIssues: ReturnType<typeof vi.fn>;
+    getIssueById: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
@@ -26,6 +27,7 @@ describe("LinearAdapter", () => {
       listTeams: vi.fn(),
       listProjects: vi.fn(),
       listIssues: vi.fn(),
+      getIssueById: vi.fn(),
     };
 
     linearClient.listTeams.mockResolvedValue([
@@ -39,19 +41,83 @@ describe("LinearAdapter", () => {
         id: "issue-1",
         title: "Test Issue 1",
         state: { id: "status-id-1", name: "Todo" },
-        blockedBy: [{ id: "issue-2" }],
+        relations: {
+          nodes: [
+            {
+              id: "rel-1",
+              type: "blocks",
+              issue: { id: "issue-2" },
+              relatedIssue: { id: "issue-1" },
+            },
+          ],
+        },
+        inverseRelations: { nodes: [] },
+        children: { nodes: [] },
       },
       {
         id: "issue-2",
         title: "Test Issue 2",
         state: { id: "status-id-2", name: "In Progress" },
-        blockedBy: [],
+        relations: { nodes: [] },
+        inverseRelations: { nodes: [] },
+        children: { nodes: [] },
       },
     ]);
+
+    linearClient.getIssueById.mockResolvedValueOnce({
+      id: "root-issue-id",
+      identifier: "POL-198",
+      title: "Root issue",
+      state: { id: "status-id-3", name: "Todo" },
+      relations: {
+        nodes: [
+          {
+            id: "rel-2",
+            type: "blocked_by",
+            issue: { id: "root-issue-id", identifier: "POL-198", title: "Root issue" },
+            relatedIssue: { id: "blocker-id", identifier: "POL-42", title: "Blocking issue" },
+          },
+          {
+            id: "rel-3",
+            type: "blocks",
+            issue: { id: "root-issue-id", identifier: "POL-198", title: "Root issue" },
+            relatedIssue: { id: "blocked-id", identifier: "POL-199", title: "Blocked issue" },
+          },
+        ],
+      },
+      inverseRelations: { nodes: [] },
+      children: { nodes: [{ id: "child-issue-id", identifier: "POL-200", title: "Child issue" }] },
+    });
+    linearClient.getIssueById.mockResolvedValue({
+      id: "child-issue-id",
+      identifier: "POL-200",
+      title: "Child issue",
+      state: { id: "status-id-4", name: "In Progress" },
+      relations: { nodes: [] },
+      inverseRelations: { nodes: [] },
+      children: { nodes: [] },
+    });
   });
 
   afterEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("throws when LINEAR_API_KEY is missing for direct Linear API usage", async () => {
+    const originalApiKey = process.env["LINEAR_API_KEY"];
+    delete process.env["LINEAR_API_KEY"];
+    config.tracker!.linear!.teamId = "mock-team-id";
+
+    try {
+      const adapter = new LinearAdapter(config);
+      await expect(adapter.syncIn()).rejects.toThrow("LINEAR_API_KEY is required for the 'linear' tracker adapter.");
+    } finally {
+      if (originalApiKey === undefined) {
+        delete process.env["LINEAR_API_KEY"];
+      } else {
+        process.env["LINEAR_API_KEY"] = originalApiKey;
+      }
+    }
   });
 
   it("should return a LocalGraph instance", async () => {
@@ -133,7 +199,9 @@ describe("LinearAdapter", () => {
         id: "issue-3",
         title: "Global Issue",
         state: { id: "status-id-3", name: "Todo" },
-        blockedBy: [],
+        relations: { nodes: [] },
+        inverseRelations: { nodes: [] },
+        children: { nodes: [] },
       },
     ]);
 
@@ -147,6 +215,64 @@ describe("LinearAdapter", () => {
     expect(fullGraph.nodes["issue-3"]).toBeDefined();
     expect(fullGraph.activeCluster).toBe("default");
     expect(fullGraph.clusters["default"].title).toBe("All Linear Issues");
+    consoleWarnSpy.mockRestore();
+  });
+
+  it("syncs by Linear issue identifier including children and dependency relations", async () => {
+    const adapter = new LinearAdapter(config, linearClient);
+    const graph = await adapter.syncIn("POL-198");
+    const fullGraph = graph.fullGraph;
+
+    expect(linearClient.getIssueById).toHaveBeenCalledWith("POL-198");
+    expect(linearClient.getIssueById).toHaveBeenCalledWith("child-issue-id");
+    expect(fullGraph.activeCluster).toBe("POL-198");
+    expect(fullGraph.clusters["POL-198"].children.slice().sort()).toEqual(
+      ["POL-198", "POL-199", "POL-200", "POL-42"].sort(),
+    );
+    expect(fullGraph.nodes["POL-198"]).toEqual({
+      id: "POL-198",
+      title: "Root issue",
+      status: "Todo",
+    });
+    expect(fullGraph.nodes["POL-200"]).toEqual({
+      id: "POL-200",
+      title: "Child issue",
+      status: "In Progress",
+    });
+    expect(fullGraph.dependencies["POL-198"]).toEqual(["POL-42"]);
+    expect(fullGraph.dependencies["POL-199"]).toEqual(["POL-198"]);
+  });
+
+  it("ignores unknown relation types safely", async () => {
+    const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    linearClient.listIssues.mockResolvedValueOnce([
+      {
+        id: "issue-unknown-rel",
+        title: "Issue with unknown relation",
+        state: { id: "status-id-1", name: "Todo" },
+        relations: {
+          nodes: [
+            {
+              id: "rel-unknown",
+              type: "related",
+              issue: { id: "issue-unknown-rel" },
+              relatedIssue: { id: "issue-other" },
+            },
+          ],
+        },
+        inverseRelations: { nodes: [] },
+        children: { nodes: [] },
+      },
+    ]);
+
+    const adapter = new LinearAdapter(config, linearClient);
+    const graph = await adapter.syncIn();
+    const fullGraph = graph.fullGraph;
+
+    expect(fullGraph.dependencies["issue-unknown-rel"]).toBeUndefined();
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      "Linear relation type 'related' is not mapped to dependencies (supported types: blocks, blocked_by, depends_on); ignoring.",
+    );
     consoleWarnSpy.mockRestore();
   });
 });
