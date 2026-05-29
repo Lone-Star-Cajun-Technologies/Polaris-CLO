@@ -19,9 +19,10 @@ interface LinearIssue {
   identifier?: string;
   title: string;
   state?: { id: string; name: string };
-  blockedBy?: Array<LinearIssueRef>;
-  blocks?: Array<LinearIssueRef>;
-  children?: Array<LinearIssueRef>;
+  parent?: LinearIssueRef | null;
+  children?: LinearConnection<LinearIssueRef>;
+  relations?: LinearConnection<LinearIssueRelation>;
+  inverseRelations?: LinearConnection<LinearIssueRelation>;
 }
 
 interface LinearIssueRef {
@@ -29,6 +30,17 @@ interface LinearIssueRef {
   identifier?: string;
   title?: string;
   state?: { id: string; name: string };
+}
+
+interface LinearConnection<T> {
+  nodes: T[];
+}
+
+interface LinearIssueRelation {
+  id: string;
+  type?: string;
+  issue?: LinearIssueRef;
+  relatedIssue?: LinearIssueRef;
 }
 
 interface LinearApiClient {
@@ -129,23 +141,49 @@ class LinearGraphqlClient implements LinearApiClient {
               identifier
               title
               state { id name }
-              blockedBy {
-                id
-                identifier
-                title
-                state { id name }
-              }
-              blocks {
-                id
-                identifier
-                title
-                state { id name }
-              }
               children {
-                id
-                identifier
-                title
-                state { id name }
+                nodes {
+                  id
+                  identifier
+                  title
+                  state { id name }
+                }
+              }
+              relations {
+                nodes {
+                  id
+                  type
+                  issue {
+                    id
+                    identifier
+                    title
+                    state { id name }
+                  }
+                  relatedIssue {
+                    id
+                    identifier
+                    title
+                    state { id name }
+                  }
+                }
+              }
+              inverseRelations {
+                nodes {
+                  id
+                  type
+                  issue {
+                    id
+                    identifier
+                    title
+                    state { id name }
+                  }
+                  relatedIssue {
+                    id
+                    identifier
+                    title
+                    state { id name }
+                  }
+                }
               }
             }
           }
@@ -160,40 +198,64 @@ class LinearGraphqlClient implements LinearApiClient {
   }
 
   async getIssueByIdentifier(identifier: string): Promise<LinearIssue | null> {
-    const data = await this.graphql<{ issues: { nodes: LinearIssue[] } }>(
+    const data = await this.graphql<{ issue: LinearIssue | null }>(
       `
-        query PolarisLinearIssueByIdentifier($identifier: String!) {
-          issues(first: 1, filter: { identifier: { eq: $identifier } }) {
-            nodes {
-              id
-              identifier
-              title
-              state { id name }
-              blockedBy {
-                id
-                identifier
-                title
-                state { id name }
-              }
-              blocks {
-                id
-                identifier
-                title
-                state { id name }
-              }
-              children {
+        query PolarisLinearIssueByIdentifier($id: String!) {
+          issue(id: $id) {
+            id
+            identifier
+            title
+            state { id name }
+            children {
+              nodes {
                 id
                 identifier
                 title
                 state { id name }
               }
             }
+            relations {
+              nodes {
+              id
+              type
+              issue {
+                id
+                identifier
+                title
+                state { id name }
+              }
+              relatedIssue {
+                id
+                identifier
+                title
+                state { id name }
+              }
+              }
+            }
+            inverseRelations {
+              nodes {
+              id
+              type
+              issue {
+                id
+                identifier
+                title
+                state { id name }
+              }
+              relatedIssue {
+                id
+                identifier
+                title
+                state { id name }
+              }
+              }
+            }
           }
         }
       `,
-      { identifier },
+      { id: identifier },
     );
-    return data.issues.nodes[0] ?? null;
+    return data.issue;
   }
 
   async getIssueById(id: string): Promise<LinearIssue | null> {
@@ -205,23 +267,49 @@ class LinearGraphqlClient implements LinearApiClient {
             identifier
             title
             state { id name }
-            blockedBy {
-              id
-              identifier
-              title
-              state { id name }
-            }
-            blocks {
-              id
-              identifier
-              title
-              state { id name }
-            }
             children {
-              id
-              identifier
-              title
-              state { id name }
+              nodes {
+                id
+                identifier
+                title
+                state { id name }
+              }
+            }
+            relations {
+              nodes {
+                id
+                type
+                issue {
+                  id
+                  identifier
+                  title
+                  state { id name }
+                }
+                relatedIssue {
+                  id
+                  identifier
+                  title
+                  state { id name }
+                }
+              }
+            }
+            inverseRelations {
+              nodes {
+                id
+                type
+                issue {
+                  id
+                  identifier
+                  title
+                  state { id name }
+                }
+                relatedIssue {
+                  id
+                  identifier
+                  title
+                  state { id name }
+                }
+              }
             }
           }
         }
@@ -283,6 +371,40 @@ export class LinearAdapter {
     return nodeId;
   }
 
+  private relationDependency(
+    relation: LinearIssueRelation,
+    issueNodeId: string,
+  ): { fromId: string; dependsOnId: string } | null {
+    if (!relation.issue || !relation.relatedIssue || !relation.type) {
+      return null;
+    }
+
+    const relationType = relation.type.trim().toUpperCase().replace(/[^A-Z0-9]+/g, "_");
+    const sourceNodeId = this.issueNodeId(relation.issue);
+    const relatedNodeId = this.issueNodeId(relation.relatedIssue);
+
+    if (sourceNodeId !== issueNodeId && relatedNodeId !== issueNodeId) {
+      return null;
+    }
+
+    if (relationType === "BLOCKS") {
+      return {
+        fromId: relatedNodeId,
+        dependsOnId: sourceNodeId,
+      };
+    }
+
+    if (relationType === "BLOCKED_BY" || relationType === "DEPENDS_ON") {
+      return {
+        fromId: sourceNodeId,
+        dependsOnId: relatedNodeId,
+      };
+    }
+
+    console.warn(`Linear relation type '${relation.type}' is not mapped to dependencies; ignoring.`);
+    return null;
+  }
+
   private mapIssueRelations(
     issue: LinearIssue,
     nodes: Record<string, ExecutionNode>,
@@ -290,17 +412,25 @@ export class LinearAdapter {
   ): void {
     const issueNodeId = this.upsertNode(nodes, issue);
 
-    for (const blocker of issue.blockedBy ?? []) {
-      const blockerNodeId = this.upsertNode(nodes, blocker);
-      this.addDependency(dependencies, issueNodeId, blockerNodeId);
+    const relationNodes = [
+      ...(issue.relations?.nodes ?? []),
+      ...(issue.inverseRelations?.nodes ?? []),
+    ];
+    for (const relation of relationNodes) {
+      if (relation.issue) {
+        this.upsertNode(nodes, relation.issue);
+      }
+      if (relation.relatedIssue) {
+        this.upsertNode(nodes, relation.relatedIssue);
+      }
+      const dependency = this.relationDependency(relation, issueNodeId);
+      if (!dependency) {
+        continue;
+      }
+      this.addDependency(dependencies, dependency.fromId, dependency.dependsOnId);
     }
 
-    for (const blockedIssue of issue.blocks ?? []) {
-      const blockedIssueNodeId = this.upsertNode(nodes, blockedIssue);
-      this.addDependency(dependencies, blockedIssueNodeId, issueNodeId);
-    }
-
-    for (const childIssue of issue.children ?? []) {
+    for (const childIssue of issue.children?.nodes ?? []) {
       this.upsertNode(nodes, childIssue);
     }
   }
@@ -312,7 +442,7 @@ export class LinearAdapter {
     }
 
     const issueMap = new Map<string, LinearIssue>([[rootIssue.id, rootIssue]]);
-    const pendingChildIds: string[] = (rootIssue.children ?? []).map((child) => child.id);
+    const pendingChildIds: string[] = (rootIssue.children?.nodes ?? []).map((child) => child.id);
     const fetchedChildIds = new Set<string>();
     let queueIndex = 0;
 
@@ -330,7 +460,7 @@ export class LinearAdapter {
       }
 
       issueMap.set(childIssue.id, childIssue);
-      for (const grandchild of childIssue.children ?? []) {
+      for (const grandchild of childIssue.children?.nodes ?? []) {
         if (!fetchedChildIds.has(grandchild.id)) {
           pendingChildIds.push(grandchild.id);
         }
@@ -418,13 +548,23 @@ export class LinearAdapter {
     for (const issue of issues) {
       this.mapIssueRelations(issue, nodes, dependencies);
       clusterChildren.add(this.issueNodeId(issue));
-      for (const blocker of issue.blockedBy ?? []) {
-        clusterChildren.add(this.issueNodeId(blocker));
+      for (const relation of issue.relations?.nodes ?? []) {
+        if (relation.issue) {
+          clusterChildren.add(this.issueNodeId(relation.issue));
+        }
+        if (relation.relatedIssue) {
+          clusterChildren.add(this.issueNodeId(relation.relatedIssue));
+        }
       }
-      for (const blockedIssue of issue.blocks ?? []) {
-        clusterChildren.add(this.issueNodeId(blockedIssue));
+      for (const relation of issue.inverseRelations?.nodes ?? []) {
+        if (relation.issue) {
+          clusterChildren.add(this.issueNodeId(relation.issue));
+        }
+        if (relation.relatedIssue) {
+          clusterChildren.add(this.issueNodeId(relation.relatedIssue));
+        }
       }
-      for (const childIssue of issue.children ?? []) {
+      for (const childIssue of issue.children?.nodes ?? []) {
         clusterChildren.add(this.issueNodeId(childIssue));
       }
     }
