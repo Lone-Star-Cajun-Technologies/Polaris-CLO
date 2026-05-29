@@ -103,6 +103,14 @@ export interface ChildDispatchRecord {
   heartbeat_count?: number;
   /** Timestamp of the first heartbeat received */
   first_heartbeat_at?: string;
+  /** Polaris role name for this worker (e.g. "worker", "foreman") */
+  role?: string;
+  /** Authority level of this role (e.g. "implementation", "coordination-only") */
+  role_authority?: string;
+  /** Whether this worker may implement source changes */
+  may_implement?: boolean;
+  /** Session character for Connect UI (e.g. "implementation", "coordination") */
+  session_type?: string;
 }
 
 /**

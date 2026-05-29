@@ -3,7 +3,8 @@ import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { dirname, join, isAbsolute, resolve } from "node:path";
 import { readState, validateState, writeStateAtomic, type LoopState, type ChildDispatchRecord, type DispatchMode, type WorkerRuntimeState, type WorkerAssignmentRecord } from "./checkpoint.js";
-import { compileImplPacket, type WorkerPacket } from "./worker-packet.js";
+import { compileImplPacket, type WorkerPacket, type WorkerRoleContext } from "./worker-packet.js";
+import { loadConfig } from "../config/loader.js";
 import { selectPromptMode } from "./worker-prompt.js";
 import {
   advanceDispatchEpoch,
@@ -28,8 +29,46 @@ export interface DispatchOptions {
   repoRoot: string;
   childId?: string;
   resultFile?: string;
-  /** Provider for direct-worker dispatch; if omitted, uses delegated mode */
+  /** Provider for direct-worker dispatch; if omitted, checks config then falls back to delegated mode */
   provider?: string;
+}
+
+/**
+ * Resolve provider from config when no explicit --provider flag is set.
+ * Returns the first configured provider in rotation, or undefined if none configured.
+ */
+function resolveConfigProvider(repoRoot: string): string | undefined {
+  try {
+    const config = loadConfig(repoRoot);
+    const exec = config.execution;
+    if (!exec) return undefined;
+    if (exec.rotation && exec.rotation.length > 0) return exec.rotation[0];
+    const keys = Object.keys(exec.providers ?? {});
+    if (keys.length > 0) return keys[0];
+  } catch {
+    // Config not present or invalid — fall through to delegated mode
+  }
+  return undefined;
+}
+
+/**
+ * Determine the effective provider and dispatch mode using the 4-scenario decision tree:
+ *   1. --provider flag set → direct-worker (no fallback)
+ *   2. Provider in .polaris/config → direct-worker (no fallback)
+ *   3. Internal subagent available → delegated dispatch with fallback chain
+ *   4. Nothing available → pending-escalation (handled in attemptDelegatedAssignment)
+ */
+function resolveProviderAndMode(
+  options: DispatchOptions,
+): { provider: string | undefined; mode: DispatchMode } {
+  if (options.provider) {
+    return { provider: options.provider, mode: "direct-worker" };
+  }
+  const configProvider = resolveConfigProvider(options.repoRoot);
+  if (configProvider) {
+    return { provider: configProvider, mode: "direct-worker" };
+  }
+  return { provider: undefined, mode: "delegated" };
 }
 
 function fail(message: string): never {
@@ -139,6 +178,7 @@ function createDispatchRecord(
   childId: string,
   packetPath: string,
   resultPath: string,
+  roleContext?: WorkerRoleContext,
   provider?: string,
 ): ChildDispatchRecord {
   const dispatchMode = determineDispatchMode(provider);
@@ -159,6 +199,15 @@ function createDispatchRecord(
     worker_id: randomUUID(),
     session_id: null,
     attachment_capable: false,
+    role: roleContext?.role,
+    role_authority: roleContext?.role_authority,
+    may_implement: roleContext?.may_implement,
+    session_type: roleContext ? (
+      roleContext.role === 'worker' ? 'implementation' :
+      roleContext.role === 'foreman' ? 'coordination' :
+      roleContext.role === 'analyst' ? 'analysis' :
+      roleContext.role === 'librarian' ? 'documentation' : undefined
+    ) : undefined,
   };
 }
 
@@ -509,6 +558,9 @@ export function runLoopDispatch(options: DispatchOptions): void {
 
   const childId = selectChild(state, options.childId);
 
+  // ── Resolve provider and dispatch mode ─────────────────────────────────────
+  const { provider: resolvedProvider, mode: resolvedMode } = resolveProviderAndMode(options);
+
   // ── Build packet before writing state ───────────────────────────────────────
   // We need to build the packet first to know its content for the artifact.
   // Use a preliminary state to build the packet (we'll update state after).
@@ -563,7 +615,8 @@ export function runLoopDispatch(options: DispatchOptions): void {
     childId,
     packetPath,
     resultPath,
-    options.provider,
+    packet.role_context,
+    resolvedProvider,
   );
 
   // ── Delegated assignment: attempt spawn with fallback chain ────────────────
@@ -617,4 +670,120 @@ export function runLoopDispatch(options: DispatchOptions): void {
   });
 
   process.stdout.write(`${JSON.stringify(packet, null, 2)}\n`);
+}
+
+// ── Acknowledgment timeout detection ─────────────────────────────────────────
+
+export interface AckTimeoutResult {
+  childId: string;
+  dispatchId: string;
+  orphaned: boolean;
+  reason?: string;
+}
+
+/**
+ * Check if the active child's dispatch has exceeded the acknowledgment timeout.
+ * Returns the result of the check and emits recovery telemetry if timeout exceeded.
+ *
+ * Scenario B: worker_id present, acknowledged_at null, >launch_to_first_heartbeat_ms elapsed.
+ * Scenario E: dispatched_at present, state handoff-pending, >stale_dispatch_timeout elapsed.
+ */
+export function checkAcknowledgmentTimeout(options: {
+  stateFile: string;
+  repoRoot: string;
+  launchToFirstHeartbeatMs?: number;
+  staleDispatchTimeoutMs?: number;
+}): AckTimeoutResult | null {
+  const launchTimeout = options.launchToFirstHeartbeatMs ?? 30_000;
+  const staleTimeout = options.staleDispatchTimeoutMs ?? 1_800_000; // 30 min
+
+  let state: LoopState;
+  try {
+    state = readState(options.stateFile);
+  } catch {
+    return null;
+  }
+
+  if (!state.active_child) return null;
+
+  const childMeta = state.open_children_meta?.[state.active_child];
+  const dr = childMeta?.dispatch_record;
+  if (!dr) return null;
+
+  const now = Date.now();
+  const dispatchedAt = new Date(dr.dispatched_at).getTime();
+  const elapsed = now - dispatchedAt;
+
+  const telemetryFile = resolveTelemetryFile(state, options.repoRoot);
+
+  // Scenario B: worker dispatched but not acknowledged within launch timeout
+  if (dr.worker_id && !dr.first_heartbeat_at && elapsed > launchTimeout) {
+    const recoveryEvent = {
+      event: "child-recovery-initiated",
+      event_id: randomUUID(),
+      child_id: state.active_child,
+      dispatch_id: dr.dispatch_id,
+      recovery_reason: "no-acknowledgment",
+      detected_at: new Date().toISOString(),
+    };
+    appendTelemetry(telemetryFile, recoveryEvent);
+
+    const orphanEvent = {
+      event: "child-orphaned",
+      event_id: randomUUID(),
+      child_id: state.active_child,
+      dispatch_id: dr.dispatch_id,
+      last_heartbeat_at: dr.last_heartbeat_at ?? null,
+      orphaned_at: new Date().toISOString(),
+    };
+    appendTelemetry(telemetryFile, orphanEvent);
+
+    // Update runtime_state to orphaned
+    const updatedMeta = {
+      ...state.open_children_meta,
+      [state.active_child]: {
+        ...childMeta,
+        dispatch_record: { ...dr, runtime_state: "orphaned" as const },
+      },
+    };
+    writeStateAtomic(options.stateFile, { ...state, open_children_meta: updatedMeta });
+
+    return { childId: state.active_child, dispatchId: dr.dispatch_id, orphaned: true, reason: "no-acknowledgment" };
+  }
+
+  // Scenario E: stale dispatch — dispatched but state hasn't progressed
+  if (dr.runtime_state === "packet-created" && elapsed > staleTimeout) {
+    const recoveryEvent = {
+      event: "child-recovery-initiated",
+      event_id: randomUUID(),
+      child_id: state.active_child,
+      dispatch_id: dr.dispatch_id,
+      recovery_reason: "stale-dispatch",
+      detected_at: new Date().toISOString(),
+    };
+    appendTelemetry(telemetryFile, recoveryEvent);
+
+    const orphanEvent = {
+      event: "child-orphaned",
+      event_id: randomUUID(),
+      child_id: state.active_child,
+      dispatch_id: dr.dispatch_id,
+      last_heartbeat_at: null,
+      orphaned_at: new Date().toISOString(),
+    };
+    appendTelemetry(telemetryFile, orphanEvent);
+
+    const updatedMeta = {
+      ...state.open_children_meta,
+      [state.active_child]: {
+        ...childMeta,
+        dispatch_record: { ...dr, runtime_state: "orphaned" as const },
+      },
+    };
+    writeStateAtomic(options.stateFile, { ...state, open_children_meta: updatedMeta });
+
+    return { childId: state.active_child, dispatchId: dr.dispatch_id, orphaned: true, reason: "stale-dispatch" };
+  }
+
+  return { childId: state.active_child, dispatchId: dr.dispatch_id, orphaned: false };
 }

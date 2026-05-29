@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { runLoopDispatch } from "./dispatch.js";
+import { runLoopDispatch, checkAcknowledgmentTimeout } from "./dispatch.js";
 import { readState } from "./checkpoint.js";
 import { createBootstrapSeal } from "./run-bootstrap.js";
 
@@ -491,5 +491,134 @@ describe("runLoopDispatch", () => {
     const dispatchRecord = updated.open_children_meta?.["POL-145"]?.dispatch_record;
 
     expect(dispatchRecord?.worker_assignment).toBeUndefined();
+  });
+
+  // ── Role context tests (POL-227 / POL-230) ──────────────────────────────────
+
+  it("impl packet includes worker role_context", () => {
+    const stateFile = writeState(testDir, baseState());
+
+    const output = captureStdout(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+    const packet = JSON.parse(output);
+
+    expect(packet.role_context).toBeDefined();
+    expect(packet.role_context.role).toBe("worker");
+    expect(packet.role_context.role_authority).toBe("implementation");
+    expect(packet.role_context.may_implement).toBe(true);
+    expect(packet.role_context.may_assign_workers).toBe(false);
+    expect(Array.isArray(packet.role_context.prohibited_actions)).toBe(true);
+  });
+
+  it("dispatch record includes role fields from packet role_context", () => {
+    const stateFile = writeState(testDir, baseState());
+
+    captureStdout(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+
+    const updated = readState(stateFile);
+    const dr = updated.open_children_meta?.["POL-145"]?.dispatch_record;
+
+    expect(dr?.role).toBe("worker");
+    expect(dr?.role_authority).toBe("implementation");
+    expect(dr?.may_implement).toBe(true);
+    expect(dr?.session_type).toBe("implementation");
+  });
+
+  // ── Config provider routing (POL-228 scenario 2) ────────────────────────────
+
+  it("uses config provider as direct-worker when no --provider flag", () => {
+    // Write a polaris config with a configured provider
+    writeFileSync(
+      join(testDir, "polaris.config.json"),
+      JSON.stringify({ execution: { adapter: "terminal-cli", providers: { codex: { command: "codex" } }, rotation: ["codex"] } }),
+      "utf-8",
+    );
+    const stateFile = writeState(testDir, baseState());
+
+    const output = captureStdout(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+    const packet = JSON.parse(output);
+
+    const updated = readState(stateFile);
+    const dr = updated.open_children_meta?.["POL-145"]?.dispatch_record;
+
+    expect(dr?.dispatch_mode).toBe("direct-worker");
+    expect(dr?.provider).toBe("codex");
+    expect(packet.role_context.role).toBe("worker");
+  });
+
+  // ── Acknowledgment timeout detection (POL-228 scenario B + E) ───────────────
+
+  it("checkAcknowledgmentTimeout returns null when no active child", () => {
+    const stateFile = writeState(testDir, baseState());
+
+    const result = checkAcknowledgmentTimeout({ stateFile, repoRoot: testDir });
+    expect(result).toBeNull();
+  });
+
+  it("checkAcknowledgmentTimeout detects no-acknowledgment timeout", () => {
+    const pastTime = new Date(Date.now() - 60_000).toISOString(); // 60s ago
+    const stateFile = writeState(testDir, baseState({
+      active_child: "POL-145",
+      open_children_meta: {
+        "POL-145": {
+          title: "Test child",
+          dispatch_record: {
+            dispatch_id: "test-dispatch-001",
+            child_id: "POL-145",
+            run_id: "pol-142-session-1",
+            cluster_id: "POL-142",
+            packet_path: "/tmp/packet.json",
+            expected_result_path: "/tmp/result.json",
+            dispatched_at: pastTime,
+            status: "dispatched",
+            dispatch_mode: "direct-worker",
+            runtime_state: "launching",
+            worker_id: "worker-001", // Has worker_id but no first_heartbeat_at
+          },
+        },
+      },
+    }));
+
+    const result = checkAcknowledgmentTimeout({
+      stateFile,
+      repoRoot: testDir,
+      launchToFirstHeartbeatMs: 30_000,
+    });
+
+    expect(result).not.toBeNull();
+    expect(result?.orphaned).toBe(true);
+    expect(result?.reason).toBe("no-acknowledgment");
+    expect(result?.childId).toBe("POL-145");
+  });
+
+  it("checkAcknowledgmentTimeout returns not-orphaned for fresh dispatch", () => {
+    const stateFile = writeState(testDir, baseState({
+      active_child: "POL-145",
+      open_children_meta: {
+        "POL-145": {
+          title: "Test child",
+          dispatch_record: {
+            dispatch_id: "test-dispatch-001",
+            child_id: "POL-145",
+            run_id: "pol-142-session-1",
+            cluster_id: "POL-142",
+            packet_path: "/tmp/packet.json",
+            expected_result_path: "/tmp/result.json",
+            dispatched_at: new Date().toISOString(), // Just dispatched
+            status: "dispatched",
+            dispatch_mode: "direct-worker",
+            runtime_state: "launching",
+            worker_id: "worker-001",
+          },
+        },
+      },
+    }));
+
+    const result = checkAcknowledgmentTimeout({
+      stateFile,
+      repoRoot: testDir,
+      launchToFirstHeartbeatMs: 30_000,
+    });
+
+    expect(result?.orphaned).toBe(false);
   });
 });
