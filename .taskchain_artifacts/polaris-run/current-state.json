@@ -9,10 +9,10 @@
     "POL-212",
     "POL-213",
     "POL-214",
-    "POL-215"
+    "POL-215",
+    "POL-216"
   ],
   "open_children": [
-    "POL-216",
     "POL-217"
   ],
   "step_cursor": "dispatch",
@@ -53,6 +53,11 @@
       "status": "success",
       "completed_at": "2026-05-29T16:00:00.000Z",
       "summary": "Wrote Worker Telemetry Specification to smartdocs/docs/specs/active/worker-telemetry-spec.md. All 11 event types specified with required/optional fields, state machine transitions, retention requirements, and worker-acknowledged implementation gap documented."
+    },
+    "POL-216": {
+      "status": "success",
+      "completed_at": "2026-05-29T16:30:00.000Z",
+      "summary": "Wrote Connect Compatibility Specification to smartdocs/docs/specs/active/connect-compatibility.md. All 5 Connect features designed with Polaris/Connect boundary tables, feature flags, migration cost analysis, and gap analysis against current checkpoint.ts schema."
     }
   },
   "open_children_meta": {}
