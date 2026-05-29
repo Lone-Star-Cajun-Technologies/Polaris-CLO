@@ -1,0 +1,70 @@
+{
+  "schema_version": "2.0",
+  "worker_role": "impl",
+  "run_id": "polaris-run-pol-201-2026-05-29-001",
+  "cluster_id": "POL-201",
+  "active_child": "POL-202",
+  "state_file": "${repoRoot}/.taskchain_artifacts/polaris-run/current-state.json",
+  "telemetry_file": "${repoRoot}/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-201-2026-05-29-001/telemetry.jsonl",
+  "instructions": {
+    "primary_goal": "Fix Polaris loop dispatch to create durable worker evidence before reporting success.\n\nThe dispatch command must write packet artifacts to cluster-scoped layout and persist dispatch records with packet/result paths, timestamps, and status before marking a child as dispatched. The status command must display this dispatch evidence.\n\nBranch: philmeaux/pol-201-implement-runtime-state-consolidation-and-cluster-state",
+    "steps": [
+      "Verify active_child is POL-202 in current-state.json",
+      "Modify src/loop/checkpoint.ts: Add ChildDispatchRecord interface with dispatch_id, child_id, run_id, cluster_id, packet_path, expected_result_path, dispatched_at, status fields",
+      "Modify src/loop/dispatch.ts: Add buildClusterArtifactPaths(), writePacketArtifact(), createDispatchRecord() helpers. Update runLoopDispatch to write packet first, then update state with dispatch_record",
+      "Modify src/loop/status.ts: Add findDispatchEvidence() helper. Update runLoopStatus to report dispatch evidence in JSON and human-readable output",
+      "Add regression tests in src/loop/dispatch.test.ts: verify packet artifact writing, dispatch_record creation, error handling",
+      "Add regression tests in src/loop/status.test.ts: verify dispatch evidence reporting in JSON and human output",
+      "Run npm run build and npm test to verify all 311 tests pass",
+      "Commit with message: [POL-202] Fix Polaris loop dispatch to create durable worker evidence",
+      "Update current-state.json: move POL-202 from open_children to completed_children, add completed_children_meta entry",
+      "Append telemetry event: child-completed for POL-202",
+      "TERMINATE SESSION"
+    ],
+    "allowed_scope": [
+      "src/loop/checkpoint.ts",
+      "src/loop/dispatch.ts",
+      "src/loop/status.ts",
+      "src/loop/dispatch.test.ts",
+      "src/loop/status.test.ts",
+      ".taskchain_artifacts/polaris-run/current-state.json",
+      ".taskchain_artifacts/polaris-run/runs/*/telemetry.jsonl"
+    ],
+    "validation_commands": [
+      "npm run build",
+      "npm test -- src/loop/dispatch.test.ts src/loop/status.test.ts",
+      "npm run polaris -- loop status --state-file .taskchain_artifacts/polaris-run/current-state.json --json | grep -q dispatch"
+    ],
+    "acceptance_criteria": [
+      "dispatch.ts writes packet to .polaris/clusters/<cluster-id>/packets/<child-id>-<dispatch-id>.json",
+      "dispatch.ts creates dispatch_record in open_children_meta with all required fields",
+      "dispatch.ts updates state atomically only after packet is written",
+      "status.ts reports dispatch evidence including packet_path, expected_result_path, status, dispatched_at",
+      "status.ts shows result_present true/false based on result file existence",
+      "All 311 tests pass",
+      "Build succeeds with no TypeScript errors"
+    ]
+  },
+  "lifecycle": {
+    "terminate_after_completion": true,
+    "max_concurrent": 1,
+    "cleanup_on_exit": "commit-and-exit"
+  },
+  "return_contract": [
+    "child_id",
+    "status",
+    "commit",
+    "validation",
+    "next_recommended_action"
+  ],
+  "prompt_mode": "compact",
+  "prompt_metrics": {
+    "mode": "compact",
+    "char_count": 1863,
+    "estimated_tokens": 466
+  },
+  "context": {
+    "branch": "philmeaux/pol-201-implement-runtime-state-consolidation-and-cluster-state",
+    "worker_role": "impl"
+  }
+}
