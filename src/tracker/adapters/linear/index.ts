@@ -47,7 +47,6 @@ interface LinearApiClient {
   listTeams(): Promise<LinearTeam[]>;
   listProjects(teamId: string): Promise<LinearProject[]>;
   listIssues(filters: { teamId?: string; projectId?: string }): Promise<LinearIssue[]>;
-  getIssueByIdentifier(identifier: string): Promise<LinearIssue | null>;
   getIssueById(id: string): Promise<LinearIssue | null>;
 }
 
@@ -197,67 +196,6 @@ class LinearGraphqlClient implements LinearApiClient {
     return data.issues.nodes;
   }
 
-  async getIssueByIdentifier(identifier: string): Promise<LinearIssue | null> {
-    const data = await this.graphql<{ issue: LinearIssue | null }>(
-      `
-        query PolarisLinearIssueByIdentifier($id: String!) {
-          issue(id: $id) {
-            id
-            identifier
-            title
-            state { id name }
-            children {
-              nodes {
-                id
-                identifier
-                title
-                state { id name }
-              }
-            }
-            relations {
-              nodes {
-              id
-              type
-              issue {
-                id
-                identifier
-                title
-                state { id name }
-              }
-              relatedIssue {
-                id
-                identifier
-                title
-                state { id name }
-              }
-              }
-            }
-            inverseRelations {
-              nodes {
-              id
-              type
-              issue {
-                id
-                identifier
-                title
-                state { id name }
-              }
-              relatedIssue {
-                id
-                identifier
-                title
-                state { id name }
-              }
-              }
-            }
-          }
-        }
-      `,
-      { id: identifier },
-    );
-    return data.issue;
-  }
-
   async getIssueById(id: string): Promise<LinearIssue | null> {
     const data = await this.graphql<{ issue: LinearIssue | null }>(
       `
@@ -277,38 +215,38 @@ class LinearGraphqlClient implements LinearApiClient {
             }
             relations {
               nodes {
+              id
+              type
+              issue {
                 id
-                type
-                issue {
-                  id
-                  identifier
-                  title
-                  state { id name }
-                }
-                relatedIssue {
-                  id
-                  identifier
-                  title
-                  state { id name }
-                }
+                identifier
+                title
+                state { id name }
+              }
+              relatedIssue {
+                id
+                identifier
+                title
+                state { id name }
+              }
               }
             }
             inverseRelations {
               nodes {
+              id
+              type
+              issue {
                 id
-                type
-                issue {
-                  id
-                  identifier
-                  title
-                  state { id name }
-                }
-                relatedIssue {
-                  id
-                  identifier
-                  title
-                  state { id name }
-                }
+                identifier
+                title
+                state { id name }
+              }
+              relatedIssue {
+                id
+                identifier
+                title
+                state { id name }
+              }
               }
             }
           }
@@ -379,7 +317,7 @@ export class LinearAdapter {
       return null;
     }
 
-    const relationType = relation.type.trim().toUpperCase().replace(/[^A-Z0-9]+/g, "_");
+    const relationType = this.normalizeRelationType(relation.type);
     const sourceNodeId = this.issueNodeId(relation.issue);
     const relatedNodeId = this.issueNodeId(relation.relatedIssue);
 
@@ -401,8 +339,14 @@ export class LinearAdapter {
       };
     }
 
-    console.warn(`Linear relation type '${relation.type}' is not mapped to dependencies; ignoring.`);
+    console.warn(
+      `Linear relation type '${relation.type}' is not mapped to dependencies (supported types: blocks, blocked_by, depends_on); ignoring.`,
+    );
     return null;
+  }
+
+  private normalizeRelationType(type: string): string {
+    return type.trim().toUpperCase().replace(/[^A-Z0-9]+/g, "_");
   }
 
   private mapIssueRelations(
@@ -435,10 +379,10 @@ export class LinearAdapter {
     }
   }
 
-  private async collectIssueAndChildren(issueIdentifier: string): Promise<LinearIssue[]> {
-    const rootIssue = await this.linearClient.getIssueByIdentifier(issueIdentifier);
+  private async collectIssueAndChildren(issueId: string): Promise<LinearIssue[]> {
+    const rootIssue = await this.linearClient.getIssueById(issueId);
     if (!rootIssue) {
-      throw new Error(`Linear issue identifier '${issueIdentifier}' not found.`);
+      throw new Error(`Linear issue ID '${issueId}' not found.`);
     }
 
     const issueMap = new Map<string, LinearIssue>([[rootIssue.id, rootIssue]]);

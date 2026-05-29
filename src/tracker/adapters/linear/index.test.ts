@@ -9,7 +9,6 @@ describe("LinearAdapter", () => {
     listTeams: ReturnType<typeof vi.fn>;
     listProjects: ReturnType<typeof vi.fn>;
     listIssues: ReturnType<typeof vi.fn>;
-    getIssueByIdentifier: ReturnType<typeof vi.fn>;
     getIssueById: ReturnType<typeof vi.fn>;
   };
 
@@ -28,7 +27,6 @@ describe("LinearAdapter", () => {
       listTeams: vi.fn(),
       listProjects: vi.fn(),
       listIssues: vi.fn(),
-      getIssueByIdentifier: vi.fn(),
       getIssueById: vi.fn(),
     };
 
@@ -66,7 +64,7 @@ describe("LinearAdapter", () => {
       },
     ]);
 
-    linearClient.getIssueByIdentifier.mockResolvedValue({
+    linearClient.getIssueById.mockResolvedValueOnce({
       id: "root-issue-id",
       identifier: "POL-198",
       title: "Root issue",
@@ -225,7 +223,7 @@ describe("LinearAdapter", () => {
     const graph = await adapter.syncIn("POL-198");
     const fullGraph = graph.fullGraph;
 
-    expect(linearClient.getIssueByIdentifier).toHaveBeenCalledWith("POL-198");
+    expect(linearClient.getIssueById).toHaveBeenCalledWith("POL-198");
     expect(linearClient.getIssueById).toHaveBeenCalledWith("child-issue-id");
     expect(fullGraph.activeCluster).toBe("POL-198");
     expect(fullGraph.clusters["POL-198"].children.slice().sort()).toEqual(
@@ -273,7 +271,7 @@ describe("LinearAdapter", () => {
 
     expect(fullGraph.dependencies["issue-unknown-rel"]).toBeUndefined();
     expect(consoleWarnSpy).toHaveBeenCalledWith(
-      "Linear relation type 'related' is not mapped to dependencies; ignoring.",
+      "Linear relation type 'related' is not mapped to dependencies (supported types: blocks, blocked_by, depends_on); ignoring.",
     );
     consoleWarnSpy.mockRestore();
   });
