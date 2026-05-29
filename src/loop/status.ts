@@ -223,6 +223,48 @@ function formatBlockedEvent(event: WorkerBlockedEvent): string {
   return msg;
 }
 
+/**
+ * Worker auto-approved event from telemetry.
+ */
+interface WorkerAutoApprovedEvent {
+  event: "worker-auto-approved";
+  run_id: string;
+  child_id: string;
+  approval_type: "destructive" | "cost" | "security" | "ambiguous" | "external";
+  description: string;
+  timestamp: string;
+}
+
+/**
+ * Find all auto-approved events for active child.
+ */
+function findAutoApprovedEvents(
+  telemetryFile: string,
+  activeChild: string | null,
+): WorkerAutoApprovedEvent[] {
+  if (!activeChild || !existsSync(telemetryFile)) return [];
+
+  const events: WorkerAutoApprovedEvent[] = [];
+  try {
+    const content = readFileSync(telemetryFile, "utf-8");
+    const lines = content.trim().split("\n").filter(Boolean);
+
+    for (const line of lines) {
+      try {
+        const event = JSON.parse(line) as WorkerAutoApprovedEvent;
+        if (event.event === "worker-auto-approved" && event.child_id === activeChild) {
+          events.push(event);
+        }
+      } catch {
+        continue;
+      }
+    }
+  } catch {
+    return [];
+  }
+  return events;
+}
+
 export interface StatusOptions {
   stateFile?: string;
   repoRoot: string;

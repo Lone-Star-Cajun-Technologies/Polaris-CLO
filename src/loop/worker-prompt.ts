@@ -187,31 +187,31 @@ export function buildWorkerPrompt(input: WorkerPromptInput): WorkerPromptResult 
   lines.push('If heartbeats stop, the parent will assume you crashed and may dispatch a replacement worker.');
   lines.push('');
 
-  // ── Approval Block Telemetry ────────────────────────────────────────────────
-  lines.push('## Approval Block Telemetry (when stuck)');
-  lines.push('If you encounter ANY situation requiring approval (destructive operation, cost threshold, security decision, ambiguous requirements, external API waiting), you MUST NOT hang silently.');
+  // ── Approval Escalation Telemetry ───────────────────────────────────────────
+  lines.push('## Approval Escalation (when uncertain)');
+  lines.push('You have a sealed packet defining your exact scope, allowed files, and validation commands. Use this to decide:');
   lines.push('');
-  lines.push('Option A - Auto-approve (if safe):');
-  lines.push('  - Make the decision yourself, document it, continue working');
-  lines.push('  - Emit heartbeat: step_cursor: "implement", note: "auto-approved <decision>"');
+  lines.push('Rule 1 - Auto-approve WITHIN scope (normal work):');
+  lines.push('  - If the operation touches files within `instructions.allowed_scope` → Just do it');
+  lines.push('  - If the command is in `instructions.validation_commands` → Just run it');
+  lines.push('  - Low risk, expected work → No need to ask, emit heartbeat with step_cursor: "implement"');
   lines.push('');
-  lines.push('Option B - Block and signal (if approval truly needed):');
-  lines.push('  1. Emit IMMEDIATELY to telemetry:');
+  lines.push('Rule 2 - ESCALATE out-of-scope or high-risk:');
+  lines.push('  - File outside allowed_scope → Emit worker-blocked with approval_type: "out-of-scope"');
+  lines.push('  - Destructive operation (rm -rf, major refactor) → Emit worker-blocked with approval_type: "destructive"');
+  lines.push('  - External API calls with cost → Emit worker-blocked with approval_type: "cost"');
+  lines.push('  - Changing secrets/.env → Emit worker-blocked with approval_type: "security"');
+  lines.push('  - Unclear requirements → Emit worker-blocked with approval_type: "ambiguous"');
+  lines.push('');
+  lines.push('To escalate, emit IMMEDIATELY to telemetry:');
   lines.push('```jsonl');
-  lines.push(`{"event":"worker-blocked","run_id":"<from packet>","child_id":"${input.issueId}","reason":"needs-approval","approval_type":"<destructive|cost|security|ambiguous|external>","description":"<what needs approval>","blocker_id":"<unique-id>","timestamp":"<ISO8601>"}`);
+  lines.push(`{"event":"worker-blocked","run_id":"<from packet>","child_id":"${input.issueId}","reason":"needs-approval","approval_type":"<out-of-scope|destructive|cost|security|ambiguous>","description":"<specifically what needs approval>","blocker_id":"<unique-id>","timestamp":"<ISO8601>"}`);
   lines.push('```');
-  lines.push('  2. Continue heartbeats every 30s with step_cursor: "blocked-awaiting-approval"');
-  lines.push('  3. Wait for parent to resolve (check telemetry for approval response)');
-  lines.push('  4. If no response in 5 minutes, emit worker-blocked with reason: "approval-timeout" and TERMINATE');
   lines.push('');
-  lines.push('Common approval scenarios:');
-  lines.push('  - rm -rf or delete operations → auto-approve if within allowed_scope, else block');
-  lines.push('  - npm install -g or system package install → auto-approve if in validation_commands, else block');
-  lines.push('  - API cost > $0.01 → block with cost estimate');
-  lines.push('  - Changing .env or secrets files → block with security warning');
-  lines.push('  - Unclear how to implement → block with specific question');
+  lines.push('Then: Continue heartbeats every 30s with step_cursor: "blocked-awaiting-approval"');
+  lines.push('Wait for parent response. If no response in 5 minutes → TERMINATE with approval-timeout.');
   lines.push('');
-  lines.push('Never wait >30s without emitting either progress OR blocked status.');
+  lines.push('Remember: Your packet scope is your authority. Within scope = proceed. Outside scope = escalate.');
   lines.push('');
 
   // ── Route cognition delta (always present) ────────────────────────────────
