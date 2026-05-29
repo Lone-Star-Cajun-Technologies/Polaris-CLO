@@ -43,6 +43,11 @@
       "status": "success",
       "completed_at": "2026-05-29T15:00:00.000Z",
       "summary": "Wrote Worker Lifecycle State Machine Spec to smartdocs/docs/specs/active/worker-lifecycle-state-machine.md"
+    },
+    "POL-214": {
+      "status": "success",
+      "completed_at": "2026-05-29T15:30:00.000Z",
+      "summary": "Wrote Worker Session Contract Spec to smartdocs/docs/specs/active/worker-session-contract.md"
     }
   },
   "open_children_meta": {}
