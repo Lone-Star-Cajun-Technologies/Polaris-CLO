@@ -1,0 +1,7 @@
+{"event":"run-start","run_id":"polaris-analyze-foreman-worker-execution-contract-2026-05-29-001","prior_run_id":"polaris-analyze-issue-orientation-2026-05-29-001","timestamp":"2026-05-29T00:00:00.000Z"}
+{"event":"step-complete","run_id":"polaris-analyze-foreman-worker-execution-contract-2026-05-29-001","step":"01-fetch-and-orient","timestamp":"2026-05-29T00:01:00.000Z"}
+{"event":"step-complete","run_id":"polaris-analyze-foreman-worker-execution-contract-2026-05-29-001","step":"02-map-affected-code","timestamp":"2026-05-29T00:02:00.000Z"}
+{"event":"step-complete","run_id":"polaris-analyze-foreman-worker-execution-contract-2026-05-29-001","step":"03-assess-issue","timestamp":"2026-05-29T00:03:00.000Z"}
+{"event":"step-complete","run_id":"polaris-analyze-foreman-worker-execution-contract-2026-05-29-001","step":"04-blocker-check","timestamp":"2026-05-29T00:04:00.000Z"}
+{"event":"step-complete","run_id":"polaris-analyze-foreman-worker-execution-contract-2026-05-29-001","step":"05-create-cluster-plan","timestamp":"2026-05-29T14:29:00.000Z"}
+{"event":"step-complete","run_id":"polaris-analyze-foreman-worker-execution-contract-2026-05-29-001","step":"06-final-report","timestamp":"2026-05-29T14:30:00.000Z"}
