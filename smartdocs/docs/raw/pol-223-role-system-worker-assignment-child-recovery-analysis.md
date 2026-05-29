@@ -155,7 +155,7 @@ CLO is invisible to workers. Workers interact with it only indirectly (via packe
 
 **Canonical location:** `.polaris/roles/`
 
-```
+```text
 .polaris/roles/
   foreman.md       # Foreman role definition
   worker.md        # Worker role definition
@@ -262,7 +262,7 @@ For Foreman packets:
 
 `polaris status` output includes a role block:
 
-```
+```text
 Role:              Foreman
 Authority:         Coordination Only
 May Implement:     No
@@ -271,7 +271,7 @@ May Assign Workers: Yes
 
 `polaris loop status` output includes per-child role tracking:
 
-```
+```text
 Active Child:      POL-205
 Dispatched To:     subagent
 Worker Role:       Worker
@@ -301,7 +301,7 @@ Last Heartbeat:    12s ago
 
 ### 4.1 Assignment Decision Tree
 
-```
+```text
 Dispatch triggered
         │
         ▼
@@ -373,7 +373,7 @@ Foreman behavior on acknowledgment timeout:
 
 ### 4.4 Fallback Behavior (Delegated Dispatch)
 
-```
+```text
 subagent spawn failed?
   → emit worker-assignment-failed(subagent)
   → try external-process adapter
@@ -408,7 +408,7 @@ This analysis defines the recovery architecture to prevent recurrence.
 Condition: `packet_path` written but `worker_id` is null after `launch_timeout` (30s)
 Cause: Provider not reached after dispatch attempt
 Recovery: Safe to redispatch — no worker ever ran
-```
+```text
 detect (no worker_id after timeout)
 → emit child-recovery-initiated(reason: no-worker-assignment)
 → clear dispatch_record (keep dispatch_id for audit, generate new one)
@@ -423,7 +423,7 @@ detect (no worker_id after timeout)
 Condition: `worker_id` present but `acknowledged_at` null after `launch_to_first_heartbeat_ms` (30s)
 Cause: Provider accepted dispatch but worker never started
 Recovery: Likely safe to redispatch
-```
+```text
 detect (no acknowledged_at after 30s)
 → emit child-recovery-initiated(reason: no-acknowledgment)
 → transition: handoff-pending → orphaned
@@ -437,7 +437,7 @@ detect (no acknowledged_at after 30s)
 Condition: `acknowledged_at` present but `last_heartbeat_at` more than `orphan_timeout_ms` (10 min) ago with no `worker-result` event
 Cause: Worker started but stopped reporting (crash, hang, disconnect)
 Recovery: Requires operator approval — partial execution may have occurred
-```
+```text
 detect (last_heartbeat_at > orphan_timeout_ms without result)
 → emit worker-orphaned
 → transition: running → orphaned
@@ -454,7 +454,7 @@ detect (last_heartbeat_at > orphan_timeout_ms without result)
 Condition: `worker-result` telemetry event received but `expected_result_path` contains no valid CompactReturn
 Cause: Worker exited abnormally after emitting completion event
 Recovery: Depends on whether commits exist
-```
+```text
 detect (worker-result event received, expected_result_path missing or invalid)
 → check git log for commits in child scope
 → if no commits: safe to redispatch
@@ -471,7 +471,7 @@ detect (worker-result event received, expected_result_path missing or invalid)
 Condition: `dispatched_at` more than a configurable `stale_dispatch_timeout` (default: 30 min) ago, state still `handoff-pending` with no subsequent events
 Cause: Dispatch was initiated but the session ended without completing handoff
 Recovery: Safe to redispatch
-```
+```text
 detect (dispatched_at + stale_dispatch_timeout < now(), state = handoff-pending)
 → emit child-recovery-initiated(reason: stale-dispatch)
 → transition: handoff-pending → orphaned
@@ -481,7 +481,7 @@ detect (dispatched_at + stale_dispatch_timeout < now(), state = handoff-pending)
 
 ### 5.3 Recovery Workflow Summary
 
-```
+```text
 1. Detect recovery condition (time-based OR evidence-based)
 2. Emit child-recovery-initiated { child_id, dispatch_id, recovery_reason, detected_at }
 3. Transition state to orphaned
@@ -513,7 +513,7 @@ Two detection modes:
 
 All recovery events extend the base telemetry schema.
 
-```
+```text
 child-recovery-initiated
   Fields: child_id, dispatch_id, recovery_reason, detected_at
   Reason values: no-worker-assignment | no-acknowledgment | no-heartbeat |
@@ -618,6 +618,7 @@ These are additive to the 5 fields already identified in POL-216 (`worker_id`, `
 - Create `.polaris/roles/foreman.md`, `worker.md`, `analyst.md`, `librarian.md`
 - These are documentation files; no source changes required
 - Deliverable: role files in repo
+- Closes: GAP-R01
 
 **Wave 1 — Skill Binding**
 - Update SKILL.md headers in all skills to reference role file
