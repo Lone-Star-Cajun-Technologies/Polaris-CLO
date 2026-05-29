@@ -24,6 +24,7 @@ export type WorkerRuntimeState =
   | "packet-created"
   | "delegated"
   | "launching"
+  | "acknowledged"
   | "running"
   | "waiting-for-approval"
   | "blocked"
@@ -269,7 +270,7 @@ export function validateState(state: unknown): string[] {
               }
             }
             if ("runtime_state" in dr && dr["runtime_state"] !== undefined) {
-              const validStates = ["packet-created", "delegated", "launching", "running", "waiting-for-approval", "blocked", "completed", "failed", "orphaned"];
+              const validStates = ["packet-created", "delegated", "launching", "acknowledged", "running", "waiting-for-approval", "blocked", "completed", "failed", "orphaned"];
               if (!validStates.includes(dr["runtime_state"] as string)) {
                 errors.push(`open_children_meta["${childId}"].dispatch_record.runtime_state must be a valid WorkerRuntimeState`);
               }
