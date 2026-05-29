@@ -2,7 +2,7 @@ import { appendFileSync, mkdirSync, realpathSync, writeFileSync } from "node:fs"
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { dirname, join, isAbsolute, resolve } from "node:path";
-import { readState, validateState, writeStateAtomic, type LoopState, type ChildDispatchRecord, type DispatchMode, type WorkerRuntimeState } from "./checkpoint.js";
+import { readState, validateState, writeStateAtomic, type LoopState, type ChildDispatchRecord, type DispatchMode, type WorkerRuntimeState, type WorkerAssignmentRecord } from "./checkpoint.js";
 import { compileImplPacket, type WorkerPacket } from "./worker-packet.js";
 import { selectPromptMode } from "./worker-prompt.js";
 import {
@@ -16,6 +16,12 @@ import {
   type ChildDispatchedEvent,
   type LedgerRunType,
 } from "./ledger.js";
+import type {
+  WorkerAssignmentAttemptedEvent,
+  WorkerAssignedEvent,
+  WorkerAssignmentFailedEvent,
+  EscalationInitiatedEvent,
+} from "./dispatch-state.js";
 
 export interface DispatchOptions {
   stateFile: string;
@@ -150,6 +156,211 @@ function createDispatchRecord(
     status: "dispatched",
     dispatch_mode: dispatchMode,
     runtime_state: runtimeState,
+    worker_id: randomUUID(),
+    session_id: null,
+    attachment_capable: false,
+  };
+}
+
+// ── Subagent spawn interface ───────────────────────────────────────────────
+type AgentSubtaskDispatcher = (
+  packet: WorkerPacket,
+  context: {
+    dispatchId: string;
+    runId: string;
+    childId: string;
+    sessionId: string;
+  },
+) => unknown;
+
+function getSubagentDispatcher(): AgentSubtaskDispatcher | undefined {
+  const host = globalThis as typeof globalThis & {
+    __POLARIS_AGENT_SUBTASK_DISPATCH__?: AgentSubtaskDispatcher;
+  };
+  return host.__POLARIS_AGENT_SUBTASK_DISPATCH__;
+}
+
+/**
+ * Result of a delegated assignment attempt.
+ */
+interface AssignmentOutcome {
+  assignment: WorkerAssignmentRecord;
+  session_id: string | null;
+  attachment_capable: boolean;
+  runtime_state: WorkerRuntimeState;
+}
+
+/**
+ * Emit a worker-assignment-attempted event (before each spawn attempt).
+ */
+function emitAssignmentAttempted(
+  telemetryFile: string,
+  dispatchId: string,
+  runId: string,
+  childId: string,
+  assignmentType: WorkerAssignmentAttemptedEvent["assignment_type"],
+): void {
+  appendTelemetry(telemetryFile, {
+    event: "worker-assignment-attempted",
+    event_id: randomUUID(),
+    dispatch_id: dispatchId,
+    run_id: runId,
+    child_id: childId,
+    assignment_type: assignmentType,
+    timestamp: new Date().toISOString(),
+  } satisfies WorkerAssignmentAttemptedEvent);
+}
+
+/**
+ * Emit a worker-assigned event on success.
+ */
+function emitAssigned(
+  telemetryFile: string,
+  dispatchId: string,
+  runId: string,
+  childId: string,
+  assignmentType: WorkerAssignedEvent["assignment_type"],
+  subagentSessionId?: string,
+  processPid?: number,
+  handoffToken?: string,
+): void {
+  appendTelemetry(telemetryFile, {
+    event: "worker-assigned",
+    event_id: randomUUID(),
+    dispatch_id: dispatchId,
+    run_id: runId,
+    child_id: childId,
+    assignment_type: assignmentType,
+    ...(subagentSessionId !== undefined ? { subagent_session_id: subagentSessionId } : {}),
+    ...(processPid !== undefined ? { process_pid: processPid } : {}),
+    ...(handoffToken !== undefined ? { handoff_token: handoffToken } : {}),
+    timestamp: new Date().toISOString(),
+  } satisfies WorkerAssignedEvent);
+}
+
+/**
+ * Emit a worker-assignment-failed event on each mechanism failure.
+ */
+function emitAssignmentFailed(
+  telemetryFile: string,
+  dispatchId: string,
+  runId: string,
+  childId: string,
+  reason: WorkerAssignmentFailedEvent["reason"],
+): void {
+  appendTelemetry(telemetryFile, {
+    event: "worker-assignment-failed",
+    event_id: randomUUID(),
+    dispatch_id: dispatchId,
+    run_id: runId,
+    child_id: childId,
+    reason,
+    timestamp: new Date().toISOString(),
+  } satisfies WorkerAssignmentFailedEvent);
+}
+
+/**
+ * Emit an escalation-initiated event when all mechanisms are exhausted.
+ */
+function emitEscalationInitiated(
+  telemetryFile: string,
+  dispatchId: string,
+  runId: string,
+  childId: string,
+  reason: string,
+): void {
+  appendTelemetry(telemetryFile, {
+    event: "escalation-initiated",
+    event_id: randomUUID(),
+    dispatch_id: dispatchId,
+    run_id: runId,
+    child_id: childId,
+    reason,
+    recommended_action: "manual-dispatch",
+    timestamp: new Date().toISOString(),
+  } satisfies EscalationInitiatedEvent);
+}
+
+/**
+ * Attempt the delegated assignment fallback chain:
+ *   1. subagent spawn attempt
+ *   2. external-process fallback
+ *   3. human-handoff fallback
+ *   4. pending-escalation (all mechanisms exhausted)
+ *
+ * Emits telemetry events at each decision point (before state transitions).
+ * Returns the assignment outcome with evidence.
+ */
+function attemptDelegatedAssignment(
+  telemetryFile: string,
+  dispatchId: string,
+  runId: string,
+  childId: string,
+  packet: WorkerPacket,
+): AssignmentOutcome {
+  const now = new Date().toISOString();
+
+  // Step 1: Try subagent spawn
+  emitAssignmentAttempted(telemetryFile, dispatchId, runId, childId, "subagent");
+  const dispatcher = getSubagentDispatcher();
+
+  if (dispatcher) {
+    // Subagent available - attempt dispatch
+    const sessionId = randomUUID();
+    try {
+      void dispatcher(packet, { dispatchId, runId, childId, sessionId });
+      emitAssigned(telemetryFile, dispatchId, runId, childId, "subagent", sessionId);
+      return {
+        assignment: {
+          assigned_at: now,
+          assignment_type: "subagent",
+          subagent_session_id: sessionId,
+        },
+        session_id: sessionId,
+        attachment_capable: false,
+        runtime_state: "delegated",
+      };
+    } catch (err) {
+      // Dispatcher invocation failed, fall through to next mechanism
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      emitAssignmentFailed(telemetryFile, dispatchId, runId, childId, "no-subagent-support");
+      appendTelemetry(telemetryFile, {
+        event: "subagent-spawn-error",
+        event_id: randomUUID(),
+        dispatch_id: dispatchId,
+        run_id: runId,
+        child_id: childId,
+        error: errorMsg,
+        timestamp: new Date().toISOString(),
+      });
+      // Continue to external-process fallback below
+    }
+  } else {
+    // Subagent unavailable
+    emitAssignmentFailed(telemetryFile, dispatchId, runId, childId, "no-subagent-support");
+  }
+
+  // Step 2: Try external-process fallback (not available in this wave)
+  emitAssignmentAttempted(telemetryFile, dispatchId, runId, childId, "external-process");
+  emitAssignmentFailed(telemetryFile, dispatchId, runId, childId, "provider-unavailable");
+
+  // Step 3: Try human-handoff fallback (not available in this wave)
+  emitAssignmentAttempted(telemetryFile, dispatchId, runId, childId, "human-handoff");
+  emitAssignmentFailed(telemetryFile, dispatchId, runId, childId, "provider-unavailable");
+
+  // Step 4: All mechanisms exhausted — pending-escalation
+  const escalationReason = "No assignment mechanism available: subagent not supported, no external-process or human-handoff configured";
+  emitEscalationInitiated(telemetryFile, dispatchId, runId, childId, escalationReason);
+
+  return {
+    assignment: {
+      assigned_at: now,
+      assignment_type: "pending-escalation",
+      escalation_reason: escalationReason,
+    },
+    session_id: null,
+    attachment_capable: false,
+    runtime_state: "delegated",
   };
 }
 
@@ -355,7 +566,27 @@ export function runLoopDispatch(options: DispatchOptions): void {
     options.provider,
   );
 
+  // ── Delegated assignment: attempt spawn with fallback chain ────────────────
+  // For delegated mode (no provider), attempt subagent spawn now.
+  // Emit all telemetry events BEFORE updating dispatch state.
+  // Write complete assignment evidence BEFORE worker begins executing.
+  if (dispatchRecord.dispatch_mode === "delegated") {
+    const assignmentOutcome = attemptDelegatedAssignment(
+      telemetryFile,
+      dispatchRecord.dispatch_id,
+      state.run_id,
+      childId,
+      packet,
+    );
+    dispatchRecord.worker_assignment = assignmentOutcome.assignment;
+    dispatchRecord.session_id = assignmentOutcome.session_id;
+    dispatchRecord.attachment_capable = assignmentOutcome.attachment_capable;
+    dispatchRecord.runtime_state = assignmentOutcome.runtime_state;
+  }
+
   // ── Update state atomically with dispatch record ───────────────────────────
+  // Assignment evidence is populated in dispatchRecord BEFORE this write.
+  // This upholds the evidence-before-execution invariant.
   const updatedState: LoopState = {
     ...preliminaryState,
     // Store the dispatch record in open_children_meta for the child

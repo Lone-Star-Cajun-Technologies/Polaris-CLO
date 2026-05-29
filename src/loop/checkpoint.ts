@@ -24,6 +24,7 @@ export type WorkerRuntimeState =
   | "packet-created"
   | "delegated"
   | "launching"
+  | "acknowledged"
   | "running"
   | "waiting-for-approval"
   | "blocked"
@@ -89,6 +90,19 @@ export interface ChildDispatchRecord {
   last_heartbeat_step?: string;
   /** Worker assignment record (for delegated mode) */
   worker_assignment?: WorkerAssignmentRecord;
+  /**
+   * Unique worker identity for this dispatch.
+   * Required on new records; for backward compat, falls back to dispatch_id.
+   */
+  worker_id?: string;
+  /** Session ID of the active worker session, or null if not yet known */
+  session_id?: string | null;
+  /** Whether the worker supports attachment-based communication */
+  attachment_capable?: boolean;
+  /** Number of heartbeats received from this worker */
+  heartbeat_count?: number;
+  /** Timestamp of the first heartbeat received */
+  first_heartbeat_at?: string;
 }
 
 /**
@@ -256,7 +270,7 @@ export function validateState(state: unknown): string[] {
               }
             }
             if ("runtime_state" in dr && dr["runtime_state"] !== undefined) {
-              const validStates = ["packet-created", "delegated", "launching", "running", "waiting-for-approval", "blocked", "completed", "failed", "orphaned"];
+              const validStates = ["packet-created", "delegated", "launching", "acknowledged", "running", "waiting-for-approval", "blocked", "completed", "failed", "orphaned"];
               if (!validStates.includes(dr["runtime_state"] as string)) {
                 errors.push(`open_children_meta["${childId}"].dispatch_record.runtime_state must be a valid WorkerRuntimeState`);
               }
@@ -299,6 +313,32 @@ export function validateState(state: unknown): string[] {
                     errors.push(`open_children_meta["${childId}"].dispatch_record.worker_assignment.escalation_reason must be a non-empty string for pending-escalation assignments`);
                   }
                 }
+              }
+            }
+            // Validate new ChildDispatchRecord fields
+            if ("worker_id" in dr && dr["worker_id"] !== undefined) {
+              if (typeof dr["worker_id"] !== "string" || (dr["worker_id"] as string).length === 0) {
+                errors.push(`open_children_meta["${childId}"].dispatch_record.worker_id must be a non-empty string if present`);
+              }
+            }
+            if ("session_id" in dr && dr["session_id"] !== undefined) {
+              if (dr["session_id"] !== null && typeof dr["session_id"] !== "string") {
+                errors.push(`open_children_meta["${childId}"].dispatch_record.session_id must be a string or null`);
+              }
+            }
+            if ("attachment_capable" in dr && dr["attachment_capable"] !== undefined) {
+              if (typeof dr["attachment_capable"] !== "boolean") {
+                errors.push(`open_children_meta["${childId}"].dispatch_record.attachment_capable must be a boolean`);
+              }
+            }
+            if ("heartbeat_count" in dr && dr["heartbeat_count"] !== undefined) {
+              if (typeof dr["heartbeat_count"] !== "number" || !Number.isInteger(dr["heartbeat_count"]) || (dr["heartbeat_count"] as number) < 0) {
+                errors.push(`open_children_meta["${childId}"].dispatch_record.heartbeat_count must be a non-negative integer`);
+              }
+            }
+            if ("first_heartbeat_at" in dr && dr["first_heartbeat_at"] !== undefined) {
+              if (typeof dr["first_heartbeat_at"] !== "string") {
+                errors.push(`open_children_meta["${childId}"].dispatch_record.first_heartbeat_at must be a string (ISO timestamp) if present`);
               }
             }
           }

@@ -18,6 +18,7 @@ export type WorkerDispatchState =
   | "packet-created"    // Packet written, no worker associated
   | "delegated"         // Provider assigned, ready for handoff
   | "launching"         // Worker process spawn initiated
+  | "acknowledged"      // Worker read packet and emitted worker-acknowledged, no heartbeat yet
   | "running"           // Worker acknowledged, first heartbeat received
   | "waiting-for-approval"  // Worker blocked on approval
   | "blocked"           // Worker stuck, no recent heartbeat
@@ -35,6 +36,7 @@ export const TERMINAL_STATES: WorkerDispatchState[] = ["completed", "failed", "o
  */
 export const ACTIVE_STATES: WorkerDispatchState[] = [
   "launching",
+  "acknowledged",
   "running",
   "waiting-for-approval",
   "blocked",
@@ -60,6 +62,9 @@ export interface WorkerTimeoutConfig {
 
   /** Time waiting for approval before auto-fail (default: 3600000ms) */
   approval_timeout_ms: number;
+
+  /** Time after acknowledgement before first heartbeat expected (default: 120000ms) */
+  ack_to_first_heartbeat_ms: number;
 }
 
 /**
@@ -70,6 +75,7 @@ export const DEFAULT_TIMEOUTS: WorkerTimeoutConfig = {
   heartbeat_interval_ms: 300000,         // 5 minutes
   orphan_timeout_ms: 600000,             // 10 minutes
   approval_timeout_ms: 3600000,          // 1 hour
+  ack_to_first_heartbeat_ms: 120000,     // 2 minutes
 };
 
 /**
@@ -225,6 +231,15 @@ export interface WorkerResultEvent extends WorkerTelemetryEventBase {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
+ * Worker acknowledged - worker read packet and computed SHA, emitted before any work output.
+ */
+export interface WorkerAcknowledgedEvent extends WorkerTelemetryEventBase {
+  event: "worker-acknowledged";
+  worker_id: string;
+  packet_sha: string;
+}
+
+/**
  * Worker assignment attempted - Foreman trying to assign worker.
  */
 export interface WorkerAssignmentAttemptedEvent extends WorkerTelemetryEventBase {
@@ -265,6 +280,7 @@ export interface EscalationInitiatedEvent extends WorkerTelemetryEventBase {
  */
 export type WorkerTelemetryEvent =
   | WorkerLaunchEvent
+  | WorkerAcknowledgedEvent
   | WorkerHeartbeat
   | WorkerBlockedEvent
   | WorkerApprovedEvent
@@ -316,6 +332,8 @@ export function resolveTimeoutConfig(
       config?.orphan_timeout_ms ?? DEFAULT_TIMEOUTS.orphan_timeout_ms,
     approval_timeout_ms:
       config?.approval_timeout_ms ?? DEFAULT_TIMEOUTS.approval_timeout_ms,
+    ack_to_first_heartbeat_ms:
+      config?.ack_to_first_heartbeat_ms ?? DEFAULT_TIMEOUTS.ack_to_first_heartbeat_ms,
   };
 }
 
@@ -442,6 +460,21 @@ export function deriveDispatchState(
     return "running";
   }
 
+  // No heartbeats yet — check for worker-acknowledged event
+  const acknowledgedEvent = sorted.find(
+    (e): e is WorkerAcknowledgedEvent => e.event === "worker-acknowledged",
+  );
+  if (acknowledgedEvent) {
+    // Worker acknowledged packet but has not yet sent a heartbeat
+    // Check if the acknowledgement has aged out
+    const msSinceAck = now.getTime() - new Date(acknowledgedEvent.timestamp).getTime();
+    if (msSinceAck > config.ack_to_first_heartbeat_ms) {
+      // Ack timeout — worker never started actual work
+      return "failed";
+    }
+    return "acknowledged";
+  }
+
   // No heartbeats yet - check for launch
   const launchEvent = sorted.find((e): e is WorkerLaunchEvent => e.event === "worker-launch");
   if (launchEvent) {
@@ -474,10 +507,11 @@ export function isValidTransition(
 
   // Define valid transitions
   const validTransitions: Record<WorkerDispatchState, WorkerDispatchState[]> = {
-    "packet-created": ["delegated", "launching", "running"],
-    "delegated": ["launching", "running", "completed", "failed"],
-    "launching": ["running", "waiting-for-approval", "blocked", "completed", "failed"],
-    "running": ["waiting-for-approval", "blocked", "completed", "failed"],
+    "packet-created": ["delegated", "launching", "acknowledged", "running", "failed"],
+    "delegated": ["launching", "acknowledged", "running", "completed", "failed", "blocked"],
+    "launching": ["acknowledged", "running", "waiting-for-approval", "blocked", "completed", "failed"],
+    "acknowledged": ["running", "failed"],
+    "running": ["waiting-for-approval", "blocked", "completed", "failed", "orphaned"],
     "waiting-for-approval": ["running", "completed", "failed"],
     "blocked": ["running", "completed", "failed", "orphaned"],
     "completed": [],
