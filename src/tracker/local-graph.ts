@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import { executionGraphV1Schema, executionGraphV2Schema } from "./schema.js";
 import { isV2Graph, type ExecutionGraph, type ExecutionGraphV2, type ExecutionNode, type ExecutionCluster } from "./types.js";
@@ -53,6 +53,22 @@ export class LocalGraph {
     return new LocalGraph(graph);
   }
   
+  /**
+   * Persists the graph to `.polaris/clusters/{clusterId}/clusters.json`.
+   * Creates the directory if it does not exist.
+   *
+   * @param clusterId The cluster ID to use as the directory name (e.g., "POL-198").
+   * @param repoRoot The root directory of the repository.
+   * @returns The absolute path of the written file.
+   */
+  async save(clusterId: string, repoRoot: string = process.cwd()): Promise<string> {
+    const dir = path.join(repoRoot, ".polaris", "clusters", clusterId);
+    await mkdir(dir, { recursive: true });
+    const filePath = path.join(dir, "clusters.json");
+    await writeFile(filePath, JSON.stringify(this.graph, null, 2), "utf-8");
+    return filePath;
+  }
+
   /**
    * Returns the full v2 execution graph.
    */

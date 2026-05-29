@@ -41,7 +41,15 @@ export function createTrackerCommand(options: TrackerCommandOptions): Command {
           console.error(`sync-in failed: ${err instanceof Error ? err.message : String(err)}`);
           process.exit(1);
         }
+        let writtenPath: string;
+        try {
+          writtenPath = await graph.save(trackerId, repoRoot);
+        } catch (err) {
+          console.error(`sync-in: failed to persist graph: ${err instanceof Error ? err.message : String(err)}`);
+          process.exit(1);
+        }
         console.log(`sync-in complete. Active cluster: ${graph.fullGraph.activeCluster}`);
+        console.log(`Written: ${writtenPath}`);
         return;
       }
 
