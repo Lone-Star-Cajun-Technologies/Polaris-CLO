@@ -19,15 +19,16 @@ Always use the repo-local Polaris CLI:
 npm run polaris -- docs ingest [--file <path>] [--batch <cluster-id>] [--dry-run]
 ```
 
+Drop zone: `smartdocs/docs/raw/` — this is the single ingest entry point.
+
 Never assume a globally linked `polaris` command exists.
 
 ## Canonical Smart Docs target
 
-`Polaris-Docs/docs/` is the authoritative Smart Docs ingest target.
+`smartdocs/docs/` is the authoritative Smart Docs ingest target. There is one drop zone: `smartdocs/docs/raw/`.
 
-- Root `docs/` content is legacy/non-canonical — treat as migration candidates, not ingest targets.
-- New Smart Docs must not be created in root `docs/`.
-- Future migration tasks may reconcile or remove root `docs/` after content is ported.
+- Root `docs/` is legacy/non-canonical — do not write new Smart Docs there.
+- There are no sub-raw folders (`specs/raw/`, `doctrine/raw/`, `audits/raw/` do not exist). All drops land in `smartdocs/docs/raw/` and are routed from there.
 
 **Architectural intent:** Smart Docs exist to reduce repo-understanding token burn. Agents should move from:
 
@@ -38,7 +39,7 @@ read many files → infer architecture
 to:
 
 ```
-read Smart Docs router → read local POLARIS.md/POLARIS.docs.md → open only necessary files
+read Smart Docs router → read local POLARIS.md → open only necessary files
 ```
 
 Smart Docs function as architectural compression, routing context, local subsystem summaries, and implementation guidance boundaries — without replacing canonical source files.
@@ -69,14 +70,13 @@ Smart Docs function as architectural compression, routing context, local subsyst
 
 | Area | Authority | Who may write | Promotion path |
 |---|---|---|---|
-| `Polaris-Docs/docs/raw/` | none | any agent freely | manual or ingest classification |
-| `Polaris-Docs/docs/runtime/` | low | polaris-run, polaris-finalize | no promotion; informational only |
-| `Polaris-Docs/docs/specs/raw/` | none | any agent | user review moves to `specs/active/` |
-| `Polaris-Docs/docs/specs/active/` | medium | approved work only | moved to `implemented/` or `superseded/` |
-| `Polaris-Docs/docs/doctrine/candidate/` | low | docs ingest | user approval required to reach `active/` |
-| `Polaris-Docs/docs/doctrine/active/` | high | user-approved only | only user approval moves or deprecates |
-| `Polaris-Docs/docs/architecture/` | high | user-approved only | explicit ADR process |
-| `Polaris-Docs/docs/decisions/` | high | user-approved only | explicit ADR process |
+| `smartdocs/docs/raw/` | none | any agent freely | `polaris doctrine draft` → `doctrine/candidate/` or `polaris doctrine spec-promote` → `specs/active/` |
+| `smartdocs/docs/runtime/` | low | polaris-run, polaris-finalize | no promotion; informational only |
+| `smartdocs/docs/specs/active/` | medium | `polaris doctrine spec-promote --approve` only | moved to `implemented/` or `superseded/` |
+| `smartdocs/docs/doctrine/candidate/` | low | docs ingest + `polaris doctrine draft` | `polaris doctrine promote` (user-approved) |
+| `smartdocs/docs/doctrine/active/` | high | `polaris doctrine promote` (user-approved) | `polaris doctrine deprecate` (user-approved) |
+| `smartdocs/docs/architecture/` | high | user-approved only | explicit ADR process |
+| `smartdocs/docs/decisions/` | high | user-approved only | explicit ADR process |
 
 ## Run ID format
 
