@@ -21,7 +21,7 @@ allowed_files:
   - .polaris/map/index.json
 allowed_routes:
   - CLAUDE.md
-  - Polaris-Docs/docs/specs/active/docs-authority-model.md
+  - smartdocs/docs/specs/active/docs-authority-model.md
   - .codex/skills/polaris-docs-ingest/chain.md
 allowed_skills:
   - repo-analysis
@@ -29,11 +29,11 @@ expected_evidence:
   - run_id generated
   - run-start telemetry emitted
   - batch file list loaded
-  - Polaris-Docs/docs/ confirmed present
+  - smartdocs/docs/ confirmed present
   - canonical target doctrine stated
 stop_rules:
   - run-start telemetry write fails
-  - Polaris-Docs/docs/ not found
+  - smartdocs/docs/ not found
   - batch cluster file missing or empty
   - no pending clusters and no --file/--batch flags
 ```
@@ -57,10 +57,11 @@ stop_rules:
    - `--batch <cluster-id>`: read `.polaris/docs-ingest/<cluster-id>.json` for file list.
    - No flags: read `current-state.json` for the next pending cluster ID. If none: halt with "no pending ingest clusters — use --file or --batch, or register clusters first."
 
-3. **Confirm canonical target** — verify `Polaris-Docs/docs/` exists in the repo root.
+3. **Confirm canonical target** — verify `smartdocs/docs/` exists in the repo root.
    - If not found: halt and report. Do not attempt to create it.
-   - Assert doctrine: `Polaris-Docs/docs/` is the only valid ingest target. Root `docs/` is legacy. New Smart Docs must not be placed there.
-   - If any source file already lives in `Polaris-Docs/docs/`: reclassification only — no file move needed in step 04.
+   - Assert doctrine: `smartdocs/docs/` is the only valid ingest target. Root `docs/` is legacy. New Smart Docs must not be placed there.
+   - Drop zone is `smartdocs/docs/raw/` — the single ingest entry point. There are no sub-raw folders.
+   - If any source file already lives in `smartdocs/docs/raw/`: reclassification only — no file move needed in step 04.
 
 4. **Load Polaris map** — read `.polaris/map/index.json` for code-area linking in step 04. If absent, note and proceed (map linking will be skipped in step 04).
 
@@ -68,12 +69,12 @@ stop_rules:
    - `run_id` and fresh/resumed
    - Ingest mode (`--file` / `--batch` / pending-cluster)
    - File list to process
-   - Canonical target confirmed: `Polaris-Docs/docs/`
+   - Canonical target confirmed: `smartdocs/docs/`
    - Provider status
 
 ## Artifact update
 
-Update `.taskchain_artifacts/polaris-docs-ingest/current-state.json`:
+Update `.taskchain_artifacts/polaris-docs-ingest/current-state.json` (artifact path unchanged — skill identity is `polaris-docs-ingest`):
 - `run_id`, `status: orienting`, `current_step_id: 01-orient-ingest`
 - `files_to_process: [...]`, `updated_at: <timestamp>`
 

@@ -13,15 +13,15 @@ Assign each file to exactly one classification. Classification determines target
 
 | Class | Target path | Authority | Approval required |
 |---|---|---|---|
-| `runtime-summary` | `Polaris-Docs/docs/runtime/summaries/` | low | no |
-| `run-report` | `Polaris-Docs/docs/runtime/run-reports/` | low | no |
-| `spec-raw` | `Polaris-Docs/docs/specs/raw/` | none | no |
-| `spec-active` | `Polaris-Docs/docs/specs/active/` | medium | yes |
-| `audit-finding` | `Polaris-Docs/docs/audits/findings/` | medium | no |
-| `doctrine-candidate` | `Polaris-Docs/docs/doctrine/candidate/` | low | no |
-| `architecture` | `Polaris-Docs/docs/architecture/` | high | yes |
-| `decision` | `Polaris-Docs/docs/decisions/` | high | yes |
-| `deprecated-noise` | `Polaris-Docs/docs/runtime/generated/` | low | no |
+| `runtime-summary` | `smartdocs/docs/runtime/summaries/` | low | no |
+| `run-report` | `smartdocs/docs/runtime/run-reports/` | low | no |
+| `spec-raw` | `smartdocs/docs/raw/` | none | no |
+| `spec-active` | `smartdocs/docs/specs/active/` | medium | yes |
+| `audit-finding` | `smartdocs/docs/audits/findings/` | medium | no |
+| `doctrine-candidate` | `smartdocs/docs/doctrine/candidate/` | low | no |
+| `architecture` | `smartdocs/docs/architecture/` | high | yes |
+| `decision` | `smartdocs/docs/decisions/` | high | yes |
+| `deprecated-noise` | `smartdocs/docs/runtime/generated/` | low | no |
 
 ## Classification process (per file)
 
@@ -57,7 +57,7 @@ Files that do not require approval proceed to step 03 immediately. Approval-requ
 ```yaml
 allowed_files:
   - source files in the batch (read only)
-  - Polaris-Docs/docs/specs/active/docs-authority-model.md (reference)
+  - smartdocs/docs/specs/active/docs-authority-model.md (reference)
 expected_evidence:
   - every file in batch assigned a classification
   - approval-required files surfaced before step 04

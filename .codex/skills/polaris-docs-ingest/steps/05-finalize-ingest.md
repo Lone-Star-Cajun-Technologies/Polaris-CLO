@@ -27,7 +27,7 @@ Close out the ingest session cleanly. Emit telemetry. Write final state. Report.
    **polaris-docs-ingest complete**
    Processed:           <n> files
    Placed:
-     <original> → <Polaris-Docs/docs/target>
+     <original> → <smartdocs/docs/target>
      ...
    Pending user approval: <files requiring approval, if any> | none
    Conflicts:           <none | list with resolution required>
