@@ -212,6 +212,118 @@ describe("executeOneChild", () => {
   });
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// POL-221: worker-acknowledged event emission tests
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("executeOneChild — worker-acknowledged event (POL-221)", () => {
+  let tmpDir: string;
+
+  beforeEach(() => {
+    tmpDir = makeTmpDir();
+  });
+
+  afterEach(() => {
+    try {
+      rmSync(tmpDir, { recursive: true, force: true });
+    } catch {
+      // ignore cleanup errors
+    }
+  });
+
+  it("emits worker-acknowledged event with dispatch_id, worker_id, packet_sha", async () => {
+    const stateFile = makeStateFile(tmpDir, "POL-69");
+    const telemetryFile = makeTelemetryFile(tmpDir, "test-run-001");
+    const packet = makePacket(stateFile, telemetryFile);
+    packet.dispatch_id = "dispatch-uuid-001";
+    packet.worker_id = "worker-uuid-001";
+
+    // Write the packet to a file so SHA can be computed
+    const packetPath = tmpDir + "/packet.json";
+    writeFileSync(packetPath, JSON.stringify(packet), "utf-8");
+
+    await executeOneChild(packet, {
+      repoRoot: tmpDir,
+      packetPath,
+      executeChild: () => { /* noop */ },
+    });
+
+    const raw = readFileSync(telemetryFile, "utf-8").trim();
+    const events = raw.split("\n").filter(Boolean).map((l) => JSON.parse(l) as Record<string, unknown>);
+
+    const ackEvent = events.find((e) => e["event"] === "worker-acknowledged");
+    expect(ackEvent).toBeDefined();
+    expect(ackEvent?.["dispatch_id"]).toBe("dispatch-uuid-001");
+    expect(ackEvent?.["worker_id"]).toBe("worker-uuid-001");
+    expect(typeof ackEvent?.["packet_sha"]).toBe("string");
+    expect((ackEvent?.["packet_sha"] as string).length).toBe(64); // SHA-256 hex
+  });
+
+  it("emits worker-acknowledged before any other telemetry events", async () => {
+    const stateFile = makeStateFile(tmpDir, "POL-69");
+    const telemetryFile = makeTelemetryFile(tmpDir, "test-run-001");
+    const packet = makePacket(stateFile, telemetryFile);
+    packet.dispatch_id = "dispatch-uuid-002";
+    packet.worker_id = "worker-uuid-002";
+
+    await executeOneChild(packet, {
+      repoRoot: tmpDir,
+      executeChild: () => { /* noop */ },
+    });
+
+    const raw = readFileSync(telemetryFile, "utf-8").trim();
+    const events = raw.split("\n").filter(Boolean).map((l) => JSON.parse(l) as Record<string, unknown>);
+
+    expect(events.length).toBeGreaterThan(0);
+    expect(events[0]?.["event"]).toBe("worker-acknowledged");
+  });
+
+  it("emits worker-acknowledged with empty packet_sha when no packet file or raw JSON provided", async () => {
+    const stateFile = makeStateFile(tmpDir, "POL-69");
+    const telemetryFile = makeTelemetryFile(tmpDir, "test-run-001");
+    const packet = makePacket(stateFile, telemetryFile);
+    packet.dispatch_id = "dispatch-uuid-003";
+    packet.worker_id = "worker-uuid-003";
+
+    // No packetPath or packetRawJson — SHA will be empty string
+    await executeOneChild(packet, {
+      repoRoot: tmpDir,
+      executeChild: () => { /* noop */ },
+    });
+
+    const raw = readFileSync(telemetryFile, "utf-8").trim();
+    const events = raw.split("\n").filter(Boolean).map((l) => JSON.parse(l) as Record<string, unknown>);
+
+    const ackEvent = events.find((e) => e["event"] === "worker-acknowledged");
+    expect(ackEvent).toBeDefined();
+    expect(ackEvent?.["packet_sha"]).toBe("");
+  });
+
+  it("computes packet_sha from packetRawJson when no file path provided", async () => {
+    const stateFile = makeStateFile(tmpDir, "POL-69");
+    const telemetryFile = makeTelemetryFile(tmpDir, "test-run-001");
+    const packet = makePacket(stateFile, telemetryFile);
+    packet.dispatch_id = "dispatch-uuid-004";
+    packet.worker_id = "worker-uuid-004";
+
+    const rawJson = JSON.stringify(packet);
+
+    await executeOneChild(packet, {
+      repoRoot: tmpDir,
+      packetRawJson: rawJson,
+      executeChild: () => { /* noop */ },
+    });
+
+    const raw = readFileSync(telemetryFile, "utf-8").trim();
+    const events = raw.split("\n").filter(Boolean).map((l) => JSON.parse(l) as Record<string, unknown>);
+
+    const ackEvent = events.find((e) => e["event"] === "worker-acknowledged");
+    expect(ackEvent).toBeDefined();
+    expect(typeof ackEvent?.["packet_sha"]).toBe("string");
+    expect((ackEvent?.["packet_sha"] as string).length).toBe(64);
+  });
+});
+
 describe("readBootstrapPacket", () => {
   let tmpDir: string;
 

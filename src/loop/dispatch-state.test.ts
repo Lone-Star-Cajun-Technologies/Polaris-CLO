@@ -3,7 +3,8 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { isValidTransition } from "./dispatch-state.js";
+import { isValidTransition, deriveDispatchState, DEFAULT_TIMEOUTS } from "./dispatch-state.js";
+import type { WorkerTelemetryEvent } from "./dispatch-state.js";
 import type { ChildDispatchRecord } from "./checkpoint.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -39,6 +40,83 @@ describe("isValidTransition — pre-existing transitions still valid", () => {
 
   it("blocked → orphaned", () => {
     expect(isValidTransition("blocked", "orphaned")).toBe(true);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POL-221: acknowledged state transitions
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("isValidTransition — acknowledged state (POL-221)", () => {
+  it("launching → acknowledged is valid", () => {
+    expect(isValidTransition("launching", "acknowledged")).toBe(true);
+  });
+
+  it("acknowledged → running is valid", () => {
+    expect(isValidTransition("acknowledged", "running")).toBe(true);
+  });
+
+  it("acknowledged → failed is valid", () => {
+    expect(isValidTransition("acknowledged", "failed")).toBe(true);
+  });
+
+  it("launching → running is still valid for backward compat", () => {
+    // The state machine allows this, but deriveDispatchState now routes through acknowledged
+    expect(isValidTransition("launching", "running")).toBe(true);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POL-221: deriveDispatchState with worker-acknowledged event
+// ─────────────────────────────────────────────────────────────────────────────
+
+function makeBaseEvent(event: string, overrides: Partial<WorkerTelemetryEvent> = {}): WorkerTelemetryEvent {
+  return {
+    event,
+    event_id: "evt-001",
+    dispatch_id: "dispatch-001",
+    run_id: "run-001",
+    child_id: "POL-221",
+    timestamp: new Date().toISOString(),
+    ...overrides,
+  } as WorkerTelemetryEvent;
+}
+
+describe("deriveDispatchState — acknowledged (POL-221)", () => {
+  const now = new Date();
+
+  it("returns 'acknowledged' when worker-acknowledged event present and no heartbeat", () => {
+    const events: WorkerTelemetryEvent[] = [
+      makeBaseEvent("worker-launch"),
+      makeBaseEvent("worker-acknowledged", { worker_id: "worker-uuid", packet_sha: "abc123" } as Partial<WorkerTelemetryEvent>),
+    ];
+    expect(deriveDispatchState(events, DEFAULT_TIMEOUTS, now)).toBe("acknowledged");
+  });
+
+  it("returns 'acknowledged' without a prior launch event if only acknowledged present", () => {
+    const events: WorkerTelemetryEvent[] = [
+      makeBaseEvent("worker-acknowledged", { worker_id: "worker-uuid", packet_sha: "abc123" } as Partial<WorkerTelemetryEvent>),
+    ];
+    expect(deriveDispatchState(events, DEFAULT_TIMEOUTS, now)).toBe("acknowledged");
+  });
+
+  it("returns 'running' when heartbeat present after acknowledgment", () => {
+    const events: WorkerTelemetryEvent[] = [
+      makeBaseEvent("worker-launch"),
+      makeBaseEvent("worker-acknowledged", { worker_id: "worker-uuid", packet_sha: "abc123" } as Partial<WorkerTelemetryEvent>),
+      makeBaseEvent("worker-heartbeat", { step_cursor: "step-1" } as Partial<WorkerTelemetryEvent>),
+    ];
+    expect(deriveDispatchState(events, DEFAULT_TIMEOUTS, now)).toBe("running");
+  });
+
+  it("does NOT return 'running' from launching without acknowledgment (proxy retirement)", () => {
+    // Without worker-acknowledged or heartbeat, should be 'launching', not 'running'
+    const events: WorkerTelemetryEvent[] = [
+      makeBaseEvent("worker-launch"),
+    ];
+    const state = deriveDispatchState(events, DEFAULT_TIMEOUTS, now);
+    expect(state).toBe("launching");
+    expect(state).not.toBe("running");
   });
 });
 
