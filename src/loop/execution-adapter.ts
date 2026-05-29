@@ -1,3 +1,5 @@
+import { relative } from "node:path";
+
 export type ExecutionAdapterMode =
   | "agent-subtask"
   | "terminal-cli"
@@ -170,12 +172,17 @@ export function selectExecutionAdapter(input: AdapterSelectionInput): AdapterSel
 }
 
 export function buildCompactBootstrapState(input: CompactBootstrapInput): CompactBootstrapState {
+  // Normalize paths to repo-relative for portability
+  const repoRoot = process.cwd();
+  const relStateFile = input.stateFile.startsWith("/") ? relative(repoRoot, input.stateFile) : input.stateFile;
+  const relTelemetryFile = input.telemetryFile.startsWith("/") ? relative(repoRoot, input.telemetryFile) : input.telemetryFile;
+
   const result: CompactBootstrapState = {
     run_id: input.runId,
     cluster_id: input.clusterId,
     child_id: input.childId,
-    state_file: input.stateFile,
-    telemetry_file: input.telemetryFile,
+    state_file: relStateFile,
+    telemetry_file: relTelemetryFile,
     current_state_sha: input.currentStateSha,
     branch: input.branch,
     compact_mode: input.compactMode ?? "standard",

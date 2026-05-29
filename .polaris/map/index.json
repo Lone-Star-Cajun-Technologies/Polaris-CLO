@@ -1,7 +1,7 @@
 {
   "scan_date": "2026-05-29T04:49:43.561Z",
   "file_count": 448,
-  "coverage_pct": 47,
+  "coverage_pct": 52,
   "instructionCoverage": {
     "routesCovered": 233,
     "routesTotal": 448,

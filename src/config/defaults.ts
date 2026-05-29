@@ -24,7 +24,7 @@ export const DEFAULT_CONFIG: Omit<Required<PolarisConfig>, "canon" | "providers"
     allowBranchDivergence: false,
   },
   orchestration: {
-    mode: "auto",
+    mode: "supervised",
     auto_finalize: false,
     notification_format: "terse",
   },

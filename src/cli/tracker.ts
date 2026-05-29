@@ -69,6 +69,16 @@ export function createTrackerCommand(options: TrackerCommandOptions): Command {
 
         const report = await service.syncIn({ trackerId });
         console.log('Sync-in Report:', report);
+
+        // Persist graph state changes
+        let writtenPath: string;
+        try {
+          writtenPath = await localGraph.save(trackerId, repoRoot);
+        } catch (err) {
+          console.error(`sync-in: failed to persist graph: ${err instanceof Error ? err.message : String(err)}`);
+          process.exit(1);
+        }
+        console.log(`Graph persisted: ${writtenPath}`);
         return;
       }
 
@@ -112,6 +122,15 @@ export function createTrackerCommand(options: TrackerCommandOptions): Command {
 
       const report = await service.reconcile(commandOptions.dryRun);
       console.log('Reconciliation Report:', report);
+
+      // Persist graph state changes after reconciliation
+      try {
+        const writtenPath = await localGraph.save(trackerId, repoRoot);
+        console.log(`Graph persisted: ${writtenPath}`);
+      } catch (err) {
+        console.error(`reconcile: failed to persist graph: ${err instanceof Error ? err.message : String(err)}`);
+        process.exit(1);
+      }
     });
 
   return trackerCommand;

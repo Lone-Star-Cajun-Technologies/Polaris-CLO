@@ -22,7 +22,7 @@
 <!-- What is implemented, what is not yet, known gaps. -->
 
 ## Known Drift
-<!-- Places where the summary may be stale (honesty field. -->
+<!-- Places where the summary may be stale (honesty field). -->
 
 ## Linked Canonical Sources
 - [POLARIS.md](POLARIS.md)
