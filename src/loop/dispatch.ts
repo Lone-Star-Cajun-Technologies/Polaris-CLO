@@ -163,11 +163,15 @@ function createDispatchRecord(
 }
 
 // ── Subagent spawn interface ───────────────────────────────────────────────
-type AgentSubtaskDispatcher = (request: {
-  packet: WorkerPacket;
-  instructions: string;
-  returnContract: string[];
-}) => Promise<string | Record<string, unknown>>;
+type AgentSubtaskDispatcher = (
+  packet: WorkerPacket,
+  context: {
+    dispatchId: string;
+    runId: string;
+    childId: string;
+    sessionId: string;
+  },
+) => unknown;
 
 function getSubagentDispatcher(): AgentSubtaskDispatcher | undefined {
   const host = globalThis as typeof globalThis & {
@@ -292,6 +296,7 @@ function attemptDelegatedAssignment(
   dispatchId: string,
   runId: string,
   childId: string,
+  packet: WorkerPacket,
 ): AssignmentOutcome {
   const now = new Date().toISOString();
 
@@ -303,12 +308,7 @@ function attemptDelegatedAssignment(
     // Subagent available - attempt dispatch
     const sessionId = randomUUID();
     try {
-      // Actually invoke the dispatcher to spawn the subagent
-      // The dispatcher is responsible for launching the worker asynchronously
-      // We don't await here as we want dispatch to return immediately
-      // Note: dispatcher signature expects packet and other metadata
-      // For now, we record the assignment and let the dispatcher handle execution
-      // The packet has already been written to disk, so the worker can read it
+      void dispatcher(packet, { dispatchId, runId, childId, sessionId });
       emitAssigned(telemetryFile, dispatchId, runId, childId, "subagent", sessionId);
       return {
         assignment: {
@@ -576,6 +576,7 @@ export function runLoopDispatch(options: DispatchOptions): void {
       dispatchRecord.dispatch_id,
       state.run_id,
       childId,
+      packet,
     );
     dispatchRecord.worker_assignment = assignmentOutcome.assignment;
     dispatchRecord.session_id = assignmentOutcome.session_id;
