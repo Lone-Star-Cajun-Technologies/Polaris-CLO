@@ -2,7 +2,7 @@ import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { readState, validateState, type ChildDispatchRecord } from "./checkpoint.js";
+import { readState, validateState, type ChildDispatchRecord, type DispatchMode, type WorkerRuntimeState, type WorkerAssignmentRecord } from "./checkpoint.js";
 import { loadConfig } from "../config/loader.js";
 import type { BootstrapPacket } from "./bootstrap-packet.js";
 
@@ -26,6 +26,16 @@ export interface DispatchEvidence {
   provider?: string;
   /** Dispatch timestamp */
   dispatched_at: string;
+  /** Dispatch mode - delegated or direct-worker */
+  dispatch_mode?: DispatchMode;
+  /** Runtime state - detailed lifecycle tracking */
+  runtime_state?: WorkerRuntimeState;
+  /** Last heartbeat timestamp (if any) */
+  last_heartbeat_at?: string;
+  /** Last known step from heartbeat */
+  last_heartbeat_step?: string;
+  /** Worker assignment record (for delegated mode) */
+  worker_assignment?: WorkerAssignmentRecord;
 }
 
 /**
@@ -57,6 +67,11 @@ function findDispatchEvidence(
       dispatch_status: dispatchRecord.status,
       provider: dispatchRecord.provider,
       dispatched_at: dispatchRecord.dispatched_at,
+      dispatch_mode: dispatchRecord.dispatch_mode,
+      runtime_state: dispatchRecord.runtime_state,
+      last_heartbeat_at: dispatchRecord.last_heartbeat_at,
+      last_heartbeat_step: dispatchRecord.last_heartbeat_step,
+      worker_assignment: dispatchRecord.worker_assignment,
     };
   }
 
@@ -408,6 +423,13 @@ export function runLoopStatus(options: StatusOptions): void {
                 result_present: dispatchEvidence.result_present,
                 provider: dispatchEvidence.provider ?? null,
                 dispatched_at: dispatchEvidence.dispatched_at,
+                dispatch_mode: dispatchEvidence.dispatch_mode ?? null,
+                // Derive runtime state: delegated mode defaults to "delegated", else "unknown"
+                runtime_state: dispatchEvidence.runtime_state ??
+                  ((dispatchEvidence.dispatch_mode ?? "delegated") === "delegated" ? "delegated" : "unknown"),
+                last_heartbeat_at: dispatchEvidence.last_heartbeat_at ?? null,
+                last_heartbeat_step: dispatchEvidence.last_heartbeat_step ?? null,
+                worker_assignment: dispatchEvidence.worker_assignment ?? null,
               }
             : null,
           worker: workerHeartbeat
@@ -479,14 +501,79 @@ export function runLoopStatus(options: StatusOptions): void {
     lines.push("");
     lines.push("Dispatch Evidence:");
     lines.push(`  Child:            ${dispatchEvidence.child_id}`);
-    lines.push(`  Status:           ${dispatchEvidence.dispatch_status}`);
-    lines.push(`  Packet:           ${getRelativePath(repoRoot, dispatchEvidence.packet_path)}`);
-    lines.push(`  Expected result:  ${getRelativePath(repoRoot, dispatchEvidence.expected_result_path)}`);
-    lines.push(`  Result present:   ${dispatchEvidence.result_present ? "✓ yes" : "✗ no (worker still running)"}`);
+    // Show dispatch mode and runtime state
+    const mode = dispatchEvidence.dispatch_mode ?? "delegated";
+    // Derive runtime state: for delegated mode without explicit state, default to "delegated"
+    // for direct-worker mode without explicit state, default to "unknown"
+    const runtimeState = dispatchEvidence.runtime_state ??
+      (mode === "delegated" ? "delegated" : "unknown");
+    lines.push(`  Mode:             ${mode}`);
+    lines.push(`  Runtime state:    ${runtimeState}`);
+
     if (dispatchEvidence.provider) {
       lines.push(`  Provider:         ${dispatchEvidence.provider}`);
     }
+
+    // Show mode-specific messaging
+    if (mode === "delegated") {
+      lines.push(`  Visibility:       limited (orchestrator-owned)`);
+
+      // Show worker assignment info if available
+      if (dispatchEvidence.worker_assignment) {
+        const wa = dispatchEvidence.worker_assignment;
+        lines.push(`  Assignment:       ${wa.assignment_type}`);
+        if (wa.assignment_type === "subagent" && wa.subagent_session_id) {
+          lines.push(`  Subagent session: ${wa.subagent_session_id}`);
+        } else if (wa.assignment_type === "external-process" && wa.process_pid) {
+          lines.push(`  Process PID:      ${wa.process_pid}`);
+        } else if (wa.assignment_type === "pending-escalation" && wa.escalation_reason) {
+          lines.push(`  Escalation:       ${wa.escalation_reason}`);
+        }
+        lines.push(`  Assigned at:      ${wa.assigned_at}`);
+      } else {
+        // No assignment yet - Foreman seal compliance notice
+        lines.push(`  Assignment:       (none yet)`);
+      }
+    }
+
+    lines.push(`  Packet:           ${getRelativePath(repoRoot, dispatchEvidence.packet_path)}`);
+    lines.push(`  Expected result:  ${getRelativePath(repoRoot, dispatchEvidence.expected_result_path)}`);
+    lines.push(`  Result present:   ${dispatchEvidence.result_present ? "✓ yes" : "✗ no"}`);
+
+    // Show heartbeat info if available
+    if (dispatchEvidence.last_heartbeat_at) {
+      const heartbeatAge = Math.round((Date.now() - new Date(dispatchEvidence.last_heartbeat_at).getTime()) / 1000);
+      lines.push(`  Last heartbeat:   ${heartbeatAge}s ago${dispatchEvidence.last_heartbeat_step ? ` (${dispatchEvidence.last_heartbeat_step})` : ""}`);
+    } else if (mode === "direct-worker" && !dispatchEvidence.result_present) {
+      lines.push(`  Last heartbeat:   (none yet)`);
+    }
+
     lines.push(`  Dispatched at:    ${dispatchEvidence.dispatched_at}`);
+
+    // Show state-specific warnings
+    if (runtimeState === "waiting-for-approval") {
+      lines.push("");
+      lines.push("  ⏳ Waiting for approval - worker is blocked");
+    } else if (runtimeState === "orphaned") {
+      lines.push("");
+      lines.push("  ⚠ Worker appears orphaned - no recent heartbeats");
+    } else if (runtimeState === "blocked") {
+      lines.push("");
+      lines.push("  ⚠ Worker blocked - no heartbeat within expected interval");
+    }
+
+    // Foreman seal compliance notice for delegated mode without assignment
+    if (mode === "delegated" && !dispatchEvidence.worker_assignment && !dispatchEvidence.result_present) {
+      lines.push("");
+      lines.push("  📋 Foreman Seal Compliance:");
+      lines.push("     Foreman coordinates; Foreman does NOT implement.");
+      lines.push("     A worker must be assigned or escalated.");
+      if (!dispatchEvidence.worker_assignment) {
+        lines.push("");
+        lines.push("     ⚠️  No worker assigned - implementation would violate seal");
+        lines.push("     Action: Assign worker or escalate to manual dispatch");
+      }
+    }
   } else if (state.active_child) {
     lines.push("");
     lines.push("⚠ No dispatch evidence found for active child");

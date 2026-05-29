@@ -115,8 +115,10 @@ export interface SealedResultFileContract {
  * rather than generating instructions from raw skill files.
  */
 export interface WorkerPacket extends BootstrapPacket {
-  /** Distinguishes v2 compiled packets from v1 BootstrapPackets. */
-  schema_version: '2.0';
+  /** Distinguishes v2 compiled packets from v1 BootstrapPackets.
+   * Supports both '2.0' (legacy) and '2.1' (dispatch contract).
+   */
+  schema_version: '2.0' | '2.1';
   worker_role: WorkerRole;
   /** Pre-compiled execution instructions. */
   instructions: CompiledSteps;
@@ -135,8 +137,9 @@ export interface WorkerPacket extends BootstrapPacket {
 /** Type guard: returns true when packet is a compiled WorkerPacket. */
 export function isWorkerPacket(packet: BootstrapPacket): packet is WorkerPacket {
   const p = packet as unknown as Record<string, unknown>;
+  // Accept both '2.0' (legacy) and '2.1' (dispatch contract) schema versions
   const isV2 =
-    packet.schema_version === '2.0' &&
+    (packet.schema_version === '2.0' || packet.schema_version === '2.1') &&
     typeof p['worker_role'] === 'string' &&
     typeof p['instructions'] === 'object' && p['instructions'] !== null && !Array.isArray(p['instructions']) &&
     typeof p['lifecycle'] === 'object' && p['lifecycle'] !== null &&
@@ -237,7 +240,7 @@ export function compileStartupPacket(input: CompileStartupPacketInput): WorkerPa
   ];
 
   return {
-    schema_version: '2.0',
+    schema_version: '2.1',
     worker_role: 'startup',
     run_id: input.runId,
     cluster_id: input.clusterId,
@@ -332,7 +335,7 @@ export function compileImplPacket(input: CompileImplPacketInput): WorkerPacket {
   });
 
   return {
-    schema_version: '2.0',
+    schema_version: '2.1',
     worker_role: 'impl',
     run_id: input.runId,
     cluster_id: input.clusterId,
@@ -392,7 +395,7 @@ export function compileFinalizePacket(input: CompileFinalizePacketInput): Worker
   ];
 
   return {
-    schema_version: '2.0',
+    schema_version: '2.1',
     worker_role: 'finalize',
     run_id: input.runId,
     cluster_id: input.clusterId,
@@ -448,7 +451,7 @@ export function compilePreflightPacket(input: CompilePreflightPacketInput): Work
   ];
 
   return {
-    schema_version: '2.0',
+    schema_version: '2.1',
     worker_role: 'preflight',
     run_id: input.runId,
     cluster_id: input.clusterId,

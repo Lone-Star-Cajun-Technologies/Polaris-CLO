@@ -2,7 +2,7 @@ import { appendFileSync, mkdirSync, realpathSync, writeFileSync } from "node:fs"
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { dirname, join, isAbsolute, resolve } from "node:path";
-import { readState, validateState, writeStateAtomic, type LoopState, type ChildDispatchRecord } from "./checkpoint.js";
+import { readState, validateState, writeStateAtomic, type LoopState, type ChildDispatchRecord, type DispatchMode, type WorkerRuntimeState } from "./checkpoint.js";
 import { compileImplPacket, type WorkerPacket } from "./worker-packet.js";
 import { selectPromptMode } from "./worker-prompt.js";
 import {
@@ -22,6 +22,8 @@ export interface DispatchOptions {
   repoRoot: string;
   childId?: string;
   resultFile?: string;
+  /** Provider for direct-worker dispatch; if omitted, uses delegated mode */
+  provider?: string;
 }
 
 function fail(message: string): never {
@@ -109,6 +111,20 @@ function writePacketArtifact(packetPath: string, packet: WorkerPacket): void {
 }
 
 /**
+ * Determine dispatch mode based on provider presence.
+ */
+function determineDispatchMode(provider: string | undefined): DispatchMode {
+  return provider ? "direct-worker" : "delegated";
+}
+
+/**
+ * Determine initial runtime state based on dispatch mode.
+ */
+function determineRuntimeState(mode: DispatchMode): WorkerRuntimeState {
+  return mode === "delegated" ? "delegated" : "packet-created";
+}
+
+/**
  * Create a dispatch record with all required evidence.
  */
 function createDispatchRecord(
@@ -119,6 +135,9 @@ function createDispatchRecord(
   resultPath: string,
   provider?: string,
 ): ChildDispatchRecord {
+  const dispatchMode = determineDispatchMode(provider);
+  const runtimeState = determineRuntimeState(dispatchMode);
+
   return {
     dispatch_id: randomUUID(),
     child_id: childId,
@@ -129,6 +148,8 @@ function createDispatchRecord(
     provider,
     dispatched_at: new Date().toISOString(),
     status: "dispatched",
+    dispatch_mode: dispatchMode,
+    runtime_state: runtimeState,
   };
 }
 
@@ -244,28 +265,33 @@ export function runLoopDispatch(options: DispatchOptions): void {
   // ── Dispatch boundary enforcement ─────────────────────────────────────────
   // Halt immediately if active_child is already set (orphaned dispatch).
   // The parent/orchestrator MUST NOT re-dispatch or complete inline.
+  // Single-emission guard: check if this invalid-inline condition was already recorded
+  const invalidInlineAlreadyRecorded = state.step_cursor === "invalid-inline-attempt";
   try {
     assertNoActiveChildBeforeDispatch(state, telemetryFile);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    const event = {
-      event: "invalid-inline-attempt",
-      run_id: state.run_id,
-      child_id: state.active_child,
-      error: msg,
-      timestamp: new Date().toISOString(),
-    };
-    appendTelemetry(telemetryFile, event);
-    const defaultTelemetryFile = join(
-      options.repoRoot,
-      ".taskchain_artifacts",
-      "polaris-run",
-      "runs",
-      state.run_id,
-      "telemetry.jsonl",
-    );
-    if (defaultTelemetryFile !== telemetryFile) {
-      appendTelemetry(defaultTelemetryFile, event);
+    // Only emit telemetry once per invalid-inline condition
+    if (!invalidInlineAlreadyRecorded) {
+      const event = {
+        event: "invalid-inline-attempt",
+        run_id: state.run_id,
+        child_id: state.active_child,
+        reason: msg,
+        timestamp: new Date().toISOString(),
+      };
+      appendTelemetry(telemetryFile, event);
+      const defaultTelemetryFile = join(
+        options.repoRoot,
+        ".taskchain_artifacts",
+        "polaris-run",
+        "runs",
+        state.run_id,
+        "telemetry.jsonl",
+      );
+      if (defaultTelemetryFile !== telemetryFile) {
+        appendTelemetry(defaultTelemetryFile, event);
+      }
     }
     fail(msg);
   }
@@ -326,7 +352,7 @@ export function runLoopDispatch(options: DispatchOptions): void {
     childId,
     packetPath,
     resultPath,
-    undefined, // provider not known at this point
+    options.provider,
   );
 
   // ── Update state atomically with dispatch record ───────────────────────────
@@ -353,6 +379,9 @@ export function runLoopDispatch(options: DispatchOptions): void {
     prompt_estimated_tokens: packet.prompt_metrics.estimated_tokens,
     packet_path: packetPath,
     expected_result_path: resultPath,
+    dispatch_mode: dispatchRecord.dispatch_mode,
+    runtime_state: dispatchRecord.runtime_state,
+    provider: dispatchRecord.provider ?? null,
     timestamp: new Date().toISOString(),
   });
 

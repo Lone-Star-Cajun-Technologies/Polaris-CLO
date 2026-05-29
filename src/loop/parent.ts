@@ -495,7 +495,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
           event: "invalid-inline-attempt",
           run_id: state.run_id,
           child_id: nextChild,
-          error: msg,
+          reason: msg,
           timestamp: new Date().toISOString(),
         });
       }

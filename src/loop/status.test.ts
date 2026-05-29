@@ -322,10 +322,11 @@ describe("runLoopStatus", () => {
     const output = logs.join("\n");
     expect(output).toContain("Dispatch Evidence:");
     expect(output).toContain("POL-26");
-    expect(output).toContain("dispatched");
+    expect(output).toContain("Mode:");
+    expect(output).toContain("Runtime state:");
     expect(output).toContain("packets");
     expect(output).toContain("results");
-    expect(output).toContain("no (worker still running)"); // Result not present
+    expect(output).toContain("✗ no"); // Result not present
   });
 
   it("reports result_present=true when result file exists", () => {
@@ -388,5 +389,45 @@ describe("runLoopStatus", () => {
     const output = logs.join("\n");
     expect(output).toContain("No dispatch evidence found for active child");
     expect(output).toContain("POL-26 is active but no packet/result artifacts exist");
+  });
+
+  it("derives runtime_state as delegated when dispatch_mode is delegated and runtime_state is undefined", () => {
+    // This tests the case where old/existing data has dispatch_mode but no runtime_state
+    const stateWithDispatchNoRuntimeState = {
+      ...baseState,
+      active_child: "POL-26",
+      step_cursor: "dispatch",
+      open_children_meta: {
+        "POL-26": {
+          title: "Test child",
+          dispatch_record: {
+            dispatch_id: "test-dispatch-123",
+            child_id: "POL-26",
+            run_id: "pol-5-session-1",
+            cluster_id: "POL-5",
+            packet_path: join(testDir, ".polaris", "clusters", "POL-5", "packets", "POL-26-no-state.json"),
+            expected_result_path: join(testDir, ".polaris", "clusters", "POL-5", "results", "POL-26-no-state.json"),
+            dispatched_at: "2026-01-15T10:30:00.000Z",
+            status: "dispatched",
+            dispatch_mode: "delegated",
+            // Note: runtime_state is intentionally omitted
+          },
+        },
+      },
+    };
+    const stateFile = writeState(testDir, stateWithDispatchNoRuntimeState);
+    const logs: string[] = [];
+    const orig = console.log;
+    console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
+    try {
+      runLoopStatus({ repoRoot: testDir, stateFile });
+    } finally {
+      console.log = orig;
+    }
+    const output = logs.join("\n");
+    // Should show "delegated" not "unknown"
+    expect(output).toContain("Mode:             delegated");
+    expect(output).toContain("Runtime state:    delegated");
+    expect(output).not.toContain("Runtime state:    unknown");
   });
 });

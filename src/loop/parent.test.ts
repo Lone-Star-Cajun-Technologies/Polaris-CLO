@@ -565,11 +565,11 @@ describe("runParentLoop", () => {
 
     await runParentLoop({ stateFile, repoRoot: tmpDir });
 
-    // Parent now dispatches compiled WorkerPackets (schema_version 2.0)
+    // Parent now dispatches compiled WorkerPackets (schema_version 2.1)
     // instead of raw v1 BootstrapPackets. WorkerPacket is a structural
     // superset of BootstrapPacket so all adapter contracts remain valid.
     expect(calls[0].packet).toMatchObject({
-      schema_version: "2.0",
+      schema_version: "2.1",
       run_id: "test-run-001",
       cluster_id: "POL-99",
       active_child: "POL-100",

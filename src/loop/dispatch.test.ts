@@ -98,7 +98,7 @@ describe("runLoopDispatch", () => {
     const packet = JSON.parse(output);
     const updated = readState(stateFile);
 
-    expect(packet.schema_version).toBe("2.0");
+    expect(packet.schema_version).toBe("2.1");
     expect(packet.active_child).toBe("POL-145");
     expect(updated.active_child).toBe("POL-145");
     expect(updated.open_children).toEqual(["POL-145", "POL-146"]);
@@ -219,7 +219,7 @@ describe("runLoopDispatch", () => {
 
     // Read the packet and verify it contains expected fields
     const packet = JSON.parse(readFileSync(dispatchRecord?.packet_path!, "utf-8"));
-    expect(packet.schema_version).toBe("2.0");
+    expect(packet.schema_version).toBe("2.1");
     expect(packet.active_child).toBe("POL-145");
     expect(packet.run_id).toBe("pol-142-session-1");
     expect(packet.cluster_id).toBe("POL-142");
@@ -272,5 +272,62 @@ describe("runLoopDispatch", () => {
     expect(events[0].expected_result_path).toBeDefined();
     expect(events[0].packet_path).toContain("POL-142");
     expect(events[0].packet_path).toContain("packets");
+  });
+
+  // ── DISPATCH MODE TESTS ────────────────────────────────────────────────────
+
+  it("records delegated dispatch mode when no provider specified", () => {
+    const stateFile = writeState(testDir, baseState());
+
+    captureStdout(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+
+    const updated = readState(stateFile);
+    const dispatchRecord = updated.open_children_meta?.["POL-145"]?.dispatch_record;
+
+    expect(dispatchRecord).toBeDefined();
+    expect(dispatchRecord?.dispatch_mode).toBe("delegated");
+    expect(dispatchRecord?.runtime_state).toBe("delegated");
+    expect(dispatchRecord?.provider).toBeUndefined();
+  });
+
+  it("records direct-worker dispatch mode when provider is specified", () => {
+    const stateFile = writeState(testDir, baseState());
+
+    captureStdout(() => runLoopDispatch({
+      repoRoot: testDir,
+      stateFile,
+      provider: "copilot"
+    }));
+
+    const updated = readState(stateFile);
+    const dispatchRecord = updated.open_children_meta?.["POL-145"]?.dispatch_record;
+
+    expect(dispatchRecord).toBeDefined();
+    expect(dispatchRecord?.dispatch_mode).toBe("direct-worker");
+    expect(dispatchRecord?.runtime_state).toBe("packet-created");
+    expect(dispatchRecord?.provider).toBe("copilot");
+  });
+
+  it("emits dispatch_mode and runtime_state in telemetry", () => {
+    const artifactDir = join(testDir, ".taskchain_artifacts", "polaris-run");
+    const stateFile = writeState(testDir, baseState({ artifact_dir: artifactDir }));
+
+    captureStdout(() => runLoopDispatch({
+      repoRoot: testDir,
+      stateFile,
+      provider: "gemini"
+    }));
+
+    const telemetryFile = join(artifactDir, "runs", "pol-142-session-1", "telemetry.jsonl");
+    const events = readFileSync(telemetryFile, "utf-8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line))
+      .filter((event) => event.event === "child-dispatched");
+
+    expect(events).toHaveLength(1);
+    expect(events[0].dispatch_mode).toBe("direct-worker");
+    expect(events[0].runtime_state).toBe("packet-created");
+    expect(events[0].provider).toBe("gemini");
   });
 });

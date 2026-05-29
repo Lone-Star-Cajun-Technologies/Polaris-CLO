@@ -1,0 +1,5 @@
+{"event":"loop-aborted","run_id":"polaris-run-pol-201-2026-05-29-001","child_id":"POL-202","reason":"External worker failed to produce expected packet or result artifacts for POL-202: 'IMPLEMENT: Write runtime-state consolidation spec and migration inventory'. No bootstrap packet was reported by loop status. Run is blocked pending manual intervention to resolve missing worker artifacts.","timestamp":"2026-05-29T06:15:43.904Z"}
+{"event":"loop-aborted","run_id":"polaris-run-pol-201-2026-05-29-001","child_id":"POL-202","reason":"Re-dispatching with fixed packet artifact writing","timestamp":"2026-05-29T06:25:32.208Z"}
+{"event":"loop-checkpoint","run_id":"polaris-run-pol-201-2026-05-29-001","child_id":"POL-202","next_child":"POL-203","timestamp":"2026-05-29T06:43:48.750Z"}
+{"event":"canon-check-start","run_id":"polaris-run-pol-201-2026-05-29-001","child_id":"POL-203","canon_files_inspected":0,"changed_files_count":0,"timestamp":"2026-05-29T06:43:48.751Z"}
+{"event":"canon-check-result","run_id":"polaris-run-pol-201-2026-05-29-001","child_id":"POL-203","outcome":"aligned","conflicts":[],"timestamp":"2026-05-29T06:43:48.751Z"}

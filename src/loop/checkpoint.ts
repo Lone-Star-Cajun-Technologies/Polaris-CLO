@@ -18,6 +18,46 @@ export interface BlockerRecord {
 }
 
 /**
+ * Runtime states for worker dispatch lifecycle.
+ */
+export type WorkerRuntimeState =
+  | "packet-created"
+  | "delegated"
+  | "launching"
+  | "running"
+  | "waiting-for-approval"
+  | "blocked"
+  | "completed"
+  | "failed"
+  | "orphaned";
+
+/**
+ * Dispatch mode - how the worker is being managed.
+ */
+export type DispatchMode =
+  | "delegated"      // No provider, orchestrator owns the child
+  | "direct-worker"; // Provider explicitly specified
+
+/**
+ * Worker assignment record for delegated mode.
+ * Tracks how the Foreman assigned/coordinated the worker.
+ */
+export interface WorkerAssignmentRecord {
+  /** When the assignment was made */
+  assigned_at: string;
+  /** Type of assignment mechanism used */
+  assignment_type: "subagent" | "external-process" | "human-handoff" | "pending-escalation";
+  /** Subagent session ID (for subagent assignments) */
+  subagent_session_id?: string;
+  /** Process PID (for external process assignments) */
+  process_pid?: number;
+  /** Handoff token (for human handoff) */
+  handoff_token?: string;
+  /** Why escalation is needed (for pending-escalation) */
+  escalation_reason?: string;
+}
+
+/**
  * Dispatch record stored in child meta for durable dispatch evidence.
  */
 export interface ChildDispatchRecord {
@@ -37,8 +77,18 @@ export interface ChildDispatchRecord {
   provider?: string;
   /** Dispatch timestamp */
   dispatched_at: string;
-  /** Dispatch status */
+  /** Legacy dispatch status - superseded by runtime_state */
   status: "dispatched" | "completed" | "failed";
+  /** Dispatch mode - delegated or direct-worker */
+  dispatch_mode?: DispatchMode;
+  /** Runtime state - detailed lifecycle tracking */
+  runtime_state?: WorkerRuntimeState;
+  /** Last heartbeat timestamp (if any) */
+  last_heartbeat_at?: string;
+  /** Last known step from heartbeat */
+  last_heartbeat_step?: string;
+  /** Worker assignment record (for delegated mode) */
+  worker_assignment?: WorkerAssignmentRecord;
 }
 
 /**
@@ -192,6 +242,65 @@ export function validateState(state: unknown): string[] {
         if ("labels" in childMeta && childMeta["labels"] !== undefined) {
           if (!Array.isArray(childMeta["labels"]) || !childMeta["labels"].every((l: unknown) => typeof l === "string")) {
             errors.push(`open_children_meta["${childId}"].labels must be an array of strings`);
+          }
+        }
+        // Validate dispatch_record if present
+        if ("dispatch_record" in childMeta && childMeta["dispatch_record"] !== undefined) {
+          const dr = childMeta["dispatch_record"] as Record<string, unknown>;
+          if (typeof dr !== "object" || dr === null || Array.isArray(dr)) {
+            errors.push(`open_children_meta["${childId}"].dispatch_record must be an object`);
+          } else {
+            if ("dispatch_mode" in dr && dr["dispatch_mode"] !== undefined) {
+              if (!["delegated", "direct-worker"].includes(dr["dispatch_mode"] as string)) {
+                errors.push(`open_children_meta["${childId}"].dispatch_record.dispatch_mode must be "delegated" or "direct-worker"`);
+              }
+            }
+            if ("runtime_state" in dr && dr["runtime_state"] !== undefined) {
+              const validStates = ["packet-created", "delegated", "launching", "running", "waiting-for-approval", "blocked", "completed", "failed", "orphaned"];
+              if (!validStates.includes(dr["runtime_state"] as string)) {
+                errors.push(`open_children_meta["${childId}"].dispatch_record.runtime_state must be a valid WorkerRuntimeState`);
+              }
+            }
+            if ("last_heartbeat_at" in dr && dr["last_heartbeat_at"] !== undefined && typeof dr["last_heartbeat_at"] !== "string") {
+              errors.push(`open_children_meta["${childId}"].dispatch_record.last_heartbeat_at must be a string`);
+            }
+            if ("last_heartbeat_step" in dr && dr["last_heartbeat_step"] !== undefined && typeof dr["last_heartbeat_step"] !== "string") {
+              errors.push(`open_children_meta["${childId}"].dispatch_record.last_heartbeat_step must be a string`);
+            }
+            // Validate worker_assignment if present
+            if ("worker_assignment" in dr && dr["worker_assignment"] !== undefined) {
+              const wa = dr["worker_assignment"] as Record<string, unknown>;
+              if (typeof wa !== "object" || wa === null || Array.isArray(wa)) {
+                errors.push(`open_children_meta["${childId}"].dispatch_record.worker_assignment must be an object`);
+              } else {
+                if (typeof wa["assigned_at"] !== "string") {
+                  errors.push(`open_children_meta["${childId}"].dispatch_record.worker_assignment.assigned_at must be a string`);
+                }
+                const validAssignmentTypes = ["subagent", "external-process", "human-handoff", "pending-escalation"];
+                if (!validAssignmentTypes.includes(wa["assignment_type"] as string)) {
+                  errors.push(`open_children_meta["${childId}"].dispatch_record.worker_assignment.assignment_type must be a valid assignment type`);
+                }
+                // Conditional field validation based on assignment_type
+                const assignmentType = wa["assignment_type"] as string;
+                if (assignmentType === "subagent") {
+                  if (typeof wa["subagent_session_id"] !== "string" || (wa["subagent_session_id"] as string).length === 0) {
+                    errors.push(`open_children_meta["${childId}"].dispatch_record.worker_assignment.subagent_session_id must be a non-empty string for subagent assignments`);
+                  }
+                } else if (assignmentType === "external-process") {
+                  if (typeof wa["process_pid"] !== "number" || (wa["process_pid"] as number) <= 0) {
+                    errors.push(`open_children_meta["${childId}"].dispatch_record.worker_assignment.process_pid must be a number greater than 0 for external-process assignments`);
+                  }
+                } else if (assignmentType === "human-handoff") {
+                  if (typeof wa["handoff_token"] !== "string" || (wa["handoff_token"] as string).length === 0) {
+                    errors.push(`open_children_meta["${childId}"].dispatch_record.worker_assignment.handoff_token must be a non-empty string for human-handoff assignments`);
+                  }
+                } else if (assignmentType === "pending-escalation") {
+                  if (typeof wa["escalation_reason"] !== "string" || (wa["escalation_reason"] as string).length === 0) {
+                    errors.push(`open_children_meta["${childId}"].dispatch_record.worker_assignment.escalation_reason must be a non-empty string for pending-escalation assignments`);
+                  }
+                }
+              }
+            }
           }
         }
       }

@@ -69,9 +69,9 @@ describe("isWorkerPacket", () => {
 // ── compileImplPacket ─────────────────────────────────────────────────────────
 
 describe("compileImplPacket", () => {
-  it("produces schema_version 2.0 and worker_role impl", () => {
+  it("produces schema_version 2.1 and worker_role impl", () => {
     const p = compileImplPacket({ ...BASE, childId: "POL-121" });
-    expect(p.schema_version).toBe("2.0");
+    expect(p.schema_version).toBe("2.1");
     expect(p.worker_role).toBe("impl");
   });
 
