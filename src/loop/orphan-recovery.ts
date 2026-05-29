@@ -34,6 +34,16 @@ function resolveTelemetryFile(state: LoopState, repoRoot: string): string {
   return join(artifactDir, "runs", state.run_id, "telemetry.jsonl");
 }
 
+/** Returns true only when path is a non-empty string and the file exists. */
+function safeResultExists(path: unknown): boolean {
+  if (typeof path !== "string" || path.trim() === "") return false;
+  try {
+    return existsSync(path);
+  } catch {
+    return false;
+  }
+}
+
 // ── Recovery scenario types ───────────────────────────────────────────────────
 
 export type RecoveryReason =
@@ -299,22 +309,13 @@ export function checkOrphans(options: OrphanCheckOptions): OrphanCheckResult {
         detected.push(detection);
         emitRecoveryInitiated(telemetryFile, state.active_child, dr.dispatch_id, "no-acknowledgment");
         emitChildOrphaned(telemetryFile, state.active_child, dr.dispatch_id, null);
-        const newId = randomUUID();
+        const newId = resetForRedispatch(options.stateFile, state, state.active_child);
         emitChildRequeued(telemetryFile, state.active_child, newId, dr.dispatch_id);
-        // Update in-memory state: clear active_child and update dispatch_id
-        const updatedMeta = {
-          ...state.open_children_meta,
-          [state.active_child]: {
-            ...childMeta,
-            dispatch_record: { ...dr, dispatch_id: newId, runtime_state: "orphaned" as const },
-          },
-        };
-        writeStateAtomic(options.stateFile, { ...state, active_child: "", open_children_meta: updatedMeta });
         return { detected, checked };
       }
 
       // Scenario C: acknowledged, heartbeat lost, no result
-      if (dr.first_heartbeat_at && !existsSync(dr.expected_result_path)) {
+      if (dr.first_heartbeat_at && !safeResultExists(dr.expected_result_path)) {
         const lastHb = dr.last_heartbeat_at ?? dr.first_heartbeat_at;
         const heartbeatAge = now - new Date(lastHb).getTime();
         if (heartbeatAge > timeouts.orphanTimeoutMs) {
@@ -335,7 +336,7 @@ export function checkOrphans(options: OrphanCheckOptions): OrphanCheckResult {
 
       // Scenario D: worker-result event received but result artifact missing or invalid
       const hasWorkerResult = hasTelemetryEvent(telemetryFile, "worker-result", state.active_child);
-      if (hasWorkerResult && !existsSync(dr.expected_result_path)) {
+      if (hasWorkerResult && !safeResultExists(dr.expected_result_path)) {
         // Check for commits in child scope (simplified: assume no commits for now)
         const reason = "missing-result-artifact-no-commits" as RecoveryReason;
         const detection: RecoveryDetection = {
