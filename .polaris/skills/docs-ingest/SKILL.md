@@ -1,6 +1,8 @@
 ---
 name: docs-ingest
 description: Classify, route, and link documents from the raw drop zone into the canonical smartdocs/docs/ authority structure. Docs routing only — no source code changes, no implementation execution.
+role: librarian
+role_file: .polaris/roles/librarian.md
 ---
 
 # docs-ingest

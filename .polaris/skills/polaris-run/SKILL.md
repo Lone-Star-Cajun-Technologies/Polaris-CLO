@@ -1,6 +1,8 @@
 ---
 name: polaris-run
 description: Execute one governed Polaris Linear parent cluster per fresh session, with explicit child dispatch boundaries and post-child checkpointing.
+role: foreman
+role_file: .polaris/roles/foreman.md
 ---
 
 # polaris-run

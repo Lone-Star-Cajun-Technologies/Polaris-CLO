@@ -1,6 +1,8 @@
 ---
 name: docs-promote
 description: Review docs in smartdocs/docs/raw/ and smartdocs/docs/doctrine/candidate/ against linked code and active doctrine, then promote or deprecate using the Polaris CLI. Requires agent judgment — reads linked source areas, surfaces conflicts, and calls promote/deprecate only with explicit confirmation.
+role: librarian
+role_file: .polaris/roles/librarian.md
 ---
 
 # docs-promote
