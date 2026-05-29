@@ -1,0 +1,61 @@
+{
+  "schema_version": "v2",
+  "cluster_id": "POL-223",
+  "parent_id": "POL-223",
+  "implement_parent_id": "POL-224",
+  "run_id": null,
+  "status": "planned",
+  "analysis_doc": "smartdocs/docs/raw/pol-223-role-system-worker-assignment-child-recovery-analysis.md",
+  "created_at": "2026-05-29T19:50:00.000Z",
+  "children": [
+    {
+      "child_id": "POL-225",
+      "title": "SPEC: Role Architecture — foreman, worker, analyst, librarian role definitions",
+      "status": "backlog",
+      "blocked_by": [],
+      "scope": "Create .polaris/roles/ files and promote role-architecture.md spec"
+    },
+    {
+      "child_id": "POL-226",
+      "title": "SPEC: Skill Binding — role-to-skill attachment model",
+      "status": "backlog",
+      "blocked_by": ["POL-225"],
+      "scope": "Write skill-binding.md spec"
+    },
+    {
+      "child_id": "POL-227",
+      "title": "SPEC: Runtime Role Injection — bootstrap packets, status output, runtime maps",
+      "status": "backlog",
+      "blocked_by": ["POL-225"],
+      "scope": "Write runtime-role-injection.md spec"
+    },
+    {
+      "child_id": "POL-228",
+      "title": "SPEC: Worker Assignment — canonical assignment model for all provider scenarios",
+      "status": "backlog",
+      "blocked_by": ["POL-225"],
+      "scope": "Write worker-assignment.md spec"
+    },
+    {
+      "child_id": "POL-229",
+      "title": "SPEC: Child Recovery — orphan detection, reset, and redispatch architecture",
+      "status": "backlog",
+      "blocked_by": ["POL-228"],
+      "scope": "Write child-recovery.md spec"
+    },
+    {
+      "child_id": "POL-230",
+      "title": "SPEC: Connect Compatibility Addendum — role metadata for future Connect features",
+      "status": "backlog",
+      "blocked_by": ["POL-225", "POL-227"],
+      "scope": "Write connect-compatibility-addendum-roles.md spec"
+    },
+    {
+      "child_id": "POL-231",
+      "title": "SPEC: Role System Migration Plan — sequenced waves from role files to runtime enforcement",
+      "status": "backlog",
+      "blocked_by": ["POL-225", "POL-226", "POL-227", "POL-228", "POL-229", "POL-230"],
+      "scope": "Write role-system-migration-plan.md spec"
+    }
+  ]
+}
