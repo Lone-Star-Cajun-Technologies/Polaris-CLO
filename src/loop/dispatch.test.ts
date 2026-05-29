@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { runLoopDispatch, checkAcknowledgmentTimeout } from "./dispatch.js";
 import { readState } from "./checkpoint.js";
@@ -215,10 +215,11 @@ describe("runLoopDispatch", () => {
     const dispatchRecord = updated.open_children_meta?.["POL-145"]?.dispatch_record;
     expect(dispatchRecord).toBeDefined();
     expect(dispatchRecord?.packet_path).toBeDefined();
-    expect(existsSync(dispatchRecord?.packet_path!)).toBe(true);
+    const absolutePacketPath = resolve(testDir, dispatchRecord?.packet_path!);
+    expect(existsSync(absolutePacketPath)).toBe(true);
 
     // Read the packet and verify it contains expected fields
-    const packet = JSON.parse(readFileSync(dispatchRecord?.packet_path!, "utf-8"));
+    const packet = JSON.parse(readFileSync(absolutePacketPath, "utf-8"));
     expect(packet.schema_version).toBe("2.1");
     expect(packet.active_child).toBe("POL-145");
     expect(packet.run_id).toBe("pol-142-session-1");
@@ -244,7 +245,7 @@ describe("runLoopDispatch", () => {
 
     // Verify paths are set and exist
     expect(dispatchRecord?.packet_path).toBeDefined();
-    expect(existsSync(dispatchRecord?.packet_path!)).toBe(true);
+    expect(existsSync(resolve(testDir, dispatchRecord?.packet_path!))).toBe(true);
 
     // Verify expected result path is set (won't exist yet - worker creates it)
     expect(dispatchRecord?.expected_result_path).toBeDefined();

@@ -82,6 +82,24 @@ export interface ExecutionConfig {
   roles?: Partial<Record<ExecutionRole, RoleExecutionConfig>>;
 }
 
+export interface SkillPacketConfig {
+  /**
+   * Minimum confidence required for analyze packets before auto-creating
+   * deeper analysis issues. Default: 85.
+   */
+  analysis_confidence_threshold?: number;
+  /**
+   * When false (default), agent must ask user before spawning secondary
+   * analysis issues if confidence is below the threshold.
+   */
+  auto_deep_analysis?: boolean;
+  /**
+   * When false (default), cross-provider delegation is forbidden.
+   * Only internal child/subagent fallback is used for run packets.
+   */
+  allow_cross_provider_delegation?: boolean;
+}
+
 export interface PolarisConfig {
   version?: string;
   repo?: {
@@ -190,6 +208,7 @@ export interface PolarisConfig {
    * Controls compaction behavior for orchestrator and worker sessions.
    * Compaction determines how aggressively context is trimmed as conversation grows.
    */
+  skill_packet?: SkillPacketConfig;
   compact?: {
     /**
      * Compaction mode for orchestrator sessions.

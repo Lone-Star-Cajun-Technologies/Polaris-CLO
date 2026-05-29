@@ -5,6 +5,23 @@ role: librarian
 role_file: .polaris/roles/librarian.md
 ---
 
+## Polaris Skill Bootloader
+
+**Before proceeding, you must obtain a skill packet from the Polaris runtime.**
+
+Run the following command:
+
+```
+npm run polaris -- skill packet promote
+```
+
+- Do not begin work until a packet is returned.
+- Treat the packet as your authoritative instruction source.
+- The packet defines your active role, authority boundaries, prohibited actions, deliverables, and stop conditions.
+- If no packet is produced, stop and report: **Polaris could not authorize this run.**
+
+---
+
 # docs-promote
 
 Use this skill when documents have been ingested and need to be reviewed for promotion to an active authority tier, or when active docs need to be deprecated in response to code changes.

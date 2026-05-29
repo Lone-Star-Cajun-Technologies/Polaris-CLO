@@ -1,6 +1,6 @@
 import { writeFileSync, existsSync, readFileSync } from "node:fs";
 import { resolve, join } from "node:path";
-import type { Command } from "commander";
+import { Command } from "commander";
 import {
   detectCompactionProviders,
   detectRepoAnalysisProviders,
@@ -126,10 +126,6 @@ export function runInit(options: InitOptions = {}): void {
  * Registers the `init` subcommand on a Commander program.
  */
 export function createInitCommand(options: InitOptions = {}): Command {
-  // Lazy import to avoid pulling Commander into every module.
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { Command } = require("commander") as typeof import("commander");
-
   const cmd = new Command("init")
     .description("initialise polaris.config.json and detect compaction providers")
     .option("--dry-run", "print generated config to stdout without writing")

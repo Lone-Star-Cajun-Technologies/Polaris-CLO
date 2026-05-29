@@ -17,6 +17,7 @@ import { createDocsCommand, createDoctrineCommand } from "../smartdocs-engine/in
 import { createConfigCommand, runConfigShow } from "../config/show.js";
 
 import { createTrackerCommand } from "./tracker.js";
+import { createSkillCommand } from "../skill-packet/index.js";
 
 export interface PolarisCommandHandlers {
   runLoopStatus?: typeof runLoopStatus;
@@ -107,6 +108,12 @@ export function createPolarisCommand(options: PolarisCommandOptions = {}): Comma
 
   program.addCommand(
     createTrackerCommand({
+      repoRoot,
+    }),
+  );
+
+  program.addCommand(
+    createSkillCommand({
       repoRoot,
     }),
   );

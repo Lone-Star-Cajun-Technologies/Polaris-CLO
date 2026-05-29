@@ -5,6 +5,23 @@ role: analyst
 role_file: .polaris/roles/analyst.md
 ---
 
+## Polaris Skill Bootloader
+
+**Before proceeding, you must obtain a skill packet from the Polaris runtime.**
+
+Run the following command:
+
+```
+npm run polaris -- skill packet analyze
+```
+
+- Do not begin work until a packet is returned.
+- Treat the packet as your authoritative instruction source.
+- The packet defines your active role, authority boundaries, prohibited actions, deliverables, and stop conditions.
+- If no packet is produced, stop and report: **Polaris could not authorize this run.**
+
+---
+
 # polaris-analyze
 
 Use this skill when the user asks to analyze or break down a Polaris issue before execution.

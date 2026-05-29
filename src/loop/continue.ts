@@ -172,11 +172,18 @@ export function runLoopContinue(options: ContinueOptions): void {
   const newCompletedChildren = completedChild
     ? [...state.completed_children, completedChild]
     : state.completed_children;
+  const completedSet = new Set(newCompletedChildren);
+  const prunedOpenChildrenMeta = state.open_children_meta
+    ? Object.fromEntries(
+        Object.entries(state.open_children_meta).filter(([id]) => !completedSet.has(id)),
+      )
+    : undefined;
   const updatedState = {
     ...state,
     active_child: "",
     completed_children: newCompletedChildren,
     open_children: remainingOpenChildren,
+    open_children_meta: prunedOpenChildrenMeta,
     step_cursor: "checkpoint",
     next_open_child: nextChild,
     status: nextChild ? "running" : "cluster-complete",

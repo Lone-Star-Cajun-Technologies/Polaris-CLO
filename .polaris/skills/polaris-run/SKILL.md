@@ -5,6 +5,23 @@ role: foreman
 role_file: .polaris/roles/foreman.md
 ---
 
+## Polaris Skill Bootloader
+
+**Before proceeding, you must obtain a skill packet from the Polaris runtime.**
+
+Run the following command:
+
+```
+npm run polaris -- skill packet run
+```
+
+- Do not begin work until a packet is returned.
+- Treat the packet as your authoritative instruction source.
+- The packet defines your active role, authority boundaries, prohibited actions, deliverables, and stop conditions.
+- If no packet is produced, stop and report: **Polaris could not authorize this run.**
+
+---
+
 # polaris-run
 
 Use this skill when the user asks to run a governed Polaris implementation cluster or standalone Polaris issue.

@@ -1,7 +1,7 @@
 import { appendFileSync, mkdirSync, realpathSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { dirname, join, isAbsolute, resolve } from "node:path";
+import { dirname, join, isAbsolute, resolve, relative } from "node:path";
 import { readState, validateState, writeStateAtomic, type LoopState, type ChildDispatchRecord, type DispatchMode, type WorkerRuntimeState, type WorkerAssignmentRecord } from "./checkpoint.js";
 import { compileImplPacket, type WorkerPacket, type WorkerRoleContext } from "./worker-packet.js";
 import { loadConfig } from "../config/loader.js";
@@ -136,13 +136,17 @@ function buildClusterArtifactPaths(
   clusterId: string,
   childId: string,
   dispatchId: string,
-): { packetPath: string; resultPath: string } {
+): { packetPath: string; resultPath: string; relativePacketPath: string; relativeResultPath: string } {
   const packetDir = getClusterPacketDir(repoRoot, clusterId);
   const resultDir = getClusterResultDir(repoRoot, clusterId);
   const filename = `${childId}-${dispatchId}.json`;
+  const packetPath = join(packetDir, filename);
+  const resultPath = join(resultDir, filename);
   return {
-    packetPath: join(packetDir, filename),
-    resultPath: join(resultDir, filename),
+    packetPath,
+    resultPath,
+    relativePacketPath: relative(repoRoot, packetPath),
+    relativeResultPath: relative(repoRoot, resultPath),
   };
 }
 
@@ -484,7 +488,7 @@ function buildPacket(
     runId: state.run_id,
     clusterId: state.cluster_id,
     childId,
-    branch: state.branch ?? getCurrentBranch(repoRoot),
+    branch: state.branch || getCurrentBranch(repoRoot),
     stateFile: canonicalPath(stateFile),
     telemetryFile,
     issueContext,
@@ -585,7 +589,7 @@ export function runLoopDispatch(options: DispatchOptions): void {
   // Create cluster-scoped packet artifact BEFORE updating state.
   // This ensures "dispatched" only means a durable record exists.
   const dispatchId = randomUUID();
-  const { packetPath, resultPath } = buildClusterArtifactPaths(
+  const { packetPath, resultPath, relativePacketPath, relativeResultPath } = buildClusterArtifactPaths(
     options.repoRoot,
     state.cluster_id,
     childId,
@@ -613,8 +617,8 @@ export function runLoopDispatch(options: DispatchOptions): void {
     state.run_id,
     state.cluster_id,
     childId,
-    packetPath,
-    resultPath,
+    relativePacketPath,
+    relativeResultPath,
     packet.role_context,
     resolvedProvider,
   );

@@ -76,4 +76,9 @@ export const DEFAULT_CONFIG: Omit<Required<PolarisConfig>, "canon" | "providers"
     orchestratorMode: "standard",
     workerMode: "standard",
   },
+  skill_packet: {
+    analysis_confidence_threshold: 85,
+    auto_deep_analysis: false,
+    allow_cross_provider_delegation: false,
+  },
 };

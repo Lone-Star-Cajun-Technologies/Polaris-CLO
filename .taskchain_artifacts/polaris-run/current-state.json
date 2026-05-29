@@ -2,7 +2,7 @@
   "schema_version": "1.0",
   "run_id": "polaris-run-pol-201-2026-05-29-001",
   "cluster_id": "POL-201",
-  "branch": "philmeaux/pol-201-implement-runtime-state-consolidation-and-cluster-state",
+  "branch": "",
   "session_type": "implement",
   "active_child": "POL-203",
   "completed_children": [
@@ -25,8 +25,8 @@
   "status": "running",
   "next_open_child": "POL-203",
   "dispatch_boundary": {
-    "dispatch_epoch": 3,
-    "continue_epoch": 2,
+    "dispatch_epoch": 2,
+    "continue_epoch": 1,
     "last_dispatched_child": "POL-203"
   },
   "run_bootstrap_seal": {
@@ -34,41 +34,29 @@
     "run_id": "polaris-run-pol-201-2026-05-29-001",
     "cluster_id": "POL-201",
     "open_children_sha": "9e425242cec721fa2b809a6e8c1ade78cafa867f762d21fec753f3ae1b3a74a5",
-    "sealed_at": "2026-05-29T06:03:58.989Z"
-  },
-  "completed_children_meta": {
-    "POL-202": {
-      "dispatch_record": {
-        "dispatch_id": "dcbec452-411c-43ea-8f5f-42abd91ec925",
-        "child_id": "POL-202",
-        "run_id": "polaris-run-pol-201-2026-05-29-001",
-        "cluster_id": "POL-201",
-        "packet_path": ".polaris/clusters/POL-201/packets/POL-202-8f34e9cf-ff08-4db7-9de3-13b040a967b7.json",
-        "expected_result_path": ".polaris/clusters/POL-201/results/POL-202-8f34e9cf-ff08-4db7-9de3-13b040a967b7.json",
-        "dispatched_at": "2026-05-29T06:26:07.279Z",
-        "completed_at": "2026-05-29T06:43:48.748Z",
-        "status": "completed"
-      },
-      "result": {
-        "child_id": "POL-202",
-        "status": "success",
-        "commit_hash": "9b10f81",
-        "validation": "passed",
-        "completed_at": "2026-05-29T06:43:48.748Z"
-      }
-    }
+    "sealed_at": "2026-05-29T19:09:50.450Z"
   },
   "open_children_meta": {
     "POL-203": {
       "dispatch_record": {
-        "dispatch_id": "14fe09d9-6f35-49e1-baa9-931ae0413f71",
+        "dispatch_id": "fb5845a1-c676-4cfd-ad39-4a711cca0b8a",
         "child_id": "POL-203",
         "run_id": "polaris-run-pol-201-2026-05-29-001",
         "cluster_id": "POL-201",
-        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-201/packets/POL-203-a0affa66-5f3f-44cc-9dbc-df835fd5e3aa.json",
-        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-201/results/POL-203-a0affa66-5f3f-44cc-9dbc-df835fd5e3aa.json",
-        "dispatched_at": "2026-05-29T06:43:52.421Z",
-        "status": "dispatched"
+        "packet_path": ".polaris/clusters/POL-201/packets/POL-203-f685895b-2b16-4542-9b62-0535a7d32cfc.json",
+        "expected_result_path": ".polaris/clusters/POL-201/results/POL-203-f685895b-2b16-4542-9b62-0535a7d32cfc.json",
+        "dispatched_at": "2026-05-29T19:10:35.101Z",
+        "status": "dispatched",
+        "dispatch_mode": "delegated",
+        "runtime_state": "delegated",
+        "worker_id": "63f82a78-fffe-49ab-9fb6-08e334af34ec",
+        "session_id": null,
+        "attachment_capable": false,
+        "worker_assignment": {
+          "assigned_at": "2026-05-29T19:10:35.101Z",
+          "assignment_type": "pending-escalation",
+          "escalation_reason": "No assignment mechanism available: subagent not supported, no external-process or human-handoff configured"
+        }
       }
     }
   }

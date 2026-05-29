@@ -5,6 +5,23 @@ role: librarian
 role_file: .polaris/roles/librarian.md
 ---
 
+## Polaris Skill Bootloader
+
+**Before proceeding, you must obtain a skill packet from the Polaris runtime.**
+
+Run the following command:
+
+```
+npm run polaris -- skill packet ingest
+```
+
+- Do not begin work until a packet is returned.
+- Treat the packet as your authoritative instruction source.
+- The packet defines your active role, authority boundaries, prohibited actions, deliverables, and stop conditions.
+- If no packet is produced, stop and report: **Polaris could not authorize this run.**
+
+---
+
 # docs-ingest
 
 Use this skill when documents need to be classified and routed into the canonical Smart Docs hierarchy.
@@ -33,6 +50,12 @@ Use this skill when documents need to be classified and routed into the canonica
 - Update Polaris map entries to link docs to code areas
 - Propose doctrine candidates (route to `doctrine/candidate/`; never promote to `doctrine/active/` without user approval)
 - Emit telemetry events
+
+## Drop zone rule
+
+**All newly generated documents must be placed in `smartdocs/docs/raw/` first.**
+
+No document may be written directly to `specs/active/`, `doctrine/active/`, `architecture/`, or `decisions/`. Every document enters through `raw/` and is promoted only after classification and approval.
 
 ## Hard rules — what docs-ingest must NOT do
 
