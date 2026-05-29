@@ -1,0 +1,61 @@
+{
+  "spec": "connect-compatibility.md",
+  "issue": "POL-216",
+  "cluster": "POL-211",
+  "run_id": "polaris-run-pol-211-2026-05-29-001",
+  "branch": "claude/lucid-newton-IC370",
+  "created": "2026-05-29",
+  "author": "Polaris worker session (POL-216)",
+  "sources": [
+    {
+      "file": "src/loop/checkpoint.ts",
+      "purpose": "Gap analysis — current ChildDispatchRecord and LoopState schema"
+    },
+    {
+      "file": "smartdocs/docs/specs/active/worker-session-contract.md",
+      "issue": "POL-214",
+      "purpose": "Session field definitions, attachment capability model, gap analysis baseline"
+    }
+  ],
+  "design_decisions": [
+    {
+      "decision": "Feature flags are additive and independent",
+      "rationale": "Each Connect feature can be enabled without enabling others; no ordering dependency is enforced at the flag level, but a recommended enablement order is documented"
+    },
+    {
+      "decision": "attachment_capable is a stored boolean, not inferred from provider",
+      "rationale": "Inferring capability from provider name at Connect query time is fragile; the adapter writes the authoritative value at dispatch time"
+    },
+    {
+      "decision": "session_id is top-level on ChildDispatchRecord, not nested under WorkerAssignmentRecord",
+      "rationale": "worker_assignment.subagent_session_id is provider-specific and buried; a top-level session_id gives Connect a single field lookup regardless of dispatch mode"
+    },
+    {
+      "decision": "Connect does not write to LoopState directly",
+      "rationale": "State mutations go through Polaris API to maintain single-writer invariant; Connect is a read-mostly system with narrow write paths (interrupt/takeover events via API)"
+    },
+    {
+      "decision": "Operator audit events (operator-interrupt, operator-takeover) are deferred to Connect enablement",
+      "rationale": "These events require Connect to be implemented; their schemas are documented here for planning but the appendAuditEvent function is out of scope for POL-216"
+    }
+  ],
+  "gap_summary": {
+    "ChildDispatchRecord_gaps": [
+      "session_id",
+      "worker_id",
+      "attachment_capable",
+      "first_heartbeat_at",
+      "heartbeat_count"
+    ],
+    "LoopState_gaps": [],
+    "missing_event_types": [
+      "operator-interrupt",
+      "operator-takeover"
+    ]
+  },
+  "out_of_scope": [
+    "EVOconnect implementation",
+    "Source code changes to checkpoint.ts",
+    "Migration plan (covered in POL-217)"
+  ]
+}
