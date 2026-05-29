@@ -165,6 +165,64 @@ function formatHeartbeat(heartbeat: WorkerHeartbeat): string {
   return `${time}: ${status}`;
 }
 
+/**
+ * Worker blocked event from telemetry.
+ */
+interface WorkerBlockedEvent {
+  event: "worker-blocked";
+  run_id: string;
+  child_id: string;
+  reason: "needs-approval" | "approval-timeout" | "error" | "unknown";
+  approval_type?: "destructive" | "cost" | "security" | "ambiguous" | "external";
+  description?: string;
+  blocker_id?: string;
+  timestamp: string;
+}
+
+/**
+ * Find latest worker-blocked event for active child.
+ */
+function findWorkerBlocked(
+  telemetryFile: string,
+  activeChild: string | null,
+): WorkerBlockedEvent | null {
+  if (!activeChild || !existsSync(telemetryFile)) return null;
+
+  try {
+    const content = readFileSync(telemetryFile, "utf-8");
+    const lines = content.trim().split("\n").filter(Boolean);
+
+    for (let i = lines.length - 1; i >= 0; i--) {
+      try {
+        const event = JSON.parse(lines[i]) as WorkerBlockedEvent;
+        if (event.event === "worker-blocked" && event.child_id === activeChild) {
+          return event;
+        }
+      } catch {
+        continue;
+      }
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+/**
+ * Format blocked event for display.
+ */
+function formatBlockedEvent(event: WorkerBlockedEvent): string {
+  const time = new Date(event.timestamp).toLocaleTimeString();
+  let msg = `${time}: ${event.reason}`;
+  if (event.approval_type) {
+    msg += ` (${event.approval_type})`;
+  }
+  if (event.description) {
+    msg += ` - ${event.description.slice(0, 60)}${event.description.length > 60 ? "..." : ""}`;
+  }
+  return msg;
+}
+
 export interface StatusOptions {
   stateFile?: string;
   repoRoot: string;
@@ -277,6 +335,7 @@ export function runLoopStatus(options: StatusOptions): void {
     state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "polaris-run");
   const telemetryFile = join(artifactDir, "runs", state.run_id, "telemetry.jsonl");
   const workerHeartbeat = findWorkerHeartbeat(telemetryFile, state.active_child || null);
+  const workerBlocked = findWorkerBlocked(telemetryFile, state.active_child || null);
 
   if (options.json) {
     console.log(
@@ -317,6 +376,15 @@ export function runLoopStatus(options: StatusOptions): void {
                 progress_pct: workerHeartbeat.progress_pct ?? null,
                 files_changed: workerHeartbeat.files_changed ?? null,
                 current_file: workerHeartbeat.current_file ?? null,
+              }
+            : null,
+          blocked: workerBlocked
+            ? {
+                reason: workerBlocked.reason,
+                approval_type: workerBlocked.approval_type ?? null,
+                description: workerBlocked.description ?? null,
+                blocker_id: workerBlocked.blocker_id ?? null,
+                timestamp: workerBlocked.timestamp,
               }
             : null,
         },
@@ -384,8 +452,34 @@ export function runLoopStatus(options: StatusOptions): void {
     lines.push("  This may indicate a dispatch failure or orphaned state.");
   }
 
+  // ── Worker blocked (needs approval) ───────────────────────────────────────
+  if (workerBlocked) {
+    lines.push("");
+    lines.push("🛑 WORKER BLOCKED - AWAITING APPROVAL");
+    lines.push(`  Reason:      ${workerBlocked.reason}`);
+    if (workerBlocked.approval_type) {
+      lines.push(`  Type:        ${workerBlocked.approval_type}`);
+    }
+    if (workerBlocked.description) {
+      lines.push(`  Details:     ${workerBlocked.description}`);
+    }
+    if (workerBlocked.blocker_id) {
+      lines.push(`  Blocker ID:  ${workerBlocked.blocker_id}`);
+    }
+    lines.push(`  Blocked at:  ${formatBlockedEvent(workerBlocked)}`);
+    lines.push("");
+    lines.push("To resolve:");
+    lines.push(`  1. Read the packet: cat ${dispatchEvidence?.packet_path ?? "<packet path>"}`);
+    lines.push(`  2. Check worker context in the packet instructions`);
+    lines.push(`  3. Either:`);
+    lines.push(`     a) Approve: Append approval response to telemetry and resume`);
+    lines.push(`     b) Abort: Run 'polaris loop abort --child ${state.active_child}' to unblock`);
+    lines.push("");
+    lines.push("⚠️  DO NOT dispatch another worker until this block is resolved!");
+  }
+
   // ── Worker heartbeat (progress) ───────────────────────────────────────────
-  if (workerHeartbeat) {
+  else if (workerHeartbeat) {
     lines.push("");
     lines.push("Worker Progress (last heartbeat):");
     lines.push(`  Step:      ${workerHeartbeat.step_cursor}`);
@@ -406,6 +500,7 @@ export function runLoopStatus(options: StatusOptions): void {
     lines.push("  Worker may be:");
     lines.push("    - Starting up (heartbeats start after packet read)");
     lines.push("    - Stuck or crashed (no heartbeats in telemetry.jsonl)");
+    lines.push("    - Blocked on approval (old worker version without block telemetry)");
     lines.push("    - Running without heartbeat compliance (old worker version)");
   }
 
