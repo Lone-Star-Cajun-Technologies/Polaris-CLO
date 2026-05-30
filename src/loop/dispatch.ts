@@ -502,7 +502,7 @@ function buildPacket(
   });
 }
 
-function buildClusterStateFromLoopState(state: LoopState): ClusterState {
+function buildClusterStateFromLoopState(state: LoopState, previousGeneration?: number): ClusterState {
   const childOrder = [
     ...state.completed_children,
     ...state.open_children,
@@ -514,16 +514,26 @@ function buildClusterStateFromLoopState(state: LoopState): ClusterState {
   for (const childId of childOrder) {
     if (!childId || seen.has(childId)) continue;
     seen.add(childId);
+
+    let status: ChildState["status"];
+    if (state.completed_children.includes(childId)) {
+      status = "done";
+    } else if (childId === state.active_child) {
+      status = "dispatched";
+    } else {
+      status = "ready";
+    }
+
     child_states.push({
       id: childId,
-      status: state.completed_children.includes(childId) ? "done" : "ready",
+      status,
     });
   }
 
   return {
     schema_version: "1.0",
     cluster_id: state.cluster_id,
-    state_generation: 1,
+    state_generation: previousGeneration !== undefined ? previousGeneration + 1 : 1,
     child_states,
     claim_metadata: {},
     packet_pointers: {},
@@ -543,7 +553,8 @@ function syncClusterDispatchState(
   repoRoot: string,
 ): void {
   const existingState = readClusterStateSync(state.cluster_id, repoRoot);
-  const clusterState = existingState ?? buildClusterStateFromLoopState(state);
+  const previousGeneration = existingState?.state_generation;
+  const clusterState = existingState ?? buildClusterStateFromLoopState(state, previousGeneration);
   const claimedAt = dispatchRecord.dispatched_at;
   const claimedAtMs = new Date(claimedAt).getTime();
   const expiresAt = new Date(
