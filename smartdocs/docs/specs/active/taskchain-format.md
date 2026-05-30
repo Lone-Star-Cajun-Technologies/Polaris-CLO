@@ -1,3 +1,15 @@
+---
+kind: spec
+status: active
+implements: 
+related: smartdocs/docs/specs/active/taskchain-authoring.md
+supersedes: 
+superseded_by: 
+depends_on: 
+validates: 
+source_paths: 
+---
+
 # Native Polaris Taskchain Format
 
 ## Purpose

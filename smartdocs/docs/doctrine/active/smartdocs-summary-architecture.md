@@ -1,11 +1,19 @@
 ---
-status: candidate
+kind: doctrine
+status: active
 candidate-since: 2026-05-28
 source: smartdocs/docs/raw/smartdocs-summary-architecture.md
 doc-type: doctrine
 confidence: 0.95
 recommended-action: promote
 overlap-analysis: No overlap with existing active doctrine. Establishes POLARIS.md/SUMMARY.md responsibility boundaries, the traversal model, and SUMMARY.md authority constraints (always informational). Directly governs behavior of seed-instructions, seed-summary, and validate-instructions tooling.
+implements: ""
+related: ""
+supersedes: ""
+superseded_by: ""
+depends_on: ""
+validates: ""
+source_paths: src/smartdocs-engine/validate-instructions.ts,src/smartdocs-engine/seed-instructions.ts
 ---
 
 # Smart Docs Summary Architecture

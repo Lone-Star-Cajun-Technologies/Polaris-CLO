@@ -312,7 +312,29 @@ describe("addCandidateGovernanceMetadata", () => {
     expect(result).toContain("overlap-analysis: pending");
   });
 
-  it("does not modify content when all governance fields already present", () => {
+  it("does not modify content when all governance and relationship fields already present", () => {
+    const content = [
+      "---",
+      "doc-type: doctrine",
+      "confidence: 0.9",
+      "recommended-action: promote",
+      "overlap-analysis: none",
+      "implements: ",
+      "related: ",
+      "supersedes: ",
+      "superseded_by: ",
+      "depends_on: ",
+      "validates: ",
+      "source_paths: ",
+      "---",
+      "",
+      "# Hello",
+    ].join("\n");
+    const result = addCandidateGovernanceMetadata(content, "other");
+    expect(result).toBe(content);
+  });
+
+  it("adds relationship scaffolding fields when only core governance fields are present", () => {
     const content = [
       "---",
       "doc-type: doctrine",
@@ -324,7 +346,9 @@ describe("addCandidateGovernanceMetadata", () => {
       "# Hello",
     ].join("\n");
     const result = addCandidateGovernanceMetadata(content, "other");
-    expect(result).toBe(content);
+    expect(result).toContain("implements: ");
+    expect(result).toContain("source_paths: ");
+    expect(result).not.toContain("doc-type: other");
   });
 });
 

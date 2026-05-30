@@ -1,3 +1,15 @@
+---
+kind: spec
+status: active
+implements: 
+related: 
+supersedes: 
+superseded_by: 
+depends_on: 
+validates: 
+source_paths: src/loop/execution-adapter.ts
+---
+
 # Polaris Execution Adapters
 
 ## Overview

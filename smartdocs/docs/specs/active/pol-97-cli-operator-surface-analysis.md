@@ -1,3 +1,16 @@
+---
+kind: spec
+status: active
+source: POL-97
+implements: 
+related: 
+supersedes: 
+superseded_by: 
+depends_on: 
+validates: 
+source_paths: src/cli/index.ts
+---
+
 # POL-97 CLI/operator surface analysis
 
 ## Decision

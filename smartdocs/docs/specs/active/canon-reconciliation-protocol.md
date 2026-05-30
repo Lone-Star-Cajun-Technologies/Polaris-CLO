@@ -1,3 +1,17 @@
+---
+kind: spec
+status: active
+source: POL-50
+created: 2026-05-23
+implements: 
+related: 
+supersedes: 
+superseded_by: 
+depends_on: 
+validates: 
+source_paths: src/smartdocs-engine/canon-check.ts
+---
+
 # Canon Reconciliation Check Protocol
 
 **Status:** active spec

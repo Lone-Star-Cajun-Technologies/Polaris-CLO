@@ -1,3 +1,15 @@
+---
+kind: spec
+status: active
+implements: 
+related: 
+supersedes: 
+superseded_by: 
+depends_on: 
+validates: 
+source_paths: src/tracker/schema.ts,src/config/schema.ts
+---
+
 # Bootstrap current-state.json Schema
 
 **Note:** This is the bootstrap schema for the temporary `bootstrap-run` skill. The full Polaris current-state schema (used by `polaris loop`) will be richer and will be documented in a future `docs/spec/polaris-architecture-spec.md` spec.

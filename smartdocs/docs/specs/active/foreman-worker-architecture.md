@@ -1,3 +1,17 @@
+---
+kind: spec
+status: active
+source: POL-212
+created: 2026-05-29
+implements: 
+related: 
+supersedes: 
+superseded_by: 
+depends_on: 
+validates: 
+source_paths: src/loop/dispatch-state.ts,src/loop/dispatch-boundary.ts,src/loop/dispatch.ts
+---
+
 # Foreman-to-Worker Architecture Spec
 
 **Status:** Authoritative architecture spec  

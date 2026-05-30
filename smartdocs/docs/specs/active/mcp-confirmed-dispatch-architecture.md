@@ -1,3 +1,16 @@
+---
+kind: spec
+status: active
+source: POL-89
+implements: 
+related: 
+supersedes: 
+superseded_by: 
+depends_on: 
+validates: 
+source_paths: src/mcp/tools/loop-continue.ts
+---
+
 # MCP Confirmed-Dispatch Architecture
 
 **Status:** Authoritative architecture spec  

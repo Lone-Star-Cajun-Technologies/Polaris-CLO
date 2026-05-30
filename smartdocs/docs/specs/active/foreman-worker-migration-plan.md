@@ -1,3 +1,17 @@
+---
+kind: spec
+status: active
+source: POL-217
+created: 2026-05-29
+implements: 
+related: 
+supersedes: 
+superseded_by: 
+depends_on: 
+validates: 
+source_paths: 
+---
+
 # Foreman-Worker Migration Plan
 
 **Status:** Authoritative migration plan

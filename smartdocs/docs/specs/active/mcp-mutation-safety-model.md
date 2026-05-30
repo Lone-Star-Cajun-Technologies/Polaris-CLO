@@ -1,3 +1,16 @@
+---
+kind: spec
+status: active
+source: POL-80
+implements: 
+related: 
+supersedes: 
+superseded_by: 
+depends_on: 
+validates: 
+source_paths: src/mcp/tools/loop-continue.ts,src/mcp/tools/loop-dry-run.ts
+---
+
 # MCP Mutation Gating and Dry-Run Continuation Contract
 
 **Issue:** POL-80  

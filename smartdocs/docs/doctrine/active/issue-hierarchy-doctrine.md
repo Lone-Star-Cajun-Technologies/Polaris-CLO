@@ -1,11 +1,19 @@
 ---
-status: candidate
+kind: doctrine
+status: active
 candidate-since: 2026-05-28
 source: smartdocs/docs/raw/issue-hierarchy-doctrine.md
 doc-type: doctrine
 confidence: 0.95
 recommended-action: promote
 overlap-analysis: No overlap with existing active doctrine. Defines ANALYZE/IMPLEMENT parent split, polaris-run targeting rules, and naming convention — all absent from current smartdocs/docs/doctrine/active/.
+implements: ""
+related: ""
+supersedes: ""
+superseded_by: ""
+depends_on: ""
+validates: ""
+source_paths: src/loop/index.ts,src/cli/index.ts
 ---
 
 # Issue Hierarchy Doctrine

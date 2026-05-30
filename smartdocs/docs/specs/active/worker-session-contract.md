@@ -1,3 +1,17 @@
+---
+kind: spec
+status: active
+source: POL-214
+created: 2026-05-29
+implements: 
+related: smartdocs/docs/specs/active/worker-lifecycle-state-machine.md
+supersedes: 
+superseded_by: 
+depends_on: 
+validates: 
+source_paths: src/loop/dispatch-state.ts
+---
+
 # Worker Session Contract Spec
 
 **Status:** Authoritative session contract spec  

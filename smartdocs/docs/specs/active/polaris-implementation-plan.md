@@ -1,3 +1,16 @@
+---
+kind: spec
+status: active
+source: POL-1
+implements: 
+related: 
+supersedes: 
+superseded_by: 
+depends_on: 
+validates: 
+source_paths: 
+---
+
 > Source: git-fit/docs/evonotes/planning-specs/ — canonical Polaris architecture reference
 
 # Polaris Implementation Plan

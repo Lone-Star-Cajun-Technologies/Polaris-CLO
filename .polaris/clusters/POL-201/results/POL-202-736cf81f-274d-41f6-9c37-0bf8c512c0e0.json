@@ -1,0 +1,9 @@
+{
+  "run_id": "polaris-run-pol-201-2026-05-29-001",
+  "child_id": "POL-202",
+  "status": "success",
+  "commit": "8a8a66968d2876ee61c6a6fb514dbe27311120a8",
+  "validation": {
+    "summary": "Recovered completion evidence for tracker reconciliation."
+  }
+}

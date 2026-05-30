@@ -1,3 +1,17 @@
+---
+kind: spec
+status: active
+source: POL-213
+created: 2026-05-29
+implements: 
+related: smartdocs/docs/specs/active/foreman-worker-architecture.md,smartdocs/docs/specs/active/worker-session-contract.md
+supersedes: 
+superseded_by: 
+depends_on: 
+validates: 
+source_paths: src/loop/dispatch-state.ts,src/loop/dispatch-boundary.ts
+---
+
 # Worker Lifecycle State Machine Spec
 
 **Status:** Authoritative spec  

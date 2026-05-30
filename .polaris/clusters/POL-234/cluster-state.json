@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "cluster_id": "POL-234",
-  "state_generation": 5,
+  "state_generation": 6,
   "child_states": [
     {
       "id": "POL-235",
@@ -10,6 +10,18 @@
     {
       "id": "POL-236",
       "status": "done"
+    },
+    {
+      "id": "POL-237",
+      "status": "ready"
+    },
+    {
+      "id": "POL-238",
+      "status": "ready"
+    },
+    {
+      "id": "POL-239",
+      "status": "ready"
     }
   ],
   "claim_metadata": {

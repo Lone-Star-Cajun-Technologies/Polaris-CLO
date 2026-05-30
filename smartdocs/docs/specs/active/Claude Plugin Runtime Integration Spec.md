@@ -1,10 +1,18 @@
 ---
+kind: spec
 title: Claude Plugin Runtime Integration Spec
-status: raw
+status: active
 source: conversation
 intended_path: docs/specs/raw/claude-plugin-runtime-integration.md
 owner: Polaris
 mode: plan-source
+implements: ""
+related: ""
+supersedes: ""
+superseded_by: ""
+depends_on: ""
+validates: ""
+source_paths: ""
 ---
 Claude Plugin Runtime Integration Spec
 

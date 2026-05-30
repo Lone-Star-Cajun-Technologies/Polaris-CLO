@@ -1,3 +1,17 @@
+---
+kind: spec
+status: active
+source: POL-216
+created: 2026-05-29
+implements: 
+related: smartdocs/docs/specs/active/worker-session-contract.md,smartdocs/docs/specs/active/worker-lifecycle-state-machine.md,smartdocs/docs/specs/active/worker-telemetry-spec.md
+supersedes: 
+superseded_by: 
+depends_on: 
+validates: 
+source_paths: src/loop/dispatch-state.ts,src/loop/dispatch-boundary.ts
+---
+
 # Connect Compatibility Specification
 
 **Status:** Authoritative  

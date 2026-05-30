@@ -1,3 +1,17 @@
+---
+kind: spec
+status: active
+source: POL-47
+created: 2026-05-23
+implements: 
+related: 
+supersedes: 
+superseded_by: 
+depends_on: 
+validates: 
+source_paths: src/smartdocs-engine/ingest.ts
+---
+
 # Polaris Docs Authority Model and `polaris docs ingest` Spec
 
 **Status:** active spec  

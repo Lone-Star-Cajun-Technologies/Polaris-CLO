@@ -1,3 +1,15 @@
+---
+kind: spec
+status: active
+implements: 
+related: smartdocs/docs/specs/active/taskchain-format.md
+supersedes: 
+superseded_by: 
+depends_on: 
+validates: 
+source_paths: 
+---
+
 # Polaris Taskchain Authoring Guide
 
 **Target reader:** a future Claude session or human engineer starting a new Polaris cluster from scratch.

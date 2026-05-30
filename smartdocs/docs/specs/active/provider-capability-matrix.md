@@ -1,3 +1,16 @@
+---
+kind: spec
+status: active
+source: POL-55
+implements: 
+related: 
+supersedes: 
+superseded_by: 
+depends_on: 
+validates: 
+source_paths: 
+---
+
 # Provider Capability Matrix
 
 > Written as part of POL-55 analysis convergence. This document does not require another analysis pass — it directly informs POL-71 (Claude Code skill), POL-72 (Codex plugin), and POL-73 (Windsurf path).

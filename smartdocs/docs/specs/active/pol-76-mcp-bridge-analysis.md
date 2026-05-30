@@ -1,3 +1,17 @@
+---
+kind: spec
+status: active
+source: POL-76
+created: 2026-05-25
+implements: 
+related: 
+supersedes: 
+superseded_by: 
+depends_on: 
+validates: 
+source_paths: src/mcp/index.ts
+---
+
 # POL-76 Analysis: Claude Desktop MCP Bridge for Polaris Runtime
 
 **Status:** Analysis complete — ready for implementation planning

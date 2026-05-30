@@ -37,15 +37,47 @@ function auditFilePath(repoRoot: string, runId: string): string {
 }
 
 /**
- * Parse a YAML-style front matter block from a markdown file.
- * Returns a map of key → raw string value (unquoted).
- * Strips the CANDIDATE_MARKER line before parsing if present.
+ * Canonical frontmatter schema for SmartDocs.
+ *
+ * Identity fields identify the document itself.
+ * Governance fields control the doctrine/spec promotion lifecycle.
+ * Relationship fields link this document to source code and sibling docs.
  */
-function parseFrontMatter(content: string): Map<string, string> {
+export interface ParsedFrontMatter {
+  // Identity
+  id?: string;
+  kind?: string;
+  status?: string;
+  owner?: string;
+  source?: string;
+  created?: string;
+  updated?: string;
+  // Governance (existing)
+  "doc-type"?: string;
+  confidence?: string;
+  "recommended-action"?: string;
+  "overlap-analysis"?: string;
+  "candidate-since"?: string;
+  // Relationships (new)
+  implements?: string;
+  related?: string;
+  supersedes?: string;
+  superseded_by?: string;
+  depends_on?: string;
+  validates?: string;
+  /**
+   * Comma-separated list of source file paths this document describes.
+   * When these files are touched, SUMMARY.md delta signals are enriched.
+   */
+  source_paths?: string;
+  // Index signature allows arbitrary frontmatter keys
+  [key: string]: string | undefined;
+}
+
+/** Internal: parse frontmatter into a raw Map for backwards-compatible usages. */
+function parseFrontMatterRaw(content: string): Map<string, string> {
   const result = new Map<string, string>();
-  // Normalize line endings to Unix style
   const normalized = content.replace(/\r\n/g, "\n");
-  // Strip candidate marker line if it's at the start
   const stripped = normalized.startsWith(CANDIDATE_MARKER)
     ? normalized.slice(CANDIDATE_MARKER.length).replace(/^\n/, "")
     : normalized;
@@ -64,6 +96,20 @@ function parseFrontMatter(content: string): Map<string, string> {
 }
 
 /**
+ * Parse a YAML-style front matter block from a markdown file.
+ * Returns a typed {@link ParsedFrontMatter} object.
+ * Strips the CANDIDATE_MARKER line before parsing if present.
+ */
+export function parseFrontMatter(content: string): ParsedFrontMatter {
+  const raw = parseFrontMatterRaw(content);
+  const result: ParsedFrontMatter = {};
+  for (const [key, value] of raw) {
+    result[key] = value;
+  }
+  return result;
+}
+
+/**
  * Add governance placeholder fields to a document's front matter.
  * If no front matter exists, one is created. Existing keys are not overwritten.
  */
@@ -73,6 +119,14 @@ export function addCandidateGovernanceMetadata(content: string, docType: string)
     "confidence": "0.0",
     "recommended-action": "hold",
     "overlap-analysis": "pending",
+    // Relationship scaffolding — populated by author before promotion
+    "implements": "",
+    "related": "",
+    "supersedes": "",
+    "superseded_by": "",
+    "depends_on": "",
+    "validates": "",
+    "source_paths": "",
   };
 
   // Normalize line endings to Unix style
@@ -189,7 +243,7 @@ export function doctrinePromote(path: string, options: DoctrineOptions): Doctrin
   const lifecyclePath = lifecycleFilePath(repoRoot, runId);
 
   // Governance check
-  const fm = parseFrontMatter(content);
+  const fm = parseFrontMatterRaw(content);
   const requiredFields = ["doc-type", "confidence", "recommended-action", "overlap-analysis"];
   for (const field of requiredFields) {
     if (!fm.has(field)) {

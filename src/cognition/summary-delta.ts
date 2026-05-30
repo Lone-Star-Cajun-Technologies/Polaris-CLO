@@ -12,9 +12,10 @@
  * Root SUMMARY.md is skipped — route-local cognition begins below root.
  */
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { isCognitionSkippedFolder } from "./route-cognition-delta.js";
+import { parseFrontMatter } from "../smartdocs-engine/doctrine.js";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -126,6 +127,61 @@ export function detectSummaryReasons(
   return Array.from(reasonSet);
 }
 
+// ── source_paths enrichment ───────────────────────────────────────────────────
+
+const SMARTDOC_SCAN_DIRS = [
+  "smartdocs/docs/doctrine/active",
+  "smartdocs/docs/specs/active",
+];
+
+/**
+ * Scan active SmartDocs for `source_paths` frontmatter entries that overlap
+ * with the touched files. Returns "linked-docs-changed" when any source path
+ * of an active doc was touched, indicating the doc may be outdated.
+ *
+ * This enriches delta signals beyond file-path pattern matching by reading
+ * the actual SmartDoc frontmatter at check time.
+ */
+export function detectSourcePathSignals(
+  touchedFiles: string[],
+  repoRoot: string,
+): boolean {
+  if (touchedFiles.length === 0) return false;
+  const touchedSet = new Set(touchedFiles.map((f) => f.replace(/\\/g, "/")));
+
+  for (const scanDir of SMARTDOC_SCAN_DIRS) {
+    const absDir = join(repoRoot, scanDir);
+    if (!existsSync(absDir)) continue;
+    let entries: string[];
+    try {
+      entries = readdirSync(absDir);
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      if (!entry.endsWith(".md")) continue;
+      const absFile = join(absDir, entry);
+      let content: string;
+      try {
+        content = readFileSync(absFile, "utf-8");
+      } catch {
+        continue;
+      }
+      const fm = parseFrontMatter(content);
+      const sourcePaths = fm["source_paths"];
+      if (!sourcePaths) continue;
+      const paths = sourcePaths
+        .split(",")
+        .map((p) => p.trim())
+        .filter(Boolean);
+      for (const sp of paths) {
+        if (touchedSet.has(sp)) return true;
+      }
+    }
+  }
+  return false;
+}
+
 // ── Nearest route SUMMARY.md ──────────────────────────────────────────────────
 
 /**
@@ -203,6 +259,15 @@ export function applySummaryDelta(options: SummaryDeltaOptions): SummaryDeltaRes
   const { repoRoot, touchedFiles, skipRoot = true } = options;
 
   const reasons = detectSummaryReasons(touchedFiles);
+
+  // Enrich signals: if any touched file appears in source_paths of an active SmartDoc,
+  // treat this as a linked-docs-changed signal even if path patterns didn't match.
+  if (detectSourcePathSignals(touchedFiles, repoRoot)) {
+    if (!reasons.includes("linked-docs-changed")) {
+      reasons.push("linked-docs-changed");
+    }
+  }
+
   const updateWarranted = reasons.length > 0;
   const precedenceSource = detectPrecedenceLevel(touchedFiles);
 
