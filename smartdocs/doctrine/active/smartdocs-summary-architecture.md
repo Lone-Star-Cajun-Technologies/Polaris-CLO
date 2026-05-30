@@ -2,7 +2,7 @@
 kind: doctrine
 status: active
 candidate-since: 2026-05-28
-source: smartdocs/docs/raw/smartdocs-summary-architecture.md
+source: smartdocs/raw/smartdocs-summary-architecture.md
 doc-type: doctrine
 confidence: 0.95
 recommended-action: promote
@@ -30,7 +30,7 @@ source_paths: src/smartdocs-engine/validate-instructions.ts,src/smartdocs-engine
 |------|------|-----------|-------|
 | `POLARIS.md` | Folder front door: navigation, local rules, structure | Authoritative for routing and editing constraints | Folder-level |
 | `SUMMARY.md` | Compressed doctrine snapshot for this folder/domain | **Informational only** — never authoritative | Folder-level |
-| `docs/doctrine/active/*.md` | Behavioral canon | Authoritative | Repo-wide |
+| `smartdocs/doctrine/active/*.md` | Behavioral canon | Authoritative | Repo-wide |
 | Implementation notes | In-code comments, ADRs | Authoritative at point of origin | File-level |
 
 ---
@@ -49,8 +49,8 @@ source_paths: src/smartdocs-engine/validate-instructions.ts,src/smartdocs-engine
 
 ### POLARIS.md MUST NOT contain
 
-- Doctrine (belongs in `docs/doctrine/`)
-- Architecture specs (belongs in `docs/spec/`)
+- Doctrine (belongs in `smartdocs/doctrine/`)
+- Architecture specs (belongs in `smartdocs/specs/`)
 - Session history or run summaries
 - Compressed knowledge that could drift from implementation
 
@@ -95,8 +95,8 @@ POLARIS.md  →  SUMMARY.md  →  linked doctrine/specs  →  implementation det
 |-------|-----------|-----------|
 | `POLARIS.md` | WHERE things are and WHAT the rules are | Authoritative for routing and editing |
 | `SUMMARY.md` | WHAT the folder understands about itself (compressed) | Informational only |
-| `docs/doctrine/active/` | WHY things work the way they do | Authoritative |
-| `docs/spec/` | Architecture decisions | Authoritative |
+| `smartdocs/doctrine/active/` | WHY things work the way they do | Authoritative |
+| `smartdocs/specs/` | Architecture decisions | Authoritative |
 | Implementation | HOW things actually work | Authoritative at point of origin |
 
 Agents must not short-circuit this traversal by treating SUMMARY.md as a substitute for doctrine or spec files. When SUMMARY.md conflicts with a linked canonical source, the canonical source wins without exception.
@@ -109,8 +109,8 @@ Agents must not short-circuit this traversal by treating SUMMARY.md as a substit
 |--------|-------------------|-------------------|
 | `POLARIS.md` | Routing, editing rules, file ownership | Overview of folder purpose |
 | `SUMMARY.md` | **Nothing** (always informational) | Compressed context, drift signals |
-| `docs/doctrine/active/` | All behavioral canon | N/A |
-| `docs/spec/` | Architecture decisions | Background context |
+| `smartdocs/doctrine/active/` | All behavioral canon | N/A |
+| `smartdocs/specs/` | Architecture decisions | Background context |
 
 **Critical rule:** SUMMARY.md is **always informational**. It must never be treated as authoritative by any tooling, canon-check, or ingest pipeline. This is a hard constraint, not a convention.
 
@@ -146,7 +146,7 @@ For multi-agent systems (such as Polaris itself), SUMMARY.md coverage of all dir
 For repos with existing POLARIS.md files:
 
 1. **Audit** — Run `polaris docs validate-instructions` to surface overloaded POLARIS.md files that contain doctrine-like or spec-like content.
-2. **Extract** — Any POLARIS.md containing compressed knowledge or behavioral assertions: extract to SUMMARY.md (or to `docs/doctrine/` if the content is genuinely canonical).
+2. **Extract** — Any POLARIS.md containing compressed knowledge or behavioral assertions: extract to SUMMARY.md (or to `smartdocs/doctrine/` if the content is genuinely canonical).
 3. **Generate** — Produce missing SUMMARY.md files with `polaris docs seed-summary --all` (implemented in POL-139).
 4. **Review** — Review generated drafts; remove `<!-- polaris:draft -->` markers only after human review confirms accuracy.
 5. **Validate** — Run `polaris docs validate-instructions` again to confirm POLARIS.md files are clean after extraction.
@@ -157,7 +157,7 @@ For repos with existing POLARIS.md files:
 
 ## Linked Canonical Sources
 
-- `docs/spec/polaris-architecture-spec.md` — loop/map/finalize architecture
-- `docs/spec/polaris-implementation-plan.md` — failure modes, recommendation, implementation tree
-- `docs/spec/polaris-dispatch-contract.md` — subagent dispatch boundary contract
+- `smartdocs/specs/polaris-architecture-spec.md` — loop/map/finalize architecture
+- `smartdocs/specs/polaris-implementation-plan.md` — failure modes, recommendation, implementation tree
+- `smartdocs/specs/polaris-dispatch-contract.md` — subagent dispatch boundary contract
 - `.polaris/skills/polaris-run/chain.md` — implementation cluster execution model

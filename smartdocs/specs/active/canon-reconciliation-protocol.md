@@ -37,10 +37,10 @@ The protocol answers a single question before allowing session work to continue 
 | Layer | Files | Authority |
 |---|---|---|
 | **Instruction files** | All `POLARIS.md` files in the repo (any directory) | High — governs editing rules and architecture assumptions for their directory and children |
-| **Active doctrine** | `docs/doctrine/active/*.md` | High — approved behavioral assertions; may only be changed by explicit user approval |
-| **Active and implemented specs** | `docs/specs/active/*.md`, `docs/specs/implemented/*.md` | Medium — governs current and completed work; superseding requires user approval |
+| **Active doctrine** | `smartdocs/doctrine/active/*.md` | High — approved behavioral assertions; may only be changed by explicit user approval |
+| **Active and implemented specs** | `smartdocs/specs/active/*.md`, `smartdocs/specs/implemented/*.md` | Medium — governs current and completed work; superseding requires user approval |
 
-Files in `docs/doctrine/candidate/`, `docs/doctrine/raw/`, `docs/specs/raw/`, `docs/specs/superseded/`, and all `docs/runtime/` subdirectories are **not canon**. They carry no authority for the reconciliation check.
+Files in `smartdocs/doctrine/candidate/`, `smartdocs/doctrine/raw/`, `smartdocs/specs/raw/`, `smartdocs/specs/superseded/`, and all `smartdocs/runtime/` subdirectories are **not canon**. They carry no authority for the reconciliation check.
 
 ---
 
@@ -59,8 +59,8 @@ Files in `docs/doctrine/candidate/`, `docs/doctrine/raw/`, `docs/specs/raw/`, `d
 For each changed file path:
 
 1. Find the nearest `POLARIS.md` in the file's directory or any ancestor directory (walk upward; stop at repo root).
-2. Add all `docs/doctrine/active/*.md` files.
-3. Add all `docs/specs/active/*.md` and `docs/specs/implemented/*.md` files whose front-matter `scope` field (if present) overlaps the directory or domain being changed, OR whose filename contains a keyword matching the changed file's domain (`loop`, `map`, `finalize`, `config`, `cli`, `docs`).
+2. Add all `smartdocs/doctrine/active/*.md` files.
+3. Add all `smartdocs/specs/active/*.md` and `smartdocs/specs/implemented/*.md` files whose front-matter `scope` field (if present) overlaps the directory or domain being changed, OR whose filename contains a keyword matching the changed file's domain (`loop`, `map`, `finalize`, `config`, `cli`, `docs`).
 
 Deduplication: each canon file is inspected once even if matched by multiple changed files.
 
@@ -97,14 +97,14 @@ Assign exactly one outcome from the taxonomy in §4.
 
 **Condition:** The proposed work differs from what canon describes, but the difference is expected and approved — e.g., the issue explicitly calls for updating a spec, adding new doctrine, or changing behavior described in an existing spec, and that change is reflected in the issue scope.
 
-**Resolution:** Agent may write to `docs/doctrine/candidate/` or `docs/specs/raw/` to propose updated canon. Proceed with warning emitted to telemetry. The agent must NOT promote directly to `docs/doctrine/active/` or `docs/specs/active/`.
+**Resolution:** Agent may write to `smartdocs/doctrine/candidate/` or `smartdocs/specs/raw/` to propose updated canon. Proceed with warning emitted to telemetry. The agent must NOT promote directly to `smartdocs/doctrine/active/` or `smartdocs/specs/active/`.
 
 ### `stale-implementation`
 
 **Condition:** An active spec or active doctrine file asserts that something (a command, a field, a file, a behavior) exists or is required, but the implementation shows it is absent, broken, or materially different from what canon describes.
 
 Examples:
-- `docs/specs/active/foo.md` says command `polaris foo bar` exists; no such command is found in `src/`.
+- `smartdocs/specs/active/foo.md` says command `polaris foo bar` exists; no such command is found in `src/`.
 - A `POLARIS.md` `## Architecture assumptions` entry says "state writes use `checkpoint.ts`"; proposed change would write state directly.
 
 **Resolution:** Halt. Report the specific gap. Require explicit user approval before proceeding. Do not generate a bootstrap packet or create a PR until the gap is resolved or the user overrides.
@@ -117,7 +117,7 @@ Examples:
 - A `POLARIS.md` lists a file that no longer exists.
 - An active spec describes a 3-step finalize flow; finalize now has 12 steps.
 
-**Resolution:** Agent may flag the stale doc and add it to the `docs/raw/` ingest queue (write a stub or note in `docs/raw/`) without halting. Emit `stale-docs` warning to telemetry. Proceed with warning.
+**Resolution:** Agent may flag the stale doc and add it to the `smartdocs/raw/` ingest queue (write a stub or note in `smartdocs/raw/`) without halting. Emit `stale-docs` warning to telemetry. Proceed with warning.
 
 ---
 
@@ -126,9 +126,9 @@ Examples:
 | Outcome | Action | Exit behavior |
 |---|---|---|
 | `aligned` | Proceed | Normal continuation or finalize |
-| `candidate-divergence` | Write candidate docs to `docs/doctrine/candidate/` or `docs/specs/raw/`; emit `canon-check-result` with `outcome: candidate-divergence`; proceed with warning | Non-blocking; continue or finalize proceeds |
+| `candidate-divergence` | Write candidate docs to `smartdocs/doctrine/candidate/` or `smartdocs/specs/raw/`; emit `canon-check-result` with `outcome: candidate-divergence`; proceed with warning | Non-blocking; continue or finalize proceeds |
 | `stale-implementation` | Emit `canon-conflict-halt` event; print structured conflict report to stderr; halt | Exit non-zero; block PR creation |
-| `stale-docs` | Write stub to `docs/raw/` flagging the stale doc; emit `canon-check-result` with `outcome: stale-docs`; proceed with warning | Non-blocking; continue or finalize proceeds |
+| `stale-docs` | Write stub to `smartdocs/raw/` flagging the stale doc; emit `canon-check-result` with `outcome: stale-docs`; proceed with warning | Non-blocking; continue or finalize proceeds |
 
 The conflict report for `stale-implementation` must include:
 - The canon file path that contains the conflicting assertion
@@ -144,17 +144,17 @@ Polaris must never silently suppress a `stale-implementation` conflict.
 
 ### Agent MAY (without user input)
 
-- Write to `docs/doctrine/candidate/` — propose new or updated doctrine for review
-- Write to `docs/specs/raw/` — drop a new or updated spec for review
-- Write stubs to `docs/raw/` — flag stale docs for ingest
+- Write to `smartdocs/doctrine/candidate/` — propose new or updated doctrine for review
+- Write to `smartdocs/specs/raw/` — drop a new or updated spec for review
+- Write stubs to `smartdocs/raw/` — flag stale docs for ingest
 - Add `stale-docs` and `candidate-divergence` warnings to telemetry
 - Generate a bootstrap packet after a `candidate-divergence` or `stale-docs` outcome
 
 ### Agent MUST STOP FOR USER
 
-- Promoting anything from `docs/doctrine/candidate/` to `docs/doctrine/active/` — this requires `polaris doctrine promote` (POL-52)
-- Superseding an active spec — moving from `docs/specs/active/` to `docs/specs/superseded/`
-- Removing or modifying content in `docs/doctrine/active/` or `docs/specs/active/` without being explicitly tasked to do so
+- Promoting anything from `smartdocs/doctrine/candidate/` to `smartdocs/doctrine/active/` — this requires `polaris doctrine promote` (POL-52)
+- Superseding an active spec — moving from `smartdocs/specs/active/` to `smartdocs/specs/superseded/`
+- Removing or modifying content in `smartdocs/doctrine/active/` or `smartdocs/specs/active/` without being explicitly tasked to do so
 - Removing or overwriting any `POLARIS.md` section without being explicitly tasked
 - Continuing or finalizing when outcome is `stale-implementation`
 
@@ -258,7 +258,7 @@ Emitted after the outcome is classified.
   "conflicts": [
     {
       "type": "candidate-divergence | stale-implementation | stale-docs",
-      "canon_file": "docs/doctrine/active/foo.md",
+      "canon_file": "smartdocs/doctrine/active/foo.md",
       "statement": "The exact conflicting statement from canon",
       "changed_file": "src/loop/continue.ts",
       "detail": "Human-readable description of the conflict"
@@ -280,7 +280,7 @@ Emitted only when outcome is `stale-implementation` and the protocol halts execu
   "run_id": "<run-id>",
   "child_id": "<child-issue-id or null>",
   "reason": "Human-readable summary of why the halt was triggered",
-  "canon_file": "docs/specs/active/bar.md",
+  "canon_file": "smartdocs/specs/active/bar.md",
   "conflicting_statement": "The exact statement from the canon file that is violated",
   "missing_or_differing": "Description of what the implementation lacks or differs from",
   "suggested_resolution": "Update canon, implement missing piece, or request override",
@@ -352,8 +352,8 @@ The goal is zero false halts in normal operation. `stale-implementation` halts s
 ### Draft doc creation for candidate-divergence and stale-docs
 
 When writing drafts:
-- `candidate-divergence`: create `docs/doctrine/candidate/<slug>-<date>.draft.md` with front-matter `status: candidate`, `source: <canon-file>`, `proposed-by: <child-id>`, `proposed-at: <ISO>`.
-- `stale-docs`: create `docs/raw/stale-flag-<slug>-<date>.md` with a brief note: which canon file appears stale, which changed file triggered the flag, and what appears to be outdated.
+- `candidate-divergence`: create `smartdocs/doctrine/candidate/<slug>-<date>.draft.md` with front-matter `status: candidate`, `source: <canon-file>`, `proposed-by: <child-id>`, `proposed-at: <ISO>`.
+- `stale-docs`: create `smartdocs/raw/stale-flag-<slug>-<date>.md` with a brief note: which canon file appears stale, which changed file triggered the flag, and what appears to be outdated.
 
 ---
 
