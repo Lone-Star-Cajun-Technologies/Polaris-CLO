@@ -10,7 +10,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { runParentLoop } from "./parent.js";
@@ -900,7 +900,7 @@ describe("runParentLoop", () => {
 
     expect(result.haltReason).toBe("cluster-complete");
     const clusterState = JSON.parse(readFileSync(clusterStateFile, "utf-8")) as Record<string, unknown>;
-    expect(clusterState.state_generation).toBe(2);
+    expect(clusterState.state_generation).toBe(3);
     expect(clusterState.child_states).toEqual([
       {
         id: "POL-100",
@@ -915,9 +915,12 @@ describe("runParentLoop", () => {
         output: "typecheck: pass",
       },
     });
-    expect((clusterState.result_pointers as Record<string, string>)["POL-100"]).toContain(
-      "runs/test-run-001/POL-100-result.json",
-    );
+    const packetPath = (clusterState.packet_pointers as Record<string, string>)["POL-100"];
+    const resultPath = (clusterState.result_pointers as Record<string, string>)["POL-100"];
+    expect(packetPath).toContain(".polaris/clusters/POL-99/packets/POL-100-");
+    expect(resultPath).toContain(".polaris/clusters/POL-99/results/POL-100-");
+    expect(existsSync(packetPath)).toBe(true);
+    expect(existsSync(resultPath)).toBe(true);
   });
 
   it("records an explicit auto-finalize handoff in auto mode", async () => {
