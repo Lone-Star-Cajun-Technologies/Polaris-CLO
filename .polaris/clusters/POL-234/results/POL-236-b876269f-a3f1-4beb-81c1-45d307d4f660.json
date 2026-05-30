@@ -1,0 +1,11 @@
+{
+  "run_id": "polaris-run-pol-234-2026-05-30-001",
+  "child_id": "POL-236",
+  "status": "success",
+  "validation": {
+    "routes": "passed",
+    "state": "passed",
+    "diff_check": "passed"
+  },
+  "timestamp": "2026-05-30T22:12:11.753Z"
+}

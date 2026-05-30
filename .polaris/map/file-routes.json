@@ -3015,5 +3015,1190 @@
       "ingested"
     ],
     "role_owner": "any"
+  },
+  "smartdocs/POLARIS.md": {
+    "domain": "docs",
+    "route": "smartdocs",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/POLARIS.md"
+  },
+  "smartdocs/SUMMARY.md": {
+    "domain": "docs",
+    "route": "smartdocs",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/POLARIS.md"
+  },
+  "smartdocs/docs/POLARIS.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/POLARIS.md"
+  },
+  "smartdocs/docs/SUMMARY.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/POLARIS.md"
+  },
+  "smartdocs/docs/architecture/POLARIS.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/architecture",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/architecture/POLARIS.md"
+  },
+  "smartdocs/docs/architecture/SUMMARY.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/architecture",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/architecture/POLARIS.md"
+  },
+  "smartdocs/docs/architecture/ephemeral-execution-architecture.provenance.json": {
+    "domain": "docs",
+    "route": "smartdocs/docs/architecture",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/architecture/POLARIS.md"
+  },
+  "smartdocs/docs/architecture/polaris-run-ledger.provenance.json": {
+    "domain": "docs",
+    "route": "smartdocs/docs/architecture",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/architecture/POLARIS.md"
+  },
+  "smartdocs/docs/architecture/runtime-state-consolidation-spec.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/architecture",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/architecture/POLARIS.md"
+  },
+  "smartdocs/docs/architecture/thin-parent-orchestration.provenance.json": {
+    "domain": "docs",
+    "route": "smartdocs/docs/architecture",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/architecture/POLARIS.md"
+  },
+  "smartdocs/docs/audits/POLARIS.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/audits",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/audits/POLARIS.md"
+  },
+  "smartdocs/docs/decisions/POLARIS.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/decisions",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/decisions/POLARIS.md"
+  },
+  "smartdocs/docs/doctrine/POLARIS.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/doctrine",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/doctrine/POLARIS.md"
+  },
+  "smartdocs/docs/doctrine/SUMMARY.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/doctrine",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/doctrine/POLARIS.md"
+  },
+  "smartdocs/docs/doctrine/active/POLARIS.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/doctrine/active",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/doctrine/active/POLARIS.md"
+  },
+  "smartdocs/docs/doctrine/active/SUMMARY.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/doctrine/active",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/doctrine/active/POLARIS.md"
+  },
+  "smartdocs/docs/doctrine/active/issue-hierarchy-doctrine.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/doctrine/active",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/doctrine/active/POLARIS.md"
+  },
+  "smartdocs/docs/doctrine/active/issue-hierarchy-doctrine.provenance.json": {
+    "domain": "docs",
+    "route": "smartdocs/docs/doctrine/active",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/doctrine/active/POLARIS.md"
+  },
+  "smartdocs/docs/doctrine/active/polaris-implementation-plan.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/doctrine/active",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/doctrine/active/POLARIS.md"
+  },
+  "smartdocs/docs/doctrine/active/polaris-implementation-plan.provenance.json": {
+    "domain": "docs",
+    "route": "smartdocs/docs/doctrine/active",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/doctrine/active/POLARIS.md"
+  },
+  "smartdocs/docs/doctrine/active/smartdocs-summary-architecture.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/doctrine/active",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/doctrine/active/POLARIS.md"
+  },
+  "smartdocs/docs/doctrine/active/smartdocs-summary-architecture.provenance.json": {
+    "domain": "docs",
+    "route": "smartdocs/docs/doctrine/active",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/doctrine/active/POLARIS.md"
+  },
+  "smartdocs/docs/doctrine/candidate/POLARIS.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/doctrine/candidate",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/doctrine/candidate/POLARIS.md"
+  },
+  "smartdocs/docs/doctrine/candidate/delegated-dispatch-foreman-seal.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/doctrine/candidate",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/doctrine/candidate/POLARIS.md"
+  },
+  "smartdocs/docs/doctrine/candidate/delegated-dispatch-implementation-summary.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/doctrine/candidate",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/doctrine/candidate/POLARIS.md"
+  },
+  "smartdocs/docs/doctrine/candidate/pol-199-runtime-state-consolidation-analysis.provenance.json": {
+    "domain": "docs",
+    "route": "smartdocs/docs/doctrine/candidate",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/doctrine/candidate/POLARIS.md"
+  },
+  "smartdocs/docs/integrations/POLARIS.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/integrations",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/integrations/POLARIS.md"
+  },
+  "smartdocs/docs/integrations/claude-desktop-mcp.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/integrations",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/integrations/POLARIS.md"
+  },
+  "smartdocs/docs/integrations/claude-plugin.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/integrations",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/integrations/POLARIS.md"
+  },
+  "smartdocs/docs/raw/2026-05-23-provider-capability-abstraction.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/raw",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/raw/POLARIS.md"
+  },
+  "smartdocs/docs/raw/2026-05-25-claude-plugin-runtime-integration.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/raw",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/raw/POLARIS.md"
+  },
+  "smartdocs/docs/raw/POLARIS.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/raw",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/raw/POLARIS.md"
+  },
+  "smartdocs/docs/raw/Polaris-Smart-Docs-Doctrine.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/raw",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/raw/POLARIS.md"
+  },
+  "smartdocs/docs/raw/cluster-map.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/raw",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/raw/POLARIS.md"
+  },
+  "smartdocs/docs/raw/clusters-json-format.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/raw",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/raw/POLARIS.md"
+  },
+  "smartdocs/docs/raw/ephemeral-validation-plan.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/raw",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/raw/POLARIS.md"
+  },
+  "smartdocs/docs/raw/ephemeral-validation-plan.provenance.json": {
+    "domain": "docs",
+    "route": "smartdocs/docs/raw",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/raw/POLARIS.md"
+  },
+  "smartdocs/docs/raw/packet-authorized-commit-gate-plan.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/raw",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/raw/POLARIS.md"
+  },
+  "smartdocs/docs/raw/pol-223-role-system-worker-assignment-child-recovery-analysis.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/raw",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/raw/POLARIS.md"
+  },
+  "smartdocs/docs/raw/pol-233-smartdocs-normalize-routing-cognition-analysis.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/raw",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/raw/POLARIS.md"
+  },
+  "smartdocs/docs/raw/polaris-clo.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/raw",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/raw/POLARIS.md"
+  },
+  "smartdocs/docs/raw/polaris-compact-contracts.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/raw",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/raw/POLARIS.md"
+  },
+  "smartdocs/docs/raw/polaris-compact-contracts.provenance.json": {
+    "domain": "docs",
+    "route": "smartdocs/docs/raw",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/raw/POLARIS.md"
+  },
+  "smartdocs/docs/raw/polaris-dispatch-contract.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/raw",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/raw/POLARIS.md"
+  },
+  "smartdocs/docs/raw/polaris-dispatch-contract.provenance.json": {
+    "domain": "docs",
+    "route": "smartdocs/docs/raw",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/raw/POLARIS.md"
+  },
+  "smartdocs/docs/raw/skill-packet-bootloader-model.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/raw",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/raw/POLARIS.md"
+  },
+  "smartdocs/docs/raw/worker-dispatch-contract-SUMMARY.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/raw",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/raw/POLARIS.md"
+  },
+  "smartdocs/docs/raw/worker-dispatch-contract.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/raw",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/raw/POLARIS.md"
+  },
+  "smartdocs/docs/specs/POLARIS.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/specs",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/specs/POLARIS.md"
+  },
+  "smartdocs/docs/specs/SUMMARY.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/specs",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/specs/POLARIS.md"
+  },
+  "smartdocs/docs/specs/active/Claude Plugin Runtime Integration Spec.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/specs/active",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/specs/active/POLARIS.md"
+  },
+  "smartdocs/docs/specs/active/POLARIS.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/specs/active",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/specs/active/POLARIS.md"
+  },
+  "smartdocs/docs/specs/active/SUMMARY.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/specs/active",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/specs/active/POLARIS.md"
+  },
+  "smartdocs/docs/specs/active/canon-reconciliation-protocol.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/specs/active",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/specs/active/POLARIS.md"
+  },
+  "smartdocs/docs/specs/active/connect-compatibility.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/specs/active",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/specs/active/POLARIS.md"
+  },
+  "smartdocs/docs/specs/active/connect-compatibility.provenance.json": {
+    "domain": "docs",
+    "route": "smartdocs/docs/specs/active",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/specs/active/POLARIS.md"
+  },
+  "smartdocs/docs/specs/active/current-state-schema.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/specs/active",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/specs/active/POLARIS.md"
+  },
+  "smartdocs/docs/specs/active/docs-authority-model.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/specs/active",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/specs/active/POLARIS.md"
+  },
+  "smartdocs/docs/specs/active/execution-adapters.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/specs/active",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/specs/active/POLARIS.md"
+  },
+  "smartdocs/docs/specs/active/foreman-worker-architecture.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/specs/active",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/specs/active/POLARIS.md"
+  },
+  "smartdocs/docs/specs/active/foreman-worker-architecture.provenance.json": {
+    "domain": "docs",
+    "route": "smartdocs/docs/specs/active",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/specs/active/POLARIS.md"
+  },
+  "smartdocs/docs/specs/active/foreman-worker-migration-plan.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/specs/active",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/specs/active/POLARIS.md"
+  },
+  "smartdocs/docs/specs/active/foreman-worker-migration-plan.provenance.json": {
+    "domain": "docs",
+    "route": "smartdocs/docs/specs/active",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/specs/active/POLARIS.md"
+  },
+  "smartdocs/docs/specs/active/mcp-confirmed-dispatch-architecture.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/specs/active",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/specs/active/POLARIS.md"
+  },
+  "smartdocs/docs/specs/active/mcp-mutation-safety-model.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/specs/active",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/specs/active/POLARIS.md"
+  },
+  "smartdocs/docs/specs/active/pol-76-mcp-bridge-analysis.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/specs/active",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/specs/active/POLARIS.md"
+  },
+  "smartdocs/docs/specs/active/pol-97-cli-operator-surface-analysis.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/specs/active",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/specs/active/POLARIS.md"
+  },
+  "smartdocs/docs/specs/active/polaris-implementation-plan.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/specs/active",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/specs/active/POLARIS.md"
+  },
+  "smartdocs/docs/specs/active/provider-capability-matrix.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/specs/active",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/specs/active/POLARIS.md"
+  },
+  "smartdocs/docs/specs/active/taskchain-authoring.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/specs/active",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/specs/active/POLARIS.md"
+  },
+  "smartdocs/docs/specs/active/taskchain-format.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/specs/active",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/specs/active/POLARIS.md"
+  },
+  "smartdocs/docs/specs/active/windsurf-orchestrator.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/specs/active",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/specs/active/POLARIS.md"
+  },
+  "smartdocs/docs/specs/active/worker-lifecycle-state-machine.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/specs/active",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/specs/active/POLARIS.md"
+  },
+  "smartdocs/docs/specs/active/worker-lifecycle-state-machine.provenance.json": {
+    "domain": "docs",
+    "route": "smartdocs/docs/specs/active",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/specs/active/POLARIS.md"
+  },
+  "smartdocs/docs/specs/active/worker-session-contract.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/specs/active",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/specs/active/POLARIS.md"
+  },
+  "smartdocs/docs/specs/active/worker-session-contract.provenance.json": {
+    "domain": "docs",
+    "route": "smartdocs/docs/specs/active",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/specs/active/POLARIS.md"
+  },
+  "smartdocs/docs/specs/active/worker-telemetry-spec.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/specs/active",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/specs/active/POLARIS.md"
+  },
+  "smartdocs/docs/specs/active/worker-telemetry-spec.provenance.json": {
+    "domain": "docs",
+    "route": "smartdocs/docs/specs/active",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/specs/active/POLARIS.md"
+  },
+  "smartdocs/docs/specs/implemented/POLARIS.md": {
+    "domain": "docs",
+    "route": "smartdocs/docs/specs/implemented",
+    "taskchain": "polaris-docs",
+    "confidence": 0.7,
+    "classification": "indexed",
+    "last_updated": "2026-05-30T22:10:38.378Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "docs",
+      "smartdocs"
+    ],
+    "role_owner": "librarian",
+    "instructionFile": "smartdocs/docs/specs/implemented/POLARIS.md"
   }
 }

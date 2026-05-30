@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "cluster_id": "POL-234",
+  "state_generation": 5,
+  "child_states": [
+    {
+      "id": "POL-235",
+      "status": "dispatched"
+    },
+    {
+      "id": "POL-236",
+      "status": "done"
+    }
+  ],
+  "claim_metadata": {
+    "POL-235": {
+      "worker_id": "polaris-run-pol-234-2026-05-30-001:POL-235:1780178630449",
+      "claimed_at": "2026-05-30T22:03:50.449Z",
+      "expires_at": "2026-05-30T22:33:50.449Z"
+    }
+  },
+  "packet_pointers": {
+    "POL-235": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-234/packets/POL-235-da8fae31-a261-4655-891e-6fb72c7fa53a.json"
+  },
+  "result_pointers": {
+    "POL-236": ".polaris/clusters/POL-234/results/POL-236-b876269f-a3f1-4beb-81c1-45d307d4f660.json"
+  },
+  "validation_results": {
+    "POL-236": {
+      "passed": true,
+      "output": "routes passed; state passed; diff_check passed"
+    }
+  },
+  "commits": {},
+  "tracker_mutations": {},
+  "blockers": []
+}
