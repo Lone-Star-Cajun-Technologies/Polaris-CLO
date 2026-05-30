@@ -18,7 +18,7 @@ created: 2026-05-30
 
 The canonical documentation vault is at `smartdocs/` (Obsidian vault root). All content lives one level deeper under `smartdocs/docs/`:
 
-```
+```text
 smartdocs/
 ├── .obsidian/          ← Obsidian vault config (5 files)
 └── docs/               ← CANONICAL_TARGET in ingest.ts
@@ -126,7 +126,7 @@ The atlas covers `src/`, `.polaris/`, `test/`, `scripts/`. It does **not** conta
 
 **Phase 1 target (immediate, low risk):** Add cognition and routing; keep `smartdocs/docs/` path structure.
 
-```
+```text
 smartdocs/
 ├── POLARIS.md          ← NEW: vault-level cognition
 ├── SUMMARY.md          ← NEW: vault-level compressed context
@@ -155,7 +155,7 @@ smartdocs/
 
 **Phase 2 target (migration phase, higher risk):** Flatten `smartdocs/docs/` into `smartdocs/`.
 
-```
+```text
 smartdocs/
 ├── POLARIS.md
 ├── SUMMARY.md
@@ -251,7 +251,7 @@ The issue is that `isDirectoryEligible()` currently returns `eligible: true` for
 
 The revised eligibility check should be:
 
-```
+```text
 is_eligible(dir) =
   NOT in RUNTIME_EXCLUDED_DIR_PATTERNS
   AND NOT in .smartdocignore (effective patterns)
@@ -405,7 +405,7 @@ Before removing any deprecated surface:
 
 ## 8. Implementation Ordering
 
-Six implementation issues are proposed, in safe execution order:
+Five implementation issues are proposed, in safe execution order:
 
 ### Cluster 01 — Cognition Foundation (no migration risk)
 
