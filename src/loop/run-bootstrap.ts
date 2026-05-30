@@ -248,6 +248,17 @@ export async function runLoopBootstrapInit(options: BootstrapInitOptions): Promi
     run_bootstrap_seal: seal,
   };
 
+  // Check if current-state.json already exists before making any modifications
+  if (existsSync(stateFile)) {
+    process.stderr.write(
+      `Error: State file already exists at ${stateFile}\n` +
+      `Cannot overwrite existing run state. Either:\n` +
+      `  1. Use a different --state-file path, or\n` +
+      `  2. Remove the existing state file if you want to start fresh\n`
+    );
+    process.exit(1);
+  }
+
   // Initialize cluster-state.json if it doesn't exist.
   try {
     const existingClusterState = await readClusterState(clusterId);
@@ -265,16 +276,6 @@ export async function runLoopBootstrapInit(options: BootstrapInitOptions): Promi
   //  avoid circular deps; validateState is called by dispatch which is downstream)
 
   mkdirSync(dirname(stateFile), { recursive: true });
-
-  if (existsSync(stateFile)) {
-    process.stderr.write(
-      `Error: State file already exists at ${stateFile}\n` +
-      `Cannot overwrite existing run state. Either:\n` +
-      `  1. Use a different --state-file path, or\n` +
-      `  2. Remove the existing state file if you want to start fresh\n`
-    );
-    process.exit(1);
-  }
 
   const sha = writeStateAtomic(stateFile, initialState);
 

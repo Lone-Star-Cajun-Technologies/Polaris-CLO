@@ -8,6 +8,7 @@
   "scripts": {
     "build": "tsc",
     "lint": "tsc --noEmit",
+    "typecheck": "tsc --noEmit --project tsconfig.typecheck.json",
     "test": "vitest run",
     "polaris": "node dist/cli/index.js"
   },
