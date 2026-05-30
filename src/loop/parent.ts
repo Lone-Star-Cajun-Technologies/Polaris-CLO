@@ -324,8 +324,8 @@ async function syncClusterCompletion(args: {
 }): Promise<boolean> {
   const clusterState = await readClusterState(args.clusterId, args.repoRoot);
   if (!clusterState) {
-    process.stderr.write(
-      `[polaris] syncClusterCompletion: no cluster state found for clusterId=${args.clusterId}; skipping sync\n`,
+    console.warn(
+      `[polaris] syncClusterCompletion: no cluster state found for clusterId=${args.clusterId}; skipping sync`,
     );
     return false;
   }

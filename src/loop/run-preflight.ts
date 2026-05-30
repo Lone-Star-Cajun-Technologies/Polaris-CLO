@@ -114,7 +114,7 @@ export async function ensureClusterRunState(options: EnsureClusterRunStateOption
     } catch (err) {
       if (!isEnoent(err)) {
         console.warn(
-          `run-preflight: failed to read state file ${stateFile}: ${err instanceof Error ? err.message : String(err)}. Proceeding with bootstrap.`,
+          `run-preflight: failed to read state file ${stateFile}: ${err instanceof Error ? err.message : String(err)}`,
         );
       }
       // ENOENT (race condition) or parse/IO error — proceed to bootstrap
