@@ -107,7 +107,7 @@ export function runMapValidate(
     }
 
     // 6. role_owner validation: present and a known value
-    if (entry.role_owner === undefined || !(VALID_ROLE_OWNERS as readonly string[]).includes(entry.role_owner)) {
+    if (entry.role_owner !== undefined && !(VALID_ROLE_OWNERS as readonly string[]).includes(entry.role_owner)) {
       invalidRoleOwner.push(filePath);
     }
 

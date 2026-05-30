@@ -81,8 +81,13 @@ describe('Cluster State Store', () => {
       await writeClusterState(MOCK_CLUSTER_ID, newState);
 
       const filePath = path.join(process.cwd(), '.polaris', 'clusters', MOCK_CLUSTER_ID, 'cluster-state.json');
-      expect(fs.writeFile).toHaveBeenCalledWith(filePath + '.tmp', JSON.stringify(newState, null, 2));
-      expect(fs.rename).toHaveBeenCalledWith(filePath + '.tmp', filePath);
+      expect(fs.writeFile).toHaveBeenNthCalledWith(1, filePath + '.lock', expect.any(String), { flag: 'wx' });
+      expect(fs.writeFile).toHaveBeenNthCalledWith(
+        2,
+        expect.stringContaining(filePath + '.tmp.'),
+        JSON.stringify(newState, null, 2),
+      );
+      expect(fs.rename).toHaveBeenCalledWith(expect.stringContaining(filePath + '.tmp.'), filePath);
     });
 
     it('should throw an error for a stale state generation', async () => {

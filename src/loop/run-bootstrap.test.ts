@@ -41,8 +41,8 @@ describe('runLoopBootstrapInit', () => {
 
     await runLoopBootstrapInit(mockOptions);
 
-    expect(clusterStateStore.readClusterState).toHaveBeenCalledWith('POL-TEST-1');
-    expect(clusterStateStore.initializeClusterState).toHaveBeenCalledWith('POL-TEST-1');
+    expect(clusterStateStore.readClusterState).toHaveBeenCalledWith('POL-TEST-1', '/fake/repo');
+    expect(clusterStateStore.initializeClusterState).toHaveBeenCalledWith('POL-TEST-1', '/fake/repo');
   });
 
   it('should not call initializeClusterState if state already exists', async () => {
@@ -51,7 +51,7 @@ describe('runLoopBootstrapInit', () => {
 
     await runLoopBootstrapInit(mockOptions);
 
-    expect(clusterStateStore.readClusterState).toHaveBeenCalledWith('POL-TEST-1');
+    expect(clusterStateStore.readClusterState).toHaveBeenCalledWith('POL-TEST-1', '/fake/repo');
     expect(clusterStateStore.initializeClusterState).not.toHaveBeenCalled();
   });
 

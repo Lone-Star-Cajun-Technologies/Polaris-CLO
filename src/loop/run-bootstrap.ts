@@ -200,13 +200,13 @@ export function assertBootstrapSeal(state: LoopState, telemetryFile: string): vo
  * legitimate path to creating a new current-state.json. Any state file
  * that was not written by this function will be refused by dispatch.
  */
-export async function runLoopBootstrapInit(options: BootstrapInitOptions): Promise<void> {
+export function runLoopBootstrapInit(options: BootstrapInitOptions): Promise<void> {
   const {
     clusterId,
     openChildren,
     openChildrenMeta,
     stateFile,
-    repoRoot: _repoRoot,
+    repoRoot,
     branch,
     sessionType,
     maxChildrenPerSession,
@@ -260,16 +260,19 @@ export async function runLoopBootstrapInit(options: BootstrapInitOptions): Promi
   }
 
   // Initialize cluster-state.json if it doesn't exist.
-  try {
-    const existingClusterState = await readClusterState(clusterId);
-    if (!existingClusterState) {
-      process.stderr.write(`Initializing new cluster-state.json for ${clusterId}...\n`);
-      await initializeClusterState(clusterId);
+  // This is best-effort and must not block bootstrap state creation.
+  const clusterStateInitPromise = (async () => {
+    try {
+      const existingClusterState = await readClusterState(clusterId, repoRoot);
+      if (!existingClusterState) {
+        process.stderr.write(`Initializing new cluster-state.json for ${clusterId}...\n`);
+        await initializeClusterState(clusterId, repoRoot);
+      }
+    } catch (error) {
+      process.stderr.write(`Warning: Failed to initialize cluster-state.json for ${clusterId}: ${error instanceof Error ? error.message : String(error)}\n`);
+      // Continue without hard-failing bootstrap.
     }
-  } catch (error) {
-    process.stderr.write(`Warning: Failed to initialize cluster-state.json for ${clusterId}: ${error instanceof Error ? error.message : String(error)}\n`);
-    // Continue without hard-failing bootstrap.
-  }
+  })();
 
   // Validate the state we're about to write
   // (uses validateState from checkpoint.ts — but we don't import it here to
@@ -296,4 +299,6 @@ export async function runLoopBootstrapInit(options: BootstrapInitOptions): Promi
     `Children: ${openChildren.join(", ")}\n` +
     `Next: npm run polaris -- loop dispatch\n`,
   );
+
+  return clusterStateInitPromise;
 }
