@@ -4,6 +4,7 @@
   "implement_parent": "POL-242",
   "generated_at": "2026-05-30T23:46:30.000Z",
   "run_id": "polaris-analyze-artifact-promotion-commit-hygiene-2026-05-30-001",
+  "spec_file": "smartdocs/raw/pol-240-artifact-promotion-commit-hygiene.md",
   "children": [
     {
       "id": "POL-243",
