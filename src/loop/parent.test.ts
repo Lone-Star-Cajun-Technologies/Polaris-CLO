@@ -145,6 +145,37 @@ function makeStateFile(
   return stateFile;
 }
 
+function makeClusterStateFile(
+  dir: string,
+  clusterId: string,
+  childIds: string[],
+): string {
+  const clusterDir = join(dir, ".polaris", "clusters", clusterId);
+  mkdirSync(clusterDir, { recursive: true });
+  const clusterStateFile = join(clusterDir, "cluster-state.json");
+  writeFileSync(
+    clusterStateFile,
+    JSON.stringify(
+      {
+        schema_version: "1.0",
+        cluster_id: clusterId,
+        state_generation: 1,
+        child_states: childIds.map((id) => ({ id, status: "ready" })),
+        claim_metadata: {},
+        packet_pointers: {},
+        result_pointers: {},
+        validation_results: {},
+        commits: {},
+        blockers: [],
+      },
+      null,
+      2,
+    ),
+    "utf-8",
+  );
+  return clusterStateFile;
+}
+
 function makeStateFileWithMeta(
   dir: string,
   openChildren: string[],
@@ -842,6 +873,51 @@ describe("runParentLoop", () => {
     const updatedState = JSON.parse(readFileSync(stateFile, "utf-8")) as Record<string, unknown>;
     expect(updatedState.active_child).toBe("POL-100");
     expect(updatedState.completed_children).toEqual([]);
+  });
+
+  it("syncs route-local cluster state after a successful child completion", async () => {
+    vi.mocked(createAdapter).mockReturnValue(
+      makeMockAdapter([
+        {
+          ...SUCCESS_RESULT,
+          summary: JSON.stringify({
+            child_id: "POL-99",
+            status: "done",
+            commit: "abc1234",
+            validation: "typecheck: pass",
+          }),
+        },
+      ]),
+    );
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+    const clusterStateFile = makeClusterStateFile(tmpDir, "POL-99", ["POL-100"]);
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(result.haltReason).toBe("cluster-complete");
+    const clusterState = JSON.parse(readFileSync(clusterStateFile, "utf-8")) as Record<string, unknown>;
+    expect(clusterState.state_generation).toBe(2);
+    expect(clusterState.child_states).toEqual([
+      {
+        id: "POL-100",
+        status: "done",
+        commit: "abc1234",
+      },
+    ]);
+    expect(clusterState.commits).toEqual({ "POL-100": "abc1234" });
+    expect(clusterState.validation_results).toEqual({
+      "POL-100": {
+        passed: true,
+        output: "typecheck: pass",
+      },
+    });
+    expect((clusterState.result_pointers as Record<string, string>)["POL-100"]).toContain(
+      "runs/test-run-001/POL-100-result.json",
+    );
   });
 
   it("records an explicit auto-finalize handoff in auto mode", async () => {

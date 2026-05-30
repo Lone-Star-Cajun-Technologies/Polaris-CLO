@@ -13,6 +13,7 @@ export interface ProviderConfig {
    *   {{telemetry_file}} - absolute path to telemetry output file
    *   {{packet_json}}    - full bootstrap packet as a JSON string
    *   {{packet_file}}    - path to temp file containing bootstrap packet JSON
+   *   {{worker_prompt}}  - compiled Polaris worker instructions
    */
   args?: string[];
 }

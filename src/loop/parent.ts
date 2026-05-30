@@ -20,12 +20,14 @@
 
 import { appendFileSync, mkdirSync, readFileSync, realpathSync } from "node:fs";
 import { randomUUID } from "node:crypto";
-import { dirname, join } from "node:path";
+import { dirname, isAbsolute, join, resolve } from "node:path";
 import { readState, validateState, writeStateAtomic, type LoopState } from "./checkpoint.js";
 import { createAdapter } from "./adapters/registry.js";
 import type { BootstrapPacket, WorkerSummary } from "./adapters/types.js";
 import { checkBudget, policyFromConfig } from "./budget.js";
 import { loadConfig } from "../config/loader.js";
+import type { ChildState } from "../cluster-state/types.js";
+import { readClusterState, writeClusterState } from "../cluster-state/store.js";
 import { WorkerLifecycleManager } from "./lifecycle.js";
 import { compileImplPacket, type WorkerPacket } from "./worker-packet.js";
 import { selectPromptMode } from "./worker-prompt.js";
@@ -113,7 +115,7 @@ function appendTelemetry(telemetryFile: string, event: Record<string, unknown>):
 
 function resolveTelemetryFile(state: LoopState, repoRoot: string): string {
   const artifactDir =
-    state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "bootstrap-run");
+    state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "polaris-run");
   return join(artifactDir, "runs", state.run_id, "telemetry.jsonl");
 }
 
@@ -209,6 +211,7 @@ function buildPacket(
   stateFile: string,
   telemetryFile: string,
   repoRoot: string,
+  resultFile?: string,
 ): WorkerPacket {
   const branch = state.branch ?? getCurrentBranch(repoRoot);
 
@@ -233,8 +236,42 @@ function buildPacket(
     issueContext,
     maxConcurrentWorkers: 1,
     promptMode,
-    resultFile: childMeta?.result_file,
+    resultFile,
   });
+}
+
+function absoluteResultFile(repoRoot: string, filePath: string): string {
+  return isAbsolute(filePath) ? filePath : resolve(repoRoot, filePath);
+}
+
+function childResultFilePath(
+  state: LoopState,
+  childId: string,
+  telemetryFile: string,
+  repoRoot: string,
+): string {
+  const configured = state.open_children_meta?.[childId]?.result_file;
+  if (configured && configured.trim().length > 0) {
+    return absoluteResultFile(repoRoot, configured);
+  }
+  return join(dirname(telemetryFile), `${childId}-result.json`);
+}
+
+function withChildResultFile(state: LoopState, childId: string, resultFile: string): LoopState {
+  const current = state.open_children_meta?.[childId];
+  if (current?.result_file === resultFile) {
+    return state;
+  }
+  return {
+    ...state,
+    open_children_meta: {
+      ...(state.open_children_meta ?? {}),
+      [childId]: {
+        ...(current ?? {}),
+        result_file: resultFile,
+      },
+    },
+  };
 }
 
 /**
@@ -275,6 +312,76 @@ function advanceState(state: LoopState, completedChild: string, lastCommit?: str
       children_completed: completed.length,
     },
   };
+}
+
+async function syncClusterCompletion(args: {
+  clusterId: string;
+  childId: string;
+  repoRoot: string;
+  resultFile?: string;
+  validationSummary?: unknown;
+  lastCommit?: string;
+}): Promise<void> {
+  const clusterState = await readClusterState(args.clusterId, args.repoRoot);
+  if (!clusterState) {
+    return;
+  }
+
+  const childStates: ChildState[] = clusterState.child_states.some((child) => child.id === args.childId)
+    ? clusterState.child_states.map((child) =>
+        child.id === args.childId
+          ? {
+              ...child,
+              status: "done",
+              commit: args.lastCommit ?? child.commit,
+            }
+          : child,
+      )
+    : [
+        ...clusterState.child_states,
+        {
+          id: args.childId,
+          status: "done",
+          ...(args.lastCommit ? { commit: args.lastCommit } : {}),
+        },
+      ];
+
+  const nextValidationResults =
+    args.validationSummary === undefined
+      ? clusterState.validation_results
+      : {
+          ...clusterState.validation_results,
+          [args.childId]: {
+            passed: true,
+            output: String(args.validationSummary),
+          },
+        };
+
+  await writeClusterState(
+    args.clusterId,
+    {
+      ...clusterState,
+      state_generation: clusterState.state_generation + 1,
+      child_states: childStates,
+      claim_metadata: Object.fromEntries(
+        Object.entries(clusterState.claim_metadata).filter(([childId]) => childId !== args.childId),
+      ),
+      result_pointers: args.resultFile
+        ? {
+            ...clusterState.result_pointers,
+            [args.childId]: args.resultFile,
+          }
+        : clusterState.result_pointers,
+      validation_results: nextValidationResults,
+      commits: args.lastCommit
+        ? {
+            ...clusterState.commits,
+            [args.childId]: args.lastCommit,
+          }
+        : clusterState.commits,
+    },
+    args.repoRoot,
+  );
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -522,18 +629,23 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     // dispatch_boundary.dispatch_epoch is always incremented before any
     // worker execution occurs. This ensures the "dispatched → completed"
     // transition is always verifiable from state alone.
+    const resultFile = childResultFilePath(state, nextChild, telemetryFile, repoRoot);
+    mkdirSync(dirname(resultFile), { recursive: true });
+    let stateBeforeDispatch = state;
+
     if (!dryRun) {
       const stateWithDispatch: LoopState = {
-        ...state,
+        ...withChildResultFile(state, nextChild, resultFile),
         active_child: nextChild,
         step_cursor: "dispatch",
         dispatch_boundary: advanceDispatchEpoch(state.dispatch_boundary, nextChild),
       };
       writeStateAtomic(stateFile, stateWithDispatch);
       state = stateWithDispatch;
+      stateBeforeDispatch = stateWithDispatch;
     }
 
-    const packet = buildPacket(state, nextChild, stateFile, telemetryFile, repoRoot);
+    const packet = buildPacket(state, nextChild, stateFile, telemetryFile, repoRoot, resultFile);
     const childrenCompletedBeforeDispatch = state.context_budget.children_completed;
 
     // Register the worker slot before dispatch.
@@ -741,12 +853,22 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
 
     // Worker completed successfully — reload state from disk before advancing
     // The worker may have updated current-state.json; reload to avoid clobbering
+    let reloadedStateValid = false;
     try {
       const reloadedState = readState(stateFile);
       const reloadErrors = validateState(reloadedState);
       if (reloadErrors.length > 0) {
         const errMsg = `State file corrupted after worker execution:\n${reloadErrors.join("\n")}`;
-        if (!dryRun) {
+        if (!dryRun && adapterName === "terminal-cli") {
+          appendTelemetry(telemetryFile, {
+            event: "state-reload-fallback",
+            run_id: state.run_id,
+            child_id: nextChild,
+            error: errMsg,
+            timestamp: new Date().toISOString(),
+          });
+          state = stateBeforeDispatch;
+        } else if (!dryRun) {
           appendTelemetry(telemetryFile, {
             event: "state-reload-error",
             run_id: state.run_id,
@@ -754,19 +876,30 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
             error: errMsg,
             timestamp: new Date().toISOString(),
           });
+          return {
+            haltReason: 'state-invalid',
+            childrenDispatched,
+            haltingChild: nextChild,
+            message: errMsg,
+          };
         }
-        return {
-          haltReason: 'state-invalid',
-          childrenDispatched,
-          haltingChild: nextChild,
-          message: errMsg,
-        };
+      } else {
+        state = reloadedState;
+        reloadedStateValid = true;
       }
-      state = reloadedState;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       const errMsg = `Failed to reload state after worker execution: ${msg}`;
-      if (!dryRun) {
+      if (!dryRun && adapterName === "terminal-cli") {
+        appendTelemetry(telemetryFile, {
+          event: "state-reload-fallback",
+          run_id: state.run_id,
+          child_id: nextChild,
+          error: errMsg,
+          timestamp: new Date().toISOString(),
+        });
+        state = stateBeforeDispatch;
+      } else if (!dryRun) {
         appendTelemetry(telemetryFile, {
           event: "state-reload-error",
           run_id: state.run_id,
@@ -774,28 +907,49 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
           error: errMsg,
           timestamp: new Date().toISOString(),
         });
+        return {
+          haltReason: 'state-invalid',
+          childrenDispatched,
+          haltingChild: nextChild,
+          message: errMsg,
+        };
       }
-      return {
-        haltReason: 'state-invalid',
-        childrenDispatched,
-        haltingChild: nextChild,
-        message: errMsg,
-      };
     }
 
     const lastCommit =
       (finalWorkerSummary as Record<string, unknown>)?.['commit'] as string | undefined ??
       (finalWorkerSummary as Record<string, unknown>)?.['commit_hash'] as string | undefined;
 
-    const validationSummary = (finalWorkerSummary as Record<string, unknown>)?.['validation'];
+    const validationSummary =
+      (finalWorkerSummary as Record<string, unknown>)?.['validation'] ??
+      (finalWorkerSummary as Record<string, unknown>)?.['validation_summary'];
+
+    if (!dryRun && workerStatus === 'done' && (!lastCommit || lastCommit.trim().length === 0)) {
+      const errMsg = `Worker reported done for ${nextChild} without commit evidence`;
+      appendTelemetry(telemetryFile, {
+        event: "child-error",
+        run_id: state.run_id,
+        child_id: nextChild,
+        error: errMsg,
+        result_file: packet.result_file_contract?.result_file,
+        timestamp: new Date().toISOString(),
+      });
+      return {
+        haltReason: 'worker-error',
+        childrenDispatched,
+        haltingChild: nextChild,
+        message: errMsg,
+      };
+    }
 
     // workerStatus === "done" has already been validated upstream.
     // If the reloaded state already reflects the completed child,
     // the worker owns the completion checkpoint and the parent
     // must not rewrite it.
     const workerWroteCompletion =
-      state.completed_children.includes(nextChild) ||
-      state.context_budget.children_completed > childrenCompletedBeforeDispatch;
+      reloadedStateValid &&
+      (state.completed_children.includes(nextChild) ||
+        state.context_budget.children_completed > childrenCompletedBeforeDispatch);
 
     if (!workerWroteCompletion) {
       // ── Dispatch boundary: verify dispatch happened before advancing ──────
@@ -850,6 +1004,31 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     // Orchestrator checkpoint event — always emitted after a successful child.
     if (!dryRun) {
       const commitSuffix = lastCommit && lastCommit.length > 0 ? ` (commit: ${lastCommit})` : "";
+      try {
+        await syncClusterCompletion({
+          clusterId: state.cluster_id,
+          childId: nextChild,
+          repoRoot,
+          resultFile: packet.result_file_contract?.result_file,
+          validationSummary,
+          lastCommit,
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        appendTelemetry(telemetryFile, {
+          event: "cluster-state-sync-error",
+          run_id: state.run_id,
+          child_id: nextChild,
+          error: message,
+          timestamp: new Date().toISOString(),
+        });
+        return {
+          haltReason: "state-invalid",
+          childrenDispatched,
+          haltingChild: nextChild,
+          message: `Failed to sync cluster-state.json for ${nextChild}: ${message}`,
+        };
+      }
       logStatus(notificationFormat, `COMPLETE ${nextChild}${commitSuffix}`);
       appendTelemetry(telemetryFile, {
         event: "child-complete",

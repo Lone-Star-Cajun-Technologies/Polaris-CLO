@@ -4,6 +4,8 @@ import os from "node:os";
 import path from "node:path";
 import type { ExecutionConfig, ProviderConfig } from "../../config/schema.js";
 import type { BootstrapPacket, DispatchOptions, DispatchResult, ExecutionAdapter } from "./types.js";
+import { buildWorkerInstructions } from "./worker-instructions.js";
+import { isWorkerPacket } from "../worker-packet.js";
 
 /** Expand $VAR and ${VAR} references from process.env. */
 function expandEnvVars(str: string): string {
@@ -65,6 +67,7 @@ export class TerminalCliAdapter implements ExecutionAdapter {
   private buildCommand(
     providerCfg: ProviderConfig,
     packet: BootstrapPacket,
+    workerPrompt: string,
     packetFile: string
   ): { command: string; args: string[] } {
     const templateVars: Record<string, string> = {
@@ -76,6 +79,7 @@ export class TerminalCliAdapter implements ExecutionAdapter {
       model: String(packet.context?.["model"] ?? ""),
       packet_json: JSON.stringify(packet),
       packet_file: packetFile,
+      worker_prompt: workerPrompt,
     };
 
     const rawCommand = providerCfg.command;
@@ -99,17 +103,18 @@ export class TerminalCliAdapter implements ExecutionAdapter {
 
   async dispatch(packet: BootstrapPacket, options: DispatchOptions): Promise<DispatchResult> {
     const providerCfg = this.getProvider(options.provider);
+    const workerPrompt = buildWorkerInstructions(packet);
 
     // Write packet to a named temp file so args can reference it via {{packet_file}}
     const packetFile = path.join(os.tmpdir(), `polaris-packet-${packet.run_id}.json`);
     fs.writeFileSync(packetFile, JSON.stringify(packet, null, 2), 'utf-8');
 
     try {
-      const { command, args } = this.buildCommand(providerCfg, packet, packetFile);
+      const { command, args } = this.buildCommand(providerCfg, packet, workerPrompt, packetFile);
       const commandLine = formatCommandLine(command, args);
 
       if (options.dryRun) {
-        return this.dryRun(options.provider, command, args, commandLine, packet, packetFile);
+        return this.dryRun(options.provider, command, args, commandLine, packet, packetFile, workerPrompt);
       }
 
       if (!resolveCommand(command)) {
@@ -136,7 +141,8 @@ export class TerminalCliAdapter implements ExecutionAdapter {
     args: string[],
     commandLine: string,
     packet: BootstrapPacket,
-    packetFile: string
+    packetFile: string,
+    workerPrompt: string,
   ): DispatchResult {
     const lines = [
       `[dry-run] Provider: ${provider}`,
@@ -150,6 +156,12 @@ export class TerminalCliAdapter implements ExecutionAdapter {
       `            POLARIS_TELEMETRY_FILE=${packet.telemetry_file}`,
       `            POLARIS_PACKET_FILE=${packetFile}`,
       `            POLARIS_PACKET_JSON=<json>`,
+      `            POLARIS_WORKER_PROMPT=<prompt>`,
+      `[dry-run] Worker prompt:`,
+      workerPrompt
+        .split('\n')
+        .map((l) => `            ${l}`)
+        .join('\n'),
       `[dry-run] Bootstrap packet:`,
       JSON.stringify(packet, null, 2)
         .split('\n')
@@ -183,6 +195,7 @@ export class TerminalCliAdapter implements ExecutionAdapter {
         POLARIS_TELEMETRY_FILE: packet.telemetry_file,
         POLARIS_PACKET_FILE: packetFile,
         POLARIS_PACKET_JSON: JSON.stringify(packet),
+        POLARIS_WORKER_PROMPT: buildWorkerInstructions(packet),
       };
 
       const child = spawn(command, args, {
@@ -216,6 +229,7 @@ export class TerminalCliAdapter implements ExecutionAdapter {
       child.on('close', (exitCode: number | null) => {
         const stdout = Buffer.concat(stdoutChunks).toString('utf-8').trim();
         const summary = extractSummary(stdout);
+        this.writeSealedResultIfNeeded(packet, summary, stdout, exitCode ?? 1);
         resolve({
           exit_code: exitCode ?? 1,
           provider_used: provider,
@@ -225,6 +239,46 @@ export class TerminalCliAdapter implements ExecutionAdapter {
         });
       });
     });
+  }
+
+  private writeSealedResultIfNeeded(
+    packet: BootstrapPacket,
+    summary: string | undefined,
+    stdout: string,
+    exitCode: number,
+  ): void {
+    const resultFile = isWorkerPacket(packet) ? packet.result_file_contract?.result_file : undefined;
+    if (!resultFile || !summary) {
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(summary) as Record<string, unknown>;
+      const sealedResult = {
+        ...parsed,
+        run_id: packet.run_id,
+        child_id: String(parsed["child_id"] ?? packet.active_child),
+        status: exitCode === 0 ? "success" : "failure",
+        commit:
+          typeof parsed["commit"] === "string"
+            ? parsed["commit"]
+            : typeof parsed["commit_hash"] === "string"
+              ? parsed["commit_hash"]
+              : undefined,
+        validation: parsed["validation"] ?? parsed["validation_summary"],
+        error_message:
+          exitCode === 0
+            ? undefined
+            : typeof parsed["error_message"] === "string"
+              ? parsed["error_message"]
+              : stdout || summary,
+      };
+      fs.mkdirSync(path.dirname(resultFile), { recursive: true });
+      fs.writeFileSync(resultFile, JSON.stringify(sealedResult, null, 2), "utf-8");
+    } catch {
+      // If the provider did not emit parseable compact JSON, leave the result
+      // file absent so the parent can surface the sealed-result read failure.
+    }
   }
 }
 

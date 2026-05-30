@@ -9,23 +9,23 @@
     "providers": {
       "claude": {
         "command": "claude",
-        "args": ["--print", "{{packet_json}}"]
+        "args": ["--print", "--dangerously-skip-permissions", "{{worker_prompt}}"]
       },
       "codex": {
         "command": "codex",
-        "args": ["{{packet_json}}"]
+        "args": ["{{worker_prompt}}"]
       },
       "gemini": {
         "command": "gemini",
-        "args": ["--prompt", "{{packet_json}}"]
+        "args": ["--prompt", "{{worker_prompt}}"]
       },
       "copilot": {
         "command": "copilot",
-        "args": ["-p", "{{packet_json}}", "--autopilot", "--allow-all-tools"]
+        "args": ["-p", "{{worker_prompt}}", "--autopilot", "--allow-all-tools"]
       },
       "custom": {
         "command": "$POLARIS_AGENT",
-        "args": ["{{packet_json}}"]
+        "args": ["{{worker_prompt}}"]
       }
     },
     "rotation": ["claude", "codex", "gemini", "copilot"],
