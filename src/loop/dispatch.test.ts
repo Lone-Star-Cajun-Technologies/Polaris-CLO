@@ -45,6 +45,41 @@ function writeState(dir: string, state: object): string {
   return stateFile;
 }
 
+function writeClusterStateFile(
+  dir: string,
+  clusterId: string,
+  childIds: string[],
+  completedChildren: string[] = [],
+): string {
+  const clusterDir = join(dir, ".polaris", "clusters", clusterId);
+  mkdirSync(clusterDir, { recursive: true });
+  const clusterStateFile = join(clusterDir, "cluster-state.json");
+  writeFileSync(
+    clusterStateFile,
+    JSON.stringify(
+      {
+        schema_version: "1.0",
+        cluster_id: clusterId,
+        state_generation: 1,
+        child_states: childIds.map((id) => ({
+          id,
+          status: completedChildren.includes(id) ? "done" : "ready",
+        })),
+        claim_metadata: {},
+        packet_pointers: {},
+        result_pointers: {},
+        validation_results: {},
+        commits: {},
+        blockers: [],
+      },
+      null,
+      2,
+    ),
+    "utf-8",
+  );
+  return clusterStateFile;
+}
+
 function captureStdout(fn: () => void): string {
   const chunks: string[] = [];
   const originalWrite = process.stdout.write.bind(process.stdout);
@@ -273,6 +308,57 @@ describe("runLoopDispatch", () => {
     expect(events[0].expected_result_path).toBeDefined();
     expect(events[0].packet_path).toContain("POL-142");
     expect(events[0].packet_path).toContain("packets");
+  });
+
+  it("syncs claim and dispatch state into cluster-state.json", () => {
+    const state = baseState();
+    const stateFile = writeState(testDir, state);
+    const clusterStateFile = writeClusterStateFile(
+      testDir,
+      "POL-142",
+      ["POL-144", "POL-145", "POL-146"],
+      ["POL-144"],
+    );
+
+    captureStdout(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+
+    const updated = readState(stateFile);
+    const dispatchRecord = updated.open_children_meta?.["POL-145"]?.dispatch_record;
+    const clusterState = JSON.parse(readFileSync(clusterStateFile, "utf-8"));
+
+    expect(clusterState.state_generation).toBe(2);
+    expect(clusterState.child_states).toEqual([
+      { id: "POL-144", status: "done" },
+      { id: "POL-145", status: "dispatched" },
+      { id: "POL-146", status: "ready" },
+    ]);
+    expect(clusterState.claim_metadata["POL-145"]).toMatchObject({
+      worker_id: dispatchRecord?.worker_id,
+      claimed_at: dispatchRecord?.dispatched_at,
+    });
+    expect(clusterState.packet_pointers["POL-145"]).toBe(dispatchRecord?.packet_path);
+    expect(Date.parse(clusterState.claim_metadata["POL-145"].expires_at)).toBeGreaterThan(
+      Date.parse(dispatchRecord?.dispatched_at ?? ""),
+    );
+  });
+
+  it("creates cluster-state.json from loop state when missing", () => {
+    const stateFile = writeState(testDir, baseState());
+
+    captureStdout(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+
+    const updated = readState(stateFile);
+    const dispatchRecord = updated.open_children_meta?.["POL-145"]?.dispatch_record;
+    const clusterStateFile = join(testDir, ".polaris", "clusters", "POL-142", "cluster-state.json");
+    const clusterState = JSON.parse(readFileSync(clusterStateFile, "utf-8"));
+
+    expect(clusterState.child_states).toEqual([
+      { id: "POL-144", status: "done" },
+      { id: "POL-145", status: "dispatched" },
+      { id: "POL-146", status: "ready" },
+    ]);
+    expect(clusterState.claim_metadata["POL-145"].worker_id).toBe(dispatchRecord?.worker_id);
+    expect(clusterState.packet_pointers["POL-145"]).toBe(dispatchRecord?.packet_path);
   });
 
   // ── DISPATCH MODE TESTS ────────────────────────────────────────────────────

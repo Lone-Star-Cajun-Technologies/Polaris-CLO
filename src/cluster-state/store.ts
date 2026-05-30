@@ -1,4 +1,12 @@
-import { promises as fs } from 'fs';
+import {
+  promises as fs,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  statSync,
+  unlinkSync,
+  writeFileSync,
+} from 'fs';
 import * as path from 'path';
 import { ClusterState, ChildState } from './types';
 import { LocalGraph } from '../tracker/local-graph';
@@ -11,6 +19,19 @@ export const readClusterState = async (clusterId: string, repoRoot?: string): Pr
   const filePath = getClusterStatePath(clusterId, repoRoot);
   try {
     const data = await fs.readFile(filePath, 'utf-8');
+    return JSON.parse(data) as ClusterState;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return null;
+    }
+    throw error;
+  }
+};
+
+export const readClusterStateSync = (clusterId: string, repoRoot?: string): ClusterState | null => {
+  const filePath = getClusterStatePath(clusterId, repoRoot);
+  try {
+    const data = readFileSync(filePath, 'utf-8');
     return JSON.parse(data) as ClusterState;
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
@@ -122,6 +143,93 @@ export const writeClusterState = async (clusterId: string, state: ClusterState, 
       await fs.unlink(lockFilePath);
     } catch {
       // Ignore errors during lock cleanup
+    }
+  }
+};
+
+export const writeClusterStateSync = (clusterId: string, state: ClusterState, repoRoot?: string): void => {
+  const filePath = getClusterStatePath(clusterId, repoRoot);
+  const lockFilePath = filePath + '.lock';
+  const tempFilePath = `${filePath}.tmp.${process.pid}.${Date.now()}.${Math.random().toString(36).slice(2, 8)}`;
+
+  let lockAcquired = false;
+  const maxRetries = 50;
+  const retryDelayMs = 100;
+  const staleLockThresholdMs = 30000;
+
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      mkdirSync(path.dirname(lockFilePath), { recursive: true });
+      writeFileSync(lockFilePath, String(process.pid), { flag: 'wx' });
+      lockAcquired = true;
+      break;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
+        throw error;
+      }
+
+      try {
+        const lockStat = statSync(lockFilePath);
+        const lockAge = Date.now() - lockStat.mtimeMs;
+
+        if (lockAge > staleLockThresholdMs) {
+          let isStale = true;
+          try {
+            const lockContent = readFileSync(lockFilePath, 'utf-8');
+            const lockPid = parseInt(lockContent.trim(), 10);
+            if (!isNaN(lockPid)) {
+              try {
+                process.kill(lockPid, 0);
+                isStale = false;
+              } catch (pidError) {
+                if ((pidError as NodeJS.ErrnoException).code === 'EPERM') {
+                  isStale = false;
+                }
+              }
+            }
+          } catch {
+            // Ignore parse/read failure and fall back to age-based stale handling.
+          }
+
+          if (isStale) {
+            try {
+              unlinkSync(lockFilePath);
+              continue;
+            } catch (unlinkError) {
+              if ((unlinkError as NodeJS.ErrnoException).code !== 'ENOENT') {
+                throw unlinkError;
+              }
+            }
+          }
+        }
+      } catch (statError) {
+        if ((statError as NodeJS.ErrnoException).code === 'ENOENT') {
+          continue;
+        }
+      }
+
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, retryDelayMs);
+    }
+  }
+
+  if (!lockAcquired) {
+    throw new Error(`Failed to acquire lock for cluster state ${clusterId} after ${maxRetries} attempts`);
+  }
+
+  try {
+    const currentState = readClusterStateSync(clusterId, repoRoot);
+    if (currentState && currentState.state_generation >= state.state_generation) {
+      throw new Error('Stale state: state_generation is not greater than current state.');
+    }
+
+    mkdirSync(path.dirname(filePath), { recursive: true });
+    writeFileSync(tempFilePath, JSON.stringify(state, null, 2));
+    renameSync(tempFilePath, filePath);
+  } finally {
+    try {
+      unlinkSync(lockFilePath);
+    } catch {
+      // Ignore errors during lock cleanup.
     }
   }
 };
