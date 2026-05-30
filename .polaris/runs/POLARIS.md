@@ -33,6 +33,29 @@
 - [`src/finalize/steps/12-archive.ts`](../../src/finalize/steps/12-archive.ts)
 - [`../POLARIS.md`](../POLARIS.md)
 
+## Telemetry surface classification
+
+Canonical telemetry surfaces written under `.taskchain_artifacts/`:
+
+| Surface | Classification | Notes |
+| --- | --- | --- |
+| `.taskchain_artifacts/polaris-run/` | Canonical | Active writer: `polaris-run` skill |
+| `.taskchain_artifacts/polaris-analyze/` | Canonical | Active writer: `polaris-analyze` skill |
+| `.taskchain_artifacts/polaris-doctrine/` | Canonical | Active writer: `polaris-doctrine` skill |
+| `.taskchain_artifacts/polaris-docs-ingest/` | Canonical | Current name after rename from `docs-ingest` |
+| `.taskchain_artifacts/docs-ingest/` | Compatibility-only | Legacy name; preserved for reference, no active writer |
+| `.taskchain_artifacts/polaris-docs-migrate/` | Compatibility-only | One-off migration; no active writer |
+| `.taskchain_artifacts/bootstrap-run/` | Canonical (default fallback) | Default `artifact_dir` in runtime src/; active writer. See note below. |
+| `.taskchain_artifacts/evo-run/` | Removed | Deprecated; no active skill. Archived to `.polaris/runs/evo-run-archive/`. |
+
+### bootstrap-run note
+
+`bootstrap-run` is the default `artifact_dir` fallback throughout the runtime (`src/loop/`, `src/finalize/`, `src/mcp/tools/`). It is written by any run that does not specify an explicit artifact directory. It is **not** deprecated; it is the canonical default surface. It should not be removed until the runtime default is changed (out of scope for POL-238; tracked separately).
+
+### worker-acknowledged gap (POL-215 scope)
+
+The `worker-acknowledged` telemetry event is not yet emitted by any runtime writer. This is a known implementation gap. The write-telemetry specification and implementation are tracked under [POL-215](https://linear.app/lsctech/issue/POL-215).
+
 ## Related routes
 
 - `.polaris`
