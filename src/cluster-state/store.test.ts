@@ -35,6 +35,7 @@ describe('Cluster State Store', () => {
         result_pointers: {},
         validation_results: {},
         commits: {},
+        tracker_mutations: {},
         blockers: [],
       };
       vi.mocked(fs.readFile).mockResolvedValue(JSON.stringify(mockState));
@@ -72,6 +73,7 @@ describe('Cluster State Store', () => {
         result_pointers: {},
         validation_results: {},
         commits: {},
+        tracker_mutations: {},
         blockers: [],
       };
 
@@ -101,6 +103,7 @@ describe('Cluster State Store', () => {
         result_pointers: {},
         validation_results: {},
         commits: {},
+        tracker_mutations: {},
         blockers: [],
       };
       const newState: ClusterState = { ...existingState, state_generation: 2 };

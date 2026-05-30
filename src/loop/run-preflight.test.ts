@@ -55,6 +55,7 @@ function writeClusterState(
         result_pointers: {},
         validation_results: {},
         commits: {},
+        tracker_mutations: {},
         blockers: [],
       },
       null,

@@ -15,11 +15,19 @@ const getClusterStatePath = (clusterId: string, repoRoot?: string): string => {
   return path.join(repoRoot || process.cwd(), '.polaris', 'clusters', clusterId, 'cluster-state.json');
 };
 
+const normalizeClusterState = (state: ClusterState): ClusterState => ({
+  ...state,
+  tracker_mutations: state.tracker_mutations ?? {},
+});
+
 export const readClusterState = async (clusterId: string, repoRoot?: string): Promise<ClusterState | null> => {
   const filePath = getClusterStatePath(clusterId, repoRoot);
   try {
     const data = await fs.readFile(filePath, 'utf-8');
-    return JSON.parse(data) as ClusterState;
+    if (!data) {
+      return null;
+    }
+    return normalizeClusterState(JSON.parse(data) as ClusterState);
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       return null;
@@ -32,7 +40,10 @@ export const readClusterStateSync = (clusterId: string, repoRoot?: string): Clus
   const filePath = getClusterStatePath(clusterId, repoRoot);
   try {
     const data = readFileSync(filePath, 'utf-8');
-    return JSON.parse(data) as ClusterState;
+    if (!data) {
+      return null;
+    }
+    return normalizeClusterState(JSON.parse(data) as ClusterState);
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       return null;
@@ -257,6 +268,7 @@ export const initializeClusterState = async (clusterId: string, repoRoot?: strin
     result_pointers: {},
     validation_results: {},
     commits: {},
+    tracker_mutations: {},
     blockers: [],
   };
 

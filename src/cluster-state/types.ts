@@ -41,6 +41,27 @@ export interface Blocker {
   resolved_at?: string; // ISO 8601
 }
 
+export type TrackerMutationStatus =
+  | 'pending'
+  | 'sent'
+  | 'succeeded'
+  | 'failed'
+  | 'conflicted'
+  | 'blocked';
+
+export interface TrackerMutationReference {
+  mutation_ids: string[];
+  idempotency_key: string;
+  source_state_generation: number;
+  result_file: string;
+  packet_file?: string;
+  commit?: string;
+  status: TrackerMutationStatus;
+  updated_at: string;
+  last_attempted_at?: string;
+  last_error?: string;
+}
+
 export interface ClusterState {
   schema_version: string;
   cluster_id: string;
@@ -51,5 +72,6 @@ export interface ClusterState {
   result_pointers: ResultPointer;
   validation_results: { [key: string]: ValidationResult };
   commits: { [childId: string]: string };
+  tracker_mutations: { [childId: string]: TrackerMutationReference };
   blockers: Blocker[];
 }

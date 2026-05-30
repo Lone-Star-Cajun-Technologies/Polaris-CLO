@@ -530,6 +530,7 @@ function buildClusterStateFromLoopState(state: LoopState): ClusterState {
     result_pointers: {},
     validation_results: {},
     commits: {},
+    tracker_mutations: {},
     blockers: [],
   };
 }
