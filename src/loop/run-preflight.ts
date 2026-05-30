@@ -111,31 +111,42 @@ export async function ensureClusterRunState(options: EnsureClusterRunStateOption
     let existingState;
     try {
       existingState = readState(stateFile);
-    } catch {
-      return;
+    } catch (err) {
+      if (!isEnoent(err)) {
+        console.warn(
+          `run-preflight: failed to read state file ${stateFile}: ${err instanceof Error ? err.message : String(err)}. Proceeding with bootstrap.`,
+        );
+      }
+      // ENOENT (race condition) or parse/IO error — proceed to bootstrap
     }
 
-    if (existingState.cluster_id === clusterId) {
-      if (
-        await isGhostCompleteState(
-          clusterId,
-          repoRoot,
-          existingState.completed_children ?? [],
-          existingState.status,
-        )
-      ) {
-        preserveMismatchedState(stateFile);
-      } else {
-        if (validateState(existingState).length > 0) {
-          return;
+    if (existingState !== undefined) {
+      if (existingState.cluster_id === clusterId) {
+        if (
+          await isGhostCompleteState(
+            clusterId,
+            repoRoot,
+            existingState.completed_children ?? [],
+            existingState.status,
+          )
+        ) {
+          preserveMismatchedState(stateFile);
+        } else {
+          // Valid state for this cluster — no bootstrap needed
+          if (validateState(existingState).length === 0) {
+            return;
+          }
+          // Invalid state — fall through to re-bootstrap with a fresh state
         }
-        return;
+      } else {
+        // Mismatched cluster_id — always preserve, with a warning if also invalid
+        if (validateState(existingState).length > 0) {
+          console.warn(
+            `run-preflight: state file ${stateFile} has cluster_id "${existingState.cluster_id}" (expected "${clusterId}") and failed validation; preserving for inspection.`,
+          );
+        }
+        preserveMismatchedState(stateFile);
       }
-    } else {
-      if (validateState(existingState).length > 0) {
-        return;
-      }
-      preserveMismatchedState(stateFile);
     }
   }
 

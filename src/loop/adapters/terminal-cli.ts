@@ -125,7 +125,7 @@ export class TerminalCliAdapter implements ExecutionAdapter {
         );
       }
 
-      return await this.runProcess(command, args, commandLine, packet, packetFile, options.provider);
+      return await this.runProcess(command, args, commandLine, packet, packetFile, options.provider, workerPrompt);
     } finally {
       try {
         fs.unlinkSync(packetFile);
@@ -183,7 +183,8 @@ export class TerminalCliAdapter implements ExecutionAdapter {
     commandLine: string,
     packet: BootstrapPacket,
     packetFile: string,
-    provider: string
+    provider: string,
+    workerPrompt: string
   ): Promise<DispatchResult> {
     return new Promise((resolve, reject) => {
       const env: NodeJS.ProcessEnv = {
@@ -195,7 +196,7 @@ export class TerminalCliAdapter implements ExecutionAdapter {
         POLARIS_TELEMETRY_FILE: packet.telemetry_file,
         POLARIS_PACKET_FILE: packetFile,
         POLARIS_PACKET_JSON: JSON.stringify(packet),
-        POLARIS_WORKER_PROMPT: buildWorkerInstructions(packet),
+        POLARIS_WORKER_PROMPT: workerPrompt,
       };
 
       const child = spawn(command, args, {

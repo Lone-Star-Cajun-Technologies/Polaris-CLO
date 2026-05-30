@@ -321,10 +321,13 @@ async function syncClusterCompletion(args: {
   resultFile?: string;
   validationSummary?: unknown;
   lastCommit?: string;
-}): Promise<void> {
+}): Promise<boolean> {
   const clusterState = await readClusterState(args.clusterId, args.repoRoot);
   if (!clusterState) {
-    return;
+    process.stderr.write(
+      `[polaris] syncClusterCompletion: no cluster state found for clusterId=${args.clusterId}; skipping sync\n`,
+    );
+    return false;
   }
 
   const childStates: ChildState[] = clusterState.child_states.some((child) => child.id === args.childId)
@@ -382,6 +385,7 @@ async function syncClusterCompletion(args: {
     },
     args.repoRoot,
   );
+  return true;
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -1005,7 +1009,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     if (!dryRun) {
       const commitSuffix = lastCommit && lastCommit.length > 0 ? ` (commit: ${lastCommit})` : "";
       try {
-        await syncClusterCompletion({
+        const synced = await syncClusterCompletion({
           clusterId: state.cluster_id,
           childId: nextChild,
           repoRoot,
@@ -1013,6 +1017,15 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
           validationSummary,
           lastCommit,
         });
+        if (!synced) {
+          appendTelemetry(telemetryFile, {
+            event: "cluster-state-sync-skipped",
+            run_id: state.run_id,
+            child_id: nextChild,
+            reason: "no cluster state found",
+            timestamp: new Date().toISOString(),
+          });
+        }
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         appendTelemetry(telemetryFile, {
