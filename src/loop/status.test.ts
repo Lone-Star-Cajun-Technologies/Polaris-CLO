@@ -81,6 +81,9 @@ describe("runLoopStatus", () => {
     expect(output).toContain("POL-26");
     expect(output).toContain("POL-23, POL-24, POL-25");
     expect(output).toContain("Blocked:         none");
+    expect(output).toContain("Runtime Artifacts:");
+    expect(output).toContain(".polaris/clusters/POL-5/cluster-state.json (canonical; live execution authority)");
+    expect(output).toContain(".polaris/runs/current-state.json (legacy; legacy/transitional current-state snapshot)");
   });
 
   it("emits JSON output with --json flag", () => {
@@ -98,6 +101,16 @@ describe("runLoopStatus", () => {
     expect(parsed.completed_children).toEqual(["POL-23", "POL-24", "POL-25"]);
     expect(parsed.open_children).toEqual(["POL-26", "POL-27"]);
     expect(parsed.deadlock).toBe(false);
+    expect(parsed.runtime_artifacts.cluster_state).toMatchObject({
+      path: ".polaris/clusters/POL-5/cluster-state.json",
+      classification: "canonical",
+      role: "live execution authority",
+      exists: false,
+    });
+    expect(parsed.runtime_artifacts.current_state).toMatchObject({
+      path: ".polaris/runs/current-state.json",
+      classification: "legacy",
+    });
   });
 
   it("reports bootstrap packet as fresh when SHA matches", () => {

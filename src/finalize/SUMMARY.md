@@ -1,12 +1,13 @@
 # Summary: finalize
 
 ## Purpose
-Atomic 12-step delivery sequence — the only subsystem that pushes branches, opens PRs, and closes Linear issues.
+Atomic 13-step delivery sequence — the only subsystem that pushes branches, opens PRs, and closes Linear issues.
 
 ## Key behaviors
-- Steps 01–12 are sequenced exclusively by `runFinalize`; steps do not call each other.
-- Steps 07–12 (remote operations) are skipped under `--dry-run` or `--skip-delivery`.
-- Step 06 commits exactly: state + map + run-report. Nothing else.
+- Steps are sequenced exclusively by `runFinalize`; steps do not call each other.
+- Tracker reconciliation runs before the final commit and only from validated cluster-state/result evidence.
+- Remote delivery steps after the commit are skipped under `--dry-run` or `--skip-delivery`.
+- `stepCommit` commits exactly: state + map + run-report. Nothing else.
 - Only `polaris finalize` may call `git push`.
 
 ## Relationships

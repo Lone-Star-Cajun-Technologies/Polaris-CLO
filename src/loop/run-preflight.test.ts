@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { mkdirSync, readdirSync, writeFileSync, existsSync } from "node:fs";
+import { mkdirSync, readdirSync, writeFileSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -55,6 +55,7 @@ function writeClusterState(
         result_pointers: {},
         validation_results: {},
         commits: {},
+        tracker_mutations: {},
         blockers: [],
       },
       null,
@@ -138,6 +139,7 @@ describe("ensureClusterRunState", () => {
   it("reuses existing state when it already matches the requested cluster", async () => {
     const repoRoot = makeRepo();
     try {
+      writeClusterState(repoRoot, "POL-232", [{ id: "POL-232", status: "ready" }]);
       const stateDir = join(repoRoot, ".taskchain_artifacts", "polaris-run");
       mkdirSync(stateDir, { recursive: true });
       const stateFile = join(stateDir, "current-state.json");
@@ -167,6 +169,145 @@ describe("ensureClusterRunState", () => {
       });
 
       expect(bootstrapHandler).not.toHaveBeenCalled();
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("fails fast when canonical cluster-state is missing for a reusable run", async () => {
+    const repoRoot = makeRepo();
+    try {
+      const stateDir = join(repoRoot, ".taskchain_artifacts", "polaris-run");
+      mkdirSync(stateDir, { recursive: true });
+      const stateFile = join(stateDir, "current-state.json");
+      writeFileSync(
+        stateFile,
+        JSON.stringify({
+          schema_version: "1.0",
+          run_id: "run-232",
+          cluster_id: "POL-232",
+          active_child: "",
+          completed_children: [],
+          open_children: ["POL-232"],
+          step_cursor: null,
+          context_budget: { children_completed: 0 },
+          status: "running",
+          next_open_child: "POL-232",
+        }),
+        "utf-8",
+      );
+      const bootstrapHandler = vi.fn();
+
+      await expect(
+        ensureClusterRunState({
+          clusterId: "POL-232",
+          stateFile,
+          repoRoot,
+          bootstrapHandler,
+        }),
+      ).rejects.toThrow("missing canonical cluster-state");
+      expect(bootstrapHandler).not.toHaveBeenCalled();
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("fails fast when canonical cluster-state drifts from current-state child references", async () => {
+    const repoRoot = makeRepo();
+    try {
+      writeClusterState(repoRoot, "POL-232", [{ id: "POL-999", status: "ready" }]);
+      const stateDir = join(repoRoot, ".taskchain_artifacts", "polaris-run");
+      mkdirSync(stateDir, { recursive: true });
+      const stateFile = join(stateDir, "current-state.json");
+      writeFileSync(
+        stateFile,
+        JSON.stringify({
+          schema_version: "1.0",
+          run_id: "run-232",
+          cluster_id: "POL-232",
+          active_child: "",
+          completed_children: [],
+          open_children: ["POL-232"],
+          step_cursor: null,
+          context_budget: { children_completed: 0 },
+          status: "running",
+          next_open_child: "POL-232",
+        }),
+        "utf-8",
+      );
+      const bootstrapHandler = vi.fn();
+
+      await expect(
+        ensureClusterRunState({
+          clusterId: "POL-232",
+          stateFile,
+          repoRoot,
+          bootstrapHandler,
+        }),
+      ).rejects.toThrow("missing children referenced by current-state.json: POL-232");
+      expect(bootstrapHandler).not.toHaveBeenCalled();
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("leaves an invalid matching state in place for downstream validation", async () => {
+    const repoRoot = makeRepo();
+    try {
+      writeClusterGraph(repoRoot, "POL-232", ["POL-232"]);
+      const stateDir = join(repoRoot, ".taskchain_artifacts", "polaris-run");
+      mkdirSync(stateDir, { recursive: true });
+      const stateFile = join(stateDir, "current-state.json");
+      writeFileSync(
+        stateFile,
+        JSON.stringify({
+          schema_version: "1.0",
+          run_id: "run-232",
+          cluster_id: "POL-232",
+          active_child: null,
+          completed_children: [],
+          open_children: ["POL-232"],
+          step_cursor: "dispatch",
+          context_budget: { children_completed: 0 },
+          status: "running",
+          next_open_child: "POL-232",
+        }),
+        "utf-8",
+      );
+      const bootstrapHandler = vi.fn();
+
+      await ensureClusterRunState({
+        clusterId: "POL-232",
+        stateFile,
+        repoRoot,
+        bootstrapHandler,
+      });
+
+      expect(bootstrapHandler).not.toHaveBeenCalled();
+      expect(JSON.parse(readFileSync(stateFile, "utf-8")).active_child).toBeNull();
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("leaves an invalid state without cluster identity in place for downstream validation", async () => {
+    const repoRoot = makeRepo();
+    try {
+      const stateDir = join(repoRoot, ".taskchain_artifacts", "polaris-run");
+      mkdirSync(stateDir, { recursive: true });
+      const stateFile = join(stateDir, "current-state.json");
+      writeFileSync(stateFile, JSON.stringify({ not_valid: true }), "utf-8");
+      const bootstrapHandler = vi.fn();
+
+      await ensureClusterRunState({
+        clusterId: "POL-232",
+        stateFile,
+        repoRoot,
+        bootstrapHandler,
+      });
+
+      expect(bootstrapHandler).not.toHaveBeenCalled();
+      expect(JSON.parse(readFileSync(stateFile, "utf-8"))).toEqual({ not_valid: true });
     } finally {
       rmSync(repoRoot, { recursive: true, force: true });
     }

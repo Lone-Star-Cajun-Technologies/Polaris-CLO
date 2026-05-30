@@ -14,6 +14,10 @@ interface BootstrapPlan {
   openChildrenMeta: NonNullable<BootstrapInitOptions["openChildrenMeta"]>;
 }
 
+function getClusterStatePath(clusterId: string, repoRoot: string): string {
+  return join(repoRoot, ".polaris", "clusters", clusterId, "cluster-state.json");
+}
+
 export interface EnsureClusterRunStateOptions {
   clusterId: string;
   stateFile: string;
@@ -104,6 +108,44 @@ async function isGhostCompleteState(
   });
 }
 
+async function assertCanonicalClusterState(
+  clusterId: string,
+  repoRoot: string,
+  state: {
+    active_child?: string;
+    open_children?: string[];
+    completed_children?: string[];
+  },
+): Promise<void> {
+  const clusterStatePath = getClusterStatePath(clusterId, repoRoot);
+  const clusterState = await readClusterState(clusterId, repoRoot);
+
+  if (!clusterState) {
+    throw new Error(
+      `run-preflight: missing canonical cluster-state for ${clusterId} at ${clusterStatePath}. ` +
+      "The live execution state must exist before Polaris reuses current-state.json.",
+    );
+  }
+
+  const clusterChildIds = new Set(clusterState.child_states.map((child) => child.id));
+  const referencedChildren = new Set([
+    ...state.completed_children ?? [],
+    ...state.open_children ?? [],
+    ...(
+      state.active_child && state.active_child.length > 0
+        ? [state.active_child]
+        : []
+    ),
+  ]);
+  const missingChildren = [...referencedChildren].filter((childId) => !clusterChildIds.has(childId));
+
+  if (missingChildren.length > 0) {
+    throw new Error(
+      `run-preflight: cluster-state for ${clusterId} is missing children referenced by current-state.json: ${missingChildren.join(", ")}`,
+    );
+  }
+}
+
 export async function ensureClusterRunState(options: EnsureClusterRunStateOptions): Promise<void> {
   const { clusterId, stateFile, repoRoot, bootstrapHandler } = options;
 
@@ -121,6 +163,7 @@ export async function ensureClusterRunState(options: EnsureClusterRunStateOption
     }
 
     if (existingState !== undefined) {
+      const validationErrors = validateState(existingState);
       if (existingState.cluster_id === clusterId) {
         if (
           await isGhostCompleteState(
@@ -133,14 +176,19 @@ export async function ensureClusterRunState(options: EnsureClusterRunStateOption
           preserveMismatchedState(stateFile);
         } else {
           // Valid state for this cluster — no bootstrap needed
-          if (validateState(existingState).length === 0) {
+          if (validationErrors.length === 0) {
+            await assertCanonicalClusterState(clusterId, repoRoot, existingState);
             return;
           }
-          // Invalid state — fall through to re-bootstrap with a fresh state
+          // Leave invalid in-place so downstream validation reports the real state error.
+          return;
         }
       } else {
+        if (!existingState.cluster_id && validationErrors.length > 0) {
+          return;
+        }
         // Mismatched cluster_id — always preserve, with a warning if also invalid
-        if (validateState(existingState).length > 0) {
+        if (validationErrors.length > 0) {
           console.warn(
             `run-preflight: state file ${stateFile} has cluster_id "${existingState.cluster_id}" (expected "${clusterId}") and failed validation; preserving for inspection.`,
           );

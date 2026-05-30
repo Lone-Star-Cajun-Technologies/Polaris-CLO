@@ -144,12 +144,18 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
       const localGraph = await LocalGraph.load(state.cluster_id, repoRoot);
       const { McpBridgeAdapter } = await import("../tracker/adapters/mcp-bridge.js");
       const trackerAdapter = new McpBridgeAdapter();
-      const trackerSyncService = new TrackerSyncService(trackerAdapter, localGraph);
+      const trackerSyncService = new TrackerSyncService(trackerAdapter, localGraph, {
+        repoRoot,
+        clusterId: state.cluster_id,
+      });
       await trackerSyncService.ready;
       const reconciliationReport = await trackerSyncService.reconcile(dryRun);
       console.log("Tracker Reconciliation Report:", reconciliationReport);
       if (reconciliationReport.conflictsDetectedCount > 0 || reconciliationReport.failedMutationsCount > 0) {
-        console.warn("Tracker reconciliation detected conflicts or failed mutations. Review the report above.");
+        const summary = reconciliationReport.details.join(" | ");
+        throw new Error(
+          `tracker reconciliation requires attention (conflicts=${reconciliationReport.conflictsDetectedCount}, failed=${reconciliationReport.failedMutationsCount})${summary ? `: ${summary}` : ""}`,
+        );
       }
     } catch (error) {
       console.error("Error during tracker reconciliation:", error);

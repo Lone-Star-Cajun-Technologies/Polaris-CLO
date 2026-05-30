@@ -5,6 +5,8 @@ import { dirname, join, isAbsolute, resolve, relative } from "node:path";
 import { readState, validateState, writeStateAtomic, type LoopState, type ChildDispatchRecord, type DispatchMode, type WorkerRuntimeState, type WorkerAssignmentRecord } from "./checkpoint.js";
 import { compileImplPacket, type WorkerPacket, type WorkerRoleContext } from "./worker-packet.js";
 import { loadConfig } from "../config/loader.js";
+import { readClusterStateSync, writeClusterStateSync } from "../cluster-state/store.js";
+import type { ChildState, ClusterState } from "../cluster-state/types.js";
 import { selectPromptMode } from "./worker-prompt.js";
 import {
   advanceDispatchEpoch,
@@ -32,6 +34,8 @@ export interface DispatchOptions {
   /** Provider for direct-worker dispatch; if omitted, checks config then falls back to delegated mode */
   provider?: string;
 }
+
+const CLAIM_TTL_MS = 30 * 60 * 1000;
 
 /**
  * Resolve provider from config when no explicit --provider flag is set.
@@ -498,6 +502,99 @@ function buildPacket(
   });
 }
 
+function buildClusterStateFromLoopState(state: LoopState, previousGeneration?: number): ClusterState {
+  const childOrder = [
+    ...state.completed_children,
+    ...state.open_children,
+    ...(state.active_child ? [state.active_child] : []),
+  ];
+  const seen = new Set<string>();
+  const child_states: ChildState[] = [];
+
+  for (const childId of childOrder) {
+    if (!childId || seen.has(childId)) continue;
+    seen.add(childId);
+
+    let status: ChildState["status"];
+    if (state.completed_children.includes(childId)) {
+      status = "done";
+    } else if (childId === state.active_child) {
+      status = "dispatched";
+    } else {
+      status = "ready";
+    }
+
+    child_states.push({
+      id: childId,
+      status,
+    });
+  }
+
+  return {
+    schema_version: "1.0",
+    cluster_id: state.cluster_id,
+    state_generation: previousGeneration !== undefined ? previousGeneration + 1 : 1,
+    child_states,
+    claim_metadata: {},
+    packet_pointers: {},
+    result_pointers: {},
+    validation_results: {},
+    commits: {},
+    tracker_mutations: {},
+    blockers: [],
+  };
+}
+
+function syncClusterDispatchState(
+  state: LoopState,
+  childId: string,
+  dispatchRecord: ChildDispatchRecord,
+  packetPath: string,
+  repoRoot: string,
+): void {
+  const existingState = readClusterStateSync(state.cluster_id, repoRoot);
+  const previousGeneration = existingState?.state_generation;
+  const clusterState = existingState ?? buildClusterStateFromLoopState(state, previousGeneration);
+  const claimedAt = dispatchRecord.dispatched_at;
+  const claimedAtMs = new Date(claimedAt).getTime();
+  const expiresAt = new Date(
+    Number.isFinite(claimedAtMs) ? claimedAtMs + CLAIM_TTL_MS : Date.now() + CLAIM_TTL_MS,
+  ).toISOString();
+  const knownChild = clusterState.child_states.some((child) => child.id === childId);
+  const child_states = knownChild
+    ? clusterState.child_states.map((child) =>
+        child.id === childId
+          ? {
+              ...child,
+              status: "dispatched" as const,
+            }
+          : child,
+      )
+    : [...clusterState.child_states, { id: childId, status: "dispatched" as const }];
+
+  writeClusterStateSync(
+    state.cluster_id,
+    {
+      ...clusterState,
+      state_generation: clusterState.state_generation + 1,
+      child_states,
+      claim_metadata: {
+        ...clusterState.claim_metadata,
+        [childId]: {
+          worker_id: dispatchRecord.worker_id ?? dispatchRecord.dispatch_id,
+          claimed_at: claimedAt,
+          expires_at: expiresAt,
+        },
+      },
+      packet_pointers: {
+        ...clusterState.packet_pointers,
+        [childId]: packetPath,
+      },
+    },
+    repoRoot,
+  );
+}
+
 export function runLoopDispatch(options: DispatchOptions): void {
   let state: LoopState;
   try {
@@ -655,6 +752,20 @@ export function runLoopDispatch(options: DispatchOptions): void {
       },
     },
   };
+
+  try {
+    syncClusterDispatchState(state, childId, dispatchRecord, relativePacketPath, options.repoRoot);
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    appendTelemetry(telemetryFile, {
+      event: "dispatch-failed",
+      run_id: state.run_id,
+      child_id: childId,
+      error: `Failed to sync cluster-state: ${errorMsg}`,
+      timestamp: new Date().toISOString(),
+    });
+    fail(`Failed to sync cluster-state for ${childId}: ${errorMsg}`);
+  }
 
   writeStateAtomic(options.stateFile, updatedState);
   appendDispatchLedgerEvent(options.repoRoot, updatedState, childId);

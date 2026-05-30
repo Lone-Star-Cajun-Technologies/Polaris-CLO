@@ -1,5 +1,5 @@
 import { readFileSync, readdirSync, existsSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { join, resolve, normalize, sep } from "node:path";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { readState, validateState, type ChildDispatchRecord, type DispatchMode, type WorkerRuntimeState, type WorkerAssignmentRecord } from "./checkpoint.js";
@@ -119,6 +119,71 @@ function getRelativePath(repoRoot: string, absolutePath: string): string {
     return absolutePath.slice(repoRoot.length + 1);
   }
   return absolutePath;
+}
+
+interface RuntimeArtifactSurface {
+  path: string;
+  role: string;
+  classification: "canonical" | "compatibility" | "derived" | "debug" | "legacy";
+  exists: boolean;
+}
+
+function classifyCurrentStateSurface(repoRoot: string, stateFile: string): RuntimeArtifactSurface {
+  const relativePath = getRelativePath(repoRoot, stateFile);
+  const normalizedPath = relativePath.split(sep).join("/");
+  const targetPath = join(".polaris", "runs", "current-state.json").split(sep).join("/");
+
+  if (normalizedPath === targetPath) {
+    return {
+      path: relativePath,
+      role: "legacy/transitional current-state snapshot",
+      classification: "legacy",
+      exists: existsSync(stateFile),
+    };
+  }
+
+  return {
+    path: relativePath,
+    role: "compatibility/debug current-state surface",
+    classification: "compatibility",
+    exists: existsSync(stateFile),
+  };
+}
+
+function buildRuntimeArtifactSurfaces(
+  repoRoot: string,
+  clusterId: string,
+  stateFile: string,
+  bootstrapDir: string,
+  telemetryFile: string,
+): {
+  cluster_state: RuntimeArtifactSurface;
+  current_state: RuntimeArtifactSurface;
+  bootstrap_packets: RuntimeArtifactSurface;
+  telemetry: RuntimeArtifactSurface;
+} {
+  const clusterStatePath = join(repoRoot, ".polaris", "clusters", clusterId, "cluster-state.json");
+  return {
+    cluster_state: {
+      path: getRelativePath(repoRoot, clusterStatePath),
+      role: "live execution authority",
+      classification: "canonical",
+      exists: existsSync(clusterStatePath),
+    },
+    current_state: classifyCurrentStateSurface(repoRoot, stateFile),
+    bootstrap_packets: {
+      path: getRelativePath(repoRoot, bootstrapDir),
+      role: "sealed handoff snapshots",
+      classification: "derived",
+      exists: existsSync(bootstrapDir),
+    },
+    telemetry: {
+      path: getRelativePath(repoRoot, telemetryFile),
+      role: "append-only audit/debug stream",
+      classification: "debug",
+      exists: existsSync(telemetryFile),
+    },
+  };
 }
 
 /**
@@ -490,6 +555,13 @@ export function runLoopStatus(options: StatusOptions): void {
   const artifactDir =
     state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "polaris-run");
   const telemetryFile = join(artifactDir, "runs", state.run_id, "telemetry.jsonl");
+  const runtimeArtifacts = buildRuntimeArtifactSurfaces(
+    repoRoot,
+    state.cluster_id,
+    stateFile,
+    bootstrapDir,
+    telemetryFile,
+  );
   const workerHeartbeat = findWorkerHeartbeat(telemetryFile, state.active_child || null);
   const workerBlocked = findWorkerBlocked(telemetryFile, state.active_child || null);
 
@@ -515,6 +587,7 @@ export function runLoopStatus(options: StatusOptions): void {
           bootstrap_packet: packetPathDisplay
             ? { path: packetPathDisplay, fresh: packetFresh }
             : null,
+          runtime_artifacts: runtimeArtifacts,
           state_sha: stateSha ? stateSha.slice(0, 12) : null,
           role_context: activeDispatch?.role ? {
             role: activeDispatch.role,
@@ -604,6 +677,12 @@ export function runLoopStatus(options: StatusOptions): void {
   ];
 
   lines.push(...roleLines);
+  lines.push("");
+  lines.push("Runtime Artifacts:");
+  lines.push(`  Cluster state:    ${runtimeArtifacts.cluster_state.path} (${runtimeArtifacts.cluster_state.classification}; ${runtimeArtifacts.cluster_state.role}; ${runtimeArtifacts.cluster_state.exists ? "exists" : "missing"})`);
+  lines.push(`  Current state:    ${runtimeArtifacts.current_state.path} (${runtimeArtifacts.current_state.classification}; ${runtimeArtifacts.current_state.role}; ${runtimeArtifacts.current_state.exists ? "exists" : "missing"})`);
+  lines.push(`  Bootstrap dir:    ${runtimeArtifacts.bootstrap_packets.path} (${runtimeArtifacts.bootstrap_packets.classification}; ${runtimeArtifacts.bootstrap_packets.role}; ${runtimeArtifacts.bootstrap_packets.exists ? "exists" : "missing"})`);
+  lines.push(`  Telemetry:        ${runtimeArtifacts.telemetry.path} (${runtimeArtifacts.telemetry.classification}; ${runtimeArtifacts.telemetry.role}; ${runtimeArtifacts.telemetry.exists ? "exists" : "missing"})`);
 
   if (packetPathDisplay) {
     const freshLabel = packetFresh

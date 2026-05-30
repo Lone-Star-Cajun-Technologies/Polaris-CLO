@@ -84,12 +84,37 @@ describe("isDirectoryEligible", () => {
   it("marks runtime and system hidden directories as ineligible", () => {
     const repoRoot = makeRepo();
 
-    for (const dir of [".git", ".polaris", ".github", ".windsurf"]) {
+    for (const dir of [".git", ".github", ".windsurf"]) {
       const fullPath = join(repoRoot, dir);
       mkdirSync(fullPath, { recursive: true });
       const result = isDirectoryEligible(fullPath, repoRoot);
       expect(result.eligible, dir).toBe(false);
       expect(result.category, dir).toMatch(/runtime|hidden/);
+    }
+  });
+
+  it("allows top-level Polaris runtime cognition directories", () => {
+    const repoRoot = makeRepo();
+
+    for (const dir of [".polaris", ".polaris/bootstrap", ".polaris/clusters", ".polaris/map", ".polaris/runs"]) {
+      const fullPath = join(repoRoot, dir);
+      mkdirSync(fullPath, { recursive: true });
+      const result = isDirectoryEligible(fullPath, repoRoot);
+      expect(result.eligible, dir).toBe(true);
+      expect(result.category, dir).toBe("eligible");
+    }
+  });
+
+  it("keeps generated Polaris runtime descendants ineligible", () => {
+    const repoRoot = makeRepo();
+
+    for (const dir of [".polaris/bootstrap/snapshots", ".polaris/clusters/POL-123", ".polaris/map/archive", ".polaris/runs/run-123"]) {
+      const fullPath = join(repoRoot, dir);
+      mkdirSync(fullPath, { recursive: true });
+      const result = isDirectoryEligible(fullPath, repoRoot);
+      expect(result.eligible, dir).toBe(false);
+      expect(result.reason, dir).toContain("generated Polaris runtime directory excluded");
+      expect(result.category, dir).toBe("runtime");
     }
   });
 
@@ -130,7 +155,7 @@ describe("isDirectoryEligible", () => {
     expect(RUNTIME_EXCLUDED_DIR_PATTERNS).toContain("build");
     expect(RUNTIME_EXCLUDED_DIR_PATTERNS).toContain("coverage");
     expect(RUNTIME_EXCLUDED_DIR_PATTERNS).toContain(".git");
-    expect(RUNTIME_EXCLUDED_DIR_PATTERNS).toContain(".polaris");
+    expect(RUNTIME_EXCLUDED_DIR_PATTERNS).not.toContain(".polaris");
     expect(RUNTIME_EXCLUDED_DIR_PATTERNS).toContain("generated");
     expect(RUNTIME_EXCLUDED_DIR_PATTERNS).not.toContain("smartdocs"); // smartdocs/ protected via targeted DEFAULT_SMARTDOCIGNORE_PATTERNS
   });

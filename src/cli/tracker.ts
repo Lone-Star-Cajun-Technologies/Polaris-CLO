@@ -64,7 +64,10 @@ export function createTrackerCommand(options: TrackerCommandOptions): Command {
 
         const { McpBridgeAdapter } = await import('../tracker/adapters/mcp-bridge.js');
         const adapter = new McpBridgeAdapter();
-        const service = new TrackerSyncService(adapter, localGraph);
+        const service = new TrackerSyncService(adapter, localGraph, {
+          repoRoot,
+          clusterId: trackerId,
+        });
         await service.ready;
 
         const report = await service.syncIn({ trackerId });
@@ -117,7 +120,10 @@ export function createTrackerCommand(options: TrackerCommandOptions): Command {
 
       const { McpBridgeAdapter } = await import('../tracker/adapters/mcp-bridge.js');
       const adapter = new McpBridgeAdapter();
-      const service = new TrackerSyncService(adapter, localGraph);
+      const service = new TrackerSyncService(adapter, localGraph, {
+        repoRoot,
+        clusterId: trackerId,
+      });
       await service.ready;
 
       const report = await service.reconcile(commandOptions.dryRun);

@@ -148,10 +148,12 @@ describe("provider smoke tests for sealed local packets", () => {
     expect(calls).toHaveLength(1);
     const dispatchedPacket = calls[0].packet as WorkerPacket;
     expect(dispatchedPacket.active_child).toBe(childId);
-    expect(dispatchedPacket.result_file_contract?.result_file).toBe(resultFilePath);
+    expect(dispatchedPacket.result_file_contract?.result_file).toContain(
+      `.polaris/clusters/POL-197/results/${childId}-`,
+    );
 
     // Verify the mock worker wrote the sealed result file
-    expect(readFileSync(resultFilePath, "utf-8")).toBe(
+    expect(readFileSync(dispatchedPacket.result_file_contract!.result_file, "utf-8")).toBe(
       JSON.stringify(
         {
           run_id: "sealed-packet-smoke-run",

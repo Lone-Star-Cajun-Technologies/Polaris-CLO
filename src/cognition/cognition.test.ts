@@ -69,8 +69,13 @@ describe("isCognitionSkippedFolder", () => {
   it("skips node_modules", () => expect(isCognitionSkippedFolder("node_modules")).toBe(true));
   it("skips dist/", () => expect(isCognitionSkippedFolder("dist/index.js")).toBe(true));
   it("skips .taskchain_artifacts/", () => expect(isCognitionSkippedFolder(".taskchain_artifacts/polaris-run")).toBe(true));
-  it("skips .polaris/bootstrap", () => expect(isCognitionSkippedFolder(".polaris/bootstrap")).toBe(true));
-  it("skips .polaris/runs", () => expect(isCognitionSkippedFolder(".polaris/runs")).toBe(true));
+  it("allows .polaris root", () => expect(isCognitionSkippedFolder(".polaris")).toBe(false));
+  it("allows .polaris/bootstrap", () => expect(isCognitionSkippedFolder(".polaris/bootstrap")).toBe(false));
+  it("allows .polaris/clusters", () => expect(isCognitionSkippedFolder(".polaris/clusters")).toBe(false));
+  it("allows .polaris/map", () => expect(isCognitionSkippedFolder(".polaris/map")).toBe(false));
+  it("allows .polaris/runs", () => expect(isCognitionSkippedFolder(".polaris/runs")).toBe(false));
+  it("skips generated .polaris/clusters descendants", () => expect(isCognitionSkippedFolder(".polaris/clusters/POL-201")).toBe(true));
+  it("skips generated .polaris/runs descendants", () => expect(isCognitionSkippedFolder(".polaris/runs/polaris-run-1")).toBe(true));
   it("skips .claude agent folder", () => expect(isCognitionSkippedFolder(".claude")).toBe(true));
   it("does not skip src/", () => expect(isCognitionSkippedFolder("src")).toBe(false));
   it("does not skip src/loop", () => expect(isCognitionSkippedFolder("src/loop")).toBe(false));
@@ -221,6 +226,18 @@ describe("applyRouteCognitionDelta", () => {
     });
 
     expect(result.routeLocalTargets).not.toContain("POLARIS.md");
+  });
+
+  it("detects missing top-level Polaris runtime surfaces", () => {
+    mkdirSync(join(tmp, ".polaris", "map"), { recursive: true });
+
+    const result = applyRouteCognitionDelta({
+      repoRoot: tmp,
+      touchedFiles: [".polaris/map/file-routes.json"],
+      skipRoot: true,
+    });
+
+    expect(result.missingCognitionSurfaces).toContain(".polaris/map");
   });
 });
 

@@ -18,10 +18,16 @@
  *   06 – CONTINUE (back to step 02) or halt (STOP / CLUSTER COMPLETE)
  */
 
-import { appendFileSync, mkdirSync, readFileSync, realpathSync } from "node:fs";
+import { appendFileSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { dirname, isAbsolute, join, resolve } from "node:path";
-import { readState, validateState, writeStateAtomic, type LoopState } from "./checkpoint.js";
+import {
+  readState,
+  validateState,
+  writeStateAtomic,
+  type ChildDispatchRecord,
+  type LoopState,
+} from "./checkpoint.js";
 import { createAdapter } from "./adapters/registry.js";
 import type { BootstrapPacket, WorkerSummary } from "./adapters/types.js";
 import { checkBudget, policyFromConfig } from "./budget.js";
@@ -46,6 +52,8 @@ import {
   type LedgerRunType,
   type RunStartedEvent,
 } from "./ledger.js";
+
+const CLAIM_TTL_MS = 30 * 60 * 1000;
 
 function logStatus(
   format: "verbose" | "terse" | undefined,
@@ -244,22 +252,82 @@ function absoluteResultFile(repoRoot: string, filePath: string): string {
   return isAbsolute(filePath) ? filePath : resolve(repoRoot, filePath);
 }
 
+function buildClusterArtifactPaths(
+  repoRoot: string,
+  clusterId: string,
+  childId: string,
+  dispatchId: string,
+): { packetPath: string; resultPath: string } {
+  const clusterDir = join(repoRoot, ".polaris", "clusters", clusterId);
+  const filename = `${childId}-${dispatchId}.json`;
+  return {
+    packetPath: join(clusterDir, "packets", filename),
+    resultPath: join(clusterDir, "results", filename),
+  };
+}
+
+function writePacketArtifact(packetPath: string, packet: WorkerPacket): void {
+  mkdirSync(dirname(packetPath), { recursive: true });
+  writeFileSync(packetPath, JSON.stringify(packet, null, 2), "utf-8");
+}
+
 function childResultFilePath(
   state: LoopState,
   childId: string,
-  telemetryFile: string,
   repoRoot: string,
+  dispatchId: string,
 ): string {
   const configured = state.open_children_meta?.[childId]?.result_file;
   if (configured && configured.trim().length > 0) {
     return absoluteResultFile(repoRoot, configured);
   }
-  return join(dirname(telemetryFile), `${childId}-result.json`);
+  return buildClusterArtifactPaths(repoRoot, state.cluster_id, childId, dispatchId).resultPath;
 }
 
-function withChildResultFile(state: LoopState, childId: string, resultFile: string): LoopState {
+function buildParentDispatchRecord(args: {
+  dispatchId: string;
+  runId: string;
+  clusterId: string;
+  childId: string;
+  packetPath: string;
+  resultPath: string;
+  provider: string;
+  workerId: string;
+  dispatchedAt: string;
+}): ChildDispatchRecord {
+  return {
+    dispatch_id: args.dispatchId,
+    child_id: args.childId,
+    run_id: args.runId,
+    cluster_id: args.clusterId,
+    packet_path: args.packetPath,
+    expected_result_path: args.resultPath,
+    provider: args.provider,
+    dispatched_at: args.dispatchedAt,
+    status: "dispatched",
+    dispatch_mode: "direct-worker",
+    runtime_state: "packet-created",
+    worker_id: args.workerId,
+    session_id: null,
+    attachment_capable: false,
+    role: "worker",
+    role_authority: "implementation",
+    may_implement: true,
+    session_type: "implementation",
+  };
+}
+
+function withChildDispatchMetadata(
+  state: LoopState,
+  childId: string,
+  resultFile: string,
+  dispatchRecord: ChildDispatchRecord,
+): LoopState {
   const current = state.open_children_meta?.[childId];
-  if (current?.result_file === resultFile) {
+  if (
+    current?.result_file === resultFile &&
+    current.dispatch_record?.dispatch_id === dispatchRecord.dispatch_id
+  ) {
     return state;
   }
   return {
@@ -269,6 +337,7 @@ function withChildResultFile(state: LoopState, childId: string, resultFile: stri
       [childId]: {
         ...(current ?? {}),
         result_file: resultFile,
+        dispatch_record: dispatchRecord,
       },
     },
   };
@@ -382,6 +451,62 @@ async function syncClusterCompletion(args: {
             [args.childId]: args.lastCommit,
           }
         : clusterState.commits,
+    },
+    args.repoRoot,
+  );
+  return true;
+}
+
+async function syncClusterDispatch(args: {
+  clusterId: string;
+  childId: string;
+  repoRoot: string;
+  packetPath: string;
+  workerId: string;
+  dispatchedAt: string;
+}): Promise<boolean> {
+  const clusterState = await readClusterState(args.clusterId, args.repoRoot);
+  if (!clusterState) {
+    console.warn(
+      `[polaris] syncClusterDispatch: no cluster state found for clusterId=${args.clusterId}; skipping sync`,
+    );
+    return false;
+  }
+
+  const dispatchedAtMs = new Date(args.dispatchedAt).getTime();
+  const expiresAt = new Date(
+    Number.isFinite(dispatchedAtMs) ? dispatchedAtMs + CLAIM_TTL_MS : Date.now() + CLAIM_TTL_MS,
+  ).toISOString();
+
+  const childStates: ChildState[] = clusterState.child_states.some((child) => child.id === args.childId)
+    ? clusterState.child_states.map((child) =>
+        child.id === args.childId
+          ? {
+              ...child,
+              status: "dispatched",
+            }
+          : child,
+      )
+    : [...clusterState.child_states, { id: args.childId, status: "dispatched" }];
+
+  await writeClusterState(
+    args.clusterId,
+    {
+      ...clusterState,
+      state_generation: clusterState.state_generation + 1,
+      child_states: childStates,
+      claim_metadata: {
+        ...clusterState.claim_metadata,
+        [args.childId]: {
+          worker_id: args.workerId,
+          claimed_at: args.dispatchedAt,
+          expires_at: expiresAt,
+        },
+      },
+      packet_pointers: {
+        ...clusterState.packet_pointers,
+        [args.childId]: args.packetPath,
+      },
     },
     args.repoRoot,
   );
@@ -633,13 +758,49 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     // dispatch_boundary.dispatch_epoch is always incremented before any
     // worker execution occurs. This ensures the "dispatched → completed"
     // transition is always verifiable from state alone.
-    const resultFile = childResultFilePath(state, nextChild, telemetryFile, repoRoot);
+    const dispatchId = randomUUID();
+    const workerId = `${state.run_id}:${nextChild}:${Date.now()}`;
+    const dispatchedAt = new Date().toISOString();
+    const resultFile = childResultFilePath(state, nextChild, repoRoot, dispatchId);
+    const packetPath = buildClusterArtifactPaths(repoRoot, state.cluster_id, nextChild, dispatchId).packetPath;
     mkdirSync(dirname(resultFile), { recursive: true });
     let stateBeforeDispatch = state;
+    const packet = buildPacket(state, nextChild, stateFile, telemetryFile, repoRoot, resultFile);
 
     if (!dryRun) {
+      try {
+        writePacketArtifact(packetPath, packet);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        appendTelemetry(telemetryFile, {
+          event: "child-dispatched-error",
+          run_id: state.run_id,
+          child_id: nextChild,
+          worker_id: workerId,
+          error: `Failed to write packet artifact: ${msg}`,
+          timestamp: new Date().toISOString(),
+        });
+        return {
+          haltReason: 'worker-error',
+          childrenDispatched,
+          haltingChild: nextChild,
+          message: `Failed to write packet artifact for ${nextChild}: ${msg}`,
+        };
+      }
+
+      const dispatchRecord = buildParentDispatchRecord({
+        dispatchId,
+        runId: state.run_id,
+        clusterId: state.cluster_id,
+        childId: nextChild,
+        packetPath,
+        resultPath: resultFile,
+        provider: providerName,
+        workerId,
+        dispatchedAt,
+      });
       const stateWithDispatch: LoopState = {
-        ...withChildResultFile(state, nextChild, resultFile),
+        ...withChildDispatchMetadata(state, nextChild, resultFile, dispatchRecord),
         active_child: nextChild,
         step_cursor: "dispatch",
         dispatch_boundary: advanceDispatchEpoch(state.dispatch_boundary, nextChild),
@@ -647,13 +808,38 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
       writeStateAtomic(stateFile, stateWithDispatch);
       state = stateWithDispatch;
       stateBeforeDispatch = stateWithDispatch;
+
+      try {
+        await syncClusterDispatch({
+          clusterId: state.cluster_id,
+          childId: nextChild,
+          repoRoot,
+          packetPath,
+          workerId,
+          dispatchedAt,
+        });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        appendTelemetry(telemetryFile, {
+          event: "child-dispatched-error",
+          run_id: state.run_id,
+          child_id: nextChild,
+          worker_id: workerId,
+          error: `Failed to sync cluster dispatch state: ${msg}`,
+          timestamp: new Date().toISOString(),
+        });
+        return {
+          haltReason: 'worker-error',
+          childrenDispatched,
+          haltingChild: nextChild,
+          message: `Failed to sync cluster dispatch state for ${nextChild}: ${msg}`,
+        };
+      }
     }
 
-    const packet = buildPacket(state, nextChild, stateFile, telemetryFile, repoRoot, resultFile);
     const childrenCompletedBeforeDispatch = state.context_budget.children_completed;
 
     // Register the worker slot before dispatch.
-    const workerId = `${state.run_id}:${nextChild}:${Date.now()}`;
     try {
       lifecycle.register(workerId, nextChild, 'impl');
     } catch (err) {
@@ -678,6 +864,8 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
         provider: providerName,
         prompt_mode: packet.prompt_mode,
         prompt_estimated_tokens: packet.prompt_metrics.estimated_tokens,
+        packet_path: packetPath,
+        expected_result_path: resultFile,
         dry_run: dryRun,
         timestamp: new Date().toISOString(),
       });
