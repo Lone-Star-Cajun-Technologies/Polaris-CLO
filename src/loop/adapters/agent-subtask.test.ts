@@ -77,6 +77,7 @@ const WORKER_PACKET_BASE = {
   branch: "feature/pol-120",
   stateFile: "/repo/.taskchain_artifacts/polaris-run/current-state.json",
   telemetryFile: "/repo/.taskchain_artifacts/polaris-run/runs/run-001/telemetry.jsonl",
+  allowedScope: ["src/**"],
 };
 
 describe("AgentSubtaskAdapter — compiled WorkerPacket", () => {

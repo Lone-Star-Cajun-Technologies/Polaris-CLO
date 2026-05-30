@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "2.0",
+  "activeCluster": "POL-TEST-1",
+  "clusters": {
+    "POL-TEST-1": {
+      "id": "POL-TEST-1",
+      "title": "Test Cluster",
+      "children": ["CHILD-1", "CHILD-2"]
+    }
+  },
+  "nodes": {
+    "POL-TEST-1": { "id": "POL-TEST-1", "type": "cluster" },
+    "CHILD-1": { "id": "CHILD-1", "type": "issue" },
+    "CHILD-2": { "id": "CHILD-2", "type": "issue" }
+  },
+  "dependencies": {
+    "CHILD-2": ["CHILD-1"]
+  }
+}

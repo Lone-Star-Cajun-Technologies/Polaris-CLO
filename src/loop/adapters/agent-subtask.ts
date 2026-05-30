@@ -171,6 +171,26 @@ export class AgentSubtaskAdapter implements ExecutionAdapter {
       };
     }
 
+    if (isWorkerPacket(packet) && packet.worker_role === 'impl') {
+      const allowed = Array.isArray(packet.instructions?.allowed_scope) ? packet.instructions.allowed_scope : [];
+      if (allowed.length === 0) {
+        const blockedMsg = `Worker blocked: impl packet for ${packet.active_child} has empty allowed_scope. Foreman must provide scope or approve override.`;
+        return {
+          exit_code: 1,
+          provider_used: provider,
+          command_run: commandRun,
+          summary: JSON.stringify({
+            child_id: packet.active_child,
+            status: "blocked",
+            validation_summary: blockedMsg,
+            next_action: "escalate",
+            warnings: ["empty-allowed-scope"],
+          }),
+          stderr: blockedMsg,
+        };
+      }
+    }
+
     if (options.dryRun) {
       const childId = packet.active_child || 'no-child';
       return {
