@@ -107,23 +107,23 @@ function buildRunPacket(config: Required<SkillPacketConfig>): Omit<SkillPacket, 
 function buildIngestPacket(): Omit<SkillPacket, "packet_id" | "skill_name" | "active_role" | "role_summary" | "source_config_snapshot" | "generated_at"> {
   return {
     authority_boundaries: [
-      "Read documents from smartdocs/docs/raw/",
+      "Read documents from smartdocs/raw/",
       "Classify documents by content analysis and front-matter",
-      "Route documents to correct authority directories within smartdocs/docs/",
+      "Route documents to correct authority directories within smartdocs/",
       "Write provenance records alongside placed files",
       "Update Polaris map entries to link docs to code areas",
       "Propose doctrine candidates (route to doctrine/candidate/ only)",
       "Emit telemetry events",
     ],
     prohibited_actions: [
-      "Write new Smart Docs to root docs/ — smartdocs/docs/ is the canonical target",
+      "Write new Smart Docs to root docs/ — smartdocs/ is the canonical target",
       "Silently promote documents to doctrine/active/, specs/active/, architecture/, or decisions/",
       "Mutate source files (src/, tests, config)",
       "Call polaris loop continue or polaris finalize",
       "Suppress detected conflicts",
     ],
     allowed_outputs: [
-      "Classified and routed documents in smartdocs/docs/",
+      "Classified and routed documents in smartdocs/",
       "Provenance sidecar records",
       "Polaris map entry updates",
       "Doctrine candidate proposals in doctrine/candidate/",
@@ -145,9 +145,9 @@ function buildIngestPacket(): Omit<SkillPacket, "packet_id" | "skill_name" | "ac
 function buildPromotePacket(): Omit<SkillPacket, "packet_id" | "skill_name" | "active_role" | "role_summary" | "source_config_snapshot" | "generated_at"> {
   return {
     authority_boundaries: [
-      "Read smartdocs/docs/raw/ and smartdocs/docs/doctrine/candidate/ to identify promotion candidates",
+      "Read smartdocs/raw/ and smartdocs/doctrine/candidate/ to identify promotion candidates",
       "Read linked source files (from linkedMapArea in provenance sidecar) to verify relevance",
-      "Read smartdocs/docs/doctrine/active/ and smartdocs/docs/specs/active/ to check for conflicts",
+      "Read smartdocs/doctrine/active/ and smartdocs/specs/active/ to check for conflicts",
       "Call polaris doctrine spec-promote <path> to surface the conflict report (without --approve)",
       "Call polaris doctrine spec-promote <path> --approve only after surfacing report and receiving explicit user confirmation",
       "Call polaris doctrine promote <path> for doctrine candidates that pass governance checks",

@@ -2,21 +2,22 @@
 
 ## Purpose
 
-The SmartDocs vault root is the canonical cognition origin for repository documentation. Keep vault config in `.obsidian/` and canonical content under `docs/`.
+The SmartDocs vault root is the canonical cognition origin for repository documentation. Vault config lives in `.obsidian/`; all canonical content lives directly under `smartdocs/`.
 
 ## What belongs here
 
 - `.obsidian/` — vault configuration only
-- `docs/` — canonical SmartDocs content
+- `architecture/`, `doctrine/`, `specs/`, `integrations/`, `audits/`, `decisions/` — canonical content domains
+- `raw/` — ingest staging area
+- `runtime/` — generated runtime output (excluded from cognition)
 
 ## What does not belong here
 
-- Generated runtime artifacts
+- A `docs/` subdirectory nesting layer (removed; content is now at canonical root)
+- Generated runtime artifacts at vault root
 - Export dumps or transient validation output
-- Canonical prose files outside `docs/`
 
 ## Editing rules
 
 - Keep root cognition stable and minimal.
-- Do not place content files directly at the vault root.
 - Prefer route-local cognition in deeper directories when the topic is specific.

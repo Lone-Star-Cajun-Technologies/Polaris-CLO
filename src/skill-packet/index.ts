@@ -18,7 +18,7 @@ export function createSkillCommand(options: SkillPacketOptions): Command {
   const packetCommand = new Command("packet")
     .description(
       "safe/read-only: generate a Polaris skill packet for the given skill. " +
-      "Any documents produced during the session must be placed in smartdocs/docs/raw/ first — never written directly to active tiers.",
+      "Any documents produced during the session must be placed in smartdocs/raw/ first — never written directly to active tiers.",
     )
     .argument("<skill-name>", `skill to generate a packet for (${SUPPORTED_SKILLS.join(", ")})`)
     .action((skillName: string) => {

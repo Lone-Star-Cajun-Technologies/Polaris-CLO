@@ -27,7 +27,7 @@ export type SummaryDeltaReason =
 
 /**
  * Precedence levels for SUMMARY.md generation source, highest to lowest:
- * 1. promoted-doctrine  — active doctrine files in smartdocs/docs/doctrine/active/
+ * 1. promoted-doctrine  — active doctrine files in smartdocs/doctrine/active/
  * 2. spec-or-arch       — linked specs or architecture docs (active or otherwise)
  * 3. route-polaris-md   — route-local POLARIS.md
  * 4. source-inference   — local source structure (fallback only)
@@ -85,7 +85,7 @@ const SUMMARY_SIGNALS: Array<{ pattern: RegExp; reason: SummaryDeltaReason }> = 
  * Determine the highest-precedence cognition source for the given touched files.
  *
  * Priority (highest first):
- * 1. promoted-doctrine — active doctrine files in smartdocs/docs/doctrine/active/
+ * 1. promoted-doctrine — active doctrine files in smartdocs/doctrine/active/
  * 2. spec-or-arch      — linked specs, architecture, or decision docs
  * 3. route-polaris-md  — a route-local POLARIS.md was touched
  * 4. source-inference  — no above signals; fallback
@@ -130,8 +130,8 @@ export function detectSummaryReasons(
 // ── source_paths enrichment ───────────────────────────────────────────────────
 
 const SMARTDOC_SCAN_DIRS = [
-  "smartdocs/docs/doctrine/active",
-  "smartdocs/docs/specs/active",
+  "smartdocs/doctrine/active",
+  "smartdocs/specs/active",
 ];
 
 /**

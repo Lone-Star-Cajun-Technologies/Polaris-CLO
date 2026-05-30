@@ -140,7 +140,7 @@ function batchFiles(files: string[], batchSize = 4): string[][] {
 export function migrateDocs(options: MigrateOptions): MigrateResult {
   const repoRoot = resolve(options.repoRoot);
   const migrationRunId = options.migrationRunId ?? makeMigrationRunId();
-  const rawDir = resolve(repoRoot, "smartdocs/docs/raw");
+  const rawDir = resolve(repoRoot, "smartdocs/raw");
 
   const allMd = findMarkdownFiles(repoRoot);
   const results: MigrateFileResult[] = [];
@@ -215,10 +215,10 @@ export function migrateDocs(options: MigrateOptions): MigrateResult {
     provenancePath = relative(repoRoot, absProvPath).replace(/\\/g, "/");
   }
 
-  // Build ingest batch paths: where files will land in smartdocs/docs/raw/
+  // Build ingest batch paths: where files will land in smartdocs/raw/
   const migratedDestPaths: string[] = results
     .filter((r) => r.classification === "migrated")
-    .map((r) => r.destination ?? `smartdocs/docs/raw/${basename(r.originalPath)}`);
+    .map((r) => r.destination ?? `smartdocs/raw/${basename(r.originalPath)}`);
 
   const ingestBatches = batchFiles(migratedDestPaths, 4);
 
@@ -234,7 +234,7 @@ export function printMigrateResults(result: MigrateResult): void {
   console.log(`${prefix}Files to migrate: ${migrated.length}`);
 
   for (const r of migrated) {
-    const dest = r.destination ?? `docs/raw/${basename(r.originalPath)}`;
+    const dest = r.destination ?? `raw/${basename(r.originalPath)}`;
     console.log(`  ${r.originalPath} -> ${dest}`);
   }
 

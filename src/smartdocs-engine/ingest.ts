@@ -70,7 +70,7 @@ interface DocsIngestState {
   last_run_at?: string;
 }
 
-export const CANONICAL_TARGET = "smartdocs/docs";
+export const CANONICAL_TARGET = "smartdocs";
 const DOCS_INGEST_STATE_FILE = ".taskchain_artifacts/polaris-docs-ingest/current-state.json";
 const DOCS_INGEST_RUNS_DIR = ".taskchain_artifacts/polaris-docs-ingest/runs";
 const DEFAULT_BATCH_LIMIT = 4;

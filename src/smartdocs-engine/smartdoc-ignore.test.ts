@@ -43,7 +43,7 @@ describe("parseSmartDocIgnore", () => {
       "docs/generated/report.md",
       "summaries/run.md",
       "docs/summaries/run.md",
-      "smartdocs/docs/specs/active/example.md",
+      "smartdocs/specs/active/example.md",
     ]) {
       expect(isIngestIneligible(path, repoRoot).ineligible, path).toBe(true);
     }
@@ -59,11 +59,11 @@ describe("parseSmartDocIgnore", () => {
 
   it("allows non-ignored paths", () => {
     const repoRoot = makeRepo();
-    mkdirSync(join(repoRoot, "smartdocs", "docs", "raw"), { recursive: true });
+    mkdirSync(join(repoRoot, "smartdocs", "raw"), { recursive: true });
     writeFileSync(join(repoRoot, ".smartdocignore"), "tmp/\n", "utf-8");
 
-    expect(isIngestIneligible("smartdocs/docs/raw/spec.md", repoRoot)).toEqual({ ineligible: false });
-    expect(parseSmartDocIgnore(repoRoot).ignores("smartdocs/docs/raw/spec.md")).toBe(false);
+    expect(isIngestIneligible("smartdocs/raw/spec.md", repoRoot)).toEqual({ ineligible: false });
+    expect(parseSmartDocIgnore(repoRoot).ignores("smartdocs/raw/spec.md")).toBe(false);
   });
 });
 

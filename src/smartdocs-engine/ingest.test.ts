@@ -7,7 +7,7 @@ import { classifyDoc, ingestDocs, CANONICAL_TARGET } from "./ingest.js";
 
 function makeRepo(): string {
   const repoRoot = mkdtempSync(join(tmpdir(), "polaris-docs-ingest-"));
-  mkdirSync(join(repoRoot, "smartdocs", "docs", "raw"), { recursive: true });
+  mkdirSync(join(repoRoot, "smartdocs", "raw"), { recursive: true });
   mkdirSync(join(repoRoot, CANONICAL_TARGET, "doctrine", "active"), { recursive: true });
   mkdirSync(join(repoRoot, ".polaris", "map"), { recursive: true });
   writeFileSync(
@@ -75,12 +75,12 @@ describe("ingestDocs", () => {
   it("moves a raw spec, writes provenance, links map area, and emits telemetry", () => {
     const repoRoot = makeRepo();
     writeFileSync(
-      join(repoRoot, "smartdocs", "docs", "raw", "ingest-plan.md"),
+      join(repoRoot, "smartdocs", "raw", "ingest-plan.md"),
       "# Ingest Spec\n\nAcceptance Criteria\n\nTouches src/smartdocs-engine/index.ts.",
       "utf-8",
     );
 
-    const [result] = ingestDocs(["smartdocs/docs/raw/ingest-plan.md"], { repoRoot });
+    const [result] = ingestDocs(["smartdocs/raw/ingest-plan.md"], { repoRoot });
 
     expect(result.classification).toBe("spec-raw");
     expect(result.destinationPath).toBe(`${CANONICAL_TARGET}/raw/ingest-plan.md`);
@@ -104,17 +104,17 @@ describe("ingestDocs", () => {
   it("rejects batches above the bounded file limit", () => {
     const repoRoot = makeRepo();
     for (const name of ["a.md", "b.md", "c.md", "d.md", "e.md"]) {
-      writeFileSync(join(repoRoot, "smartdocs", "docs", "raw", name), "# Spec\n\nAcceptance Criteria", "utf-8");
+      writeFileSync(join(repoRoot, "smartdocs", "raw", name), "# Spec\n\nAcceptance Criteria", "utf-8");
     }
 
     expect(() =>
       ingestDocs(
         [
-          "smartdocs/docs/raw/a.md",
-          "smartdocs/docs/raw/b.md",
-          "smartdocs/docs/raw/c.md",
-          "smartdocs/docs/raw/d.md",
-          "smartdocs/docs/raw/e.md",
+          "smartdocs/raw/a.md",
+          "smartdocs/raw/b.md",
+          "smartdocs/raw/c.md",
+          "smartdocs/raw/d.md",
+          "smartdocs/raw/e.md",
         ],
         { repoRoot },
       ),
@@ -123,28 +123,28 @@ describe("ingestDocs", () => {
 
   it("does not promote high-authority architecture docs without approval", () => {
     const repoRoot = makeRepo();
-    writeFileSync(join(repoRoot, "smartdocs", "docs", "raw", "architecture.md"), "# Architecture\n\nStructural design", "utf-8");
+    writeFileSync(join(repoRoot, "smartdocs", "raw", "architecture.md"), "# Architecture\n\nStructural design", "utf-8");
 
-    expect(() => ingestDocs(["smartdocs/docs/raw/architecture.md"], { repoRoot })).toThrow("requires explicit approval");
+    expect(() => ingestDocs(["smartdocs/raw/architecture.md"], { repoRoot })).toThrow("requires explicit approval");
   });
 
-  it("halts when smartdocs/docs/ canonical target is missing", () => {
+  it("halts when smartdocs/ canonical target is missing", () => {
     const repoRoot = makeRepoWithoutCanonical();
     writeFileSync(join(repoRoot, "test.md"), "# Spec\n\nAcceptance Criteria", "utf-8");
 
-    expect(() => ingestDocs(["test.md"], { repoRoot })).toThrow("canonical target");
-    expect(() => ingestDocs(["test.md"], { repoRoot })).toThrow("smartdocs/docs");
+        expect(() => ingestDocs(["test.md"], { repoRoot })).toThrow("canonical target");
+    expect(() => ingestDocs(["test.md"], { repoRoot })).toThrow("smartdocs");
   });
 
   it("dry-run classifies and reports placement without moving files", () => {
     const repoRoot = makeRepo();
     writeFileSync(
-      join(repoRoot, "smartdocs", "docs", "raw", "spec-dry.md"),
+      join(repoRoot, "smartdocs", "raw", "spec-dry.md"),
       "# Feature Spec\n\nAcceptance Criteria",
       "utf-8",
     );
 
-    const [result] = ingestDocs(["smartdocs/docs/raw/spec-dry.md"], { repoRoot, dryRun: true });
+    const [result] = ingestDocs(["smartdocs/raw/spec-dry.md"], { repoRoot, dryRun: true });
 
     expect(result.dryRun).toBe(true);
     expect(result.classification).toBe("spec-raw");
@@ -152,7 +152,7 @@ describe("ingestDocs", () => {
     expect(result.provenancePath).toBeNull();
 
     // Source file still exists (not moved)
-    expect(existsSync(join(repoRoot, "smartdocs", "docs", "raw", "spec-dry.md"))).toBe(true);
+    expect(existsSync(join(repoRoot, "smartdocs", "raw", "spec-dry.md"))).toBe(true);
     // Target file does not exist
     expect(existsSync(join(repoRoot, CANONICAL_TARGET, "specs", "raw", "spec-dry.md"))).toBe(false);
 
@@ -174,13 +174,13 @@ describe("ingestDocs", () => {
       "utf-8",
     );
     writeFileSync(
-      join(repoRoot, "smartdocs", "docs", "raw", "conflicting-doc.md"),
+      join(repoRoot, "smartdocs", "raw", "conflicting-doc.md"),
       "# Conflicting Policy\n\nAgents never preserve telemetry files.",
       "utf-8",
     );
 
     expect(() =>
-      ingestDocs(["smartdocs/docs/raw/conflicting-doc.md"], { repoRoot }),
+      ingestDocs(["smartdocs/raw/conflicting-doc.md"], { repoRoot }),
     ).toThrow("conflict detected");
 
     // Conflict telemetry should be present
@@ -194,12 +194,12 @@ describe("ingestDocs", () => {
   it("writes durable state to polaris-docs-ingest after a successful ingest", () => {
     const repoRoot = makeRepo();
     writeFileSync(
-      join(repoRoot, "smartdocs", "docs", "raw", "state-test.md"),
+      join(repoRoot, "smartdocs", "raw", "state-test.md"),
       "# Feature Spec\n\nAcceptance Criteria",
       "utf-8",
     );
 
-    const [result] = ingestDocs(["smartdocs/docs/raw/state-test.md"], { repoRoot });
+    const [result] = ingestDocs(["smartdocs/raw/state-test.md"], { repoRoot });
 
     const stateFile = join(repoRoot, ".taskchain_artifacts", "polaris-docs-ingest", "current-state.json");
     expect(existsSync(stateFile)).toBe(true);
