@@ -137,10 +137,24 @@ function batchFiles(files: string[], batchSize = 4): string[][] {
   return batches;
 }
 
+/**
+ * Migrates markdown files in a repository into smartdocs/raw/, records provenance for moved files, and summarizes the migration.
+ *
+ * @param options - Migration options including the repository root, an optional dry-run flag, and an optional migration run identifier.
+ *   - `repoRoot`: Path to the repository root containing markdown files to evaluate and migrate.
+ *   - `dryRun`: When true, no files are moved or written; results describe what would have happened.
+ *   - `migrationRunId`: If provided, use this identifier for provenance records; otherwise a new id is generated.
+ * @returns An object summarizing the migration:
+ *   - `results`: Per-file results showing original path, current path, classification (`"allowed-exception"` or `"migrated"`), and optional fields such as `exceptionReason`, `endpointArtifactReason`, or `destination`.
+ *   - `migrationRunId`: The migration run identifier used for this operation.
+ *   - `provenancePath`: Relative path to the written provenance JSON file when not a dry run and provenance was recorded; `null` otherwise.
+ *   - `ingestBatches`: Array of batches (arrays) of destination paths suitable for ingestion.
+ *   - `dryRun`: Boolean reflecting whether the operation was a dry run.
+ */
 export function migrateDocs(options: MigrateOptions): MigrateResult {
   const repoRoot = resolve(options.repoRoot);
   const migrationRunId = options.migrationRunId ?? makeMigrationRunId();
-  const rawDir = resolve(repoRoot, "smartdocs/docs/raw");
+  const rawDir = resolve(repoRoot, "smartdocs/raw");
 
   const allMd = findMarkdownFiles(repoRoot);
   const results: MigrateFileResult[] = [];
@@ -215,16 +229,28 @@ export function migrateDocs(options: MigrateOptions): MigrateResult {
     provenancePath = relative(repoRoot, absProvPath).replace(/\\/g, "/");
   }
 
-  // Build ingest batch paths: where files will land in smartdocs/docs/raw/
+  // Build ingest batch paths: where files will land in smartdocs/raw/
   const migratedDestPaths: string[] = results
     .filter((r) => r.classification === "migrated")
-    .map((r) => r.destination ?? `smartdocs/docs/raw/${basename(r.originalPath)}`);
+    .map((r) => r.destination ?? `smartdocs/raw/${basename(r.originalPath)}`);
 
   const ingestBatches = batchFiles(migratedDestPaths, 4);
 
   return { results, migrationRunId, provenancePath, ingestBatches, dryRun: Boolean(options.dryRun) };
 }
 
+/**
+ * Prints a human-readable summary of a migration run to stdout.
+ *
+ * The summary includes the migration run ID, number of files to migrate, each migrated
+ * file and its destination (or the default `raw/<basename>`), allowed exceptions with
+ * their reasons, ingest batches rendered as `polaris docs ingest --file <path>` commands,
+ * and the provenance file path when present. A "[dry-run] " prefix is added when `result.dryRun`
+ * is true.
+ *
+ * @param result - The migration result object containing per-file classifications, ingest batches,
+ *                 provenance path, and the `dryRun` flag
+ */
 export function printMigrateResults(result: MigrateResult): void {
   const prefix = result.dryRun ? "[dry-run] " : "";
   const migrated = result.results.filter((r) => r.classification === "migrated");
@@ -234,7 +260,7 @@ export function printMigrateResults(result: MigrateResult): void {
   console.log(`${prefix}Files to migrate: ${migrated.length}`);
 
   for (const r of migrated) {
-    const dest = r.destination ?? `docs/raw/${basename(r.originalPath)}`;
+    const dest = r.destination ?? `raw/${basename(r.originalPath)}`;
     console.log(`  ${r.originalPath} -> ${dest}`);
   }
 

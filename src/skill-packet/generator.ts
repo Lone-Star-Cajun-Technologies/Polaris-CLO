@@ -104,26 +104,33 @@ function buildRunPacket(config: Required<SkillPacketConfig>): Omit<SkillPacket, 
   };
 }
 
+/**
+ * Builds the ingest skill packet body that defines authority boundaries, prohibited actions, allowed outputs, required deliverables, and stop conditions for processing smartdocs.
+ *
+ * The packet enforces reading from smartdocs/raw/, classification and routing into smartdocs/, provenance recording, Polaris map updates, doctrine candidate routing, and telemetry emission while forbidding source mutation, silent promotions, writing to root docs/, loop/finalize calls, and conflict suppression.
+ *
+ * @returns An object with `authority_boundaries`, `prohibited_actions`, `allowed_outputs`, `deliverables`, and `stop_conditions` describing the ingest skill's policies and required outcomes.
+ */
 function buildIngestPacket(): Omit<SkillPacket, "packet_id" | "skill_name" | "active_role" | "role_summary" | "source_config_snapshot" | "generated_at"> {
   return {
     authority_boundaries: [
-      "Read documents from smartdocs/docs/raw/",
+      "Read documents from smartdocs/raw/",
       "Classify documents by content analysis and front-matter",
-      "Route documents to correct authority directories within smartdocs/docs/",
+      "Route documents to correct authority directories within smartdocs/",
       "Write provenance records alongside placed files",
       "Update Polaris map entries to link docs to code areas",
       "Propose doctrine candidates (route to doctrine/candidate/ only)",
       "Emit telemetry events",
     ],
     prohibited_actions: [
-      "Write new Smart Docs to root docs/ — smartdocs/docs/ is the canonical target",
+      "Write new Smart Docs to root docs/ — smartdocs/ is the canonical target",
       "Silently promote documents to doctrine/active/, specs/active/, architecture/, or decisions/",
       "Mutate source files (src/, tests, config)",
       "Call polaris loop continue or polaris finalize",
       "Suppress detected conflicts",
     ],
     allowed_outputs: [
-      "Classified and routed documents in smartdocs/docs/",
+      "Classified and routed documents in smartdocs/",
       "Provenance sidecar records",
       "Polaris map entry updates",
       "Doctrine candidate proposals in doctrine/candidate/",
@@ -142,12 +149,22 @@ function buildIngestPacket(): Omit<SkillPacket, "packet_id" | "skill_name" | "ac
   };
 }
 
+/**
+ * Construct the promotion/governance packet body that governs doctrine/spec promotion and deprecation.
+ *
+ * @returns The body of a `SkillPacket` for the `promote` skill containing:
+ * - `authority_boundaries`: allowed read/verify/promote/deprecate actions and telemetry emission;
+ * - `prohibited_actions`: actions that must not be performed (auto-approve, source mutation, suppressing conflicts, etc.);
+ * - `allowed_outputs`: permitted resulting artifacts (promoted/ deprecated docs, conflict reports, telemetry);
+ * - `deliverables`: required outcomes (reviewed promotions/deprecations and surfaced conflict reports);
+ * - `stop_conditions`: conditions that halt the promotion process (all reviewed, unresolved conflicts, missing user approval).
+ */
 function buildPromotePacket(): Omit<SkillPacket, "packet_id" | "skill_name" | "active_role" | "role_summary" | "source_config_snapshot" | "generated_at"> {
   return {
     authority_boundaries: [
-      "Read smartdocs/docs/raw/ and smartdocs/docs/doctrine/candidate/ to identify promotion candidates",
+      "Read smartdocs/raw/ and smartdocs/doctrine/candidate/ to identify promotion candidates",
       "Read linked source files (from linkedMapArea in provenance sidecar) to verify relevance",
-      "Read smartdocs/docs/doctrine/active/ and smartdocs/docs/specs/active/ to check for conflicts",
+      "Read smartdocs/doctrine/active/ and smartdocs/specs/active/ to check for conflicts",
       "Call polaris doctrine spec-promote <path> to surface the conflict report (without --approve)",
       "Call polaris doctrine spec-promote <path> --approve only after surfacing report and receiving explicit user confirmation",
       "Call polaris doctrine promote <path> for doctrine candidates that pass governance checks",

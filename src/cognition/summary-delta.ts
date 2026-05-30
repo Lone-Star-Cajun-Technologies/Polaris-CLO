@@ -12,9 +12,10 @@
  * Root SUMMARY.md is skipped — route-local cognition begins below root.
  */
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { isCognitionSkippedFolder } from "./route-cognition-delta.js";
+import { parseFrontMatter } from "../smartdocs-engine/doctrine.js";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -26,7 +27,7 @@ export type SummaryDeltaReason =
 
 /**
  * Precedence levels for SUMMARY.md generation source, highest to lowest:
- * 1. promoted-doctrine  — active doctrine files in smartdocs/docs/doctrine/active/
+ * 1. promoted-doctrine  — active doctrine files in smartdocs/doctrine/active/
  * 2. spec-or-arch       — linked specs or architecture docs (active or otherwise)
  * 3. route-polaris-md   — route-local POLARIS.md
  * 4. source-inference   — local source structure (fallback only)
@@ -84,7 +85,7 @@ const SUMMARY_SIGNALS: Array<{ pattern: RegExp; reason: SummaryDeltaReason }> = 
  * Determine the highest-precedence cognition source for the given touched files.
  *
  * Priority (highest first):
- * 1. promoted-doctrine — active doctrine files in smartdocs/docs/doctrine/active/
+ * 1. promoted-doctrine — active doctrine files in smartdocs/doctrine/active/
  * 2. spec-or-arch      — linked specs, architecture, or decision docs
  * 3. route-polaris-md  — a route-local POLARIS.md was touched
  * 4. source-inference  — no above signals; fallback
@@ -110,7 +111,10 @@ export function detectPrecedenceLevel(
 }
 
 /**
- * Detect which SUMMARY.md-relevant signals fire for the given touched files.
+ * Determine which summary-related delta reasons are triggered by the provided file paths.
+ *
+ * @param touchedFiles - List of touched file paths (relative-like strings) to evaluate against summary signal patterns
+ * @returns An array of unique `SummaryDeltaReason` values that matched any signal pattern for the given files
  */
 export function detectSummaryReasons(
   touchedFiles: string[],
@@ -124,6 +128,60 @@ export function detectSummaryReasons(
     }
   }
   return Array.from(reasonSet);
+}
+
+// ── source_paths enrichment ───────────────────────────────────────────────────
+
+const SMARTDOC_SCAN_DIRS = [
+  "smartdocs/doctrine/active",
+  "smartdocs/specs/active",
+];
+
+/**
+ * Detects whether any active SmartDoc declares a `source_paths` entry that exactly matches a touched file.
+ *
+ * @param touchedFiles - Array of touched file paths (normalized-ish strings, typically repository-relative)
+ * @param repoRoot - Filesystem path to the repository root used to locate active SmartDocs
+ * @returns `true` if at least one `source_paths` entry in an active SmartDoc matches a touched file, `false` otherwise
+ */
+export function detectSourcePathSignals(
+  touchedFiles: string[],
+  repoRoot: string,
+): boolean {
+  if (touchedFiles.length === 0) return false;
+  const touchedSet = new Set(touchedFiles.map((f) => f.replace(/\\/g, "/")));
+
+  for (const scanDir of SMARTDOC_SCAN_DIRS) {
+    const absDir = join(repoRoot, scanDir);
+    if (!existsSync(absDir)) continue;
+    let entries: string[];
+    try {
+      entries = readdirSync(absDir);
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      if (!entry.endsWith(".md")) continue;
+      const absFile = join(absDir, entry);
+      let content: string;
+      try {
+        content = readFileSync(absFile, "utf-8");
+      } catch {
+        continue;
+      }
+      const fm = parseFrontMatter(content);
+      const sourcePaths = fm["source_paths"];
+      if (!sourcePaths) continue;
+      const paths = sourcePaths
+        .split(",")
+        .map((p) => p.trim())
+        .filter(Boolean);
+      for (const sp of paths) {
+        if (touchedSet.has(sp)) return true;
+      }
+    }
+  }
+  return false;
 }
 
 // ── Nearest route SUMMARY.md ──────────────────────────────────────────────────
@@ -194,15 +252,32 @@ export function detectMissingSummaries(
 // ── Main delta entry point ────────────────────────────────────────────────────
 
 /**
- * Determine whether a SUMMARY.md update is warranted for the given touched files.
+ * Determine whether a route-local SUMMARY.md should be updated based on the given touched files.
  *
- * Does NOT write SUMMARY.md. Returns a result describing what was found so
- * the caller can conditionally instruct an update.
+ * Does not modify repository files; analyzes touched paths and repository state to decide
+ * whether a SUMMARY.md update is warranted and where updates or drafts might be targeted.
+ *
+ * @param options - Analysis options: `repoRoot` (repository root path), `touchedFiles` (list of touched file paths), and `skipRoot` (optional; when true, exclude root `SUMMARY.md` from consideration; defaults to `true`)
+ * @returns A `SummaryDeltaResult` containing:
+ *  - `updateWarranted`: `true` if an update is recommended, `false` otherwise;
+ *  - `reasons`: triggered `SummaryDeltaReason` values;
+ *  - `summaryTargets`: relative paths of nearest `SUMMARY.md` candidates;
+ *  - `missingSummaries`: directories that contain `POLARIS.md` but lack `SUMMARY.md`;
+ *  - `precedenceSource`: computed `SummaryPrecedenceLevel`.
  */
 export function applySummaryDelta(options: SummaryDeltaOptions): SummaryDeltaResult {
   const { repoRoot, touchedFiles, skipRoot = true } = options;
 
   const reasons = detectSummaryReasons(touchedFiles);
+
+  // Enrich signals: if any touched file appears in source_paths of an active SmartDoc,
+  // treat this as a linked-docs-changed signal even if path patterns didn't match.
+  if (detectSourcePathSignals(touchedFiles, repoRoot)) {
+    if (!reasons.includes("linked-docs-changed")) {
+      reasons.push("linked-docs-changed");
+    }
+  }
+
   const updateWarranted = reasons.length > 0;
   const precedenceSource = detectPrecedenceLevel(touchedFiles);
 

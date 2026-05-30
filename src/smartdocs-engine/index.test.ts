@@ -89,11 +89,11 @@ describe("docs init command", () => {
     const repoRoot = makeRepo();
     await runDocsCommand(repoRoot, ["init"]);
     writeFileSync(
-      join(repoRoot, "smartdocs", "docs", "raw", "smart-docs.md"),
+      join(repoRoot, "smartdocs", "raw", "smart-docs.md"),
       "# Smart Docs Spec\n\nAcceptance Criteria\n",
       "utf-8",
     );
-    const output = await runDocsCommand(repoRoot, ["ingest", "--file", "smartdocs/docs/raw/smart-docs.md"]);
+    const output = await runDocsCommand(repoRoot, ["ingest", "--file", "smartdocs/raw/smart-docs.md"]);
 
     expect(output.stdout).toContain(`${CANONICAL_TARGET}/raw/smart-docs.md`);
     expect(existsSync(join(repoRoot, CANONICAL_TARGET, "raw", "smart-docs.md"))).toBe(true);

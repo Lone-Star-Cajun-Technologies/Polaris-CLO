@@ -7,6 +7,17 @@ export interface SkillPacketOptions {
   repoRoot: string;
 }
 
+/**
+ * Create a top-level "skill" CLI command configured for safe, read-only skill packet operations.
+ *
+ * The returned command includes a "packet" subcommand that validates the requested skill, loads
+ * repository configuration (falling back to sensible defaults for `skill_packet`), generates a
+ * skill packet, and prints the resulting JSON to stdout. If an unknown skill is requested, the
+ * subcommand writes an error to stderr and exits with code 1.
+ *
+ * @param options - Options containing `repoRoot`, the repository root used to locate and load configuration
+ * @returns A configured Commander `Command` instance with the `packet` subcommand registered
+ */
 export function createSkillCommand(options: SkillPacketOptions): Command {
   const command = new Command("skill")
     .description("safe/read-only: skill packet operations")
@@ -18,7 +29,7 @@ export function createSkillCommand(options: SkillPacketOptions): Command {
   const packetCommand = new Command("packet")
     .description(
       "safe/read-only: generate a Polaris skill packet for the given skill. " +
-      "Any documents produced during the session must be placed in smartdocs/docs/raw/ first — never written directly to active tiers.",
+      "Any documents produced during the session must be placed in smartdocs/raw/ first — never written directly to active tiers.",
     )
     .argument("<skill-name>", `skill to generate a packet for (${SUPPORTED_SKILLS.join(", ")})`)
     .action((skillName: string) => {

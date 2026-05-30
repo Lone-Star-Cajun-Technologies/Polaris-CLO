@@ -12,13 +12,19 @@ export interface DocsCommandOptions {
   repoRoot?: string;
 }
 
+/**
+ * Build and return the top-level "docs" Commander command group for Polaris docs lifecycle workflows.
+ *
+ * @param options - Optional configuration. If `options.repoRoot` is omitted, the current working directory is used as the repository root for subcommands.
+ * @returns The configured `Command` implementing the `docs` command and its subcommands.
+ */
 export function createDocsCommand(options: DocsCommandOptions = {}): Command {
   const defaultRepoRoot = options.repoRoot ?? process.cwd();
   const docs = new Command("docs").description("Polaris docs lifecycle commands");
 
   docs
     .command("init")
-    .description("Create the Smart Docs canonical scaffold under smartdocs/docs/")
+    .description("Create the Smart Docs canonical scaffold under smartdocs/")
     .option("--dry-run", "Print what would be created without writing directories")
     .option("-r, --repo-root <path>", "Repository root", defaultRepoRoot)
     .action((options: { dryRun?: boolean; repoRoot: string }) => {
@@ -41,7 +47,7 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
 
   docs
     .command("ingest [path]")
-    .description("Classify and place docs into the smartdocs/docs/ canonical authority structure")
+    .description("Classify and place docs into the smartdocs/ canonical authority structure")
     .option("--file <path>", "Single file to ingest")
     .option("--batch <cluster-id>", "Cluster ID for bounded batch ingest (reads .polaris/docs-ingest/<cluster-id>.json)")
     .option("--cluster <id>", "Alias for --batch")
@@ -138,7 +144,7 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
 
   docs
     .command("migrate")
-    .description("Find scattered markdown files, move them to smartdocs/docs/raw/, and produce an ingest cluster list")
+    .description("Find scattered markdown files, move them to smartdocs/raw/, and produce an ingest cluster list")
     .option("--dry-run", "Show plan without moving files")
     .option("--migration-run-id <id>", "Override the generated migration run ID")
     .option("-r, --repo-root <path>", "Repository root", defaultRepoRoot)
@@ -366,12 +372,19 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
   return docs;
 }
 
+/**
+ * Build and return the "doctrine" Commander command group that registers doctrine lifecycle and spec-promotion subcommands.
+ *
+ * The returned command contains subcommands: `draft`, `promote`, `deprecate`, and `spec-promote`, each wired to their respective handlers and options.
+ *
+ * @returns A configured Commander `Command` representing the `doctrine` command group
+ */
 export function createDoctrineCommand(): Command {
   const doctrine = new Command("doctrine").description("Polaris doctrine lifecycle commands");
 
   doctrine
     .command("draft <path>")
-    .description("Move a doc from smartdocs/docs/raw/ or smartdocs/docs/doctrine/raw/ to docs/doctrine/candidate/")
+    .description("Move a doc from smartdocs/raw/ or smartdocs/doctrine/raw/ to docs/doctrine/candidate/")
     .option("-r, --repo-root <path>", "Repository root", process.cwd())
     .option("--run-id <id>", "Override the generated doctrine run ID")
     .action((path: string, options: { repoRoot: string; runId?: string }) => {
@@ -387,7 +400,7 @@ export function createDoctrineCommand(): Command {
 
   doctrine
     .command("promote <path>")
-    .description("Move a doc from smartdocs/docs/doctrine/candidate/ to smartdocs/docs/doctrine/active/")
+    .description("Move a doc from smartdocs/doctrine/candidate/ to smartdocs/doctrine/active/")
     .option("-r, --repo-root <path>", "Repository root", process.cwd())
     .option("--run-id <id>", "Override the generated doctrine run ID")
     .action((path: string, options: { repoRoot: string; runId?: string }) => {
@@ -406,7 +419,7 @@ export function createDoctrineCommand(): Command {
 
   doctrine
     .command("deprecate <path>")
-    .description("Move a doc from smartdocs/docs/doctrine/active/ to smartdocs/docs/doctrine/deprecated/")
+    .description("Move a doc from smartdocs/doctrine/active/ to smartdocs/doctrine/deprecated/")
     .option("-r, --repo-root <path>", "Repository root", process.cwd())
     .option("--run-id <id>", "Override the generated doctrine run ID")
     .action((path: string, options: { repoRoot: string; runId?: string }) => {
@@ -425,7 +438,7 @@ export function createDoctrineCommand(): Command {
 
   doctrine
     .command("spec-promote <path>")
-    .description("Promote a raw spec from smartdocs/docs/raw/ to smartdocs/docs/specs/active/ after conflict check")
+    .description("Promote a raw spec from smartdocs/raw/ to smartdocs/specs/active/ after conflict check")
     .option("-r, --repo-root <path>", "Repository root", process.cwd())
     .option("--run-id <id>", "Override the generated run ID")
     .option("--approve", "Proceed despite detected conflicts")

@@ -1,0 +1,194 @@
+[
+  {
+    "id": "0fcfb604-364a-429e-a579-c265c3eada68",
+    "operationId": "088cea3dae09879d9f36c048b3480ecd40dec7a6eb0e835f9d6952f3181cd367",
+    "type": "update",
+    "entityType": "issue",
+    "entityId": "POL-202",
+    "payload": {
+      "state": "Done"
+    },
+    "status": "failed",
+    "timestamp": "2026-05-30T19:25:23.174Z",
+    "retries": 1,
+    "evidence": {
+      "runId": "polaris-run-pol-201-2026-05-29-001",
+      "packetFile": ".polaris/clusters/POL-201/packets/POL-202-736cf81f-274d-41f6-9c37-0bf8c512c0e0.json",
+      "resultFile": ".polaris/clusters/POL-201/results/POL-202-736cf81f-274d-41f6-9c37-0bf8c512c0e0.json",
+      "commit": "8a8a66968d2876ee61c6a6fb514dbe27311120a8",
+      "sourceStateGeneration": 5,
+      "validatedAt": "2026-05-30T19:25:23.172Z",
+      "clusterId": "POL-201",
+      "childId": "POL-202"
+    },
+    "error": "MCP bridge adapter is unavailable because '@tool-server/linear' is not installed. Install MCP bridge dependencies or switch tracker.adapter to 'linear'."
+  },
+  {
+    "id": "c704ef0a-27ad-47d0-9b17-da9d811e3677",
+    "operationId": "ed0d52985f1ae72c206b0f83db24bdb2c384eec955f1e01bbfbad8d870c17558",
+    "type": "update",
+    "entityType": "issue",
+    "entityId": "POL-203",
+    "payload": {
+      "state": "Done"
+    },
+    "status": "failed",
+    "timestamp": "2026-05-30T19:25:23.174Z",
+    "retries": 1,
+    "evidence": {
+      "runId": "polaris-run-pol-201-2026-05-29-001",
+      "packetFile": ".polaris/clusters/POL-201/packets/POL-203-a0affa66-5f3f-44cc-9dbc-df835fd5e3aa.json",
+      "resultFile": ".polaris/clusters/POL-201/results/POL-203-a0affa66-5f3f-44cc-9dbc-df835fd5e3aa.json",
+      "commit": "23e74303822d57c1fbd03ec9b6a2e1ea82f5afca",
+      "sourceStateGeneration": 5,
+      "validatedAt": "2026-05-30T19:25:23.174Z",
+      "clusterId": "POL-201",
+      "childId": "POL-203"
+    },
+    "error": "MCP bridge adapter is unavailable because '@tool-server/linear' is not installed. Install MCP bridge dependencies or switch tracker.adapter to 'linear'."
+  },
+  {
+    "id": "5fa5c3a6-a84c-40d3-9a6f-c71432a2073f",
+    "operationId": "256930cef994d6273dca1a99dea749e9fc8b5972ea86aa8f09f9e77ff545d6bd",
+    "type": "update",
+    "entityType": "issue",
+    "entityId": "POL-204",
+    "payload": {
+      "state": "Done"
+    },
+    "status": "failed",
+    "timestamp": "2026-05-30T19:25:23.174Z",
+    "retries": 1,
+    "evidence": {
+      "runId": "polaris-run-pol-201-2026-05-29-001",
+      "packetFile": ".polaris/clusters/POL-201/packets/POL-204-9b028c57-d1ac-431d-a99c-070e072dae4a.json",
+      "resultFile": ".polaris/clusters/POL-201/results/POL-204-9b028c57-d1ac-431d-a99c-070e072dae4a.json",
+      "commit": "5720b5adfe1ff0ffbea790a892a68d86410963d6",
+      "sourceStateGeneration": 5,
+      "validatedAt": "2026-05-30T19:25:23.174Z",
+      "clusterId": "POL-201",
+      "childId": "POL-204"
+    },
+    "error": "MCP bridge adapter is unavailable because '@tool-server/linear' is not installed. Install MCP bridge dependencies or switch tracker.adapter to 'linear'."
+  },
+  {
+    "id": "bba4aff3-d62d-44ef-a1fa-6651f255249a",
+    "operationId": "6084f5b608043870a3a4a70272d955b2d58876ce56329f5fe3833c4433c54d70",
+    "type": "update",
+    "entityType": "issue",
+    "entityId": "POL-205",
+    "payload": {
+      "state": "Done"
+    },
+    "status": "failed",
+    "timestamp": "2026-05-30T19:25:23.175Z",
+    "retries": 1,
+    "evidence": {
+      "runId": "polaris-run-pol-201-2026-05-29-001",
+      "packetFile": ".polaris/clusters/POL-201/packets/POL-205-d7875ce7-e606-4eca-a683-da7eb0f31398.json",
+      "resultFile": ".polaris/clusters/POL-201/results/POL-205-d7875ce7-e606-4eca-a683-da7eb0f31398.json",
+      "commit": "886a7670d2f326913e1d7f4f3ce11641125210c1",
+      "sourceStateGeneration": 5,
+      "validatedAt": "2026-05-30T19:25:23.175Z",
+      "clusterId": "POL-201",
+      "childId": "POL-205"
+    },
+    "error": "MCP bridge adapter is unavailable because '@tool-server/linear' is not installed. Install MCP bridge dependencies or switch tracker.adapter to 'linear'."
+  },
+  {
+    "id": "ad6f35a1-a747-4f8e-a6a3-726b2416b5f3",
+    "operationId": "8dee83ad05da6b084a87950c29ac412397edccac906644cc120f33afe659047a",
+    "type": "update",
+    "entityType": "issue",
+    "entityId": "POL-206",
+    "payload": {
+      "state": "Done"
+    },
+    "status": "failed",
+    "timestamp": "2026-05-30T19:25:23.175Z",
+    "retries": 1,
+    "evidence": {
+      "runId": "polaris-run-pol-201-2026-05-29-001",
+      "packetFile": ".polaris/clusters/POL-201/packets/POL-206-78ab2b01-f8b6-49bc-9753-6de089f0b46e.json",
+      "resultFile": ".polaris/clusters/POL-201/results/POL-206-78ab2b01-f8b6-49bc-9753-6de089f0b46e.json",
+      "commit": "ab7209884dabbf6f8571ffe2552d0a372351d54a",
+      "sourceStateGeneration": 5,
+      "validatedAt": "2026-05-30T19:25:23.175Z",
+      "clusterId": "POL-201",
+      "childId": "POL-206"
+    },
+    "error": "MCP bridge adapter is unavailable because '@tool-server/linear' is not installed. Install MCP bridge dependencies or switch tracker.adapter to 'linear'."
+  },
+  {
+    "id": "b7382f88-3ba0-4a03-b37f-65110a3b553a",
+    "operationId": "78345d281981085014f8936eeebc326a709ea0357eb30cfa6986780beb57d0e9",
+    "type": "update",
+    "entityType": "issue",
+    "entityId": "POL-207",
+    "payload": {
+      "state": "Done"
+    },
+    "status": "failed",
+    "timestamp": "2026-05-30T19:25:23.175Z",
+    "retries": 1,
+    "evidence": {
+      "runId": "polaris-run-pol-201-2026-05-29-001",
+      "packetFile": ".polaris/clusters/POL-201/packets/POL-207-b5c043f1-cdb4-41ee-8c0d-2a4bf6ebf59a.json",
+      "resultFile": ".polaris/clusters/POL-201/results/POL-207-b5c043f1-cdb4-41ee-8c0d-2a4bf6ebf59a.json",
+      "commit": "e73b811cfd96b88bea475f39af921d91840974c8",
+      "sourceStateGeneration": 5,
+      "validatedAt": "2026-05-30T19:25:23.175Z",
+      "clusterId": "POL-201",
+      "childId": "POL-207"
+    },
+    "error": "MCP bridge adapter is unavailable because '@tool-server/linear' is not installed. Install MCP bridge dependencies or switch tracker.adapter to 'linear'."
+  },
+  {
+    "id": "78f0baaa-96fe-41f6-b56f-b177db02f0d5",
+    "operationId": "c7761a86182f04183dd54e4cf0016d6f20e1a5610b4c2f391f642da5ac403ed1",
+    "type": "update",
+    "entityType": "issue",
+    "entityId": "POL-208",
+    "payload": {
+      "state": "Done"
+    },
+    "status": "failed",
+    "timestamp": "2026-05-30T19:25:23.175Z",
+    "retries": 1,
+    "evidence": {
+      "runId": "polaris-run-pol-201-2026-05-29-001",
+      "packetFile": ".polaris/clusters/POL-201/packets/POL-208-4d224353-078f-478a-8f2b-b71e9ad1a1c5.json",
+      "resultFile": ".polaris/clusters/POL-201/results/POL-208-4d224353-078f-478a-8f2b-b71e9ad1a1c5.json",
+      "commit": "237c22b32245591e531c3d8e754551f219631916",
+      "sourceStateGeneration": 5,
+      "validatedAt": "2026-05-30T19:25:23.175Z",
+      "clusterId": "POL-201",
+      "childId": "POL-208"
+    },
+    "error": "MCP bridge adapter is unavailable because '@tool-server/linear' is not installed. Install MCP bridge dependencies or switch tracker.adapter to 'linear'."
+  },
+  {
+    "id": "45450d7a-988f-44ac-907a-89b7a81bd234",
+    "operationId": "2abd40664136432eb823f4cf0dba3c406638bc949b537426e5385b482ef63351",
+    "type": "update",
+    "entityType": "issue",
+    "entityId": "POL-209",
+    "payload": {
+      "state": "Done"
+    },
+    "status": "failed",
+    "timestamp": "2026-05-30T19:25:23.176Z",
+    "retries": 1,
+    "evidence": {
+      "runId": "polaris-run-pol-201-2026-05-29-001",
+      "packetFile": ".polaris/clusters/POL-201/packets/POL-209-1cdd6be2-cc53-4e5b-99bc-83b11077cdbf.json",
+      "resultFile": ".polaris/clusters/POL-201/results/POL-209-1cdd6be2-cc53-4e5b-99bc-83b11077cdbf.json",
+      "commit": "839469f401972ce5bd96fe639450482a0f8f308a",
+      "sourceStateGeneration": 5,
+      "validatedAt": "2026-05-30T19:25:23.176Z",
+      "clusterId": "POL-201",
+      "childId": "POL-209"
+    },
+    "error": "MCP bridge adapter is unavailable because '@tool-server/linear' is not installed. Install MCP bridge dependencies or switch tracker.adapter to 'linear'."
+  }
+]
