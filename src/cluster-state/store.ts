@@ -29,6 +29,7 @@ export const writeClusterState = async (clusterId: string, state: ClusterState, 
   let lockAcquired = false;
   const maxRetries = 50;
   const retryDelayMs = 100;
+  const staleLockThresholdMs = 30000; // 30 seconds
 
   for (let i = 0; i < maxRetries; i++) {
     try {
@@ -38,7 +39,61 @@ export const writeClusterState = async (clusterId: string, state: ClusterState, 
       break;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
-        // Lock file exists, wait and retry
+        // Lock file exists, check if it's stale before retrying
+        try {
+          const lockStat = await fs.stat(lockFilePath);
+          const lockAge = Date.now() - lockStat.mtimeMs;
+
+          if (lockAge > staleLockThresholdMs) {
+            // Lock is stale, try to read the PID
+            let isStale = true;
+            try {
+              const lockContent = await fs.readFile(lockFilePath, 'utf-8');
+              const lockPid = parseInt(lockContent.trim(), 10);
+
+              // Check if the process is still running
+              if (!isNaN(lockPid)) {
+                try {
+                  // process.kill with signal 0 checks existence without killing
+                  process.kill(lockPid, 0);
+                  // Process exists, lock is not stale
+                  isStale = false;
+                } catch (pidError) {
+                  // Process doesn't exist (ESRCH) or no permission (EPERM)
+                  // If EPERM, process exists but we can't signal it, so not stale
+                  if ((pidError as NodeJS.ErrnoException).code === 'EPERM') {
+                    isStale = false;
+                  }
+                  // Otherwise (ESRCH), process doesn't exist, lock is stale
+                }
+              }
+            } catch {
+              // If we can't read the lock file or parse PID, consider it stale based on age
+            }
+
+            if (isStale) {
+              console.warn(`Removing stale lock file for cluster ${clusterId} (age: ${lockAge}ms)`);
+              try {
+                await fs.unlink(lockFilePath);
+                // Retry immediately after removing stale lock
+                continue;
+              } catch (unlinkError) {
+                // Race condition: another process may have removed it
+                if ((unlinkError as NodeJS.ErrnoException).code !== 'ENOENT') {
+                  throw unlinkError;
+                }
+              }
+            }
+          }
+        } catch (statError) {
+          // If lock file disappeared between EEXIST and stat, retry
+          if ((statError as NodeJS.ErrnoException).code === 'ENOENT') {
+            continue;
+          }
+          // Other errors during stat, just retry with delay
+        }
+
+        // Lock file exists and is not stale, wait and retry
         await new Promise(resolve => setTimeout(resolve, retryDelayMs));
       } else {
         throw error;
