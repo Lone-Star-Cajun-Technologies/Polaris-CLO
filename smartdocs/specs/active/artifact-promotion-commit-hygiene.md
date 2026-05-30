@@ -140,11 +140,18 @@ Until the resume migration is complete, `.taskchain_artifacts/polaris-run/curren
 
 ```gitignore
 # Polaris workspace scratch — never commit
+# NOTE: .taskchain_artifacts/polaris-run/current-state.json is intentionally
+# excluded here. It must remain tracked until the resume migration (POL-248)
+# is verified. Add the negation below and run git rm --cached only after
+# POL-248 lands.
 .taskchain_artifacts/*/current-state.json
+!.taskchain_artifacts/polaris-run/current-state.json
 .taskchain_artifacts/*/remaining-state.json
 .taskchain_artifacts/*/run-report.md
 .taskchain_artifacts/**/*.bak
+# Cover both the old location (removed by migration) and the new workspace location.
 .polaris/runs/mutation-queue.json
+.taskchain_artifacts/*/mutation-queue.json
 ```
 
 ### Finalize preflight check (04-run-checks.ts)
