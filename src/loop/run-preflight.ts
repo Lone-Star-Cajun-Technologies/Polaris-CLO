@@ -121,6 +121,7 @@ export async function ensureClusterRunState(options: EnsureClusterRunStateOption
     }
 
     if (existingState !== undefined) {
+      const validationErrors = validateState(existingState);
       if (existingState.cluster_id === clusterId) {
         if (
           await isGhostCompleteState(
@@ -133,14 +134,18 @@ export async function ensureClusterRunState(options: EnsureClusterRunStateOption
           preserveMismatchedState(stateFile);
         } else {
           // Valid state for this cluster — no bootstrap needed
-          if (validateState(existingState).length === 0) {
+          if (validationErrors.length === 0) {
             return;
           }
-          // Invalid state — fall through to re-bootstrap with a fresh state
+          // Leave invalid in-place so downstream validation reports the real state error.
+          return;
         }
       } else {
+        if (!existingState.cluster_id && validationErrors.length > 0) {
+          return;
+        }
         // Mismatched cluster_id — always preserve, with a warning if also invalid
-        if (validateState(existingState).length > 0) {
+        if (validationErrors.length > 0) {
           console.warn(
             `run-preflight: state file ${stateFile} has cluster_id "${existingState.cluster_id}" (expected "${clusterId}") and failed validation; preserving for inspection.`,
           );

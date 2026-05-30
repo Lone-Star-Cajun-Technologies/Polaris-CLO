@@ -7,10 +7,10 @@
   "active_child": "POL-204",
   "completed_children": [
     "POL-202",
-    "POL-203"
+    "POL-203",
+    "POL-204"
   ],
   "open_children": [
-    "POL-204",
     "POL-205",
     "POL-206",
     "POL-207",

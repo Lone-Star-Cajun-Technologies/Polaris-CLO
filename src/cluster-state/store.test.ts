@@ -132,7 +132,7 @@ describe('Cluster State Store', () => {
 
       const initialState = await initializeClusterState(MOCK_CLUSTER_ID);
 
-      expect(LocalGraph.load).toHaveBeenCalledWith(MOCK_CLUSTER_ID);
+      expect(LocalGraph.load).toHaveBeenCalledWith(MOCK_CLUSTER_ID, undefined);
       expect(initialState.cluster_id).toBe(MOCK_CLUSTER_ID);
       expect(initialState.state_generation).toBe(1);
       expect(initialState.child_states).toHaveLength(2);

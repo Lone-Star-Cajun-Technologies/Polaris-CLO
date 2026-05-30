@@ -127,7 +127,7 @@ export const writeClusterState = async (clusterId: string, state: ClusterState, 
 };
 
 export const initializeClusterState = async (clusterId: string, repoRoot?: string): Promise<ClusterState> => {
-  const graph = await LocalGraph.load(clusterId);
+  const graph = await LocalGraph.load(clusterId, repoRoot);
   const activeCluster = graph.getActiveCluster();
 
   if (!activeCluster) {
