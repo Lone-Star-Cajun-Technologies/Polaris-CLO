@@ -4,12 +4,12 @@
   "cluster_id": "POL-201",
   "branch": "",
   "session_type": "implement",
-  "active_child": "POL-203",
+  "active_child": "POL-204",
   "completed_children": [
-    "POL-202"
+    "POL-202",
+    "POL-203"
   ],
   "open_children": [
-    "POL-203",
     "POL-204",
     "POL-205",
     "POL-206",
@@ -23,7 +23,7 @@
     "max_children_per_session": 1
   },
   "status": "running",
-  "next_open_child": "POL-203",
+  "next_open_child": "POL-204",
   "dispatch_boundary": {
     "dispatch_epoch": 2,
     "continue_epoch": 1,
@@ -36,28 +36,17 @@
     "open_children_sha": "9e425242cec721fa2b809a6e8c1ade78cafa867f762d21fec753f3ae1b3a74a5",
     "sealed_at": "2026-05-29T19:09:50.450Z"
   },
-  "open_children_meta": {
-    "POL-203": {
-      "dispatch_record": {
-        "dispatch_id": "fb5845a1-c676-4cfd-ad39-4a711cca0b8a",
-        "child_id": "POL-203",
-        "run_id": "polaris-run-pol-201-2026-05-29-001",
-        "cluster_id": "POL-201",
-        "packet_path": ".polaris/clusters/POL-201/packets/POL-203-f685895b-2b16-4542-9b62-0535a7d32cfc.json",
-        "expected_result_path": ".polaris/clusters/POL-201/results/POL-203-f685895b-2b16-4542-9b62-0535a7d32cfc.json",
-        "dispatched_at": "2026-05-29T19:10:35.101Z",
-        "status": "dispatched",
-        "dispatch_mode": "delegated",
-        "runtime_state": "delegated",
-        "worker_id": "63f82a78-fffe-49ab-9fb6-08e334af34ec",
-        "session_id": null,
-        "attachment_capable": false,
-        "worker_assignment": {
-          "assigned_at": "2026-05-29T19:10:35.101Z",
-          "assignment_type": "pending-escalation",
-          "escalation_reason": "No assignment mechanism available: subagent not supported, no external-process or human-handoff configured"
-        }
-      }
-    }
-  }
+  "open_children_meta": {},
+  "last_worker_result": {
+    "child_id": "POL-203",
+    "status": "done",
+    "commit": "23e74303822d57c1fbd03ec9b6a2e1ea82f5afca",
+    "validation": {
+      "build": "passed",
+      "tests": "passed"
+    },
+    "recorded_at": "2026-05-29T23:10:00.000Z"
+  },
+  "validation_status": "done",
+  "last_commit": "23e74303822d57c1fbd03ec9b6a2e1ea82f5afca"
 }
