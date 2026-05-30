@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { runLoopBootstrapInit } from './run-bootstrap';
 import * as clusterStateStore from '../cluster-state/store';
+import type { ClusterState } from '../cluster-state/types';
 import { existsSync, writeFileSync } from 'node:fs';
 
 vi.mock('node:fs', () => ({
@@ -36,8 +37,8 @@ describe('runLoopBootstrapInit', () => {
   });
 
   it('should call initializeClusterState if no existing state is found', async () => {
-    (clusterStateStore.readClusterState as vi.Mock).mockResolvedValue(null);
-    (existsSync as vi.Mock).mockReturnValue(false);
+    vi.mocked(clusterStateStore.readClusterState).mockResolvedValue(null);
+    vi.mocked(existsSync).mockReturnValue(false);
 
     await runLoopBootstrapInit(mockOptions);
 
@@ -46,8 +47,8 @@ describe('runLoopBootstrapInit', () => {
   });
 
   it('should not call initializeClusterState if state already exists', async () => {
-    (clusterStateStore.readClusterState as vi.Mock).mockResolvedValue({ cluster_id: 'POL-TEST-1' });
-    (existsSync as vi.Mock).mockReturnValue(false);
+    vi.mocked(clusterStateStore.readClusterState).mockResolvedValue({ cluster_id: 'POL-TEST-1' } as unknown as ClusterState);
+    vi.mocked(existsSync).mockReturnValue(false);
 
     await runLoopBootstrapInit(mockOptions);
 
@@ -56,9 +57,9 @@ describe('runLoopBootstrapInit', () => {
   });
 
   it('should continue bootstrap even if initializeClusterState fails', async () => {
-    (clusterStateStore.readClusterState as vi.Mock).mockResolvedValue(null);
-    (clusterStateStore.initializeClusterState as vi.Mock).mockRejectedValue(new Error('Init failed'));
-    (existsSync as vi.Mock).mockReturnValue(false);
+    vi.mocked(clusterStateStore.readClusterState).mockResolvedValue(null);
+    vi.mocked(clusterStateStore.initializeClusterState).mockRejectedValue(new Error('Init failed'));
+    vi.mocked(existsSync).mockReturnValue(false);
 
     await runLoopBootstrapInit(mockOptions);
 

@@ -11,12 +11,13 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { runParentLoop } from "./parent.js";
 import { createLoopCommand } from "./index.js";
 import { createBootstrapSeal } from "./run-bootstrap.js";
 import type { BootstrapPacket, DispatchOptions, DispatchResult, ExecutionAdapter } from "./adapters/types.js";
+import { isWorkerPacket } from "./worker-packet.js";
 import type { Command } from "commander";
 
 // ── Mock adapter factory ─────────────────────────────────────────────────────
@@ -37,17 +38,32 @@ function makeMockAdapter(
       calls.push({ packet, options });
       const base = responses[callIndex] ?? responses[responses.length - 1]!;
       callIndex += 1;
+      let parsedSummary: Record<string, unknown> | undefined;
       // Rewrite child_id in the summary to match the dispatched child so the
       // parent loop's mismatch guard doesn't reject a valid mock result.
       try {
-        const parsed = JSON.parse(base.summary ?? "{}") as Record<string, unknown>;
-        if ("child_id" in parsed) {
-          return { ...base, summary: JSON.stringify({ ...parsed, child_id: packet.active_child }) };
+        parsedSummary = JSON.parse(base.summary ?? "{}") as Record<string, unknown>;
+        if ("child_id" in parsedSummary) {
+          parsedSummary = { ...parsedSummary, child_id: packet.active_child };
         }
       } catch {
         // Summary is not JSON — leave as-is
       }
-      return base;
+
+      const resultFile = isWorkerPacket(packet) ? packet.result_file_contract?.result_file : undefined;
+      if (resultFile) {
+        mkdirSync(dirname(resultFile), { recursive: true });
+        const sealedResult =
+          parsedSummary ??
+          ({
+            child_id: packet.active_child,
+            status: base.exit_code === 0 ? "done" : "failed",
+            error: base.summary,
+          } satisfies Record<string, unknown>);
+        writeFileSync(resultFile, JSON.stringify(sealedResult, null, 2), "utf-8");
+      }
+
+      return parsedSummary ? { ...base, summary: JSON.stringify(parsedSummary) } : base;
     },
   };
 }
@@ -497,7 +513,7 @@ describe("runParentLoop", () => {
 
     const mockAdapter: ExecutionAdapter = {
       name: "mock",
-      async dispatch() {
+      async dispatch(packet) {
         const state = JSON.parse(readFileSync(stateFile, "utf-8")) as Record<string, unknown>;
         const contextBudget = state.context_budget as Record<string, unknown>;
         writeFileSync(
@@ -519,6 +535,15 @@ describe("runParentLoop", () => {
           ),
           "utf-8",
         );
+        const resultFile = isWorkerPacket(packet) ? packet.result_file_contract?.result_file : undefined;
+        if (resultFile) {
+          mkdirSync(dirname(resultFile), { recursive: true });
+          writeFileSync(
+            resultFile,
+            JSON.stringify({ child_id: "POL-100", status: "done", commit: "abc1234" }, null, 2),
+            "utf-8",
+          );
+        }
         return {
           exit_code: 0,
           provider_used: "mock",
@@ -801,7 +826,7 @@ describe("runParentLoop", () => {
     expect(calls[0].options.provider).toBe("mock");
   });
 
-  it("omits undefined commit hashes from terse completion output", async () => {
+  it("halts when a worker reports done without commit evidence", async () => {
     const calls: MockCall[] = [];
     vi.mocked(createAdapter).mockReturnValue(makeMockAdapter([SUCCESS_RESULT_NO_COMMIT], calls));
     const stateFile = makeStateFile(tmpDir, {
@@ -810,36 +835,13 @@ describe("runParentLoop", () => {
       max_children_per_session: 10,
     });
 
-    let stdout = "";
-    const originalStdoutWrite = process.stdout.write;
-    process.stdout.write = ((chunk: string | Uint8Array) => {
-      stdout += String(chunk);
-      return true;
-    }) as typeof process.stdout.write;
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
 
-    try {
-      const { loadConfig } = await import("../config/loader.js");
-      vi.mocked(loadConfig).mockReturnValueOnce({
-        orchestration: {
-          mode: "auto",
-          notification_format: "terse",
-          auto_finalize: false,
-        },
-        execution: {
-          adapter: "mock",
-          providers: { mock: { command: "mock-worker" } },
-          rotation: ["mock"],
-        },
-      } as unknown as Required<import("../config/schema.js").PolarisConfig>);
-
-      await runParentLoop({ stateFile, repoRoot: tmpDir });
-    } finally {
-      process.stdout.write = originalStdoutWrite;
-    }
-
-    expect(stdout).toContain("[POLARIS] COMPLETE POL-100");
-    expect(stdout).not.toContain("undefined");
-    expect(stdout).not.toContain("(commit:");
+    expect(result.haltReason).toBe("worker-error");
+    expect(result.message).toContain("without commit evidence");
+    const updatedState = JSON.parse(readFileSync(stateFile, "utf-8")) as Record<string, unknown>;
+    expect(updatedState.active_child).toBe("POL-100");
+    expect(updatedState.completed_children).toEqual([]);
   });
 
   it("records an explicit auto-finalize handoff in auto mode", async () => {
