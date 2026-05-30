@@ -8,6 +8,7 @@ import { runLoopAbort } from "./abort.js";
 import { runLoopDispatch } from "./dispatch.js";
 import { runParentLoop } from "./parent.js";
 import { runLoopBootstrapInit, type BootstrapInitOptions } from "./run-bootstrap.js";
+import { ensureClusterRunState } from "./run-preflight.js";
 import type { ExecutionAdapterMode } from "./execution-adapter.js";
 
 export interface LoopCommandHandlers {
@@ -102,6 +103,12 @@ export function createLoopCommand(handlers: LoopCommandHandlers = {}): Command {
       ) => {
         const repoRoot = options.repoRoot;
         const stateFile = defaultStateFile(repoRoot, options.stateFile);
+        await ensureClusterRunState({
+          clusterId,
+          stateFile,
+          repoRoot,
+          bootstrapHandler,
+        });
         const result = await parentHandler({
           stateFile,
           repoRoot,

@@ -1,10 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { runParentLoop } from "./parent.js";
 import { createBootstrapSeal } from "./run-bootstrap.js";
 import type { BootstrapPacket, DispatchOptions, DispatchResult, ExecutionAdapter } from "./adapters/types.js";
+import { isWorkerPacket } from "./worker-packet.js";
 
 interface AdapterCall {
   packet: BootstrapPacket;
@@ -93,6 +94,25 @@ function makeAdapter(calls: AdapterCall[]): ExecutionAdapter {
     name: "agent-subtask",
     async dispatch(packet, options) {
       calls.push({ packet, options });
+      const resultFile = isWorkerPacket(packet) ? packet.result_file_contract?.result_file : undefined;
+      if (resultFile) {
+        mkdirSync(dirname(resultFile), { recursive: true });
+        writeFileSync(
+          resultFile,
+          JSON.stringify(
+            {
+              child_id: packet.active_child,
+              status: "done",
+              commit_hash: "abc1120",
+              validation_summary: "ephemeral smoke passed",
+              next_action: "resume-parent",
+            },
+            null,
+            2,
+          ),
+          "utf-8",
+        );
+      }
       return result;
     },
   };

@@ -19,9 +19,8 @@ export async function loadTrackerGraph(
 
   if (config.tracker?.linear?.enabled) {
     const linearAdapter = new LinearAdapter(config);
-    return linearAdapter.syncIn();
+    return linearAdapter.syncIn(clusterId);
   }
 
   return null;
 }
-

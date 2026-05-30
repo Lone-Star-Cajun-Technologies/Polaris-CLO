@@ -37,7 +37,7 @@ describe('Cluster State Store', () => {
         commits: {},
         blockers: [],
       };
-      (fs.readFile as vi.Mock).mockResolvedValue(JSON.stringify(mockState));
+      vi.mocked(fs.readFile).mockResolvedValue(JSON.stringify(mockState));
 
       const state = await readClusterState(MOCK_CLUSTER_ID);
       expect(state).toEqual(mockState);
@@ -47,7 +47,7 @@ describe('Cluster State Store', () => {
     it('should return null if the file does not exist', async () => {
       const error = new Error('ENOENT: no such file or directory');
       (error as any).code = 'ENOENT';
-      (fs.readFile as vi.Mock).mockRejectedValue(error);
+      vi.mocked(fs.readFile).mockRejectedValue(error);
 
       const state = await readClusterState(MOCK_CLUSTER_ID);
       expect(state).toBeNull();
@@ -55,7 +55,7 @@ describe('Cluster State Store', () => {
 
     it('should re-throw other errors', async () => {
       const error = new Error('Read error');
-      (fs.readFile as vi.Mock).mockRejectedValue(error);
+      vi.mocked(fs.readFile).mockRejectedValue(error);
       await expect(readClusterState(MOCK_CLUSTER_ID)).rejects.toThrow('Read error');
     });
   });
@@ -75,8 +75,8 @@ describe('Cluster State Store', () => {
         blockers: [],
       };
 
-      // Mock existing state as null
-      (fs.readFile as vi.Mock).mockResolvedValueOnce(null);
+      // Mock existing state as null (cast required — real readFile never returns null, but mock does)
+      vi.mocked(fs.readFile).mockResolvedValueOnce(null as unknown as string);
 
       await writeClusterState(MOCK_CLUSTER_ID, newState);
 
@@ -105,7 +105,7 @@ describe('Cluster State Store', () => {
       };
       const newState: ClusterState = { ...existingState, state_generation: 2 };
       
-      (fs.readFile as vi.Mock).mockResolvedValue(JSON.stringify(existingState));
+      vi.mocked(fs.readFile).mockResolvedValue(JSON.stringify(existingState));
 
       await expect(writeClusterState(MOCK_CLUSTER_ID, newState)).rejects.toThrow('Stale state: state_generation is not greater than current state.');
     });
@@ -126,7 +126,7 @@ describe('Cluster State Store', () => {
       // Simulate file not existing for the initial write
       const error = new Error('ENOENT');
       (error as any).code = 'ENOENT';
-      (fs.readFile as vi.Mock).mockRejectedValue(error);
+      vi.mocked(fs.readFile).mockRejectedValue(error);
       
       vi.spyOn(fs, 'writeFile');
 
