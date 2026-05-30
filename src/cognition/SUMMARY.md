@@ -7,7 +7,7 @@ Delta-only signal library for route-local cognition surfaces — determines when
 - Returns signals only; callers own all writes to disk.
 - Cognition is scoped per directory, walking upward from touched files; root excluded by default.
 - SUMMARY.md size cap is a hard error; doctrine bleed detection is warn-only.
-- `isCognitionSkippedFolder` is the single authority on excluded folders.
+- `isCognitionSkippedFolder` is the single authority on excluded folders, including the top-level `.polaris` runtime surfaces that now carry cognition while nested run and cluster artifacts stay excluded.
 
 ## Relationships
 - **Called by**: `src/loop/worker.ts` after each child completes; `src/smartdocs-engine` during ingest

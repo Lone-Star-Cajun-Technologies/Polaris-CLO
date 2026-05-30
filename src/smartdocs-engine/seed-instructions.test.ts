@@ -199,6 +199,23 @@ describe("seedInstructionsAll", () => {
     expect(skippedRoot?.path).toBe(".");
   });
 
+  it("includes top-level Polaris runtime cognition folders but skips generated descendants", () => {
+    mkdirSync(join(TMP, ".polaris/bootstrap"), { recursive: true });
+    mkdirSync(join(TMP, ".polaris/clusters/POL-123"), { recursive: true });
+    mkdirSync(join(TMP, ".polaris/runs/run-123"), { recursive: true });
+
+    const { written, skippedIneligible } = seedInstructionsAll(TMP);
+    const ineligiblePaths = skippedIneligible.map((s) => s.path);
+
+    expect(written).toContain(".polaris");
+    expect(written).toContain(".polaris/bootstrap");
+    expect(written).toContain(".polaris/clusters");
+    expect(written).toContain(".polaris/map");
+    expect(written).toContain(".polaris/runs");
+    expect(ineligiblePaths).toContain(".polaris/clusters/POL-123");
+    expect(ineligiblePaths).toContain(".polaris/runs/run-123");
+  });
+
   it("includes root when includeRoot option is set", () => {
     const { written, skippedRoot } = seedInstructionsAll(TMP, { includeRoot: true });
     // Root should be in written
@@ -283,6 +300,23 @@ describe("seedSummaryAll", () => {
     // Root should be in skippedRoot
     expect(skippedRoot).toBeDefined();
     expect(skippedRoot?.path).toBe(".");
+  });
+
+  it("includes top-level Polaris runtime summaries but skips generated descendants", () => {
+    mkdirSync(join(TMP, ".polaris/bootstrap"), { recursive: true });
+    mkdirSync(join(TMP, ".polaris/clusters/POL-123"), { recursive: true });
+    mkdirSync(join(TMP, ".polaris/runs/run-123"), { recursive: true });
+
+    const { written, skippedIneligible } = seedSummaryAll(TMP);
+    const ineligiblePaths = skippedIneligible.map((s) => s.path);
+
+    expect(written).toContain(".polaris");
+    expect(written).toContain(".polaris/bootstrap");
+    expect(written).toContain(".polaris/clusters");
+    expect(written).toContain(".polaris/map");
+    expect(written).toContain(".polaris/runs");
+    expect(ineligiblePaths).toContain(".polaris/clusters/POL-123");
+    expect(ineligiblePaths).toContain(".polaris/runs/run-123");
   });
 
   it("includes root when includeRoot option is set for SUMMARY.md", () => {

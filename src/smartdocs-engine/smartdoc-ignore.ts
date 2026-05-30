@@ -86,7 +86,6 @@ export const RUNTIME_EXCLUDED_DIR_PATTERNS = [
   "build",
   "coverage",
   ".git",
-  ".polaris",
   ".antigravitycli",
   ".taskchain_artifacts",
   "generated",
@@ -135,6 +134,21 @@ export const HIDDEN_SYSTEM_FOLDERS = [
   ".windsurf",
 ];
 
+export const POLARIS_RUNTIME_COGNITION_DIRS = [
+  ".polaris",
+  ".polaris/bootstrap",
+  ".polaris/clusters",
+  ".polaris/map",
+  ".polaris/runs",
+] as const;
+
+const POLARIS_RUNTIME_GENERATED_DIR_PREFIXES = [
+  ".polaris/bootstrap/",
+  ".polaris/clusters/",
+  ".polaris/map/",
+  ".polaris/runs/",
+] as const;
+
 export interface DirectoryEligibilityOptions {
   /** Include agent cognition folders (.codex, .claude, .agents) */
   includeAgentFolders?: boolean;
@@ -151,6 +165,38 @@ export interface DirectoryEligibility {
   reason?: string;
   /** Category of exclusion for dry-run visibility */
   category?: "runtime" | "agent-cognition" | "hidden" | "ignored" | "root" | "eligible";
+}
+
+function getPolarisDirectoryEligibility(
+  relPath: string,
+  opts: DirectoryEligibilityOptions,
+): DirectoryEligibility | null {
+  if (POLARIS_RUNTIME_COGNITION_DIRS.includes(relPath as typeof POLARIS_RUNTIME_COGNITION_DIRS[number])) {
+    return { eligible: true, category: "eligible" };
+  }
+
+  for (const prefix of POLARIS_RUNTIME_GENERATED_DIR_PREFIXES) {
+    if (relPath.startsWith(prefix)) {
+      return {
+        eligible: false,
+        reason: `generated Polaris runtime directory excluded: ${relPath}`,
+        category: "runtime",
+      };
+    }
+  }
+
+  if (relPath.startsWith(".polaris/")) {
+    if (opts.includeHidden) {
+      return { eligible: true, category: "eligible" };
+    }
+    return {
+      eligible: false,
+      reason: `hidden Polaris directory (use --include-hidden to include): ${relPath}`,
+      category: "hidden",
+    };
+  }
+
+  return null;
 }
 
 /**
@@ -175,6 +221,11 @@ export function isDirectoryEligible(
       };
     }
     return { eligible: true, category: "eligible" };
+  }
+
+  const polarisEligibility = getPolarisDirectoryEligibility(relPath, opts);
+  if (polarisEligibility) {
+    return polarisEligibility;
   }
 
   // Check against runtime/build artifact patterns (permanently excluded)

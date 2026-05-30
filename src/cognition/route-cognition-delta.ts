@@ -53,11 +53,22 @@ const SKIP_FOLDER_PREFIXES = [
   "node_modules/",
   "dist/",
   ".taskchain_artifacts/",
-  ".polaris/bootstrap/",
-  ".polaris/runs/",
 ];
 
 const AGENT_OPT_IN_FOLDERS = new Set([".claude", ".codex"]);
+const POLARIS_RUNTIME_COGNITION_FOLDERS = new Set([
+  ".polaris",
+  ".polaris/bootstrap",
+  ".polaris/clusters",
+  ".polaris/map",
+  ".polaris/runs",
+]);
+const POLARIS_RUNTIME_GENERATED_PREFIXES = [
+  ".polaris/bootstrap/",
+  ".polaris/clusters/",
+  ".polaris/map/",
+  ".polaris/runs/",
+];
 
 /**
  * Returns true when a folder is skipped for route-local cognition:
@@ -75,6 +86,10 @@ export function isCognitionSkippedFolder(folderRel: string, repoRoot?: string): 
       return true;
     }
   }
+  if (POLARIS_RUNTIME_COGNITION_FOLDERS.has(folderRel)) return false;
+  for (const prefix of POLARIS_RUNTIME_GENERATED_PREFIXES) {
+    if (folderRel.startsWith(prefix)) return true;
+  }
   // Agent folders are opt-in only
   const topLevel = folderRel.split("/")[0] ?? folderRel;
   if (AGENT_OPT_IN_FOLDERS.has(topLevel)) return true;
@@ -87,8 +102,10 @@ export function isCognitionSkippedFolder(folderRel: string, repoRoot?: string): 
     const eligibility = isDirectoryEligible(folderRel, repoRoot);
     if (!eligibility.eligible) return true;
     // Also check .smartdocignore patterns directly for directory paths
-    const ig = parseSmartDocIgnore(repoRoot);
-    if (ig.ignores(folderRel) || ig.ignores(`${folderRel}/`)) return true;
+    if (!folderRel.startsWith(".polaris")) {
+      const ig = parseSmartDocIgnore(repoRoot);
+      if (ig.ignores(folderRel) || ig.ignores(`${folderRel}/`)) return true;
+    }
   }
 
   return false;

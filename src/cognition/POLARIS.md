@@ -31,7 +31,7 @@ The cognition subsystem provides delta-only logic for maintaining route-local `P
 ## Route model
 
 - Cognition surfaces are route-local: one `POLARIS.md` per directory, walked upward from touched files.
-- `isCognitionSkippedFolder` uses prefix matching against a fixed list (`.git/`, `node_modules/`, `dist/`, `.taskchain_artifacts/`, `.polaris/bootstrap/`, `.polaris/runs/`). Agent folders (`.claude`, `.codex`) are opt-in only.
+- `isCognitionSkippedFolder` uses prefix matching for hard runtime exclusions (`.git/`, `node_modules/`, `dist/`, `.taskchain_artifacts/`) and treats top-level Polaris runtime folders (`.polaris/`, `.polaris/bootstrap`, `.polaris/clusters`, `.polaris/map`, `.polaris/runs`) as eligible cognition surfaces while skipping their generated descendants.
 - Summary delta signals are driven by file path patterns (e.g., `docs/spec/`, `docs/architecture/`), not file content.
 - Operational reasons for POLARIS.md update are driven by non-test, non-comment source file changes matching known path patterns.
 
