@@ -111,7 +111,10 @@ export function detectPrecedenceLevel(
 }
 
 /**
- * Detect which SUMMARY.md-relevant signals fire for the given touched files.
+ * Determine which summary-related delta reasons are triggered by the provided file paths.
+ *
+ * @param touchedFiles - List of touched file paths (relative-like strings) to evaluate against summary signal patterns
+ * @returns An array of unique `SummaryDeltaReason` values that matched any signal pattern for the given files
  */
 export function detectSummaryReasons(
   touchedFiles: string[],
@@ -135,12 +138,11 @@ const SMARTDOC_SCAN_DIRS = [
 ];
 
 /**
- * Scan active SmartDocs for `source_paths` frontmatter entries that overlap
- * with the touched files. Returns "linked-docs-changed" when any source path
- * of an active doc was touched, indicating the doc may be outdated.
+ * Detects whether any active SmartDoc declares a `source_paths` entry that exactly matches a touched file.
  *
- * This enriches delta signals beyond file-path pattern matching by reading
- * the actual SmartDoc frontmatter at check time.
+ * @param touchedFiles - Array of touched file paths (normalized-ish strings, typically repository-relative)
+ * @param repoRoot - Filesystem path to the repository root used to locate active SmartDocs
+ * @returns `true` if at least one `source_paths` entry in an active SmartDoc matches a touched file, `false` otherwise
  */
 export function detectSourcePathSignals(
   touchedFiles: string[],
@@ -250,10 +252,18 @@ export function detectMissingSummaries(
 // ── Main delta entry point ────────────────────────────────────────────────────
 
 /**
- * Determine whether a SUMMARY.md update is warranted for the given touched files.
+ * Determine whether a route-local SUMMARY.md should be updated based on the given touched files.
  *
- * Does NOT write SUMMARY.md. Returns a result describing what was found so
- * the caller can conditionally instruct an update.
+ * Does not modify repository files; analyzes touched paths and repository state to decide
+ * whether a SUMMARY.md update is warranted and where updates or drafts might be targeted.
+ *
+ * @param options - Analysis options: `repoRoot` (repository root path), `touchedFiles` (list of touched file paths), and `skipRoot` (optional; when true, exclude root `SUMMARY.md` from consideration; defaults to `true`)
+ * @returns A `SummaryDeltaResult` containing:
+ *  - `updateWarranted`: `true` if an update is recommended, `false` otherwise;
+ *  - `reasons`: triggered `SummaryDeltaReason` values;
+ *  - `summaryTargets`: relative paths of nearest `SUMMARY.md` candidates;
+ *  - `missingSummaries`: directories that contain `POLARIS.md` but lack `SUMMARY.md`;
+ *  - `precedenceSource`: computed `SummaryPrecedenceLevel`.
  */
 export function applySummaryDelta(options: SummaryDeltaOptions): SummaryDeltaResult {
   const { repoRoot, touchedFiles, skipRoot = true } = options;

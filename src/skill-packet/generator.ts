@@ -104,6 +104,13 @@ function buildRunPacket(config: Required<SkillPacketConfig>): Omit<SkillPacket, 
   };
 }
 
+/**
+ * Builds the ingest skill packet body that defines authority boundaries, prohibited actions, allowed outputs, required deliverables, and stop conditions for processing smartdocs.
+ *
+ * The packet enforces reading from smartdocs/raw/, classification and routing into smartdocs/, provenance recording, Polaris map updates, doctrine candidate routing, and telemetry emission while forbidding source mutation, silent promotions, writing to root docs/, loop/finalize calls, and conflict suppression.
+ *
+ * @returns An object with `authority_boundaries`, `prohibited_actions`, `allowed_outputs`, `deliverables`, and `stop_conditions` describing the ingest skill's policies and required outcomes.
+ */
 function buildIngestPacket(): Omit<SkillPacket, "packet_id" | "skill_name" | "active_role" | "role_summary" | "source_config_snapshot" | "generated_at"> {
   return {
     authority_boundaries: [
@@ -142,6 +149,16 @@ function buildIngestPacket(): Omit<SkillPacket, "packet_id" | "skill_name" | "ac
   };
 }
 
+/**
+ * Construct the promotion/governance packet body that governs doctrine/spec promotion and deprecation.
+ *
+ * @returns The body of a `SkillPacket` for the `promote` skill containing:
+ * - `authority_boundaries`: allowed read/verify/promote/deprecate actions and telemetry emission;
+ * - `prohibited_actions`: actions that must not be performed (auto-approve, source mutation, suppressing conflicts, etc.);
+ * - `allowed_outputs`: permitted resulting artifacts (promoted/ deprecated docs, conflict reports, telemetry);
+ * - `deliverables`: required outcomes (reviewed promotions/deprecations and surfaced conflict reports);
+ * - `stop_conditions`: conditions that halt the promotion process (all reviewed, unresolved conflicts, missing user approval).
+ */
 function buildPromotePacket(): Omit<SkillPacket, "packet_id" | "skill_name" | "active_role" | "role_summary" | "source_config_snapshot" | "generated_at"> {
   return {
     authority_boundaries: [

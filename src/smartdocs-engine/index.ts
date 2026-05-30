@@ -12,6 +12,12 @@ export interface DocsCommandOptions {
   repoRoot?: string;
 }
 
+/**
+ * Build and return the top-level "docs" Commander command group for Polaris docs lifecycle workflows.
+ *
+ * @param options - Optional configuration. If `options.repoRoot` is omitted, the current working directory is used as the repository root for subcommands.
+ * @returns The configured `Command` implementing the `docs` command and its subcommands.
+ */
 export function createDocsCommand(options: DocsCommandOptions = {}): Command {
   const defaultRepoRoot = options.repoRoot ?? process.cwd();
   const docs = new Command("docs").description("Polaris docs lifecycle commands");
@@ -366,6 +372,13 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
   return docs;
 }
 
+/**
+ * Build and return the "doctrine" Commander command group that registers doctrine lifecycle and spec-promotion subcommands.
+ *
+ * The returned command contains subcommands: `draft`, `promote`, `deprecate`, and `spec-promote`, each wired to their respective handlers and options.
+ *
+ * @returns A configured Commander `Command` representing the `doctrine` command group
+ */
 export function createDoctrineCommand(): Command {
   const doctrine = new Command("doctrine").description("Polaris doctrine lifecycle commands");
 

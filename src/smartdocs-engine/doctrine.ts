@@ -32,6 +32,13 @@ function lifecycleFilePath(repoRoot: string, runId: string): string {
   return join(repoRoot, ".taskchain_artifacts", "polaris-doctrine", runId, "lifecycle.jsonl");
 }
 
+/**
+ * Builds the filesystem path to the audit JSONL file for a given doctrine run.
+ *
+ * @param repoRoot - The repository root directory
+ * @param runId - The doctrine run identifier
+ * @returns The full path to `.taskchain_artifacts/polaris-doctrine/<runId>/audit.jsonl`
+ */
 function auditFilePath(repoRoot: string, runId: string): string {
   return join(repoRoot, ".taskchain_artifacts", "polaris-doctrine", runId, "audit.jsonl");
 }
@@ -74,7 +81,16 @@ export interface ParsedFrontMatter {
   [key: string]: string | undefined;
 }
 
-/** Internal: parse frontmatter into a raw Map for backwards-compatible usages. */
+/**
+ * Parse YAML-style frontmatter from a Markdown string into a map of raw key/value pairs.
+ *
+ * Normalizes CRLF to LF and tolerates a leading candidate marker line. If a frontmatter
+ * block delimited by `---` is found, each line inside the block is split at the first
+ * `:`; keys are lowercased and trimmed, values are trimmed and stripped of surrounding
+ * single/double quotes. If no well-formed frontmatter is present, an empty map is returned.
+ *
+ * @param content - The raw file content to inspect for a frontmatter block.
+ * @returns A Map where each entry is `key -> value` from the frontmatter; keys are lowercased and values are trimmed with surrounding quotes removed.
 function parseFrontMatterRaw(content: string): Map<string, string> {
   const result = new Map<string, string>();
   const normalized = content.replace(/\r\n/g, "\n");
@@ -96,9 +112,12 @@ function parseFrontMatterRaw(content: string): Map<string, string> {
 }
 
 /**
- * Parse a YAML-style front matter block from a markdown file.
- * Returns a typed {@link ParsedFrontMatter} object.
- * Strips the CANDIDATE_MARKER line before parsing if present.
+ * Extracts YAML-style front matter from markdown content into a ParsedFrontMatter object.
+ *
+ * Strips a leading candidate marker line if present and parses key:value pairs from a YAML-style block delimited by `---`.
+ *
+ * @param content - Markdown file content to parse
+ * @returns The parsed front matter as a ParsedFrontMatter object where keys are front-matter fields and values are their string values
  */
 export function parseFrontMatter(content: string): ParsedFrontMatter {
   const raw = parseFrontMatterRaw(content);
@@ -110,8 +129,13 @@ export function parseFrontMatter(content: string): ParsedFrontMatter {
 }
 
 /**
- * Add governance placeholder fields to a document's front matter.
- * If no front matter exists, one is created. Existing keys are not overwritten.
+ * Ensure a candidate governance frontmatter block exists and add placeholder governance and relationship fields without overwriting existing keys.
+ *
+ * Normalizes CRLF to LF. If a YAML-style frontmatter block is present it appends any missing governance keys; if no frontmatter exists it prepends a new block containing the default governance and relationship scaffold. Existing frontmatter keys and their values are preserved.
+ *
+ * @param content - The markdown document content to update
+ * @param docType - The value to use for the `doc-type` field in the frontmatter
+ * @returns The markdown content with governance placeholder frontmatter added or updated
  */
 export function addCandidateGovernanceMetadata(content: string, docType: string): string {
   const govDefaults: Record<string, string> = {
@@ -164,12 +188,26 @@ function appendLifecycle(lifecyclePath: string, event: Record<string, unknown>):
   appendFileSync(lifecyclePath, JSON.stringify(event) + "\n", "utf-8");
 }
 
+/**
+ * Resolve a filesystem path against a repository root and return an absolute path.
+ *
+ * @param path - The input path to resolve; may be absolute or relative.
+ * @param repoRoot - The repository root used to resolve relative paths.
+ * @returns An absolute filesystem path. If `path` starts with `/` it is returned unchanged; otherwise the result of resolving `path` against `repoRoot`.
+ */
 function resolvePath(path: string, repoRoot: string): string {
   if (path.startsWith("/")) return path;
   return join(resolve(repoRoot), path);
 }
 
-/** Move a doc from smartdocs/raw/ to smartdocs/doctrine/candidate/ */
+/**
+ * Move a markdown file from the repository's smartdocs/raw/ directory into smartdocs/doctrine/candidate/,
+ * mark it as a doctrine candidate, delete the original, and append a lifecycle event.
+ *
+ * @param path - Path to the source file; if not absolute, it is resolved relative to `options.repoRoot`
+ * @param options - Operation options; `options.repoRoot` specifies the repository root and `options.runId` may override the generated run id
+ * @returns An object containing `source` (resolved source path), `destination` (path in the candidate directory), `runId` (the run identifier used), and `lifecyclePath` (path to the lifecycle log file)
+ */
 export function doctrineDraft(path: string, options: DoctrineOptions): DoctrineResult {
   const repoRoot = resolve(options.repoRoot);
   const runId = options.runId ?? generateRunId();
@@ -213,7 +251,23 @@ export function doctrineDraft(path: string, options: DoctrineOptions): DoctrineR
   return { source, destination, runId, lifecyclePath };
 }
 
-/** Move a doc from smartdocs/doctrine/candidate/ to smartdocs/doctrine/active/ */
+/**
+ * Promote a candidate SmartDoc into the doctrine active pool.
+ *
+ * Moves a Markdown file from smartdocs/doctrine/candidate/ to smartdocs/doctrine/active/,
+ * removes the candidate marker, preserves a provenance sidecar if present, records an audit
+ * entry, and appends a lifecycle event.
+ *
+ * @param path - Path to the candidate Markdown file (absolute or repository-relative)
+ * @param options - Doctrine operation options (must include `repoRoot`; may include `runId`)
+ * @returns The operation result containing `source`, `destination`, `runId`, and `lifecyclePath`
+ * @throws If the source file does not exist
+ * @throws If the source is not located under smartdocs/doctrine/candidate/
+ * @throws If the file does not contain the candidate marker
+ * @throws If required governance frontmatter fields are missing
+ * @throws If `recommended-action` in frontmatter is not `"promote"`
+ * @throws If the destination file already exists
+ */
 export function doctrinePromote(path: string, options: DoctrineOptions): DoctrineResult {
   const repoRoot = resolve(options.repoRoot);
   const runId = options.runId ?? generateRunId();
@@ -309,7 +363,14 @@ export function doctrinePromote(path: string, options: DoctrineOptions): Doctrin
   return { source, destination, runId, lifecyclePath };
 }
 
-/** Move a doc from smartdocs/doctrine/active/ to smartdocs/doctrine/deprecated/ */
+/**
+ * Move a doctrine document from smartdocs/doctrine/active/ into smartdocs/doctrine/deprecated/ and record the deprecation event.
+ *
+ * @param path - Absolute or repository-relative path to the source markdown file; must be located in smartdocs/doctrine/active/.
+ * @param options - Options object containing `repoRoot` (repository root used to resolve relative paths) and an optional `runId`.
+ * @returns An object with `source` (original path), `destination` (new path under deprecated), `runId` used for this operation, and `lifecyclePath` where the lifecycle event was appended.
+ * @throws Error if the source file does not exist, if the source is not inside smartdocs/doctrine/active/, or if the destination file already exists.
+ */
 export function doctrineDeprecate(path: string, options: DoctrineOptions): DoctrineResult {
   const repoRoot = resolve(options.repoRoot);
   const runId = options.runId ?? generateRunId();
@@ -403,12 +464,27 @@ export interface SpecPromoteResult {
   report: string;
 }
 
-/** Promote a raw spec from smartdocs/raw/ to smartdocs/specs/active/.
+/**
+ * Promotes a spec file from smartdocs/raw/ into smartdocs/specs/active/.
  *
- * Gate:
- *  1. Content conflict check — verb-keyword overlap with existing active specs.
- *  2. Map conflict check — linkedMapArea already covered by an active spec.
- *  3. Halts with a report unless approve is true.
+ * Performs two pre-promotion checks: content conflicts against existing active specs
+ * (verb-keyword requirements vs prohibitions) and map-area conflicts based on a
+ * provenance `linkedMapArea`. If conflicts are found the operation halts and returns
+ * a human-readable report unless approval is explicitly provided.
+ *
+ * @param path - Filesystem path to the source `.md` spec (must reside under `smartdocs/raw/`)
+ * @param options - Promotion options and environment:
+ *   - `repoRoot`: repository root directory
+ *   - `approve`: when true, proceed with promotion despite detected conflicts
+ *   - `runId`: optional run identifier to use for lifecycle/audit paths
+ * @returns The promotion result containing:
+ *   - `source`: original source path
+ *   - `destination`: destination path under `smartdocs/specs/active/` (empty string if halted)
+ *   - `runId`: run identifier used
+ *   - `lifecyclePath`: path to the lifecycle log for this run
+ *   - `conflicts`: array of detected `SpecConflict` entries
+ *   - `halted`: `true` if promotion was stopped due to conflicts and `approve` was not set
+ *   - `report`: multi-line text report summarizing detected conflicts and action taken
  */
 export function specPromote(path: string, options: SpecPromoteOptions): SpecPromoteResult {
   const repoRoot = resolve(options.repoRoot);
