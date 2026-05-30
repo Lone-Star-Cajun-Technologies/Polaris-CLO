@@ -6,7 +6,9 @@ Session lifecycle manager for Polaris cluster runs — orchestrates child dispat
 ## Key behaviors
 - One child per session (STOP rule); enforced by `context_budget.children_completed >= 1` in `current-state.json`.
 - `checkpoint.ts` is the sole owner of `current-state.json` reads/writes.
+- `.polaris/clusters/<cluster-id>/cluster-state.json` is the live execution authority; `current-state.json` remains a compatibility/debug surface during migration.
 - Bootstrap packets are self-contained: cold-start agents resume without replaying JSONL history.
+- `.polaris/bootstrap/` is a derived sealed handoff surface, and telemetry remains append-only audit/debug output.
 - JSONL telemetry ledger is append-only; truncation breaks the telemetry contract.
 
 ## Relationships
