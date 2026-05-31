@@ -126,9 +126,41 @@ export function validateCognitionLibrarianResult(value: unknown): string[] {
   }
   if (!Array.isArray(r["proposed_patches"])) {
     errors.push("proposed_patches must be an array");
+  } else {
+    // Validate each CognitionPatch element
+    for (let i = 0; i < r["proposed_patches"].length; i++) {
+      const patch = r["proposed_patches"][i];
+      if (typeof patch !== "object" || patch === null) {
+        errors.push(`proposed_patches[${i}]: must be an object`);
+        continue;
+      }
+      const p = patch as Record<string, unknown>;
+      if (typeof p["file"] !== "string") {
+        errors.push(`proposed_patches[${i}]: missing or invalid 'file' (must be string)`);
+      }
+      if (typeof p["proposed_content"] !== "string") {
+        errors.push(`proposed_patches[${i}]: missing or invalid 'proposed_content' (must be string)`);
+      }
+    }
   }
   if (!Array.isArray(r["archive_actions"])) {
     errors.push("archive_actions must be an array");
+  } else {
+    // Validate each ArchiveAction element
+    for (let i = 0; i < r["archive_actions"].length; i++) {
+      const action = r["archive_actions"][i];
+      if (typeof action !== "object" || action === null) {
+        errors.push(`archive_actions[${i}]: must be an object`);
+        continue;
+      }
+      const a = action as Record<string, unknown>;
+      if (typeof a["note_path"] !== "string") {
+        errors.push(`archive_actions[${i}]: missing or invalid 'note_path' (must be string)`);
+      }
+      if (typeof a["archive_path"] !== "string") {
+        errors.push(`archive_actions[${i}]: missing or invalid 'archive_path' (must be string)`);
+      }
+    }
   }
 
   const validStatuses = ["success", "no-change", "low-confidence", "failure"];

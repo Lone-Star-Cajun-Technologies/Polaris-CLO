@@ -71,7 +71,16 @@ function parseNoteFrontmatter(content: string): Record<string, string> | null {
     const colonIdx = line.indexOf(":");
     if (colonIdx < 1) continue;
     const key = line.slice(0, colonIdx).trim();
-    const value = line.slice(colonIdx + 1).trim();
+    let value = line.slice(colonIdx + 1).trim();
+
+    // Strip surrounding matching quotes and unescape common escaped sequences
+    if ((value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
+      // Unescape common escaped sequences
+      value = value.replace(/\\"/g, '"').replace(/\\'/g, "'").replace(/\\\\/g, '\\');
+    }
+
     if (key) result[key] = value;
   }
   return result;
@@ -309,7 +318,29 @@ export async function dispatchCognitionLibrarian(
       timestamp: new Date().toISOString(),
     });
 
-    const outcome = validateAndApplyLibrarianResult(result, repoRoot, packet);
+    let outcome: ValidationOutcome;
+    try {
+      outcome = validateAndApplyLibrarianResult(result, repoRoot, packet);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      appendTelemetry(telemetryFile, {
+        event: "cognition-librarian-patch-rejected",
+        run_id: runId,
+        dispatch_id: dispatchId,
+        folder: group.folder,
+        folder_slug: group.folder_slug,
+        reason: "validation-error",
+        error: msg,
+        timestamp: new Date().toISOString(),
+      });
+      outcomes.push({
+        folder: group.folder,
+        folder_slug: group.folder_slug,
+        outcome: null,
+        error: `Validation failed: ${msg}`,
+      });
+      continue;
+    }
 
     if (outcome.approved) {
       appendTelemetry(telemetryFile, {
@@ -428,11 +459,21 @@ export function validateAndApplyLibrarianResult(
 
     // Rule §6.3: Size guard.
     if (isPolarisPath) {
-      const lineCount = patch.proposed_content.split("\n").length;
-      if (lineCount > packet.constraints.max_polaris_addition_lines) {
+      const absPath = resolve(repoRoot, patch.file);
+      let currentLines = 0;
+      try {
+        const currentContent = readFileSync(absPath, "utf-8");
+        currentLines = currentContent.split("\n").length;
+      } catch {
+        // File doesn't exist yet, treat as 0 lines
+        currentLines = 0;
+      }
+      const proposedLines = patch.proposed_content.split("\n").length;
+      const netNew = Math.max(0, proposedLines - currentLines);
+      if (netNew > packet.constraints.max_polaris_addition_lines) {
         patchesRejected.push({
           patch,
-          reason: `COGNITION_SIZE_GUARD: POLARIS.md has ${lineCount} lines, max ${packet.constraints.max_polaris_addition_lines}`,
+          reason: `COGNITION_SIZE_GUARD: POLARIS.md net-new ${netNew} lines exceeds max ${packet.constraints.max_polaris_addition_lines}`,
         });
         continue;
       }

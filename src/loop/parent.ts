@@ -425,7 +425,9 @@ async function syncClusterCompletion(args: {
           ...clusterState.validation_results,
           [args.childId]: {
             passed: true,
-            output: String(args.validationSummary),
+            output: typeof args.validationSummary === 'object' && args.validationSummary !== null
+              ? JSON.stringify(args.validationSummary)
+              : String(args.validationSummary),
           },
         };
 

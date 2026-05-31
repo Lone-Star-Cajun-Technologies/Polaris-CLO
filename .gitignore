@@ -7,7 +7,8 @@ build/
 .env
 docs/Polaris/.obsidian/
 # Cognition staging — ephemeral, not committed
-.polaris/cognition/pending/
+.polaris/cognition/pending/*
+!.polaris/cognition/pending/.gitkeep
 .claude/worktrees/
 .taskchain_artifacts/bootstrap-run/
 
