@@ -6,7 +6,7 @@ import {
   existsSync,
   rmSync,
 } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { execFileSync } from "node:child_process";
 
@@ -53,6 +53,13 @@ function writeEmptyAtlas(dir: string): void {
   writeFileSync(join(mapDir, "exemptions.json"), "{}");
 }
 
+function stageFile(dir: string, relativePath: string, content = "test\n"): void {
+  const fullPath = join(dir, relativePath);
+  mkdirSync(dirname(fullPath), { recursive: true });
+  writeFileSync(fullPath, content);
+  execFileSync("git", ["add", relativePath], { cwd: dir, stdio: "pipe" });
+}
+
 // ---- step 03: schema validate -----------------------------------------------
 
 describe("stepSchemaValidate", () => {
@@ -79,6 +86,68 @@ describe("stepSchemaValidate", () => {
     }) as never);
     expect(() => stepSchemaValidate({ schema_version: "1.0" })).toThrow("process.exit called");
     exitSpy.mockRestore();
+  });
+});
+
+describe("stepRunChecks staged artifact preflight", () => {
+  let testDir: string;
+  beforeEach(() => { testDir = makeTestDir(); });
+  afterEach(() => { rmSync(testDir, { recursive: true, force: true }); });
+
+  it("aborts on staged workspace scratch, backups, and mutation queue artifacts", async () => {
+    const { stepRunChecks } = await import("./steps/04-run-checks.js");
+    stageFile(testDir, ".taskchain_artifacts/polaris-run/current-state.json", "{}\n");
+    stageFile(testDir, "notes/snapshot.bak", "backup\n");
+    stageFile(testDir, ".polaris/runs/mutation-queue.json", "[]\n");
+
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation((() => {
+      throw new Error("process.exit called");
+    }) as never);
+    let stderr = "";
+    const stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(((chunk: string | Uint8Array) => {
+      stderr += String(chunk);
+      return true;
+    }) as never);
+
+    expect(() => stepRunChecks(testDir, [], { activeClusterId: "POL-242" })).toThrow("process.exit called");
+    expect(stderr).toContain(".taskchain_artifacts/polaris-run/current-state.json");
+    expect(stderr).toContain("notes/snapshot.bak");
+    expect(stderr).toContain(".polaris/runs/mutation-queue.json");
+    expect(stderr).toContain("git restore --staged <path>");
+
+    exitSpy.mockRestore();
+    stderrSpy.mockRestore();
+  });
+
+  it("warns on staged foreign-cluster artifacts without aborting", async () => {
+    const { stepRunChecks } = await import("./steps/04-run-checks.js");
+    stageFile(testDir, ".polaris/clusters/POL-240/results/POL-240.json", "{}\n");
+
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    expect(() => stepRunChecks(testDir, [], { activeClusterId: "POL-242" })).not.toThrow();
+    expect(warnSpy).toHaveBeenCalledOnce();
+    expect(warnSpy.mock.calls[0]?.[0]).toContain(".polaris/clusters/POL-240/results/POL-240.json");
+    expect(warnSpy.mock.calls[0]?.[0]).toContain("git restore --staged <path>");
+
+    warnSpy.mockRestore();
+  });
+
+  it("skips the staged artifact preflight during skip-delivery finalize runs", async () => {
+    const { stepRunChecks } = await import("./steps/04-run-checks.js");
+    stageFile(testDir, ".taskchain_artifacts/polaris-run/current-state.json", "{}\n");
+
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation((() => {
+      throw new Error("process.exit called");
+    }) as never);
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    expect(() => stepRunChecks(testDir, [], { activeClusterId: "POL-242", skipDelivery: true })).not.toThrow();
+    expect(exitSpy).not.toHaveBeenCalled();
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("Skipping staged delivery artifact check"));
+
+    exitSpy.mockRestore();
+    logSpy.mockRestore();
   });
 });
 
@@ -210,6 +279,7 @@ describe("runFinalize (steps 1–6, skip-delivery)", () => {
     const { runFinalize } = await import("./index.js");
     const stateFile = writeState(testDir);
     writeEmptyAtlas(testDir);
+    stageFile(testDir, ".taskchain_artifacts/polaris-run/current-state.json", "{\"scratch\":true}\n");
 
     // Capture stdout
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});

@@ -67,11 +67,11 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
   // Step 4: Run configured checks
   const checks = config.finalize?.runChecks ?? [];
   if (checks.length > 0) {
-    console.log(`[4/13] Running ${checks.length} configured check(s)...`); // Step count updated
-    stepRunChecks(repoRoot, checks);
+    console.log(`[4/13] Running ${checks.length} configured check(s) and staging preflight...`); // Step count updated
   } else {
-    console.log("[4/13] No finalize.runChecks configured — skipping."); // Step count updated
+    console.log("[4/13] Running staging preflight..."); // Step count updated
   }
+  stepRunChecks(repoRoot, checks, { activeClusterId: state.cluster_id, skipDelivery });
 
   // Step 4.5: Canon reconciliation check
   const canonCheckEnabled = config.canon?.checkOnFinalize !== false;
