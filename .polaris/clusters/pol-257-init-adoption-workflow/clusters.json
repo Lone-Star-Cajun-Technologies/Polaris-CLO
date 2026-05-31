@@ -1,0 +1,28 @@
+{
+  "cluster_id": "pol-257-init-adoption-workflow",
+  "parent_issue": "POL-257",
+  "generated_at": "2026-05-31T21:44:50.000Z",
+  "run_id": "polaris-analyze-init-adoption-workflow-2026-05-31-001",
+  "children": [
+    { "id": "POL-258", "title": "IMPL: Add repo state detection to polaris init", "order": 1, "blocked_by": [], "route": "src/cli", "taskchain": "polaris-cli" },
+    { "id": "POL-259", "title": "IMPL: Add read-only repo scanner (RepoScanInventory)", "order": 2, "blocked_by": ["POL-258"], "route": "src/cli", "taskchain": "polaris-cli" },
+    { "id": "POL-260", "title": "IMPL: Add adoption plan generator (AdoptionPlan)", "order": 3, "blocked_by": ["POL-259"], "route": "src/cli", "taskchain": "polaris-cli" },
+    { "id": "POL-261", "title": "IMPL: Add user approval gate to polaris init --adopt", "order": 4, "blocked_by": ["POL-260"], "route": "src/cli", "taskchain": "polaris-cli" },
+    { "id": "POL-262", "title": "IMPL: Add minimal provider config lock for polaris init --adopt", "order": 5, "blocked_by": ["POL-258"], "route": "src/cli", "taskchain": "polaris-cli", "note": "Coordinate with POL-256" },
+    { "id": "POL-263", "title": "IMPL: Add SmartDocs migration step to polaris init --adopt", "order": 6, "blocked_by": ["POL-261"], "route": "src/cli", "taskchain": "polaris-cli" },
+    { "id": "POL-264", "title": "IMPL: Add folder cognition generation to polaris init --adopt", "order": 7, "blocked_by": ["POL-263"], "route": "src/cli", "taskchain": "polaris-cli" },
+    { "id": "POL-265", "title": "IMPL: Add agent instruction file handler to polaris init --adopt", "order": 8, "blocked_by": ["POL-261"], "route": "src/cli", "taskchain": "polaris-cli" },
+    { "id": "POL-266", "title": "IMPL: Integrate atlas generation into polaris init --adopt", "order": 9, "blocked_by": ["POL-264", "POL-265"], "route": "src/cli", "taskchain": "polaris-cli" },
+    { "id": "POL-267", "title": "IMPL: Add adoption stage/commit finalization to polaris init --adopt", "order": 10, "blocked_by": ["POL-266"], "route": "src/cli", "taskchain": "polaris-cli" }
+  ],
+  "parallel_windows": [
+    { "window": 1, "issues": ["POL-258"] },
+    { "window": 2, "issues": ["POL-259", "POL-262"] },
+    { "window": 3, "issues": ["POL-260"] },
+    { "window": 4, "issues": ["POL-261"] },
+    { "window": 5, "issues": ["POL-263", "POL-265"] },
+    { "window": 6, "issues": ["POL-264"] },
+    { "window": 7, "issues": ["POL-266"] },
+    { "window": 8, "issues": ["POL-267"] }
+  ]
+}
