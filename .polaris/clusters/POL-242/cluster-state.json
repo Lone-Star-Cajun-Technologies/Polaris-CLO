@@ -107,7 +107,7 @@
     }
   },
   "packet_pointers": {
-    "POL-242": "/Users/lsctech/.copilot/session-state/1d8c5235-dbe4-4e6f-b3e1-85772cd4763d/files/pol-242-worktree/.polaris/clusters/POL-242/packets/POL-242-18032234-d443-495f-a403-c971d471e622.json",
+    "POL-242": ".polaris/clusters/POL-242/packets/POL-242-18032234-d443-495f-a403-c971d471e622.json",
     "POL-234": ".polaris/clusters/POL-242/packets/POL-234-e4aaf252-9020-49b8-a36d-3963480339dc.json",
     "POL-201": ".polaris/clusters/POL-242/packets/POL-201-5f5ab238-4750-4aee-a331-f97d001ad2bb.json",
     "POL-248": ".polaris/clusters/POL-242/packets/POL-248-62b2dc9f-14f0-4484-811a-da23052a4007.json",

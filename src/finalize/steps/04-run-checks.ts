@@ -73,7 +73,7 @@ function isBlockedDeliveryPath(filePath: string): boolean {
   return (
     filePath.startsWith(".taskchain_artifacts/")
     || filePath.endsWith(".bak")
-    || filePath === ".polaris/runs/mutation-queue.json"
+    || filePath.startsWith(".polaris/runs/")
   );
 }
 

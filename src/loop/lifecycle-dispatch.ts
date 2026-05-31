@@ -226,7 +226,7 @@ function deriveCognitionArchiveOptions(
       : result;
 
   const reconcileId = readString(candidate.reconcile_id) ?? readString(candidate.reconcileId);
-  const runId = readString(candidate.run_id) ?? readString(candidate.runId) ?? readString(result.run_id);
+  const runId = readString(result.run_id) ?? readString(candidate.run_id) ?? readString(candidate.runId);
   const notesConsumed = readStringArray(
     candidate.notes_consumed
     ?? candidate.notesConsumed
@@ -415,9 +415,11 @@ export async function dispatchLifecyclePhase(
   }
 
   try {
-    const cognitionArchiveOptions = deriveCognitionArchiveOptions(parsed.value, resolveRepoRoot(options));
-    if (cognitionArchiveOptions) {
-      archiveCognitionNotes(cognitionArchiveOptions);
+    if (options.phase === "finalize") {
+      const cognitionArchiveOptions = deriveCognitionArchiveOptions(parsed.value, resolveRepoRoot(options));
+      if (cognitionArchiveOptions) {
+        archiveCognitionNotes(cognitionArchiveOptions);
+      }
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

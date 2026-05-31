@@ -10,11 +10,7 @@ docs/Polaris/.obsidian/
 .taskchain_artifacts/bootstrap-run/
 
 # Polaris workspace scratch — never commit
-# NOTE: .taskchain_artifacts/polaris-run/current-state.json is intentionally
-# excluded here. It must remain tracked until the resume migration (POL-248)
-# is verified. Remove the negation and run git rm --cached only after POL-248 lands.
 .taskchain_artifacts/*/current-state.json
-!.taskchain_artifacts/polaris-run/current-state.json
 .taskchain_artifacts/*/remaining-state.json
 .taskchain_artifacts/*/run-report.md
 .taskchain_artifacts/**/*.bak

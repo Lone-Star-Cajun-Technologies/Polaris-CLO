@@ -69,7 +69,19 @@ function resolvePendingNotePath(repoRoot: string, notePath: string): ResolvedNot
   const rawRelativePath = path.isAbsolute(notePath)
     ? path.relative(repoRoot, notePath)
     : notePath;
-  const normalized = normalizeRelativePath(rawRelativePath);
+  let normalized = normalizeRelativePath(rawRelativePath);
+
+  // Remove leading slashes
+  normalized = normalized.replace(/^\/+/, "");
+
+  // Use path.posix.normalize to collapse ".." and "."
+  normalized = path.posix.normalize(normalized);
+
+  // Validate: reject paths that escape the repository or are absolute
+  if (normalized.startsWith("../") || normalized.includes("/../") || normalized.startsWith("/")) {
+    throw new Error(`Invalid note path: path traversal or absolute path detected: ${notePath}`);
+  }
+
   const pendingRelativePath = normalized.startsWith(PENDING_PREFIX)
     ? normalized
     : `${PENDING_PREFIX}${normalized}`;

@@ -52,11 +52,15 @@ function isPromotedClusterArtifact(relativePath: string, activeClusterId: string
 export function classifyArtifactPath(filePath: string, activeClusterId: string): ArtifactPathClass {
   const relativePath = normalizeArtifactPath(filePath);
 
+  if (relativePath.endsWith(".bak")) {
+    return "workspace-scratch";
+  }
+
   if (!relativePath.startsWith(".polaris/") && !relativePath.startsWith(WORKSPACE_SCRATCH_PREFIX)) {
     return "non-artifact";
   }
 
-  if (relativePath.endsWith(".bak") || relativePath.startsWith(WORKSPACE_SCRATCH_PREFIX)) {
+  if (relativePath.startsWith(WORKSPACE_SCRATCH_PREFIX)) {
     return "workspace-scratch";
   }
 
