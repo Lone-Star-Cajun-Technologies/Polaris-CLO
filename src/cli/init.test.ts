@@ -10,12 +10,16 @@ vi.mock("node:fs", async (importOriginal) => {
     existsSync: vi.fn(),
     readFileSync: vi.fn(),
     writeFileSync: vi.fn(),
+    mkdirSync: vi.fn(),
+    renameSync: vi.fn(),
   };
 });
 
 const mockedExistsSync = vi.mocked(fs.existsSync);
 const mockedReadFileSync = vi.mocked(fs.readFileSync);
 const mockedWriteFileSync = vi.mocked(fs.writeFileSync);
+const mockedMkdirSync = vi.mocked(fs.mkdirSync);
+const mockedRenameSync = vi.mocked(fs.renameSync);
 
 let stdoutOutput = "";
 const originalWrite = process.stdout.write.bind(process.stdout);
@@ -571,5 +575,88 @@ describe("runInit — adopt approval gate", () => {
 
     expect(readAdoptionApproval).not.toHaveBeenCalled();
     expect(stdoutOutput).toContain("Adoption approved. Proceeding with mutation phases.");
+  });
+
+  it("runs SmartDocs migration step during adopt flow", () => {
+    mockedExistsSync.mockImplementation((path: fs.PathLike) => {
+      const value = String(path);
+      if (value === CONFIG_PATH) {
+        return false;
+      }
+      if (value === join(REPO_ROOT, "docs/design.md")) {
+        return true;
+      }
+      return false;
+    });
+
+    runInit({
+      repoRoot: REPO_ROOT,
+      adopt: true,
+      yes: true,
+      detectRepoState: vi.fn().mockReturnValue("existing"),
+      detectProviders: vi.fn().mockReturnValue([]),
+      detectRepoAnalysisProviders: vi.fn().mockReturnValue([]),
+      scanAdoptionInventory: vi.fn().mockReturnValue({
+        scan_date: "2026-05-31T00:00:00.000Z",
+        repo_state: "existing",
+        package_manager: null,
+        source_roots: [],
+        docs_roots: [],
+        test_commands: [],
+        build_commands: [],
+        package_scripts: {},
+        generated_roots: [],
+        cache_roots: [],
+        fixture_roots: [],
+        agent_instruction_files: [],
+        existing_smartdocs_dirs: [],
+        architecture_notes: [],
+        likely_canonical_folders: [],
+        smartdocs_candidates: [
+          {
+            path: "docs/design.md",
+            kind: "architecture",
+            suggested_destination: "smartdocs/raw/design.md",
+            confidence: 0.95,
+            has_frontmatter: false,
+            estimated_risk: "medium",
+          },
+        ],
+        ignore_candidates: [],
+      }),
+      generateAdoptionArtifacts: vi.fn().mockReturnValue({
+        plan: {
+          plan_id: "adoption-test",
+          generated_at: "2026-05-31T00:00:00.000Z",
+          repo_state: "existing",
+          approved: false,
+          approved_at: null,
+          dry_run: false,
+          steps: [],
+          impact_summary: {
+            files_to_create: 0,
+            files_to_move: 1,
+            files_to_modify: 0,
+            instruction_files_affected: 0,
+            smartdocs_candidates_moved: 1,
+            cognition_files_to_generate: 0,
+          },
+        },
+        json: "{}\n",
+        markdown: "# Adoption Plan\n",
+        jsonPath: "/fake-repo/.polaris/adoption-plan.json",
+        markdownPath: "/fake-repo/.polaris/adoption-plan.md",
+        wroteFiles: false,
+      }),
+    });
+
+    expect(mockedMkdirSync).toHaveBeenCalledWith(join(REPO_ROOT, "smartdocs/raw"), {
+      recursive: true,
+    });
+    expect(mockedRenameSync).toHaveBeenCalledWith(
+      join(REPO_ROOT, "docs/design.md"),
+      join(REPO_ROOT, "smartdocs/raw/design.md"),
+    );
+    expect(stdoutOutput).toContain("SmartDocs migration step completed: moved 1, skipped 0.");
   });
 });

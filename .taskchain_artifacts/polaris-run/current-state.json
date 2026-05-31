@@ -5,7 +5,7 @@
   "skill": "polaris-run",
   "branch": "",
   "session_type": "implement",
-  "active_child": "POL-262",
+  "active_child": "POL-263",
   "completed_children": [
     "POL-269",
     "POL-269",
@@ -16,10 +16,11 @@
     "POL-259",
     "POL-258",
     "POL-258",
-    "POL-262"
+    "POL-262",
+    "POL-262",
+    "POL-263"
   ],
   "open_children": [
-    "POL-263",
     "POL-275",
     "POL-274",
     "POL-273",
@@ -29,7 +30,27 @@
   ],
   "open_children_meta": {
     "POL-263": {
-      "title": "IMPL: Add SmartDocs migration step to polaris init --adopt"
+      "title": "IMPL: Add SmartDocs migration step to polaris init --adopt",
+      "dispatch_record": {
+        "dispatch_id": "ae4022aa-6503-464e-87c8-eaac1dc901f3",
+        "child_id": "POL-263",
+        "run_id": "polaris-run-pol-269-2026-05-31-001",
+        "cluster_id": "POL-269",
+        "packet_path": ".polaris/clusters/POL-269/packets/POL-263-c692496c-5015-4656-a7d7-ab3f5a31e02d.json",
+        "expected_result_path": ".polaris/clusters/POL-269/results/POL-263-c692496c-5015-4656-a7d7-ab3f5a31e02d.json",
+        "provider": "claude",
+        "dispatched_at": "2026-05-31T22:54:43.221Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "ae667f26-01c1-4d2a-a103-e701520d201e",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
     },
     "POL-275": {
       "title": "IMPL: Recommended default provider policy in polaris.config.json"
@@ -52,16 +73,16 @@
   },
   "step_cursor": "dispatch",
   "context_budget": {
-    "children_completed": 10,
+    "children_completed": 11,
     "max_children_per_session": 1
   },
   "status": "running",
   "next_open_child": "POL-263",
   "artifact_dir": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run",
   "dispatch_boundary": {
-    "dispatch_epoch": 6,
-    "continue_epoch": 5,
-    "last_dispatched_child": "POL-262"
+    "dispatch_epoch": 7,
+    "continue_epoch": 6,
+    "last_dispatched_child": "POL-263"
   },
   "run_bootstrap_seal": {
     "sealer": "polaris-loop-bootstrap",

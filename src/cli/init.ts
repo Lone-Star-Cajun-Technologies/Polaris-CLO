@@ -1,5 +1,12 @@
-import { writeFileSync, existsSync, readFileSync, readdirSync } from "node:fs";
-import { resolve, join } from "node:path";
+import {
+  writeFileSync,
+  existsSync,
+  readFileSync,
+  readdirSync,
+  mkdirSync,
+  renameSync,
+} from "node:fs";
+import { resolve, join, dirname } from "node:path";
 import { Command } from "commander";
 import {
   detectCompactionProviders,
@@ -39,6 +46,11 @@ export interface InitOptions {
   ) => AdoptionPlanArtifacts;
   /** Injected approval reader — for unit testing. */
   readAdoptionApproval?: () => boolean;
+  /** Injected SmartDocs migration step — for unit testing. */
+  applySmartDocsMigration?: (
+    repoRoot: string,
+    inventory: RepoScanInventory,
+  ) => { moved: number; skipped: number };
   /** Injected timestamp for deterministic testing. */
   now?: Date;
 }
@@ -100,6 +112,30 @@ function promptAdoptionApproval(): boolean {
   } catch {
     return false;
   }
+}
+
+function applySmartDocsMigration(
+  repoRoot: string,
+  inventory: RepoScanInventory,
+): { moved: number; skipped: number } {
+  let moved = 0;
+  let skipped = 0;
+
+  for (const candidate of inventory.smartdocs_candidates) {
+    const sourcePath = join(repoRoot, candidate.path);
+    const destinationPath = join(repoRoot, candidate.suggested_destination);
+
+    if (!existsSync(sourcePath) || existsSync(destinationPath)) {
+      skipped += 1;
+      continue;
+    }
+
+    mkdirSync(dirname(destinationPath), { recursive: true });
+    renameSync(sourcePath, destinationPath);
+    moved += 1;
+  }
+
+  return { moved, skipped };
 }
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -253,6 +289,13 @@ export function runInit(options: InitOptions = {}): void {
     return;
   }
 
+  const migrationResult = (options.applySmartDocsMigration ?? applySmartDocsMigration)(
+    repoRoot,
+    inventory,
+  );
+  process.stdout.write(
+    `SmartDocs migration step completed: moved ${migrationResult.moved}, skipped ${migrationResult.skipped}.\n`,
+  );
   process.stdout.write("Adoption approved. Proceeding with mutation phases.\n");
 }
 
