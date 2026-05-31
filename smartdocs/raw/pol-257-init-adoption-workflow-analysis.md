@@ -44,7 +44,7 @@ The `existing` state is the riskiest — it requires the full adoption flow with
 
 For `empty` and `new` states. Low risk; no user approval required before scaffold creation.
 
-```
+```text
 Step 1: Minimal provider config
   → Write polaris.config.json with provider locked to local-only or a single approved provider
   → No cross-agent dispatch enabled until user explicitly configures it
@@ -76,7 +76,7 @@ Step 6: Stage and report
 ### New Repo .gitignore additions
 
 Append during Step 2:
-```
+```text
 .polaris/runs/
 .polaris/bootstrap/
 .polaris/clusters/
@@ -91,15 +91,16 @@ These are runtime artifacts and must not be committed. The canonical `.polaris/m
 
 For `existing` state. Higher risk; user approval is mandatory before any mutation.
 
-### Phase A: Safe Setup (no mutation)
+### Phase A: Safe Setup (no repo-content mutation; config bootstrap allowed)
 
-```
-Step A1: Minimal provider config (first, before anything else)
+```text
+Step A1: Minimal provider config bootstrap (first, before anything else)
   → Write polaris.config.json with:
       execution.rotation = []                  (no rotation)
       execution.allowCrossAgentFallback = false
       execution.adapter = "terminal-cli"
       orchestration.mode = "supervised"
+  → This is the only permitted write in Phase A; it locks dispatch before any scan runs
   → This prevents any agent dispatch during adoption, regardless of later config merges
   → Integrate with POL-256: provider roles are not assigned until adoption is complete
 
@@ -115,7 +116,7 @@ Step A2: Read-only repo scan
 
 ### Phase B: Plan and Approve
 
-```
+```text
 Step B1: Generate adoption plan
   → Produce AdoptionPlan (see §6 schema)
   → Human-readable Markdown summary at .polaris/adoption-plan.md
@@ -133,7 +134,7 @@ Step B2: User approval gate
 
 ### Phase C: Controlled Mutation (only after approval)
 
-```
+```text
 Step C1: Create .polaris/ skeleton (same as new repo Step 2)
 
 Step C2: SmartDocs migration
@@ -391,7 +392,7 @@ Save step execution state into `.polaris/adoption-plan.json` (the `status` field
 ### .gitignore additions (always applied)
 
 Append during scaffold creation:
-```
+```text
 # Polaris runtime artifacts — do not commit
 .polaris/runs/
 .polaris/bootstrap/
@@ -407,7 +408,7 @@ The atlas sidecar (`.polaris/map/`) and adoption artifacts (`.polaris/adoption-p
 
 The current `polaris init` command lives in `src/cli/init.ts` and handles provider detection for the development environment. For distributed use (users running Polaris on their own repos), the surface needs to be:
 
-```
+```text
 polaris init               → new repo init (empty/new state)
 polaris init --adopt       → existing repo adoption flow
 polaris init --status      → detect and print current repo state (read-only)
