@@ -5,6 +5,18 @@ role: foreman
 role_file: .polaris/roles/foreman.md
 ---
 
+## Command entrypoints
+
+This skill is the target for the following user commands:
+
+- `polaris-status`
+- `run polaris-status`
+
+When any of these commands are issued, load this skill packet **first** before any other action.
+See `.polaris/skills/ROUTING.md` for the full routing protocol.
+
+---
+
 # polaris-tools
 
 Use this skill when the user wants to inspect Polaris run state without dumping large artifacts:

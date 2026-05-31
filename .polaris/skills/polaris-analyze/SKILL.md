@@ -5,6 +5,20 @@ role: analyst
 role_file: .polaris/roles/analyst.md
 ---
 
+## Command entrypoints
+
+This skill is the target for the following user commands:
+
+- `polaris-analyze POL-###`
+- `run polaris-analyze on issue POL-###`
+- `run polaris-analyze on POL-###`
+
+When any of these commands are issued, load this skill packet **first** before any other action.
+Bind the named issue exactly as specified. See `.polaris/skills/ROUTING.md` for the full routing
+protocol.
+
+---
+
 ## Polaris Skill Bootloader
 
 **Before proceeding, you must obtain a skill packet from the Polaris runtime.**
