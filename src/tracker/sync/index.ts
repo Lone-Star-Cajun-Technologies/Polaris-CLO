@@ -114,7 +114,7 @@ export class TrackerSyncService {
     this.localGraphRef = localGraph;
     this.repoRoot = options.repoRoot ?? process.cwd();
     this.clusterId = options.clusterId;
-    this.queueFilePath = options.queueFilePath ?? path.join(this.repoRoot, '.polaris', 'runs', 'mutation-queue.json');
+    this.queueFilePath = options.queueFilePath ?? path.join(this.repoRoot, '.taskchain_artifacts', 'polaris-run', 'mutation-queue.json');
     this.ready = this.loadQueue();
   }
 

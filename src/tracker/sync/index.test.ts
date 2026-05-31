@@ -90,7 +90,7 @@ describe('TrackerSyncService', () => {
     const clusterId = 'POL-201';
     const childId = 'POL-207';
     const repoRoot = makeRepoRoot('tracker-sync-success');
-    const queueFilePath = path.join(repoRoot, '.polaris', 'runs', 'mutation-queue.json');
+    const queueFilePath = path.join(repoRoot, '.taskchain_artifacts', 'polaris-run', 'mutation-queue.json');
     await seedValidatedCompletion(repoRoot, clusterId, childId);
 
     const adapter: TrackerAdapter = {
@@ -132,7 +132,7 @@ describe('TrackerSyncService', () => {
     const clusterId = 'POL-201';
     const childId = 'POL-207';
     const repoRoot = makeRepoRoot('tracker-sync-blocked');
-    const queueFilePath = path.join(repoRoot, '.polaris', 'runs', 'mutation-queue.json');
+    const queueFilePath = path.join(repoRoot, '.taskchain_artifacts', 'polaris-run', 'mutation-queue.json');
     const { packetFile, commit } = await seedValidatedCompletion(repoRoot, clusterId, childId);
 
     await writeClusterState(
@@ -179,7 +179,7 @@ describe('TrackerSyncService', () => {
     const clusterId = 'POL-201';
     const childId = 'POL-207';
     const repoRoot = makeRepoRoot('tracker-sync-conflict');
-    const queueFilePath = path.join(repoRoot, '.polaris', 'runs', 'mutation-queue.json');
+    const queueFilePath = path.join(repoRoot, '.taskchain_artifacts', 'polaris-run', 'mutation-queue.json');
     await seedValidatedCompletion(repoRoot, clusterId, childId);
 
     const adapter: TrackerAdapter = {

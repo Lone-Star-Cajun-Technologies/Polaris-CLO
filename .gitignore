@@ -7,3 +7,4 @@ build/
 .env
 docs/Polaris/.obsidian/
 .claude/worktrees/
+.taskchain_artifacts/polaris-run/mutation-queue.json
