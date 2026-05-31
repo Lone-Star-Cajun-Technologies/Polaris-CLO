@@ -1,0 +1,72 @@
+{
+  "schema_version": "1.0",
+  "run_id": "polaris-run-pol-249-2026-05-31-001",
+  "cluster_id": "POL-249",
+  "skill": "polaris-run",
+  "branch": "",
+  "session_type": "implement",
+  "active_child": null,
+  "completed_children": [
+    "POL-249"
+  ],
+  "open_children": [
+    "POL-233",
+    "POL-240",
+    "POL-255",
+    "POL-254",
+    "POL-253",
+    "POL-252",
+    "POL-251",
+    "POL-250",
+    "POL-247"
+  ],
+  "open_children_meta": {
+    "POL-233": {
+      "title": "ANALYZE: Normalize SmartDocs routing, folder cognition, YAML links, and telemetry cleanup"
+    },
+    "POL-240": {
+      "title": "ANALYZE: Define durable run artifact promotion and commit hygiene policy"
+    },
+    "POL-255": {
+      "title": "IMPLEMENT: Archive model, cognition-index, and provenance records for reconciled notes"
+    },
+    "POL-254": {
+      "title": "IMPLEMENT: Implement foreman cognition-librarian dispatch and patch validation"
+    },
+    "POL-253": {
+      "title": "IMPLEMENT: Create cognition-librarian role file and define packet/result contract types"
+    },
+    "POL-252": {
+      "title": "IMPLEMENT: Extend CompactReturn to include work_note_path and validate note presence"
+    },
+    "POL-251": {
+      "title": "IMPLEMENT: Define worker note schema and update worker packet to require note writing"
+    },
+    "POL-250": {
+      "title": "IMPLEMENT: Create .polaris/cognition/ staging folder structure and POLARIS.md contract"
+    },
+    "POL-247": {
+      "title": "IMPLEMENT: Add finalize preflight check for commit staging allowlist"
+    }
+  },
+  "step_cursor": "checkpoint",
+  "context_budget": {
+    "children_completed": 1,
+    "max_children_per_session": 1
+  },
+  "status": "running",
+  "next_open_child": "POL-233",
+  "artifact_dir": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run",
+  "dispatch_boundary": {
+    "dispatch_epoch": 1,
+    "continue_epoch": 0,
+    "last_dispatched_child": "POL-249"
+  },
+  "run_bootstrap_seal": {
+    "sealer": "polaris-loop-bootstrap",
+    "run_id": "polaris-run-pol-249-2026-05-31-001",
+    "cluster_id": "POL-249",
+    "open_children_sha": "c7962fa8b9fb86afd2d1efc745ac204ad166a9a7b81c112730dcd432f3823726",
+    "sealed_at": "2026-05-31T15:53:22.762Z"
+  }
+}
