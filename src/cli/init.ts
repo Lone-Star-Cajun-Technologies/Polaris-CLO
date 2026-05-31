@@ -5,6 +5,11 @@ import {
   detectCompactionProviders,
   detectRepoAnalysisProviders,
 } from "../config/provider-detect.js";
+import {
+  generateAdoptionPlanArtifacts,
+  type AdoptionPlanArtifacts,
+  type RepoScanInventory,
+} from "./adoption-plan.js";
 
 export interface InitOptions {
   /** Absolute path to the repo root (defaults to cwd). */
@@ -15,6 +20,54 @@ export interface InitOptions {
   detectProviders?: (repoRoot: string) => string[];
   /** Injected repo-analysis detector function — for unit testing. */
   detectRepoAnalysisProviders?: (repoRoot: string) => string[];
+  /** Run existing repo adoption flow. */
+  adopt?: boolean;
+  /** Auto-approve adoption plan prompt (for CI). */
+  yes?: boolean;
+  /** Injected adoption inventory scanner — for unit testing. */
+  scanAdoptionInventory?: (repoRoot: string) => RepoScanInventory;
+  /** Injected adoption plan generator — for unit testing. */
+  generateAdoptionArtifacts?: (
+    repoRoot: string,
+    inventory: RepoScanInventory,
+    options: { dryRun?: boolean; now?: Date },
+  ) => AdoptionPlanArtifacts;
+  /** Injected approval reader — for unit testing. */
+  readAdoptionApproval?: () => boolean;
+  /** Injected timestamp for deterministic testing. */
+  now?: Date;
+}
+
+function buildFallbackAdoptionInventory(now: Date): RepoScanInventory {
+  return {
+    scan_date: now.toISOString(),
+    repo_state: "existing",
+    package_manager: null,
+    source_roots: [],
+    docs_roots: [],
+    test_commands: [],
+    build_commands: [],
+    package_scripts: {},
+    generated_roots: [],
+    cache_roots: [],
+    fixture_roots: [],
+    agent_instruction_files: [],
+    existing_smartdocs_dirs: [],
+    architecture_notes: [],
+    likely_canonical_folders: [],
+    smartdocs_candidates: [],
+    ignore_candidates: [],
+  };
+}
+
+function promptAdoptionApproval(): boolean {
+  process.stdout.write("Approve adoption plan and continue? [y/N] ");
+  try {
+    const response = readFileSync(0, "utf-8").trim().toLowerCase();
+    return response === "y" || response === "yes";
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -120,6 +173,29 @@ export function runInit(options: InitOptions = {}): void {
   process.stdout.write(
     `polaris.config.json written to ${configPath}\n${providerSummary}\n`,
   );
+
+  if (!options.adopt) {
+    return;
+  }
+
+  const now = options.now ?? new Date();
+  const scanAdoptionInventory = options.scanAdoptionInventory ?? (() => buildFallbackAdoptionInventory(now));
+  const inventory = scanAdoptionInventory(repoRoot);
+  const adoptionArtifacts = (options.generateAdoptionArtifacts ?? generateAdoptionPlanArtifacts)(
+    repoRoot,
+    inventory,
+    { dryRun: options.dryRun, now },
+  );
+
+  process.stdout.write(`${adoptionArtifacts.markdown}\n`);
+
+  const approved = options.yes ? true : (options.readAdoptionApproval ?? promptAdoptionApproval)();
+  if (!approved) {
+    process.stdout.write("Adoption aborted: explicit approval required.\n");
+    return;
+  }
+
+  process.stdout.write("Adoption approved. Proceeding with mutation phases.\n");
 }
 
 /**
@@ -129,8 +205,15 @@ export function createInitCommand(options: InitOptions = {}): Command {
   const cmd = new Command("init")
     .description("initialise polaris.config.json and detect compaction providers")
     .option("--dry-run", "print generated config to stdout without writing")
-    .action((cmdOptions: { dryRun?: boolean }) => {
-      runInit({ ...options, dryRun: cmdOptions.dryRun });
+    .option("--adopt", "run existing repository adoption flow")
+    .option("--yes", "auto-approve adoption plan when used with --adopt")
+    .action((cmdOptions: { dryRun?: boolean; adopt?: boolean; yes?: boolean }) => {
+      runInit({
+        ...options,
+        dryRun: cmdOptions.dryRun,
+        adopt: cmdOptions.adopt,
+        yes: cmdOptions.yes,
+      });
     });
 
   return cmd;

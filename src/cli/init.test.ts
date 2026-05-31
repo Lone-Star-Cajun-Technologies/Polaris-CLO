@@ -264,3 +264,126 @@ describe("runInit — stdout messaging", () => {
     expect(stdoutOutput).toContain("No compaction providers detected");
   });
 });
+
+describe("runInit — adopt approval gate", () => {
+  it("aborts adoption when approval is denied", () => {
+    mockedExistsSync.mockReturnValue(false);
+    const generateAdoptionArtifacts = vi.fn().mockReturnValue({
+      plan: {
+        plan_id: "adoption-test",
+        generated_at: "2026-05-31T00:00:00.000Z",
+        repo_state: "existing",
+        approved: false,
+        approved_at: null,
+        dry_run: false,
+        steps: [],
+        impact_summary: {
+          files_to_create: 0,
+          files_to_move: 0,
+          files_to_modify: 0,
+          instruction_files_affected: 0,
+          smartdocs_candidates_moved: 0,
+          cognition_files_to_generate: 0,
+        },
+      },
+      json: "{}\n",
+      markdown: "# Adoption Plan\n",
+      jsonPath: "/fake-repo/.polaris/adoption-plan.json",
+      markdownPath: "/fake-repo/.polaris/adoption-plan.md",
+      wroteFiles: false,
+    });
+
+    runInit({
+      repoRoot: REPO_ROOT,
+      adopt: true,
+      detectProviders: vi.fn().mockReturnValue([]),
+      detectRepoAnalysisProviders: vi.fn().mockReturnValue([]),
+      scanAdoptionInventory: vi.fn().mockReturnValue({
+        scan_date: "2026-05-31T00:00:00.000Z",
+        repo_state: "existing",
+        package_manager: null,
+        source_roots: [],
+        docs_roots: [],
+        test_commands: [],
+        build_commands: [],
+        package_scripts: {},
+        generated_roots: [],
+        cache_roots: [],
+        fixture_roots: [],
+        agent_instruction_files: [],
+        existing_smartdocs_dirs: [],
+        architecture_notes: [],
+        likely_canonical_folders: [],
+        smartdocs_candidates: [],
+        ignore_candidates: [],
+      }),
+      generateAdoptionArtifacts,
+      readAdoptionApproval: vi.fn().mockReturnValue(false),
+    });
+
+    expect(generateAdoptionArtifacts).toHaveBeenCalledOnce();
+    expect(stdoutOutput).toContain("# Adoption Plan");
+    expect(stdoutOutput).toContain("Adoption aborted: explicit approval required.");
+    expect(mockedWriteFileSync).toHaveBeenCalledOnce();
+  });
+
+  it("bypasses prompt and proceeds when --yes is set", () => {
+    mockedExistsSync.mockReturnValue(false);
+    const readAdoptionApproval = vi.fn();
+
+    runInit({
+      repoRoot: REPO_ROOT,
+      adopt: true,
+      yes: true,
+      detectProviders: vi.fn().mockReturnValue([]),
+      detectRepoAnalysisProviders: vi.fn().mockReturnValue([]),
+      scanAdoptionInventory: vi.fn().mockReturnValue({
+        scan_date: "2026-05-31T00:00:00.000Z",
+        repo_state: "existing",
+        package_manager: null,
+        source_roots: [],
+        docs_roots: [],
+        test_commands: [],
+        build_commands: [],
+        package_scripts: {},
+        generated_roots: [],
+        cache_roots: [],
+        fixture_roots: [],
+        agent_instruction_files: [],
+        existing_smartdocs_dirs: [],
+        architecture_notes: [],
+        likely_canonical_folders: [],
+        smartdocs_candidates: [],
+        ignore_candidates: [],
+      }),
+      generateAdoptionArtifacts: vi.fn().mockReturnValue({
+        plan: {
+          plan_id: "adoption-test",
+          generated_at: "2026-05-31T00:00:00.000Z",
+          repo_state: "existing",
+          approved: false,
+          approved_at: null,
+          dry_run: false,
+          steps: [],
+          impact_summary: {
+            files_to_create: 0,
+            files_to_move: 0,
+            files_to_modify: 0,
+            instruction_files_affected: 0,
+            smartdocs_candidates_moved: 0,
+            cognition_files_to_generate: 0,
+          },
+        },
+        json: "{}\n",
+        markdown: "# Adoption Plan\n",
+        jsonPath: "/fake-repo/.polaris/adoption-plan.json",
+        markdownPath: "/fake-repo/.polaris/adoption-plan.md",
+        wroteFiles: false,
+      }),
+      readAdoptionApproval,
+    });
+
+    expect(readAdoptionApproval).not.toHaveBeenCalled();
+    expect(stdoutOutput).toContain("Adoption approved. Proceeding with mutation phases.");
+  });
+});
