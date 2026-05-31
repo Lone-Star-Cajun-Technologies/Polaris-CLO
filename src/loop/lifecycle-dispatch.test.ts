@@ -211,6 +211,53 @@ describe("dispatchLifecyclePhase", () => {
     }
   });
 
+  it("archives cognition notes after accepting a sealed lifecycle result", async () => {
+    const dir = makeDir();
+    try {
+      mkdirSync(join(dir, ".git"), { recursive: true });
+      mkdirSync(join(dir, ".polaris", "cognition", "pending", "src", "loop"), { recursive: true });
+      writeFileSync(join(dir, ".polaris", "cognition", "pending", "src", "loop", "note.md"), "pending note", "utf-8");
+
+      const result = await dispatchLifecyclePhase({
+        phase: "finalize",
+        runId: "run-1",
+        clusterId: "POL-188",
+        branch: "polaris/POL-188",
+        repoRoot: dir,
+        stateFile: join(dir, "current-state.json"),
+        telemetryFile: join(dir, "telemetry.jsonl"),
+        config: baseConfig(),
+        adapter: makeAdapter((packet) => ({
+          run_id: packet.run_id,
+          role: "finalize",
+          status: "success",
+          cognition_archive: {
+            reconcile_id: "reconcile-1",
+            notes_consumed: ["src/loop/note.md"],
+            polaris_md_updated: true,
+            summary_md_updated: false,
+          },
+        })),
+      });
+
+      expect(result.ok).toBe(true);
+      expect(readFileSync(join(dir, ".polaris", "cognition", "archive", "src", "loop", "note.md"), "utf-8")).toBe("pending note");
+      const index = JSON.parse(readFileSync(join(dir, ".polaris", "cognition", "archive", "src", "loop", "cognition-index.json"), "utf-8"));
+      expect(index.entries).toEqual([
+        {
+          reconcile_id: "reconcile-1",
+          run_id: "run-1",
+          reconciled_at: expect.any(String),
+          notes_consumed: ["note.md"],
+          polaris_md_updated: true,
+          summary_md_updated: false,
+        },
+      ]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it("halts safely when the sealed result file is missing", async () => {
     const dir = makeDir();
     try {

@@ -4,6 +4,7 @@ export type ArtifactPathClass =
   | "non-artifact"
   | "promoted-cluster-artifact"
   | "promoted-run-ledger"
+  | "promoted-cognition-archive"
   | "promoted-map-artifact"
   | "workspace-scratch"
   | "foreign-cluster-artifact"
@@ -11,11 +12,12 @@ export type ArtifactPathClass =
 
 export interface ArtifactPromotionViolation {
   path: string;
-  classification: Exclude<ArtifactPathClass, "non-artifact" | "promoted-cluster-artifact" | "promoted-run-ledger" | "promoted-map-artifact">;
+  classification: Exclude<ArtifactPathClass, "non-artifact" | "promoted-cluster-artifact" | "promoted-run-ledger" | "promoted-cognition-archive" | "promoted-map-artifact">;
   message: string;
 }
 
 const PROMOTED_RUN_LEDGER = ".polaris/runs/ledger.jsonl";
+const PROMOTED_COGNITION_ARCHIVE_PREFIX = ".polaris/cognition/archive/";
 const PROMOTED_MAP_PREFIX = ".polaris/map/";
 const WORKSPACE_SCRATCH_PREFIX = ".taskchain_artifacts/";
 const LEGACY_RUN_ARTIFACTS = new Set([
@@ -66,6 +68,10 @@ export function classifyArtifactPath(filePath: string, activeClusterId: string):
     return "promoted-run-ledger";
   }
 
+  if (relativePath.startsWith(PROMOTED_COGNITION_ARCHIVE_PREFIX)) {
+    return "promoted-cognition-archive";
+  }
+
   if (relativePath.startsWith(PROMOTED_MAP_PREFIX)) {
     return "promoted-map-artifact";
   }
@@ -90,6 +96,7 @@ export function isPromotedArtifactPath(filePath: string, activeClusterId: string
   return (
     classification === "promoted-cluster-artifact"
     || classification === "promoted-run-ledger"
+    || classification === "promoted-cognition-archive"
     || classification === "promoted-map-artifact"
   );
 }
@@ -103,6 +110,8 @@ export function explainArtifactPolicy(filePath: string, activeClusterId: string)
       return "active cluster evidence is eligible for promotion into finalize commits";
     case "promoted-run-ledger":
       return "the run ledger is durable audit evidence and stays commit-eligible";
+    case "promoted-cognition-archive":
+      return "archived cognition reconciliation notes are durable provenance and stay commit-eligible";
     case "promoted-map-artifact":
       return "atlas outputs under .polaris/map/ are durable derived artifacts";
     case "workspace-scratch":
@@ -131,6 +140,7 @@ export function findArtifactPromotionViolations(
       classification === "non-artifact"
       || classification === "promoted-cluster-artifact"
       || classification === "promoted-run-ledger"
+      || classification === "promoted-cognition-archive"
       || classification === "promoted-map-artifact"
     ) {
       continue;
@@ -159,6 +169,7 @@ export function getArtifactPromotionPolicy(activeClusterId: string): {
       `${activeClusterPrefix}packets/**`,
       `${activeClusterPrefix}results/**`,
       PROMOTED_RUN_LEDGER,
+      `${PROMOTED_COGNITION_ARCHIVE_PREFIX}**`,
       `${PROMOTED_MAP_PREFIX}**`,
     ],
     blocked: [

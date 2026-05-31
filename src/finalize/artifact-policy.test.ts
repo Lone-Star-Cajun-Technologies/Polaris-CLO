@@ -15,6 +15,7 @@ describe("artifact promotion policy", () => {
     expect(isPromotedArtifactPath(".polaris/clusters/POL-242/packets/worker.json", "POL-242")).toBe(true);
     expect(isPromotedArtifactPath(".polaris/clusters/POL-242/results/worker.json", "POL-242")).toBe(true);
     expect(isPromotedArtifactPath(".polaris/runs/ledger.jsonl", "POL-242")).toBe(true);
+    expect(isPromotedArtifactPath(".polaris/cognition/archive/src/loop/cognition-index.json", "POL-242")).toBe(true);
     expect(isPromotedArtifactPath(".polaris/map/file-routes.json", "POL-242")).toBe(true);
   });
 
@@ -65,6 +66,7 @@ describe("artifact promotion policy", () => {
         ".polaris/clusters/POL-242/packets/**",
         ".polaris/clusters/POL-242/results/**",
         ".polaris/runs/ledger.jsonl",
+        ".polaris/cognition/archive/**",
         ".polaris/map/**",
       ],
       blocked: [
@@ -85,6 +87,7 @@ describe("artifact promotion policy", () => {
       ".polaris/clusters/POL-242/packets",
       ".polaris/clusters/POL-242/results",
       ".polaris/runs/ledger.jsonl",
+      ".polaris/cognition/archive",
       ".polaris/map",
     ]);
   });
