@@ -732,6 +732,56 @@ describe("runLoopDispatch", () => {
     expect(packet.role_context.role).toBe("worker");
   });
 
+  it("uses role policy provider before rotation when role policy is configured", () => {
+    writeFileSync(
+      join(testDir, "polaris.config.json"),
+      JSON.stringify({
+        execution: {
+          adapter: "terminal-cli",
+          providers: { codex: { command: "codex" }, copilot: { command: "copilot" } },
+          rotation: ["codex"],
+          providerPolicy: {
+            worker: { providers: ["copilot", "codex"] },
+          },
+        },
+      }),
+      "utf-8",
+    );
+    const stateFile = writeState(testDir, baseState());
+
+    captureStdout(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+
+    const updated = readState(stateFile);
+    const dr = updated.open_children_meta?.["POL-145"]?.dispatch_record;
+    expect(dr?.provider).toBe("copilot");
+    expect(dr?.provider_selection_reason).toBe("role-policy");
+  });
+
+  it("uses role config provider when provider policy is absent", () => {
+    writeFileSync(
+      join(testDir, "polaris.config.json"),
+      JSON.stringify({
+        execution: {
+          adapter: "terminal-cli",
+          providers: { codex: { command: "codex" }, copilot: { command: "copilot" } },
+          rotation: ["codex"],
+          roles: {
+            worker: { provider: "copilot" },
+          },
+        },
+      }),
+      "utf-8",
+    );
+    const stateFile = writeState(testDir, baseState());
+
+    captureStdout(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+
+    const updated = readState(stateFile);
+    const dr = updated.open_children_meta?.["POL-145"]?.dispatch_record;
+    expect(dr?.provider).toBe("copilot");
+    expect(dr?.provider_selection_reason).toBe("role-config");
+  });
+
   it("fails pre-dispatch and emits provider-forbidden when selected provider is outside role policy", () => {
     const artifactDir = join(testDir, ".taskchain_artifacts", "polaris-run");
     writeFileSync(
@@ -750,7 +800,9 @@ describe("runLoopDispatch", () => {
     );
     const stateFile = writeState(testDir, baseState({ artifact_dir: artifactDir }));
 
-    const stderr = expectDispatchError(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+    const stderr = expectDispatchError(() =>
+      runLoopDispatch({ repoRoot: testDir, stateFile, provider: "codex" })
+    );
     expect(stderr).toContain('provider "codex" is not allowed for role "worker"');
 
     const packetDir = join(testDir, ".polaris", "clusters", "POL-142", "packets");

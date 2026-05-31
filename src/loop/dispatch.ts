@@ -5,7 +5,7 @@ import { dirname, join, isAbsolute, resolve, relative } from "node:path";
 import { readState, validateState, writeStateAtomic, type LoopState, type ChildDispatchRecord, type DispatchMode, type WorkerRuntimeState, type WorkerAssignmentRecord } from "./checkpoint.js";
 import { compileImplPacket, type WorkerPacket, type WorkerRoleContext } from "./worker-packet.js";
 import { loadConfig } from "../config/loader.js";
-import type { ExecutionRole, RoleProviderPolicy } from "../config/schema.js";
+import type { ExecutionRole, RoleProviderPolicy, PolarisConfig } from "../config/schema.js";
 import { readClusterStateSync, writeClusterStateSync } from "../cluster-state/store.js";
 import type { ChildState, ClusterState } from "../cluster-state/types.js";
 import { selectPromptMode } from "./worker-prompt.js";
@@ -59,17 +59,6 @@ interface ProviderDecisionEvidence {
 }
 
 type ProviderPolicyByRole = Partial<Record<ExecutionRole, RoleProviderPolicy>>;
-const EXECUTION_ROLES = new Set<ExecutionRole>([
-  "orchestrator",
-  "startup",
-  "worker",
-  "analyst",
-  "analysis",
-  "repair",
-  "librarian",
-  "docs",
-  "finalizer",
-]);
 
 /**
  * Determine the effective provider and dispatch mode using the 4-scenario decision tree:
@@ -78,8 +67,24 @@ const EXECUTION_ROLES = new Set<ExecutionRole>([
  *   3. Internal subagent available → delegated dispatch with fallback chain
  *   4. Nothing available → pending-escalation (handled in attemptDelegatedAssignment)
  */
+function roleContextToExecutionRole(role: WorkerRoleContext["role"] | undefined): ExecutionRole {
+  switch (role) {
+    case "foreman":
+      return "orchestrator";
+    case "analyst":
+      return "analyst";
+    case "librarian":
+      return "librarian";
+    case "worker":
+    default:
+      return "worker";
+  }
+}
+
 function resolveProviderAndMode(
   options: DispatchOptions,
+  role: ExecutionRole,
+  config?: Required<PolarisConfig>,
 ): ProviderDecisionEvidence {
   const defaultAdapter = "terminal-cli";
 
@@ -95,9 +100,33 @@ function resolveProviderAndMode(
   }
 
   try {
-    const config = loadConfig(options.repoRoot);
-    const exec = config.execution;
+    const loaded = config ?? loadConfig(options.repoRoot);
+    const exec = loaded.execution;
     const adapter = exec?.adapter ?? defaultAdapter;
+    const rolePolicy = exec?.providerPolicy?.[role];
+    const roleProviders = rolePolicy?.providers ?? [];
+
+    if (roleProviders.length > 0 && roleProviders[0]) {
+      return {
+        provider: roleProviders[0],
+        mode: "direct-worker",
+        adapter,
+        selectionReason: "role-policy",
+        providersTried: [roleProviders[0]],
+      };
+    }
+
+    const roleProvider = exec?.roles?.[role]?.provider;
+    if (roleProvider) {
+      return {
+        provider: roleProvider,
+        mode: "direct-worker",
+        adapter,
+        selectionReason: "role-config",
+        providersTried: [roleProvider],
+      };
+    }
+
     const rotation = exec?.rotation ?? [];
 
     if (rotation.length > 0 && rotation[0]) {
@@ -558,11 +587,8 @@ function attemptDelegatedAssignment(
   providerPolicy?: ProviderPolicyByRole,
 ): AssignmentOutcome {
   const now = new Date().toISOString();
-  const roleName = packet.role_context.role;
-  const governedRole = EXECUTION_ROLES.has(roleName as ExecutionRole)
-    ? (roleName as ExecutionRole)
-    : undefined;
-  const rolePolicy = governedRole ? providerPolicy?.[governedRole] : undefined;
+  const governedRole = roleContextToExecutionRole(packet.role_context.role);
+  const rolePolicy = providerPolicy?.[governedRole];
   const allowNativeSubagent = rolePolicy?.allowNativeSubagent !== false;
 
   // Step 1: Try subagent spawn (unless policy disables native subagents for this role)
@@ -878,24 +904,6 @@ export function runLoopDispatch(options: DispatchOptions): void {
   const childId = selectChild(state, options.childId);
   const dispatchId = randomUUID();
 
-  // ── Resolve provider and dispatch mode ─────────────────────────────────────
-  const providerDecision = resolveProviderAndMode(options);
-  const { provider: resolvedProvider } = providerDecision;
-  const providerPolicy = getProviderPolicy(options.repoRoot);
-  try {
-    assertProviderAllowedForRole(
-      "worker",
-      resolvedProvider,
-      providerPolicy,
-      telemetryFile,
-      dispatchId,
-      state.run_id,
-      childId,
-    );
-  } catch (err) {
-    fail(err instanceof Error ? err.message : String(err));
-  }
-
   // ── Build packet before writing state ───────────────────────────────────────
   // We need to build the packet first to know its content for the artifact.
   // Use a preliminary state to build the packet (we'll update state after).
@@ -915,6 +923,31 @@ export function runLoopDispatch(options: DispatchOptions): void {
     options.repoRoot,
     options.resultFile,
   );
+  const targetRole = roleContextToExecutionRole(packet.role_context.role);
+
+  // ── Resolve provider and dispatch mode ─────────────────────────────────────
+  let loadedConfig: Required<PolarisConfig> | undefined;
+  try {
+    loadedConfig = loadConfig(options.repoRoot);
+  } catch {
+    loadedConfig = undefined;
+  }
+  const providerDecision = resolveProviderAndMode(options, targetRole, loadedConfig);
+  const { provider: resolvedProvider } = providerDecision;
+  const providerPolicy = loadedConfig?.execution.providerPolicy ?? getProviderPolicy(options.repoRoot);
+  try {
+    assertProviderAllowedForRole(
+      targetRole,
+      resolvedProvider,
+      providerPolicy,
+      telemetryFile,
+      dispatchId,
+      state.run_id,
+      childId,
+    );
+  } catch (err) {
+    fail(err instanceof Error ? err.message : String(err));
+  }
 
   // ── Write durable dispatch evidence ────────────────────────────────────────
   // Create cluster-scoped packet artifact BEFORE updating state.
