@@ -1,0 +1,2 @@
+{"event":"run-start","run_id":"polaris-analyze-provider-role-dispatch-governance-2026-05-31-001","prior_run_id":null,"timestamp":"2026-05-31T21:53:21Z"}
+{"event":"step-complete","run_id":"polaris-analyze-provider-role-dispatch-governance-2026-05-31-001","step":"01-fetch-and-orient","outcome":"halted","halt_reason":"issue-already-done","timestamp":"2026-05-31T21:53:42Z"}
