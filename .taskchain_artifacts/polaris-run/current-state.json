@@ -1,39 +1,133 @@
 {
   "schema_version": "1.0",
-  "run_id": "polaris-run-pol-234-2026-05-30-001",
-  "cluster_id": "POL-234",
+  "run_id": "polaris-run-pol-242-2026-05-31-001",
+  "cluster_id": "POL-242",
   "skill": "polaris-run",
-  "branch": "",
+  "branch": "polaris/POL-242",
   "session_type": "implement",
   "active_child": "",
   "completed_children": [
-    "POL-235",
-    "POL-236"
+    "POL-242",
+    "POL-242",
+    "POL-234",
+    "POL-234",
+    "POL-201",
+    "POL-248",
+    "POL-247",
+    "POL-247",
+    "POL-246",
+    "POL-245",
+    "POL-244",
+    "POL-244",
+    "POL-243"
   ],
-  "open_children": [],
+  "open_children": [
+    "POL-255",
+    "POL-55",
+    "POL-198",
+    "POL-42",
+    "POL-5",
+    "POL-97",
+    "POL-240"
+  ],
   "open_children_meta": {
-    "POL-234": {
-      "title": "Cognition Foundation \u2014 add folder cognition and atlas routing to smartdocs/ (no migration risk, parallel)"
+    "POL-255": {
+      "title": "IMPLEMENT: Archive model, cognition-index, and provenance records for reconciled notes"
+    },
+    "POL-55": {
+      "title": "Analyze scheduler-only parent loop and provider worker adapters"
+    },
+    "POL-198": {
+      "title": "IMPLEMENT: Dispatch-only orchestration lifecycle with startup and finalize dispatchers"
+    },
+    "POL-42": {
+      "title": "Add Polaris canon reconciliation and docs-ingest lifecycle"
+    },
+    "POL-5": {
+      "title": "Cluster 4: Polaris loop \u2014 checkpoint / resume / session boundary"
+    },
+    "POL-97": {
+      "title": "ANALYZE: Polaris 1.0 CLI/operator surface for finalize and Codex plugin"
+    },
+    "POL-240": {
+      "title": "ANALYZE: Define durable run artifact promotion and commit hygiene policy"
     }
   },
-  "step_cursor": "complete",
+  "step_cursor": "child-complete",
   "context_budget": {
-    "children_completed": 2,
+    "children_completed": 13,
     "max_children_per_session": 1
   },
-  "status": "cluster-complete",
-  "next_open_child": null,
-  "artifact_dir": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run",
+  "status": "running",
+  "next_open_child": "POL-255",
+  "artifact_dir": "/Users/lsctech/.copilot/session-state/1d8c5235-dbe4-4e6f-b3e1-85772cd4763d/files/pol-242-worktree/.taskchain_artifacts/polaris-run",
   "dispatch_boundary": {
-    "dispatch_epoch": 1,
-    "continue_epoch": 1,
-    "last_dispatched_child": "POL-235"
+    "dispatch_epoch": 9,
+    "continue_epoch": 6,
+    "last_dispatched_child": "POL-243"
   },
   "run_bootstrap_seal": {
     "sealer": "polaris-loop-bootstrap",
-    "run_id": "polaris-run-pol-234-2026-05-30-001",
-    "cluster_id": "POL-234",
-    "open_children_sha": "e2fee8d788aeaf291d47cec446aa80f36c2cb6991e136885dc630cfaa0f89ac6",
-    "sealed_at": "2026-05-30T21:42:47.444Z"
+    "run_id": "polaris-run-pol-242-2026-05-31-001",
+    "cluster_id": "POL-242",
+    "open_children_sha": "75fe8eb8346cdc3f881f0d7b87d4db23efd9be6b1fefcd2a6181e2060f974cd5",
+    "sealed_at": "2026-05-31T02:20:40.025Z"
+  },
+  "last_commit": "2b036aa",
+  "updated_at": "2026-05-31T03:22:08.263030Z",
+  "completed_children_results": {
+    "POL-247": {
+      "status": "done",
+      "validation": "passed",
+      "commit": "e40cb24",
+      "next_recommended_action": "continue",
+      "result_data": {
+        "result_file": ".polaris/clusters/POL-242/results/POL-247-adaa7b44-9168-4279-8989-8bb7e94648dd.json"
+      }
+    },
+    "POL-246": {
+      "status": "done",
+      "validation": "passed",
+      "commit": "478af46",
+      "next_recommended_action": "continue",
+      "result_data": {
+        "result_file": ".polaris/clusters/POL-242/results/POL-246-346ea83b-85dd-4d88-8156-f762b7a540e9.json"
+      }
+    },
+    "POL-245": {
+      "status": "done",
+      "validation": "failed",
+      "commit": "d677daa",
+      "next_recommended_action": "continue",
+      "result_data": {
+        "result_file": ".polaris/clusters/POL-242/results/POL-245-06c5e5b4-c4a3-445b-9db4-57361d98d040.json"
+      }
+    },
+    "POL-244": {
+      "status": "done",
+      "validation": "failed",
+      "commit": "2b036aa",
+      "next_recommended_action": "continue",
+      "result_data": {
+        "result_file": ".polaris/clusters/POL-242/results/POL-244-cca592f4-1a09-4b52-a597-f16a9609eb69.json"
+      }
+    }
+  },
+  "validation_status": "completed",
+  "last_worker_result": {
+    "child_id": "POL-244",
+    "status": "completed",
+    "commit": "2b036aa",
+    "validation": {
+      "passed": [
+        "npm run lint",
+        "npm run build",
+        "npm run test -- src/finalize/finalize.test.ts src/finalize/artifact-policy.test.ts"
+      ],
+      "failed": [
+        "npm run test: pre-existing unrelated failure in src/loop/status.test.ts > runLoopStatus > prints human-readable status from state file"
+      ]
+    },
+    "recorded_at": "2026-05-31T03:17:14.677Z"
   }
 }
