@@ -732,6 +732,87 @@ describe("runLoopDispatch", () => {
     expect(packet.role_context.role).toBe("worker");
   });
 
+  it("fails pre-dispatch and emits provider-forbidden when selected provider is outside role policy", () => {
+    const artifactDir = join(testDir, ".taskchain_artifacts", "polaris-run");
+    writeFileSync(
+      join(testDir, "polaris.config.json"),
+      JSON.stringify({
+        execution: {
+          adapter: "terminal-cli",
+          providers: { codex: { command: "codex" }, copilot: { command: "copilot" } },
+          rotation: ["codex"],
+          providerPolicy: {
+            worker: { providers: ["copilot"] },
+          },
+        },
+      }),
+      "utf-8",
+    );
+    const stateFile = writeState(testDir, baseState({ artifact_dir: artifactDir }));
+
+    const stderr = expectDispatchError(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+    expect(stderr).toContain('provider "codex" is not allowed for role "worker"');
+
+    const packetDir = join(testDir, ".polaris", "clusters", "POL-142", "packets");
+    expect(existsSync(packetDir)).toBe(false);
+
+    const telemetryFile = join(artifactDir, "runs", "pol-142-session-1", "telemetry.jsonl");
+    const providerForbiddenEvents = readFileSync(telemetryFile, "utf-8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line))
+      .filter((event) => event.event === "provider-forbidden");
+
+    expect(providerForbiddenEvents).toHaveLength(1);
+    expect(providerForbiddenEvents[0]).toMatchObject({
+      requested_role: "worker",
+      selected_provider: "codex",
+      reason: "not-in-policy",
+      policy_providers: ["copilot"],
+    });
+  });
+
+  it("allows dispatch when selected provider is in role policy", () => {
+    writeFileSync(
+      join(testDir, "polaris.config.json"),
+      JSON.stringify({
+        execution: {
+          adapter: "terminal-cli",
+          providers: { codex: { command: "codex" }, copilot: { command: "copilot" } },
+          rotation: ["codex"],
+          providerPolicy: {
+            worker: { providers: ["codex", "copilot"] },
+          },
+        },
+      }),
+      "utf-8",
+    );
+    const stateFile = writeState(testDir, baseState());
+
+    const output = captureStdout(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+    const packet = JSON.parse(output);
+    expect(packet.active_child).toBe("POL-145");
+  });
+
+  it("allows dispatch when provider policy is absent", () => {
+    writeFileSync(
+      join(testDir, "polaris.config.json"),
+      JSON.stringify({
+        execution: {
+          adapter: "terminal-cli",
+          providers: { codex: { command: "codex" } },
+          rotation: ["codex"],
+        },
+      }),
+      "utf-8",
+    );
+    const stateFile = writeState(testDir, baseState());
+
+    const output = captureStdout(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+    const packet = JSON.parse(output);
+    expect(packet.active_child).toBe("POL-145");
+  });
+
   // ── Acknowledgment timeout detection (POL-228 scenario B + E) ───────────────
 
   it("checkAcknowledgmentTimeout returns null when no active child", () => {

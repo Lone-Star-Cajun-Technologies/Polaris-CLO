@@ -5,6 +5,7 @@ import { dirname, join, isAbsolute, resolve, relative } from "node:path";
 import { readState, validateState, writeStateAtomic, type LoopState, type ChildDispatchRecord, type DispatchMode, type WorkerRuntimeState, type WorkerAssignmentRecord } from "./checkpoint.js";
 import { compileImplPacket, type WorkerPacket, type WorkerRoleContext } from "./worker-packet.js";
 import { loadConfig } from "../config/loader.js";
+import type { ExecutionRole, RoleProviderPolicy } from "../config/schema.js";
 import { readClusterStateSync, writeClusterStateSync } from "../cluster-state/store.js";
 import type { ChildState, ClusterState } from "../cluster-state/types.js";
 import { selectPromptMode } from "./worker-prompt.js";
@@ -26,6 +27,7 @@ import type {
   ProviderSelectedEvent,
   ProviderFallbackAttemptedEvent,
   ProviderExhaustedEvent,
+  ProviderForbiddenEvent,
   EscalationInitiatedEvent,
 } from "./dispatch-state.js";
 
@@ -55,6 +57,8 @@ interface ProviderDecisionEvidence {
   providersTried: string[];
   exhaustedReason?: string;
 }
+
+type ProviderPolicyByRole = Partial<Record<ExecutionRole, RoleProviderPolicy>>;
 
 /**
  * Determine the effective provider and dispatch mode using the 4-scenario decision tree:
@@ -299,6 +303,62 @@ function emitProviderExhausted(
     ...(decision.providersTried.length > 0 ? { providers_tried: decision.providersTried } : {}),
     timestamp: new Date().toISOString(),
   } satisfies ProviderExhaustedEvent);
+}
+
+function getProviderPolicy(repoRoot: string): ProviderPolicyByRole | undefined {
+  try {
+    const config = loadConfig(repoRoot);
+    return config.execution.providerPolicy;
+  } catch {
+    return undefined;
+  }
+}
+
+function assertProviderAllowedForRole(
+  role: ExecutionRole,
+  provider: string | undefined,
+  policy: ProviderPolicyByRole | undefined,
+  telemetryFile: string,
+  dispatchId: string,
+  runId: string,
+  childId: string,
+): void {
+  const rolePolicy = policy?.[role];
+  if (!rolePolicy) return;
+
+  if (rolePolicy.providers.length === 0) {
+    appendTelemetry(telemetryFile, {
+      event: "provider-forbidden",
+      event_id: randomUUID(),
+      dispatch_id: dispatchId,
+      run_id: runId,
+      child_id: childId,
+      requested_role: "worker",
+      selected_provider: provider ?? null,
+      reason: "role-disabled",
+      policy_providers: [],
+      timestamp: new Date().toISOString(),
+    } satisfies ProviderForbiddenEvent);
+    throw new Error(`provider dispatch forbidden: role "${role}" is disabled by provider policy`);
+  }
+
+  if (!provider || !rolePolicy.providers.includes(provider)) {
+    appendTelemetry(telemetryFile, {
+      event: "provider-forbidden",
+      event_id: randomUUID(),
+      dispatch_id: dispatchId,
+      run_id: runId,
+      child_id: childId,
+      requested_role: "worker",
+      selected_provider: provider ?? null,
+      reason: "not-in-policy",
+      policy_providers: rolePolicy.providers,
+      timestamp: new Date().toISOString(),
+    } satisfies ProviderForbiddenEvent);
+    throw new Error(
+      `provider dispatch forbidden: provider "${provider ?? "none"}" is not allowed for role "${role}"`,
+    );
+  }
 }
 
 /**
@@ -788,10 +848,25 @@ export function runLoopDispatch(options: DispatchOptions): void {
   }
 
   const childId = selectChild(state, options.childId);
+  const dispatchId = randomUUID();
 
   // ── Resolve provider and dispatch mode ─────────────────────────────────────
   const providerDecision = resolveProviderAndMode(options);
   const { provider: resolvedProvider } = providerDecision;
+  const providerPolicy = getProviderPolicy(options.repoRoot);
+  try {
+    assertProviderAllowedForRole(
+      "worker",
+      resolvedProvider,
+      providerPolicy,
+      telemetryFile,
+      dispatchId,
+      state.run_id,
+      childId,
+    );
+  } catch (err) {
+    fail(err instanceof Error ? err.message : String(err));
+  }
 
   // ── Build packet before writing state ───────────────────────────────────────
   // We need to build the packet first to know its content for the artifact.
@@ -816,7 +891,6 @@ export function runLoopDispatch(options: DispatchOptions): void {
   // ── Write durable dispatch evidence ────────────────────────────────────────
   // Create cluster-scoped packet artifact BEFORE updating state.
   // This ensures "dispatched" only means a durable record exists.
-  const dispatchId = randomUUID();
   const { packetPath, resultPath, relativePacketPath, relativeResultPath } = buildClusterArtifactPaths(
     options.repoRoot,
     state.cluster_id,

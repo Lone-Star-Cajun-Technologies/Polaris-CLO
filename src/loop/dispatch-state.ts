@@ -304,6 +304,17 @@ export interface ProviderExhaustedEvent extends WorkerTelemetryEventBase {
 }
 
 /**
+ * Provider forbidden - provider blocked by role policy before dispatch.
+ */
+export interface ProviderForbiddenEvent extends WorkerTelemetryEventBase {
+  event: "provider-forbidden";
+  requested_role: "worker";
+  selected_provider: string | null;
+  reason: "role-disabled" | "not-in-policy";
+  policy_providers?: string[];
+}
+
+/**
  * Escalation initiated - No worker available, escalating to human.
  */
 export interface EscalationInitiatedEvent extends WorkerTelemetryEventBase {
@@ -330,6 +341,7 @@ export type WorkerTelemetryEvent =
   | ProviderSelectedEvent
   | ProviderFallbackAttemptedEvent
   | ProviderExhaustedEvent
+  | ProviderForbiddenEvent
   | EscalationInitiatedEvent;
 
 // ─────────────────────────────────────────────────────────────────────────────
