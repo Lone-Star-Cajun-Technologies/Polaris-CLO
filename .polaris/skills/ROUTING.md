@@ -12,14 +12,21 @@ future agents. Any agent instruction surface that references `.polaris/` inherit
 This rule applies whenever a user message is an explicit Polaris skill command — that is, any
 message whose primary instruction is to invoke a named Polaris skill.
 
+### Notation key
+
+| Notation | Meaning |
+|---|---|
+| `<POL-###>` | Required placeholder — substitute the actual issue ID (e.g., `POL-257`) |
+| `[issue]` | Optional literal word — the word "issue" may be present or absent |
+
 ### Recognized command patterns
 
 | User command | Target skill | Skill packet path |
 |---|---|---|
-| `polaris-analyze [POL-###]` | polaris-analyze | `.polaris/skills/polaris-analyze/` |
-| `run polaris-analyze on [issue] [POL-###]` | polaris-analyze | `.polaris/skills/polaris-analyze/` |
-| `polaris-run [POL-###]` | polaris-run | `.polaris/skills/polaris-run/` |
-| `run polaris-run on [issue] [POL-###]` | polaris-run | `.polaris/skills/polaris-run/` |
+| `polaris-analyze <POL-###>` | polaris-analyze | `.polaris/skills/polaris-analyze/` |
+| `run polaris-analyze on [issue] <POL-###>` | polaris-analyze | `.polaris/skills/polaris-analyze/` |
+| `polaris-run <POL-###>` | polaris-run | `.polaris/skills/polaris-run/` |
+| `run polaris-run on [issue] <POL-###>` | polaris-run | `.polaris/skills/polaris-run/` |
 | `polaris-finalize` | polaris-run | `.polaris/skills/polaris-run/` |
 | `run polaris-finalize` | polaris-run | `.polaris/skills/polaris-run/` |
 | `polaris-status` | polaris-tools | `.polaris/skills/polaris-tools/` |
@@ -54,9 +61,10 @@ When a recognized command is detected, execute these steps **in order**:
    If the command specifies an issue ID (e.g., `POL-257`), bind exactly that issue.
    Do not substitute another issue or infer a different target.
 
-5. **One issue per invocation.**
-   Process one issue per skill invocation. Only process multiple issues in a single invocation
-   if the skill's `chain.md` explicitly states it supports batching.
+5. **One issue per invocation (when an issue is bound).**
+   When an issue ID is present, process one issue per skill invocation. Only process multiple
+   issues in a single invocation if the skill's `chain.md` explicitly states it supports batching.
+   Commands that carry no issue ID (e.g., `polaris-finalize`) are not subject to this constraint.
 
 ---
 

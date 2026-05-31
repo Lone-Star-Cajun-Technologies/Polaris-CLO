@@ -9,9 +9,9 @@ role_file: .polaris/roles/foreman.md
 
 This skill is the target for the following user commands:
 
-- `polaris-run POL-###`
-- `run polaris-run on issue POL-###`
-- `run polaris-run on POL-###`
+- `polaris-run <POL-###>`
+- `run polaris-run on issue <POL-###>`
+- `run polaris-run on <POL-###>`
 - `polaris-finalize`
 - `run polaris-finalize`
 

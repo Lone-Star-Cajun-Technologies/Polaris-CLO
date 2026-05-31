@@ -11,14 +11,15 @@ Work is executed through routed issue clusters, Smart Docs, and bounded worker e
 An explicit Polaris skill command is any message whose primary instruction is to invoke a named
 Polaris skill. Recognized forms:
 
-- `polaris-analyze [POL-###]` / `run polaris-analyze on [issue] [POL-###]`
-- `polaris-run [POL-###]` / `run polaris-run on [issue] [POL-###]`
+- `polaris-analyze <POL-###>` / `run polaris-analyze on [issue] <POL-###>`
+- `polaris-run <POL-###>` / `run polaris-run on [issue] <POL-###>`
 - `polaris-finalize` / `run polaris-finalize`
 - `polaris-status` / `run polaris-status`
 - `docs-ingest` / `run docs-ingest`
 - `docs-promote` / `run docs-promote`
 
-(`[issue]` is optional — `run polaris-analyze on POL-257` and `run polaris-analyze on issue POL-257` are both recognized.)
+(`<POL-###>` = required issue ID placeholder; `[issue]` = optional literal word.
+`run polaris-analyze on POL-257` and `run polaris-analyze on issue POL-257` are both recognized.)
 
 When a recognized command is received:
 
