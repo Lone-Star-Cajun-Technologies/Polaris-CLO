@@ -53,6 +53,18 @@ function writeEmptyAtlas(dir: string): void {
   writeFileSync(join(mapDir, "exemptions.json"), "{}");
 }
 
+function writeDurableClusterArtifacts(dir: string, clusterId: string): void {
+  const clusterDir = join(dir, ".polaris", "clusters", clusterId);
+  mkdirSync(join(clusterDir, "packets"), { recursive: true });
+  mkdirSync(join(clusterDir, "results"), { recursive: true });
+  mkdirSync(join(dir, ".polaris", "runs"), { recursive: true });
+  writeFileSync(join(clusterDir, "cluster-state.json"), "{\"status\":\"ready\"}\n");
+  writeFileSync(join(clusterDir, "clusters.json"), "{\"active\":true}\n");
+  writeFileSync(join(clusterDir, "packets", "packet.json"), "{\"packet\":true}\n");
+  writeFileSync(join(clusterDir, "results", "result.json"), "{\"result\":true}\n");
+  writeFileSync(join(dir, ".polaris", "runs", "ledger.jsonl"), "{\"event\":\"run-complete\"}\n");
+}
+
 function stageFile(dir: string, relativePath: string, content = "test\n"): void {
   const fullPath = join(dir, relativePath);
   mkdirSync(dirname(fullPath), { recursive: true });
@@ -176,6 +188,48 @@ describe("stepGenerateReport", () => {
   });
 });
 
+// ---- step 06: commit ---------------------------------------------------------
+
+describe("stepCommit", () => {
+  let testDir: string;
+  beforeEach(() => { testDir = makeTestDir(); });
+  afterEach(() => { rmSync(testDir, { recursive: true, force: true }); });
+
+  it("stages only durable active-cluster artifacts alongside existing source changes", async () => {
+    const { stepCommit } = await import("./steps/06-commit.js");
+    const { readState } = await import("../loop/checkpoint.js");
+    const stateFile = writeState(testDir);
+    const state = readState(stateFile);
+    const reportPath = join(testDir, ".polaris", "runs", "run-report.md");
+
+    writeEmptyAtlas(testDir);
+    writeDurableClusterArtifacts(testDir, state.cluster_id);
+    mkdirSync(join(testDir, ".taskchain_artifacts", "polaris-run"), { recursive: true });
+    writeFileSync(reportPath, "# Run Report: test-finalize-001\n");
+    writeFileSync(join(testDir, ".taskchain_artifacts", "polaris-run", "current-state.json"), "{\"scratch\":true}\n");
+    writeFileSync(join(testDir, "README.md"), "updated\n");
+    execFileSync("git", ["add", "README.md"], { cwd: testDir, stdio: "pipe" });
+
+    stepCommit(testDir, state, stateFile, reportPath);
+
+    const files = execFileSync("git", ["show", "--name-only", "--format=", "HEAD"], {
+      cwd: testDir,
+      encoding: "utf-8",
+    }).trim().split("\n").filter(Boolean);
+
+    expect(files).toContain("README.md");
+    expect(files).toContain(`.polaris/clusters/${state.cluster_id}/cluster-state.json`);
+    expect(files).toContain(`.polaris/clusters/${state.cluster_id}/clusters.json`);
+    expect(files).toContain(`.polaris/clusters/${state.cluster_id}/packets/packet.json`);
+    expect(files).toContain(`.polaris/clusters/${state.cluster_id}/results/result.json`);
+    expect(files).toContain(".polaris/map/file-routes.json");
+    expect(files).toContain(".polaris/runs/ledger.jsonl");
+    expect(files).not.toContain(".polaris/runs/current-state.json");
+    expect(files).not.toContain(".polaris/runs/run-report.md");
+    expect(files).not.toContain(".taskchain_artifacts/polaris-run/current-state.json");
+  });
+});
+
 // ---- step 09: update state --------------------------------------------------
 
 describe("stepUpdateState", () => {
@@ -279,6 +333,7 @@ describe("runFinalize (steps 1–6, skip-delivery)", () => {
     const { runFinalize } = await import("./index.js");
     const stateFile = writeState(testDir);
     writeEmptyAtlas(testDir);
+    writeDurableClusterArtifacts(testDir, "POL-6");
     stageFile(testDir, ".taskchain_artifacts/polaris-run/current-state.json", "{\"scratch\":true}\n");
 
     // Capture stdout
@@ -303,6 +358,16 @@ describe("runFinalize (steps 1–6, skip-delivery)", () => {
       encoding: "utf-8",
     });
     expect(log).toContain("polaris finalize: test-finalize-001");
+
+    const files = execFileSync("git", ["show", "--name-only", "--format=", "HEAD"], {
+      cwd: testDir,
+      encoding: "utf-8",
+    });
+    expect(files).toContain(".polaris/clusters/POL-6/cluster-state.json");
+    expect(files).toContain(".polaris/runs/ledger.jsonl");
+    expect(files).not.toContain(".taskchain_artifacts/polaris-run/current-state.json");
+    expect(files).not.toContain(".polaris/runs/current-state.json");
+    expect(files).not.toContain(".polaris/runs/run-report.md");
   });
 
   it("aborts on missing state file", async () => {

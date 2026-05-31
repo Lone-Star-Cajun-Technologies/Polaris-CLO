@@ -1,0 +1,22 @@
+{
+  "child_id": "POL-248",
+  "status": "completed",
+  "commit": "bcbba8d",
+  "validation": {
+    "passed": [
+      "npm run lint",
+      "npm run build",
+      "npx vitest run src/loop/resume.test.ts"
+    ],
+    "noted": [
+      "npm test currently fails in pre-existing src/loop/status.test.ts: runLoopStatus > prints human-readable status from state file"
+    ]
+  },
+  "files_changed": [
+    "src/loop/resume.ts",
+    "src/loop/resume.test.ts",
+    "smartdocs/specs/active/polaris-artifact-promotion-commit-hygiene-policy.md"
+  ],
+  "blockers": [],
+  "next_recommended_action": "Parent can continue with POL-247; full npm test still has the existing src/loop/status.test.ts failure to triage separately."
+}

@@ -4,6 +4,7 @@ import {
   explainArtifactPolicy,
   findArtifactPromotionViolations,
   getArtifactPromotionPolicy,
+  getArtifactPromotionStageTargets,
   isPromotedArtifactPath,
 } from "./artifact-policy.js";
 
@@ -75,5 +76,16 @@ describe("artifact promotion policy", () => {
         ".polaris/clusters/<other-cluster>/**",
       ],
     });
+  });
+
+  it("derives git-add stage targets from promoted policy patterns", () => {
+    expect(getArtifactPromotionStageTargets("POL-242")).toEqual([
+      ".polaris/clusters/POL-242/clusters.json",
+      ".polaris/clusters/POL-242/cluster-state.json",
+      ".polaris/clusters/POL-242/packets",
+      ".polaris/clusters/POL-242/results",
+      ".polaris/runs/ledger.jsonl",
+      ".polaris/map",
+    ]);
   });
 });

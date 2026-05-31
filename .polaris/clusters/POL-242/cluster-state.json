@@ -1,0 +1,133 @@
+{
+  "schema_version": "1.0",
+  "cluster_id": "POL-242",
+  "state_generation": 10,
+  "child_states": [
+    {
+      "id": "POL-242",
+      "status": "dispatched"
+    },
+    {
+      "id": "POL-234",
+      "status": "dispatched"
+    },
+    {
+      "id": "POL-201",
+      "status": "done",
+      "commit": "17bae4dbcf0fc1eae224e9c02ee194abbc1efa0d"
+    },
+    {
+      "id": "POL-248",
+      "status": "dispatched"
+    },
+    {
+      "id": "POL-247",
+      "status": "dispatched"
+    },
+    {
+      "id": "POL-246",
+      "status": "dispatched"
+    },
+    {
+      "id": "POL-245",
+      "status": "dispatched"
+    },
+    {
+      "id": "POL-244",
+      "status": "dispatched"
+    },
+    {
+      "id": "POL-243",
+      "status": "ready"
+    },
+    {
+      "id": "POL-255",
+      "status": "ready"
+    },
+    {
+      "id": "POL-55",
+      "status": "ready"
+    },
+    {
+      "id": "POL-198",
+      "status": "ready"
+    },
+    {
+      "id": "POL-42",
+      "status": "ready"
+    },
+    {
+      "id": "POL-5",
+      "status": "ready"
+    },
+    {
+      "id": "POL-97",
+      "status": "ready"
+    },
+    {
+      "id": "POL-240",
+      "status": "ready"
+    }
+  ],
+  "claim_metadata": {
+    "POL-242": {
+      "worker_id": "polaris-run-pol-242-2026-05-31-001:POL-242:1780194040031",
+      "claimed_at": "2026-05-31T02:20:40.031Z",
+      "expires_at": "2026-05-31T02:50:40.031Z"
+    },
+    "POL-234": {
+      "worker_id": "958dc74f-dcc7-426b-9613-08047dd2deb2",
+      "claimed_at": "2026-05-31T02:33:19.341Z",
+      "expires_at": "2026-05-31T03:03:19.341Z"
+    },
+    "POL-248": {
+      "worker_id": "42e57fd4-8ad1-42ad-81e7-f81b84420e79",
+      "claimed_at": "2026-05-31T02:44:59.976Z",
+      "expires_at": "2026-05-31T03:14:59.976Z"
+    },
+    "POL-247": {
+      "worker_id": "fdf45067-0441-4ed5-821b-19893f676e5b",
+      "claimed_at": "2026-05-31T02:53:37.606Z",
+      "expires_at": "2026-05-31T03:23:37.606Z"
+    },
+    "POL-246": {
+      "worker_id": "f7591f17-bf35-4a91-a85e-66a0c4c47570",
+      "claimed_at": "2026-05-31T02:59:37.678Z",
+      "expires_at": "2026-05-31T03:29:37.678Z"
+    },
+    "POL-245": {
+      "worker_id": "4481df88-e45b-447d-88bc-6339467f56b1",
+      "claimed_at": "2026-05-31T03:05:16.340Z",
+      "expires_at": "2026-05-31T03:35:16.340Z"
+    },
+    "POL-244": {
+      "worker_id": "fbf07b91-2777-47e4-9108-d1b1ab3e1337",
+      "claimed_at": "2026-05-31T03:12:01.026Z",
+      "expires_at": "2026-05-31T03:42:01.026Z"
+    }
+  },
+  "packet_pointers": {
+    "POL-242": "/Users/lsctech/.copilot/session-state/1d8c5235-dbe4-4e6f-b3e1-85772cd4763d/files/pol-242-worktree/.polaris/clusters/POL-242/packets/POL-242-18032234-d443-495f-a403-c971d471e622.json",
+    "POL-234": ".polaris/clusters/POL-242/packets/POL-234-e4aaf252-9020-49b8-a36d-3963480339dc.json",
+    "POL-201": ".polaris/clusters/POL-242/packets/POL-201-5f5ab238-4750-4aee-a331-f97d001ad2bb.json",
+    "POL-248": ".polaris/clusters/POL-242/packets/POL-248-62b2dc9f-14f0-4484-811a-da23052a4007.json",
+    "POL-247": ".polaris/clusters/POL-242/packets/POL-247-adaa7b44-9168-4279-8989-8bb7e94648dd.json",
+    "POL-246": ".polaris/clusters/POL-242/packets/POL-246-346ea83b-85dd-4d88-8156-f762b7a540e9.json",
+    "POL-245": ".polaris/clusters/POL-242/packets/POL-245-06c5e5b4-c4a3-445b-9db4-57361d98d040.json",
+    "POL-244": ".polaris/clusters/POL-242/packets/POL-244-cca592f4-1a09-4b52-a597-f16a9609eb69.json"
+  },
+  "result_pointers": {
+    "POL-201": ".polaris/clusters/POL-242/results/POL-201-5f5ab238-4750-4aee-a331-f97d001ad2bb.json"
+  },
+  "validation_results": {
+    "POL-201": {
+      "passed": true,
+      "output": "npm run lint: passed; npm run build: passed; npx vitest run src/cluster-state/store.test.ts src/cluster-state/store.integration.test.ts test/loop/dispatch-boundary.test.ts src/loop/parent.test.ts --testNamePattern='syncs route-local cluster state after a successful child completion|loop continue after dispatch|dispatch required before completion|state machine': passed; npm test: failed (pre-existing unrelated failure: src/loop/status.test.ts > runLoopStatus > prints human-readable status from state file)"
+    }
+  },
+  "commits": {
+    "POL-201": "17bae4dbcf0fc1eae224e9c02ee194abbc1efa0d"
+  },
+  "tracker_mutations": {},
+  "blockers": []
+}

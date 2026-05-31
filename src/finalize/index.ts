@@ -167,8 +167,8 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
   }
 
 
-  // Step 7: Single final commit: state + map + run-report
-  console.log("[7/13] Committing state + map + run-report..."); // Step count updated
+  // Step 7: Single final commit: source changes + durable Polaris artifacts
+  console.log("[7/13] Committing durable Polaris state + map..."); // Step count updated
   const resolvedStateFile = resolve(stateFile);
   stepCommit(repoRoot, state, resolvedStateFile, reportPath);
 

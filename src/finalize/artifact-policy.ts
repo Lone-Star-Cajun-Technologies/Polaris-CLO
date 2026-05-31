@@ -171,3 +171,9 @@ export function getArtifactPromotionPolicy(activeClusterId: string): {
     ],
   };
 }
+
+export function getArtifactPromotionStageTargets(activeClusterId: string): string[] {
+  return getArtifactPromotionPolicy(activeClusterId).promoted.map((pattern) => (
+    pattern.endsWith("/**") ? pattern.slice(0, -3) : pattern
+  ));
+}

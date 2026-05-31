@@ -1,0 +1,13 @@
+{
+  "child_id": "POL-247",
+  "status": "completed",
+  "commit": "e40cb24",
+  "validation": {
+    "passed": [
+      "npm run lint",
+      "npm test -- src/finalize/finalize.test.ts src/finalize/artifact-policy.test.ts",
+      "npm run build"
+    ]
+  },
+  "next_recommended_action": "Parent can reconcile POL-247 completion and choose the next open child."
+}
