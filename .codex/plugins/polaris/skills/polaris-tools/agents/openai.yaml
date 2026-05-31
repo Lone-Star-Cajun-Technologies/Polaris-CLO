@@ -1,0 +1,5 @@
+interface:
+  display_name: "Polaris Tools"
+  short_description: "Inspect Polaris taskchain status via safe CLI helpers"
+  brand_color: "#6366F1"
+  default_prompt: "Use $polaris-tools to check compact Polaris cluster status."

@@ -1,6 +1,6 @@
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import { readFileSync } from "node:fs";
-import { spawnSync } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import {
   readState,
   validateState,
@@ -12,12 +12,27 @@ import {
 import { buildBootstrapPacket, writeBootstrapPacket } from "./bootstrap-packet.js";
 import { loadConfig } from "../config/loader.js";
 import type { ExecutionAdapterMode } from "./execution-adapter.js";
-import { runCanonCheck } from "../docs/canon-check.js";
+import { runCanonCheck } from "../smartdocs-engine/canon-check.js";
+import {
+  assertContinueRequiresDispatch,
+  advanceContinueEpoch,
+} from "./dispatch-boundary.js";
+import {
+  DEFAULT_LEDGER_PATH,
+  LedgerWriter,
+  type ClusterCompleteEvent,
+  type ChildCompletedEvent,
+  type LedgerRunType,
+} from "./ledger.js";
 
 export interface ContinueOptions {
   stateFile: string;
   repoRoot: string;
   adapter?: ExecutionAdapterMode;
+  /** Override AI provider for the next worker session. */
+  provider?: string;
+  /** If true, allow analyze-type children to be dispatched (overrides budget.allow_analyze_children). */
+  allowAnalyzeChildren?: boolean;
 }
 
 function readSessionTypeFile(repoRoot: string): string | undefined {
@@ -37,8 +52,62 @@ function isAnalyzeImplBoundary(sessionType: string | undefined, nextChildType: s
   return sessionType === "analyze" && nextChildType === "implement";
 }
 
+function normalizeRunType(sessionType: string | undefined): LedgerRunType {
+  return sessionType === "analyze" ? "analyze" : "implement";
+}
+
+function ledgerBranch(state: LoopState): string {
+  return state.branch ?? "unknown";
+}
+
+function ledgerLastCommit(state: LoopState): string | null {
+  return state.last_commit && state.last_commit.length > 0 ? state.last_commit : null;
+}
+
+function appendContinueLedgerEvents(repoRoot: string, state: LoopState, completedChild: string | null): void {
+  if (!completedChild) return;
+
+  const writer = new LedgerWriter(join(repoRoot, DEFAULT_LEDGER_PATH));
+  const timestamp = new Date().toISOString();
+  const base = {
+    schema_version: 1 as const,
+    event_id: randomUUID(),
+    run_id: state.run_id,
+    run_type: normalizeRunType(state.session_type),
+    cluster_id: state.cluster_id,
+    branch: ledgerBranch(state),
+    completed_children: Array.from(new Set(state.completed_children)),
+    open_children: state.open_children,
+    next_child: state.next_open_child,
+    last_commit: ledgerLastCommit(state),
+    pr_url: null,
+    timestamp,
+  };
+
+  writer.append({
+    ...base,
+    event: "child-completed",
+    issue_id: completedChild,
+    status: state.status === "cluster-complete" ? "cluster-complete" : "running",
+    last_commit: ledgerLastCommit(state),
+    validation: { status: "complete" },
+  } satisfies ChildCompletedEvent);
+
+  if (state.open_children.length === 0) {
+    writer.append({
+      ...base,
+      event_id: randomUUID(),
+      event: "cluster-complete",
+      issue_id: null,
+      status: "cluster-complete",
+      open_children: [],
+      next_child: null,
+    } satisfies ClusterCompleteEvent);
+  }
+}
+
 export function runLoopContinue(options: ContinueOptions): void {
-  const { stateFile, repoRoot } = options;
+  const { stateFile, repoRoot, provider, allowAnalyzeChildren } = options;
 
   // Step 1: Read and validate current-state.json
   let rawState: unknown;
@@ -59,7 +128,34 @@ export function runLoopContinue(options: ContinueOptions): void {
   }
 
   const state = rawState as ReturnType<typeof readState>;
-  const completedChild = state.active_child;
+
+  // ── Dispatch boundary enforcement ─────────────────────────────────────────
+  // continue MUST be preceded by a `polaris loop dispatch` call.
+  // If no dispatch was recorded (dispatch_epoch === continue_epoch),
+  // reject immediately and do NOT mutate any state.
+  const artifactDirForTelemetry =
+    state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "polaris-run");
+  const telemetryFileForCheck = join(artifactDirForTelemetry, "runs", state.run_id, "telemetry.jsonl");
+
+  try {
+    assertContinueRequiresDispatch(state, telemetryFileForCheck);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`Error: ${msg}`);
+    process.exit(1);
+  }
+
+  // Identify the completed child:
+  // - If active_child is set, use it (standard case)
+  // - If dispatch_epoch > continue_epoch but active_child is empty,
+  //   resolve from dispatch_boundary.last_dispatched_child
+  let completedChild = state.active_child;
+  if (!completedChild && state.dispatch_boundary) {
+    const { dispatch_epoch, continue_epoch, last_dispatched_child } = state.dispatch_boundary;
+    if (dispatch_epoch > continue_epoch && last_dispatched_child) {
+      completedChild = last_dispatched_child;
+    }
+  }
   const remainingOpenChildren = completedChild
     ? state.open_children.filter((child) => child !== completedChild)
     : state.open_children;
@@ -76,11 +172,18 @@ export function runLoopContinue(options: ContinueOptions): void {
   const newCompletedChildren = completedChild
     ? [...state.completed_children, completedChild]
     : state.completed_children;
+  const completedSet = new Set(newCompletedChildren);
+  const prunedOpenChildrenMeta = state.open_children_meta
+    ? Object.fromEntries(
+        Object.entries(state.open_children_meta).filter(([id]) => !completedSet.has(id)),
+      )
+    : undefined;
   const updatedState = {
     ...state,
     active_child: "",
     completed_children: newCompletedChildren,
     open_children: remainingOpenChildren,
+    open_children_meta: prunedOpenChildrenMeta,
     step_cursor: "checkpoint",
     next_open_child: nextChild,
     status: nextChild ? "running" : "cluster-complete",
@@ -88,14 +191,17 @@ export function runLoopContinue(options: ContinueOptions): void {
       ...state.context_budget,
       children_completed: newCompletedChildren.length,
     },
+    // Advance continue_epoch to match the consumed dispatch_epoch
+    dispatch_boundary: advanceContinueEpoch(state.dispatch_boundary),
   };
 
   // Step 1 (cont): Atomic write of updated current-state.json
   const sha = writeStateAtomic(stateFile, updatedState);
+  appendContinueLedgerEvents(repoRoot, updatedState, completedChild);
 
   // Step 2: Append JSONL checkpoint event
   const artifactDir =
-    state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "bootstrap-run");
+    state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "polaris-run");
   const telemetryFile = join(artifactDir, "runs", state.run_id, "telemetry.jsonl");
   appendCheckpointEvent(telemetryFile, {
     event: "loop-checkpoint",
@@ -107,21 +213,34 @@ export function runLoopContinue(options: ContinueOptions): void {
 
   // Load config early — needed for canon check and adapter selection
   const config = loadConfig(repoRoot);
+  const effectiveConfig = {
+    ...config,
+    execution: provider
+      ? {
+          ...config.execution,
+          rotation: [
+            provider,
+            ...(config.execution.rotation ?? []).filter((name) => name !== provider),
+          ],
+        }
+      : config.execution,
+    budget:
+      allowAnalyzeChildren === undefined
+        ? config.budget
+        : {
+            ...config.budget,
+            allow_analyze_children: allowAnalyzeChildren,
+          },
+  };
+  const effectiveExecution = {
+    ...effectiveConfig.execution,
+    allow_analyze_children: effectiveConfig.budget?.allow_analyze_children,
+  };
 
-  // Step 3: Run polaris map update --changed (non-fatal if not yet implemented)
-  const mapResult = spawnSync(
-    process.execPath,
-    [resolve(repoRoot, "dist/cli/index.js"), "map", "update", "--changed"],
-    { cwd: repoRoot, encoding: "utf-8" },
-  );
-  if (mapResult.status !== 0) {
-    console.warn(
-      "Warning: polaris map update --changed failed (map not yet implemented). Continuing.",
-    );
-  }
+  // Map update runs once at session end (step 08 / polaris finalize), not per checkpoint.
 
   // Step 3.5: Canon reconciliation check
-  const canonCheckEnabled = config.canon?.checkOnContinue !== false;
+  const canonCheckEnabled = effectiveConfig.canon?.checkOnContinue !== false;
   if (canonCheckEnabled && nextChild) {
     const changedFiles: string[] = (updatedState as Record<string, unknown>)["changed_files"] as string[] ?? [];
     const canonResult = runCanonCheck({
@@ -168,8 +287,8 @@ export function runLoopContinue(options: ContinueOptions): void {
     sha,
     repoRoot,
     completedChild,
-    (options.adapter ?? config.execution.adapter) as ExecutionAdapterMode | undefined,
-    config.execution,
+    (options.adapter ?? effectiveExecution.adapter) as ExecutionAdapterMode | undefined,
+    effectiveExecution,
   );
   if (boundaryTriggered) {
     packet.boundary_enforcement =

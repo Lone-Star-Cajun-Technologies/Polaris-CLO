@@ -1,0 +1,5 @@
+{"event":"child-dispatched","run_id":"polaris-run-pol-156-2026-05-28-001","child_id":"POL-157","prompt_mode":"compact","prompt_estimated_tokens":467,"timestamp":"2026-05-28T14:47:15.294Z"}
+{"event":"child-complete","run_id":"polaris-run-pol-156-2026-05-28-001","child_id":"POL-157","commit":"5882d65","timestamp":"2026-05-28T14:55:00.000Z"}
+{"event":"child-dispatched","run_id":"polaris-run-pol-156-2026-05-28-001","child_id":"POL-158","prompt_mode":"compact","prompt_estimated_tokens":467,"timestamp":"2026-05-28T14:51:12.606Z"}
+{"event":"child-complete","run_id":"polaris-run-pol-156-2026-05-28-001","child_id":"POL-158","commit":"37d02b0","timestamp":"2026-05-28T15:00:00.000Z"}{"event":"child-dispatched","run_id":"polaris-run-pol-156-2026-05-28-001","child_id":"POL-159","prompt_mode":"compact","prompt_estimated_tokens":467,"timestamp":"2026-05-28T14:56:57.582Z"}
+{"event":"child-dispatched","run_id":"polaris-run-pol-156-2026-05-28-001","child_id":"POL-160","prompt_mode":"compact","prompt_estimated_tokens":467,"timestamp":"2026-05-28T14:58:36.142Z"}

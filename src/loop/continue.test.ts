@@ -137,6 +137,100 @@ describe("runLoopContinue", () => {
     expect(updated.context_budget.children_completed).toBe(1);
   });
 
+  it("appends child-completed to the global ledger after updating current-state.json", () => {
+    const state = {
+      schema_version: "1.0",
+      run_id: "pol-5-session-1",
+      cluster_id: "POL-5",
+      branch: "test-branch",
+      active_child: "POL-23",
+      completed_children: [],
+      open_children: ["POL-23", "POL-24"],
+      step_cursor: "03-execute-child",
+      context_budget: { children_completed: 0, max_children_per_session: 3 },
+      status: "running",
+      next_open_child: "POL-23",
+      last_commit: "abc1234",
+    };
+    const stateFile = writeState(testDir, state);
+
+    const origLog = console.log;
+    console.log = () => {};
+    try {
+      runLoopContinue({ stateFile, repoRoot: testDir });
+    } finally {
+      console.log = origLog;
+    }
+
+    const ledgerFile = join(testDir, ".polaris", "runs", "ledger.jsonl");
+    expect(existsSync(ledgerFile)).toBe(true);
+    const events = readFileSync(ledgerFile, "utf-8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    const event = events.find((entry) => entry.event === "child-completed");
+    expect(event).toMatchObject({
+      run_id: "pol-5-session-1",
+      run_type: "implement",
+      cluster_id: "POL-5",
+      issue_id: "POL-23",
+      branch: "test-branch",
+      status: "running",
+      completed_children: ["POL-23"],
+      open_children: ["POL-24"],
+      next_child: "POL-24",
+      last_commit: "abc1234",
+      pr_url: null,
+      validation: { status: "complete" },
+    });
+    expect(readState(stateFile).completed_children).toEqual(["POL-23"]);
+  });
+
+  it("appends cluster-complete to the global ledger when no next child remains", () => {
+    const state = {
+      schema_version: "1.0",
+      run_id: "pol-5-session-1",
+      cluster_id: "POL-5",
+      branch: "test-branch",
+      active_child: "POL-23",
+      completed_children: [],
+      open_children: ["POL-23"],
+      step_cursor: "03-execute-child",
+      context_budget: { children_completed: 0, max_children_per_session: 3 },
+      status: "running",
+      next_open_child: "POL-23",
+      last_commit: "abc1234",
+    };
+    const stateFile = writeState(testDir, state);
+
+    const origLog = console.log;
+    console.log = () => {};
+    try {
+      runLoopContinue({ stateFile, repoRoot: testDir });
+    } finally {
+      console.log = origLog;
+    }
+
+    const events = readFileSync(join(testDir, ".polaris", "runs", "ledger.jsonl"), "utf-8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    const event = events.find((entry) => entry.event === "cluster-complete");
+    expect(event).toMatchObject({
+      run_id: "pol-5-session-1",
+      run_type: "implement",
+      cluster_id: "POL-5",
+      issue_id: null,
+      branch: "test-branch",
+      status: "cluster-complete",
+      completed_children: ["POL-23"],
+      open_children: [],
+      next_child: null,
+      last_commit: "abc1234",
+      pr_url: null,
+    });
+  });
+
   it("removes completed child from open_children before selecting next child", () => {
     const state = {
       schema_version: "1.0",
@@ -182,7 +276,7 @@ describe("runLoopContinue", () => {
       context_budget: { children_completed: 0, max_children_per_session: 3 },
       status: "running",
       next_open_child: "POL-24",
-      artifact_dir: join(testDir, ".taskchain_artifacts", "bootstrap-run"),
+      artifact_dir: join(testDir, ".taskchain_artifacts", "polaris-run"),
     };
     const stateFile = writeState(testDir, state);
 
@@ -197,7 +291,7 @@ describe("runLoopContinue", () => {
     const telemetryFile = join(
       testDir,
       ".taskchain_artifacts",
-      "bootstrap-run",
+      "polaris-run",
       "runs",
       "pol-5-session-1",
       "telemetry.jsonl",
@@ -248,6 +342,34 @@ describe("runLoopContinue", () => {
     const packet = JSON.parse(output);
     expect(packet.current_state_sha).toBeTruthy();
     expect(packet.run_id).toBe("pol-5-session-1");
+  });
+
+  it("forwards allowAnalyzeChildren override into execution bootstrap state", () => {
+    const state = {
+      schema_version: "1.0",
+      run_id: "pol-5-session-1",
+      cluster_id: "POL-5",
+      active_child: "POL-23",
+      completed_children: [],
+      open_children: ["POL-24"],
+      step_cursor: "03-execute-child",
+      context_budget: { children_completed: 0, max_children_per_session: 3 },
+      status: "running",
+      next_open_child: "POL-24",
+    };
+    const stateFile = writeState(testDir, state);
+
+    const logs: string[] = [];
+    const origLog = console.log;
+    console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
+    try {
+      runLoopContinue({ stateFile, repoRoot: testDir, allowAnalyzeChildren: true });
+    } finally {
+      console.log = origLog;
+    }
+
+    const packet = JSON.parse(logs.join("\n"));
+    expect(packet.execution_adapter.compact_bootstrap_state.allow_analyze_children).toBe(true);
   });
 
   it("exits with error if state file missing", () => {
@@ -323,7 +445,7 @@ describe("runLoopContinue", () => {
       context_budget: { children_completed: 0, max_children_per_session: 3 },
       status: "running",
       next_open_child: "POL-24",
-      artifact_dir: join(testDir, ".taskchain_artifacts", "bootstrap-run"),
+      artifact_dir: join(testDir, ".taskchain_artifacts", "polaris-run"),
     };
     const stateFile = writeState(testDir, state);
 
@@ -338,7 +460,7 @@ describe("runLoopContinue", () => {
     const telemetryFile = join(
       testDir,
       ".taskchain_artifacts",
-      "bootstrap-run",
+      "polaris-run",
       "runs",
       "pol-5-session-1",
       "telemetry.jsonl",

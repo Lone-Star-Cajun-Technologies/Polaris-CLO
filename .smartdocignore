@@ -1,0 +1,10 @@
+# Additional repo-specific Smart Docs exclusions.
+# Core Smart Docs protections are enforced in code via:
+# src/smartdocs-engine/smartdoc-ignore.ts
+#
+# Use this file to add repo-specific exclusions that should
+# remain tracked in git but never enter Smart Docs ingest.
+
+examples/**
+templates/**
+sample-docs/**

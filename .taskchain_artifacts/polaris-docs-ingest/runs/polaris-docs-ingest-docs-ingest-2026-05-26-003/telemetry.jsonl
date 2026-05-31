@@ -1,0 +1,4 @@
+{"event":"run-start","run_id":"polaris-docs-ingest-docs-ingest-2026-05-26-003","prior_run_id":null,"timestamp":"2026-05-26T20:52:30.586Z"}
+{"event":"docs-ingest-classified","file":"docs/test-dry-run.md","classification":"spec-raw","destination":"Polaris-Docs/docs/specs/raw/test-dry-run.md","linked_map_area":null,"cluster_id":null,"run_id":"polaris-docs-ingest-docs-ingest-2026-05-26-003","timestamp":"2026-05-26T20:52:30.589Z"}
+{"event":"docs-ingest","file":"docs/test-dry-run.md","classification":"spec-raw","destination":"Polaris-Docs/docs/specs/raw/test-dry-run.md","linked_map_area":null,"cluster_id":null,"run_id":"polaris-docs-ingest-docs-ingest-2026-05-26-003","timestamp":"2026-05-26T20:52:30.589Z"}
+{"event":"docs-ingest-complete","count":1,"cluster_id":null,"run_id":"polaris-docs-ingest-docs-ingest-2026-05-26-003","timestamp":"2026-05-26T20:52:30.589Z"}

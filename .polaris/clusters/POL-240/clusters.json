@@ -1,0 +1,64 @@
+{
+  "schema_version": "1.0",
+  "analyze_issue": "POL-240",
+  "implement_parent": "POL-242",
+  "generated_at": "2026-05-30T23:46:30.000Z",
+  "run_id": "polaris-analyze-artifact-promotion-commit-hygiene-2026-05-30-001",
+  "spec_file": "smartdocs/raw/pol-240-artifact-promotion-commit-hygiene.md",
+  "children": [
+    {
+      "id": "POL-243",
+      "title": "IMPLEMENT: Gitignore and untrack .taskchain_artifacts/ workspace files",
+      "priority": "high",
+      "order": 1,
+      "depends_on": [],
+      "scope": ".gitignore, git rm --cached",
+      "risk": "low"
+    },
+    {
+      "id": "POL-244",
+      "title": "IMPLEMENT: Fix finalize commit step to stage .polaris/clusters/ durable state",
+      "priority": "high",
+      "order": 2,
+      "depends_on": ["POL-243"],
+      "scope": "src/finalize/steps/06-commit.ts",
+      "risk": "medium"
+    },
+    {
+      "id": "POL-245",
+      "title": "IMPLEMENT: Remove deprecated artifact surfaces from git tracking",
+      "priority": "medium",
+      "order": 3,
+      "depends_on": ["POL-243"],
+      "scope": "git rm --cached, .gitignore",
+      "risk": "low"
+    },
+    {
+      "id": "POL-246",
+      "title": "IMPLEMENT: Relocate mutation-queue.json from .polaris/runs/ to taskchain workspace",
+      "priority": "medium",
+      "order": 4,
+      "depends_on": ["POL-243"],
+      "scope": "src/tracker/sync/queue-store.ts, src/tracker/sync/index.ts",
+      "risk": "low"
+    },
+    {
+      "id": "POL-247",
+      "title": "IMPLEMENT: Add finalize preflight check for commit staging allowlist",
+      "priority": "medium",
+      "order": 5,
+      "depends_on": ["POL-243", "POL-244"],
+      "scope": "src/finalize/steps/04-run-checks.ts",
+      "risk": "low"
+    },
+    {
+      "id": "POL-248",
+      "title": "IMPLEMENT: Verify and document resume-state minimum contract from cluster-state.json",
+      "priority": "medium",
+      "order": 6,
+      "depends_on": ["POL-243", "POL-244"],
+      "scope": "src/loop/resume.ts, src/cluster-state/types.ts",
+      "risk": "medium"
+    }
+  ]
+}

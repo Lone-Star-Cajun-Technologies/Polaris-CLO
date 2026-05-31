@@ -1,0 +1,32 @@
+{
+  "name": "polaris",
+  "version": "1.0.0",
+  "description": "Exposes compact read-only Polaris status helpers as Codex tools.",
+  "author": {
+    "name": "Polaris",
+    "email": "phil.meaux@lsctech.biz",
+    "url": "https://github.com/ItIsYeBananaduck/Polaris"
+  },
+  "homepage": "https://github.com/ItIsYeBananaduck/Polaris",
+  "repository": "https://github.com/ItIsYeBananaduck/Polaris",
+  "license": "MIT",
+  "keywords": ["polaris", "taskchain", "orchestration", "cluster", "worker"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Polaris",
+    "shortDescription": "Inspect Polaris taskchain cluster status",
+    "longDescription": "Provides compact polaris_status and polaris_loop_status helpers backed by the local Polaris CLI or current-state fallback. Direct run, ungated loop continuation, and finalize delivery remain operator-only and are not exposed as casual Codex plugin tools.",
+    "developerName": "Polaris",
+    "category": "Productivity",
+    "capabilities": ["Interactive", "Read"],
+    "websiteURL": "https://github.com/ItIsYeBananaduck/Polaris",
+    "privacyPolicyURL": "https://github.com/ItIsYeBananaduck/Polaris",
+    "termsOfServiceURL": "https://github.com/ItIsYeBananaduck/Polaris",
+    "defaultPrompt": [
+      "Show polaris cluster status",
+      "Show polaris loop status",
+      "Check compact Polaris run state"
+    ],
+    "brandColor": "#6366F1"
+  }
+}

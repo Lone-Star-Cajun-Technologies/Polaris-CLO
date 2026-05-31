@@ -3,7 +3,7 @@ import { join, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 import { loadConfig } from "../config/loader.js";
 import { readState } from "../loop/checkpoint.js";
-import { runCanonCheck } from "../docs/canon-check.js";
+import { runCanonCheck } from "../smartdocs-engine/canon-check.js";
 import { stepMapUpdate } from "./steps/01-map-update.js";
 import { stepMapValidate } from "./steps/02-map-validate.js";
 import { stepSchemaValidate } from "./steps/03-schema-validate.js";
@@ -16,6 +16,8 @@ import { stepUpdateState } from "./steps/09-update-state.js";
 import { stepAppendJsonl } from "./steps/10-append-jsonl.js";
 import { stepUpdateLinear } from "./steps/11-update-linear.js";
 import { stepArchive } from "./steps/12-archive.js";
+import { LocalGraph } from "../tracker/local-graph.js";
+import { TrackerSyncService } from "../tracker/sync/index.js";
 
 export interface FinalizeOptions {
   repoRoot: string;
@@ -41,15 +43,15 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
   const config = loadConfig(repoRoot);
 
   // Step 1: polaris map update --changed
-  console.log("[1/12] Updating map...");
+  console.log("[1/13] Updating map..."); // Step count updated
   stepMapUpdate(repoRoot);
 
   // Step 2: polaris map validate — fail fast
-  console.log("[2/12] Validating map...");
+  console.log("[2/13] Validating map..."); // Step count updated
   stepMapValidate(repoRoot);
 
   // Step 3: Validate current-state.json schema
-  console.log("[3/12] Validating current-state.json schema...");
+  console.log("[3/13] Validating current-state.json schema..."); // Step count updated
   let rawState: unknown;
   try {
     rawState = readState(stateFile);
@@ -65,16 +67,16 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
   // Step 4: Run configured checks
   const checks = config.finalize?.runChecks ?? [];
   if (checks.length > 0) {
-    console.log(`[4/12] Running ${checks.length} configured check(s)...`);
-    stepRunChecks(repoRoot, checks);
+    console.log(`[4/13] Running ${checks.length} configured check(s) and staging preflight...`); // Step count updated
   } else {
-    console.log("[4/12] No finalize.runChecks configured — skipping.");
+    console.log("[4/13] Running staging preflight..."); // Step count updated
   }
+  stepRunChecks(repoRoot, checks, { activeClusterId: state.cluster_id, skipDelivery });
 
   // Step 4.5: Canon reconciliation check
   const canonCheckEnabled = config.canon?.checkOnFinalize !== false;
   if (canonCheckEnabled) {
-    console.log("[4.5/12] Running canon reconciliation check...");
+    console.log("[4.5/13] Running canon reconciliation check..."); // Step count updated
     let changedFiles: string[] = [];
     try {
       const baseBranch = config.finalize?.targetBranch ?? "main";
@@ -91,7 +93,7 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
       throw new Error(`Canon check cannot proceed: git diff failed: ${msg}`);
     }
 
-    const artifactDirForCheck = state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "bootstrap-run");
+    const artifactDirForCheck = state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "polaris-run");
     const telemetryFileForCheck = join(artifactDirForCheck, "runs", state.run_id, "telemetry.jsonl");
 
     const canonResult = runCanonCheck({
@@ -119,75 +121,133 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
   }
 
   // Step 5: Generate run-report.md (written once, never updated)
-  console.log("[5/12] Generating run-report.md...");
+  console.log("[5/13] Generating run-report.md..."); // Step count updated
   const branch = getBranch(repoRoot);
   const reportPath = stepGenerateReport(repoRoot, state, branch, true);
 
   if (dryRun) {
-    console.log("[6–12/12] Dry run — skipping commit and delivery.");
+    console.log("[6–13/13] Dry run — skipping reconciliation, commit and delivery."); // Step count updated
     console.log("Finalize dry run complete.");
     return;
   }
 
-  // Step 6: Single final commit: state + map + run-report
-  console.log("[6/12] Committing state + map + run-report...");
+  // Step 6: Tracker Reconciliation
+  // LinearAdapter is sync-in only; only McpBridgeAdapter supports full reconciliation.
+  const trackerType = config.tracker?.adapter;
+  if (!trackerType) {
+    console.log("[6/13] Tracker not configured — skipping reconciliation.");
+  } else if (trackerType === "linear") {
+    console.log("[6/13] Linear adapter is sync-in only — skipping reconciliation (use mcp-bridge for two-way sync).");
+  } else if (trackerType === "mcp-bridge") {
+    console.log("[6/13] Running tracker reconciliation...");
+    try {
+      const localGraph = await LocalGraph.load(state.cluster_id, repoRoot);
+      const { McpBridgeAdapter } = await import("../tracker/adapters/mcp-bridge.js");
+      const trackerAdapter = new McpBridgeAdapter();
+      const trackerSyncService = new TrackerSyncService(trackerAdapter, localGraph, {
+        repoRoot,
+        clusterId: state.cluster_id,
+      });
+      await trackerSyncService.ready;
+      const reconciliationReport = await trackerSyncService.reconcile(dryRun);
+      console.log("Tracker Reconciliation Report:", reconciliationReport);
+      if (reconciliationReport.conflictsDetectedCount > 0 || reconciliationReport.failedMutationsCount > 0) {
+        const summary = reconciliationReport.details.join(" | ");
+        throw new Error(
+          `tracker reconciliation requires attention (conflicts=${reconciliationReport.conflictsDetectedCount}, failed=${reconciliationReport.failedMutationsCount})${summary ? `: ${summary}` : ""}`,
+        );
+      }
+    } catch (error) {
+      console.error("Error during tracker reconciliation:", error);
+      process.stderr.write(`finalize aborted: tracker reconciliation failed: ${error instanceof Error ? error.message : String(error)}\n`);
+      process.exit(1);
+    }
+  } else {
+    console.warn(`[6/13] Unknown tracker adapter '${trackerType}' — skipping reconciliation.`);
+  }
+
+
+  // Step 7: Single final commit: source changes + durable Polaris artifacts
+  console.log("[7/13] Committing durable Polaris state + map..."); // Step count updated
   const resolvedStateFile = resolve(stateFile);
   stepCommit(repoRoot, state, resolvedStateFile, reportPath);
 
   if (skipDelivery) {
-    console.log("[7–12/12] Delivery skipped (--skip-delivery).");
-    console.log("polaris finalize steps 1–6 complete.");
+    console.log("[8–13/13] Delivery skipped (--skip-delivery)."); // Step count updated
+    console.log("polaris finalize steps 1–7 complete."); // Step count updated
     return;
   }
 
-  // Step 7: git push
-  console.log("[7/12] Pushing branch...");
+  // Step 8: git push
+  console.log("[8/13] Pushing branch..."); // Step count updated
   stepPush(repoRoot, branch);
 
-  // Step 8: Create draft PR
+  // Step 9: Create draft PR
   const prDraft = config.finalize?.prDraft ?? true;
-  console.log("[8/12] Creating draft PR...");
+  console.log("[9/13] Creating draft PR..."); // Step count updated
   const prUrl = stepCreatePr(repoRoot, branch, state, prDraft);
 
-  // Step 9: Write PR URL to current-state.json
-  console.log("[9/12] Writing PR URL to state...");
+  // Step 10: Write PR URL to current-state.json
+  console.log("[10/13] Writing PR URL to state..."); // Step count updated
   state = stepUpdateState(resolvedStateFile, state, prUrl);
 
-  // Step 10: Append JSONL events
-  console.log("[10/12] Appending JSONL events...");
-  const artifactDir = state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "bootstrap-run");
+  // Step 11: Append JSONL events
+  console.log("[11/13] Appending JSONL events..."); // Step count updated
+  const artifactDir = state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "polaris-run");
   const telemetryFile = join(artifactDir, "runs", state.run_id, "telemetry.jsonl");
   stepAppendJsonl(telemetryFile, state, prUrl);
 
-  // Step 11: Update Linear parent issue
-  console.log("[11/12] Updating Linear...");
+  // Step 12: Update Linear parent issue
+  console.log("[12/13] Updating Linear..."); // Step count updated
   const linearEnabled = config.tracker?.linear?.enabled ?? false;
   await stepUpdateLinear(state, branch, prUrl, true, linearEnabled, state.cluster_id);
 
-  // Step 12: Archive run snapshot
-  console.log("[12/12] Archiving run snapshot...");
+  // Step 13: Archive run snapshot
+  console.log("[13/13] Archiving run snapshot..."); // Step count updated
   stepArchive(repoRoot, state, resolvedStateFile, reportPath);
 
   console.log("polaris finalize complete.");
 }
 
-export function createFinalizeCommand(): Command {
-  const finalize = new Command("finalize").description(
-    "Atomic 12-step final delivery sequence",
-  );
+export interface FinalizeCommandHandlers {
+  runFinalize?: typeof runFinalize;
+  repoRoot?: string;
+}
+
+function failMissingSubcommand(command: Command, commandName: string): never {
+  const unknownSubcommand = command.args[0];
+  const message = unknownSubcommand
+    ? `error: unknown command '${unknownSubcommand}' for '${commandName}'. Run '${commandName} --help'.`
+    : `error: missing command for '${commandName}'. Run '${commandName} --help'.`;
+  command.error(message, {
+    code: "commander.missingCommand",
+    exitCode: 1,
+  });
+}
+
+export function createFinalizeCommand(handlers: FinalizeCommandHandlers = {}): Command {
+  const finalizeHandler = handlers.runFinalize ?? runFinalize;
+  const repoRootDefault = handlers.repoRoot ?? process.cwd();
+  const finalize = new Command("finalize")
+    .description(
+      "manual/operator-triggered delivery; finalize run performs delivery unless --dry-run or --skip-delivery is supplied",
+    )
+    .showHelpAfterError()
+    .showSuggestionAfterError();
+  finalize.action(() => failMissingSubcommand(finalize, "polaris finalize"));
 
   finalize
     .command("run")
-    .description("Run polaris finalize (all 12 steps)")
-    .option("-r, --repo-root <path>", "Repository root", process.cwd())
+    .description("mutating: run manual/operator-triggered finalize and perform delivery")
+    .option("-r, --repo-root <path>", "Repository root", repoRootDefault)
     .option("--state-file <path>", "Path to current-state.json")
-    .option("--dry-run", "Validate and generate report without committing or pushing")
-    .option("--skip-delivery", "Run steps 1–6 only; skip push/PR/Linear/archive")
+    .option("--dry-run", "non-mutating preview: validate and generate report without committing or pushing")
+    .option("--skip-delivery", "perform local finalize steps only; skip push/PR/Linear/archive")
     .action((options: { repoRoot: string; stateFile?: string; dryRun?: boolean; skipDelivery?: boolean }) => {
       const repoRoot = options.repoRoot;
       const stateFile =
         options.stateFile ?? join(repoRoot, ".polaris", "runs", "current-state.json");
-      runFinalize({ repoRoot, stateFile, dryRun: options.dryRun, skipDelivery: options.skipDelivery })
+      finalizeHandler({ repoRoot, stateFile, dryRun: options.dryRun, skipDelivery: options.skipDelivery })
         .catch((err: unknown) => {
           process.stderr.write(`finalize error: ${err instanceof Error ? err.message : String(err)}\n`);
           process.exit(1);

@@ -1,0 +1,9 @@
+{"event":"run-start","run_id":"polaris-run-mcp-confirmed-dispatch-2026-05-25-002","prior_run_id":"polaris-run-mcp-confirmed-dispatch-2026-05-25-001","timestamp":"2026-05-25T04:00:00.000Z"}
+{"event":"step-complete","run_id":"polaris-run-mcp-confirmed-dispatch-2026-05-25-002","step":"01-orient-cluster","timestamp":"2026-05-25T04:00:05.000Z"}
+{"event":"step-complete","run_id":"polaris-run-mcp-confirmed-dispatch-2026-05-25-002","step":"02-prepare-branch","timestamp":"2026-05-25T04:00:10.000Z"}
+{"event":"step-complete","run_id":"polaris-run-mcp-confirmed-dispatch-2026-05-25-002","step":"03-select-child","active_child":"POL-91","timestamp":"2026-05-25T04:00:15.000Z"}
+{"event":"step-complete","run_id":"polaris-run-mcp-confirmed-dispatch-2026-05-25-002","step":"06-commit-and-update-linear","active_child":"POL-91","commit":"7c999e8","timestamp":"2026-05-25T04:00:20.000Z"}
+{"event":"loop-checkpoint","run_id":"polaris-run-mcp-confirmed-dispatch-2026-05-25-002","child_id":"","next_child":"POL-92","timestamp":"2026-05-26T03:48:39.521Z"}
+{"event":"canon-check-start","run_id":"polaris-run-mcp-confirmed-dispatch-2026-05-25-002","child_id":"POL-92","canon_files_inspected":0,"changed_files_count":0,"timestamp":"2026-05-26T03:48:39.594Z"}
+{"event":"canon-check-result","run_id":"polaris-run-mcp-confirmed-dispatch-2026-05-25-002","child_id":"POL-92","outcome":"aligned","conflicts":[],"timestamp":"2026-05-26T03:48:39.594Z"}
+{"event":"loop-checkpoint","run_id":"polaris-run-mcp-confirmed-dispatch-2026-05-25-002","step":"07-decide-continuation","decision":"adapter-handoff","completed_child":"POL-91","next_child":"POL-92","timestamp":"2026-05-25T04:00:25.000Z"}

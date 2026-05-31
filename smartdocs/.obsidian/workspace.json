@@ -1,0 +1,235 @@
+{
+  "main": {
+    "id": "ebe34cc4b150230c",
+    "type": "split",
+    "children": [
+      {
+        "id": "9eb391b54458241f",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "da472f8745b6a6cf",
+            "type": "leaf",
+            "state": {
+              "type": "empty",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "New tab"
+            }
+          }
+        ]
+      },
+      {
+        "id": "4d8fb56d93ae72ca",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "361dc8048a504e02",
+            "type": "leaf",
+            "state": {
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "Graph view"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "97b9bd25b9108936",
+    "type": "split",
+    "children": [
+      {
+        "id": "d153fd06ca85d593",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "eeb5df633462ded9",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "2287ceb864036e61",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "dabaf8f0d93da2e1",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "9d87e0bea54884f7",
+    "type": "split",
+    "children": [
+      {
+        "id": "f30c4f4f747007aa",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "09a8b25e18775ee3",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks"
+            }
+          },
+          {
+            "id": "0b175c9d7dba7940",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links"
+            }
+          },
+          {
+            "id": "e1b8110c4448fcc6",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "053205b5bb736605",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "3a2cfbe9b94f199c",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "Welcome.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of Welcome"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "eeb5df633462ded9",
+  "lastOpenFiles": [
+    "docs/raw/2026-05-25-claude-plugin-runtime-integration.md",
+    "docs/raw/2026-05-23-provider-capability-abstraction.md",
+    "docs/raw/cluster-map.md",
+    "docs/raw/polaris-dispatch-contract.provenance.json",
+    "docs/raw/polaris-compact-contracts.provenance.json",
+    "docs/raw/ephemeral-validation-plan.provenance.json",
+    "docs/raw/polaris-dispatch-contract.md",
+    "docs/raw/polaris-compact-contracts.md",
+    "docs/raw/ephemeral-validation-plan.md",
+    "docs/raw/Polaris-Smart-Docs-Doctrine.md",
+    "docs/raw/polaris-clo.md",
+    "docs/raw/clusters-json-format.md",
+    "docs/doctrine/raw/polaris-clo.md",
+    "docs/specs/raw/polaris-clo.md",
+    "docs/doctrine/active/polaris-implementation-plan.provenance.json",
+    "docs/doctrine/active/smartdocs-summary-architecture.provenance.json",
+    "docs/doctrine/active/issue-hierarchy-doctrine.provenance.json",
+    "docs/architecture/thin-parent-orchestration.provenance.json",
+    "docs/architecture/thin-parent-orchestration.md",
+    "docs/doctrine/candidate/pol-199-runtime-state-consolidation-analysis.provenance.json",
+    "docs/doctrine/candidate/pol-199-runtime-state-consolidation-analysis.md",
+    "docs/audits/raw/clusters-json-format.md",
+    "docs/raw/thin-parent-orchestration.md",
+    "docs/raw/pol-199-runtime-state-consolidation-analysis.md",
+    "docs/doctrine/active/smartdocs-summary-architecture.md",
+    "docs/doctrine/active/polaris-implementation-plan.md",
+    "docs/doctrine/active/issue-hierarchy-doctrine.md",
+    "docs/doctrine/candidate/smartdocs-summary-architecture.provenance.json",
+    "docs/doctrine/candidate/smartdocs-summary-architecture.md",
+    "docs/architecture/polaris-run-ledger.provenance.json",
+    "docs/architecture/polaris-run-ledger.md",
+    "docs/doctrine/candidate/polaris-implementation-plan.md",
+    "docs/specs/raw/polaris-dispatch-contract.md",
+    "docs/doctrine/candidate/issue-hierarchy-doctrine.md",
+    "docs/specs/raw/ephemeral-validation-plan.md",
+    "docs/architecture/ephemeral-execution-architecture.md"
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "source_id": "POL-142",
+  "analyze_source_id": "POL-141",
+  "source_type": "linear",
+  "created_at": "2026-05-27T15:06:00.000Z",
+  "clusters": [
+    {
+      "cluster_id": "cluster-01",
+      "description": "Spec and skill docs — establishes the dispatch contract before any CLI work",
+      "children": [
+        {
+          "id": "POL-143",
+          "title": "IMPLEMENT: Write polaris-dispatch-contract spec",
+          "session_type": "implement",
+          "blockedBy": []
+        },
+        {
+          "id": "POL-144",
+          "title": "IMPLEMENT: Update polaris-run skill files with explicit dispatch boundary",
+          "session_type": "implement",
+          "blockedBy": ["POL-143"]
+        }
+      ]
+    },
+    {
+      "cluster_id": "cluster-02",
+      "description": "CLI implementation — adds polaris loop dispatch and polaris loop run commands",
+      "children": [
+        {
+          "id": "POL-145",
+          "title": "IMPLEMENT: Add polaris loop dispatch CLI command",
+          "session_type": "implement",
+          "blockedBy": ["POL-143", "POL-144"]
+        },
+        {
+          "id": "POL-146",
+          "title": "IMPLEMENT: Expose runParentLoop as polaris loop run CLI command",
+          "session_type": "implement",
+          "blockedBy": ["POL-145"]
+        }
+      ]
+    }
+  ]
+}

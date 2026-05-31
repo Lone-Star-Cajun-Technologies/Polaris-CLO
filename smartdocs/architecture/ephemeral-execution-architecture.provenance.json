@@ -1,0 +1,12 @@
+{
+  "currentPath": "smartdocs/docs/architecture/ephemeral-execution-architecture.md",
+  "originalPath": "smartdocs/docs/raw/ephemeral-execution-architecture.md",
+  "ingestedAt": "2026-05-28T06:22:37.632Z",
+  "ingestRunId": "polaris-docs-ingest-docs-ingest-2026-05-28-002",
+  "ingestClusterId": null,
+  "relatedRunId": "polaris-docs-ingest-docs-ingest-2026-05-28-002",
+  "relatedIssue": null,
+  "classifiedAs": "architecture",
+  "linkedMapArea": ".taskchain_artifacts/polaris-run/current-state.json",
+  "conflictsDetected": false
+}

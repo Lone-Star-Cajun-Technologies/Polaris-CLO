@@ -193,11 +193,10 @@ export function detectOperationalReasons(
  * For each touched file, check whether its nearest eligible folder has a
  * POLARIS.md. Return folders that are newly eligible but missing one.
  */
-// eslint-disable-next-line no-unused-vars
 function detectMissingCognitionSurfaces(
   touchedFiles: string[],
   repoRoot: string,
-  _skipRoot: boolean, // eslint-disable-line no-unused-vars
+  _skipRoot: boolean,
 ): string[] {
   const missing = new Set<string>();
   for (const file of touchedFiles) {

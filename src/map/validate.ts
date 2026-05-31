@@ -8,6 +8,7 @@ import {
   readExemptions,
   writeFileRoutes,
   writeNeedsReview,
+  VALID_ROLE_OWNERS,
 } from "./atlas.js";
 
 const SECRET_REGEXES = SECRET_PATTERNS.map(
@@ -34,6 +35,7 @@ export interface ValidationResult {
   conflicted: string[];
   needsReviewCount: number;
   coveragePct: number;
+  invalidRoleOwner: string[];
 }
 
 export function runMapValidate(
@@ -71,13 +73,14 @@ export function runMapValidate(
     } else {
       console.log(`No entry found for: ${fixPath}`);
     }
-    return { hasError: false, indexed: 0, stale: [], missing: [], sensitive: [], conflicted: [], needsReviewCount: 0, coveragePct: 0 };
+    return { hasError: false, indexed: 0, stale: [], missing: [], sensitive: [], conflicted: [], needsReviewCount: 0, coveragePct: 0, invalidRoleOwner: [] };
   }
 
   const stale: string[] = [];
   const missing: string[] = [];
   const sensitive: string[] = [];
   const conflicted: string[] = [];
+  const invalidRoleOwner: string[] = [];
 
   // Route conflict detection: route → set of domains seen
   const routeToDomains = new Map<string, Set<string>>();
@@ -101,6 +104,11 @@ export function runMapValidate(
     // 4. Sensitive pattern matches in atlas
     if (isSecretPath(filePath)) {
       sensitive.push(filePath);
+    }
+
+    // 6. role_owner validation: present and a known value
+    if (entry.role_owner !== undefined && !(VALID_ROLE_OWNERS as readonly string[]).includes(entry.role_owner)) {
+      invalidRoleOwner.push(filePath);
     }
 
     // 5. Conflicted routes: same route claimed by different domains
@@ -158,6 +166,10 @@ export function runMapValidate(
     console.log(`${warnMark} ${conflicted.length} conflicted route entries: ${conflicted.slice(0, 3).join(", ")}${conflicted.length > 3 ? "..." : ""}`);
   }
 
+  if (invalidRoleOwner.length > 0) {
+    console.log(`${errMark} ${invalidRoleOwner.length} entries with invalid role_owner value: ${invalidRoleOwner.slice(0, 3).join(", ")}${invalidRoleOwner.length > 3 ? "..." : ""}`);
+  }
+
   // Low-confidence entries warning
   const lowConfidence = Object.entries(routes).filter(([, e]) => e.confidence < confidenceThreshold);
   if (lowConfidence.length > 0) {
@@ -166,7 +178,7 @@ export function runMapValidate(
 
   console.log(`\nCoverage: ${coveragePct}% (${indexedCount} / ${total} non-ignored files)`);
 
-  const hasError = missing.length > 0 || sensitive.length > 0;
+  const hasError = missing.length > 0 || sensitive.length > 0 || invalidRoleOwner.length > 0;
 
-  return { hasError, indexed: indexedCount, stale, missing, sensitive, conflicted, needsReviewCount, coveragePct };
+  return { hasError, indexed: indexedCount, stale, missing, sensitive, conflicted, needsReviewCount, coveragePct, invalidRoleOwner };
 }

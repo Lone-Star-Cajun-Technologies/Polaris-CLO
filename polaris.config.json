@@ -1,0 +1,42 @@
+{
+  "orchestration": {
+    "mode": "auto",
+    "auto_finalize": false,
+    "notification_format": "terse"
+  },
+  "execution": {
+    "adapter": "terminal-cli",
+    "providers": {
+      "claude": {
+        "command": "claude",
+        "args": ["--print", "--dangerously-skip-permissions", "{{worker_prompt}}"]
+      },
+      "codex": {
+        "command": "codex",
+        "args": ["{{worker_prompt}}"]
+      },
+      "gemini": {
+        "command": "gemini",
+        "args": ["--prompt", "{{worker_prompt}}"]
+      },
+      "copilot": {
+        "command": "copilot",
+        "args": ["-p", "{{worker_prompt}}", "--autopilot", "--allow-all-tools"]
+      },
+      "custom": {
+        "command": "$POLARIS_AGENT",
+        "args": ["{{worker_prompt}}"]
+      }
+    },
+    "rotation": ["claude", "codex", "gemini", "copilot"],
+    "allowCrossAgentFallback": false
+  },
+  "tracker": {
+   "adapter": "linear",
+   "linear": {
+      "enabled": true,
+      "teamId": "Polaris",
+      "projectId": "Polaris Core Runtime"
+  }
+}
+}

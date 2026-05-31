@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { mkdirSync, writeFileSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { execFileSync } from "node:child_process";
@@ -11,6 +11,7 @@ function makeTestDir(): string {
   execFileSync("git", ["init"], { cwd: dir });
   execFileSync("git", ["config", "user.email", "test@test.com"], { cwd: dir });
   execFileSync("git", ["config", "user.name", "Test"], { cwd: dir });
+  execFileSync("git", ["config", "commit.gpgsign", "false"], { cwd: dir });
   writeFileSync(join(dir, "README.md"), "test\n");
   execFileSync("git", ["add", "."], { cwd: dir });
   execFileSync("git", ["commit", "-m", "init"], { cwd: dir });
@@ -99,7 +100,7 @@ describe("runLoopAbort", () => {
   });
 
   it("appends loop-aborted JSONL event to telemetry file", () => {
-    const artifactDir = join(testDir, ".taskchain_artifacts", "bootstrap-run");
+    const artifactDir = join(testDir, ".taskchain_artifacts", "polaris-run");
     const telemetryFile = join(artifactDir, "runs", "pol-5-session-1", "telemetry.jsonl");
     const stateFile = writeState(testDir, baseState);
 
@@ -122,6 +123,48 @@ describe("runLoopAbort", () => {
     expect(event.event).toBe("loop-aborted");
     expect(event.run_id).toBe("pol-5-session-1");
     expect(event.reason).toBe("test blocker");
+  });
+
+  it("appends run-blocked to the global ledger and creates it when absent", () => {
+    const stateFile = writeState(testDir, { ...baseState, branch: "test-branch" });
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
+      throw new Error("process.exit called");
+    });
+    vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+
+    try {
+      expect(() =>
+        runLoopAbort({ reason: "test blocker", repoRoot: testDir, stateFile }),
+      ).toThrow("process.exit called");
+    } finally {
+      exitSpy.mockRestore();
+      vi.restoreAllMocks();
+    }
+
+    const ledgerFile = join(testDir, ".polaris", "runs", "ledger.jsonl");
+    expect(existsSync(ledgerFile)).toBe(true);
+    const events = readFileSync(ledgerFile, "utf-8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    expect(events[0]).toMatchObject({
+      event: "run-blocked",
+      run_id: "pol-5-session-1",
+      run_type: "implement",
+      cluster_id: "POL-5",
+      issue_id: "POL-26",
+      branch: "test-branch",
+      status: "blocked",
+      completed_children: ["POL-23"],
+      open_children: ["POL-26", "POL-27"],
+      next_child: "POL-26",
+      last_commit: null,
+      pr_url: null,
+      blocker: {
+        summary: "test blocker",
+        unblock_condition: "Resolve blocker then run: polaris loop resume",
+      },
+    });
   });
 
   it("prints abort message to stderr and exits 1", () => {

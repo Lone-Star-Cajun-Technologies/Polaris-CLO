@@ -1,0 +1,61 @@
+{
+  "source_id": "POL-55",
+  "source_type": "linear",
+  "created_at": "2026-05-24T00:05:00Z",
+  "clusters": [
+    {
+      "cluster_id": "cluster-01",
+      "description": "Research — plugin distribution feasibility (parallel)",
+      "children": [
+        {
+          "id": "POL-56",
+          "title": "Analyze: Claude and Codex plugin/skill distribution and local CLI invocation path",
+          "session_type": "analyze",
+          "blockedBy": []
+        },
+        {
+          "id": "POL-57",
+          "title": "Analyze: Gemini, OpenCode, Windsurf, CI, and Connect provider integration paths",
+          "session_type": "analyze",
+          "blockedBy": []
+        }
+      ]
+    },
+    {
+      "cluster_id": "cluster-02",
+      "description": "Design/Synthesis — contracts, policy, capability matrix (depends on cluster-01)",
+      "children": [
+        {
+          "id": "POL-58",
+          "title": "Analyze: Specify parent scheduler-only contract and worker contract",
+          "session_type": "analyze",
+          "blockedBy": ["POL-56", "POL-57"]
+        },
+        {
+          "id": "POL-59",
+          "title": "Analyze: Specify configurable budget/cap policy for polaris-run sessions",
+          "session_type": "analyze",
+          "blockedBy": ["POL-56", "POL-57"]
+        },
+        {
+          "id": "POL-60",
+          "title": "Analyze: Produce provider/plugin capability matrix and adapter contract refinements",
+          "session_type": "analyze",
+          "blockedBy": ["POL-56", "POL-57"]
+        }
+      ]
+    },
+    {
+      "cluster_id": "cluster-03",
+      "description": "Planning — implementation breakdown (depends on cluster-02)",
+      "children": [
+        {
+          "id": "POL-61",
+          "title": "Analyze: Produce implementation issue breakdown and first-provider recommendation",
+          "session_type": "analyze",
+          "blockedBy": ["POL-58", "POL-59", "POL-60"]
+        }
+      ]
+    }
+  ]
+}

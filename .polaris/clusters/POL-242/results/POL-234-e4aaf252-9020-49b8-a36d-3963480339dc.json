@@ -1,0 +1,1 @@
+{"child_id":"POL-234","status":"completed","commit":"9344a285844beda0a0b8f38eeefa289c86762e87","validation":{"npm run lint":"passed","npm test -- --run src/smartdocs-engine/doctrine.test.ts":"passed"},"next_recommended_action":"Parent can reconcile POL-234 completion and choose the next open child."}

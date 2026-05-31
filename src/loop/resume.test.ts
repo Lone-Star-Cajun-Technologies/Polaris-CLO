@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { runLoopResume } from "./resume.js";
 import type { BootstrapPacket } from "./bootstrap-packet.js";
+import type { ClusterState } from "../cluster-state/types.js";
 
 function getHeadSha(dir: string): string {
   try {
@@ -29,6 +30,7 @@ function makeTestDir(): string {
   execFileSync("git", ["init"], { cwd: dir });
   execFileSync("git", ["config", "user.email", "test@test.com"], { cwd: dir });
   execFileSync("git", ["config", "user.name", "Test"], { cwd: dir });
+  execFileSync("git", ["config", "commit.gpgsign", "false"], { cwd: dir });
   writeFileSync(join(dir, "README.md"), "test\n");
   execFileSync("git", ["add", "."], { cwd: dir });
   execFileSync("git", ["commit", "-m", "init"], { cwd: dir });
@@ -40,6 +42,13 @@ function writeState(dir: string, state: object): string {
   mkdirSync(join(dir, ".polaris", "runs"), { recursive: true });
   const content = JSON.stringify(state, null, 2);
   writeFileSync(stateFile, content);
+  return stateFile;
+}
+
+function writeClusterState(dir: string, state: ClusterState): string {
+  const stateFile = join(dir, ".polaris", "clusters", state.cluster_id, "cluster-state.json");
+  mkdirSync(join(dir, ".polaris", "clusters", state.cluster_id), { recursive: true });
+  writeFileSync(stateFile, JSON.stringify(state, null, 2));
   return stateFile;
 }
 
@@ -134,6 +143,56 @@ describe("runLoopResume", () => {
     expect(logs.join("")).toContain("pol-5-session-1");
   });
 
+  it("appends run-resumed to the global ledger and creates it when absent", () => {
+    const stateContent = {
+      schema_version: "1.0",
+      run_id: "pol-5-session-1",
+      cluster_id: "POL-5",
+      branch: getCurrentBranch(testDir),
+      active_child: "",
+      completed_children: ["POL-23"],
+      open_children: ["POL-24"],
+      step_cursor: "checkpoint",
+      context_budget: { children_completed: 1 },
+      status: "running",
+      next_open_child: "POL-24",
+      last_commit: "abc1234",
+    };
+    const stateFile = writeState(testDir, stateContent);
+    const packet = makePacket(stateFile, stateContent, testDir);
+    writePacket(testDir, packet);
+
+    const origLog = console.log;
+    console.log = () => {};
+    try {
+      runLoopResume({ runId: "pol-5-session-1", repoRoot: testDir, stateFile });
+    } finally {
+      console.log = origLog;
+    }
+
+    const ledgerFile = join(testDir, ".polaris", "runs", "ledger.jsonl");
+    expect(existsSync(ledgerFile)).toBe(true);
+    const events = readFileSync(ledgerFile, "utf-8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    expect(events[0]).toMatchObject({
+      event: "run-resumed",
+      run_id: "pol-5-session-1",
+      run_type: "implement",
+      cluster_id: "POL-5",
+      issue_id: null,
+      status: "running",
+      completed_children: ["POL-23"],
+      open_children: ["POL-24"],
+      next_child: "POL-24",
+      last_commit: "abc1234",
+      pr_url: null,
+      resume_source: "bootstrap",
+      resume_reason: "polaris loop resume selected bootstrap packet",
+    });
+  });
+
   it("halts with exit 1 when current-state SHA does not match packet", () => {
     const stateContent = { schema_version: "1.0", run_id: "pol-5-session-1" };
     const stateFile = writeState(testDir, stateContent);
@@ -190,6 +249,86 @@ describe("runLoopResume", () => {
         runLoopResume({ runId: "nonexistent-run", repoRoot: testDir, stateFile }),
       ).toThrow();
       expect(errSpy).toHaveBeenCalledWith(expect.stringContaining("nonexistent-run"));
+    } finally {
+      exitSpy.mockRestore();
+      errSpy.mockRestore();
+    }
+  });
+
+  it("rebuilds current-state.json from cluster-state.json when the workspace state is absent", () => {
+    const stateFile = join(testDir, ".taskchain_artifacts", "polaris-run", "current-state.json");
+    const clusterState: ClusterState = {
+      schema_version: "1.0",
+      cluster_id: "POL-5",
+      state_generation: 3,
+      child_states: [
+        { id: "POL-23", status: "done", commit: "abc1234" },
+        { id: "POL-24", status: "ready" },
+      ],
+      claim_metadata: {},
+      packet_pointers: {},
+      result_pointers: {},
+      validation_results: {},
+      commits: { "POL-23": "abc1234" },
+      tracker_mutations: {},
+      blockers: [],
+    };
+    writeClusterState(testDir, clusterState);
+    const packet = makePacket(stateFile, { missing: true }, testDir, {
+      artifact_pointers: {
+        current_state: ".taskchain_artifacts/polaris-run/current-state.json",
+        telemetry: "/tmp/telemetry.jsonl",
+      },
+      current_state_sha: "missing",
+    });
+    writePacket(testDir, packet);
+
+    const logs: string[] = [];
+    const origLog = console.log;
+    console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
+
+    try {
+      runLoopResume({ runId: "pol-5-session-1", repoRoot: testDir });
+    } finally {
+      console.log = origLog;
+    }
+
+    const emitted = JSON.parse(logs.join("\n")) as BootstrapPacket;
+    const rebuiltState = JSON.parse(readFileSync(stateFile, "utf-8")) as Record<string, unknown>;
+    expect(rebuiltState.cluster_id).toBe("POL-5");
+    expect(rebuiltState.completed_children).toEqual(["POL-23"]);
+    expect(rebuiltState.open_children).toEqual(["POL-24"]);
+    expect(rebuiltState.next_open_child).toBe("POL-24");
+    expect(rebuiltState.last_commit).toBe("abc1234");
+    expect(emitted.current_state_sha).toBe(
+      shaOf(JSON.stringify(JSON.parse(readFileSync(stateFile, "utf-8")), null, 2)),
+    );
+    expect(emitted.artifact_pointers.current_state).toBe(
+      ".taskchain_artifacts/polaris-run/current-state.json",
+    );
+  });
+
+  it("fails with a clear error when neither current-state.json nor matching cluster-state.json exist", () => {
+    const stateFile = join(testDir, ".taskchain_artifacts", "polaris-run", "current-state.json");
+    const packet = makePacket(stateFile, { missing: true }, testDir, {
+      artifact_pointers: {
+        current_state: ".taskchain_artifacts/polaris-run/current-state.json",
+        telemetry: "/tmp/telemetry.jsonl",
+      },
+      current_state_sha: "missing",
+    });
+    writePacket(testDir, packet);
+
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
+      throw new Error("process.exit called");
+    });
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    try {
+      expect(() => runLoopResume({ runId: "pol-5-session-1", repoRoot: testDir })).toThrow();
+      expect(errSpy).toHaveBeenCalledWith(
+        expect.stringContaining("cannot reconstruct state"),
+      );
     } finally {
       exitSpy.mockRestore();
       errSpy.mockRestore();

@@ -2,16 +2,15 @@
 
 ## Purpose
 
-The finalize subsystem implements the atomic 12-step final delivery sequence for a Polaris cluster run. It is the only subsystem that pushes branches, opens PRs, and closes out Linear issues. It runs at session end when all children are Done and the user requests delivery.
+The finalize subsystem implements the atomic 13-step final delivery sequence for a Polaris cluster run. It is the only subsystem that pushes branches, opens PRs, and closes out Linear issues. It runs at session end when all children are Done and the user requests delivery.
 
 ## What belongs here
 
-- `index.ts` — `polaris finalize run` command registration and `runFinalize` orchestrator
-- `github.ts` — GitHub PR creation helper
-- `linear.ts` — Linear issue update helper
-- `run-report.ts` — run report markdown generation
-- `steps/` — one file per finalize step (01 through 12)
-- `finalize.test.ts` — integration tests for the finalize sequence
+- `index.ts` — `polaris finalize run` orchestrator
+- `artifact-policy.ts` — source-of-truth classifier for promoted Polaris artifacts versus workspace scratch
+- `steps/` — one file per delivery step; each exports a single named function
+- `github.ts`, `linear.ts` — PR creation and Linear update helpers
+- `run-report.ts`, `finalize.test.ts`, `artifact-policy.test.ts` — report generation and finalize policy tests
 
 ## What does not belong here
 
@@ -21,24 +20,29 @@ The finalize subsystem implements the atomic 12-step final delivery sequence for
 
 ## Editing rules
 
-- The 12-step sequence is fixed and ordered. Do not reorder steps or add steps outside `steps/`.
+- The finalize sequence is fixed and ordered. Do not reorder steps or add delivery steps outside `steps/`.
 - Each step file exports a single named function (`step<Name>`). Steps must not call each other directly — the orchestrator in `index.ts` sequences them.
-- `stepCommit` (step 06) must commit exactly: state + map + run-report. No other files.
-- Steps 7–12 are skipped when `--skip-delivery` is passed or `--dry-run` is active. Enforce this in `runFinalize`, not in individual step files.
+- Tracker reconciliation runs before the final commit. Only validated cluster-state/result evidence may queue sync-out mutations, and any tracker conflict/failure must abort finalize.
+- Treat `artifact-policy.ts` as the single source of truth for Polaris-owned artifact promotion and commit-hygiene rules; do not duplicate `.polaris/`/`.taskchain_artifacts/` path checks in individual step files.
+- `stepCommit` must only promote durable Polaris evidence plus intentional source/doc changes; live workspace scratch stays out of delivery commits.
+- Remote delivery steps after the commit are skipped when `--skip-delivery` is passed or `--dry-run` is active. Enforce this in `runFinalize`, not in individual step files.
+- `polaris finalize run` is manual/operator-triggered and performs delivery unless `--dry-run` or `--skip-delivery` is supplied.
 - JSONL telemetry events (`pr-opened`, `run-complete`) are emitted by `polaris finalize` via step 10. Do not emit them elsewhere.
 - `polaris finalize` is the only command that pushes to remote. No other subsystem may call `git push`.
 
-## Architecture assumptions
+## Route model
 
 - Delivery is atomic: if any step fails, the session does not report completion.
+- Tracker sync-out is atomic with finalize: unresolved reconciliation failures block delivery before the final commit.
 - The PR is created as a draft (`prDraft: true` by default in config).
 - `polaris finalize` reads `current-state.json` for cluster_id, branch, run_id, and completed_children — it does not re-read Linear for this information.
 - Linear parent issue (cluster_id) is updated in step 11 after the PR URL is known.
 
 ## Read before editing
 
+- `smartdocs/specs/active/polaris-artifact-promotion-commit-hygiene-policy.md` — durable artifact promotion and commit-hygiene contract
 - `docs/spec/polaris-architecture-spec.md` — finalize's role in the loop/map/finalize triad
-- `.codex/skills/polaris-run/chain.md` — step 08 (final-delivery) invocation contract
+- `.polaris/skills/polaris-run/chain.md` — step 08 (final-delivery) invocation contract
 - `src/loop/checkpoint.ts` — state schema that `runFinalize` reads
 
 ## Related routes

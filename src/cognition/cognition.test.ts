@@ -34,6 +34,8 @@ import {
   isSummaryOversized,
   hasDoctrineBled,
   SUMMARY_MAX_BYTES,
+  findNearestSummarymd,
+  detectMissingSummaries,
 } from "./summary-delta.js";
 
 import {

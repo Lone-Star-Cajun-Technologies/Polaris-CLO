@@ -1,7 +1,11 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { describe, it, expect } from "vitest";
 import { TerminalCliAdapter } from "../terminal-cli.js";
 import { createAdapter } from "../registry.js";
 import type { BootstrapPacket } from "../types.js";
+import { compileImplPacket } from "../../worker-packet.js";
 
 const MOCK_PACKET: BootstrapPacket = {
   schema_version: "1.0",
@@ -76,6 +80,63 @@ describe("TerminalCliAdapter", () => {
       expect(result.command_run).toContain("child=POL-14");
       expect(result.command_run).toContain("run=run-test-0001");
     });
+
+    it("substitutes {{worker_prompt}} with compiled worker instructions", async () => {
+      const adapter = new TerminalCliAdapter({
+        adapter: "terminal-cli",
+        providers: {
+          claude: {
+            command: "echo",
+            args: ["{{worker_prompt}}"],
+          },
+        },
+      });
+      const result = await adapter.dispatch(MOCK_PACKET, { provider: "claude", dryRun: true });
+      expect(result.command_run).toContain("You are the dedicated Polaris worker subagent");
+      expect(result.command_run).not.toContain('"schema_version":"1.0"');
+    });
+
+    it("writes a sealed result file from compact stdout when requested", async () => {
+      const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "polaris-terminal-cli-test-"));
+      try {
+        const resultFile = path.join(tmpDir, "sealed-result.json");
+        const adapter = new TerminalCliAdapter({
+          adapter: "terminal-cli",
+          providers: {
+            claude: {
+              command: process.execPath,
+              args: [
+                "-e",
+                "console.log(JSON.stringify({child_id:'POL-14',status:'done',commit_hash:'abc1234',validation_summary:'ok'}))",
+              ],
+            },
+          },
+        });
+        const packet = compileImplPacket({
+          runId: "run-test-0001",
+          clusterId: "POL-5",
+          childId: "POL-14",
+          branch: "feature/pol-14",
+          stateFile: "/tmp/polaris-test/current-state.json",
+          telemetryFile: "/tmp/polaris-test/telemetry.jsonl",
+          resultFile,
+        });
+
+        await adapter.dispatch(packet, { provider: "claude" });
+
+        expect(fs.existsSync(resultFile)).toBe(true);
+        const written = JSON.parse(fs.readFileSync(resultFile, "utf-8")) as Record<string, unknown>;
+        expect(written).toMatchObject({
+          run_id: "run-test-0001",
+          child_id: "POL-14",
+          status: "success",
+          commit: "abc1234",
+          validation: "ok",
+        });
+      } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
   });
 
   describe("dry-run", () => {
@@ -101,7 +162,7 @@ describe("registry", () => {
   });
 
   it("createAdapter throws for unknown adapter", () => {
-    expect(() => createAdapter("agent-subtask", { adapter: "agent-subtask", providers: {} })).toThrow(
+    expect(() => createAdapter("not-a-real-adapter", { adapter: "not-a-real-adapter", providers: {} })).toThrow(
       /Unknown adapter/,
     );
   });

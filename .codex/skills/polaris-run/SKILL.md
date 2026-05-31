@@ -1,36 +1,15 @@
 ---
 name: polaris-run
-description: Execute one governed Polaris Linear parent cluster per fresh session, with bounded child execution, Polaris loop checkpointing, and map indexing after each child.
+description: Execute one governed Polaris Linear parent cluster per fresh session, with explicit child dispatch boundaries and post-child checkpointing.
 ---
 
-# polaris-run
+> **Canonical skill**: `.polaris/skills/polaris-run/SKILL.md`
+> This file is a Codex-specific wrapper. All doctrine lives in the canonical skill.
 
-Use this skill when the user asks to run a governed Polaris implementation cluster or standalone Polaris issue.
+Read and follow `.polaris/skills/polaris-run/SKILL.md`.
 
-## Related doctrine
-
-See `docs/Polaris/spec/polaris-implementation-plan.md` for the Polaris architecture reference.
-
-## How to execute
+## Execution steps
 
 1. Read `chain.md` — it is the route map for this workflow.
-2. Read `.taskchain_artifacts/polaris-run/current-state.json` — it holds shared runtime state across sessions.
-3. Execute one step at a time in the order `chain.md` specifies.
-4. After each step completes, update `.taskchain_artifacts/polaris-run/current-state.json` before advancing.
-5. Do not skip steps.
-6. Do not report completion until `.taskchain_artifacts/polaris-run/current-state.json` has `status: complete`.
-
-## Artifact authority rule
-
-`.taskchain_artifacts/polaris-run/current-state.json` is the authoritative run ledger, not an optional note.
-
-A step is not complete until its state update has been written successfully.
-
-If the artifact update fails or cannot be verified, stop and report the artifact failure instead of continuing.
-
-## Hard rules
-
-- Implementation work only — source code, tests, config changes.
-- One child per commit. Never batch multiple children into one commit.
-- Do not call `polaris loop continue` without a preceding commit.
-- `polaris finalize` replaces manual push and PR — do not push or open PRs directly.
+2. Read `.polaris/skills/polaris-run/SKILL.md` for full doctrine.
+3. Execute one step at a time in the order `chain.md` specifies. Do not skip steps.

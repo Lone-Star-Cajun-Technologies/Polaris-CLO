@@ -1,0 +1,2 @@
+{"event":"child-dispatched","run_id":"polaris-run-pol-198-2026-05-28-001","child_id":"POL-198","prompt_mode":"compact","prompt_estimated_tokens":449,"timestamp":"2026-05-28T20:34:09.100Z"}
+{"event":"child-complete","run_id":"polaris-run-pol-198-2026-05-28-001","child_id":"POL-198","children_completed":1,"validation_summary":["npm test -- src/loop src/tracker src/finalize: passed","npm run typecheck: unavailable (package.json has no typecheck script); npm run lint passed","npm run build: passed"],"commit_hash":null,"timestamp":"2026-05-28T20:42:00.000Z"}

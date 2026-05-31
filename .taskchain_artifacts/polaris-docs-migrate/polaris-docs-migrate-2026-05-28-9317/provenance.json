@@ -1,0 +1,50 @@
+[
+  {
+    "originalPath": "docs/spec/ephemeral-execution-architecture.md",
+    "currentPath": "smartdocs/docs/raw/ephemeral-execution-architecture.md",
+    "migratedAt": "2026-05-28T06:22:09.339Z",
+    "migrationRunId": "polaris-docs-migrate-2026-05-28-9317"
+  },
+  {
+    "originalPath": "docs/spec/ephemeral-validation-plan.md",
+    "currentPath": "smartdocs/docs/raw/ephemeral-validation-plan.md",
+    "migratedAt": "2026-05-28T06:22:09.339Z",
+    "migrationRunId": "polaris-docs-migrate-2026-05-28-9317"
+  },
+  {
+    "originalPath": "docs/spec/issue-hierarchy-doctrine.md",
+    "currentPath": "smartdocs/docs/raw/issue-hierarchy-doctrine.md",
+    "migratedAt": "2026-05-28T06:22:09.339Z",
+    "migrationRunId": "polaris-docs-migrate-2026-05-28-9317"
+  },
+  {
+    "originalPath": "docs/spec/polaris-compact-contracts.md",
+    "currentPath": "smartdocs/docs/raw/polaris-compact-contracts.md",
+    "migratedAt": "2026-05-28T06:22:09.339Z",
+    "migrationRunId": "polaris-docs-migrate-2026-05-28-9317"
+  },
+  {
+    "originalPath": "docs/spec/polaris-dispatch-contract.md",
+    "currentPath": "smartdocs/docs/raw/polaris-dispatch-contract.md",
+    "migratedAt": "2026-05-28T06:22:09.340Z",
+    "migrationRunId": "polaris-docs-migrate-2026-05-28-9317"
+  },
+  {
+    "originalPath": "docs/spec/polaris-implementation-plan.md",
+    "currentPath": "smartdocs/docs/raw/polaris-implementation-plan.md",
+    "migratedAt": "2026-05-28T06:22:09.340Z",
+    "migrationRunId": "polaris-docs-migrate-2026-05-28-9317"
+  },
+  {
+    "originalPath": "docs/spec/polaris-run-ledger.md",
+    "currentPath": "smartdocs/docs/raw/polaris-run-ledger.md",
+    "migratedAt": "2026-05-28T06:22:09.340Z",
+    "migrationRunId": "polaris-docs-migrate-2026-05-28-9317"
+  },
+  {
+    "originalPath": "docs/spec/smartdocs-summary-architecture.md",
+    "currentPath": "smartdocs/docs/raw/smartdocs-summary-architecture.md",
+    "migratedAt": "2026-05-28T06:22:09.340Z",
+    "migrationRunId": "polaris-docs-migrate-2026-05-28-9317"
+  }
+]

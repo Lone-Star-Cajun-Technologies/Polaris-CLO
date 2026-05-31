@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0",
+  "cluster_id": "POL-TEST-1",
+  "state_generation": 1,
+  "child_states": [
+    { "id": "CHILD-1", "status": "ready" },
+    { "id": "CHILD-2", "status": "ready" }
+  ],
+  "claim_metadata": {},
+  "packet_pointers": {},
+  "result_pointers": {},
+  "validation_results": {},
+  "commits": {},
+  "blockers": []
+}

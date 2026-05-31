@@ -28,6 +28,27 @@ function inRange(value: number, min: number, max: number): boolean {
   return value >= min && value <= max;
 }
 
+const SUPPORTED_COMPACTION_PROVIDER_IDS = ["caveman", "gitnexus"] as const;
+const SUPPORTED_EXECUTION_ROLES = [
+  "orchestrator",
+  "startup",
+  "worker",
+  "analyst",
+  "analysis",
+  "repair",
+  "librarian",
+  "docs",
+  "finalizer",
+] as const;
+const SUPPORTED_EXECUTION_ADAPTERS = [
+  "agent-subtask",
+  "terminal-cli",
+  "ci",
+  "ssh",
+  "remote-worker",
+  "cross-agent",
+] as const;
+
 export function validateConfig(config: unknown): ValidationResult {
   const result: ValidationResult = { valid: true, errors: [], warnings: [] };
 
@@ -171,7 +192,7 @@ export function validateConfig(config: unknown): ValidationResult {
       if ("adapter" in config.execution && config.execution.adapter !== undefined) {
         if (
           !isString(config.execution.adapter) ||
-          !["agent-subtask", "terminal-cli", "ci", "ssh", "remote-worker", "cross-agent"].includes(config.execution.adapter)
+          !SUPPORTED_EXECUTION_ADAPTERS.includes(config.execution.adapter as typeof SUPPORTED_EXECUTION_ADAPTERS[number])
         ) {
           result.valid = false;
           result.errors.push("execution.adapter must be one of agent-subtask, terminal-cli, ci, ssh, remote-worker, cross-agent");
@@ -193,6 +214,47 @@ export function validateConfig(config: unknown): ValidationResult {
         if (!isBoolean(config.execution.allowCrossAgentFallback)) {
           result.valid = false;
           result.errors.push("execution.allowCrossAgentFallback must be a boolean");
+        }
+      }
+      if ("roles" in config.execution && config.execution.roles !== undefined) {
+        if (!isPlainObject(config.execution.roles)) {
+          result.valid = false;
+          result.errors.push("execution.roles must be a plain object");
+        } else {
+          for (const [roleName, roleConfig] of Object.entries(config.execution.roles)) {
+            if (!SUPPORTED_EXECUTION_ROLES.includes(roleName as typeof SUPPORTED_EXECUTION_ROLES[number])) {
+              result.valid = false;
+              result.errors.push(`execution.roles contains unsupported role: ${roleName}`);
+              continue;
+            }
+            if (!isPlainObject(roleConfig)) {
+              result.valid = false;
+              result.errors.push(`execution.roles.${roleName} must be a plain object`);
+              continue;
+            }
+            if ("adapter" in roleConfig && roleConfig.adapter !== undefined) {
+              if (!isString(roleConfig.adapter) || !SUPPORTED_EXECUTION_ADAPTERS.includes(roleConfig.adapter as typeof SUPPORTED_EXECUTION_ADAPTERS[number])) {
+                result.valid = false;
+                result.errors.push(`execution.roles.${roleName}.adapter must be one of agent-subtask, terminal-cli, ci, ssh, remote-worker, cross-agent`);
+              }
+            }
+            if ("provider" in roleConfig && roleConfig.provider !== undefined && !isString(roleConfig.provider)) {
+              result.valid = false;
+              result.errors.push(`execution.roles.${roleName}.provider must be a string`);
+            }
+            if ("model" in roleConfig && roleConfig.model !== undefined && !isString(roleConfig.model)) {
+              result.valid = false;
+              result.errors.push(`execution.roles.${roleName}.model must be a string`);
+            }
+            if ("command" in roleConfig && roleConfig.command !== undefined && !isString(roleConfig.command)) {
+              result.valid = false;
+              result.errors.push(`execution.roles.${roleName}.command must be a string`);
+            }
+            if ("args" in roleConfig && roleConfig.args !== undefined && !isStringArray(roleConfig.args)) {
+              result.valid = false;
+              result.errors.push(`execution.roles.${roleName}.args must be an array of strings`);
+            }
+          }
         }
       }
     }
@@ -249,6 +311,12 @@ export function validateConfig(config: unknown): ValidationResult {
       result.valid = false;
       result.errors.push("tracker must be an object");
     } else {
+      if ("adapter" in config.tracker && config.tracker.adapter !== undefined) {
+        if (!isString(config.tracker.adapter) || !["linear", "mcp-bridge"].includes(config.tracker.adapter)) {
+          result.valid = false;
+          result.errors.push('tracker.adapter must be either "linear" or "mcp-bridge"');
+        }
+      }
       if ("linear" in config.tracker && config.tracker.linear !== undefined) {
         if (!isPlainObject(config.tracker.linear)) {
           result.valid = false;
@@ -270,6 +338,31 @@ export function validateConfig(config: unknown): ValidationResult {
             if (!isString(config.tracker.linear.projectId)) {
               result.valid = false;
               result.errors.push("tracker.linear.projectId must be a string");
+            }
+          }
+        }
+      }
+      if ("mcpBridge" in config.tracker && config.tracker.mcpBridge !== undefined) {
+        if (!isPlainObject(config.tracker.mcpBridge)) {
+          result.valid = false;
+          result.errors.push("tracker.mcpBridge must be an object");
+        } else {
+          if ("enabled" in config.tracker.mcpBridge && config.tracker.mcpBridge.enabled !== undefined) {
+            if (!isBoolean(config.tracker.mcpBridge.enabled)) {
+              result.valid = false;
+              result.errors.push("tracker.mcpBridge.enabled must be a boolean");
+            }
+          }
+          if ("teamId" in config.tracker.mcpBridge && config.tracker.mcpBridge.teamId !== undefined) {
+            if (!isString(config.tracker.mcpBridge.teamId)) {
+              result.valid = false;
+              result.errors.push("tracker.mcpBridge.teamId must be a string");
+            }
+          }
+          if ("projectId" in config.tracker.mcpBridge && config.tracker.mcpBridge.projectId !== undefined) {
+            if (!isString(config.tracker.mcpBridge.projectId)) {
+              result.valid = false;
+              result.errors.push("tracker.mcpBridge.projectId must be a string");
             }
           }
         }
@@ -338,6 +431,27 @@ export function validateConfig(config: unknown): ValidationResult {
           }
         }
       }
+      if (
+        "compactionProviders" in config.providers &&
+        config.providers.compactionProviders !== undefined
+      ) {
+        if (!isStringArray(config.providers.compactionProviders)) {
+          result.valid = false;
+          result.errors.push(
+            "providers.compactionProviders must be an array of strings",
+          );
+        } else {
+          // Validate each provider ID is supported
+          for (const providerId of config.providers.compactionProviders) {
+            if (!SUPPORTED_COMPACTION_PROVIDER_IDS.includes(providerId as typeof SUPPORTED_COMPACTION_PROVIDER_IDS[number])) {
+              result.valid = false;
+              result.errors.push(
+                `providers.compactionProviders contains unsupported provider id: ${providerId}`,
+              );
+            }
+          }
+        }
+      }
     }
   }
 
@@ -362,6 +476,78 @@ export function validateConfig(config: unknown): ValidationResult {
     }
   }
 
+  // budget
+  if ("budget" in config && config.budget !== undefined) {
+    if (!isPlainObject(config.budget)) {
+      result.valid = false;
+      result.errors.push("budget must be an object");
+    } else {
+      if ("mode" in config.budget && config.budget.mode !== undefined) {
+        if (
+          !isString(config.budget.mode) ||
+          !["fixed-cap", "run-until-done", "stop-on-fail"].includes(config.budget.mode)
+        ) {
+          result.valid = false;
+          result.errors.push('budget.mode must be one of "fixed-cap", "run-until-done", "stop-on-fail"');
+        }
+      }
+      if ("max_children" in config.budget && config.budget.max_children !== undefined) {
+        if (!isNumber(config.budget.max_children) || config.budget.max_children < 1 || !Number.isInteger(config.budget.max_children)) {
+          result.valid = false;
+          result.errors.push("budget.max_children must be a positive integer");
+        }
+      }
+      if ("stop_on_fail" in config.budget && config.budget.stop_on_fail !== undefined) {
+        if (!isBoolean(config.budget.stop_on_fail)) {
+          result.valid = false;
+          result.errors.push("budget.stop_on_fail must be a boolean");
+        }
+      }
+      if ("allow_analyze_children" in config.budget && config.budget.allow_analyze_children !== undefined) {
+        if (!isBoolean(config.budget.allow_analyze_children)) {
+          result.valid = false;
+          result.errors.push("budget.allow_analyze_children must be a boolean");
+        }
+      }
+    }
+  }
+
+  // compact
+  if ("compact" in config && config.compact !== undefined) {
+    if (!isPlainObject(config.compact)) {
+      result.valid = false;
+      result.errors.push("compact must be an object");
+    } else {
+      if ("orchestratorMode" in config.compact && config.compact.orchestratorMode !== undefined) {
+        if (
+          !isString(config.compact.orchestratorMode) ||
+          !["standard", "strict"].includes(config.compact.orchestratorMode)
+        ) {
+          result.valid = false;
+          result.errors.push('compact.orchestratorMode must be either "standard" or "strict"');
+        }
+      }
+      if ("workerMode" in config.compact && config.compact.workerMode !== undefined) {
+        if (
+          !isString(config.compact.workerMode) ||
+          !["standard", "strict", "minimal"].includes(config.compact.workerMode)
+        ) {
+          result.valid = false;
+          result.errors.push('compact.workerMode must be one of "standard", "strict", "minimal"');
+        }
+      }
+      if ("level" in config.compact && config.compact.level !== undefined) {
+        if (
+          !isString(config.compact.level) ||
+          !["standard", "strict", "minimal"].includes(config.compact.level)
+        ) {
+          result.valid = false;
+          result.errors.push('compact.level must be one of "standard", "strict", "minimal"');
+        }
+      }
+    }
+  }
+
   // unknown top-level fields -> warnings
   const knownKeys = new Set([
     "version",
@@ -374,6 +560,8 @@ export function validateConfig(config: unknown): ValidationResult {
     "integrations",
     "canon",
     "providers",
+    "budget",
+    "compact",
   ]);
   for (const key of Object.keys(config)) {
     if (!knownKeys.has(key)) {

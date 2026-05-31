@@ -1,0 +1,123 @@
+{
+  "version": "1.0",
+  "created_at": "2026-05-26T23:59:00.000Z",
+  "analyze_run_id": "polaris-analyze-endpoint-artifact-protection-2026-05-26-001",
+  "parent_cluster": "POL-130",
+  "analyze_issue": "POL-129",
+  "clusters": [
+    {
+      "id": "POL-131",
+      "title": "IMPLEMENT: Add .smartdocignore parser and enforce in polaris docs ingest",
+      "branch": "philmeaux/pol-131-implement-add-smartdocignore-parser-and-enforce-in-polaris",
+      "priority": 1,
+      "dependencies": [],
+      "affected_files": [
+        "src/docs/smartdoc-ignore.ts",
+        "src/docs/ingest.ts",
+        "src/docs/ingest.test.ts"
+      ],
+      "new_files": [
+        "src/docs/smartdoc-ignore.ts",
+        "src/docs/smartdoc-ignore.test.ts"
+      ],
+      "risk": "MEDIUM",
+      "rationale": "New module + additive check in ingestDocs(). No existing behavior changed, only blocked when endpoint artifact detected.",
+      "key_functions": [
+        "parseSmarDocIgnore(repoRoot)",
+        "isIngestIneligible(filePath, repoRoot)",
+        "ingestDocs() — add isIngestIneligible check before processing each file"
+      ],
+      "acceptance_criteria": [
+        ".smartdocignore parsed with gitignore-style patterns",
+        "Default endpoint artifact patterns enforced without file",
+        "docs-ingest-skipped-endpoint-artifact telemetry event emitted",
+        "ingestDocs() rejects endpoint artifacts with clear error",
+        "Tests: ignored rejected, non-ignored passes, custom pattern, default without file"
+      ]
+    },
+    {
+      "id": "POL-132",
+      "title": "IMPLEMENT: Add endpoint artifact protection to polaris docs migrate",
+      "branch": "philmeaux/pol-132-implement-add-endpoint-artifact-protection-to-polaris-docs",
+      "priority": 2,
+      "dependencies": ["POL-131"],
+      "affected_files": [
+        "src/docs/migrate.ts",
+        "src/docs/migrate.test.ts"
+      ],
+      "new_files": [],
+      "risk": "LOW",
+      "rationale": "Purely additive — extends ALLOWED_BASENAMES and ALLOWED_DIR_PREFIXES. Files that were being migrated will now be excluded, preventing them from entering the ingest queue.",
+      "key_functions": [
+        "isAllowedException() — extend with AGENTS.md, CLAUDE.md, GEMINI.md, Polaris-Docs/",
+        "migrateDocs() — call isIngestIneligible() via smartdoc-ignore module"
+      ],
+      "acceptance_criteria": [
+        "AGENTS.md, CLAUDE.md, GEMINI.md excluded from migrate queue by default",
+        "Polaris-Docs/ not re-migrated",
+        ".smartdocignore patterns respected by migrate",
+        "endpointArtifactReason field in MigrateFileResult",
+        "Tests cover all new exclusions"
+      ]
+    },
+    {
+      "id": "POL-133",
+      "title": "IMPLEMENT: Add candidate promotion governance with audit logging",
+      "branch": "philmeaux/pol-133-implement-add-candidate-promotion-governance-with-audit",
+      "priority": 3,
+      "dependencies": [],
+      "affected_files": [
+        "src/docs/doctrine.ts",
+        "src/docs/ingest.ts",
+        "src/docs/doctrine.test.ts"
+      ],
+      "new_files": [],
+      "risk": "MEDIUM",
+      "rationale": "Changes doctrinePromote() contract — adds required front matter fields. Breaking change for existing candidates without governance metadata. --skip-governance escape hatch mitigates migration risk.",
+      "key_functions": [
+        "doctrinePromote() — require governance front matter fields",
+        "addCandidateGovernanceMetadata() — new helper, called from ingestDocs()",
+        "audit.jsonl — promotion audit trail"
+      ],
+      "acceptance_criteria": [
+        "doctrinePromote() rejects files without governance front matter",
+        "Promotion blocked unless recommended-action: promote",
+        "audit.jsonl written for every promotion",
+        "ingestDocs() sets placeholder governance front matter on doctrine-candidate",
+        "--skip-governance flag exists and logs governance-override warning",
+        "Tests cover all governance enforcement paths"
+      ]
+    },
+    {
+      "id": "POL-134",
+      "title": "IMPLEMENT: Add polaris docs audit subcommand for recursive ingest risk report",
+      "branch": "philmeaux/pol-134-implement-add-polaris-docs-audit-subcommand-for-recursive",
+      "priority": 4,
+      "dependencies": ["POL-131"],
+      "affected_files": [
+        "src/docs/index.ts",
+        "src/docs/audit.test.ts"
+      ],
+      "new_files": [
+        "src/docs/audit.ts",
+        "src/docs/audit.test.ts"
+      ],
+      "risk": "LOW",
+      "rationale": "Read-only subcommand. No existing behavior changed. New module + CLI registration only.",
+      "key_functions": [
+        "auditIngestRiskSurface(repoRoot) — walk files, classify risk",
+        "polaris docs audit — CLI subcommand with --json and --output flags"
+      ],
+      "acceptance_criteria": [
+        "polaris docs audit is a working CLI subcommand",
+        "Identifies all recursive ingest risk paths",
+        "Reports pipeline stages, current/missing protections",
+        "--json output is machine-readable AuditResult",
+        "--output writes markdown findings report",
+        "Tests cover all risk detection paths"
+      ]
+    }
+  ],
+  "execution_order": ["POL-131", "POL-133", "POL-132", "POL-134"],
+  "notes": "POL-131 must run before POL-132 and POL-134 (smartdoc-ignore module dependency). POL-133 is independent and can run in parallel with POL-131. POL-132 and POL-134 require POL-131 complete."
+}

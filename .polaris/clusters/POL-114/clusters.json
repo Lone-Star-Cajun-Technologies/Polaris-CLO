@@ -1,0 +1,68 @@
+{
+  "source_id": "POL-114",
+  "analyze_source_id": "POL-75",
+  "source_type": "linear",
+  "created_at": "2026-05-26T00:07:00.000Z",
+  "clusters": [
+    {
+      "cluster_id": "cluster-01",
+      "description": "Spec document — no dependencies",
+      "children": [
+        {
+          "id": "POL-115",
+          "title": "IMPLEMENT: Write docs/spec/polaris-compact-contracts.md",
+          "session_type": "implement",
+          "blockedBy": []
+        }
+      ]
+    },
+    {
+      "cluster_id": "cluster-02",
+      "description": "Config schema and Caveman dependency removal — both blocked by POL-115",
+      "children": [
+        {
+          "id": "POL-116",
+          "title": "IMPLEMENT: Add compact config section to PolarisConfig schema",
+          "session_type": "implement",
+          "blockedBy": ["POL-115"]
+        },
+        {
+          "id": "POL-117",
+          "title": "IMPLEMENT: Remove hard Caveman dependency from polaris-run and polaris-analyze skill chains",
+          "session_type": "implement",
+          "blockedBy": ["POL-115"]
+        }
+      ]
+    },
+    {
+      "cluster_id": "cluster-03",
+      "description": "Bootstrap injection and provider detection — both blocked by POL-116",
+      "children": [
+        {
+          "id": "POL-118",
+          "title": "IMPLEMENT: Wire compact config into bootstrap packet and execution adapter injection",
+          "session_type": "implement",
+          "blockedBy": ["POL-116"]
+        },
+        {
+          "id": "POL-119",
+          "title": "IMPLEMENT: Add optional Caveman/GitNexus provider detection to polaris init",
+          "session_type": "implement",
+          "blockedBy": ["POL-116"]
+        }
+      ]
+    },
+    {
+      "cluster_id": "cluster-04",
+      "description": "Test coverage — blocked by POL-118 and POL-119",
+      "children": [
+        {
+          "id": "POL-120",
+          "title": "IMPLEMENT: Add test coverage for compact config, bootstrap injection, and provider detection",
+          "session_type": "implement",
+          "blockedBy": ["POL-118", "POL-119"]
+        }
+      ]
+    }
+  ]
+}

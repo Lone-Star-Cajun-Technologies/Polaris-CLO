@@ -1,0 +1,9 @@
+---
+name: docs-promote
+description: Review and promote candidate SmartDocs from draft to active status.
+---
+
+> **Canonical skill**: `.polaris/skills/docs-promote/SKILL.md`
+> This file is a Codex-specific wrapper. All doctrine lives in the canonical skill.
+
+Read and follow `.polaris/skills/docs-promote/SKILL.md`.

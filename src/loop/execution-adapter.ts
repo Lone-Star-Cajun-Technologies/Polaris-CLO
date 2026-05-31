@@ -1,3 +1,5 @@
+import { relative } from "node:path";
+
 export type ExecutionAdapterMode =
   | "agent-subtask"
   | "terminal-cli"
@@ -38,6 +40,8 @@ export interface CompactBootstrapInput {
   telemetryFile: string;
   currentStateSha: string;
   branch: string;
+  allowAnalyzeChildren?: boolean;
+  compactMode?: "standard" | "strict" | "minimal";
 }
 
 export interface CompactBootstrapState {
@@ -48,6 +52,8 @@ export interface CompactBootstrapState {
   telemetry_file: string;
   current_state_sha: string;
   branch: string;
+  allow_analyze_children?: boolean;
+  compact_mode: "standard" | "strict" | "minimal";
   return_summary_contract: string[];
 }
 
@@ -166,14 +172,20 @@ export function selectExecutionAdapter(input: AdapterSelectionInput): AdapterSel
 }
 
 export function buildCompactBootstrapState(input: CompactBootstrapInput): CompactBootstrapState {
-  return {
+  // Normalize paths to repo-relative for portability
+  const repoRoot = process.cwd();
+  const relStateFile = input.stateFile.startsWith("/") ? relative(repoRoot, input.stateFile) : input.stateFile;
+  const relTelemetryFile = input.telemetryFile.startsWith("/") ? relative(repoRoot, input.telemetryFile) : input.telemetryFile;
+
+  const result: CompactBootstrapState = {
     run_id: input.runId,
     cluster_id: input.clusterId,
     child_id: input.childId,
-    state_file: input.stateFile,
-    telemetry_file: input.telemetryFile,
+    state_file: relStateFile,
+    telemetry_file: relTelemetryFile,
     current_state_sha: input.currentStateSha,
     branch: input.branch,
+    compact_mode: input.compactMode ?? "standard",
     return_summary_contract: [
       "child_id",
       "status",
@@ -182,6 +194,10 @@ export function buildCompactBootstrapState(input: CompactBootstrapInput): Compac
       "next_action",
     ],
   };
+  if (input.allowAnalyzeChildren !== undefined) {
+    result.allow_analyze_children = input.allowAnalyzeChildren;
+  }
+  return result;
 }
 
 export function buildExecutionAdapterContract(

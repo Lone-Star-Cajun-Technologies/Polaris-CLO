@@ -1,0 +1,62 @@
+{
+  "run_id": "polaris-run-cli-parity-workflow-migration-2026-05-26-001",
+  "skill": "polaris-run",
+  "branch": "philmeaux/pol-123-implement-polaris-runtime-cli-parity-and-deferred-workflow",
+  "base_commit_sha": "d62cb22b3f135618d826a341e3bd216cb4d9894f",
+  "last_completed_step": "checkpoint",
+  "last_completed_child": "",
+  "next_step": "CLUSTER-COMPLETE",
+  "open_children": [],
+  "artifact_pointers": {
+    "current_state": ".taskchain_artifacts/polaris-run/current-state.json",
+    "telemetry": ".taskchain_artifacts/polaris-run/runs/polaris-run-cli-parity-workflow-migration-2026-05-26-001/telemetry.jsonl"
+  },
+  "context_budget": {
+    "children_completed": 5,
+    "files_touched_total": 16,
+    "stop_threshold_remaining": -2
+  },
+  "current_state_sha": "18b15a66400f8cecd6a95939e671a8b1bfbcdf92b23d61d6d9b2c593012aa7b9",
+  "resume_instructions": "All children complete. Run `polaris loop status` to verify cluster state.",
+  "compact_mode": "standard",
+  "execution_adapter": {
+    "mode": "terminal-cli",
+    "autoDispatch": false,
+    "providerCoupling": "shell-process",
+    "priority": 2,
+    "warnings": [],
+    "reason": "terminal CLI worker adapter configured",
+    "compact_bootstrap_state": {
+      "run_id": "polaris-run-cli-parity-workflow-migration-2026-05-26-001",
+      "cluster_id": "POL-123",
+      "child_id": null,
+      "state_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json",
+      "telemetry_file": ".taskchain_artifacts/polaris-run/runs/polaris-run-cli-parity-workflow-migration-2026-05-26-001/telemetry.jsonl",
+      "current_state_sha": "18b15a66400f8cecd6a95939e671a8b1bfbcdf92b23d61d6d9b2c593012aa7b9",
+      "branch": "philmeaux/pol-123-implement-polaris-runtime-cli-parity-and-deferred-workflow",
+      "compact_mode": "standard",
+      "return_summary_contract": [
+        "child_id",
+        "status",
+        "commit_hash",
+        "validation_summary",
+        "next_action"
+      ],
+      "allow_analyze_children": false
+    },
+    "dispatch_contract": {
+      "one_child_per_worker": true,
+      "parent_receives_compact_summary_only": true,
+      "child_transcript_retained_by_worker": true,
+      "updates_current_state_and_telemetry": true
+    },
+    "fallback_order": [
+      "agent-subtask",
+      "terminal-cli",
+      "ci",
+      "ssh",
+      "remote-worker",
+      "cross-agent"
+    ]
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "run_id": "polaris-run-global-run-ledger-2026-05-28-001",
+  "cluster_id": "POL-151",
+  "branch": "philmeaux/pol-151-implement-add-global-polaris-run-ledger-for-cross-agent",
+  "session_type": "implement",
+  "active_child": "",
+  "completed_children": [
+    "POL-152",
+    "POL-153",
+    "POL-154",
+    "POL-155"
+  ],
+  "open_children": [],
+  "step_cursor": "checkpoint",
+  "context_budget": {
+    "children_completed": 4,
+    "max_children_per_session": 1
+  },
+  "status": "complete",
+  "next_open_child": null,
+  "artifact_dir": ".taskchain_artifacts/polaris-run",
+  "dispatch_boundary": {
+    "dispatch_epoch": 4,
+    "continue_epoch": 4,
+    "last_dispatched_child": "POL-155"
+  },
+  "run_bootstrap_seal": {
+    "sealer": "polaris-loop-bootstrap",
+    "run_id": "polaris-run-global-run-ledger-2026-05-28-001",
+    "cluster_id": "POL-151",
+    "open_children_sha": "f0353173cede34d7ac4420b2421f328586949d8141057abc04a558338a01f39a",
+    "sealed_at": "2026-05-28T03:15:58.402Z"
+  },
+  "last_commit": "4604d638311fbd3c86b878aa32378d46295321a0",
+  "pr_url": "https://github.com/ItIsYeBananaduck/Polaris/pull/47"
+}

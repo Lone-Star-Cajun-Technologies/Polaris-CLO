@@ -16,8 +16,7 @@ export type LifecycleResultError =
   | "failed_result";
 
 export interface LifecycleDispatchAdapter extends Pick<ExecutionAdapter, "name"> {
-  // eslint-disable-next-line no-unused-vars
-  dispatch(_packet: BootstrapPacket, _options: DispatchOptions): Promise<DispatchResult>;
+  dispatch(packet: BootstrapPacket, options: DispatchOptions): Promise<DispatchResult>;
 }
 
 export interface ResolvedLifecycleProvider {
@@ -204,7 +203,6 @@ function resolveRepoRoot(options: DispatchLifecyclePhaseOptions): string {
   }
 
   let current = dirname(options.stateFile);
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     if (existsSync(join(current, ".git")) || existsSync(join(current, "package.json"))) {
       return current;
@@ -228,7 +226,7 @@ function deriveCognitionArchiveOptions(
       : result;
 
   const reconcileId = readString(candidate.reconcile_id) ?? readString(candidate.reconcileId);
-  const runId = readString(candidate.run_id) ?? readString(candidate.runId) ?? readString(result.run_id);
+  const runId = readString(result.run_id) ?? readString(candidate.run_id) ?? readString(candidate.runId);
   const notesConsumed = readStringArray(
     candidate.notes_consumed
     ?? candidate.notesConsumed
@@ -417,9 +415,11 @@ export async function dispatchLifecyclePhase(
   }
 
   try {
-    const cognitionArchiveOptions = deriveCognitionArchiveOptions(parsed.value, resolveRepoRoot(options));
-    if (cognitionArchiveOptions) {
-      archiveCognitionNotes(cognitionArchiveOptions);
+    if (options.phase === "finalize") {
+      const cognitionArchiveOptions = deriveCognitionArchiveOptions(parsed.value, resolveRepoRoot(options));
+      if (cognitionArchiveOptions) {
+        archiveCognitionNotes(cognitionArchiveOptions);
+      }
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

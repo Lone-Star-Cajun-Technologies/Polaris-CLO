@@ -1,0 +1,19 @@
+{
+  "source_id": "POL-58",
+  "source_type": "linear",
+  "created_at": "2026-05-24T10:12:00.000Z",
+  "clusters": [
+    {
+      "cluster_id": "cluster-01",
+      "description": "Write scheduler-worker-contract.md — single doc deliverable",
+      "children": [
+        {
+          "id": "POL-65",
+          "title": "Implement: Write scheduler-worker-contract.md",
+          "session_type": "implement",
+          "blockedBy": []
+        }
+      ]
+    }
+  ]
+}

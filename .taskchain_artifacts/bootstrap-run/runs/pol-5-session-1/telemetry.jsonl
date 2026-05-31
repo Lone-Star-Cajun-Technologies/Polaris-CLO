@@ -1,3 +1,0 @@
-{"event":"pr-opened","run_id":"pol-5-session-1","pr_url":"https://github.com/ItIsYeBananaduck/Polaris/pull/8","timestamp":"2026-05-23T08:35:28.516Z"}
-{"event":"run-complete","run_id":"pol-5-session-1","children_completed":3,"timestamp":"2026-05-23T08:35:28.516Z"}
-{"event":"loop-checkpoint","run_id":"pol-5-session-1","child_id":"","next_child":"POL-26","timestamp":"2026-05-23T15:50:16.056Z"}

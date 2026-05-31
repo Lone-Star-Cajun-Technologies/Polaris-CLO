@@ -1,0 +1,24 @@
+{
+  "source_id": "POL-88",
+  "source_type": "linear",
+  "created_at": "2026-05-25T00:05:00.000Z",
+  "clusters": [
+    {
+      "cluster_id": "cluster-01",
+      "children": [
+        {
+          "id": "POL-89",
+          "title": "IMPLEMENT: Write mcp-confirmed-dispatch-architecture.md",
+          "session_type": "implement",
+          "blockedBy": []
+        },
+        {
+          "id": "POL-90",
+          "title": "IMPLEMENT: Create MCP dispatch implementation child issues from spec",
+          "session_type": "implement",
+          "blockedBy": ["POL-89"]
+        }
+      ]
+    }
+  ]
+}

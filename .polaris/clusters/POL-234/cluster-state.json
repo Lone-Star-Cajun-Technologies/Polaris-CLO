@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0",
+  "cluster_id": "POL-234",
+  "state_generation": 7,
+  "child_states": [
+    {
+      "id": "POL-235",
+      "status": "done"
+    },
+    {
+      "id": "POL-236",
+      "status": "done"
+    },
+    {
+      "id": "POL-237",
+      "status": "done"
+    },
+    {
+      "id": "POL-238",
+      "status": "done"
+    },
+    {
+      "id": "POL-239",
+      "status": "done"
+    }
+  ],
+  "claim_metadata": {},
+  "packet_pointers": {},
+  "result_pointers": {
+    "POL-236": ".polaris/clusters/POL-234/results/POL-236-b876269f-a3f1-4beb-81c1-45d307d4f660.json"
+  },
+  "validation_results": {
+    "POL-236": {
+      "passed": true,
+      "output": "routes passed; state passed; diff_check passed"
+    }
+  },
+  "commits": {},
+  "tracker_mutations": {},
+  "blockers": []
+}

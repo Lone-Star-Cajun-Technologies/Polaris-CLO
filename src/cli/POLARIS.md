@@ -6,23 +6,24 @@ The CLI entry point for Polaris. It registers all top-level commands (`map`, `lo
 
 ## What belongs here
 
-- `index.ts` — `#!/usr/bin/env node` entry point, command registration, `program.parse()`
-- `version.ts` — `getVersion()` helper (reads from `package.json`)
-- `version.test.ts` — unit test for version helper
+- `index.ts` — binary entry point; registers subsystem commands via `addCommand()`
+- `version.ts`, `version.test.ts` — version helper and test
 
 ## What does not belong here
 
-- Command implementation logic — belongs in the respective subsystem (`src/map/`, `src/loop/`, `src/finalize/`, `src/docs/`, `src/config/`)
+- Command implementation logic — belongs in the respective subsystem (`src/map/`, `src/loop/`, `src/finalize/`, `src/smartdocs-engine/`, `src/config/`)
 - Business logic, file I/O, or state management of any kind
 
 ## Editing rules
 
 - To add a new top-level command, create a `create<Name>Command()` factory in the appropriate subsystem and register it with `program.addCommand()` here.
 - Do not add inline `.action()` handlers in `index.ts` for anything beyond trivial cases (e.g., `config show`).
+- Public help must label safe/read-only commands separately from mutating commands. Deferred 1.0 commands must be marked unavailable instead of sounding implemented.
+- Unknown commands and bare subsystem commands must exit non-zero with actionable help.
 - Keep `index.ts` short — it should remain a thin wiring file.
 - Version string comes from `getVersion()` only — do not hardcode version strings elsewhere.
 
-## Architecture assumptions
+## Route model
 
 - The binary name is `polaris` (set via `program.name("polaris")`).
 - Commander.js is the only CLI framework used. Do not introduce alternatives (yargs, meow, etc.).

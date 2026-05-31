@@ -1,51 +1,31 @@
 # Polaris — CLAUDE.md
 
-## Project identity
+This repository is governed by the Polaris runtime.
 
-Polaris is a standalone taskchain orchestration/runtime framework. It is NOT an EVO app. Do not apply EVO app doctrine or EVO app-specific behavior here.
+Work is executed through routed issue clusters, Smart Docs, and bounded worker execution.
 
-## Stack
+## Runtime behavior
 
-- Node.js / TypeScript 5+, targeting ES2022
-- Module system: Node16
+- Resolve execution state before beginning work.
+- Follow the active cluster and child ordering.
+- Execute only the currently assigned child.
+- Do not expand scope outside the assigned child.
+- If blocked, stop and report the unblock condition.
 
-## Repo structure
+## Canon discovery
 
-```
-src/          # implementation (cli/, map/, loop/, finalize/, config/, ignore/)
-docs/         # specs and planning docs (spec/, planning/)
-.polaris/     # runtime state (map/, bootstrap/, runs/)
-.taskchain_artifacts/  # artifact storage for cluster execution sessions
-.codex/       # skills for governed cluster execution
-```
+Project canon is route-local.
 
-## Branch convention
+Use:
+- POLARIS.md for operational guidance
+- SUMMARY.md for informational context
+- .polaris/map/file-routes.json for route and ownership resolution
+- runtime state artifacts for execution state and resume handling
 
-**Never commit cluster work directly to `main`.** Each cluster session must work on a dedicated feature branch:
+Do not assume global repository context unless explicitly provided by the runtime.
 
-1. At session start, create a branch from `main` named after the Linear issue: `git checkout -b philmeaux/<pol-id>-<slug> main`
-2. Commit all work to that branch
-3. PR targets `main` (not any other branch)
+## Execution model
 
-The branch name comes from the Linear issue's `gitBranchName` field.
+Parent/orchestrator sessions coordinate execution state and worker dispatch.
 
-## Commands
-
-```
-npm test        # run test suite
-npm run lint    # lint TypeScript sources
-npm run build   # compile to dist/
-```
-
-## Taskchain skills
-
-Use `.codex/skills/polaris-run/chain.md` for implementation clusters, `.codex/skills/polaris-analyze/chain.md` for analysis clusters.
-
-## Implementation target
-
-All Polaris code belongs in this repo (`ItIsYeBananaduck/Polaris`). EVO skill changes (Cluster 7 work) belong in `git-fit`.
-
-## Architecture references
-
-- `docs/spec/polaris-architecture-spec.md` — loop/map/finalize architecture
-- `docs/spec/polaris-implementation-plan.md` — failure modes, recommendation, implementation tree
+Worker sessions perform implementation, analysis, validation, and delivery tasks within bounded scope.
