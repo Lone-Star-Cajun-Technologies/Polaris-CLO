@@ -828,7 +828,7 @@ describe("dispatch boundary telemetry events", () => {
   beforeEach(() => {
     testDir = makeTempDir();
     mkdirSync(join(testDir, ".polaris", "bootstrap"), { recursive: true });
-    const telemetryDir = join(testDir, ".taskchain_artifacts", "bootstrap-run", "runs", "polaris-run-test-boundary-001");
+    const telemetryDir = join(testDir, ".taskchain_artifacts", "polaris-run", "runs", "polaris-run-test-boundary-001");
     mkdirSync(telemetryDir, { recursive: true });
     telemetryFile = join(telemetryDir, "telemetry.jsonl");
   });
@@ -848,7 +848,7 @@ describe("dispatch boundary telemetry events", () => {
 
   it("emits dispatch-required event when continue called without dispatch", () => {
     const state = makeFreshState({
-      artifact_dir: join(testDir, ".taskchain_artifacts", "bootstrap-run"),
+      artifact_dir: join(testDir, ".taskchain_artifacts", "polaris-run"),
       open_children: ["POL-101"],
     });
     const stateFile = writeStateFile(testDir, state);
@@ -874,7 +874,7 @@ describe("dispatch boundary telemetry events", () => {
 
   it("emits invalid-inline-attempt event when dispatch called with active_child set", () => {
     const state = makeDispatchedState("POL-101");
-    state.artifact_dir = join(testDir, ".taskchain_artifacts", "bootstrap-run");
+    state.artifact_dir = join(testDir, ".taskchain_artifacts", "polaris-run");
     const stateFile = writeStateFile(testDir, state);
 
     const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {

@@ -92,7 +92,7 @@ export function runLoopAbort(options: AbortOptions): void {
   appendBlockedLedgerEvent(repoRoot, updatedState, childId, reason);
 
   const artifactDir =
-    state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "bootstrap-run");
+    state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "polaris-run");
   const telemetryFile = join(artifactDir, "runs", state.run_id, "telemetry.jsonl");
 
   appendAbortEvent(telemetryFile, {

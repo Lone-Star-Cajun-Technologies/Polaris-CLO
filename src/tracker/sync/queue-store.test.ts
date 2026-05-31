@@ -14,7 +14,7 @@ describe('queue-store', () => {
 
   beforeEach(async () => {
     testDir = await mkdtemp(join(tmpdir(), 'queue-store-test-'));
-    testFilePath = join(testDir, '.polaris', 'runs', 'mutation-queue.json');
+    testFilePath = join(testDir, '.taskchain_artifacts', 'polaris-run', 'mutation-queue.json');
   });
 
   afterEach(async () => {
@@ -111,7 +111,7 @@ describe('queue-store', () => {
 
   it('should throw an error for malformed JSON content', async () => {
     // Manually create a malformed JSON file
-    await mkdir(join(testDir, '.polaris', 'runs'), { recursive: true });
+    await mkdir(join(testDir, '.taskchain_artifacts', 'polaris-run'), { recursive: true });
     await writeFile(testFilePath, '{"id": "malformed",', 'utf-8');
 
     await expect(loadMutationQueue(testFilePath)).rejects.toThrow(SyntaxError);

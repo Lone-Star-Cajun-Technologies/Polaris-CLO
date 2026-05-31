@@ -1,0 +1,119 @@
+{
+  "schemaVersion": "v2",
+  "source": {
+    "id": "POL-242",
+    "type": "Linear",
+    "analysis": {
+      "id": "initial-sync",
+      "doc": "Synchronized from Linear issue identifier: POL-242"
+    }
+  },
+  "nodes": {
+    "POL-242": {
+      "id": "POL-242",
+      "title": "IMPLEMENT: Define and enforce Polaris artifact promotion and commit hygiene policy",
+      "status": "Todo"
+    },
+    "POL-234": {
+      "id": "POL-234",
+      "title": "IMPLEMENT: Normalize SmartDocs routing, folder cognition, YAML links, and telemetry cleanup",
+      "status": "In Progress"
+    },
+    "POL-201": {
+      "id": "POL-201",
+      "title": "IMPLEMENT: Runtime state consolidation and cluster-state execution model",
+      "status": "Done"
+    },
+    "POL-248": {
+      "id": "POL-248",
+      "title": "IMPLEMENT: Verify and document resume-state minimum contract from cluster-state.json",
+      "status": "Todo"
+    },
+    "POL-247": {
+      "id": "POL-247",
+      "title": "IMPLEMENT: Add finalize preflight check for commit staging allowlist",
+      "status": "Todo"
+    },
+    "POL-246": {
+      "id": "POL-246",
+      "title": "IMPLEMENT: Relocate mutation-queue.json from .polaris/runs/ to taskchain workspace",
+      "status": "Todo"
+    },
+    "POL-245": {
+      "id": "POL-245",
+      "title": "IMPLEMENT: Remove deprecated artifact surfaces from git tracking",
+      "status": "Todo"
+    },
+    "POL-244": {
+      "id": "POL-244",
+      "title": "IMPLEMENT: Fix finalize commit step to stage .polaris/clusters/ durable state",
+      "status": "Todo"
+    },
+    "POL-243": {
+      "id": "POL-243",
+      "title": "IMPLEMENT: Gitignore and untrack .taskchain_artifacts/ workspace files",
+      "status": "Todo"
+    },
+    "POL-255": {
+      "id": "POL-255",
+      "title": "IMPLEMENT: Archive model, cognition-index, and provenance records for reconciled notes",
+      "status": "Todo"
+    },
+    "POL-55": {
+      "id": "POL-55",
+      "title": "Analyze scheduler-only parent loop and provider worker adapters",
+      "status": "Done"
+    },
+    "POL-198": {
+      "id": "POL-198",
+      "title": "IMPLEMENT: Dispatch-only orchestration lifecycle with startup and finalize dispatchers",
+      "status": "Done"
+    },
+    "POL-42": {
+      "id": "POL-42",
+      "title": "Add Polaris canon reconciliation and docs-ingest lifecycle",
+      "status": "Done"
+    },
+    "POL-5": {
+      "id": "POL-5",
+      "title": "Cluster 4: Polaris loop — checkpoint / resume / session boundary",
+      "status": "Done"
+    },
+    "POL-97": {
+      "id": "POL-97",
+      "title": "ANALYZE: Polaris 1.0 CLI/operator surface for finalize and Codex plugin",
+      "status": "Canceled"
+    },
+    "POL-240": {
+      "id": "POL-240",
+      "title": "ANALYZE: Define durable run artifact promotion and commit hygiene policy",
+      "status": "Done"
+    }
+  },
+  "dependencies": {},
+  "clusters": {
+    "POL-242": {
+      "id": "POL-242",
+      "title": "Linear Issue: POL-242",
+      "children": [
+        "POL-242",
+        "POL-234",
+        "POL-201",
+        "POL-248",
+        "POL-247",
+        "POL-246",
+        "POL-245",
+        "POL-244",
+        "POL-243",
+        "POL-255",
+        "POL-55",
+        "POL-198",
+        "POL-42",
+        "POL-5",
+        "POL-97",
+        "POL-240"
+      ]
+    }
+  },
+  "activeCluster": "POL-242"
+}

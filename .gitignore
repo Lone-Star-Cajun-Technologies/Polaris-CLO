@@ -7,3 +7,12 @@ build/
 .env
 docs/Polaris/.obsidian/
 .claude/worktrees/
+.taskchain_artifacts/bootstrap-run/
+
+# Polaris workspace scratch — never commit
+.taskchain_artifacts/*/current-state.json
+.taskchain_artifacts/*/remaining-state.json
+.taskchain_artifacts/*/run-report.md
+.taskchain_artifacts/**/*.bak
+.polaris/runs/mutation-queue.json
+.taskchain_artifacts/*/mutation-queue.json

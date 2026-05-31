@@ -1,0 +1,14 @@
+{
+  "child_id": "POL-246",
+  "status": "completed",
+  "commit": "478af46",
+  "validation": {
+    "passed": [
+      "npm run lint",
+      "npm run test -- src/tracker/sync/queue-store.test.ts src/tracker/sync/index.test.ts",
+      "git ls-files .polaris/runs/mutation-queue.json .taskchain_artifacts/polaris-run/mutation-queue.json",
+      "git check-ignore -v .taskchain_artifacts/polaris-run/mutation-queue.json"
+    ]
+  },
+  "next_recommended_action": "Parent can reconcile POL-246 completion and choose the next open child."
+}

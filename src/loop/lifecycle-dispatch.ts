@@ -2,6 +2,7 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { randomUUID } from "node:crypto";
 import type { PolarisConfig, ExecutionConfig, ExecutionRole, RoleExecutionConfig } from "../config/schema.js";
+import { archiveCognitionNotes, type ArchiveCognitionNotesOptions } from "../cognition/index.js";
 import type { BootstrapPacket, DispatchOptions, DispatchResult, ExecutionAdapter } from "./adapters/types.js";
 import { compileFinalizePacket, compileStartupPacket, type WorkerPacket, type WorkerRole } from "./worker-packet.js";
 
@@ -29,6 +30,7 @@ export interface DispatchLifecyclePhaseOptions {
   runId: string;
   clusterId: string;
   branch: string;
+  repoRoot?: string;
   stateFile: string;
   telemetryFile: string;
   config: Required<PolarisConfig>;
@@ -177,6 +179,94 @@ function parseResultFile(path: string): { ok: true; value: Record<string, unknow
   return { ok: true, value: parsed as Record<string, unknown> };
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function readString(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim().length > 0 ? value : undefined;
+}
+
+function readBoolean(value: unknown): boolean {
+  return value === true;
+}
+
+function readStringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0)
+    : [];
+}
+
+function resolveRepoRoot(options: DispatchLifecyclePhaseOptions): string {
+  if (options.repoRoot) {
+    return options.repoRoot;
+  }
+
+  let current = dirname(options.stateFile);
+  while (true) {
+    if (existsSync(join(current, ".git")) || existsSync(join(current, "package.json"))) {
+      return current;
+    }
+    const parent = dirname(current);
+    if (parent === current) {
+      return dirname(options.stateFile);
+    }
+    current = parent;
+  }
+}
+
+function deriveCognitionArchiveOptions(
+  result: Record<string, unknown>,
+  repoRoot: string,
+): ArchiveCognitionNotesOptions | null {
+  const candidate = isRecord(result.cognition_archive)
+    ? result.cognition_archive
+    : isRecord(result.cognition_reconcile)
+      ? result.cognition_reconcile
+      : result;
+
+  const reconcileId = readString(candidate.reconcile_id) ?? readString(candidate.reconcileId);
+  const runId = readString(result.run_id) ?? readString(candidate.run_id) ?? readString(candidate.runId);
+  const notesConsumed = readStringArray(
+    candidate.notes_consumed
+    ?? candidate.notesConsumed
+    ?? candidate.note_paths
+    ?? candidate.notePaths
+    ?? candidate.consumed_notes,
+  );
+
+  if (!reconcileId || !runId || notesConsumed.length === 0) {
+    return null;
+  }
+
+  const status = readString(candidate.archive_status)
+    ?? readString(candidate.reconcile_status)
+    ?? readString(candidate.result)
+    ?? readString(candidate.status);
+
+  return {
+    repoRoot,
+    reconcileId,
+    runId,
+    notesConsumed,
+    polarisMdUpdated: readBoolean(candidate.polaris_md_updated ?? candidate.polarisMdUpdated),
+    summaryMdUpdated: readBoolean(candidate.summary_md_updated ?? candidate.summaryMdUpdated),
+    reconciledAt: readString(candidate.reconciled_at) ?? readString(candidate.reconciledAt),
+    status:
+      candidate.rejected === true
+      || candidate.applied === false
+      || candidate.accepted === false
+      || status === "rejected"
+        ? "rejected"
+        : "applied",
+    rejectionReason:
+      readString(candidate.reason)
+      ?? readString(candidate.rejection_reason)
+      ?? readString(candidate.error_message),
+    result,
+  };
+}
+
 function validateLifecycleResult(
   result: Record<string, unknown>,
   packet: WorkerPacket,
@@ -321,6 +411,35 @@ export async function dispatchLifecyclePhase(
       resultFile: sealedResultFile,
       error: validation.error,
       message: validation.message,
+    };
+  }
+
+  try {
+    if (options.phase === "finalize") {
+      const cognitionArchiveOptions = deriveCognitionArchiveOptions(parsed.value, resolveRepoRoot(options));
+      if (cognitionArchiveOptions) {
+        archiveCognitionNotes(cognitionArchiveOptions);
+      }
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    appendTelemetry(options.telemetryFile, {
+      event: "lifecycle-result-rejected",
+      run_id: options.runId,
+      role,
+      error: "failed_result",
+      message: `Lifecycle post-validation apply failed: ${message}`,
+      result_file: sealedResultFile,
+      timestamp: new Date().toISOString(),
+    });
+    return {
+      ok: false,
+      role,
+      provider: resolved.provider,
+      model: resolved.model,
+      resultFile: sealedResultFile,
+      error: "failed_result",
+      message: `Lifecycle post-validation apply failed: ${message}`,
     };
   }
 

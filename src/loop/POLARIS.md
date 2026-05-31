@@ -25,6 +25,7 @@ The loop subsystem manages the session lifecycle for Polaris cluster runs. It ha
 
 - `polaris loop continue` always halts after one child completes (STOP rule). Do not add CONTINUE paths that execute multiple children in a single session.
 - `polaris loop continue` is mutating: it writes `current-state.json`, appends telemetry, runs canon checks, and writes a bootstrap packet after worker return.
+- Sealed lifecycle dispatch validation may apply durable post-validation side effects for accepted results (for example cognition provenance archival), so keep those hooks deterministic and idempotent.
 - Use `polaris loop status` for safe/read-only operator checks and smoke tests.
 - State writes must use `checkpoint.ts` helpers — never write `current-state.json` directly with `fs`.
 - The JSONL telemetry file is append-only. Never truncate or overwrite it.

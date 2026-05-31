@@ -1,0 +1,10 @@
+{
+  "child_id": "POL-242",
+  "status": "completed",
+  "commit": "042b9da733a7ef086b1de0a5c21b7f28f55b20fa",
+  "validation": {
+    "npm_test_targeted": "passed: npm test -- src/finalize/artifact-policy.test.ts",
+    "npm_run_lint": "baseline failure unrelated to POL-242: src/smartdocs-engine/doctrine.ts references missing parseFrontMatterRaw"
+  },
+  "next_recommended_action": "Parent may continue with the next remaining child; POL-242 is complete."
+}

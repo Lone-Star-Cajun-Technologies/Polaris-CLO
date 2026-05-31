@@ -50,3 +50,15 @@ export {
   getSummaryFileSize,
   looksLikePolarisChurn,
 } from "./validate.js";
+
+export type {
+  ArchiveCognitionNotesOptions,
+  ArchiveCognitionNotesResult,
+  CognitionIndexFile,
+  CognitionPatchRejectedEntry,
+  CognitionReconciliationEntry,
+} from "./archive.js";
+
+export {
+  archiveCognitionNotes,
+} from "./archive.js";

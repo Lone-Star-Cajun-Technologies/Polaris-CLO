@@ -9,6 +9,7 @@ import {
   doctrineDeprecate,
   doctrinePromote,
   addCandidateGovernanceMetadata,
+  parseFrontMatter,
   specPromote,
 } from "./doctrine.js";
 
@@ -349,6 +350,47 @@ describe("addCandidateGovernanceMetadata", () => {
     expect(result).toContain("implements: ");
     expect(result).toContain("source_paths: ");
     expect(result).not.toContain("doc-type: other");
+  });
+});
+
+describe("parseFrontMatter", () => {
+  it("parses governance and relationship fields from candidate content", () => {
+    const content = [
+      CANDIDATE_MARKER,
+      "---",
+      "doc-type: doctrine",
+      "confidence: 0.9",
+      "recommended-action: promote",
+      "overlap-analysis: none",
+      "implements: POL-234",
+      "related: smartdocs-summary-architecture",
+      "supersedes: old-doc",
+      "superseded_by: new-doc",
+      "depends_on: map-route-normalization",
+      "validates: POL-234",
+      "source_paths: src/smartdocs-engine/doctrine.ts,src/cognition/summary-delta.ts",
+      "---",
+      "",
+      "# Candidate",
+    ].join("\n");
+
+    expect(parseFrontMatter(content)).toMatchObject({
+      "doc-type": "doctrine",
+      confidence: "0.9",
+      "recommended-action": "promote",
+      "overlap-analysis": "none",
+      implements: "POL-234",
+      related: "smartdocs-summary-architecture",
+      supersedes: "old-doc",
+      superseded_by: "new-doc",
+      depends_on: "map-route-normalization",
+      validates: "POL-234",
+      source_paths: "src/smartdocs-engine/doctrine.ts,src/cognition/summary-delta.ts",
+    });
+  });
+
+  it("returns an empty object when no frontmatter is present", () => {
+    expect(parseFrontMatter("# No frontmatter")).toEqual({});
   });
 });
 

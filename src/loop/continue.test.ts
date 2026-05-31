@@ -276,7 +276,7 @@ describe("runLoopContinue", () => {
       context_budget: { children_completed: 0, max_children_per_session: 3 },
       status: "running",
       next_open_child: "POL-24",
-      artifact_dir: join(testDir, ".taskchain_artifacts", "bootstrap-run"),
+      artifact_dir: join(testDir, ".taskchain_artifacts", "polaris-run"),
     };
     const stateFile = writeState(testDir, state);
 
@@ -291,7 +291,7 @@ describe("runLoopContinue", () => {
     const telemetryFile = join(
       testDir,
       ".taskchain_artifacts",
-      "bootstrap-run",
+      "polaris-run",
       "runs",
       "pol-5-session-1",
       "telemetry.jsonl",
@@ -445,7 +445,7 @@ describe("runLoopContinue", () => {
       context_budget: { children_completed: 0, max_children_per_session: 3 },
       status: "running",
       next_open_child: "POL-24",
-      artifact_dir: join(testDir, ".taskchain_artifacts", "bootstrap-run"),
+      artifact_dir: join(testDir, ".taskchain_artifacts", "polaris-run"),
     };
     const stateFile = writeState(testDir, state);
 
@@ -460,7 +460,7 @@ describe("runLoopContinue", () => {
     const telemetryFile = join(
       testDir,
       ".taskchain_artifacts",
-      "bootstrap-run",
+      "polaris-run",
       "runs",
       "pol-5-session-1",
       "telemetry.jsonl",

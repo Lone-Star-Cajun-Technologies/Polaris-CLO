@@ -43,6 +43,7 @@ import {
   validateSummaryFile,
   looksLikePolarisChurn,
 } from "./validate.js";
+import { archiveCognitionNotes } from "./archive.js";
 
 import {
   detectMissingCognitionSurfaces,
@@ -238,6 +239,118 @@ describe("applyRouteCognitionDelta", () => {
     });
 
     expect(result.missingCognitionSurfaces).toContain(".polaris/map");
+  });
+});
+
+// ── archiveCognitionNotes ──────────────────────────────────────────────────────
+
+describe("archiveCognitionNotes", () => {
+  let tmp: string;
+  beforeEach(() => { tmp = makeTmp(); });
+  afterEach(() => cleanup(tmp));
+
+  it("moves reconciled notes into archive and writes provenance files", () => {
+    mkdirSync(join(tmp, ".polaris", "cognition", "pending", "src", "loop"), { recursive: true });
+    writeFileSync(join(tmp, ".polaris", "cognition", "pending", "src", "loop", "note.md"), "hello", "utf-8");
+
+    const result = archiveCognitionNotes({
+      repoRoot: tmp,
+      reconcileId: "reconcile-1",
+      runId: "run-1",
+      notesConsumed: ["src/loop/note.md"],
+      polarisMdUpdated: true,
+      summaryMdUpdated: false,
+      result: { status: "success", applied: true },
+    });
+
+    expect(result.archivedNotes).toEqual([".polaris/cognition/archive/src/loop/note.md"]);
+    expect(result.missingNotes).toEqual([]);
+    expect(existsSync(join(tmp, ".polaris", "cognition", "pending", "src", "loop", "note.md"))).toBe(false);
+    expect(readFileSync(join(tmp, ".polaris", "cognition", "archive", "src", "loop", "note.md"), "utf-8")).toBe("hello");
+    expect(JSON.parse(readFileSync(join(tmp, ".polaris", "cognition", "archive", "src", "loop", ".reconcile-reconcile-1.json"), "utf-8"))).toEqual({
+      status: "success",
+      applied: true,
+    });
+    expect(JSON.parse(readFileSync(join(tmp, ".polaris", "cognition", "archive", "src", "loop", "cognition-index.json"), "utf-8"))).toEqual({
+      entries: [
+        {
+          reconcile_id: "reconcile-1",
+          run_id: "run-1",
+          reconciled_at: expect.any(String),
+          notes_consumed: ["note.md"],
+          polaris_md_updated: true,
+          summary_md_updated: false,
+        },
+      ],
+    });
+  });
+
+  it("keeps partial archive progress discoverable when some notes are missing", () => {
+    mkdirSync(join(tmp, ".polaris", "cognition", "pending", "src", "loop"), { recursive: true });
+    writeFileSync(join(tmp, ".polaris", "cognition", "pending", "src", "loop", "note.md"), "hello", "utf-8");
+
+    const result = archiveCognitionNotes({
+      repoRoot: tmp,
+      reconcileId: "reconcile-2",
+      runId: "run-2",
+      notesConsumed: [
+        "src/loop/note.md",
+        "src/loop/missing.md",
+      ],
+      polarisMdUpdated: false,
+      summaryMdUpdated: true,
+    });
+
+    expect(result.archivedNotes).toEqual([".polaris/cognition/archive/src/loop/note.md"]);
+    expect(result.missingNotes).toEqual([".polaris/cognition/pending/src/loop/missing.md"]);
+    expect(JSON.parse(readFileSync(join(tmp, ".polaris", "cognition", "archive", "src", "loop", "cognition-index.json"), "utf-8"))).toEqual({
+      entries: [
+        {
+          reconcile_id: "reconcile-2",
+          run_id: "run-2",
+          reconciled_at: expect.any(String),
+          notes_consumed: ["note.md"],
+          polaris_md_updated: false,
+          summary_md_updated: true,
+        },
+      ],
+    });
+  });
+
+  it("keeps pending notes in place and records rejected librarian patches", () => {
+    mkdirSync(join(tmp, ".polaris", "cognition", "pending", "src", "loop"), { recursive: true });
+    writeFileSync(join(tmp, ".polaris", "cognition", "pending", "src", "loop", "note.md"), "hello", "utf-8");
+
+    const result = archiveCognitionNotes({
+      repoRoot: tmp,
+      reconcileId: "reconcile-3",
+      runId: "run-3",
+      notesConsumed: ["src/loop/note.md"],
+      polarisMdUpdated: false,
+      summaryMdUpdated: false,
+      status: "rejected",
+      rejectionReason: "validation failed",
+      result: { status: "rejected" },
+    });
+
+    expect(result.archivedNotes).toEqual([]);
+    expect(result.resultFiles).toEqual([]);
+    expect(existsSync(join(tmp, ".polaris", "cognition", "pending", "src", "loop", "note.md"))).toBe(true);
+    expect(existsSync(join(tmp, ".polaris", "cognition", "archive", "src", "loop", "note.md"))).toBe(false);
+    expect(JSON.parse(readFileSync(join(tmp, ".polaris", "cognition", "pending", "src", "loop", "cognition-index.json"), "utf-8"))).toEqual({
+      entries: [
+        {
+          event: "cognition-librarian-patch-rejected",
+          reconcile_id: "reconcile-3",
+          run_id: "run-3",
+          rejected_at: expect.any(String),
+          notes_consumed: ["note.md"],
+          polaris_md_updated: false,
+          summary_md_updated: false,
+          reason: "validation failed",
+        },
+      ],
+    });
   });
 });
 

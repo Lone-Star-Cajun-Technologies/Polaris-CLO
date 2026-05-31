@@ -1,0 +1,17 @@
+{
+  "child_id": "POL-245",
+  "status": "completed",
+  "commit": "d677daa",
+  "validation": {
+    "passed": [
+      "npm run lint",
+      "npm run build",
+      "git ls-files '.taskchain_artifacts/bootstrap-run/**' '.polaris/runs/evo-run-archive/**' '.polaris/runs/current-state.pre-pol-198.json' returned no tracked files",
+      "rg -n 'bootstrap-run' src/finalize src/loop src/mcp/tools --glob '!**/*.test.ts' returned no matches"
+    ],
+    "failed": [
+      "npm run test: pre-existing unrelated failure in src/loop/status.test.ts > runLoopStatus > prints human-readable status from state file"
+    ]
+  },
+  "next_recommended_action": "Parent can reconcile POL-245 completion and choose the next open child."
+}

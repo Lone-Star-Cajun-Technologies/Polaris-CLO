@@ -53,7 +53,7 @@ export const TOOLS: Tool[] = [
       properties: {
         artifact_dir: {
           type: "string",
-          description: "Artifact directory name under .taskchain_artifacts/. Default: bootstrap-run",
+          description: "Artifact directory name under .taskchain_artifacts/. Default: polaris-run",
         },
         expected_step_cursor: {
           type: "string",
@@ -72,7 +72,7 @@ export const TOOLS: Tool[] = [
       properties: {
         artifact_dir: {
           type: "string",
-          description: "Artifact directory name under .taskchain_artifacts/. Default: bootstrap-run",
+          description: "Artifact directory name under .taskchain_artifacts/. Default: polaris-run",
         },
         run_id: {
           type: "string",

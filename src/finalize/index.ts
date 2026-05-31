@@ -67,11 +67,11 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
   // Step 4: Run configured checks
   const checks = config.finalize?.runChecks ?? [];
   if (checks.length > 0) {
-    console.log(`[4/13] Running ${checks.length} configured check(s)...`); // Step count updated
-    stepRunChecks(repoRoot, checks);
+    console.log(`[4/13] Running ${checks.length} configured check(s) and staging preflight...`); // Step count updated
   } else {
-    console.log("[4/13] No finalize.runChecks configured — skipping."); // Step count updated
+    console.log("[4/13] Running staging preflight..."); // Step count updated
   }
+  stepRunChecks(repoRoot, checks, { activeClusterId: state.cluster_id, skipDelivery });
 
   // Step 4.5: Canon reconciliation check
   const canonCheckEnabled = config.canon?.checkOnFinalize !== false;
@@ -93,7 +93,7 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
       throw new Error(`Canon check cannot proceed: git diff failed: ${msg}`);
     }
 
-    const artifactDirForCheck = state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "bootstrap-run");
+    const artifactDirForCheck = state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "polaris-run");
     const telemetryFileForCheck = join(artifactDirForCheck, "runs", state.run_id, "telemetry.jsonl");
 
     const canonResult = runCanonCheck({
@@ -167,8 +167,8 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
   }
 
 
-  // Step 7: Single final commit: state + map + run-report
-  console.log("[7/13] Committing state + map + run-report..."); // Step count updated
+  // Step 7: Single final commit: source changes + durable Polaris artifacts
+  console.log("[7/13] Committing durable Polaris state + map..."); // Step count updated
   const resolvedStateFile = resolve(stateFile);
   stepCommit(repoRoot, state, resolvedStateFile, reportPath);
 
@@ -193,7 +193,7 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
 
   // Step 11: Append JSONL events
   console.log("[11/13] Appending JSONL events..."); // Step count updated
-  const artifactDir = state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "bootstrap-run");
+  const artifactDir = state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "polaris-run");
   const telemetryFile = join(artifactDir, "runs", state.run_id, "telemetry.jsonl");
   stepAppendJsonl(telemetryFile, state, prUrl);
 

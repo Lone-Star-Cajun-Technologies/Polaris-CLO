@@ -91,6 +91,7 @@ export interface ParsedFrontMatter {
  *
  * @param content - The raw file content to inspect for a frontmatter block.
  * @returns A Map where each entry is `key -> value` from the frontmatter; keys are lowercased and values are trimmed with surrounding quotes removed.
+ */
 function parseFrontMatterRaw(content: string): Map<string, string> {
   const result = new Map<string, string>();
   const normalized = content.replace(/\r\n/g, "\n");
