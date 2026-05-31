@@ -1,0 +1,96 @@
+{
+  "schemaVersion": "v2",
+  "source": {
+    "id": "POL-249",
+    "type": "Linear",
+    "analysis": {
+      "id": "initial-sync",
+      "doc": "Synchronized from Linear issue identifier: POL-249"
+    }
+  },
+  "nodes": {
+    "POL-249": {
+      "id": "POL-249",
+      "title": "IMPLEMENT: Define and enforce folder-local work note staging and cognition librarian reconciliation model",
+      "status": "Todo"
+    },
+    "POL-233": {
+      "id": "POL-233",
+      "title": "ANALYZE: Normalize SmartDocs routing, folder cognition, YAML links, and telemetry cleanup",
+      "status": "Done"
+    },
+    "POL-240": {
+      "id": "POL-240",
+      "title": "ANALYZE: Define durable run artifact promotion and commit hygiene policy",
+      "status": "Done"
+    },
+    "POL-255": {
+      "id": "POL-255",
+      "title": "IMPLEMENT: Archive model, cognition-index, and provenance records for reconciled notes",
+      "status": "Todo"
+    },
+    "POL-254": {
+      "id": "POL-254",
+      "title": "IMPLEMENT: Implement foreman cognition-librarian dispatch and patch validation",
+      "status": "Todo"
+    },
+    "POL-253": {
+      "id": "POL-253",
+      "title": "IMPLEMENT: Create cognition-librarian role file and define packet/result contract types",
+      "status": "Todo"
+    },
+    "POL-252": {
+      "id": "POL-252",
+      "title": "IMPLEMENT: Extend CompactReturn to include work_note_path and validate note presence",
+      "status": "Todo"
+    },
+    "POL-251": {
+      "id": "POL-251",
+      "title": "IMPLEMENT: Define worker note schema and update worker packet to require note writing",
+      "status": "Todo"
+    },
+    "POL-250": {
+      "id": "POL-250",
+      "title": "IMPLEMENT: Create .polaris/cognition/ staging folder structure and POLARIS.md contract",
+      "status": "Todo"
+    },
+    "POL-247": {
+      "id": "POL-247",
+      "title": "IMPLEMENT: Add finalize preflight check for commit staging allowlist",
+      "status": "Done"
+    }
+  },
+  "dependencies": {
+    "POL-255": [
+      "POL-254"
+    ],
+    "POL-254": [
+      "POL-253",
+      "POL-252"
+    ],
+    "POL-253": [
+      "POL-250"
+    ],
+    "POL-252": [
+      "POL-251"
+    ],
+    "POL-251": [
+      "POL-250"
+    ]
+  },
+  "clusters": {
+    "POL-249": {
+      "id": "POL-249",
+      "title": "Linear Issue: POL-249",
+      "children": [
+        "POL-250",
+        "POL-251",
+        "POL-252",
+        "POL-253",
+        "POL-254",
+        "POL-255"
+      ]
+    }
+  },
+  "activeCluster": "POL-249"
+}

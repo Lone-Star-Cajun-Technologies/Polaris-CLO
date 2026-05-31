@@ -1,0 +1,11 @@
+{
+  "child_id": "POL-255",
+  "status": "success",
+  "commit": "73f8e78",
+  "validation": {
+    "passed": true,
+    "notes": "Implementation in bf5c6c0. archiveCognitionNotes in src/cognition/archive.ts; cognition-index, rejection path, finalize allowlist all complete. 90/90 tests pass."
+  },
+  "next_recommended_action": "dispatch POL-254",
+  "run_id": "polaris-run-pol-249-2026-05-31-001"
+}

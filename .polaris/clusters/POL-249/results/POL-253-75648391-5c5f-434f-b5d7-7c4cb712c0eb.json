@@ -1,0 +1,8 @@
+{
+  "child_id": "POL-253",
+  "status": "success",
+  "commit": "57637cc",
+  "validation": "no validation commands defined",
+  "next_recommended_action": "dispatch-next-child",
+  "run_id": "polaris-run-pol-249-2026-05-31-001"
+}

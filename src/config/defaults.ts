@@ -1,6 +1,6 @@
 import type { PolarisConfig } from "./schema.js";
 
-export const DEFAULT_CONFIG: Omit<Required<PolarisConfig>, "canon" | "providers"> & { canon: Required<NonNullable<PolarisConfig["canon"]>>; providers: { repoAnalysis: { preferred: string | undefined; fallback: string[] } } } = {
+export const DEFAULT_CONFIG: Omit<Required<PolarisConfig>, "canon" | "providers" | "orchestration"> & { canon: Required<NonNullable<PolarisConfig["canon"]>>; providers: { repoAnalysis: { preferred: string | undefined; fallback: string[] } }; orchestration: Required<NonNullable<PolarisConfig["orchestration"]>> } & { compact: Required<Pick<NonNullable<PolarisConfig["compact"]>, "orchestratorMode" | "workerMode">> } = {
   version: "1.0",
   repo: {
     name: "",
@@ -23,11 +23,17 @@ export const DEFAULT_CONFIG: Omit<Required<PolarisConfig>, "canon" | "providers"
     sessionTerminationMode: "emit-marker",
     allowBranchDivergence: false,
   },
+  orchestration: {
+    mode: "supervised",
+    auto_finalize: false,
+    notification_format: "terse",
+  },
   execution: {
     adapter: "terminal-cli",
     providers: {},
     rotation: [],
     allowCrossAgentFallback: false,
+    roles: {},
   },
   finalize: {
     targetBranch: "main",
@@ -59,5 +65,20 @@ export const DEFAULT_CONFIG: Omit<Required<PolarisConfig>, "canon" | "providers"
       preferred: undefined as string | undefined,
       fallback: ["polaris-map", "ripgrep"],
     },
+  },
+  budget: {
+    mode: "fixed-cap" as "fixed-cap" | "run-until-done" | "stop-on-fail",
+    max_children: 3,
+    stop_on_fail: false,
+    allow_analyze_children: false,
+  },
+  compact: {
+    orchestratorMode: "standard",
+    workerMode: "standard",
+  },
+  skill_packet: {
+    analysis_confidence_threshold: 85,
+    auto_deep_analysis: false,
+    allow_cross_provider_delegation: false,
   },
 };

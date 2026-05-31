@@ -13,7 +13,43 @@ export interface ProviderConfig {
    *   {{telemetry_file}} - absolute path to telemetry output file
    *   {{packet_json}}    - full bootstrap packet as a JSON string
    *   {{packet_file}}    - path to temp file containing bootstrap packet JSON
+   *   {{worker_prompt}}  - compiled Polaris worker instructions
    */
+  args?: string[];
+}
+
+export type ExecutionRole =
+  | "orchestrator"
+  | "startup"
+  | "worker"
+  | "analyst"
+  | "analysis"
+  | "repair"
+  | "librarian"
+  | "docs"
+  | "finalizer";
+
+export interface RoleExecutionConfig {
+  /**
+   * Optional adapter override for this role.
+   * Defaults to execution.adapter when omitted.
+   */
+  adapter?: string;
+  /**
+   * Provider key used for this role.
+   * Defaults to execution.rotation[0] or the first configured provider.
+   */
+  provider?: string;
+  /**
+   * Optional model identifier passed to provider command templates as {{model}}.
+   */
+  model?: string;
+  /**
+   * Optional command override for this role. When present, it is materialized
+   * as a provider config before dispatch.
+   */
+  command?: string;
+  /** Optional command args override for this role. */
   args?: string[];
 }
 
@@ -39,6 +75,30 @@ export interface ExecutionConfig {
    * If false (default), a failed provider does not automatically retry with another.
    */
   allowCrossAgentFallback?: boolean;
+
+  /**
+   * Role-specific provider selection. Polaris owns dispatch and state; each
+   * role entry only selects the adapter/provider/model used to invoke an agent.
+   */
+  roles?: Partial<Record<ExecutionRole, RoleExecutionConfig>>;
+}
+
+export interface SkillPacketConfig {
+  /**
+   * Minimum confidence required for analyze packets before auto-creating
+   * deeper analysis issues. Default: 85.
+   */
+  analysis_confidence_threshold?: number;
+  /**
+   * When false (default), agent must ask user before spawning secondary
+   * analysis issues if confidence is below the threshold.
+   */
+  auto_deep_analysis?: boolean;
+  /**
+   * When false (default), cross-provider delegation is forbidden.
+   * Only internal child/subagent fallback is used for run packets.
+   */
+  allow_cross_provider_delegation?: boolean;
 }
 
 export interface PolarisConfig {
@@ -64,6 +124,25 @@ export interface PolarisConfig {
     sessionTerminationMode?: "emit-marker" | "exit-0";
     allowBranchDivergence?: boolean;
   };
+  orchestration?: {
+    /**
+     * Orchestration mode.
+     * - "supervised": stop after each child and wait for operator confirmation (default)
+     * - "auto": run the entire cluster from start to finish without interruption
+     */
+    mode?: "supervised" | "auto";
+    /**
+     * If true, automatically finalize the run after all children are complete (only in auto mode).
+     * Default: false.
+     */
+    auto_finalize?: boolean;
+    /**
+     * Notification format for orchestration events.
+     * - "verbose": detailed, human-readable status updates (default for supervised mode)
+     * - "terse": compact, single-line status updates for logs (default for auto mode)
+     */
+    notification_format?: "verbose" | "terse";
+  };
   /** Configuration for external agent dispatch via terminal-cli adapter. */
   execution?: ExecutionConfig;
   finalize?: {
@@ -75,10 +154,18 @@ export interface PolarisConfig {
     archiveRunSnapshot?: boolean;
   };
   tracker?: {
+    /** Which remote tracker adapter to use. Omit to disable remote reconciliation. */
+    adapter?: "linear" | "mcp-bridge";
+    'local-file'?: {
+      enabled?: boolean;
+    };
     linear?: {
       enabled?: boolean;
       teamId?: string;
       projectId?: string;
+    };
+    mcpBridge?: {
+      enabled?: boolean;
     };
   };
   integrations?: {
@@ -96,5 +183,51 @@ export interface PolarisConfig {
       preferred?: string;
       fallback?: string[];
     };
+    /**
+     * Compaction providers detected by `polaris init`.
+     * Supported values: "caveman", "gitnexus".
+     * Omit the field (or leave as empty array) when no providers are detected.
+     */
+    compactionProviders?: string[];
+  };
+  budget?: {
+    /**
+     * Budget enforcement mode.
+     * - "fixed-cap": stop after max_children children (default)
+     * - "run-until-done": run all open children without a cap
+     * - "stop-on-fail": halt immediately when any child returns status "failed"
+     */
+    mode?: "fixed-cap" | "run-until-done" | "stop-on-fail";
+    /** Maximum children per session (only used in fixed-cap mode). Default: 3. */
+    max_children?: number;
+    /** If true, halt immediately when a child returns status "failed". Default: false. */
+    stop_on_fail?: boolean;
+    /** If true, allow analyze-type children to run in an impl session. Default: false. */
+    allow_analyze_children?: boolean;
+  };
+  /**
+   * Controls compaction behavior for orchestrator and worker sessions.
+   * Compaction determines how aggressively context is trimmed as conversation grows.
+   */
+  skill_packet?: SkillPacketConfig;
+  compact?: {
+    /**
+     * Compaction mode for orchestrator sessions.
+     * - "standard": default compaction behavior (default)
+     * - "strict": aggressive compaction; prune more aggressively to stay within budget
+     */
+    orchestratorMode?: "standard" | "strict";
+    /**
+     * Compaction mode for worker sessions.
+     * - "standard": default compaction behavior (default)
+     * - "strict": aggressive compaction; prune more aggressively
+     * - "minimal": minimal compaction; preserve as much context as possible
+     */
+    workerMode?: "standard" | "strict" | "minimal";
+    /**
+     * Shorthand that sets both orchestratorMode and workerMode when neither is
+     * specified individually. Ignored if orchestratorMode or workerMode is set.
+     */
+    level?: "standard" | "strict" | "minimal";
   };
 }

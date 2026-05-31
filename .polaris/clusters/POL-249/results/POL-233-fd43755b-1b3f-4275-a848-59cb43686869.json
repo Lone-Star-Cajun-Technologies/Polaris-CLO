@@ -1,0 +1,11 @@
+{
+  "child_id": "POL-233",
+  "status": "success",
+  "commit": "d6e45cc",
+  "validation": {
+    "passed": true,
+    "notes": "No validation commands defined. Work completed in prior session (f686f3e). Governance loop closed: sealed result written, state recovery updated, commit created."
+  },
+  "next_recommended_action": "dispatch POL-240",
+  "run_id": "polaris-run-pol-249-2026-05-31-001"
+}

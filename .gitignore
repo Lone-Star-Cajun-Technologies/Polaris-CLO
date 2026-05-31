@@ -4,3 +4,6 @@ build/
 *.js
 .env
 docs/Polaris/.obsidian/
+
+# Cognition staging — ephemeral, not committed
+.polaris/cognition/pending/
