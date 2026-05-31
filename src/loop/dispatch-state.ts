@@ -267,6 +267,43 @@ export interface WorkerAssignmentFailedEvent extends WorkerTelemetryEventBase {
 }
 
 /**
+ * Provider selected - dispatch chose a provider/adapter pair.
+ */
+export interface ProviderSelectedEvent extends WorkerTelemetryEventBase {
+  event: "provider-selected";
+  requested_role: "worker";
+  selected_provider: string | null;
+  selected_adapter: string;
+  selection_reason: string;
+  override_source?: string;
+  fallback_from?: string;
+  fallback_reason?: string;
+  providers_tried?: string[];
+}
+
+/**
+ * Provider fallback attempted - selector moved to another source/mechanism.
+ */
+export interface ProviderFallbackAttemptedEvent extends WorkerTelemetryEventBase {
+  event: "provider-fallback-attempted";
+  requested_role: "worker";
+  fallback_from: string;
+  fallback_reason: string;
+  providers_tried?: string[];
+}
+
+/**
+ * Provider exhausted - no provider could be selected before delegation path.
+ */
+export interface ProviderExhaustedEvent extends WorkerTelemetryEventBase {
+  event: "provider-exhausted";
+  requested_role: "worker";
+  selected_adapter: string;
+  reason: string;
+  providers_tried?: string[];
+}
+
+/**
  * Escalation initiated - No worker available, escalating to human.
  */
 export interface EscalationInitiatedEvent extends WorkerTelemetryEventBase {
@@ -290,6 +327,9 @@ export type WorkerTelemetryEvent =
   | WorkerAssignmentAttemptedEvent
   | WorkerAssignedEvent
   | WorkerAssignmentFailedEvent
+  | ProviderSelectedEvent
+  | ProviderFallbackAttemptedEvent
+  | ProviderExhaustedEvent
   | EscalationInitiatedEvent;
 
 // ─────────────────────────────────────────────────────────────────────────────

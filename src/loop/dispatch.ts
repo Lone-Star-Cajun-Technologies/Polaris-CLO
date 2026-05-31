@@ -23,6 +23,9 @@ import type {
   WorkerAssignmentAttemptedEvent,
   WorkerAssignedEvent,
   WorkerAssignmentFailedEvent,
+  ProviderSelectedEvent,
+  ProviderFallbackAttemptedEvent,
+  ProviderExhaustedEvent,
   EscalationInitiatedEvent,
 } from "./dispatch-state.js";
 
@@ -41,18 +44,16 @@ const CLAIM_TTL_MS = 30 * 60 * 1000;
  * Resolve provider from config when no explicit --provider flag is set.
  * Returns the first configured provider in rotation, or undefined if none configured.
  */
-function resolveConfigProvider(repoRoot: string): string | undefined {
-  try {
-    const config = loadConfig(repoRoot);
-    const exec = config.execution;
-    if (!exec) return undefined;
-    if (exec.rotation && exec.rotation.length > 0) return exec.rotation[0];
-    const keys = Object.keys(exec.providers ?? {});
-    if (keys.length > 0) return keys[0];
-  } catch {
-    // Config not present or invalid — fall through to delegated mode
-  }
-  return undefined;
+interface ProviderDecisionEvidence {
+  provider?: string;
+  mode: DispatchMode;
+  adapter: string;
+  selectionReason: string;
+  overrideSource?: string;
+  fallbackFrom?: string;
+  fallbackReason?: string;
+  providersTried: string[];
+  exhaustedReason?: string;
 }
 
 /**
@@ -64,15 +65,69 @@ function resolveConfigProvider(repoRoot: string): string | undefined {
  */
 function resolveProviderAndMode(
   options: DispatchOptions,
-): { provider: string | undefined; mode: DispatchMode } {
+): ProviderDecisionEvidence {
+  const defaultAdapter = "terminal-cli";
+
   if (options.provider) {
-    return { provider: options.provider, mode: "direct-worker" };
+    return {
+      provider: options.provider,
+      mode: "direct-worker",
+      adapter: defaultAdapter,
+      selectionReason: "cli-provider-override",
+      overrideSource: "dispatch-flag",
+      providersTried: [options.provider],
+    };
   }
-  const configProvider = resolveConfigProvider(options.repoRoot);
-  if (configProvider) {
-    return { provider: configProvider, mode: "direct-worker" };
+
+  try {
+    const config = loadConfig(options.repoRoot);
+    const exec = config.execution;
+    const adapter = exec?.adapter ?? defaultAdapter;
+    const rotation = exec?.rotation ?? [];
+
+    if (rotation.length > 0 && rotation[0]) {
+      return {
+        provider: rotation[0],
+        mode: "direct-worker",
+        adapter,
+        selectionReason: "config-rotation",
+        providersTried: [rotation[0]],
+      };
+    }
+
+    const providers = Object.keys(exec?.providers ?? {});
+    if (providers.length > 0 && providers[0]) {
+      return {
+        provider: providers[0],
+        mode: "direct-worker",
+        adapter,
+        selectionReason: "config-first-provider",
+        fallbackFrom: "rotation",
+        fallbackReason: "rotation-empty",
+        providersTried: [providers[0]],
+      };
+    }
+
+    return {
+      provider: undefined,
+      mode: "delegated",
+      adapter,
+      selectionReason: "delegated-no-provider",
+      providersTried: [],
+      exhaustedReason: "no-configured-provider",
+    };
+  } catch {
+    return {
+      provider: undefined,
+      mode: "delegated",
+      adapter: defaultAdapter,
+      selectionReason: "delegated-config-unavailable",
+      fallbackFrom: "config",
+      fallbackReason: "config-unavailable",
+      providersTried: [],
+      exhaustedReason: "config-unavailable",
+    };
   }
-  return { provider: undefined, mode: "delegated" };
 }
 
 function fail(message: string): never {
@@ -177,6 +232,75 @@ function determineRuntimeState(mode: DispatchMode): WorkerRuntimeState {
   return mode === "delegated" ? "delegated" : "packet-created";
 }
 
+function emitProviderSelected(
+  telemetryFile: string,
+  dispatchId: string,
+  runId: string,
+  childId: string,
+  decision: ProviderDecisionEvidence,
+): void {
+  appendTelemetry(telemetryFile, {
+    event: "provider-selected",
+    event_id: randomUUID(),
+    dispatch_id: dispatchId,
+    run_id: runId,
+    child_id: childId,
+    requested_role: "worker",
+    selected_provider: decision.provider ?? null,
+    selected_adapter: decision.adapter,
+    selection_reason: decision.selectionReason,
+    ...(decision.overrideSource ? { override_source: decision.overrideSource } : {}),
+    ...(decision.fallbackFrom ? { fallback_from: decision.fallbackFrom } : {}),
+    ...(decision.fallbackReason ? { fallback_reason: decision.fallbackReason } : {}),
+    ...(decision.providersTried.length > 0 ? { providers_tried: decision.providersTried } : {}),
+    timestamp: new Date().toISOString(),
+  } satisfies ProviderSelectedEvent);
+}
+
+function emitProviderFallbackAttempted(
+  telemetryFile: string,
+  dispatchId: string,
+  runId: string,
+  childId: string,
+  decision: ProviderDecisionEvidence,
+): void {
+  if (!decision.fallbackFrom || !decision.fallbackReason) return;
+  appendTelemetry(telemetryFile, {
+    event: "provider-fallback-attempted",
+    event_id: randomUUID(),
+    dispatch_id: dispatchId,
+    run_id: runId,
+    child_id: childId,
+    requested_role: "worker",
+    fallback_from: decision.fallbackFrom,
+    fallback_reason: decision.fallbackReason,
+    ...(decision.providersTried.length > 0 ? { providers_tried: decision.providersTried } : {}),
+    timestamp: new Date().toISOString(),
+  } satisfies ProviderFallbackAttemptedEvent);
+}
+
+function emitProviderExhausted(
+  telemetryFile: string,
+  dispatchId: string,
+  runId: string,
+  childId: string,
+  decision: ProviderDecisionEvidence,
+): void {
+  if (decision.provider) return;
+  appendTelemetry(telemetryFile, {
+    event: "provider-exhausted",
+    event_id: randomUUID(),
+    dispatch_id: dispatchId,
+    run_id: runId,
+    child_id: childId,
+    requested_role: "worker",
+    selected_adapter: decision.adapter,
+    reason: decision.exhaustedReason ?? "no-provider-selected",
+    ...(decision.providersTried.length > 0 ? { providers_tried: decision.providersTried } : {}),
+    timestamp: new Date().toISOString(),
+  } satisfies ProviderExhaustedEvent);
+}
+
 /**
  * Create a dispatch record with all required evidence.
  */
@@ -188,6 +312,9 @@ function createDispatchRecord(
   resultPath: string,
   roleContext?: WorkerRoleContext,
   provider?: string,
+  providerSelectionReason?: string,
+  providerOverrideSource?: string,
+  providersTried?: string[],
 ): ChildDispatchRecord {
   const dispatchMode = determineDispatchMode(provider);
   const runtimeState = determineRuntimeState(dispatchMode);
@@ -200,6 +327,9 @@ function createDispatchRecord(
     packet_path: packetPath,
     expected_result_path: resultPath,
     provider,
+    provider_selection_reason: providerSelectionReason,
+    provider_override_source: providerOverrideSource,
+    providers_tried: providersTried && providersTried.length > 0 ? providersTried : undefined,
     dispatched_at: new Date().toISOString(),
     status: "dispatched",
     dispatch_mode: dispatchMode,
@@ -660,7 +790,8 @@ export function runLoopDispatch(options: DispatchOptions): void {
   const childId = selectChild(state, options.childId);
 
   // ── Resolve provider and dispatch mode ─────────────────────────────────────
-  const { provider: resolvedProvider, mode: resolvedMode } = resolveProviderAndMode(options);
+  const providerDecision = resolveProviderAndMode(options);
+  const { provider: resolvedProvider } = providerDecision;
 
   // ── Build packet before writing state ───────────────────────────────────────
   // We need to build the packet first to know its content for the artifact.
@@ -718,7 +849,14 @@ export function runLoopDispatch(options: DispatchOptions): void {
     relativeResultPath,
     packet.role_context,
     resolvedProvider,
+    providerDecision.selectionReason,
+    providerDecision.overrideSource,
+    providerDecision.providersTried,
   );
+
+  emitProviderFallbackAttempted(telemetryFile, dispatchRecord.dispatch_id, state.run_id, childId, providerDecision);
+  emitProviderExhausted(telemetryFile, dispatchRecord.dispatch_id, state.run_id, childId, providerDecision);
+  emitProviderSelected(telemetryFile, dispatchRecord.dispatch_id, state.run_id, childId, providerDecision);
 
   // ── Delegated assignment: attempt spawn with fallback chain ────────────────
   // For delegated mode (no provider), attempt subagent spawn now.

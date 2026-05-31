@@ -76,6 +76,12 @@ export interface ChildDispatchRecord {
   expected_result_path: string;
   /** Provider/adapter if known */
   provider?: string;
+  /** Evidence describing why provider selection resolved to this provider/mode */
+  provider_selection_reason?: string;
+  /** Source of provider override when explicit override occurred */
+  provider_override_source?: string;
+  /** Ordered providers considered during selection */
+  providers_tried?: string[];
   /** Dispatch timestamp */
   dispatched_at: string;
   /** Legacy dispatch status - superseded by runtime_state */
