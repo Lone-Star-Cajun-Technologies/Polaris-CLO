@@ -16,9 +16,10 @@ This skill is the target for the following user commands:
 - `run polaris-finalize`
 
 When any of these commands are issued, load this skill packet **first** before any other action.
-Bind the named issue exactly as specified. `polaris-finalize` routes here because finalization is
-part of the run lifecycle governed by this skill. See `.polaris/skills/ROUTING.md` for the full
-routing protocol.
+If the command specifies an issue ID (e.g., `POL-249`), bind exactly that issue. Commands without
+an issue ID (e.g., `polaris-finalize`) do not require issue binding. `polaris-finalize` routes
+here because finalization is part of the run lifecycle governed by this skill. See
+`.polaris/skills/ROUTING.md` for the full routing protocol.
 
 ---
 

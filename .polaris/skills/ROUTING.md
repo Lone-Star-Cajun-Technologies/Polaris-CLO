@@ -35,10 +35,12 @@ message whose primary instruction is to invoke a named Polaris skill.
 
 When a recognized command is detected, execute these steps **in order**:
 
-1. **Load the skill packet first.**
-   Read `.polaris/skills/<skill-name>/SKILL.md`.
-   Do not investigate the repo, summarize the issue, browse runtime files, or invent a process
-   before loading the skill. The skill packet is the authoritative instruction source.
+1. **Resolve the target skill and load its packet first.**
+   Look up the command in the routing table above to find the **target skill** (the target skill
+   may differ from the command name — e.g., `polaris-finalize` → `polaris-run`). Read
+   `.polaris/skills/<target-skill>/SKILL.md`. Do not investigate the repo, summarize the issue,
+   browse runtime files, or invent a process before reading the skill packet. The skill packet is
+   the authoritative instruction source.
 
 2. **Run the skill bootloader.**
    Execute the bootloader command specified in the SKILL.md (typically
@@ -65,19 +67,25 @@ Do not continue, substitute, or attempt workarounds.
 
 | Condition | Required response |
 |---|---|
-| `SKILL.md` not found at `.polaris/skills/<skill-name>/SKILL.md` | `Blocking: skill packet not found at .polaris/skills/<skill-name>/SKILL.md` |
+| `SKILL.md` not found at `.polaris/skills/<target-skill>/SKILL.md` | `Blocking: skill packet not found at .polaris/skills/<target-skill>/SKILL.md` |
 | Runtime packet not returned by the bootloader command | `Blocking: Polaris could not authorize this run.` |
 | Named issue does not match the skill's allowed parent type | Report the mismatch as described in the skill's SKILL.md |
 
 ---
 
-## What this rule prohibits before the skill packet is loaded
+## What this rule prohibits before reading the skill's SKILL.md
+
+The following actions are prohibited until the target skill's `SKILL.md` has been read and the
+bootloader command has returned a runtime packet. The bootloader itself (`npm run polaris -- skill
+packet <name>`, as specified in SKILL.md) is the only Polaris CLI call that is authorized before
+the runtime packet is returned.
 
 - Ad hoc repo inspection (reading source files, grep, find)
 - Summarizing the named issue from a tracker
 - Inventing a process or substituting general investigation
 - Reading runtime state files (`.taskchain_artifacts/`, `.polaris/runs/`, `.polaris/clusters/`)
-- Calling any Polaris CLI commands (`polaris loop continue`, `polaris loop dispatch`, `polaris finalize`)
+- Calling any Polaris CLI command other than the skill bootloader (e.g., `polaris loop continue`,
+  `polaris loop dispatch`, `polaris finalize`)
 
-The skill packet's chain defines what the agent may do and in what order. Nothing outside that
-chain is authorized.
+Once the runtime packet is returned, the skill packet's chain defines what the agent may do and
+in what order. Nothing outside that chain is authorized.
