@@ -126,7 +126,7 @@ interface ExecutionConfig {
 `resolveConfigProvider()` in `src/loop/dispatch.ts` currently ignores role. The replacement is `resolveProviderForRole()`.
 
 ```text
-function resolveProviderForRole(role, options):
+function resolveProviderForRole(role, options, fallbackContext?):
 
   1. USER OVERRIDE CHECK  [Hybrid model: disabled roles are a hard gate; otherwise any valid provider is allowed]
      If options.provider is set (--provider CLI flag):
@@ -145,10 +145,22 @@ function resolveProviderForRole(role, options):
             Log provider-forbidden event with reason: "role-disabled".
             Fail with "role '<R>' has no configured providers — dispatch refused".
        c. Let candidate = policy.providers[0].
+          If fallbackContext is set: let candidate = first provider in policy.providers
+            not in fallbackContext.providersTried (skipping exhausted entries).
+          If no remaining candidates: go to pending-escalation.
        d. Validate candidate exists in execution.providers.
           If not: fail with "provider '<X>' listed in role policy is not defined".
-       e. Log provider-selected event with selection_reason: "role-policy".
+       e. Log provider-selected event with selection_reason: "role-policy" (or "fallback" if
+          fallbackContext is set).
        f. Return { provider: candidate, mode: "direct-worker", policy }.
+
+  2.5 LEGACY ROLE CONFIG CHECK  [only reached when no providerPolicy for role]
+     If execution.roles[role] exists AND execution.roles[role].provider is set:
+       a. Let candidate = execution.roles[role].provider.
+       b. Validate candidate exists in execution.providers.
+          If not: fail with "provider '<X>' in execution.roles config is not defined".
+       c. Log provider-selected event with selection_reason: "role-config".
+       d. Return { provider: candidate, mode: "direct-worker" }.
 
   3. ROTATION FALLBACK
      If execution.rotation has entries:
@@ -226,7 +238,7 @@ The fallback loop runs inside `attemptProviderDispatch()`, a new wrapper around 
 
 - `resolveProviderForRole()` returns the initial provider selection (step 2 above).
 - `attemptProviderDispatch()` invokes the execution adapter with that provider.
-- On failure, if auto-fallback is allowed for the role (`noFallback: false` and the role has more providers), `attemptProviderDispatch()` re-calls `resolveProviderForRole()` with fallback context (previous provider + failure reason) to obtain the next candidate, then retries the execution adapter.
+- On failure, if auto-fallback is allowed for the role (`noFallback: false` and the role has more providers), `attemptProviderDispatch()` re-calls `resolveProviderForRole(role, options, { providersTried, failureReason })` — the third `fallbackContext` argument carries the list of already-tried providers and the reason for the last failure. `resolveProviderForRole()` uses `fallbackContext.providersTried` to skip exhausted entries in the policy list and return the next candidate.
 - The loop repeats until success or the provider list is exhausted, at which point `attemptProviderDispatch()` emits `provider-exhausted` and escalates.
 
 This keeps `resolveProviderForRole()` a pure selection function (no I/O, easy to unit-test) and confines retry state to `attemptProviderDispatch()`. POL-259 implements `resolveProviderForRole()`; POL-262 adds the evidence events; a follow-on issue can introduce `attemptProviderDispatch()` as the fallback driver (not required for the first enforcement wave).
@@ -337,10 +349,11 @@ interface ProviderSelectedEvent {
    * - "user-override":  explicit --provider flag or run-local override file
    * - "role-policy":    execution.providerPolicy[role].providers[0]
    * - "fallback":       a fallback entry from role policy (providers[1+])
-   * - "rotation":       execution.rotation[0] (no role policy)
+   * - "role-config":    execution.roles[role].provider (no providerPolicy for role)
+   * - "rotation":       execution.rotation[0] (no role policy or role config)
    * - "config-default": first key in execution.providers (no rotation)
    */
-  selection_reason: "user-override" | "role-policy" | "fallback" | "rotation" | "config-default";
+  selection_reason: "user-override" | "role-policy" | "fallback" | "role-config" | "rotation" | "config-default";
 
   /** Set when selection_reason is "user-override". */
   override_source?: "user-cli" | "user-run-file";
@@ -421,7 +434,7 @@ Add these fields to `ChildDispatchRecord` in `src/loop/checkpoint.ts`:
 
 ```typescript
 /** How the provider was selected for this dispatch. */
-provider_selection_reason?: "user-override" | "role-policy" | "fallback" | "rotation" | "config-default";
+provider_selection_reason?: "user-override" | "role-policy" | "fallback" | "role-config" | "rotation" | "config-default";
 
 /** Source of user override, if applicable. */
 provider_override_source?: "user-cli" | "user-run-file";
