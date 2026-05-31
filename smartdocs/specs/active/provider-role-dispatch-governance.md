@@ -125,15 +125,18 @@ interface ExecutionConfig {
 
 `resolveConfigProvider()` in `src/loop/dispatch.ts` currently ignores role. The replacement is `resolveProviderForRole()`.
 
-```
+```text
 function resolveProviderForRole(role, options):
 
-  1. USER OVERRIDE CHECK
+  1. USER OVERRIDE CHECK  [Hybrid model: disabled roles are a hard gate; otherwise any valid provider is allowed]
      If options.provider is set (--provider CLI flag):
        a. Validate the provider key exists in execution.providers.
           If not: fail with "provider '<X>' is not defined in execution.providers".
-       b. Log provider-selected event with selection_reason: "user-override".
-       c. Return { provider: options.provider, mode: "direct-worker", override_source: "user-cli" }.
+       b. If execution.providerPolicy[role] exists AND providerPolicy[role].providers is empty:
+            Log provider-forbidden event with reason: "role-disabled".
+            Fail with "role '<R>' is disabled — cannot be unblocked by --provider override".
+       c. Log provider-selected event with selection_reason: "user-override".
+       d. Return { provider: options.provider, mode: "direct-worker", override_source: "user-cli" }.
 
   2. ROLE POLICY CHECK
      If execution.providerPolicy[role] exists:
@@ -170,7 +173,7 @@ Role is inferred from the worker packet's `role_context.role`. If the packet has
 
 Before `attemptDelegatedAssignment` calls `getSubagentDispatcher()`, it checks:
 
-```
+```text
 if role policy exists AND policy.allowNativeSubagent === false:
   skip subagent spawn step entirely
   emit worker-assignment-failed with reason: "native-subagent-not-allowed-for-role"
@@ -201,7 +204,7 @@ When a provider is selected but unavailable during dispatch:
 
 When a provider fails and auto-fallback is permitted:
 
-```
+```text
 providers_tried = [initial_provider]
 for each next_provider in role_policy.providers[1..]:
   emit provider-fallback-attempted event
@@ -216,6 +219,17 @@ for each next_provider in role_policy.providers[1..]:
 all providers exhausted → pending-escalation
 emit provider-exhausted event with providers_tried list
 ```
+
+### Fallback invocation point
+
+The fallback loop runs inside `attemptProviderDispatch()`, a new wrapper around the execution adapter call that owns the retry lifecycle:
+
+- `resolveProviderForRole()` returns the initial provider selection (step 2 above).
+- `attemptProviderDispatch()` invokes the execution adapter with that provider.
+- On failure, if auto-fallback is allowed for the role (`noFallback: false` and the role has more providers), `attemptProviderDispatch()` re-calls `resolveProviderForRole()` with fallback context (previous provider + failure reason) to obtain the next candidate, then retries the execution adapter.
+- The loop repeats until success or the provider list is exhausted, at which point `attemptProviderDispatch()` emits `provider-exhausted` and escalates.
+
+This keeps `resolveProviderForRole()` a pure selection function (no I/O, easy to unit-test) and confines retry state to `attemptProviderDispatch()`. POL-259 implements `resolveProviderForRole()`; POL-262 adds the evidence events; a follow-on issue can introduce `attemptProviderDispatch()` as the fallback driver (not required for the first enforcement wave).
 
 ---
 
@@ -239,8 +253,8 @@ An override is an explicit user action that selects a specific provider for a di
 - Override does **not** modify `polaris.config.json` or `execution.providerPolicy`. It is local and temporary.
 - Override is **logged** in the `provider-selected` telemetry event with `override_source: "user-cli"` or `"user-run-file"`.
 - Override is **visible** in the dispatch record (`ChildDispatchRecord.provider_override_source`).
-- Override does **not** silence forbidden-provider enforcement when the role policy has `providers: []` (disabled role). A disabled role cannot be unblocked by override; the user must change config.
-- Override **may** select a provider not in the role's policy list. This is the whole point — user override bypasses the role default. It is logged as a policy deviation.
+- Override follows the **Hybrid model**: it may select any provider defined in `execution.providers`, including providers not listed in the role's normal policy. This is the whole point — the user is explicitly choosing a non-default provider. The selection is logged as a policy deviation with `override_source`.
+- The one hard gate that override cannot bypass: a role whose `providerPolicy[role].providers` is empty is **disabled**. An empty providers list means the role is not available at all; `--provider` cannot unblock it. The user must add a provider to the policy in config first.
 
 ### What override does not do
 
@@ -275,7 +289,7 @@ The check runs in `resolveProviderForRole()` **before** the packet is written an
 
 ### Enforcement behavior
 
-```
+```text
 if provider is forbidden for role:
   emit provider-forbidden telemetry event
   fail with error:
@@ -495,7 +509,7 @@ This makes the incident pattern (Claude used as worker without authorization) im
 |---|---|
 | `execution.rotation` | Retained as fallback when no `providerPolicy` for role. |
 | `execution.allowCrossAgentFallback` | Retained but now superseded per-role by `providerPolicy[role].noFallback`. Recommend deprecating in a future cleanup issue. |
-| `execution.roles[role].provider` | Retained for adapter/model/command override. `providerPolicy` governs the allowed-list; `roles[role].provider` is a convenience alias for `providerPolicy[role].providers[0]` when no full policy is needed. These are not merged — `providerPolicy` takes precedence when both are present. |
+| `execution.roles[role].provider` | Retained for adapter/model/command override. Provides a simpler alternative when only a single default provider is needed, without fallback or governance controls. When both `execution.roles[role].provider` and `providerPolicy[role]` are present for a role, `providerPolicy` takes precedence and `roles[role].provider` is ignored — they are not merged. |
 | `skill_packet.allow_cross_provider_delegation` | Retained for analysis packet context. Not related to dispatch-time provider governance. |
 
 ---
