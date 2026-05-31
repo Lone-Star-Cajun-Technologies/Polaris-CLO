@@ -29,7 +29,26 @@
       }
     },
     "rotation": ["claude", "codex", "gemini", "copilot"],
-    "allowCrossAgentFallback": false
+    "allowCrossAgentFallback": false,
+    "providerPolicy": {
+      "worker": {
+        "providers": ["copilot", "codex"],
+        "allowNativeSubagent": false
+      },
+      "analyst": {
+        "providers": ["claude", "codex"],
+        "allowNativeSubagent": true
+      },
+      "librarian": {
+        "providers": []
+      },
+      "orchestrator": {
+        "providers": []
+      },
+      "finalizer": {
+        "providers": []
+      }
+    }
   },
   "tracker": {
    "adapter": "linear",
