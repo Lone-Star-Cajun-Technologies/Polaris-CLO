@@ -62,3 +62,27 @@ export type {
 export {
   archiveCognitionNotes,
 } from "./archive.js";
+
+export type {
+  CognitionConstraints,
+  CognitionLibrarianPacket,
+  CognitionLibrarianResult,
+  CognitionPatch,
+  ArchiveAction,
+  ValidationOutcome,
+} from "./librarian-types.js";
+
+export {
+  validateCognitionLibrarianResult,
+} from "./librarian-types.js";
+
+export type {
+  DispatchCognitionLibrarianOptions,
+  DispatchCognitionLibrarianResult,
+  FolderDispatchOutcome,
+} from "./librarian-dispatch.js";
+
+export {
+  dispatchCognitionLibrarian,
+  validateAndApplyLibrarianResult,
+} from "./librarian-dispatch.js";
