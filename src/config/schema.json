@@ -113,6 +113,36 @@
         "allowCrossAgentFallback": {
           "type": "boolean",
           "default": false
+        },
+        "roles": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "orchestrator": { "$ref": "#/definitions/roleExecutionConfig" },
+            "startup": { "$ref": "#/definitions/roleExecutionConfig" },
+            "worker": { "$ref": "#/definitions/roleExecutionConfig" },
+            "analyst": { "$ref": "#/definitions/roleExecutionConfig" },
+            "analysis": { "$ref": "#/definitions/roleExecutionConfig" },
+            "repair": { "$ref": "#/definitions/roleExecutionConfig" },
+            "librarian": { "$ref": "#/definitions/roleExecutionConfig" },
+            "docs": { "$ref": "#/definitions/roleExecutionConfig" },
+            "finalizer": { "$ref": "#/definitions/roleExecutionConfig" }
+          }
+        },
+        "providerPolicy": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "orchestrator": { "$ref": "#/definitions/roleProviderPolicy" },
+            "startup": { "$ref": "#/definitions/roleProviderPolicy" },
+            "worker": { "$ref": "#/definitions/roleProviderPolicy" },
+            "analyst": { "$ref": "#/definitions/roleProviderPolicy" },
+            "analysis": { "$ref": "#/definitions/roleProviderPolicy" },
+            "repair": { "$ref": "#/definitions/roleProviderPolicy" },
+            "librarian": { "$ref": "#/definitions/roleProviderPolicy" },
+            "docs": { "$ref": "#/definitions/roleProviderPolicy" },
+            "finalizer": { "$ref": "#/definitions/roleProviderPolicy" }
+          }
         }
       }
     },
@@ -181,6 +211,38 @@
             "owner": { "type": "string" },
             "repo": { "type": "string" }
           }
+        }
+      },
+      "definitions": {
+        "roleExecutionConfig": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "adapter": {
+              "type": "string",
+              "enum": ["agent-subtask", "terminal-cli", "ci", "ssh", "remote-worker", "cross-agent"]
+            },
+            "provider": { "type": "string" },
+            "model": { "type": "string" },
+            "command": { "type": "string" },
+            "args": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "roleProviderPolicy": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "providers": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "allowNativeSubagent": { "type": "boolean" },
+            "noFallback": { "type": "boolean" }
+          },
+          "required": ["providers"]
         }
       }
     }
