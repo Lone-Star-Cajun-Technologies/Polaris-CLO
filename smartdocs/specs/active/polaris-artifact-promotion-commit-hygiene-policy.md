@@ -59,6 +59,35 @@ Non-artifact repository changes (for example `src/**`, `smartdocs/**`, config fi
 - flag workspace scratch and legacy run artifacts as hygiene violations, and
 - ignore non-artifact implementation files so normal code review still governs them.
 
-## 6. Resume-state note
+## 6. Minimum committed resume-state contract
 
-This policy does not by itself remove `.taskchain_artifacts/polaris-run/current-state.json` from repository history. Resume-state fallback from `.polaris/clusters/<id>/cluster-state.json` remains a separate contract tracked by POL-248.
+`.taskchain_artifacts/polaris-run/current-state.json` remains workspace scratch, but committed cluster evidence must still be sufficient to rebuild the minimum resume state when that workspace file is missing.
+
+### 6.1 Field audit
+
+| `LoopState` field | Resume source | Contract |
+|---|---|---|
+| `schema_version` | Reconstructed default | Rebuild as the current loop-state schema version. |
+| `run_id` | Bootstrap packet | Must come from the selected bootstrap packet. |
+| `cluster_id` | `cluster-state.json` | Must be present in committed cluster state. |
+| `branch` | Bootstrap packet | Must come from the selected bootstrap packet. |
+| `session_type` | Reconstructed default | Resume fallback may default to `implement` when no committed override exists. |
+| `active_child` | Bootstrap packet + `child_states` | Must resolve to the first still-open child, preferring dispatched/running work when present. |
+| `completed_children` | `child_states` | Derive from committed child statuses marked `done` or `finalized`. |
+| `open_children` | Bootstrap packet, validated against `child_states` | Packet order is canonical when the ids still exist in committed cluster state. |
+| `step_cursor` | Bootstrap packet | Reuse `last_completed_step`. |
+| `context_budget.children_completed` | Bootstrap packet | Reuse the packet counter. |
+| `status` | Reconstructed default | Resume fallback should restore `running` unless a stronger committed contract is introduced later. |
+| `last_commit` | `commits` map | Use the commit recorded for `last_completed_child`, or the latest committed child hash. |
+| `next_open_child` | Bootstrap packet + `open_children` | Use the first remaining open child after reconstruction. |
+| `artifact_dir` | Repository-local convention | Rebuild as `.taskchain_artifacts/polaris-run`. |
+| `blocker`, `dispatch_boundary`, `run_bootstrap_seal`, `open_children_meta`, `completed_children_results` | Not committed today | These fields are optional for resume and must not be required when only committed cluster evidence is available. |
+
+### 6.2 Committed minimum
+
+The minimum committed contract for resume is therefore:
+
+1. a bootstrap packet with `run_id`, `branch`, `last_completed_step`, `last_completed_child`, `open_children`, and `context_budget.children_completed`; and
+2. `.polaris/clusters/<active-cluster>/cluster-state.json` with `cluster_id`, `child_states`, and `commits`.
+
+If that contract is present, `polaris loop resume` must rebuild `current-state.json`, emit a fresh `current_state_sha`, and continue. If the contract is incomplete, resume must fail with a clear reconstruction error instead of a raw file-not-found.
