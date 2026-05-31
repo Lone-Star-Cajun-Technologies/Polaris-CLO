@@ -5,18 +5,20 @@
   "skill": "polaris-run",
   "branch": "",
   "session_type": "implement",
-  "active_child": "POL-261",
+  "active_child": "POL-262",
   "completed_children": [
     "POL-269",
     "POL-269",
     "POL-260",
     "POL-260",
-    "POL-261"
-  ],
-  "open_children": [
+    "POL-261",
+    "POL-261",
     "POL-259",
     "POL-258",
-    "POL-262",
+    "POL-258",
+    "POL-262"
+  ],
+  "open_children": [
     "POL-263",
     "POL-275",
     "POL-274",
@@ -26,38 +28,6 @@
     "POL-270"
   ],
   "open_children_meta": {
-    "POL-261": {
-      "title": "IMPL: Add user approval gate to polaris init --adopt",
-      "dispatch_record": {
-        "dispatch_id": "53c9abd1-c480-4827-8541-38654793eca9",
-        "child_id": "POL-261",
-        "run_id": "polaris-run-pol-269-2026-05-31-001",
-        "cluster_id": "POL-269",
-        "packet_path": ".polaris/clusters/POL-269/packets/POL-261-1dc9a952-a073-4e32-a5b5-3b80a198bb8d.json",
-        "expected_result_path": ".polaris/clusters/POL-269/results/POL-261-1dc9a952-a073-4e32-a5b5-3b80a198bb8d.json",
-        "provider": "claude",
-        "dispatched_at": "2026-05-31T22:37:59.221Z",
-        "status": "dispatched",
-        "dispatch_mode": "direct-worker",
-        "runtime_state": "packet-created",
-        "worker_id": "efe5fc53-b9d2-4c8c-bdee-667886177ad1",
-        "session_id": null,
-        "attachment_capable": false,
-        "role": "worker",
-        "role_authority": "implementation",
-        "may_implement": true,
-        "session_type": "implementation"
-      }
-    },
-    "POL-259": {
-      "title": "IMPL: Add read-only repo scanner (RepoScanInventory)"
-    },
-    "POL-258": {
-      "title": "IMPL: Add repo state detection to polaris init"
-    },
-    "POL-262": {
-      "title": "IMPL: Add minimal provider config lock for polaris init --adopt"
-    },
     "POL-263": {
       "title": "IMPL: Add SmartDocs migration step to polaris init --adopt"
     },
@@ -82,16 +52,16 @@
   },
   "step_cursor": "dispatch",
   "context_budget": {
-    "children_completed": 4,
+    "children_completed": 10,
     "max_children_per_session": 1
   },
   "status": "running",
-  "next_open_child": "POL-261",
+  "next_open_child": "POL-263",
   "artifact_dir": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run",
   "dispatch_boundary": {
-    "dispatch_epoch": 3,
-    "continue_epoch": 2,
-    "last_dispatched_child": "POL-261"
+    "dispatch_epoch": 6,
+    "continue_epoch": 5,
+    "last_dispatched_child": "POL-262"
   },
   "run_bootstrap_seal": {
     "sealer": "polaris-loop-bootstrap",

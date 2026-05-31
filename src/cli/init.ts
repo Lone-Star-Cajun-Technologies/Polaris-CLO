@@ -102,6 +102,12 @@ function promptAdoptionApproval(): boolean {
   }
 }
 
+function asRecord(value: unknown): Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
 /**
  * Generates (or updates) `polaris.config.json` in the repo root.
  *
@@ -149,12 +155,7 @@ export function runInit(options: InitOptions = {}): void {
   const detectedRepoAnalysis = detectRepoAnalysis(repoRoot);
 
   // Build updated providers section.
-  const existingProviders =
-    typeof existing.providers === "object" &&
-    existing.providers !== null &&
-    !Array.isArray(existing.providers)
-      ? (existing.providers as Record<string, unknown>)
-      : {};
+  const existingProviders = asRecord(existing.providers);
 
   const updatedProviders: Record<string, unknown> = { ...existingProviders };
 
@@ -165,12 +166,7 @@ export function runInit(options: InitOptions = {}): void {
     delete updatedProviders.compactionProviders;
   }
 
-  const existingRepoAnalysis =
-    typeof existingProviders.repoAnalysis === "object" &&
-    existingProviders.repoAnalysis !== null &&
-    !Array.isArray(existingProviders.repoAnalysis)
-      ? (existingProviders.repoAnalysis as Record<string, unknown>)
-      : {};
+  const existingRepoAnalysis = asRecord(existingProviders.repoAnalysis);
 
   const updatedRepoAnalysis: Record<string, unknown> =
     detectedRepoAnalysis.length > 0
@@ -189,6 +185,22 @@ export function runInit(options: InitOptions = {}): void {
     ...existing,
     version: typeof existing.version === "string" ? existing.version : "1.0",
   };
+
+  if (options.adopt) {
+    const existingExecution = asRecord(existing.execution);
+    updated.execution = {
+      ...existingExecution,
+      adapter: "terminal-cli",
+      rotation: [],
+      allowCrossAgentFallback: false,
+    };
+
+    const existingOrchestration = asRecord(existing.orchestration);
+    updated.orchestration = {
+      ...existingOrchestration,
+      mode: "supervised",
+    };
+  }
 
   if (Object.keys(updatedProviders).length > 0) {
     updated.providers = updatedProviders;
