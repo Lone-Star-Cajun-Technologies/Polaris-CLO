@@ -1,129 +1,118 @@
 {
   "schema_version": "1.0",
-  "run_id": "polaris-run-pol-242-2026-05-31-001",
-  "cluster_id": "POL-242",
+  "run_id": "polaris-run-pol-249-2026-05-31-001",
+  "cluster_id": "POL-249",
   "skill": "polaris-run",
-  "branch": "polaris/POL-242",
+  "branch": "",
   "session_type": "implement",
-  "active_child": "",
+  "active_child": "POL-233",
   "completed_children": [
-    "POL-242",
-    "POL-234",
-    "POL-201",
-    "POL-248",
-    "POL-247",
-    "POL-246",
-    "POL-245",
-    "POL-244",
-    "POL-243"
+    "POL-249",
+    "POL-233"
   ],
   "open_children": [
+    "POL-240",
     "POL-255",
-    "POL-55",
-    "POL-198",
-    "POL-42",
-    "POL-5",
-    "POL-97",
-    "POL-240"
+    "POL-254",
+    "POL-253",
+    "POL-252",
+    "POL-251",
+    "POL-250",
+    "POL-247"
   ],
   "open_children_meta": {
-    "POL-255": {
-      "title": "IMPLEMENT: Archive model, cognition-index, and provenance records for reconciled notes"
+    "POL-249": {
+      "title": "IMPLEMENT: Define and enforce folder-local work note staging and cognition librarian reconciliation model",
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-249/results/POL-249-a2da5d94-7870-4f2c-8145-47b98f8a03fe.json",
+      "dispatch_record": {
+        "dispatch_id": "a2da5d94-7870-4f2c-8145-47b98f8a03fe",
+        "child_id": "POL-249",
+        "run_id": "polaris-run-pol-249-2026-05-31-001",
+        "cluster_id": "POL-249",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-249/packets/POL-249-a2da5d94-7870-4f2c-8145-47b98f8a03fe.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-249/results/POL-249-a2da5d94-7870-4f2c-8145-47b98f8a03fe.json",
+        "provider": "claude",
+        "dispatched_at": "2026-05-31T15:44:24.517Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-pol-249-2026-05-31-001:POL-249:1780242264517",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
     },
-    "POL-55": {
-      "title": "Analyze scheduler-only parent loop and provider worker adapters"
-    },
-    "POL-198": {
-      "title": "IMPLEMENT: Dispatch-only orchestration lifecycle with startup and finalize dispatchers"
-    },
-    "POL-42": {
-      "title": "Add Polaris canon reconciliation and docs-ingest lifecycle"
-    },
-    "POL-5": {
-      "title": "Cluster 4: Polaris loop \u2014 checkpoint / resume / session boundary"
-    },
-    "POL-97": {
-      "title": "ANALYZE: Polaris 1.0 CLI/operator surface for finalize and Codex plugin"
+    "POL-233": {
+      "title": "ANALYZE: Normalize SmartDocs routing, folder cognition, YAML links, and telemetry cleanup",
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-249/results/POL-233-da435457-df4a-45f9-b10f-c459f4b09d12.json",
+      "dispatch_record": {
+        "dispatch_id": "da435457-df4a-45f9-b10f-c459f4b09d12",
+        "child_id": "POL-233",
+        "run_id": "polaris-run-pol-249-2026-05-31-001",
+        "cluster_id": "POL-249",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-249/packets/POL-233-da435457-df4a-45f9-b10f-c459f4b09d12.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-249/results/POL-233-da435457-df4a-45f9-b10f-c459f4b09d12.json",
+        "provider": "claude",
+        "dispatched_at": "2026-05-31T15:49:03.496Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-pol-249-2026-05-31-001:POL-233:1780242543496",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
     },
     "POL-240": {
       "title": "ANALYZE: Define durable run artifact promotion and commit hygiene policy"
+    },
+    "POL-255": {
+      "title": "IMPLEMENT: Archive model, cognition-index, and provenance records for reconciled notes"
+    },
+    "POL-254": {
+      "title": "IMPLEMENT: Implement foreman cognition-librarian dispatch and patch validation"
+    },
+    "POL-253": {
+      "title": "IMPLEMENT: Create cognition-librarian role file and define packet/result contract types"
+    },
+    "POL-252": {
+      "title": "IMPLEMENT: Extend CompactReturn to include work_note_path and validate note presence"
+    },
+    "POL-251": {
+      "title": "IMPLEMENT: Define worker note schema and update worker packet to require note writing"
+    },
+    "POL-250": {
+      "title": "IMPLEMENT: Create .polaris/cognition/ staging folder structure and POLARIS.md contract"
+    },
+    "POL-247": {
+      "title": "IMPLEMENT: Add finalize preflight check for commit staging allowlist"
     }
   },
-  "step_cursor": "child-complete",
+  "step_cursor": "dispatch",
   "context_budget": {
-    "children_completed": 13,
+    "children_completed": 1,
     "max_children_per_session": 1
   },
   "status": "running",
-  "next_open_child": "POL-255",
-  "artifact_dir": "/Users/lsctech/.copilot/session-state/1d8c5235-dbe4-4e6f-b3e1-85772cd4763d/files/pol-242-worktree/.taskchain_artifacts/polaris-run",
+  "next_open_child": "POL-233",
+  "artifact_dir": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run",
   "dispatch_boundary": {
-    "dispatch_epoch": 9,
-    "continue_epoch": 6,
-    "last_dispatched_child": "POL-243"
+    "dispatch_epoch": 2,
+    "continue_epoch": 1,
+    "last_dispatched_child": "POL-233"
   },
   "run_bootstrap_seal": {
     "sealer": "polaris-loop-bootstrap",
-    "run_id": "polaris-run-pol-242-2026-05-31-001",
-    "cluster_id": "POL-242",
-    "open_children_sha": "75fe8eb8346cdc3f881f0d7b87d4db23efd9be6b1fefcd2a6181e2060f974cd5",
-    "sealed_at": "2026-05-31T02:20:40.025Z"
+    "run_id": "polaris-run-pol-249-2026-05-31-001",
+    "cluster_id": "POL-249",
+    "open_children_sha": "c7962fa8b9fb86afd2d1efc745ac204ad166a9a7b81c112730dcd432f3823726",
+    "sealed_at": "2026-05-31T15:44:24.509Z"
   },
-  "last_commit": "2b036aa",
-  "updated_at": "2026-05-31T03:22:08.263030Z",
-  "completed_children_results": {
-    "POL-247": {
-      "status": "done",
-      "validation": "passed",
-      "commit": "e40cb24",
-      "next_recommended_action": "continue",
-      "result_data": {
-        "result_file": ".polaris/clusters/POL-242/results/POL-247-adaa7b44-9168-4279-8989-8bb7e94648dd.json"
-      }
-    },
-    "POL-246": {
-      "status": "done",
-      "validation": "passed",
-      "commit": "478af46",
-      "next_recommended_action": "continue",
-      "result_data": {
-        "result_file": ".polaris/clusters/POL-242/results/POL-246-346ea83b-85dd-4d88-8156-f762b7a540e9.json"
-      }
-    },
-    "POL-245": {
-      "status": "done",
-      "validation": "failed",
-      "commit": "d677daa",
-      "next_recommended_action": "continue",
-      "result_data": {
-        "result_file": ".polaris/clusters/POL-242/results/POL-245-06c5e5b4-c4a3-445b-9db4-57361d98d040.json"
-      }
-    },
-    "POL-244": {
-      "status": "done",
-      "validation": "failed",
-      "commit": "2b036aa",
-      "next_recommended_action": "continue",
-      "result_data": {
-        "result_file": ".polaris/clusters/POL-242/results/POL-244-cca592f4-1a09-4b52-a597-f16a9609eb69.json"
-      }
-    }
-  },
-  "validation_status": "completed",
-  "last_worker_result": {
-    "child_id": "POL-244",
-    "status": "completed",
-    "commit": "2b036aa",
-    "validation": {
-      "passed": [
-        "npm run lint",
-        "npm run build",
-        "npm run test -- src/finalize/finalize.test.ts src/finalize/artifact-policy.test.ts"
-      ],
-      "failed": [
-        "npm run test: pre-existing unrelated failure in src/loop/status.test.ts > runLoopStatus > prints human-readable status from state file"
-      ]
-    },
-    "recorded_at": "2026-05-31T03:17:14.677Z"
-  }
+  "last_commit": "19ad4c3"
 }
