@@ -10,6 +10,7 @@ import {
   type AdoptionPlanArtifacts,
   type RepoScanInventory,
 } from "./adoption-plan.js";
+import { scanAdoptionInventory as scanRepoAdoptionInventory } from "./adoption-inventory.js";
 
 export interface InitOptions {
   /** Absolute path to the repo root (defaults to cwd). */
@@ -36,28 +37,6 @@ export interface InitOptions {
   readAdoptionApproval?: () => boolean;
   /** Injected timestamp for deterministic testing. */
   now?: Date;
-}
-
-function buildFallbackAdoptionInventory(now: Date): RepoScanInventory {
-  return {
-    scan_date: now.toISOString(),
-    repo_state: "existing",
-    package_manager: null,
-    source_roots: [],
-    docs_roots: [],
-    test_commands: [],
-    build_commands: [],
-    package_scripts: {},
-    generated_roots: [],
-    cache_roots: [],
-    fixture_roots: [],
-    agent_instruction_files: [],
-    existing_smartdocs_dirs: [],
-    architecture_notes: [],
-    likely_canonical_folders: [],
-    smartdocs_candidates: [],
-    ignore_candidates: [],
-  };
 }
 
 function promptAdoptionApproval(): boolean {
@@ -179,7 +158,8 @@ export function runInit(options: InitOptions = {}): void {
   }
 
   const now = options.now ?? new Date();
-  const scanAdoptionInventory = options.scanAdoptionInventory ?? (() => buildFallbackAdoptionInventory(now));
+  const scanAdoptionInventory =
+    options.scanAdoptionInventory ?? ((root: string) => scanRepoAdoptionInventory(root, { now }));
   const inventory = scanAdoptionInventory(repoRoot);
   const adoptionArtifacts = (options.generateAdoptionArtifacts ?? generateAdoptionPlanArtifacts)(
     repoRoot,
