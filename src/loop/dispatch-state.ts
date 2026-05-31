@@ -263,7 +263,12 @@ export interface WorkerAssignedEvent extends WorkerTelemetryEventBase {
  */
 export interface WorkerAssignmentFailedEvent extends WorkerTelemetryEventBase {
   event: "worker-assignment-failed";
-  reason: "no-subagent-support" | "process-spawn-failed" | "provider-unavailable" | "timeout";
+  reason:
+    | "no-subagent-support"
+    | "native-subagent-not-allowed-for-role"
+    | "process-spawn-failed"
+    | "provider-unavailable"
+    | "timeout";
 }
 
 /**

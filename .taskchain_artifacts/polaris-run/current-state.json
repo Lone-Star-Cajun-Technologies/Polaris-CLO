@@ -8,49 +8,41 @@
   "active_child": "",
   "completed_children": [
     "POL-269",
-    "POL-269",
     "POL-260",
-    "POL-260",
-    "POL-261",
     "POL-261",
     "POL-259",
     "POL-258",
-    "POL-258",
-    "POL-262",
     "POL-262",
     "POL-263",
-    "POL-263",
-    "POL-275",
     "POL-275",
     "POL-274",
-    "POL-274",
-    "POL-273"
+    "POL-273",
+    "POL-272"
   ],
   "open_children": [
-    "POL-272",
     "POL-271",
     "POL-270"
   ],
   "open_children_meta": {
-    "POL-273": {
-      "title": "IMPL: Forbidden provider enforcement pre-dispatch",
+    "POL-272": {
+      "title": "IMPL: Native subagent role gate in attemptDelegatedAssignment",
       "dispatch_record": {
-        "dispatch_id": "6110c4db-a7e9-466c-a643-276caf743d67",
-        "child_id": "POL-273",
+        "dispatch_id": "cb85f8fd-2f24-4939-9e92-85a67ff850e5",
+        "child_id": "POL-272",
         "run_id": "polaris-run-pol-269-2026-05-31-001",
         "cluster_id": "POL-269",
-        "packet_path": ".polaris/clusters/POL-269/packets/POL-273-d0a5d61e-8c97-45f0-ac70-09aad1d7c2bf.json",
-        "expected_result_path": ".polaris/clusters/POL-269/results/POL-273-d0a5d61e-8c97-45f0-ac70-09aad1d7c2bf.json",
-        "provider": "claude",
+        "packet_path": ".polaris/clusters/POL-269/packets/POL-272-17c19589-fcbe-459a-adf9-d3ddb1d71327.json",
+        "expected_result_path": ".polaris/clusters/POL-269/results/POL-272-17c19589-fcbe-459a-adf9-d3ddb1d71327.json",
+        "provider": "codex",
         "provider_selection_reason": "config-rotation",
         "providers_tried": [
-          "claude"
+          "codex"
         ],
-        "dispatched_at": "2026-05-31T23:04:25.008Z",
+        "dispatched_at": "2026-05-31T23:09:56.070Z",
         "status": "dispatched",
         "dispatch_mode": "direct-worker",
         "runtime_state": "packet-created",
-        "worker_id": "ac20f8db-5d30-4f7d-a620-56b314314ea2",
+        "worker_id": "e5d459d2-eca5-41ec-90bf-8a697582dbef",
         "session_id": null,
         "attachment_capable": false,
         "role": "worker",
@@ -58,9 +50,6 @@
         "may_implement": true,
         "session_type": "implementation"
       }
-    },
-    "POL-272": {
-      "title": "IMPL: Native subagent role gate in attemptDelegatedAssignment"
     },
     "POL-271": {
       "title": "IMPL: Role-aware provider resolution in dispatch"
@@ -71,22 +60,22 @@
   },
   "step_cursor": "dispatch",
   "context_budget": {
-    "children_completed": 17,
+    "children_completed": 11,
     "max_children_per_session": 1
   },
   "status": "running",
-  "next_open_child": "POL-272",
+  "next_open_child": "POL-271",
   "artifact_dir": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run",
   "dispatch_boundary": {
-    "dispatch_epoch": 10,
-    "continue_epoch": 9,
-    "last_dispatched_child": "POL-273"
+    "dispatch_epoch": 11,
+    "continue_epoch": 10,
+    "last_dispatched_child": "POL-272"
   },
   "run_bootstrap_seal": {
     "sealer": "polaris-loop-bootstrap",
     "run_id": "polaris-run-pol-269-2026-05-31-001",
     "cluster_id": "POL-269",
     "open_children_sha": "522f4eba1abb01a54f2c74b1d18a3e5272968d254e55a8810264f7b304c40963",
-    "sealed_at": "2026-05-31T22:05:51.876Z"
+    "sealed_at": "2026-05-31T23:07:48.975Z"
   }
 }

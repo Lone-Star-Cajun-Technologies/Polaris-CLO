@@ -59,6 +59,17 @@ interface ProviderDecisionEvidence {
 }
 
 type ProviderPolicyByRole = Partial<Record<ExecutionRole, RoleProviderPolicy>>;
+const EXECUTION_ROLES = new Set<ExecutionRole>([
+  "orchestrator",
+  "startup",
+  "worker",
+  "analyst",
+  "analysis",
+  "repair",
+  "librarian",
+  "docs",
+  "finalizer",
+]);
 
 /**
  * Determine the effective provider and dispatch mode using the 4-scenario decision tree:
@@ -544,47 +555,64 @@ function attemptDelegatedAssignment(
   runId: string,
   childId: string,
   packet: WorkerPacket,
+  providerPolicy?: ProviderPolicyByRole,
 ): AssignmentOutcome {
   const now = new Date().toISOString();
+  const roleName = packet.role_context.role;
+  const governedRole = EXECUTION_ROLES.has(roleName as ExecutionRole)
+    ? (roleName as ExecutionRole)
+    : undefined;
+  const rolePolicy = governedRole ? providerPolicy?.[governedRole] : undefined;
+  const allowNativeSubagent = rolePolicy?.allowNativeSubagent !== false;
 
-  // Step 1: Try subagent spawn
-  emitAssignmentAttempted(telemetryFile, dispatchId, runId, childId, "subagent");
-  const dispatcher = getSubagentDispatcher();
-
-  if (dispatcher) {
-    // Subagent available - attempt dispatch
-    const sessionId = randomUUID();
-    try {
-      void dispatcher(packet, { dispatchId, runId, childId, sessionId });
-      emitAssigned(telemetryFile, dispatchId, runId, childId, "subagent", sessionId);
-      return {
-        assignment: {
-          assigned_at: now,
-          assignment_type: "subagent",
-          subagent_session_id: sessionId,
-        },
-        session_id: sessionId,
-        attachment_capable: false,
-        runtime_state: "delegated",
-      };
-    } catch (err) {
-      // Dispatcher invocation failed, fall through to next mechanism
-      const errorMsg = err instanceof Error ? err.message : String(err);
-      emitAssignmentFailed(telemetryFile, dispatchId, runId, childId, "no-subagent-support");
-      appendTelemetry(telemetryFile, {
-        event: "subagent-spawn-error",
-        event_id: randomUUID(),
-        dispatch_id: dispatchId,
-        run_id: runId,
-        child_id: childId,
-        error: errorMsg,
-        timestamp: new Date().toISOString(),
-      });
-      // Continue to external-process fallback below
-    }
+  // Step 1: Try subagent spawn (unless policy disables native subagents for this role)
+  if (!allowNativeSubagent) {
+    emitAssignmentFailed(
+      telemetryFile,
+      dispatchId,
+      runId,
+      childId,
+      "native-subagent-not-allowed-for-role",
+    );
   } else {
-    // Subagent unavailable
-    emitAssignmentFailed(telemetryFile, dispatchId, runId, childId, "no-subagent-support");
+    emitAssignmentAttempted(telemetryFile, dispatchId, runId, childId, "subagent");
+    const dispatcher = getSubagentDispatcher();
+
+    if (dispatcher) {
+      // Subagent available - attempt dispatch
+      const sessionId = randomUUID();
+      try {
+        void dispatcher(packet, { dispatchId, runId, childId, sessionId });
+        emitAssigned(telemetryFile, dispatchId, runId, childId, "subagent", sessionId);
+        return {
+          assignment: {
+            assigned_at: now,
+            assignment_type: "subagent",
+            subagent_session_id: sessionId,
+          },
+          session_id: sessionId,
+          attachment_capable: false,
+          runtime_state: "delegated",
+        };
+      } catch (err) {
+        // Dispatcher invocation failed, fall through to next mechanism
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        emitAssignmentFailed(telemetryFile, dispatchId, runId, childId, "no-subagent-support");
+        appendTelemetry(telemetryFile, {
+          event: "subagent-spawn-error",
+          event_id: randomUUID(),
+          dispatch_id: dispatchId,
+          run_id: runId,
+          child_id: childId,
+          error: errorMsg,
+          timestamp: new Date().toISOString(),
+        });
+        // Continue to external-process fallback below
+      }
+    } else {
+      // Subagent unavailable
+      emitAssignmentFailed(telemetryFile, dispatchId, runId, childId, "no-subagent-support");
+    }
   }
 
   // Step 2: Try external-process fallback (not available in this wave)
@@ -943,6 +971,7 @@ export function runLoopDispatch(options: DispatchOptions): void {
       state.run_id,
       childId,
       packet,
+      providerPolicy,
     );
     dispatchRecord.worker_assignment = assignmentOutcome.assignment;
     dispatchRecord.session_id = assignmentOutcome.session_id;
