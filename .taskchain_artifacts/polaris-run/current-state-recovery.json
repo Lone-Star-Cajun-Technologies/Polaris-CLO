@@ -5,13 +5,13 @@
   "skill": "polaris-run",
   "branch": "",
   "session_type": "implement",
-  "active_child": null,
+  "active_child": "POL-255",
   "completed_children": [
     "POL-249",
-    "POL-233"
+    "POL-233",
+    "POL-240"
   ],
   "open_children": [
-    "POL-240",
     "POL-255",
     "POL-254",
     "POL-253",
@@ -57,9 +57,9 @@
         "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-249/results/POL-233-fd43755b-1b3f-4275-a848-59cb43686869.json",
         "provider": "claude",
         "dispatched_at": "2026-05-31T15:55:08.840Z",
-        "status": "completed",
+        "status": "dispatched",
         "dispatch_mode": "direct-worker",
-        "runtime_state": "completed",
+        "runtime_state": "packet-created",
         "worker_id": "polaris-run-pol-249-2026-05-31-001:POL-233:1780242908840",
         "session_id": null,
         "attachment_capable": false,
@@ -70,7 +70,28 @@
       }
     },
     "POL-240": {
-      "title": "ANALYZE: Define durable run artifact promotion and commit hygiene policy"
+      "title": "ANALYZE: Define durable run artifact promotion and commit hygiene policy",
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-249/results/POL-240-be78fde1-1feb-42ae-a810-95f04b168025.json",
+      "dispatch_record": {
+        "dispatch_id": "be78fde1-1feb-42ae-a810-95f04b168025",
+        "child_id": "POL-240",
+        "run_id": "polaris-run-pol-249-2026-05-31-001",
+        "cluster_id": "POL-249",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-249/packets/POL-240-be78fde1-1feb-42ae-a810-95f04b168025.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-249/results/POL-240-be78fde1-1feb-42ae-a810-95f04b168025.json",
+        "provider": "claude",
+        "dispatched_at": "2026-05-31T15:56:34.014Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-pol-249-2026-05-31-001:POL-240:1780242994014",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
     },
     "POL-255": {
       "title": "IMPLEMENT: Archive model, cognition-index, and provenance records for reconciled notes"
@@ -94,18 +115,18 @@
       "title": "IMPLEMENT: Add finalize preflight check for commit staging allowlist"
     }
   },
-  "step_cursor": "completed",
+  "step_cursor": "dispatch",
   "context_budget": {
-    "children_completed": 2,
+    "children_completed": 3,
     "max_children_per_session": 1
   },
   "status": "running",
-  "next_open_child": "POL-240",
+  "next_open_child": "POL-255",
   "artifact_dir": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run",
   "dispatch_boundary": {
-    "dispatch_epoch": 2,
-    "continue_epoch": 1,
-    "last_dispatched_child": "POL-233"
+    "dispatch_epoch": 4,
+    "continue_epoch": 3,
+    "last_dispatched_child": "POL-240"
   },
   "run_bootstrap_seal": {
     "sealer": "polaris-loop-bootstrap",
@@ -114,5 +135,5 @@
     "open_children_sha": "c7962fa8b9fb86afd2d1efc745ac204ad166a9a7b81c112730dcd432f3823726",
     "sealed_at": "2026-05-31T15:53:22.762Z"
   },
-  "last_commit": "f686f3e"
+  "last_commit": "71122cc"
 }
