@@ -12,3 +12,4 @@ Vault-level context for SmartDocs. This is the documentation origin for the repo
 ## Relationships
 - **Contains**: `architecture/`, `doctrine/`, `specs/`, `integrations/`, `audits/`, `decisions/`, `raw/`, `runtime/`
 - **Linked canonical source**: [POLARIS.md](POLARIS.md)
+- **Active policy spec**: [specs/active/polaris-artifact-promotion-commit-hygiene-policy.md](specs/active/polaris-artifact-promotion-commit-hygiene-policy.md) defines durable Polaris artifact promotion versus workspace scratch.
