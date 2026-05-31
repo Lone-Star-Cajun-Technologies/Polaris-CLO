@@ -1,4 +1,4 @@
-import { writeFileSync, existsSync, readFileSync } from "node:fs";
+import { writeFileSync, existsSync, readFileSync, readdirSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { Command } from "commander";
 import {
@@ -21,8 +21,12 @@ export interface InitOptions {
   detectProviders?: (repoRoot: string) => string[];
   /** Injected repo-analysis detector function — for unit testing. */
   detectRepoAnalysisProviders?: (repoRoot: string) => string[];
+  /** Injected repo state detector function — for unit testing. */
+  detectRepoState?: (repoRoot: string) => RepoState;
   /** Run existing repo adoption flow. */
   adopt?: boolean;
+  /** Print detected repo state and exit without mutating files. */
+  status?: boolean;
   /** Auto-approve adoption plan prompt (for CI). */
   yes?: boolean;
   /** Injected adoption inventory scanner — for unit testing. */
@@ -37,6 +41,55 @@ export interface InitOptions {
   readAdoptionApproval?: () => boolean;
   /** Injected timestamp for deterministic testing. */
   now?: Date;
+}
+
+export type RepoState = "empty" | "new" | "partial" | "existing" | "polaris-enabled";
+
+const SOURCE_ROOT_HINTS = ["src", "lib", "app", "packages", "services", "server", "client"];
+const DOC_ROOT_HINTS = [
+  "docs",
+  "doc",
+  "wiki",
+  "adr",
+  "rfcs",
+  "architecture",
+  "design",
+  "spec",
+  "specs",
+  "guides",
+];
+const MANIFEST_HINTS = ["package.json", "pyproject.toml", "go.mod", "Cargo.toml"];
+
+function detectRepoState(repoRoot: string): RepoState {
+  if (existsSync(join(repoRoot, ".polaris"))) {
+    return "polaris-enabled";
+  }
+
+  let topLevelEntries: string[] = [];
+  try {
+    topLevelEntries = readdirSync(repoRoot);
+  } catch {
+    topLevelEntries = [];
+  }
+
+  const meaningfulEntries = topLevelEntries.filter((entry) => entry !== ".git" && entry !== ".gitignore");
+  if (meaningfulEntries.length === 0) {
+    return "empty";
+  }
+
+  const hasManifest = MANIFEST_HINTS.some((file) => existsSync(join(repoRoot, file)));
+  const hasSourceRoots = topLevelEntries.some((entry) => SOURCE_ROOT_HINTS.includes(entry));
+  const hasDocsRoots = topLevelEntries.some((entry) => DOC_ROOT_HINTS.includes(entry));
+
+  if (hasManifest && !hasSourceRoots && !hasDocsRoots) {
+    return "new";
+  }
+
+  if (!hasManifest && (hasSourceRoots || hasDocsRoots)) {
+    return "partial";
+  }
+
+  return "existing";
 }
 
 function promptAdoptionApproval(): boolean {
@@ -67,6 +120,19 @@ export function runInit(options: InitOptions = {}): void {
   const configPath = join(repoRoot, "polaris.config.json");
   const detectCompaction = options.detectProviders ?? detectCompactionProviders;
   const detectRepoAnalysis = options.detectRepoAnalysisProviders ?? detectRepoAnalysisProviders;
+  const repoState = (options.detectRepoState ?? detectRepoState)(repoRoot);
+
+  if (options.status) {
+    process.stdout.write(`Repository state: ${repoState}\n`);
+    return;
+  }
+
+  if (!options.adopt && repoState === "existing") {
+    process.stdout.write(
+      "This repo has existing content. Run `polaris init --adopt` to begin adoption.\n",
+    );
+    return;
+  }
 
   // Load existing config (if any) so we preserve user-authored fields.
   let existing: Record<string, unknown> = {};
@@ -185,12 +251,14 @@ export function createInitCommand(options: InitOptions = {}): Command {
   const cmd = new Command("init")
     .description("initialise polaris.config.json and detect compaction providers")
     .option("--dry-run", "print generated config to stdout without writing")
+    .option("--status", "detect and print current repository state without writing files")
     .option("--adopt", "run existing repository adoption flow")
     .option("--yes", "auto-approve adoption plan when used with --adopt")
-    .action((cmdOptions: { dryRun?: boolean; adopt?: boolean; yes?: boolean }) => {
+    .action((cmdOptions: { dryRun?: boolean; status?: boolean; adopt?: boolean; yes?: boolean }) => {
       runInit({
         ...options,
         dryRun: cmdOptions.dryRun,
+        status: cmdOptions.status,
         adopt: cmdOptions.adopt,
         yes: cmdOptions.yes,
       });

@@ -236,6 +236,92 @@ describe("runInit — dry-run", () => {
   });
 });
 
+describe("runInit — repo state detection", () => {
+  it("prints repository state and exits when --status is used", () => {
+    runInit({
+      repoRoot: REPO_ROOT,
+      status: true,
+      detectRepoState: vi.fn().mockReturnValue("partial"),
+      detectProviders: vi.fn().mockReturnValue(["caveman"]),
+      detectRepoAnalysisProviders: vi.fn().mockReturnValue(["gitnexus"]),
+    });
+
+    expect(stdoutOutput).toContain("Repository state: partial");
+    expect(mockedWriteFileSync).not.toHaveBeenCalled();
+  });
+
+  it("exits early with adoption guidance when repo state is existing", () => {
+    runInit({
+      repoRoot: REPO_ROOT,
+      detectRepoState: vi.fn().mockReturnValue("existing"),
+      detectProviders: vi.fn().mockReturnValue(["caveman"]),
+      detectRepoAnalysisProviders: vi.fn().mockReturnValue(["gitnexus"]),
+    });
+
+    expect(stdoutOutput).toContain("Run `polaris init --adopt` to begin adoption.");
+    expect(mockedWriteFileSync).not.toHaveBeenCalled();
+  });
+
+  it("allows config generation for existing repos when --adopt is set", () => {
+    mockedExistsSync.mockReturnValue(false);
+
+    runInit({
+      repoRoot: REPO_ROOT,
+      adopt: true,
+      yes: true,
+      detectRepoState: vi.fn().mockReturnValue("existing"),
+      detectProviders: vi.fn().mockReturnValue(["caveman"]),
+      detectRepoAnalysisProviders: vi.fn().mockReturnValue([]),
+      scanAdoptionInventory: vi.fn().mockReturnValue({
+        scan_date: "2026-05-31T00:00:00.000Z",
+        repo_state: "existing",
+        package_manager: null,
+        source_roots: [],
+        docs_roots: [],
+        test_commands: [],
+        build_commands: [],
+        package_scripts: {},
+        generated_roots: [],
+        cache_roots: [],
+        fixture_roots: [],
+        agent_instruction_files: [],
+        existing_smartdocs_dirs: [],
+        architecture_notes: [],
+        likely_canonical_folders: [],
+        smartdocs_candidates: [],
+        ignore_candidates: [],
+      }),
+      generateAdoptionArtifacts: vi.fn().mockReturnValue({
+        plan: {
+          plan_id: "adoption-test",
+          generated_at: "2026-05-31T00:00:00.000Z",
+          repo_state: "existing",
+          approved: false,
+          approved_at: null,
+          dry_run: false,
+          steps: [],
+          impact_summary: {
+            files_to_create: 0,
+            files_to_move: 0,
+            files_to_modify: 0,
+            instruction_files_affected: 0,
+            smartdocs_candidates_moved: 0,
+            cognition_files_to_generate: 0,
+          },
+        },
+        json: "{}\n",
+        markdown: "# Adoption Plan\n",
+        jsonPath: "/fake-repo/.polaris/adoption-plan.json",
+        markdownPath: "/fake-repo/.polaris/adoption-plan.md",
+        wroteFiles: false,
+      }),
+    });
+
+    expect(mockedWriteFileSync).toHaveBeenCalledOnce();
+    expect(stdoutOutput).toContain("Adoption approved. Proceeding with mutation phases.");
+  });
+});
+
 describe("runInit — stdout messaging", () => {
   it("prints detected providers in success message", () => {
     mockedExistsSync.mockReturnValue(false);
