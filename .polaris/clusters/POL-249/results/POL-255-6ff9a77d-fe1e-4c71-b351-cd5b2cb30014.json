@@ -1,0 +1,11 @@
+{
+  "run_id": "polaris-run-pol-249-2026-05-31-001",
+  "child_id": "POL-255",
+  "status": "success",
+  "commit": "bf5c6c0",
+  "validation": {
+    "passed": true,
+    "notes": "Implementation was completed in prior commit (bf5c6c0). archiveCognitionNotes implemented in src/cognition/archive.ts; cognition-index provenance records created; rejected-patch path handled; .polaris/cognition/archive/ added to finalize staging allowlist in src/finalize/artifact-policy.ts; 3 unit tests covering successful archive, partial archive, and rejection entry. All 90 cognition tests pass."
+  },
+  "next_recommended_action": "dispatch POL-254"
+}

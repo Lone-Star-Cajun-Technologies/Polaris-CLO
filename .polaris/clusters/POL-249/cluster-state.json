@@ -1,0 +1,90 @@
+{
+  "schema_version": "1.0",
+  "cluster_id": "POL-249",
+  "state_generation": 13,
+  "child_states": [
+    {
+      "id": "POL-249",
+      "status": "done",
+      "commit": "38ec4bf"
+    },
+    {
+      "id": "POL-233",
+      "status": "done",
+      "commit": "d6e45cc"
+    },
+    {
+      "id": "POL-240",
+      "status": "done",
+      "commit": "b2e4d96"
+    },
+    {
+      "id": "POL-255",
+      "status": "done",
+      "commit": "bf5c6c0"
+    },
+    {
+      "id": "POL-254",
+      "status": "ready"
+    },
+    {
+      "id": "POL-253",
+      "status": "ready"
+    },
+    {
+      "id": "POL-252",
+      "status": "ready"
+    },
+    {
+      "id": "POL-251",
+      "status": "ready"
+    },
+    {
+      "id": "POL-250",
+      "status": "ready"
+    },
+    {
+      "id": "POL-247",
+      "status": "ready"
+    }
+  ],
+  "claim_metadata": {},
+  "packet_pointers": {
+    "POL-249": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-249/packets/POL-249-5dc7b222-6b7e-446e-9045-ae834c72ac98.json",
+    "POL-233": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-249/packets/POL-233-fd43755b-1b3f-4275-a848-59cb43686869.json",
+    "POL-240": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-249/packets/POL-240-be78fde1-1feb-42ae-a810-95f04b168025.json",
+    "POL-255": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-249/packets/POL-255-6ff9a77d-fe1e-4c71-b351-cd5b2cb30014.json"
+  },
+  "result_pointers": {
+    "POL-249": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-249/results/POL-249-5dc7b222-6b7e-446e-9045-ae834c72ac98.json",
+    "POL-233": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-249/results/POL-233-fd43755b-1b3f-4275-a848-59cb43686869.json",
+    "POL-240": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-249/results/POL-240-be78fde1-1feb-42ae-a810-95f04b168025.json",
+    "POL-255": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-249/results/POL-255-6ff9a77d-fe1e-4c71-b351-cd5b2cb30014.json"
+  },
+  "validation_results": {
+    "POL-249": {
+      "passed": true,
+      "output": "[object Object]"
+    },
+    "POL-233": {
+      "passed": true,
+      "output": "[object Object]"
+    },
+    "POL-240": {
+      "passed": true,
+      "output": "[object Object]"
+    },
+    "POL-255": {
+      "passed": true,
+      "output": "90 tests passed"
+    }
+  },
+  "commits": {
+    "POL-249": "38ec4bf",
+    "POL-233": "d6e45cc",
+    "POL-240": "b2e4d96",
+    "POL-255": "bf5c6c0"
+  },
+  "tracker_mutations": {},
+  "blockers": []
+}
