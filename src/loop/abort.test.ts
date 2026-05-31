@@ -100,7 +100,7 @@ describe("runLoopAbort", () => {
   });
 
   it("appends loop-aborted JSONL event to telemetry file", () => {
-    const artifactDir = join(testDir, ".taskchain_artifacts", "bootstrap-run");
+    const artifactDir = join(testDir, ".taskchain_artifacts", "polaris-run");
     const telemetryFile = join(artifactDir, "runs", "pol-5-session-1", "telemetry.jsonl");
     const stateFile = writeState(testDir, baseState);
 

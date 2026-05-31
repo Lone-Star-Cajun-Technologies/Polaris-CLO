@@ -80,7 +80,7 @@ export function buildBootstrapPacket(
   const filesTouched = state.context_budget.files_touched_total ?? 0;
   const stopThresholdRemaining = maxChildren - state.context_budget.children_completed;
   const artifactDir =
-    state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "bootstrap-run");
+    state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "polaris-run");
   const telemetryFile = join(artifactDir, "runs", state.run_id, "telemetry.jsonl");
 
   // Resolve compact_mode: explicit level wins, then orchestratorMode, then default "standard"
@@ -117,7 +117,7 @@ export function buildBootstrapPacket(
 
   return {
     run_id: state.run_id,
-    skill: state.skill ?? "bootstrap-run",
+    skill: state.skill ?? "polaris-run",
     branch,
     base_commit_sha: getHeadSha(repoRoot),
     last_completed_step: state.step_cursor,

@@ -134,7 +134,7 @@ export function runLoopContinue(options: ContinueOptions): void {
   // If no dispatch was recorded (dispatch_epoch === continue_epoch),
   // reject immediately and do NOT mutate any state.
   const artifactDirForTelemetry =
-    state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "bootstrap-run");
+    state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "polaris-run");
   const telemetryFileForCheck = join(artifactDirForTelemetry, "runs", state.run_id, "telemetry.jsonl");
 
   try {
@@ -201,7 +201,7 @@ export function runLoopContinue(options: ContinueOptions): void {
 
   // Step 2: Append JSONL checkpoint event
   const artifactDir =
-    state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "bootstrap-run");
+    state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "polaris-run");
   const telemetryFile = join(artifactDir, "runs", state.run_id, "telemetry.jsonl");
   appendCheckpointEvent(telemetryFile, {
     event: "loop-checkpoint",

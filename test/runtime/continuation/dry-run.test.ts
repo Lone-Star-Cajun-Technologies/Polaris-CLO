@@ -32,7 +32,7 @@ describe("executeDryRun", () => {
   it("returns ok preview for an eligible run", async () => {
     vi.mocked(stateModule.loadState).mockResolvedValue(runningState);
     const result = await executeDryRun({
-      artifact_dir: "bootstrap-run",
+      artifact_dir: "polaris-run",
       expected_step_cursor: "06-decide-continuation",
     });
     expect(result.ok).toBe(true);
@@ -47,7 +47,7 @@ describe("executeDryRun", () => {
   it("does not include bootstrap packets, worktrees, or worker details", async () => {
     vi.mocked(stateModule.loadState).mockResolvedValue(runningState);
     const result = await executeDryRun({
-      artifact_dir: "bootstrap-run",
+      artifact_dir: "polaris-run",
       expected_step_cursor: "06-decide-continuation",
     });
     expect(result.ok).toBe(true);
@@ -62,8 +62,8 @@ describe("executeDryRun", () => {
   it("generates a unique nonce per call", async () => {
     vi.mocked(stateModule.loadState).mockResolvedValue(runningState);
     const [a, b] = await Promise.all([
-      executeDryRun({ artifact_dir: "bootstrap-run", expected_step_cursor: "06-decide-continuation" }),
-      executeDryRun({ artifact_dir: "bootstrap-run", expected_step_cursor: "06-decide-continuation" }),
+      executeDryRun({ artifact_dir: "polaris-run", expected_step_cursor: "06-decide-continuation" }),
+      executeDryRun({ artifact_dir: "polaris-run", expected_step_cursor: "06-decide-continuation" }),
     ]);
     expect(a.ok && b.ok).toBe(true);
     if (!a.ok || !b.ok) return;
@@ -79,21 +79,21 @@ describe("executeDryRun", () => {
 
   it("rejects when run is not in running state", async () => {
     vi.mocked(stateModule.loadState).mockResolvedValue({ ...runningState, status: "stopped" });
-    const result = await executeDryRun({ artifact_dir: "bootstrap-run", expected_step_cursor: "06-decide-continuation" });
+    const result = await executeDryRun({ artifact_dir: "polaris-run", expected_step_cursor: "06-decide-continuation" });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.rejection.reason).toBe("run_not_continuable");
   });
 
   it("rejects when active_child is set", async () => {
     vi.mocked(stateModule.loadState).mockResolvedValue({ ...runningState, active_child: "POL-81" });
-    const result = await executeDryRun({ artifact_dir: "bootstrap-run", expected_step_cursor: "06-decide-continuation" });
+    const result = await executeDryRun({ artifact_dir: "polaris-run", expected_step_cursor: "06-decide-continuation" });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.rejection.reason).toBe("concurrent_execution");
   });
 
   it("rejects step_cursor mismatch", async () => {
     vi.mocked(stateModule.loadState).mockResolvedValue(runningState);
-    const result = await executeDryRun({ artifact_dir: "bootstrap-run", expected_step_cursor: "03-execute-child" });
+    const result = await executeDryRun({ artifact_dir: "polaris-run", expected_step_cursor: "03-execute-child" });
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.rejection.reason).toBe("step_cursor_mismatch");
@@ -103,16 +103,16 @@ describe("executeDryRun", () => {
 
   it("rejects when no open children remain", async () => {
     vi.mocked(stateModule.loadState).mockResolvedValue({ ...runningState, open_children: [] });
-    const result = await executeDryRun({ artifact_dir: "bootstrap-run", expected_step_cursor: "06-decide-continuation" });
+    const result = await executeDryRun({ artifact_dir: "polaris-run", expected_step_cursor: "06-decide-continuation" });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.rejection.reason).toBe("no_open_children");
   });
 
   it("logs a dry_run_executed audit event on success", async () => {
     vi.mocked(stateModule.loadState).mockResolvedValue(runningState);
-    await executeDryRun({ artifact_dir: "bootstrap-run", expected_step_cursor: "06-decide-continuation" });
+    await executeDryRun({ artifact_dir: "polaris-run", expected_step_cursor: "06-decide-continuation" });
     expect(auditModule.appendAuditEvent).toHaveBeenCalledWith(
-      "bootstrap-run",
+      "polaris-run",
       expect.objectContaining({ event_type: "dry_run_executed", result: "preview" })
     );
   });

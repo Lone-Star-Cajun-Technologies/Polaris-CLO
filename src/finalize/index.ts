@@ -93,7 +93,7 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
       throw new Error(`Canon check cannot proceed: git diff failed: ${msg}`);
     }
 
-    const artifactDirForCheck = state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "bootstrap-run");
+    const artifactDirForCheck = state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "polaris-run");
     const telemetryFileForCheck = join(artifactDirForCheck, "runs", state.run_id, "telemetry.jsonl");
 
     const canonResult = runCanonCheck({
@@ -193,7 +193,7 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
 
   // Step 11: Append JSONL events
   console.log("[11/13] Appending JSONL events..."); // Step count updated
-  const artifactDir = state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "bootstrap-run");
+  const artifactDir = state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "polaris-run");
   const telemetryFile = join(artifactDir, "runs", state.run_id, "telemetry.jsonl");
   stepAppendJsonl(telemetryFile, state, prUrl);
 

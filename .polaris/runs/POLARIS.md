@@ -45,12 +45,12 @@ Canonical telemetry surfaces written under `.taskchain_artifacts/`:
 | `.taskchain_artifacts/polaris-docs-ingest/` | Canonical | Current name after rename from `docs-ingest` |
 | `.taskchain_artifacts/docs-ingest/` | Compatibility-only | Legacy name; preserved for reference, no active writer |
 | `.taskchain_artifacts/polaris-docs-migrate/` | Compatibility-only | One-off migration; no active writer |
-| `.taskchain_artifacts/bootstrap-run/` | Canonical (default fallback) | Default `artifact_dir` in runtime src/; active writer. See note below. |
+| `.taskchain_artifacts/bootstrap-run/` | Removed | Deprecated scratch surface; no active skill writes here. |
 | `.taskchain_artifacts/evo-run/` | Removed | Deprecated; no active skill. Archived to `.polaris/runs/evo-run-archive/`. |
 
 ### bootstrap-run note
 
-`bootstrap-run` is the default `artifact_dir` fallback throughout the runtime (`src/loop/`, `src/finalize/`, `src/mcp/tools/`). It is written by any run that does not specify an explicit artifact directory. It is **not** deprecated; it is the canonical default surface. It should not be removed until the runtime default is changed (out of scope for POL-238; tracked separately).
+`bootstrap-run` is deprecated. Active runtime fallbacks now target `.taskchain_artifacts/polaris-run/`, and historical `bootstrap-run` artifacts should remain untracked workspace scratch only.
 
 ### worker-acknowledged gap (POL-215 scope)
 

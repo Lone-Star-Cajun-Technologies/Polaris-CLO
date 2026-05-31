@@ -18,7 +18,7 @@ const pendingConfirmations = new Set<string>();
 
 function parseEnvelope(args: Record<string, unknown>): ContinuationApprovalEnvelope & { artifact_dir: string } {
   const artifact_dir =
-    typeof args["artifact_dir"] === "string" ? args["artifact_dir"] : "bootstrap-run";
+    typeof args["artifact_dir"] === "string" ? args["artifact_dir"] : "polaris-run";
 
   const required = [
     "run_id",

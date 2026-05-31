@@ -169,7 +169,7 @@ describe("dispatchTool()", () => {
       message: "Continuation approved. Worker dispatch is not yet implemented.",
     });
     const envelopeArgs = {
-      artifact_dir: "bootstrap-run",
+      artifact_dir: "polaris-run",
       run_id: "run-123",
       expected_step_cursor: "06-decide-continuation",
       fingerprint: "abc123",

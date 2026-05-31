@@ -8,3 +8,4 @@ build/
 docs/Polaris/.obsidian/
 .claude/worktrees/
 .taskchain_artifacts/polaris-run/mutation-queue.json
+.taskchain_artifacts/bootstrap-run/
