@@ -246,6 +246,20 @@ describe("validateConfig — execution roles", () => {
 });
 
 describe("validateConfig — execution providerPolicy", () => {
+  it("remains backward compatible when providerPolicy is omitted", () => {
+    const result = validateConfig({
+      execution: {
+        adapter: "terminal-cli",
+        providers: {
+          copilot: { command: "copilot" },
+        },
+      },
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
   it("accepts valid role provider policy config", () => {
     const result = validateConfig({
       execution: {
