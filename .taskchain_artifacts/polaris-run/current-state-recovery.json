@@ -7,10 +7,10 @@
   "session_type": "implement",
   "active_child": null,
   "completed_children": [
-    "POL-249"
+    "POL-249",
+    "POL-233"
   ],
   "open_children": [
-    "POL-233",
     "POL-240",
     "POL-255",
     "POL-254",
@@ -21,8 +21,53 @@
     "POL-247"
   ],
   "open_children_meta": {
+    "POL-249": {
+      "title": "IMPLEMENT: Define and enforce folder-local work note staging and cognition librarian reconciliation model",
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-249/results/POL-249-5dc7b222-6b7e-446e-9045-ae834c72ac98.json",
+      "dispatch_record": {
+        "dispatch_id": "5dc7b222-6b7e-446e-9045-ae834c72ac98",
+        "child_id": "POL-249",
+        "run_id": "polaris-run-pol-249-2026-05-31-001",
+        "cluster_id": "POL-249",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-249/packets/POL-249-5dc7b222-6b7e-446e-9045-ae834c72ac98.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-249/results/POL-249-5dc7b222-6b7e-446e-9045-ae834c72ac98.json",
+        "provider": "claude",
+        "dispatched_at": "2026-05-31T15:53:22.769Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-pol-249-2026-05-31-001:POL-249:1780242802769",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    },
     "POL-233": {
-      "title": "ANALYZE: Normalize SmartDocs routing, folder cognition, YAML links, and telemetry cleanup"
+      "title": "ANALYZE: Normalize SmartDocs routing, folder cognition, YAML links, and telemetry cleanup",
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-249/results/POL-233-fd43755b-1b3f-4275-a848-59cb43686869.json",
+      "dispatch_record": {
+        "dispatch_id": "fd43755b-1b3f-4275-a848-59cb43686869",
+        "child_id": "POL-233",
+        "run_id": "polaris-run-pol-249-2026-05-31-001",
+        "cluster_id": "POL-249",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-249/packets/POL-233-fd43755b-1b3f-4275-a848-59cb43686869.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-249/results/POL-233-fd43755b-1b3f-4275-a848-59cb43686869.json",
+        "provider": "claude",
+        "dispatched_at": "2026-05-31T15:55:08.840Z",
+        "status": "completed",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "completed",
+        "worker_id": "polaris-run-pol-249-2026-05-31-001:POL-233:1780242908840",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
     },
     "POL-240": {
       "title": "ANALYZE: Define durable run artifact promotion and commit hygiene policy"
@@ -49,18 +94,18 @@
       "title": "IMPLEMENT: Add finalize preflight check for commit staging allowlist"
     }
   },
-  "step_cursor": "checkpoint",
+  "step_cursor": "completed",
   "context_budget": {
-    "children_completed": 1,
+    "children_completed": 2,
     "max_children_per_session": 1
   },
   "status": "running",
-  "next_open_child": "POL-233",
+  "next_open_child": "POL-240",
   "artifact_dir": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run",
   "dispatch_boundary": {
-    "dispatch_epoch": 1,
-    "continue_epoch": 0,
-    "last_dispatched_child": "POL-249"
+    "dispatch_epoch": 2,
+    "continue_epoch": 1,
+    "last_dispatched_child": "POL-233"
   },
   "run_bootstrap_seal": {
     "sealer": "polaris-loop-bootstrap",
@@ -68,5 +113,6 @@
     "cluster_id": "POL-249",
     "open_children_sha": "c7962fa8b9fb86afd2d1efc745ac204ad166a9a7b81c112730dcd432f3823726",
     "sealed_at": "2026-05-31T15:53:22.762Z"
-  }
+  },
+  "last_commit": "f686f3e"
 }
