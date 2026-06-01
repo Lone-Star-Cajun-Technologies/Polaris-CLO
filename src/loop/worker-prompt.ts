@@ -318,7 +318,11 @@ export function buildPromptFromPacketInput(
     goal,
     scopeTouch: input.allowedScope ?? [],
     scopeAvoid: [],
-    acceptanceCriteria: requirements.length > 1 ? requirements.slice(1) : requirements,
+    // When body is the goal, all requirements are acceptance criteria (none was consumed as goal).
+    // When requirements[0] is the goal, the rest (slice(1)) are acceptance criteria.
+    acceptanceCriteria: body
+      ? requirements
+      : (requirements.length > 1 ? requirements.slice(1) : requirements),
     existingHelpers: [],
     validationCommands: input.validationCommands ?? [],
     commitFormat: `[${input.issueId}] ${input.title}`,

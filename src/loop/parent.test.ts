@@ -116,7 +116,6 @@ function makeStateFile(
   const stateFile = join(dir, "current-state.json");
   const openChildren = overrides.open_children ?? ["POL-100", "POL-101", "POL-102"];
   const completedChildren = overrides.completed_children ?? [];
-  const allChildren = [...new Set([...openChildren, ...completedChildren])];
   const state = {
     schema_version: "1.0",
     run_id: "test-run-001",
@@ -133,7 +132,7 @@ function makeStateFile(
     next_open_child: openChildren[0] ?? null,
     completed_children: completedChildren,
     open_children: openChildren,
-    open_children_meta: Object.fromEntries(allChildren.map((id) => [id, { title: id, body: `Default test body for ${id}.` }])),
+    open_children_meta: Object.fromEntries(openChildren.map((id) => [id, { title: id, body: `Default test body for ${id}.` }])),
     context_budget: {
       children_completed: overrides.children_completed ?? 0,
       files_touched_total: 0,

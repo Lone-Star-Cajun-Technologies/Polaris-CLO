@@ -310,6 +310,29 @@ describe("buildPromptFromPacketInput", () => {
     expect(prompt.slice(expandedIdx)).toContain("Parse the .smartdocignore file from the repo root.");
   });
 
+  it("all requirements appear in Acceptance Criteria when body is present as goal", () => {
+    // Regression: previously requirements.slice(1) discarded requirements[0] when body was goal.
+    const { prompt } = buildPromptFromPacketInput({
+      issueId: "POL-131",
+      title: "Add parser",
+      worktree: ".",
+      branch: "feat/test",
+      stateFile: "state.json",
+      telemetryFile: "telemetry.jsonl",
+      issueContext: {
+        id: "POL-131",
+        title: "Add parser",
+        key_requirements: ["Req A", "Req B", "Req C"],
+        body: "Full description here.",
+      },
+      mode: "compact",
+    });
+    expect(prompt).toContain("Full description here.");
+    expect(prompt).toContain("Req A");
+    expect(prompt).toContain("Req B");
+    expect(prompt).toContain("Req C");
+  });
+
   it("returns compact metrics by default for narrow input", () => {
     const { metrics } = buildPromptFromPacketInput({
       issueId: "POL-131",

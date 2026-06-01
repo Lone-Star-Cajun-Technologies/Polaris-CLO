@@ -14,8 +14,8 @@ The Analyst maps issues to code, assesses feasibility, and produces execution pl
 - Assess feasibility, detect blockers
 - Produce clusters.json defining child issues
 - Write analysis documents to `smartdocs/docs/raw/`
-- Create an Implementation parent and child Linear issues 
-- the implementation parent must be a child of the issue being analyzed
+- Create an "Implementation" parent Linear issue and corresponding child issues.
+- Ensure the "Implementation" parent is itself a child of the issue being analyzed.
 
 ## Authority Boundaries
 
