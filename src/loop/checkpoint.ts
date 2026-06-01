@@ -6,7 +6,7 @@ import {
   appendFileSync,
 } from "node:fs";
 import { createHash } from "node:crypto";
-import { dirname } from "node:path";
+import { dirname, join } from "node:path";
 import { getMonotonicTimestamp } from "../utils/monotonic-timestamp.js";
 import type { RunBootstrapSeal } from "./run-bootstrap.js";
 
@@ -482,4 +482,26 @@ export function appendAbortEvent(telemetryFile: string, event: AbortEvent): void
   const timestampedEvent = { ...event, timestamp: getMonotonicTimestamp() };
   mkdirSync(dirname(telemetryFile), { recursive: true });
   appendFileSync(telemetryFile, JSON.stringify(timestampedEvent) + "\n", "utf-8");
+}
+
+/**
+ * Reads the issue body for a node from the durable cluster snapshot at
+ * `.polaris/clusters/<clusterId>/clusters.json`. Returns undefined when the
+ * snapshot is absent, unparseable, or the node has no body field.
+ * Never throws.
+ */
+export function readBodyFromClusterSnapshot(
+  clusterId: string,
+  nodeId: string,
+  repoRoot: string,
+): string | undefined {
+  try {
+    const snapshotPath = join(repoRoot, ".polaris", "clusters", clusterId, "clusters.json");
+    const raw = readFileSync(snapshotPath, "utf-8");
+    const graph = JSON.parse(raw) as { nodes?: Record<string, { body?: unknown }> };
+    const body = graph?.nodes?.[nodeId]?.body;
+    return typeof body === "string" && body.trim().length > 0 ? body : undefined;
+  } catch {
+    return undefined;
+  }
 }

@@ -1437,4 +1437,130 @@ describe("runParentLoop", () => {
     // active_child is left set (dispatch was partially recorded) — that is expected
     // for non-pre_dispatch_failure failures where the worker may have partially run.
   });
+
+  // ── Cluster snapshot body hydration ──────────────────────────────────────
+  //
+  // Packet generation must resolve body from .polaris/clusters/<id>/clusters.json
+  // when open_children_meta lacks body. current-state.json is ephemeral cursor
+  // state; clusters.json is the durable local body snapshot.
+
+  function makeClusterSnapshotWithBodies(
+    dir: string,
+    clusterId: string,
+    nodes: Record<string, { title?: string; body?: string }>,
+  ): void {
+    const snapshotDir = join(dir, ".polaris", "clusters", clusterId);
+    mkdirSync(snapshotDir, { recursive: true });
+    const snapshot = {
+      schemaVersion: "v2",
+      source: { id: clusterId, type: "Linear" },
+      nodes: Object.fromEntries(
+        Object.entries(nodes).map(([id, n]) => [
+          id,
+          { id, title: n.title ?? id, status: "Todo", ...(n.body ? { body: n.body } : {}) },
+        ]),
+      ),
+      dependencies: {},
+      clusters: {
+        [clusterId]: { id: clusterId, title: clusterId, children: Object.keys(nodes) },
+      },
+      activeCluster: clusterId,
+    };
+    writeFileSync(join(snapshotDir, "clusters.json"), JSON.stringify(snapshot, null, 2), "utf-8");
+  }
+
+  it("resolves body from clusters.json when open_children_meta has no body", async () => {
+    const calls: MockCall[] = [];
+    vi.mocked(createAdapter).mockReturnValue(makeMockAdapter([SUCCESS_RESULT], calls));
+    const stateFile = makeStateFileWithMeta(
+      tmpDir,
+      ["POL-100"],
+      { "POL-100": { title: "Implement foo" } }, // no body in state
+    );
+    makeClusterSnapshotWithBodies(tmpDir, "POL-99", {
+      "POL-99": { title: "Parent cluster" },
+      "POL-100": { title: "Implement foo", body: "## Goal\nFix the thing.\n\n## Scope\n- src/loop/**\n" },
+    });
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(result.haltReason).not.toBe("preflight-failed");
+    expect(calls).toHaveLength(1);
+    const packet = calls[0].packet;
+    expect(isWorkerPacket(packet)).toBe(true);
+    if (isWorkerPacket(packet)) {
+      expect(packet.instructions.issue_context?.body).toContain("## Goal");
+      expect(packet.instructions.allowed_scope).toContain("src/loop/**");
+    }
+  });
+
+  it("halts with preflight-failed and sync-in message when neither state nor clusters.json has body", async () => {
+    vi.mocked(createAdapter).mockReturnValue(makeMockAdapter([SUCCESS_RESULT]));
+    const stateFile = makeStateFileWithMeta(
+      tmpDir,
+      ["POL-100"],
+      { "POL-100": { title: "Implement foo" } }, // no body
+    );
+    // No clusters.json written — snapshot is absent
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(result.haltReason).toBe("preflight-failed");
+    expect(result.haltingChild).toBe("POL-100");
+    expect(result.message).toContain("no body/description");
+    expect(result.message).toContain("tracker sync-in");
+    expect(result.message).toContain("POL-99");
+  });
+
+  it("resolves parent scope from clusters.json when child body lacks scope and state has no parent body", async () => {
+    const calls: MockCall[] = [];
+    vi.mocked(createAdapter).mockReturnValue(makeMockAdapter([SUCCESS_RESULT], calls));
+    const stateFile = makeStateFileWithMeta(
+      tmpDir,
+      ["POL-100"],
+      {
+        // Child body present in state but no scope; parent body absent from state
+        "POL-100": { title: "Implement foo", body: "## Goal\nFix the thing.\n" },
+      },
+    );
+    makeClusterSnapshotWithBodies(tmpDir, "POL-99", {
+      "POL-99": { title: "Parent cluster", body: "## Goal\nParent plan.\n\n## Scope\n- src/finalize/**\n" },
+      "POL-100": { title: "Implement foo" },
+    });
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(result.haltReason).not.toBe("preflight-failed");
+    expect(calls).toHaveLength(1);
+    const packet = calls[0].packet;
+    if (isWorkerPacket(packet)) {
+      expect(packet.instructions.allowed_scope).toContain("src/finalize/**");
+    }
+  });
+
+  it("resolves body from clusters.json when open_children_meta entry is entirely absent", async () => {
+    const calls: MockCall[] = [];
+    vi.mocked(createAdapter).mockReturnValue(makeMockAdapter([SUCCESS_RESULT], calls));
+    // State has no entry for POL-100 in open_children_meta at all
+    const stateFile = makeStateFileWithMeta(
+      tmpDir,
+      ["POL-100"],
+      {}, // no meta entry for POL-100
+    );
+    makeClusterSnapshotWithBodies(tmpDir, "POL-99", {
+      "POL-99": { title: "Parent cluster" },
+      "POL-100": { title: "Implement foo", body: "## Goal\nFix the thing.\n\n## Scope\n- src/loop/**\n" },
+    });
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(result.haltReason).not.toBe("preflight-failed");
+    expect(calls).toHaveLength(1);
+    const packet = calls[0].packet;
+    expect(isWorkerPacket(packet)).toBe(true);
+    if (isWorkerPacket(packet)) {
+      expect(packet.instructions.issue_context?.body).toContain("## Goal");
+      expect(packet.instructions.allowed_scope).toContain("src/loop/**");
+    }
+  });
 });
