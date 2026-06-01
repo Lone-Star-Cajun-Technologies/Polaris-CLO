@@ -59,13 +59,13 @@ const CLAIM_TTL_MS = 30 * 60 * 1000;
 
 /**
  * Returns the list of files touched by a git commit.
- * Throws an error when the commit cannot be resolved (short hash in a non-repo context, missing repo, etc.).
- * Callers treat errors as verification failures (fail closed).
+ * Throws an error when the commit cannot be resolved or is not a commit object (fail closed).
+ * Callers treat errors as verification failures.
  */
-function defaultGetCommitFiles(commit: string, repoRoot: string): string[] | null {
+function defaultGetCommitFiles(commit: string, repoRoot: string): string[] {
   try {
-    // First resolve the commit to its full SHA
-    const resolvedCommit = execFileSync("git", ["rev-parse", "--verify", commit], {
+    // First resolve the ref to a commit OID, rejecting non-commit refs like HEAD^{tree}
+    const resolvedCommit = execFileSync("git", ["rev-parse", "--verify", `${commit}^{commit}`], {
       cwd: repoRoot,
       encoding: "utf-8",
     }).trim();
@@ -78,7 +78,7 @@ function defaultGetCommitFiles(commit: string, repoRoot: string): string[] | nul
     return output.trim().split("\n").filter(Boolean);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    throw new Error(`Cannot verify commit ${commit}: ${msg}`);
+    throw new Error(`Cannot verify commit ${commit} (not a commit or does not exist): ${msg}`);
   }
 }
 
@@ -138,7 +138,7 @@ export interface ParentLoopOptions {
    * Injected for testing; defaults to `defaultGetCommitFiles`.
    * Throws when the commit cannot be resolved (fail closed).
    */
-  getCommitFiles?: (commit: string, repoRoot: string) => string[] | null;
+  getCommitFiles?: (commit: string, repoRoot: string) => string[];
 }
 
 export type ParentLoopHaltReason =
@@ -1329,27 +1329,25 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
       const getFiles = options.getCommitFiles ?? defaultGetCommitFiles;
       try {
         const commitFiles = getFiles(lastCommit, repoRoot);
-        if (commitFiles !== null) {
-          const nonArtifact = commitFiles.filter(
-            (f) => classifyArtifactPath(f, state.cluster_id) === 'non-artifact',
-          );
-          if (nonArtifact.length === 0) {
-            const errMsg = `Worker commit ${lastCommit} for ${nextChild} contains only artifact files; no implementation evidence found`;
-            appendTelemetry(telemetryFile, {
-              event: "child-error",
-              run_id: state.run_id,
-              child_id: nextChild,
-              error: errMsg,
-              commit: lastCommit,
-              timestamp: new Date().toISOString(),
-            });
-            return {
-              haltReason: 'worker-error',
-              childrenDispatched,
-              haltingChild: nextChild,
-              message: errMsg,
-            };
-          }
+        const nonArtifact = commitFiles.filter(
+          (f) => classifyArtifactPath(f, state.cluster_id) === 'non-artifact',
+        );
+        if (nonArtifact.length === 0) {
+          const errMsg = `Worker commit ${lastCommit} for ${nextChild} contains only artifact files; no implementation evidence found`;
+          appendTelemetry(telemetryFile, {
+            event: "child-error",
+            run_id: state.run_id,
+            child_id: nextChild,
+            error: errMsg,
+            commit: lastCommit,
+            timestamp: new Date().toISOString(),
+          });
+          return {
+            haltReason: 'worker-error',
+            childrenDispatched,
+            haltingChild: nextChild,
+            message: errMsg,
+          };
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
