@@ -484,4 +484,212 @@ describe("runLoopAbort", () => {
     expect(saved.dispatch_boundary.continue_epoch).toBe(1); // unchanged
     expect(saved.open_children_meta["POL-281"].dispatch_record.status).toBe("dispatched");
   });
+
+  // ── Tests for status:"blocked" + active_child still set (prior-abort regression) ──
+  //
+  // Real-world scenario: a previous `loop abort` run set status:"blocked" but the
+  // pre-fix code left active_child, step_cursor, and dispatch_boundary dirty because
+  // getMachineState() short-circuits to "blocked" before reaching epoch logic.
+  // The operator re-runs `loop abort` and expects the stuck dispatch to be cleared.
+
+  const blockedStaleDispatchState = {
+    ...staleDispatchState,
+    status: "blocked",
+    blocker: {
+      reason: "prior abort attempt",
+      child_id: "POL-281",
+      timestamp: "2024-01-01T00:01:00.000Z",
+      resolved: false,
+    },
+  };
+
+  it("clears active_child when status is already blocked but dispatch_record is still dispatched with no heartbeat and no result", () => {
+    const stateFile = writeState(testDir, blockedStaleDispatchState);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
+      throw new Error("process.exit called");
+    });
+    vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+
+    try {
+      expect(() =>
+        runLoopAbort({ reason: "retry stale clear", repoRoot: testDir, stateFile }),
+      ).toThrow("process.exit called");
+    } finally {
+      exitSpy.mockRestore();
+      vi.restoreAllMocks();
+    }
+
+    const saved = JSON.parse(readFileSync(stateFile, "utf-8"));
+    expect(saved.active_child).toBe("");
+    expect(saved.step_cursor).toBeNull();
+    expect(saved.dispatch_boundary.continue_epoch).toBe(saved.dispatch_boundary.dispatch_epoch);
+  });
+
+  it("does NOT clear active_child when status is blocked and heartbeat exists in dispatch_record", () => {
+    const stateWithHeartbeat = {
+      ...blockedStaleDispatchState,
+      open_children_meta: {
+        ...blockedStaleDispatchState.open_children_meta,
+        "POL-281": {
+          ...blockedStaleDispatchState.open_children_meta["POL-281"],
+          dispatch_record: {
+            ...blockedStaleDispatchState.open_children_meta["POL-281"].dispatch_record,
+            last_heartbeat_at: "2024-01-01T00:05:00.000Z",
+          },
+        },
+      },
+    };
+    const stateFile = writeState(testDir, stateWithHeartbeat);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
+      throw new Error("process.exit called");
+    });
+    vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+
+    try {
+      expect(() =>
+        runLoopAbort({ reason: "abort with heartbeat present", repoRoot: testDir, stateFile }),
+      ).toThrow("process.exit called");
+    } finally {
+      exitSpy.mockRestore();
+      vi.restoreAllMocks();
+    }
+
+    const saved = JSON.parse(readFileSync(stateFile, "utf-8"));
+    expect(saved.active_child).toBe("POL-281");
+    expect(saved.dispatch_boundary.continue_epoch).toBe(1); // unchanged
+    expect(saved.open_children_meta["POL-281"].dispatch_record.status).toBe("dispatched");
+  });
+
+  it("does NOT clear active_child when status is blocked and result file exists", () => {
+    const resultPath = join(
+      testDir,
+      ".polaris", "clusters", "POL-100", "results", "POL-281-old-dispatch-abc.json",
+    );
+    mkdirSync(join(testDir, ".polaris", "clusters", "POL-100", "results"), { recursive: true });
+    writeFileSync(resultPath, JSON.stringify({ status: "done" }));
+
+    const stateFile = writeState(testDir, blockedStaleDispatchState);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
+      throw new Error("process.exit called");
+    });
+    vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+
+    try {
+      expect(() =>
+        runLoopAbort({ reason: "abort with result present", repoRoot: testDir, stateFile }),
+      ).toThrow("process.exit called");
+    } finally {
+      exitSpy.mockRestore();
+      vi.restoreAllMocks();
+    }
+
+    const saved = JSON.parse(readFileSync(stateFile, "utf-8"));
+    expect(saved.active_child).toBe("POL-281");
+    expect(saved.dispatch_boundary.continue_epoch).toBe(1); // unchanged
+    expect(saved.open_children_meta["POL-281"].dispatch_record.status).toBe("dispatched");
+  });
+
+  it("does NOT clear active_child when dispatch_record is already marked failed", () => {
+    const stateWithFailedRecord = {
+      ...blockedStaleDispatchState,
+      open_children_meta: {
+        ...blockedStaleDispatchState.open_children_meta,
+        "POL-281": {
+          ...blockedStaleDispatchState.open_children_meta["POL-281"],
+          dispatch_record: {
+            ...blockedStaleDispatchState.open_children_meta["POL-281"].dispatch_record,
+            status: "failed" as const,
+            runtime_state: "failed" as const,
+          },
+        },
+      },
+    };
+    const stateFile = writeState(testDir, stateWithFailedRecord);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
+      throw new Error("process.exit called");
+    });
+    vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+
+    try {
+      expect(() =>
+        runLoopAbort({ reason: "abort on already-failed record", repoRoot: testDir, stateFile }),
+      ).toThrow("process.exit called");
+    } finally {
+      exitSpy.mockRestore();
+      vi.restoreAllMocks();
+    }
+
+    const saved = JSON.parse(readFileSync(stateFile, "utf-8"));
+    // dispatch_record already terminal — no stale reset, active_child preserved
+    expect(saved.active_child).toBe("POL-281");
+    expect(saved.dispatch_boundary.continue_epoch).toBe(1); // unchanged
+  });
+
+  it("allows stale reset when telemetry has sealed-result-read-error but no heartbeat", () => {
+    // Write a telemetry file that contains a sealed-result-read-error but NO worker-heartbeat.
+    // The sealed-result-read-error event is an infrastructure error, not worker progress.
+    const artifactDir = join(testDir, ".taskchain_artifacts", "polaris-run");
+    const telemetryFile = join(artifactDir, "runs", "pol-100-session-1", "telemetry.jsonl");
+    mkdirSync(join(artifactDir, "runs", "pol-100-session-1"), { recursive: true });
+    writeFileSync(
+      telemetryFile,
+      [
+        JSON.stringify({ event: "child-dispatched", run_id: "pol-100-session-1", child_id: "POL-281", timestamp: "2024-01-01T00:00:00.000Z" }),
+        JSON.stringify({ event: "sealed-result-read-error", run_id: "pol-100-session-1", child_id: "POL-281", timestamp: "2024-01-01T00:00:30.000Z" }),
+      ].join("\n") + "\n",
+    );
+
+    const stateFile = writeState(testDir, blockedStaleDispatchState);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
+      throw new Error("process.exit called");
+    });
+    vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+
+    try {
+      expect(() =>
+        runLoopAbort({ reason: "stale after read error", repoRoot: testDir, stateFile }),
+      ).toThrow("process.exit called");
+    } finally {
+      exitSpy.mockRestore();
+      vi.restoreAllMocks();
+    }
+
+    const saved = JSON.parse(readFileSync(stateFile, "utf-8"));
+    // sealed-result-read-error is not a heartbeat — stale reset proceeds
+    expect(saved.active_child).toBe("");
+  });
+
+  it("after stale reset on a blocked state: active_child cleared, step_cursor null, epochs balanced, dispatch_record failed, telemetry has both events", () => {
+    const stateFile = writeState(testDir, blockedStaleDispatchState);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
+      throw new Error("process.exit called");
+    });
+    vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+
+    try {
+      expect(() =>
+        runLoopAbort({ reason: "full-state stale reset", repoRoot: testDir, stateFile }),
+      ).toThrow("process.exit called");
+    } finally {
+      exitSpy.mockRestore();
+      vi.restoreAllMocks();
+    }
+
+    const saved = JSON.parse(readFileSync(stateFile, "utf-8"));
+    expect(saved.status).toBe("blocked");
+    expect(saved.active_child).toBe("");
+    expect(saved.step_cursor).toBeNull();
+    expect(saved.dispatch_boundary.continue_epoch).toBe(saved.dispatch_boundary.dispatch_epoch);
+    const dr = saved.open_children_meta["POL-281"].dispatch_record;
+    expect(dr.status).toBe("failed");
+    expect(dr.runtime_state).toBe("failed");
+    expect(dr.dispatch_id).toBe("old-dispatch-abc"); // dispatch_id preserved for audit
+
+    const artifactDir = join(testDir, ".taskchain_artifacts", "polaris-run");
+    const telemetryFile = join(artifactDir, "runs", "pol-100-session-1", "telemetry.jsonl");
+    const events = readFileSync(telemetryFile, "utf-8")
+      .trim().split("\n").map((l) => JSON.parse(l));
+    expect(events.some((e) => e.event === "stale-dispatch-aborted")).toBe(true);
+    expect(events.some((e) => e.event === "loop-aborted")).toBe(true);
+  });
 });
