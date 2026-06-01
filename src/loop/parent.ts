@@ -39,6 +39,7 @@ import { compileImplPacket, type WorkerPacket } from "./worker-packet.js";
 import { selectPromptMode } from "./worker-prompt.js";
 import { parseIssueBody } from "./body-parser.js";
 import { execFileSync } from "node:child_process";
+import { classifyArtifactPath } from "../finalize/artifact-policy.js";
 import {
   INLINE_EXECUTION_ERROR,
   assertNoActiveChildBeforeDispatch,
@@ -55,6 +56,48 @@ import {
 } from "./ledger.js";
 
 const CLAIM_TTL_MS = 30 * 60 * 1000;
+
+/**
+ * Returns the list of files touched by a git commit.
+ * Throws an error when the commit cannot be resolved or is not a commit object (fail closed).
+ * Callers treat errors as verification failures.
+ */
+function defaultGetCommitFiles(commit: string, repoRoot: string): string[] {
+  try {
+    // First resolve the ref to a commit OID, rejecting non-commit refs like HEAD^{tree}
+    const resolvedCommit = execFileSync("git", ["rev-parse", "--verify", `${commit}^{commit}`], {
+      cwd: repoRoot,
+      encoding: "utf-8",
+    }).trim();
+
+    // Now use the resolved SHA to get the files
+    const output = execFileSync("git", ["show", "--name-only", "--format=", resolvedCommit], {
+      cwd: repoRoot,
+      encoding: "utf-8",
+    });
+    return output.trim().split("\n").filter(Boolean);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(`Cannot verify commit ${commit} (not a commit or does not exist): ${msg}`);
+  }
+}
+
+/**
+ * Returns true when a parsed `## Goal` section text looks like placeholder
+ * or template content that has not been filled in.
+ * Impl-only gate — analyze children are exempted by their caller.
+ */
+function isPlaceholderGoal(goal: string): boolean {
+  const t = goal.trim().toLowerCase();
+  if (t.length === 0) return true;
+  if (t === 'tbd') return true;
+  if (t.startsWith('tbd ') || t.startsWith('tbd—') || t.startsWith('tbd -') || t.startsWith('tbd:')) return true;
+  if (t === 'todo') return true;
+  if (t.startsWith('todo:') || t.startsWith('todo ')) return true;
+  if (t === 'placeholder') return true;
+  if (t.startsWith('[placeholder]') || t.startsWith('<<') || t.startsWith('<placeholder')) return true;
+  return false;
+}
 
 function logStatus(
   format: "verbose" | "terse" | undefined,
@@ -90,6 +133,12 @@ export interface ParentLoopOptions {
    * Overrides budget.allow_analyze_children from config.
    */
   allowAnalyzeChildren?: boolean;
+  /**
+   * Optional override for getting files changed in a git commit.
+   * Injected for testing; defaults to `defaultGetCommitFiles`.
+   * Throws when the commit cannot be resolved (fail closed).
+   */
+  getCommitFiles?: (commit: string, repoRoot: string) => string[];
 }
 
 export type ParentLoopHaltReason =
@@ -543,6 +592,7 @@ async function syncClusterDispatch(args: {
  */
 export async function runParentLoop(options: ParentLoopOptions): Promise<ParentLoopResult> {
   const { stateFile, repoRoot, dryRun = false, allowAnalyzeChildren: allowAnalyzeChildrenFlag = false } = options;
+  // getCommitFiles intentionally read via options.getCommitFiles in the gate below
 
   // ── Step 01: Load cluster / read current-state.json ─────────────────────
 
@@ -819,6 +869,36 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
               message: errMsg,
             };
           }
+        }
+      }
+    }
+
+    // ── Placeholder primary goal gate ───────────────────────────────────────
+    //
+    // HARD GATE (impl only): The child's ## Goal section must not be empty or
+    // placeholder text. A placeholder goal means the issue was never properly
+    // authored — dispatching would produce meaningless or incorrect work.
+    // Analyze children are exempt since they are not implementation issues.
+    {
+      const childBody = state.open_children_meta?.[nextChild]?.body ?? '';
+      if (!dryRun && childBody.trim().length > 0 && !isAnalyzeChild(nextChild, state)) {
+        const { goal } = parseIssueBody(childBody);
+        if (isPlaceholderGoal(goal)) {
+          const errMsg =
+            `Child ${nextChild} body has a placeholder primary goal; cannot generate actionable packet. ` +
+            `Fill in the "## Goal" section with a specific, actionable objective.`;
+          appendTelemetry(telemetryFile, {
+            event: "preflight-placeholder-goal",
+            run_id: state.run_id,
+            child_id: nextChild,
+            timestamp: new Date().toISOString(),
+          });
+          return {
+            haltReason: 'preflight-failed',
+            childrenDispatched,
+            haltingChild: nextChild,
+            message: errMsg,
+          };
         }
       }
     }
@@ -1236,6 +1316,57 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
         haltingChild: nextChild,
         message: errMsg,
       };
+    }
+
+    // ── Artifact-only commit gate ────────────────────────────────────────────
+    //
+    // HARD GATE: A worker commit that touches only Polaris artifact files
+    // (.polaris/**, .taskchain_artifacts/**) indicates no real implementation
+    // work was done — reject it to prevent phantom completions.
+    // Uses getCommitFiles from options for testability; defaults to a git-backed
+    // implementation that throws when the commit cannot be resolved (fail closed).
+    if (!dryRun && workerStatus === 'done' && lastCommit && lastCommit.trim().length > 0) {
+      const getFiles = options.getCommitFiles ?? defaultGetCommitFiles;
+      try {
+        const commitFiles = getFiles(lastCommit, repoRoot);
+        const nonArtifact = commitFiles.filter(
+          (f) => classifyArtifactPath(f, state.cluster_id) === 'non-artifact',
+        );
+        if (nonArtifact.length === 0) {
+          const errMsg = `Worker commit ${lastCommit} for ${nextChild} contains only artifact files; no implementation evidence found`;
+          appendTelemetry(telemetryFile, {
+            event: "child-error",
+            run_id: state.run_id,
+            child_id: nextChild,
+            error: errMsg,
+            commit: lastCommit,
+            timestamp: new Date().toISOString(),
+          });
+          return {
+            haltReason: 'worker-error',
+            childrenDispatched,
+            haltingChild: nextChild,
+            message: errMsg,
+          };
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        const errMsg = `Cannot verify worker commit ${lastCommit} for ${nextChild}: ${msg}`;
+        appendTelemetry(telemetryFile, {
+          event: "child-error",
+          run_id: state.run_id,
+          child_id: nextChild,
+          error: errMsg,
+          commit: lastCommit,
+          timestamp: new Date().toISOString(),
+        });
+        return {
+          haltReason: 'worker-error',
+          childrenDispatched,
+          haltingChild: nextChild,
+          message: errMsg,
+        };
+      }
     }
 
     // workerStatus === "done" has already been validated upstream.

@@ -335,6 +335,8 @@ describe("runFinalize (steps 1–6, skip-delivery)", () => {
     writeEmptyAtlas(testDir);
     writeDurableClusterArtifacts(testDir, "POL-6");
     stageFile(testDir, ".taskchain_artifacts/polaris-run/current-state.json", "{\"scratch\":true}\n");
+    // Non-artifact implementation evidence required by the evidence gate
+    stageFile(testDir, "src/impl.ts", "export function impl() {}\n");
 
     // Capture stdout
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
