@@ -44,6 +44,17 @@ Use this skill when the user asks to analyze or break down a Polaris issue befor
 
 See `docs/Polaris/spec/polaris-implementation-plan.md` for the Polaris architecture reference.
 
+## Canonical issue template
+
+All implementation issues (IMPLEMENT parents and children) must use the 8-section canonical format.
+See `.polaris/skills/polaris-analyze/issue-template.md` for the full template.
+
+Key rules:
+- Use `## Scope` exactly — no variants ("Implementation scope", "Expected code areas", etc.).
+- If scope is unknown: write `- TBD — BLOCKED: scope missing` under `## Scope` and mark the issue Blocked in Linear.
+- Both IMPLEMENT parents and child issues require a full body — no title-only stubs.
+- Every child must have `## Scope` and `## Validation` or the dispatch preflight gate will halt execution.
+
 ## When to use
 
 - "Analyze POL-XXX before running it"
