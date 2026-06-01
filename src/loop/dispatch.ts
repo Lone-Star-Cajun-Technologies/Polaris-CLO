@@ -2,7 +2,7 @@ import { appendFileSync, mkdirSync, realpathSync, writeFileSync } from "node:fs"
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { dirname, join, isAbsolute, resolve, relative } from "node:path";
-import { readState, validateState, writeStateAtomic, type LoopState, type ChildDispatchRecord, type DispatchMode, type WorkerRuntimeState, type WorkerAssignmentRecord } from "./checkpoint.js";
+import { readState, validateState, writeStateAtomic, readBodyFromClusterSnapshot, type LoopState, type ChildDispatchRecord, type DispatchMode, type WorkerRuntimeState, type WorkerAssignmentRecord } from "./checkpoint.js";
 import { compileImplPacket, type WorkerPacket, type WorkerRoleContext } from "./worker-packet.js";
 import { parseIssueBody } from "./body-parser.js";
 import { loadConfig } from "../config/loader.js";
@@ -740,20 +740,30 @@ function buildPacket(
   resultFile?: string,
 ): WorkerPacket {
   const childMeta = state.open_children_meta?.[childId];
+  // Hydrate body from cluster snapshot when runtime state lacks it.
+  const cachedBody = childMeta?.body;
+  const resolvedChildBody = (cachedBody && cachedBody.trim().length > 0)
+    ? cachedBody
+    : readBodyFromClusterSnapshot(state.cluster_id, childId, repoRoot);
+
   const issueContext = childMeta
     ? {
         id: childId,
         title: childMeta.title ?? childId,
         key_requirements: [],
-        body: childMeta.body,
+        body: resolvedChildBody,
       }
     : undefined;
 
   // Scope precedence: child body → parent/cluster-root body fallback.
-  const childScope = issueContext?.body ? parseIssueBody(issueContext.body).scope : [];
+  const childScope = resolvedChildBody ? parseIssueBody(resolvedChildBody).scope : [];
+  const cachedParentBody = state.open_children_meta?.[state.cluster_id]?.body;
+  const parentBodyForScope = (cachedParentBody && cachedParentBody.trim().length > 0)
+    ? cachedParentBody
+    : readBodyFromClusterSnapshot(state.cluster_id, state.cluster_id, repoRoot) ?? '';
   const resolvedScope = childScope.length > 0
     ? childScope
-    : parseIssueBody(state.open_children_meta?.[state.cluster_id]?.body ?? '').scope;
+    : parseIssueBody(parentBodyForScope).scope;
 
   return compileImplPacket({
     runId: state.run_id,
@@ -958,9 +968,9 @@ export function runLoopDispatch(options: DispatchOptions): void {
   // Fail packet generation if body is present but scope cannot be derived.
   // A body without a scope section produces an unactionable packet that would
   // block the worker immediately. Body absence is caught separately by the
-  // parent loop's preflight gate.
-  const childBodyForCheck = state.open_children_meta?.[childId]?.body;
-  const childBodyPresent = !!(childBodyForCheck && childBodyForCheck.trim().length > 0);
+  // parent loop's preflight gate. Use the resolved body from the packet so
+  // snapshot-hydrated bodies are covered by the same check.
+  const childBodyPresent = !!(packet.instructions.issue_context?.body?.trim());
   if (packet.worker_role === 'impl' && childBodyPresent && packet.instructions.allowed_scope.length === 0) {
     fail(
       `Packet generation failed for ${childId}: body has no scope section. ` +

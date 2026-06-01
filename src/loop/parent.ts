@@ -25,6 +25,7 @@ import {
   readState,
   validateState,
   writeStateAtomic,
+  readBodyFromClusterSnapshot,
   type ChildDispatchRecord,
   type LoopState,
 } from "./checkpoint.js";
@@ -285,22 +286,32 @@ function buildPacket(
   const branch = state.branch ?? getCurrentBranch(repoRoot);
 
   const childMeta = state.open_children_meta?.[activeChild];
+  // Hydrate body from cluster snapshot when runtime state lacks it.
+  const cachedBody = childMeta?.body;
+  const resolvedChildBody = (cachedBody && cachedBody.trim().length > 0)
+    ? cachedBody
+    : readBodyFromClusterSnapshot(state.cluster_id, activeChild, repoRoot);
+
   const issueContext = childMeta
     ? {
         id: activeChild,
         title: childMeta.title ?? activeChild,
         key_requirements: [],
-        body: childMeta.body,
+        body: resolvedChildBody,
       }
     : undefined;
 
   // Scope precedence: child body → parent/cluster-root body fallback.
   // Derive here so compileImplPacket receives an authoritative scope list
   // rather than falling back to [] when the child body has no scope section.
-  const childScope = issueContext?.body ? parseIssueBody(issueContext.body).scope : [];
+  const childScope = resolvedChildBody ? parseIssueBody(resolvedChildBody).scope : [];
+  const cachedParentBody = state.open_children_meta?.[state.cluster_id]?.body;
+  const parentBodyForScope = (cachedParentBody && cachedParentBody.trim().length > 0)
+    ? cachedParentBody
+    : readBodyFromClusterSnapshot(state.cluster_id, state.cluster_id, repoRoot) ?? '';
   const resolvedScope = childScope.length > 0
     ? childScope
-    : parseIssueBody(state.open_children_meta?.[state.cluster_id]?.body ?? '').scope;
+    : parseIssueBody(parentBodyForScope).scope;
 
   const promptMode = selectPromptMode(activeChild, state);
 
@@ -817,14 +828,19 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
 
     // ── Child body preflight gate ────────────────────────────────────────────
     //
-    // HARD GATE: Every child MUST have a body/description in open_children_meta
-    // before dispatch. A missing body means the worker cannot generate an
-    // actionable packet — dispatching would produce low-quality or incorrect work.
-    // Re-sync the cluster from Linear (tracker sync-in) to populate body fields.
+    // HARD GATE: Every child MUST have a resolvable body/description before
+    // dispatch. Runtime state is checked first (cache); if absent, the durable
+    // cluster snapshot (.polaris/clusters/<id>/clusters.json) is the fallback.
+    // If neither source has a body, tell the operator to run tracker sync-in.
     {
-      const childBody = state.open_children_meta?.[nextChild]?.body;
+      const cachedChildBody = state.open_children_meta?.[nextChild]?.body;
+      const childBody = (cachedChildBody && cachedChildBody.trim().length > 0)
+        ? cachedChildBody
+        : readBodyFromClusterSnapshot(state.cluster_id, nextChild, repoRoot);
       if (!dryRun && (!childBody || childBody.trim().length === 0)) {
-        const errMsg = `Child ${nextChild} has no body/description; cannot generate actionable packet.`;
+        const errMsg =
+          `Child ${nextChild} has no body/description; cannot generate actionable packet. ` +
+          `Run 'tracker sync-in ${state.cluster_id}' to populate issue body data from Linear.`;
         appendTelemetry(telemetryFile, {
           event: "preflight-body-missing",
           run_id: state.run_id,
@@ -845,16 +861,23 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     // HARD GATE: Every impl child MUST have a derivable allowed_scope before
     // dispatch. Scope is parsed from the child's body "## Scope" / "## Expected
     // code areas" section, with fallback to the cluster-root (parent) body.
+    // Both sources check runtime state first, then the cluster snapshot.
     // A packet with empty allowed_scope would block the worker immediately —
     // fail here with a clear error instead.
     // Analyze children are exempt since they don't produce impl packets.
     {
-      const childBody = state.open_children_meta?.[nextChild]?.body ?? '';
+      const cachedChildBody = state.open_children_meta?.[nextChild]?.body;
+      const childBody = (cachedChildBody && cachedChildBody.trim().length > 0)
+        ? cachedChildBody
+        : readBodyFromClusterSnapshot(state.cluster_id, nextChild, repoRoot) ?? '';
       if (!dryRun && childBody.trim().length > 0 && !isAnalyzeChild(nextChild, state)) {
         const { scope: childScope } = parseIssueBody(childBody);
         if (childScope.length === 0) {
           // Fallback: check the cluster-root (parent) body for scope
-          const parentBody = state.open_children_meta?.[state.cluster_id]?.body ?? '';
+          const cachedParentBody = state.open_children_meta?.[state.cluster_id]?.body;
+          const parentBody = (cachedParentBody && cachedParentBody.trim().length > 0)
+            ? cachedParentBody
+            : readBodyFromClusterSnapshot(state.cluster_id, state.cluster_id, repoRoot) ?? '';
           const { scope: parentScope } = parseIssueBody(parentBody);
           if (parentScope.length === 0) {
             const errMsg =
@@ -885,7 +908,10 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     // authored — dispatching would produce meaningless or incorrect work.
     // Analyze children are exempt since they are not implementation issues.
     {
-      const childBody = state.open_children_meta?.[nextChild]?.body ?? '';
+      const cachedChildBodyForGoal = state.open_children_meta?.[nextChild]?.body;
+      const childBody = (cachedChildBodyForGoal && cachedChildBodyForGoal.trim().length > 0)
+        ? cachedChildBodyForGoal
+        : readBodyFromClusterSnapshot(state.cluster_id, nextChild, repoRoot) ?? '';
       if (!dryRun && childBody.trim().length > 0 && !isAnalyzeChild(nextChild, state)) {
         const { goal } = parseIssueBody(childBody);
         if (isPlaceholderGoal(goal)) {

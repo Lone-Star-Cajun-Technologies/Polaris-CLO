@@ -81,6 +81,31 @@ function writeClusterStateFile(
   return clusterStateFile;
 }
 
+function writeClusterSnapshotFile(
+  dir: string,
+  clusterId: string,
+  nodes: Record<string, { title?: string; body?: string }>,
+): void {
+  const clusterDir = join(dir, ".polaris", "clusters", clusterId);
+  mkdirSync(clusterDir, { recursive: true });
+  const snapshot = {
+    schemaVersion: "v2",
+    source: { id: clusterId, type: "Linear" },
+    nodes: Object.fromEntries(
+      Object.entries(nodes).map(([id, n]) => [
+        id,
+        { id, title: n.title ?? id, status: "Todo", ...(n.body ? { body: n.body } : {}) },
+      ]),
+    ),
+    dependencies: {},
+    clusters: {
+      [clusterId]: { id: clusterId, title: clusterId, children: Object.keys(nodes) },
+    },
+    activeCluster: clusterId,
+  };
+  writeFileSync(join(clusterDir, "clusters.json"), JSON.stringify(snapshot, null, 2), "utf-8");
+}
+
 function captureStdout(fn: () => void): string {
   const chunks: string[] = [];
   const originalWrite = process.stdout.write.bind(process.stdout);
@@ -940,5 +965,61 @@ describe("runLoopDispatch", () => {
     });
 
     expect(result?.orphaned).toBe(false);
+  });
+
+  // ── Cluster snapshot body hydration ──────────────────────────────────────
+  //
+  // buildPacket must hydrate issue body from .polaris/clusters/<id>/clusters.json
+  // when open_children_meta lacks body. .taskchain_artifacts is ephemeral state;
+  // clusters.json is the durable local body snapshot written by tracker sync-in.
+
+  it("packet body and scope hydrated from clusters.json when state has no body", () => {
+    const stateFile = writeState(
+      testDir,
+      baseState({
+        // No body on POL-145
+        open_children_meta: {
+          "POL-145": { title: "Add dispatch command", labels: ["implement"] },
+          "POL-146": { title: "Parent delivery", labels: ["implement"] },
+        },
+      }),
+    );
+    writeClusterSnapshotFile(testDir, "POL-142", {
+      "POL-142": { title: "Cluster root" },
+      "POL-145": {
+        title: "Add dispatch command",
+        body: "## Goal\nAdd dispatch.\n\n## Scope\n- src/loop/dispatch.ts\n",
+      },
+    });
+    writeClusterStateFile(testDir, "POL-142", ["POL-145", "POL-146"]);
+
+    const output = captureStdout(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+    const packet = JSON.parse(output);
+
+    expect(packet.active_child).toBe("POL-145");
+    expect(packet.instructions.issue_context?.body).toContain("## Goal");
+    expect(packet.instructions.allowed_scope).toContain("src/loop/dispatch.ts");
+  });
+
+  it("packet proceeds without body when neither state nor clusters.json has body", () => {
+    const stateFile = writeState(
+      testDir,
+      baseState({
+        open_children_meta: {
+          "POL-145": { title: "Add dispatch command", labels: ["implement"] },
+          "POL-146": { title: "Parent delivery", labels: ["implement"] },
+        },
+      }),
+    );
+    writeClusterStateFile(testDir, "POL-142", ["POL-145", "POL-146"]);
+    // No clusters.json written — snapshot absent
+
+    const output = captureStdout(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+    const packet = JSON.parse(output);
+
+    expect(packet.active_child).toBe("POL-145");
+    // No body available, so issue_context body is undefined and scope is empty
+    expect(packet.instructions.issue_context?.body).toBeUndefined();
+    expect(packet.instructions.allowed_scope).toEqual([]);
   });
 });
