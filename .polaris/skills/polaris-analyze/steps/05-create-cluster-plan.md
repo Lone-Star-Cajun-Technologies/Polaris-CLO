@@ -80,7 +80,7 @@ Why this cluster was created. Link to ANALYZE source issue.
 The specific implementation outcome for the entire cluster.
 
 ## Scope
-Cluster-wide allowed paths or globs. Children inherit this if they omit their own ## Scope.
+Cluster-wide allowed paths or globs for documentation purposes. Each child must include its own explicit ## Scope.
 - <path-or-glob>
 - ...
 

@@ -326,6 +326,7 @@ describe("parseIssueBody — TBD-blocked scope", () => {
     // Mixed: the TBD item is filtered out but a real path is present
     expect(scopeBlocked).toBe(false);
     expect(scope).toContain("src/loop/dispatch.ts");
+    expect(scope).not.toContain("TBD — BLOCKED: scope missing");
   });
 
   it("scopeBlocked: false for normal bodies without scope section", () => {

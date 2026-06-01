@@ -213,9 +213,10 @@ export function parseIssueBody(body: string): ParsedIssueBody {
 
   const rawScope = findSection(sections, SCOPE_HEADERS);
   const scopeBlocked = rawScope.length > 0 && rawScope.every((item) => TBD_BLOCKED_RE.test(item));
+  const filteredScope = rawScope.filter((item) => !TBD_BLOCKED_RE.test(item));
 
   return {
-    scope: scopeBlocked ? [] : rawScope,
+    scope: scopeBlocked ? [] : filteredScope,
     scopeBlocked,
     validationCommands: findSection(sections, VALIDATION_HEADERS),
     requirements: findSection(sections, REQUIREMENTS_HEADERS),

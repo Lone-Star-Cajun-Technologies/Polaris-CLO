@@ -92,7 +92,8 @@ must always use the canonical header names.
 ### `## Scope` is required
 
 - Every implementation child issue MUST have `## Scope` with at least one path or glob.
-- The runtime derives `allowed_scope` from this section. An empty or missing `## Scope` causes
+- Child issues must include their own explicit `## Scope` section (they may not omit it).
+- The runtime derives `allowed_scope` from the child's `## Scope` section. An empty or missing `## Scope` causes
   a hard preflight failure — the issue cannot be dispatched.
 - If scope is not yet determinable, write:
 
@@ -116,9 +117,9 @@ must include all 8 canonical sections, populated with real content.
 
 ### IMPLEMENT parents
 
-IMPLEMENT parent issues carry a cluster-wide `## Scope` that child issues inherit
-when they omit their own `## Scope` section. Always write a specific scope on the parent —
-child issues that rely on parent scope inheritance are fragile.
+IMPLEMENT parent issues must include a cluster-wide `## Scope` section for documentation
+and context purposes. However, every child issue must include its own explicit `## Scope`
+section — children may not omit scope to inherit from the parent.
 
 ---
 
