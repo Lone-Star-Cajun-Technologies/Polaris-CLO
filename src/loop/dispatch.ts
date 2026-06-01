@@ -957,6 +957,9 @@ export function runLoopDispatch(options: DispatchOptions): void {
   const canonicalResultFile = options.resultFile
     ? canonicalPath(absoluteResultFile(options.repoRoot, options.resultFile))
     : resultPath;
+  // Use canonicalResultFile as the effective result path when options.resultFile is provided
+  const effectiveResultPath = canonicalResultFile;
+  const relativeEffectiveResultPath = relative(options.repoRoot, effectiveResultPath);
 
   // ── Build packet before writing state ───────────────────────────────────────
   // We need to build the packet first to know its content for the artifact.
@@ -1045,7 +1048,7 @@ export function runLoopDispatch(options: DispatchOptions): void {
     state.cluster_id,
     childId,
     relativePacketPath,
-    relativeResultPath,
+    relativeEffectiveResultPath,
     packet.role_context,
     resolvedProvider,
     providerDecision.selectionReason,
@@ -1115,7 +1118,7 @@ export function runLoopDispatch(options: DispatchOptions): void {
     prompt_mode: packet.prompt_mode,
     prompt_estimated_tokens: packet.prompt_metrics.estimated_tokens,
     packet_path: packetPath,
-    expected_result_path: resultPath,
+    expected_result_path: effectiveResultPath,
     dispatch_mode: dispatchRecord.dispatch_mode,
     runtime_state: dispatchRecord.runtime_state,
     provider: dispatchRecord.provider ?? null,
