@@ -283,6 +283,23 @@ describe("LinearAdapter", () => {
     expect(fullGraph.dependencies["POL-199"]).toEqual(["POL-198"]);
   });
 
+  it("excludes relation-referenced issues from runnable children in single-target mode", async () => {
+    // POL-42 (blocks root) and POL-199 (blocked by root) are context/dependency references.
+    // They must appear in nodes (graph reference) but must NOT appear in children.
+    const adapter = new LinearAdapter(config, linearClient);
+    const graph = await adapter.syncIn("POL-198");
+    const fullGraph = graph.fullGraph;
+
+    // Relation targets are in the graph for edge/dependency resolution.
+    expect(fullGraph.nodes["POL-42"]).toBeDefined();
+    expect(fullGraph.nodes["POL-199"]).toBeDefined();
+
+    // But they must never appear in the runnable children list.
+    expect(fullGraph.clusters["POL-198"].children).not.toContain("POL-42");
+    expect(fullGraph.clusters["POL-198"].children).not.toContain("POL-199");
+    expect(fullGraph.clusters["POL-198"].children).not.toContain("POL-198");
+  });
+
   it("treats the root as a runnable leaf when it has no Linear children", async () => {
     linearClient.getIssueById.mockReset();
     linearClient.getIssueById.mockResolvedValue({
