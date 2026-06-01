@@ -9,7 +9,6 @@ import {
   appendStaleDispatchAbortedEvent,
   type LoopState,
 } from "./checkpoint.js";
-import { getMachineState } from "./dispatch-boundary.js";
 import {
   DEFAULT_LEDGER_PATH,
   LedgerWriter,
@@ -65,21 +64,43 @@ interface StaleDispatchInfo {
 
 /**
  * Detect whether the current state has a stuck dispatch with no worker activity.
- * A dispatch is considered stale when active_child is set, the machine state is
- * "dispatched", but the worker has no heartbeat and the expected result file is absent.
- * This covers both the "packet-created" runtime state and older delegated dispatches
- * that never progressed.
+ *
+ * Intentionally does NOT call getMachineState(). When a prior `loop abort` set
+ * state.status to "blocked" but failed to clear active_child (the pre-fix
+ * behavior), getMachineState() would short-circuit to "blocked" before reaching
+ * the dispatch-boundary epoch logic, making re-abort appear non-stale.  Instead
+ * we inspect the raw dispatch signals directly.
+ *
+ * A dispatch is eligible for stale reset when ALL of the following are true:
+ *   • active_child is set
+ *   • dispatch evidence exists (step_cursor is "dispatch", dispatch_boundary
+ *     records the child, or the dispatch_record is still "dispatched")
+ *   • the dispatch_record has not already reached a terminal state (failed/completed)
+ *   • no heartbeat exists (worker never acknowledged)
+ *   • the expected result file is absent (worker never wrote output)
  */
 function detectStaleDispatch(state: LoopState, repoRoot: string): StaleDispatchInfo {
   if (!state.active_child || state.active_child === "") {
     return { isStale: false, hasHeartbeat: false, hasResultFile: false };
   }
 
-  if (getMachineState(state) !== "dispatched") {
+  const activeChild = state.active_child;
+  const dr = state.open_children_meta?.[activeChild]?.dispatch_record;
+
+  // A dispatch record that already reached a terminal state has been handled.
+  if (dr && (dr.status === "failed" || dr.status === "completed")) {
     return { isStale: false, hasHeartbeat: false, hasResultFile: false };
   }
 
-  const dr = state.open_children_meta?.[state.active_child]?.dispatch_record;
+  // Require at least one dispatch signal for this child.
+  const hasDispatchEvidence =
+    state.step_cursor === "dispatch" ||
+    state.dispatch_boundary?.last_dispatched_child === activeChild ||
+    dr?.status === "dispatched";
+
+  if (!hasDispatchEvidence) {
+    return { isStale: false, hasHeartbeat: false, hasResultFile: false };
+  }
 
   const hasHeartbeat = !!(dr?.last_heartbeat_at);
 
@@ -93,8 +114,7 @@ function detectStaleDispatch(state: LoopState, repoRoot: string): StaleDispatchI
 
   // Only treat as stale when the worker left no evidence at all.
   // If a heartbeat exists the worker may still be running; if a result file
-  // exists the worker completed and its output must be handled before clearing.
-  // In either case the operator must resolve the situation manually.
+  // exists the worker completed and must be checkpointed before clearing.
   return {
     isStale: !hasHeartbeat && !hasResultFile,
     hasHeartbeat,
