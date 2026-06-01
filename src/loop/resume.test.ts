@@ -5,6 +5,8 @@ import { tmpdir } from "node:os";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { runLoopResume } from "./resume.js";
+import { runLoopDispatch } from "./dispatch.js";
+import { createBootstrapSeal } from "./run-bootstrap.js";
 import type { BootstrapPacket } from "./bootstrap-packet.js";
 import type { ClusterState } from "../cluster-state/types.js";
 
@@ -333,5 +335,177 @@ describe("runLoopResume", () => {
       exitSpy.mockRestore();
       errSpy.mockRestore();
     }
+  });
+
+  // ── Blocked-idle resume tests ──────────────────────────────────────────────
+  //
+  // After `loop abort` clears a stale dispatch, current-state.json has:
+  //   status: "blocked", active_child: "", balanced dispatch_boundary.
+  // The bootstrap packet's current_state_sha was computed before the abort
+  // and no longer matches.  Resume must clear the blocker rather than
+  // reporting "state packet stale".
+
+  // Shared blocked-idle state shape used across these tests.
+  function makeBlockedIdleState(testDir: string) {
+    return {
+      schema_version: "1.0",
+      run_id: "pol-5-session-1",
+      cluster_id: "POL-5",
+      branch: getCurrentBranch(testDir),
+      active_child: "",
+      completed_children: ["POL-23"],
+      open_children: ["POL-24"],
+      step_cursor: null as null,
+      context_budget: { children_completed: 1, max_children_per_session: 3 },
+      status: "blocked",
+      blocker: {
+        reason: "stale dispatch cleared",
+        child_id: "POL-24",
+        timestamp: "2024-01-01T00:00:00.000Z",
+        resolved: false,
+      },
+      next_open_child: "POL-24",
+      dispatch_boundary: { dispatch_epoch: 1, continue_epoch: 1, last_dispatched_child: "POL-24" },
+      run_bootstrap_seal: createBootstrapSeal("pol-5-session-1", "POL-5", ["POL-24"]),
+    };
+  }
+
+  it("clears blocked status when active_child is empty and dispatch boundary is balanced (blocked-idle)", () => {
+    const blockedIdleState = makeBlockedIdleState(testDir);
+
+    // Write state with a different (pre-abort) SHA in the packet to simulate
+    // the abort having modified current-state.json after the packet was created.
+    const stalePacketContent = { schema_version: "1.0", run_id: "pol-5-session-1", status: "running" };
+    const stateFile = writeState(testDir, stalePacketContent);
+    const packet = makePacket(stateFile, stalePacketContent, testDir);
+    // Overwrite with the post-abort blocked-idle state (SHA now differs from packet)
+    writeFileSync(stateFile, JSON.stringify(blockedIdleState, null, 2));
+    writePacket(testDir, packet);
+
+    const logs: string[] = [];
+    const origLog = console.log;
+    console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
+    try {
+      runLoopResume({ repoRoot: testDir, stateFile });
+    } finally {
+      console.log = origLog;
+    }
+
+    const saved = JSON.parse(readFileSync(stateFile, "utf-8")) as Record<string, unknown>;
+    expect(saved["status"]).toBe("running");
+    expect(saved["blocker"]).toBeUndefined();
+    expect(saved["active_child"]).toBe("");
+  });
+
+  it("refuses to resume when blocked with active_child present", () => {
+    const blockedWithActiveChild = {
+      ...makeBlockedIdleState(testDir),
+      active_child: "POL-24",
+    };
+
+    const stalePacketContent = { schema_version: "1.0", run_id: "pol-5-session-1", status: "running" };
+    const stateFile = writeState(testDir, stalePacketContent);
+    const packet = makePacket(stateFile, stalePacketContent, testDir);
+    writeFileSync(stateFile, JSON.stringify(blockedWithActiveChild, null, 2));
+    writePacket(testDir, packet);
+
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
+      throw new Error("process.exit called");
+    });
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      expect(() => runLoopResume({ repoRoot: testDir, stateFile })).toThrow("process.exit called");
+      expect(errSpy).toHaveBeenCalledWith(
+        expect.stringContaining("active_child set"),
+      );
+    } finally {
+      exitSpy.mockRestore();
+      errSpy.mockRestore();
+    }
+  });
+
+  it("refuses to resume when blocked with unbalanced dispatch boundary", () => {
+    const blockedUnbalanced = {
+      ...makeBlockedIdleState(testDir),
+      // dispatch_epoch > continue_epoch → outstanding dispatch
+      dispatch_boundary: { dispatch_epoch: 2, continue_epoch: 1, last_dispatched_child: "POL-24" },
+    };
+
+    const stalePacketContent = { schema_version: "1.0", run_id: "pol-5-session-1", status: "running" };
+    const stateFile = writeState(testDir, stalePacketContent);
+    const packet = makePacket(stateFile, stalePacketContent, testDir);
+    writeFileSync(stateFile, JSON.stringify(blockedUnbalanced, null, 2));
+    writePacket(testDir, packet);
+
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
+      throw new Error("process.exit called");
+    });
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      expect(() => runLoopResume({ repoRoot: testDir, stateFile })).toThrow("process.exit called");
+      expect(errSpy).toHaveBeenCalledWith(
+        expect.stringContaining("unbalanced dispatch boundary"),
+      );
+    } finally {
+      exitSpy.mockRestore();
+      errSpy.mockRestore();
+    }
+  });
+
+  it("after blocked-idle resume, loop dispatch creates a fresh packet", () => {
+    const blockedIdleState = makeBlockedIdleState(testDir);
+
+    // Write cluster state so dispatch can sync
+    const clusterState: ClusterState = {
+      schema_version: "1.0",
+      cluster_id: "POL-5",
+      state_generation: 1,
+      child_states: [
+        { id: "POL-23", status: "done" },
+        { id: "POL-24", status: "ready" },
+      ],
+      claim_metadata: {},
+      packet_pointers: {},
+      result_pointers: {},
+      validation_results: {},
+      commits: {},
+      tracker_mutations: {},
+      blockers: [],
+    };
+    writeClusterState(testDir, clusterState);
+
+    const stalePacketContent = { schema_version: "1.0", run_id: "pol-5-session-1", status: "running" };
+    const stateFile = writeState(testDir, stalePacketContent);
+    const packet = makePacket(stateFile, stalePacketContent, testDir);
+    writeFileSync(stateFile, JSON.stringify(blockedIdleState, null, 2));
+    writePacket(testDir, packet);
+
+    // Step 1: resume clears blocked status
+    const logs: string[] = [];
+    const origLog = console.log;
+    console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
+    try {
+      runLoopResume({ repoRoot: testDir, stateFile });
+    } finally {
+      console.log = origLog;
+    }
+
+    const afterResume = JSON.parse(readFileSync(stateFile, "utf-8")) as Record<string, unknown>;
+    expect(afterResume["status"]).toBe("running");
+
+    // Step 2: dispatch creates a fresh packet
+    const stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+    try {
+      runLoopDispatch({ stateFile, repoRoot: testDir });
+    } finally {
+      stdoutSpy.mockRestore();
+      vi.restoreAllMocks();
+    }
+
+    const afterDispatch = JSON.parse(readFileSync(stateFile, "utf-8")) as Record<string, unknown>;
+    expect(afterDispatch["active_child"]).toBe("POL-24");
+    const meta = afterDispatch["open_children_meta"] as Record<string, { dispatch_record?: { status?: string } }>;
+    expect(meta["POL-24"]?.dispatch_record?.status).toBe("dispatched");
   });
 });
