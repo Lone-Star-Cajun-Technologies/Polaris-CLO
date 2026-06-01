@@ -804,7 +804,8 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
           if (parentScope.length === 0) {
             const errMsg =
               `Child ${nextChild} body has no scope section; cannot generate actionable packet. ` +
-              `Add a "## Scope" or "## Expected code areas" section to the issue body.`;
+              `Add a "## Scope" section with explicit repo paths or globs. ` +
+              `If scope is unknown, write "- TBD — BLOCKED: scope missing" and mark the issue as Blocked in Linear.`;
             appendTelemetry(telemetryFile, {
               event: "preflight-scope-missing",
               run_id: state.run_id,

@@ -67,6 +67,37 @@ If a matching IMPLEMENT parent already exists under the ANALYZE issue, update/re
 
 Children must be created under the IMPLEMENT parent, not under the ANALYZE issue.
 
+**The IMPLEMENT parent MUST have a full body using the canonical format.** Title-only stubs are not allowed. Use:
+
+```text
+## Objective
+One sentence. What this cluster accomplishes when complete.
+
+## Context
+Why this cluster was created. Link to ANALYZE source issue.
+
+## Goal
+The specific implementation outcome for the entire cluster.
+
+## Scope
+Cluster-wide allowed paths or globs for documentation purposes. Each child must include its own explicit ## Scope.
+- <path-or-glob>
+- ...
+
+## Acceptance Criteria
+- Verifiable conditions for the cluster as a whole.
+
+## Validation
+- <command>
+- ...
+
+## Ordering
+Dependencies relative to other IMPLEMENT clusters, if any.
+
+## Non-goals
+What the cluster must not change.
+```
+
 ### 3. Write clusters.json
 
 Always write to `.polaris/clusters/<implement-parent-id>/clusters.json`.
@@ -104,30 +135,52 @@ For trackerless workflows (`source_type: "local"`), IDs are locally generated sl
 - If a matching child already exists, update/refine it — do not duplicate.
 - Confirm the child parent is the IMPLEMENT parent issue.
 
-**Each child issue body must include:**
+**Every child issue MUST have a full body. Title-only stubs are not allowed.**
+
+**Canonical child issue body format (use this exactly):**
 
 ```text
 ## Objective
 One sentence. What this child achieves when complete.
 
+## Context
+Why this child exists. Include relevant bug, PR, cluster, or doctrine context.
+
+## Goal
+Specific implementation outcome for this child.
+
 ## Scope
-Specific files, symbols, or systems this child touches.
-
-## Allowed Changes
-Exhaustive list of what may be modified.
-
-## Out of Scope
-Explicit exclusions.
+Machine-readable list of allowed paths or globs. Use explicit repo paths.
+- src/loop/**
+- src/finalize/**
 
 ## Acceptance Criteria
-Verifiable conditions that must be true to mark Done.
+- Verifiable condition 1
+- Verifiable condition 2
 
 ## Validation
-Commands polaris-run must run to confirm criteria pass.
+- npm run build
+- npm test
+- npx vitest run <relevant paths>
 
-## Dependencies / Blockers
-Child IDs that must be Done before this one can start.
+## Ordering
+- List of sibling child IDs this child depends on (or "None").
+
+## Non-goals
+- What this child must not change.
 ```
+
+**Critical rules for `## Scope`:**
+
+- Use the header `## Scope` exactly — not "Implementation scope", "Expected code areas", "Files", or any other variant. Aliases exist for backward compatibility only; new issues must use `## Scope`.
+- List explicit repo paths or globs, one per bullet.
+- If scope is not yet determinable, write:
+  ```markdown
+  ## Scope
+  - TBD — BLOCKED: scope missing
+  ```
+  and mark the Linear issue as **Blocked** status. Do NOT invent paths. A blocked issue will not be dispatched by polaris-run.
+- Do not omit the `## Scope` section. A missing scope section causes a hard preflight failure at dispatch time.
 
 ## Artifact update
 

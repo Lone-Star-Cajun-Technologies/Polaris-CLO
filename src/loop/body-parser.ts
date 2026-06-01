@@ -5,16 +5,38 @@
  * generator. Sections are identified by `## Header` lines (case-insensitive).
  * List items are lines starting with `- ` or `* `.
  *
+ * ## Canonical section format
+ *
+ * All implementation issues (parents and children) must use this exact format:
+ *
+ *   ## Objective          — one-sentence statement of what this issue accomplishes
+ *   ## Context            — why this issue exists
+ *   ## Goal               — specific implementation outcome
+ *   ## Scope              — machine-readable list of allowed paths/globs (REQUIRED)
+ *   ## Acceptance Criteria — checklist of observable completion requirements
+ *   ## Validation         — commands that must be run (REQUIRED)
+ *   ## Ordering           — dependencies or sequencing relative to siblings
+ *   ## Non-goals          — what this issue must not change
+ *
+ * Use `## Scope` exactly — not "Implementation scope", "Expected code areas",
+ * or other variants. Aliases are supported for backward compatibility only.
+ *
+ * If scope cannot be determined, write:
+ *   ## Scope
+ *   - TBD — BLOCKED: scope missing
+ * and mark the Linear issue as Blocked. Do NOT invent paths.
+ *
  * ## Scope inheritance precedence
  *
  * When `buildPacket` resolves `allowed_scope` for a worker packet, it applies
  * the following rules in order (first non-empty result wins):
  *
  *   1. Explicit `allowedScope` passed to `compileImplPacket` by the caller.
- *   2. Child issue body `## Scope` / `## Expected code areas` section.
+ *   2. Child issue body `## Scope` section.
  *   3. Cluster-root (parent) body `## Scope` section — fallback only when the
  *      child body has no scope section at all.
- *   4. Empty → preflight gate halts dispatch with `preflight-scope-missing`.
+ *   4. Empty or TBD-blocked → preflight gate halts dispatch with
+ *      `preflight-scope-missing`.
  *
  * Rule 3 means a parent implementation plan can declare a cluster-wide scope
  * that all child issues inherit when they omit their own scope section.
@@ -27,10 +49,21 @@
 
 export interface ParsedIssueBody {
   scope: string[];
+  /** True when scope section contains only TBD-BLOCKED markers (treated as empty). */
+  scopeBlocked: boolean;
   validationCommands: string[];
   requirements: string[];
+  objective: string;
+  context: string;
+  goal: string;
+  ordering: string[];
+  nonGoals: string[];
 }
 
+/**
+ * Canonical scope header. Aliases kept for backward compatibility only.
+ * New issues must use `## Scope` exactly.
+ */
 const SCOPE_HEADERS = new Set([
   'scope',
   'expected code areas',
@@ -51,6 +84,41 @@ const REQUIREMENTS_HEADERS = new Set([
   'requirements',
   'criteria',
 ]);
+
+const ORDERING_HEADERS = new Set([
+  'ordering',
+  'dependencies / blockers',
+  'dependencies',
+  'order',
+]);
+
+const NON_GOALS_HEADERS = new Set([
+  'non-goals',
+  'non goals',
+  'out of scope',
+]);
+
+const OBJECTIVE_HEADERS = new Set(['objective']);
+const CONTEXT_HEADERS = new Set(['context']);
+const GOAL_HEADERS = new Set(['goal', 'goals']);
+
+/** Pattern that identifies a TBD-BLOCKED scope marker. */
+const TBD_BLOCKED_RE = /^tbd\b/i;
+
+/**
+ * Canonical sections required on every implementation issue.
+ * Used by `validateCanonicalSections` to report missing sections.
+ */
+const CANONICAL_SECTION_CHECKS: ReadonlyArray<{ name: string; headers: Set<string> }> = [
+  { name: 'Objective',           headers: OBJECTIVE_HEADERS },
+  { name: 'Context',             headers: CONTEXT_HEADERS },
+  { name: 'Goal',                headers: GOAL_HEADERS },
+  { name: 'Scope',               headers: SCOPE_HEADERS },
+  { name: 'Acceptance Criteria', headers: REQUIREMENTS_HEADERS },
+  { name: 'Validation',          headers: VALIDATION_HEADERS },
+  { name: 'Ordering',            headers: ORDERING_HEADERS },
+  { name: 'Non-goals',           headers: NON_GOALS_HEADERS },
+];
 
 /**
  * Split a markdown text into sections keyed by their normalized `##` header lines.
@@ -101,21 +169,82 @@ function findSection(sections: Map<string, string>, headers: Set<string>): strin
 }
 
 /**
+ * Returns trimmed prose text from the first section matching a header set.
+ * Used for single-paragraph sections (Objective, Context, Goal).
+ */
+function findSectionText(sections: Map<string, string>, headers: Set<string>): string {
+  for (const [header, content] of sections) {
+    if (headers.has(header)) {
+      return content.trim();
+    }
+  }
+  return '';
+}
+
+/**
  * Parse a markdown issue body into structured fields.
  *
  * Recognizes `##` sections and extracts bullet list items (`-` or `*`) from the first matching header for each field.
+ * Prose sections (Objective, Context, Goal) are returned as trimmed text.
+ *
+ * TBD-blocked scope: if every item in the `## Scope` section begins with "TBD"
+ * the scope is treated as empty (`scope: []`) and `scopeBlocked` is set to `true`.
+ * This ensures the preflight gate fires instead of dispatching a worker with an
+ * unusable scope list.
  *
  * @param body - The markdown issue body to parse.
- * @returns An object with `scope`, `validationCommands`, and `requirements` arrays containing extracted list items; each array is empty when the input is empty/whitespace or when no matching section is found.
+ * @returns Structured fields; each array/string is empty when the input is empty/whitespace or no matching section is found.
  */
 export function parseIssueBody(body: string): ParsedIssueBody {
   if (!body || !body.trim()) {
-    return { scope: [], validationCommands: [], requirements: [] };
+    return {
+      scope: [],
+      scopeBlocked: false,
+      validationCommands: [],
+      requirements: [],
+      objective: '',
+      context: '',
+      goal: '',
+      ordering: [],
+      nonGoals: [],
+    };
   }
   const sections = parseSections(body);
+
+  const rawScope = findSection(sections, SCOPE_HEADERS);
+  const scopeBlocked = rawScope.length > 0 && rawScope.every((item) => TBD_BLOCKED_RE.test(item));
+  const filteredScope = rawScope.filter((item) => !TBD_BLOCKED_RE.test(item));
+
   return {
-    scope: findSection(sections, SCOPE_HEADERS),
+    scope: scopeBlocked ? [] : filteredScope,
+    scopeBlocked,
     validationCommands: findSection(sections, VALIDATION_HEADERS),
     requirements: findSection(sections, REQUIREMENTS_HEADERS),
+    objective: findSectionText(sections, OBJECTIVE_HEADERS),
+    context: findSectionText(sections, CONTEXT_HEADERS),
+    goal: findSectionText(sections, GOAL_HEADERS),
+    ordering: findSection(sections, ORDERING_HEADERS),
+    nonGoals: findSection(sections, NON_GOALS_HEADERS),
   };
+}
+
+/**
+ * Checks a markdown issue body for the presence of all 8 required canonical sections.
+ *
+ * @param body - The markdown issue body to validate.
+ * @returns Names of any canonical sections that are absent. Empty array means the body is fully canonical.
+ */
+export function validateCanonicalSections(body: string): string[] {
+  if (!body || !body.trim()) {
+    return CANONICAL_SECTION_CHECKS.map((c) => c.name);
+  }
+  const sections = parseSections(body);
+  const sectionKeys = [...sections.keys()];
+  const missing: string[] = [];
+  for (const { name, headers } of CANONICAL_SECTION_CHECKS) {
+    if (!sectionKeys.some((key) => headers.has(key))) {
+      missing.push(name);
+    }
+  }
+  return missing;
 }
