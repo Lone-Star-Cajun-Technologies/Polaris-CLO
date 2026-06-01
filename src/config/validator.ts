@@ -257,6 +257,47 @@ export function validateConfig(config: unknown): ValidationResult {
           }
         }
       }
+      if ("providerPolicy" in config.execution && config.execution.providerPolicy !== undefined) {
+        if (!isPlainObject(config.execution.providerPolicy)) {
+          result.valid = false;
+          result.errors.push("execution.providerPolicy must be a plain object");
+        } else {
+          const providerKeys = isPlainObject(config.execution.providers)
+            ? new Set(Object.keys(config.execution.providers))
+            : null;
+          for (const [roleName, rolePolicy] of Object.entries(config.execution.providerPolicy)) {
+            if (!SUPPORTED_EXECUTION_ROLES.includes(roleName as typeof SUPPORTED_EXECUTION_ROLES[number])) {
+              result.valid = false;
+              result.errors.push(`execution.providerPolicy contains unsupported role: ${roleName}`);
+              continue;
+            }
+            if (!isPlainObject(rolePolicy)) {
+              result.valid = false;
+              result.errors.push(`execution.providerPolicy.${roleName} must be a plain object`);
+              continue;
+            }
+            if (!("providers" in rolePolicy) || !isStringArray(rolePolicy.providers)) {
+              result.valid = false;
+              result.errors.push(`execution.providerPolicy.${roleName}.providers must be an array of strings`);
+            } else if (providerKeys) {
+              for (const providerName of rolePolicy.providers) {
+                if (!providerKeys.has(providerName)) {
+                  result.valid = false;
+                  result.errors.push(`execution.providerPolicy.${roleName}.providers contains unknown provider: ${providerName}`);
+                }
+              }
+            }
+            if ("allowNativeSubagent" in rolePolicy && rolePolicy.allowNativeSubagent !== undefined && !isBoolean(rolePolicy.allowNativeSubagent)) {
+              result.valid = false;
+              result.errors.push(`execution.providerPolicy.${roleName}.allowNativeSubagent must be a boolean`);
+            }
+            if ("noFallback" in rolePolicy && rolePolicy.noFallback !== undefined && !isBoolean(rolePolicy.noFallback)) {
+              result.valid = false;
+              result.errors.push(`execution.providerPolicy.${roleName}.noFallback must be a boolean`);
+            }
+          }
+        }
+      }
     }
   }
 

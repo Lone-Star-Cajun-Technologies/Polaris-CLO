@@ -1,42 +1,48 @@
 {
   "schema_version": "1.0",
-  "run_id": "polaris-run-pol-249-2026-05-31-001",
-  "cluster_id": "POL-249",
+  "run_id": "polaris-run-pol-269-2026-05-31-001",
+  "cluster_id": "POL-269",
   "skill": "polaris-run",
   "branch": "",
   "session_type": "implement",
-  "active_child": "POL-233",
+  "active_child": "",
   "completed_children": [
-    "POL-249",
-    "POL-233"
+    "POL-269",
+    "POL-260",
+    "POL-261",
+    "POL-259",
+    "POL-258",
+    "POL-262",
+    "POL-263",
+    "POL-275",
+    "POL-274",
+    "POL-273",
+    "POL-272"
   ],
   "open_children": [
-    "POL-240",
-    "POL-255",
-    "POL-254",
-    "POL-253",
-    "POL-252",
-    "POL-251",
-    "POL-250",
-    "POL-247"
+    "POL-271",
+    "POL-270"
   ],
   "open_children_meta": {
-    "POL-249": {
-      "title": "IMPLEMENT: Define and enforce folder-local work note staging and cognition librarian reconciliation model",
-      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-249/results/POL-249-a2da5d94-7870-4f2c-8145-47b98f8a03fe.json",
+    "POL-272": {
+      "title": "IMPL: Native subagent role gate in attemptDelegatedAssignment",
       "dispatch_record": {
-        "dispatch_id": "a2da5d94-7870-4f2c-8145-47b98f8a03fe",
-        "child_id": "POL-249",
-        "run_id": "polaris-run-pol-249-2026-05-31-001",
-        "cluster_id": "POL-249",
-        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-249/packets/POL-249-a2da5d94-7870-4f2c-8145-47b98f8a03fe.json",
-        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-249/results/POL-249-a2da5d94-7870-4f2c-8145-47b98f8a03fe.json",
-        "provider": "claude",
-        "dispatched_at": "2026-05-31T15:44:24.517Z",
+        "dispatch_id": "cb85f8fd-2f24-4939-9e92-85a67ff850e5",
+        "child_id": "POL-272",
+        "run_id": "polaris-run-pol-269-2026-05-31-001",
+        "cluster_id": "POL-269",
+        "packet_path": ".polaris/clusters/POL-269/packets/POL-272-17c19589-fcbe-459a-adf9-d3ddb1d71327.json",
+        "expected_result_path": ".polaris/clusters/POL-269/results/POL-272-17c19589-fcbe-459a-adf9-d3ddb1d71327.json",
+        "provider": "codex",
+        "provider_selection_reason": "config-rotation",
+        "providers_tried": [
+          "codex"
+        ],
+        "dispatched_at": "2026-05-31T23:09:56.070Z",
         "status": "dispatched",
         "dispatch_mode": "direct-worker",
         "runtime_state": "packet-created",
-        "worker_id": "polaris-run-pol-249-2026-05-31-001:POL-249:1780242264517",
+        "worker_id": "e5d459d2-eca5-41ec-90bf-8a697582dbef",
         "session_id": null,
         "attachment_capable": false,
         "role": "worker",
@@ -45,74 +51,31 @@
         "session_type": "implementation"
       }
     },
-    "POL-233": {
-      "title": "ANALYZE: Normalize SmartDocs routing, folder cognition, YAML links, and telemetry cleanup",
-      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-249/results/POL-233-da435457-df4a-45f9-b10f-c459f4b09d12.json",
-      "dispatch_record": {
-        "dispatch_id": "da435457-df4a-45f9-b10f-c459f4b09d12",
-        "child_id": "POL-233",
-        "run_id": "polaris-run-pol-249-2026-05-31-001",
-        "cluster_id": "POL-249",
-        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-249/packets/POL-233-da435457-df4a-45f9-b10f-c459f4b09d12.json",
-        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-249/results/POL-233-da435457-df4a-45f9-b10f-c459f4b09d12.json",
-        "provider": "claude",
-        "dispatched_at": "2026-05-31T15:49:03.496Z",
-        "status": "dispatched",
-        "dispatch_mode": "direct-worker",
-        "runtime_state": "packet-created",
-        "worker_id": "polaris-run-pol-249-2026-05-31-001:POL-233:1780242543496",
-        "session_id": null,
-        "attachment_capable": false,
-        "role": "worker",
-        "role_authority": "implementation",
-        "may_implement": true,
-        "session_type": "implementation"
-      }
+    "POL-271": {
+      "title": "IMPL: Role-aware provider resolution in dispatch"
     },
-    "POL-240": {
-      "title": "ANALYZE: Define durable run artifact promotion and commit hygiene policy"
-    },
-    "POL-255": {
-      "title": "IMPLEMENT: Archive model, cognition-index, and provenance records for reconciled notes"
-    },
-    "POL-254": {
-      "title": "IMPLEMENT: Implement foreman cognition-librarian dispatch and patch validation"
-    },
-    "POL-253": {
-      "title": "IMPLEMENT: Create cognition-librarian role file and define packet/result contract types"
-    },
-    "POL-252": {
-      "title": "IMPLEMENT: Extend CompactReturn to include work_note_path and validate note presence"
-    },
-    "POL-251": {
-      "title": "IMPLEMENT: Define worker note schema and update worker packet to require note writing"
-    },
-    "POL-250": {
-      "title": "IMPLEMENT: Create .polaris/cognition/ staging folder structure and POLARIS.md contract"
-    },
-    "POL-247": {
-      "title": "IMPLEMENT: Add finalize preflight check for commit staging allowlist"
+    "POL-270": {
+      "title": "IMPL: Extend RoleProviderPolicy in config schema"
     }
   },
   "step_cursor": "dispatch",
   "context_budget": {
-    "children_completed": 1,
+    "children_completed": 11,
     "max_children_per_session": 1
   },
   "status": "running",
-  "next_open_child": "POL-233",
+  "next_open_child": "POL-271",
   "artifact_dir": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run",
   "dispatch_boundary": {
-    "dispatch_epoch": 2,
-    "continue_epoch": 1,
-    "last_dispatched_child": "POL-233"
+    "dispatch_epoch": 11,
+    "continue_epoch": 10,
+    "last_dispatched_child": "POL-272"
   },
   "run_bootstrap_seal": {
     "sealer": "polaris-loop-bootstrap",
-    "run_id": "polaris-run-pol-249-2026-05-31-001",
-    "cluster_id": "POL-249",
-    "open_children_sha": "c7962fa8b9fb86afd2d1efc745ac204ad166a9a7b81c112730dcd432f3823726",
-    "sealed_at": "2026-05-31T15:44:24.509Z"
-  },
-  "last_commit": "19ad4c3"
+    "run_id": "polaris-run-pol-269-2026-05-31-001",
+    "cluster_id": "POL-269",
+    "open_children_sha": "522f4eba1abb01a54f2c74b1d18a3e5272968d254e55a8810264f7b304c40963",
+    "sealed_at": "2026-05-31T23:07:48.975Z"
+  }
 }

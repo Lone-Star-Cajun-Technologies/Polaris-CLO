@@ -263,7 +263,60 @@ export interface WorkerAssignedEvent extends WorkerTelemetryEventBase {
  */
 export interface WorkerAssignmentFailedEvent extends WorkerTelemetryEventBase {
   event: "worker-assignment-failed";
-  reason: "no-subagent-support" | "process-spawn-failed" | "provider-unavailable" | "timeout";
+  reason:
+    | "no-subagent-support"
+    | "native-subagent-not-allowed-for-role"
+    | "process-spawn-failed"
+    | "provider-unavailable"
+    | "timeout";
+}
+
+/**
+ * Provider selected - dispatch chose a provider/adapter pair.
+ */
+export interface ProviderSelectedEvent extends WorkerTelemetryEventBase {
+  event: "provider-selected";
+  requested_role: "worker";
+  selected_provider: string | null;
+  selected_adapter: string;
+  selection_reason: string;
+  override_source?: string;
+  fallback_from?: string;
+  fallback_reason?: string;
+  providers_tried?: string[];
+}
+
+/**
+ * Provider fallback attempted - selector moved to another source/mechanism.
+ */
+export interface ProviderFallbackAttemptedEvent extends WorkerTelemetryEventBase {
+  event: "provider-fallback-attempted";
+  requested_role: "worker";
+  fallback_from: string;
+  fallback_reason: string;
+  providers_tried?: string[];
+}
+
+/**
+ * Provider exhausted - no provider could be selected before delegation path.
+ */
+export interface ProviderExhaustedEvent extends WorkerTelemetryEventBase {
+  event: "provider-exhausted";
+  requested_role: "worker";
+  selected_adapter: string;
+  reason: string;
+  providers_tried?: string[];
+}
+
+/**
+ * Provider forbidden - provider blocked by role policy before dispatch.
+ */
+export interface ProviderForbiddenEvent extends WorkerTelemetryEventBase {
+  event: "provider-forbidden";
+  requested_role: "worker";
+  selected_provider: string | null;
+  reason: "role-disabled" | "not-in-policy";
+  policy_providers?: string[];
 }
 
 /**
@@ -290,6 +343,10 @@ export type WorkerTelemetryEvent =
   | WorkerAssignmentAttemptedEvent
   | WorkerAssignedEvent
   | WorkerAssignmentFailedEvent
+  | ProviderSelectedEvent
+  | ProviderFallbackAttemptedEvent
+  | ProviderExhaustedEvent
+  | ProviderForbiddenEvent
   | EscalationInitiatedEvent;
 
 // ─────────────────────────────────────────────────────────────────────────────

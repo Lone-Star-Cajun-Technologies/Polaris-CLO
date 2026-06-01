@@ -244,3 +244,77 @@ describe("validateConfig — execution roles", () => {
     expect(result.errors).toContain("execution.roles contains unsupported role: madeUpRole");
   });
 });
+
+describe("validateConfig — execution providerPolicy", () => {
+  it("remains backward compatible when providerPolicy is omitted", () => {
+    const result = validateConfig({
+      execution: {
+        adapter: "terminal-cli",
+        providers: {
+          copilot: { command: "copilot" },
+        },
+      },
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it("accepts valid role provider policy config", () => {
+    const result = validateConfig({
+      execution: {
+        providers: {
+          copilot: { command: "copilot" },
+          codex: { command: "codex" },
+        },
+        providerPolicy: {
+          worker: {
+            providers: ["copilot", "codex"],
+            allowNativeSubagent: false,
+            noFallback: false,
+          },
+        },
+      },
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it("accepts empty providers list for a disabled role", () => {
+    const result = validateConfig({
+      execution: {
+        providers: {
+          copilot: { command: "copilot" },
+        },
+        providerPolicy: {
+          librarian: {
+            providers: [],
+            noFallback: true,
+          },
+        },
+      },
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it("rejects provider policy entries that reference undefined providers", () => {
+    const result = validateConfig({
+      execution: {
+        providers: {
+          copilot: { command: "copilot" },
+        },
+        providerPolicy: {
+          worker: {
+            providers: ["copilot", "claude"],
+          },
+        },
+      },
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("execution.providerPolicy.worker.providers contains unknown provider: claude");
+  });
+});

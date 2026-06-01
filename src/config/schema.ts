@@ -53,6 +53,23 @@ export interface RoleExecutionConfig {
   args?: string[];
 }
 
+/** Governance policy for provider selection for a given role. */
+export interface RoleProviderPolicy {
+  /**
+   * Ordered provider list for this role.
+   * An empty array means the role is disabled.
+   */
+  providers: string[];
+  /**
+   * Whether native same-session subagent dispatch is permitted for this role.
+   */
+  allowNativeSubagent?: boolean;
+  /**
+   * Whether provider fallback is disallowed for this role.
+   */
+  noFallback?: boolean;
+}
+
 export interface ExecutionConfig {
   /**
    * Adapter to use for external dispatch. Currently supported: "terminal-cli"
@@ -81,6 +98,10 @@ export interface ExecutionConfig {
    * role entry only selects the adapter/provider/model used to invoke an agent.
    */
   roles?: Partial<Record<ExecutionRole, RoleExecutionConfig>>;
+  /**
+   * Per-role provider governance policy.
+   */
+  providerPolicy?: Partial<Record<ExecutionRole, RoleProviderPolicy>>;
 }
 
 export interface SkillPacketConfig {
