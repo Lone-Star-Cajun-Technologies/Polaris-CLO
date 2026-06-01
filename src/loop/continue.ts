@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import {
   readState,
@@ -33,6 +33,70 @@ export interface ContinueOptions {
   provider?: string;
   /** If true, allow analyze-type children to be dispatched (overrides budget.allow_analyze_children). */
   allowAnalyzeChildren?: boolean;
+}
+
+function resolveResultFileForChild(state: LoopState, childId: string): string | null {
+  const meta = state.open_children_meta?.[childId];
+  return meta?.result_file ?? meta?.dispatch_record?.expected_result_path ?? null;
+}
+
+function verifyCompletionEvidenceForContinue(
+  state: LoopState,
+  completedChild: string,
+): { ok: true; commit: string } | { ok: false; reason: string } {
+  if (state.completed_children.includes(completedChild)) {
+    return { ok: true, commit: state.last_commit ?? "" };
+  }
+
+  const resultFile = resolveResultFileForChild(state, completedChild);
+  if (!resultFile) {
+    return {
+      ok: false,
+      reason: `cannot checkpoint ${completedChild}: no result_file evidence found in state metadata`,
+    };
+  }
+  if (!existsSync(resultFile)) {
+    return {
+      ok: false,
+      reason: `cannot checkpoint ${completedChild}: expected result file is missing (${resultFile})`,
+    };
+  }
+
+  let parsed: Record<string, unknown>;
+  try {
+    const content = readFileSync(resultFile, "utf-8");
+    const raw = JSON.parse(content) as unknown;
+    if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
+      return {
+        ok: false,
+        reason: `cannot checkpoint ${completedChild}: result file has invalid JSON shape`,
+      };
+    }
+    parsed = raw as Record<string, unknown>;
+  } catch (error) {
+    return {
+      ok: false,
+      reason: `cannot checkpoint ${completedChild}: failed to read result file (${error instanceof Error ? error.message : String(error)})`,
+    };
+  }
+
+  const status = String(parsed["status"] ?? "").trim().toLowerCase();
+  if (!["done", "success"].includes(status)) {
+    return {
+      ok: false,
+      reason: `cannot checkpoint ${completedChild}: result status is "${status || "unknown"}" (expected done/success)`,
+    };
+  }
+
+  const commit = String(parsed["commit"] ?? parsed["commit_hash"] ?? "").trim();
+  if (!commit) {
+    return {
+      ok: false,
+      reason: `cannot checkpoint ${completedChild}: result file is missing commit evidence`,
+    };
+  }
+
+  return { ok: true, commit };
 }
 
 function readSessionTypeFile(repoRoot: string): string | undefined {
@@ -161,6 +225,16 @@ export function runLoopContinue(options: ContinueOptions): void {
     : state.open_children;
   const nextChild = remainingOpenChildren[0] ?? null;
 
+  let completionCommit = "";
+  if (state.dispatch_boundary && completedChild) {
+    const evidence = verifyCompletionEvidenceForContinue(state, completedChild);
+    if (!evidence.ok) {
+      console.error(`Error: ${evidence.reason}`);
+      process.exit(1);
+    }
+    completionCommit = evidence.commit;
+  }
+
   // Determine session type (state field takes precedence, file is secondary signal)
   const sessionTypeFile = readSessionTypeFile(repoRoot);
   const sessionType = state.session_type ?? sessionTypeFile;
@@ -170,7 +244,7 @@ export function runLoopContinue(options: ContinueOptions): void {
 
   // Update state: mark active_child as completed
   const newCompletedChildren = completedChild
-    ? [...state.completed_children, completedChild]
+    ? Array.from(new Set([...state.completed_children, completedChild]))
     : state.completed_children;
   const completedSet = new Set(newCompletedChildren);
   const prunedOpenChildrenMeta = state.open_children_meta
@@ -191,6 +265,7 @@ export function runLoopContinue(options: ContinueOptions): void {
       ...state.context_budget,
       children_completed: newCompletedChildren.length,
     },
+    last_commit: completionCommit || state.last_commit,
     // Advance continue_epoch to match the consumed dispatch_epoch
     dispatch_boundary: advanceContinueEpoch(state.dispatch_boundary),
   };

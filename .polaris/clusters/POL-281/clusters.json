@@ -1,0 +1,59 @@
+{
+  "schemaVersion": "v2",
+  "source": {
+    "id": "POL-281",
+    "type": "Linear",
+    "analysis": {
+      "id": "initial-sync",
+      "doc": "Synchronized from Linear issue identifier: POL-281"
+    }
+  },
+  "nodes": {
+    "POL-281": {
+      "id": "POL-281",
+      "title": "IMPLEMENT",
+      "status": "Todo"
+    },
+    "POL-280": {
+      "id": "POL-280",
+      "title": "FIX: Parent loop must validate commit evidence even when worker wrote its own state completion",
+      "status": "Todo"
+    },
+    "POL-279": {
+      "id": "POL-279",
+      "title": "FIX: polaris finalize must verify non-artifact commit diff per child before creating PR",
+      "status": "Todo"
+    },
+    "POL-278": {
+      "id": "POL-278",
+      "title": "FIX: Extend empty-scope guard from agent-subtask adapter to terminal-cli adapter",
+      "status": "Todo"
+    },
+    "POL-277": {
+      "id": "POL-277",
+      "title": "FIX: Fail packet generation when impl child has empty allowed_scope or placeholder goal",
+      "status": "Todo"
+    },
+    "POL-268": {
+      "id": "POL-268",
+      "title": "IMPLEMENT: Polaris init and repository adoption workflow",
+      "status": "In Progress"
+    }
+  },
+  "dependencies": {},
+  "clusters": {
+    "POL-281": {
+      "id": "POL-281",
+      "title": "Linear Issue: POL-281",
+      "children": [
+        "POL-281",
+        "POL-280",
+        "POL-279",
+        "POL-278",
+        "POL-277",
+        "POL-268"
+      ]
+    }
+  },
+  "activeCluster": "POL-281"
+}

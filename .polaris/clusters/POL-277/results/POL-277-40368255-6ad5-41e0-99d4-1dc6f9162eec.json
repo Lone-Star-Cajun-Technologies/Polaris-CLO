@@ -1,0 +1,7 @@
+{
+  "message": "Native ephemeral agent subtask dispatch is unavailable in this host environment. Use manual handoff or a configured terminal-cli adapter.",
+  "run_id": "polaris-run-pol-277-2026-06-01-001",
+  "child_id": "POL-277",
+  "status": "failure",
+  "error_message": "Native ephemeral agent subtask dispatch is unavailable in this host environment. Use manual handoff or a configured terminal-cli adapter."
+}

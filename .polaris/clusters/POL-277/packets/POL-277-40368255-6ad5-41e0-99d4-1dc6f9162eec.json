@@ -1,0 +1,90 @@
+{
+  "schema_version": "2.1",
+  "worker_role": "impl",
+  "run_id": "polaris-run-pol-277-2026-06-01-001",
+  "cluster_id": "POL-277",
+  "active_child": "POL-277",
+  "state_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json",
+  "telemetry_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-277-2026-06-01-001/telemetry.jsonl",
+  "instructions": {
+    "primary_goal": "Issue: POL-277 — FIX: Fail packet generation when impl child has empty allowed_scope or placeholder goal\nWorktree: .\nBranch: \n\n## Goal\nAdd a hard gate in the packet generator (and/or the CLI dispatch path) that refuses to emit an `impl` worker packet when:\n\n## Scope\nTouch only:\n- `src/loop/` — packet generation and dispatch path\n- `src/cli/` — dispatch CLI command if gate belongs there\n\n## Acceptance Criteria\n- `allowed_scope` is empty (`[]`)\n- `primary_goal` is a placeholder (issue title repeated verbatim, with no extractable goal body)\n- Both `validation_commands` is empty AND `validation_waiver` is absent\n- `npm run polaris -- loop dispatch` exits non-zero and emits `packet-generation-failed` telemetry when scope is empty\n- Error message names the specific missing field and the child issue ID\n- Existing tests for well-formed packets continue to pass\n- New test: dispatch with an issue that has no scope body → should fail with clear error\n\n## Validation\n- npm test -- --grep \"packet.*empty.*scope|empty.*allowed_scope\"\n- npm run build\n\n## Commit\n[POL-277] FIX: Fail packet generation when impl child has empty allowed_scope or placeholder goal\n\n## Governance\n- Update /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json: move \"POL-277\" from open_children to completed_children.\n- Append a telemetry event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-277-2026-06-01-001/telemetry.jsonl.\n\n## Worker Progress Telemetry (MANDATORY)\nThe parent CANNOT see your work. You MUST emit heartbeat events so the parent knows you are alive and making progress.\n\nAfter EVERY step, append a JSONL event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-277-2026-06-01-001/telemetry.jsonl:\n```jsonl\n{\"event\":\"worker-heartbeat\",\"run_id\":\"<from packet>\",\"child_id\":\"POL-277\",\"step_cursor\":\"<current step>\",\"timestamp\":\"<ISO8601>\",\"progress_pct\":<0-100>,\"files_changed\":<count>,\"current_file\":\"<file being edited>\"}\n```\n\nRequired heartbeat points:\n  1. Immediately after reading this packet (step_cursor: \"start\")\n  2. After verifying state file (step_cursor: \"verify\")\n  3. After EACH file edit (step_cursor: \"implement\")\n  4. After running validation (step_cursor: \"validate\")\n  5. After creating commit (step_cursor: \"commit\")\n  6. Before terminating (step_cursor: \"complete\" or \"failed\")\n\nIf heartbeats stop, the parent will assume you crashed and may dispatch a replacement worker.\n\n## Approval Escalation (when uncertain)\nYou have a sealed packet defining your exact scope, allowed files, and validation commands. Use this to decide:\n\nRule 1 - Auto-approve WITHIN scope (normal work):\n  - If the operation touches files within `instructions.allowed_scope` → Just do it\n  - If the command is in `instructions.validation_commands` → Just run it\n  - Low risk, expected work → No need to ask, emit heartbeat with step_cursor: \"implement\"\n\nRule 2 - ESCALATE out-of-scope or high-risk:\n  - File outside allowed_scope → Emit worker-blocked with approval_type: \"out-of-scope\"\n  - Destructive operation (rm -rf, major refactor) → Emit worker-blocked with approval_type: \"destructive\"\n  - External API calls with cost → Emit worker-blocked with approval_type: \"cost\"\n  - Changing secrets/.env → Emit worker-blocked with approval_type: \"security\"\n  - Unclear requirements → Emit worker-blocked with approval_type: \"ambiguous\"\n\nTo escalate, emit IMMEDIATELY to telemetry:\n```jsonl\n{\"event\":\"worker-blocked\",\"run_id\":\"<from packet>\",\"child_id\":\"POL-277\",\"reason\":\"needs-approval\",\"approval_type\":\"<out-of-scope|destructive|cost|security|ambiguous>\",\"description\":\"<specifically what needs approval>\",\"blocker_id\":\"<unique-id>\",\"timestamp\":\"<ISO8601>\"}\n```\n\nThen: Continue heartbeats every 30s with step_cursor: \"blocked-awaiting-approval\"\nWait for parent response. If no response in 5 minutes → TERMINATE with approval-timeout.\n\nRemember: Your packet scope is your authority. Within scope = proceed. Outside scope = escalate.\n\n## Route Cognition Delta\nAfter implementation, apply route-local cognition delta — only if something materially changed.\n\n**POLARIS.md** — update only when ALL of the following are true:\n  - You touched a file in that folder (not a distant folder).\n  - The change materially affects: folder responsibilities, commands/workflows,\n    execution constraints, ownership/routing, or operational behavior.\n  - The current POLARIS.md content is actually wrong or incomplete as a result.\n  DO NOT update POLARIS.md for: formatting fixes, comment changes, tiny refactors,\n  internal implementation details, or any change that leaves the operational guidance\n  still accurate. When in doubt, do not update.\n\n**SUMMARY.md** — update only when: linked docs/specs changed, canon relationships\n  changed, architecture meaning changed, or doctrine/spec linkage changed.\n  SUMMARY.md is informational only. Do not create it if missing — that is a hint for\n  operators, not a task for workers. Keep it short. Never add operational doctrine.\n\n**Never** scan unrelated folders. **Never** regenerate all route docs.\nIf no material change occurred, skip this section entirely.\n\n## Report Back\n- files changed\n- validation results\n- commit hash\n- blockers\n\nTERMINATE SESSION IMMEDIATELY. Do not select or execute the next child.",
+    "steps": [
+      "Verify: read /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json and confirm active_child === \"POL-277\".",
+      "Implement POL-277: \"FIX: Fail packet generation when impl child has empty allowed_scope or placeholder goal\".",
+      "Requirements:",
+      "   1. Add a hard gate in the packet generator (and/or the CLI dispatch path) that refuses to emit an `impl` worker packet when:",
+      "   2. `allowed_scope` is empty (`[]`)",
+      "   3. `primary_goal` is a placeholder (issue title repeated verbatim, with no extractable goal body)",
+      "   4. Both `validation_commands` is empty AND `validation_waiver` is absent",
+      "   5. `npm run polaris -- loop dispatch` exits non-zero and emits `packet-generation-failed` telemetry when scope is empty",
+      "   6. Error message names the specific missing field and the child issue ID",
+      "   7. Existing tests for well-formed packets continue to pass",
+      "   8. New test: dispatch with an issue that has no scope body → should fail with clear error",
+      "Run validation commands and confirm all pass.",
+      "Create exactly ONE git commit: [POL-277] FIX: Fail packet generation when impl child has empty allowed_scope or placeholder goal.",
+      "Update /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json: move \"POL-277\" from open_children to completed_children.",
+      "Append a telemetry event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-277-2026-06-01-001/telemetry.jsonl.",
+      "Write compact return JSON to stdout (fields: child_id, status, commit, validation, next_recommended_action).",
+      "TERMINATE SESSION IMMEDIATELY. Do not select or execute the next child."
+    ],
+    "allowed_scope": [
+      "`src/loop/` — packet generation and dispatch path",
+      "`src/cli/` — dispatch CLI command if gate belongs there"
+    ],
+    "validation_commands": [
+      "npm test -- --grep \"packet.*empty.*scope|empty.*allowed_scope\"",
+      "npm run build"
+    ],
+    "issue_context": {
+      "id": "POL-277",
+      "title": "FIX: Fail packet generation when impl child has empty allowed_scope or placeholder goal",
+      "key_requirements": [
+        "Add a hard gate in the packet generator (and/or the CLI dispatch path) that refuses to emit an `impl` worker packet when:",
+        "`allowed_scope` is empty (`[]`)",
+        "`primary_goal` is a placeholder (issue title repeated verbatim, with no extractable goal body)",
+        "Both `validation_commands` is empty AND `validation_waiver` is absent",
+        "`npm run polaris -- loop dispatch` exits non-zero and emits `packet-generation-failed` telemetry when scope is empty",
+        "Error message names the specific missing field and the child issue ID",
+        "Existing tests for well-formed packets continue to pass",
+        "New test: dispatch with an issue that has no scope body → should fail with clear error"
+      ]
+    }
+  },
+  "lifecycle": {
+    "terminate_after_completion": true,
+    "max_concurrent": 1,
+    "cleanup_on_exit": "commit-and-exit"
+  },
+  "return_contract": [
+    "child_id",
+    "status",
+    "commit",
+    "validation",
+    "next_recommended_action"
+  ],
+  "prompt_mode": "compact",
+  "prompt_metrics": {
+    "mode": "compact",
+    "char_count": 5339,
+    "estimated_tokens": 1335
+  },
+  "role_context": {
+    "role": "worker",
+    "role_authority": "implementation",
+    "may_implement": true,
+    "may_assign_workers": false,
+    "prohibited_actions": [
+      "modify-cluster-plan",
+      "dispatch-children",
+      "polaris-loop-dispatch",
+      "polaris-loop-continue"
+    ]
+  },
+  "result_file_contract": {
+    "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-277/results/POL-277-40368255-6ad5-41e0-99d4-1dc6f9162eec.json"
+  },
+  "context": {
+    "branch": "",
+    "worker_role": "impl"
+  }
+}

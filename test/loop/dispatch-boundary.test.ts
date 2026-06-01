@@ -406,6 +406,22 @@ describe("runLoopContinue: dispatch boundary enforcement", () => {
     // State with dispatch completed: dispatch_epoch(1) > continue_epoch(0)
     const state = makeDispatchedState("POL-101");
     state.open_children = ["POL-101", "POL-102"]; // POL-101 is active
+    const resultFile = join(testDir, ".polaris", "clusters", "POL-100", "results", "POL-101-sealed.json");
+    mkdirSync(join(testDir, ".polaris", "clusters", "POL-100", "results"), { recursive: true });
+    writeFileSync(
+      resultFile,
+      JSON.stringify({
+        run_id: state.run_id,
+        child_id: "POL-101",
+        status: "success",
+        commit: "abc1234",
+      }),
+    );
+    state.open_children_meta = {
+      "POL-101": {
+        result_file: resultFile,
+      },
+    };
     const stateFile = writeStateFile(testDir, state);
 
     const logs: string[] = [];

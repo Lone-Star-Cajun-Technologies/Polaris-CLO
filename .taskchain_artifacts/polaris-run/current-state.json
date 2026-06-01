@@ -1,48 +1,37 @@
 {
   "schema_version": "1.0",
-  "run_id": "polaris-run-pol-269-2026-05-31-001",
-  "cluster_id": "POL-269",
+  "run_id": "polaris-run-pol-281-2026-06-01-001",
+  "cluster_id": "POL-281",
   "skill": "polaris-run",
   "branch": "",
   "session_type": "implement",
-  "active_child": "",
-  "completed_children": [
-    "POL-269",
-    "POL-260",
-    "POL-261",
-    "POL-259",
-    "POL-258",
-    "POL-262",
-    "POL-263",
-    "POL-275",
-    "POL-274",
-    "POL-273",
-    "POL-272"
-  ],
+  "active_child": "POL-281",
+  "completed_children": [],
   "open_children": [
-    "POL-271",
-    "POL-270"
+    "POL-281",
+    "POL-280",
+    "POL-279",
+    "POL-278",
+    "POL-277",
+    "POL-268"
   ],
   "open_children_meta": {
-    "POL-272": {
-      "title": "IMPL: Native subagent role gate in attemptDelegatedAssignment",
+    "POL-281": {
+      "title": "IMPLEMENT",
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-281/results/POL-281-80ea0abc-845d-4002-b9fc-ec1ad23b5db1.json",
       "dispatch_record": {
-        "dispatch_id": "cb85f8fd-2f24-4939-9e92-85a67ff850e5",
-        "child_id": "POL-272",
-        "run_id": "polaris-run-pol-269-2026-05-31-001",
-        "cluster_id": "POL-269",
-        "packet_path": ".polaris/clusters/POL-269/packets/POL-272-17c19589-fcbe-459a-adf9-d3ddb1d71327.json",
-        "expected_result_path": ".polaris/clusters/POL-269/results/POL-272-17c19589-fcbe-459a-adf9-d3ddb1d71327.json",
-        "provider": "codex",
-        "provider_selection_reason": "config-rotation",
-        "providers_tried": [
-          "codex"
-        ],
-        "dispatched_at": "2026-05-31T23:09:56.070Z",
+        "dispatch_id": "80ea0abc-845d-4002-b9fc-ec1ad23b5db1",
+        "child_id": "POL-281",
+        "run_id": "polaris-run-pol-281-2026-06-01-001",
+        "cluster_id": "POL-281",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-281/packets/POL-281-80ea0abc-845d-4002-b9fc-ec1ad23b5db1.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-281/results/POL-281-80ea0abc-845d-4002-b9fc-ec1ad23b5db1.json",
+        "provider": "agent-subtask",
+        "dispatched_at": "2026-06-01T04:34:21.021Z",
         "status": "dispatched",
         "dispatch_mode": "direct-worker",
         "runtime_state": "packet-created",
-        "worker_id": "e5d459d2-eca5-41ec-90bf-8a697582dbef",
+        "worker_id": "polaris-run-pol-281-2026-06-01-001:POL-281:1780288461021",
         "session_id": null,
         "attachment_capable": false,
         "role": "worker",
@@ -51,31 +40,40 @@
         "session_type": "implementation"
       }
     },
-    "POL-271": {
-      "title": "IMPL: Role-aware provider resolution in dispatch"
+    "POL-280": {
+      "title": "FIX: Parent loop must validate commit evidence even when worker wrote its own state completion"
     },
-    "POL-270": {
-      "title": "IMPL: Extend RoleProviderPolicy in config schema"
+    "POL-279": {
+      "title": "FIX: polaris finalize must verify non-artifact commit diff per child before creating PR"
+    },
+    "POL-278": {
+      "title": "FIX: Extend empty-scope guard from agent-subtask adapter to terminal-cli adapter"
+    },
+    "POL-277": {
+      "title": "FIX: Fail packet generation when impl child has empty allowed_scope or placeholder goal"
+    },
+    "POL-268": {
+      "title": "IMPLEMENT: Polaris init and repository adoption workflow"
     }
   },
   "step_cursor": "dispatch",
   "context_budget": {
-    "children_completed": 11,
+    "children_completed": 0,
     "max_children_per_session": 1
   },
   "status": "running",
-  "next_open_child": "POL-271",
+  "next_open_child": "POL-281",
   "artifact_dir": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run",
   "dispatch_boundary": {
-    "dispatch_epoch": 11,
-    "continue_epoch": 10,
-    "last_dispatched_child": "POL-272"
+    "dispatch_epoch": 1,
+    "continue_epoch": 0,
+    "last_dispatched_child": "POL-281"
   },
   "run_bootstrap_seal": {
     "sealer": "polaris-loop-bootstrap",
-    "run_id": "polaris-run-pol-269-2026-05-31-001",
-    "cluster_id": "POL-269",
-    "open_children_sha": "522f4eba1abb01a54f2c74b1d18a3e5272968d254e55a8810264f7b304c40963",
-    "sealed_at": "2026-05-31T23:07:48.975Z"
+    "run_id": "polaris-run-pol-281-2026-06-01-001",
+    "cluster_id": "POL-281",
+    "open_children_sha": "26e4e1faf1d67e16e0969a925aa58d892e5e45e52bf7e6c67c83d60e41b085db",
+    "sealed_at": "2026-06-01T04:34:21.016Z"
   }
 }

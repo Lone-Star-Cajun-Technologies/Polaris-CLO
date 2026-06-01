@@ -15,6 +15,7 @@ import { createRunsCommand } from "../runs/index.js";
 import { createInitCommand, runInit } from "./init.js";
 import { createDocsCommand, createDoctrineCommand } from "../smartdocs-engine/index.js";
 import { createConfigCommand, runConfigShow } from "../config/show.js";
+import { installCliSubtaskBridge } from "../loop/adapters/cli-subtask-bridge.js";
 
 import { createTrackerCommand } from "./tracker.js";
 import { createSkillCommand } from "../skill-packet/index.js";
@@ -44,6 +45,7 @@ function resolveStateFile(repoRoot: string, explicit?: string): string {
 
 export function createPolarisCommand(options: PolarisCommandOptions = {}): Command {
   const repoRoot = options.repoRoot ?? resolve(process.cwd());
+  installCliSubtaskBridge(repoRoot);
   const statusHandler = options.runLoopStatus ?? runLoopStatus;
 
   const program = new Command("polaris")
@@ -127,4 +129,3 @@ if (require.main === module) {
     process.exit(1);
   });
 }
-

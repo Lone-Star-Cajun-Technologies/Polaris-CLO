@@ -503,4 +503,88 @@ describe("runLoopContinue", () => {
     const packet = JSON.parse(logs.join("\n"));
     expect(packet.boundary_enforcement).toBeUndefined();
   });
+
+  it("blocks checkpoint when dispatch-boundary child has no result evidence", () => {
+    const state = {
+      schema_version: "1.0",
+      run_id: "pol-5-session-1",
+      cluster_id: "POL-5",
+      active_child: "POL-23",
+      completed_children: [],
+      open_children: ["POL-23", "POL-24"],
+      open_children_meta: {
+        "POL-23": {
+          result_file: join(testDir, ".polaris", "clusters", "POL-5", "results", "missing.json"),
+        },
+      },
+      step_cursor: "dispatch",
+      context_budget: { children_completed: 0, max_children_per_session: 3 },
+      status: "running",
+      next_open_child: "POL-23",
+      dispatch_boundary: {
+        dispatch_epoch: 1,
+        continue_epoch: 0,
+        last_dispatched_child: "POL-23",
+      },
+    };
+    const stateFile = writeState(testDir, state);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
+      throw new Error("process.exit called");
+    });
+    const stderrSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    expect(() => runLoopContinue({ stateFile, repoRoot: testDir })).toThrow("process.exit called");
+
+    exitSpy.mockRestore();
+    stderrSpy.mockRestore();
+  });
+
+  it("allows checkpoint with dispatch-boundary when result evidence includes commit", () => {
+    const resultFile = join(testDir, ".polaris", "clusters", "POL-5", "results", "POL-23-sealed.json");
+    mkdirSync(join(testDir, ".polaris", "clusters", "POL-5", "results"), { recursive: true });
+    writeFileSync(
+      resultFile,
+      JSON.stringify({
+        run_id: "pol-5-session-1",
+        child_id: "POL-23",
+        status: "success",
+        commit: "abc1234",
+        validation: "ok",
+      }),
+    );
+    const state = {
+      schema_version: "1.0",
+      run_id: "pol-5-session-1",
+      cluster_id: "POL-5",
+      active_child: "POL-23",
+      completed_children: [],
+      open_children: ["POL-23", "POL-24"],
+      open_children_meta: {
+        "POL-23": {
+          result_file: resultFile,
+        },
+      },
+      step_cursor: "dispatch",
+      context_budget: { children_completed: 0, max_children_per_session: 3 },
+      status: "running",
+      next_open_child: "POL-23",
+      dispatch_boundary: {
+        dispatch_epoch: 1,
+        continue_epoch: 0,
+        last_dispatched_child: "POL-23",
+      },
+    };
+    const stateFile = writeState(testDir, state);
+    const origLog = console.log;
+    console.log = () => {};
+    try {
+      runLoopContinue({ stateFile, repoRoot: testDir });
+    } finally {
+      console.log = origLog;
+    }
+
+    const updated = readState(stateFile);
+    expect(updated.completed_children).toEqual(["POL-23"]);
+    expect(updated.last_commit).toBe("abc1234");
+  });
 });

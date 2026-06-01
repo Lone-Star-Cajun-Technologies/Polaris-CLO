@@ -82,8 +82,8 @@ describe("runLoopStatus", () => {
     expect(output).toContain("POL-23, POL-24, POL-25");
     expect(output).toContain("Blocked:         none");
     expect(output).toContain("Runtime Artifacts:");
-    expect(output).toContain(".polaris/clusters/POL-5/cluster-state.json (canonical; live execution authority)");
-    expect(output).toContain(".polaris/runs/current-state.json (legacy; legacy/transitional current-state snapshot)");
+    expect(output).toContain(".polaris/clusters/POL-5/cluster-state.json (canonical; live execution authority;");
+    expect(output).toContain(".polaris/runs/current-state.json (legacy; legacy/transitional current-state snapshot;");
   });
 
   it("emits JSON output with --json flag", () => {

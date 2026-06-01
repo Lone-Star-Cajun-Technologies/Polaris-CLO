@@ -40,13 +40,13 @@
         "allowNativeSubagent": true
       },
       "librarian": {
-        "providers": []
+        "providers": ["gemini","claude","codex","copilot"]
       },
       "orchestrator": {
         "providers": []
       },
       "finalizer": {
-        "providers": []
+        "providers": ["copilot"]
       }
     }
   },
