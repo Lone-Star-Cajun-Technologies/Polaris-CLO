@@ -132,7 +132,7 @@ function makeStateFile(
     next_open_child: openChildren[0] ?? null,
     completed_children: completedChildren,
     open_children: openChildren,
-    open_children_meta: Object.fromEntries(openChildren.map((id) => [id, { title: id, body: `Default test body for ${id}.` }])),
+    open_children_meta: Object.fromEntries(openChildren.map((id) => [id, { title: id, body: `## Goal\nDefault test body for ${id}.\n\n## Scope\n- src/**\n` }])),
     context_budget: {
       children_completed: overrides.children_completed ?? 0,
       files_touched_total: 0,
@@ -735,7 +735,7 @@ describe("runParentLoop", () => {
     const stateFile = makeStateFileWithMeta(
       tmpDir,
       ["POL-200"],
-      { "POL-200": { title: "Implement: add budget guardrail", body: "Add a guardrail.", labels: ["feature"] } },
+      { "POL-200": { title: "Implement: add budget guardrail", body: "## Goal\nAdd a guardrail.\n\n## Scope\n- src/**\n", labels: ["feature"] } },
     );
 
     const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
@@ -1078,7 +1078,7 @@ describe("runParentLoop", () => {
     const stateFile = makeStateFileWithMeta(
       tmpDir,
       ["POL-100"],
-      { "POL-100": { title: "Implement foo", body: "As a user I want..." } },
+      { "POL-100": { title: "Implement foo", body: "## Goal\nAs a user I want...\n\n## Scope\n- src/**\n" } },
     );
 
     const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
@@ -1130,6 +1130,188 @@ describe("runParentLoop", () => {
 
     const stateAfter = readFileSync(stateFile, "utf-8");
     expect(stateAfter).toBe(stateBefore);
+  });
+
+  // ── Scope preflight gate ──────────────────────────────────────────────────
+
+  it("halts with preflight-failed when child body has no scope section", async () => {
+    vi.mocked(createAdapter).mockReturnValue(makeMockAdapter([SUCCESS_RESULT]));
+    const stateFile = makeStateFileWithMeta(
+      tmpDir,
+      ["POL-100"],
+      { "POL-100": { title: "Implement foo", body: "## Goal\nFix the thing.\n" } },
+    );
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(result.haltReason).toBe("preflight-failed");
+    expect(result.haltingChild).toBe("POL-100");
+    expect(result.message).toContain("POL-100");
+    expect(result.message).toContain("scope section");
+  });
+
+  it("emits preflight-scope-missing telemetry when scope section is absent", async () => {
+    vi.mocked(createAdapter).mockReturnValue(makeMockAdapter([SUCCESS_RESULT]));
+    const stateFile = makeStateFileWithMeta(
+      tmpDir,
+      ["POL-100"],
+      { "POL-100": { title: "Implement foo", body: "## Goal\nFix the thing.\n" } },
+    );
+
+    await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    const telemetry = readJsonLines(join(tmpDir, "runs", "test-run-001", "telemetry.jsonl"));
+    const event = telemetry.find((e) => e["event"] === "preflight-scope-missing");
+    expect(event).toBeDefined();
+    expect(event?.["child_id"]).toBe("POL-100");
+  });
+
+  it("passes scope preflight when child body has a ## Scope section", async () => {
+    const calls: MockCall[] = [];
+    vi.mocked(createAdapter).mockReturnValue(makeMockAdapter([SUCCESS_RESULT], calls));
+    const stateFile = makeStateFileWithMeta(
+      tmpDir,
+      ["POL-100"],
+      { "POL-100": { title: "Implement foo", body: "## Goal\nFix.\n\n## Scope\n- src/loop/**\n" } },
+    );
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(result.haltReason).not.toBe("preflight-failed");
+    expect(calls).toHaveLength(1);
+  });
+
+  it("inherits scope from parent cluster body when child body has no scope section", async () => {
+    const calls: MockCall[] = [];
+    vi.mocked(createAdapter).mockReturnValue(makeMockAdapter([SUCCESS_RESULT], calls));
+    const parentBody = "## Goal\nParent plan.\n\n## Scope\n- src/loop/**\n- src/finalize/**\n";
+    const stateFile = makeStateFileWithMeta(
+      tmpDir,
+      ["POL-100"],
+      {
+        // cluster root (POL-99) has scope; child has body but no scope section
+        "POL-99": { title: "Parent cluster", body: parentBody },
+        "POL-100": { title: "Implement foo", body: "## Goal\nFix the thing.\n" },
+      },
+    );
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(result.haltReason).not.toBe("preflight-failed");
+    expect(calls).toHaveLength(1);
+  });
+
+  it("scope preflight gate does not fire in dry-run mode", async () => {
+    const calls: MockCall[] = [];
+    vi.mocked(createAdapter).mockReturnValue(makeMockAdapter([SUCCESS_RESULT], calls));
+    const stateFile = makeStateFileWithMeta(
+      tmpDir,
+      ["POL-100"],
+      { "POL-100": { title: "Implement foo", body: "## Goal\nFix the thing.\n" } },
+    );
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir, dryRun: true });
+
+    expect(result.haltReason).not.toBe("preflight-failed");
+  });
+
+  // ── Scope inheritance: packet-level assertions ────────────────────────────
+  //
+  // These tests assert that the dispatched WorkerPacket's allowed_scope reflects
+  // the correct precedence: child scope overrides parent; parent is fallback only.
+
+  it("dispatched packet allowed_scope comes from child body ## Scope section", async () => {
+    const calls: MockCall[] = [];
+    vi.mocked(createAdapter).mockReturnValue(makeMockAdapter([SUCCESS_RESULT], calls));
+    const stateFile = makeStateFileWithMeta(
+      tmpDir,
+      ["POL-100"],
+      {
+        "POL-99": { title: "Parent", body: "## Goal\nPlan.\n\n## Scope\n- src/parent/**\n" },
+        "POL-100": { title: "Implement foo", body: "## Goal\nFix.\n\n## Scope\n- src/loop/worker-packet.ts\n- src/loop/dispatch.ts\n" },
+      },
+    );
+
+    await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(calls).toHaveLength(1);
+    const packet = calls[0].packet;
+    expect(isWorkerPacket(packet)).toBe(true);
+    if (isWorkerPacket(packet)) {
+      // Child scope wins — parent scope items must not appear
+      expect(packet.instructions.allowed_scope).toContain("src/loop/worker-packet.ts");
+      expect(packet.instructions.allowed_scope).toContain("src/loop/dispatch.ts");
+      expect(packet.instructions.allowed_scope).not.toContain("src/parent/**");
+    }
+  });
+
+  it("dispatched packet allowed_scope falls back to parent body when child has no scope section", async () => {
+    const calls: MockCall[] = [];
+    vi.mocked(createAdapter).mockReturnValue(makeMockAdapter([SUCCESS_RESULT], calls));
+    const stateFile = makeStateFileWithMeta(
+      tmpDir,
+      ["POL-100"],
+      {
+        "POL-99": { title: "Parent", body: "## Goal\nPlan.\n\n## Scope\n- src/loop/**\n- src/finalize/**\n" },
+        "POL-100": { title: "Implement foo", body: "## Goal\nFix the thing.\n" },
+      },
+    );
+
+    await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(calls).toHaveLength(1);
+    const packet = calls[0].packet;
+    expect(isWorkerPacket(packet)).toBe(true);
+    if (isWorkerPacket(packet)) {
+      // Parent scope is the fallback source
+      expect(packet.instructions.allowed_scope).toContain("src/loop/**");
+      expect(packet.instructions.allowed_scope).toContain("src/finalize/**");
+    }
+  });
+
+  it("child scope overrides parent scope — parent items absent from packet", async () => {
+    const calls: MockCall[] = [];
+    vi.mocked(createAdapter).mockReturnValue(makeMockAdapter([SUCCESS_RESULT], calls));
+    const stateFile = makeStateFileWithMeta(
+      tmpDir,
+      ["POL-100"],
+      {
+        "POL-99": { title: "Parent", body: "## Goal\nPlan.\n\n## Scope\n- src/parent-only/**\n" },
+        "POL-100": { title: "Implement foo", body: "## Goal\nFix.\n\n## Scope\n- src/child-only/**\n" },
+      },
+    );
+
+    await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(calls).toHaveLength(1);
+    const packet = calls[0].packet;
+    expect(isWorkerPacket(packet)).toBe(true);
+    if (isWorkerPacket(packet)) {
+      expect(packet.instructions.allowed_scope).toContain("src/child-only/**");
+      expect(packet.instructions.allowed_scope).not.toContain("src/parent-only/**");
+    }
+  });
+
+  it("parent scope is not merged with child scope — only child scope appears", async () => {
+    const calls: MockCall[] = [];
+    vi.mocked(createAdapter).mockReturnValue(makeMockAdapter([SUCCESS_RESULT], calls));
+    const stateFile = makeStateFileWithMeta(
+      tmpDir,
+      ["POL-100"],
+      {
+        "POL-99": { title: "Parent", body: "## Goal\nPlan.\n\n## Scope\n- src/loop/**\n- src/finalize/**\n" },
+        "POL-100": { title: "Implement foo", body: "## Goal\nFix.\n\n## Scope\n- src/loop/worker-packet.ts\n" },
+      },
+    );
+
+    await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    const packet = calls[0].packet;
+    if (isWorkerPacket(packet)) {
+      // Parent's broader scope items must NOT be merged in
+      expect(packet.instructions.allowed_scope).toEqual(["src/loop/worker-packet.ts"]);
+      expect(packet.instructions.allowed_scope).not.toContain("src/finalize/**");
+    }
   });
 
   // ── Sealed result contract / pre-dispatch-failure regressions ─────────────

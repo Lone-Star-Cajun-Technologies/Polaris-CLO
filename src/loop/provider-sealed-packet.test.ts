@@ -133,7 +133,7 @@ describe("provider smoke tests for sealed local packets", () => {
       open_children_meta: {
         [childId]: {
           title: "IMPLEMENT: Sealed Packet Test Child",
-          body: "Implement the sealed packet test child.",
+          body: "## Goal\nImplement the sealed packet test child.\n\n## Scope\n- src/**\n",
         },
       },
     });

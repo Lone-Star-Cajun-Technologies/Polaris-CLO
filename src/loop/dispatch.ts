@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { dirname, join, isAbsolute, resolve, relative } from "node:path";
 import { readState, validateState, writeStateAtomic, type LoopState, type ChildDispatchRecord, type DispatchMode, type WorkerRuntimeState, type WorkerAssignmentRecord } from "./checkpoint.js";
 import { compileImplPacket, type WorkerPacket, type WorkerRoleContext } from "./worker-packet.js";
+import { parseIssueBody } from "./body-parser.js";
 import { loadConfig } from "../config/loader.js";
 import type { ExecutionRole, RoleProviderPolicy, PolarisConfig } from "../config/schema.js";
 import { readClusterStateSync, writeClusterStateSync } from "../cluster-state/store.js";
@@ -715,6 +716,21 @@ function selectChild(state: LoopState, requestedChild?: string): string {
   return state.open_children[0];
 }
 
+/**
+ * Constructs a WorkerPacket for dispatching a specific child using the current loop state and repository context.
+ *
+ * The packet includes run/cluster/child identifiers, branch (derived from state or git), canonicalized paths for
+ * state and optional result files, prompt mode, and an `allowedScope` resolved from the child's issue body with a
+ * fallback to the cluster/root issue body when present.
+ *
+ * @param state - The current LoopState used to populate packet metadata
+ * @param childId - The target child identifier to include in the packet
+ * @param stateFile - Path to the loop state file to embed in the packet (will be canonicalized)
+ * @param telemetryFile - Path to the telemetry file to include in the packet
+ * @param repoRoot - Repository root used to determine branch and resolve non-absolute result paths
+ * @param resultFile - Optional path for the expected result file; non-absolute paths are resolved against `repoRoot`
+ * @returns The constructed WorkerPacket ready for dispatch
+ */
 function buildPacket(
   state: LoopState,
   childId: string,
@@ -729,8 +745,15 @@ function buildPacket(
         id: childId,
         title: childMeta.title ?? childId,
         key_requirements: [],
+        body: childMeta.body,
       }
     : undefined;
+
+  // Scope precedence: child body → parent/cluster-root body fallback.
+  const childScope = issueContext?.body ? parseIssueBody(issueContext.body).scope : [];
+  const resolvedScope = childScope.length > 0
+    ? childScope
+    : parseIssueBody(state.open_children_meta?.[state.cluster_id]?.body ?? '').scope;
 
   return compileImplPacket({
     runId: state.run_id,
@@ -740,6 +763,7 @@ function buildPacket(
     stateFile: canonicalPath(stateFile),
     telemetryFile,
     issueContext,
+    allowedScope: resolvedScope.length > 0 ? resolvedScope : undefined,
     maxConcurrentWorkers: 1,
     promptMode: selectPromptMode(childId, state),
     resultFile: resultFile ? canonicalPath(absoluteResultFile(repoRoot, resultFile)) : undefined,
@@ -839,6 +863,13 @@ function syncClusterDispatchState(
   );
 }
 
+/**
+ * Dispatches one child task from the loop state: prepares a worker packet, persists artifacts, updates state, and emits telemetry.
+ *
+ * Performs child selection (or uses the provided childId), builds the packet, resolves provider and dispatch mode, writes cluster-scoped packet/result artifacts, creates and persists a dispatch record, attempts delegated assignment when required, synchronizes cluster dispatch state, appends ledger and telemetry events, and writes the packet JSON to stdout.
+ *
+ * @param options - DispatchOptions controlling where to read/write state and artifacts (includes `stateFile`, `repoRoot`, optional `childId`, optional `resultFile`, and an optional `provider` override)
+ */
 export function runLoopDispatch(options: DispatchOptions): void {
   let state: LoopState;
   try {
@@ -923,6 +954,21 @@ export function runLoopDispatch(options: DispatchOptions): void {
     options.repoRoot,
     options.resultFile,
   );
+
+  // Fail packet generation if body is present but scope cannot be derived.
+  // A body without a scope section produces an unactionable packet that would
+  // block the worker immediately. Body absence is caught separately by the
+  // parent loop's preflight gate.
+  const childBodyForCheck = state.open_children_meta?.[childId]?.body;
+  const childBodyPresent = !!(childBodyForCheck && childBodyForCheck.trim().length > 0);
+  if (packet.worker_role === 'impl' && childBodyPresent && packet.instructions.allowed_scope.length === 0) {
+    fail(
+      `Packet generation failed for ${childId}: body has no scope section. ` +
+      `Add a "## Scope" or "## Expected code areas" section to the issue body. ` +
+      `(Missing: allowed_scope)`,
+    );
+  }
+
   const targetRole = roleContextToExecutionRole(packet.role_context.role);
 
   // ── Resolve provider and dispatch mode ─────────────────────────────────────

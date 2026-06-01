@@ -37,6 +37,7 @@ import { readClusterState, writeClusterState } from "../cluster-state/store.js";
 import { WorkerLifecycleManager } from "./lifecycle.js";
 import { compileImplPacket, type WorkerPacket } from "./worker-packet.js";
 import { selectPromptMode } from "./worker-prompt.js";
+import { parseIssueBody } from "./body-parser.js";
 import { execFileSync } from "node:child_process";
 import {
   INLINE_EXECUTION_ERROR,
@@ -211,8 +212,13 @@ function appendRunStartedLedgerEvent(repoRoot: string, state: LoopState): void {
 }
 
 /**
- * Build a compiled WorkerPacket for impl dispatch.
- * Workers receive pre-baked instructions — no skill re-ingestion required.
+ * Builds the compiled WorkerPacket used to dispatch an implementation (impl) child.
+ *
+ * @param stateFile - Absolute path to the current-state.json file used by the worker
+ * @param telemetryFile - Path to the telemetry JSONL file the worker should append to
+ * @param repoRoot - Repository root used to resolve branch and paths
+ * @param resultFile - Optional override path where the worker should write its result
+ * @returns The compiled WorkerPacket configured for `activeChild`
  */
 function buildPacket(
   state: LoopState,
@@ -234,6 +240,14 @@ function buildPacket(
       }
     : undefined;
 
+  // Scope precedence: child body → parent/cluster-root body fallback.
+  // Derive here so compileImplPacket receives an authoritative scope list
+  // rather than falling back to [] when the child body has no scope section.
+  const childScope = issueContext?.body ? parseIssueBody(issueContext.body).scope : [];
+  const resolvedScope = childScope.length > 0
+    ? childScope
+    : parseIssueBody(state.open_children_meta?.[state.cluster_id]?.body ?? '').scope;
+
   const promptMode = selectPromptMode(activeChild, state);
 
   return compileImplPacket({
@@ -244,6 +258,7 @@ function buildPacket(
     stateFile: canonicalPath(stateFile),
     telemetryFile,
     issueContext,
+    allowedScope: resolvedScope.length > 0 ? resolvedScope : undefined,
     maxConcurrentWorkers: 1,
     promptMode,
     resultFile,
@@ -767,6 +782,43 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
           haltingChild: nextChild,
           message: errMsg,
         };
+      }
+    }
+
+    // ── Child scope preflight gate ───────────────────────────────────────────
+    //
+    // HARD GATE: Every impl child MUST have a derivable allowed_scope before
+    // dispatch. Scope is parsed from the child's body "## Scope" / "## Expected
+    // code areas" section, with fallback to the cluster-root (parent) body.
+    // A packet with empty allowed_scope would block the worker immediately —
+    // fail here with a clear error instead.
+    // Analyze children are exempt since they don't produce impl packets.
+    {
+      const childBody = state.open_children_meta?.[nextChild]?.body ?? '';
+      if (!dryRun && childBody.trim().length > 0 && !isAnalyzeChild(nextChild, state)) {
+        const { scope: childScope } = parseIssueBody(childBody);
+        if (childScope.length === 0) {
+          // Fallback: check the cluster-root (parent) body for scope
+          const parentBody = state.open_children_meta?.[state.cluster_id]?.body ?? '';
+          const { scope: parentScope } = parseIssueBody(parentBody);
+          if (parentScope.length === 0) {
+            const errMsg =
+              `Child ${nextChild} body has no scope section; cannot generate actionable packet. ` +
+              `Add a "## Scope" or "## Expected code areas" section to the issue body.`;
+            appendTelemetry(telemetryFile, {
+              event: "preflight-scope-missing",
+              run_id: state.run_id,
+              child_id: nextChild,
+              timestamp: new Date().toISOString(),
+            });
+            return {
+              haltReason: 'preflight-failed',
+              childrenDispatched,
+              haltingChild: nextChild,
+              message: errMsg,
+            };
+          }
+        }
       }
     }
 
