@@ -112,6 +112,49 @@ describe("compileImplPacket", () => {
     expect(stepsText).toContain("Emit error events");
   });
 
+  it("includes the issue body in steps when body is present", () => {
+    const p = compileImplPacket({
+      ...BASE,
+      childId: "POL-121",
+      issueContext: {
+        id: "POL-121",
+        title: "Add validation layer",
+        key_requirements: [],
+        body: "As a user I want input validation so that bad data is rejected early.",
+      },
+    });
+    const stepsText = p.instructions.steps.join("\n");
+    expect(stepsText).toContain("As a user I want input validation");
+  });
+
+  it("includes the issue body in primary_goal via the prompt when body is present", () => {
+    const p = compileImplPacket({
+      ...BASE,
+      childId: "POL-121",
+      issueContext: {
+        id: "POL-121",
+        title: "Add validation layer",
+        key_requirements: [],
+        body: "As a user I want input validation so that bad data is rejected early.",
+      },
+    });
+    expect(p.instructions.primary_goal).toContain("As a user I want input validation");
+  });
+
+  it("does not include a description step when body is absent", () => {
+    const p = compileImplPacket({
+      ...BASE,
+      childId: "POL-121",
+      issueContext: {
+        id: "POL-121",
+        title: "Add validation layer",
+        key_requirements: [],
+      },
+    });
+    const stepsText = p.instructions.steps.join("\n");
+    expect(stepsText).not.toContain("Issue description:");
+  });
+
   it("respects allowedScope and validationCommands", () => {
     const p = compileImplPacket({
       ...BASE,

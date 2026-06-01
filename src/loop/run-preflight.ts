@@ -58,6 +58,7 @@ function buildBootstrapPlan(clusterId: string, graph: LocalGraph): BootstrapPlan
   const clusterNode = graph.getNode(clusterId);
   openChildrenMeta[clusterId] = {
     title: clusterNode?.title ?? activeCluster.title,
+    ...(clusterNode?.body ? { body: clusterNode.body } : {}),
   };
 
   for (const childId of openChildren) {
@@ -65,6 +66,7 @@ function buildBootstrapPlan(clusterId: string, graph: LocalGraph): BootstrapPlan
     openChildrenMeta[childId] = {
       ...openChildrenMeta[childId],
       title: node?.title ?? openChildrenMeta[childId]?.title ?? childId,
+      ...(node?.body ? { body: node.body } : {}),
     };
   }
 

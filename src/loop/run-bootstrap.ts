@@ -78,8 +78,8 @@ export interface BootstrapInitOptions {
   runId?: string;
   /** Ordered list of child issue IDs to execute. */
   openChildren: string[];
-  /** Metadata keyed by child ID (title, type, labels). */
-  openChildrenMeta?: Record<string, { title?: string; type?: string; labels?: string[] }>;
+  /** Metadata keyed by child ID (title, body, type, labels). */
+  openChildrenMeta?: Record<string, { title?: string; body?: string; type?: string; labels?: string[] }>;
   /** Absolute path to write current-state.json. */
   stateFile: string;
   /** Repository root. */

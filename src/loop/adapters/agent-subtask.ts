@@ -70,6 +70,7 @@ export class AgentSubtaskAdapter implements ExecutionAdapter {
         "Use manual handoff or a configured terminal-cli adapter.";
       return {
         exit_code: 1,
+        pre_dispatch_failure: true,
         provider_used: provider,
         command_run: commandRun,
         summary: error,
