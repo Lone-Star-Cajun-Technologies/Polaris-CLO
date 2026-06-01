@@ -1,0 +1,148 @@
+{
+  "schemaVersion": "v2",
+  "source": {
+    "id": "POL-268",
+    "type": "Linear",
+    "analysis": {
+      "id": "initial-sync",
+      "doc": "Synchronized from Linear issue identifier: POL-268"
+    }
+  },
+  "nodes": {
+    "POL-268": {
+      "id": "POL-268",
+      "title": "IMPLEMENT: Polaris init and repository adoption workflow",
+      "status": "Backlog"
+    },
+    "POL-260": {
+      "id": "POL-260",
+      "title": "IMPL: Add adoption plan generator (AdoptionPlan)",
+      "status": "Backlog"
+    },
+    "POL-257": {
+      "id": "POL-257",
+      "title": "ANALYZE: Define Polaris init and repository adoption workflow",
+      "status": "Done"
+    },
+    "POL-263": {
+      "id": "POL-263",
+      "title": "IMPL: Add SmartDocs migration step to polaris init --adopt",
+      "status": "Backlog"
+    },
+    "POL-265": {
+      "id": "POL-265",
+      "title": "IMPL: Add agent instruction file handler to polaris init --adopt",
+      "status": "Backlog"
+    },
+    "POL-266": {
+      "id": "POL-266",
+      "title": "IMPL: Integrate atlas generation into polaris init --adopt",
+      "status": "Backlog"
+    },
+    "POL-262": {
+      "id": "POL-262",
+      "title": "IMPL: Add minimal provider config lock for polaris init --adopt",
+      "status": "Backlog"
+    },
+    "POL-264": {
+      "id": "POL-264",
+      "title": "IMPL: Add folder cognition generation to polaris init --adopt",
+      "status": "Backlog"
+    },
+    "POL-261": {
+      "id": "POL-261",
+      "title": "IMPL: Add user approval gate to polaris init --adopt",
+      "status": "Backlog"
+    },
+    "POL-259": {
+      "id": "POL-259",
+      "title": "IMPL: Add read-only repo scanner (RepoScanInventory)",
+      "status": "Backlog"
+    },
+    "POL-258": {
+      "id": "POL-258",
+      "title": "IMPL: Add repo state detection to polaris init",
+      "status": "Backlog"
+    },
+    "POL-267": {
+      "id": "POL-267",
+      "title": "IMPL: Add adoption stage/commit finalization to polaris init --adopt",
+      "status": "Backlog"
+    },
+    "POL-241": {
+      "id": "POL-241",
+      "title": "ANALYZE: Define folder-local work note staging and librarian reconciliation model",
+      "status": "Done"
+    },
+    "POL-233": {
+      "id": "POL-233",
+      "title": "ANALYZE: Normalize SmartDocs routing, folder cognition, YAML links, and telemetry cleanup",
+      "status": "Done"
+    },
+    "POL-269": {
+      "id": "POL-269",
+      "title": "IMPLEMENT: Provider role dispatch governance",
+      "status": "Done"
+    },
+    "POL-256": {
+      "id": "POL-256",
+      "title": "ANALYZE: Define provider role config, fallback, and dispatch governance",
+      "status": "Done"
+    }
+  },
+  "dependencies": {
+    "POL-267": [
+      "POL-266"
+    ],
+    "POL-266": [
+      "POL-265",
+      "POL-264"
+    ],
+    "POL-265": [
+      "POL-261"
+    ],
+    "POL-264": [
+      "POL-263"
+    ],
+    "POL-263": [
+      "POL-261"
+    ],
+    "POL-262": [
+      "POL-258"
+    ],
+    "POL-261": [
+      "POL-260"
+    ],
+    "POL-260": [
+      "POL-259"
+    ],
+    "POL-259": [
+      "POL-258"
+    ]
+  },
+  "clusters": {
+    "POL-268": {
+      "id": "POL-268",
+      "title": "Linear Issue: POL-268",
+      "children": [
+        "POL-268",
+        "POL-260",
+        "POL-257",
+        "POL-263",
+        "POL-265",
+        "POL-266",
+        "POL-262",
+        "POL-264",
+        "POL-261",
+        "POL-259",
+        "POL-258",
+        "POL-267",
+        "POL-241",
+        "POL-233",
+        "POL-269",
+        "POL-256"
+      ]
+    }
+  },
+  "activeCluster": "POL-268"
+}

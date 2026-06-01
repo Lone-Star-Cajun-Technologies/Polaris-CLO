@@ -1,0 +1,176 @@
+{
+  "schema_version": "1.0",
+  "cluster_id": "POL-268",
+  "state_generation": 19,
+  "child_states": [
+    {
+      "id": "POL-268",
+      "status": "dispatched"
+    },
+    {
+      "id": "POL-260",
+      "status": "dispatched"
+    },
+    {
+      "id": "POL-257",
+      "status": "dispatched"
+    },
+    {
+      "id": "POL-263",
+      "status": "dispatched"
+    },
+    {
+      "id": "POL-265",
+      "status": "dispatched"
+    },
+    {
+      "id": "POL-266",
+      "status": "dispatched"
+    },
+    {
+      "id": "POL-262",
+      "status": "dispatched"
+    },
+    {
+      "id": "POL-264",
+      "status": "dispatched"
+    },
+    {
+      "id": "POL-261",
+      "status": "dispatched"
+    },
+    {
+      "id": "POL-259",
+      "status": "dispatched"
+    },
+    {
+      "id": "POL-258",
+      "status": "dispatched"
+    },
+    {
+      "id": "POL-267",
+      "status": "dispatched"
+    },
+    {
+      "id": "POL-241",
+      "status": "dispatched"
+    },
+    {
+      "id": "POL-233",
+      "status": "dispatched"
+    },
+    {
+      "id": "POL-269",
+      "status": "dispatched"
+    },
+    {
+      "id": "POL-256",
+      "status": "dispatched"
+    }
+  ],
+  "claim_metadata": {
+    "POL-268": {
+      "worker_id": "polaris-run-pol-268-2026-06-01-001:POL-268:1780275629944",
+      "claimed_at": "2026-06-01T01:00:29.944Z",
+      "expires_at": "2026-06-01T01:30:29.944Z"
+    },
+    "POL-260": {
+      "worker_id": "b6c8c096-c47c-40db-8057-383454c48b33",
+      "claimed_at": "2026-06-01T01:04:51.508Z",
+      "expires_at": "2026-06-01T01:34:51.508Z"
+    },
+    "POL-257": {
+      "worker_id": "8d974941-1bb6-4079-8710-4ded94571db9",
+      "claimed_at": "2026-06-01T01:20:47.535Z",
+      "expires_at": "2026-06-01T01:50:47.535Z"
+    },
+    "POL-263": {
+      "worker_id": "1b13395d-b294-4137-b052-6976ef086b39",
+      "claimed_at": "2026-06-01T01:21:40.951Z",
+      "expires_at": "2026-06-01T01:51:40.951Z"
+    },
+    "POL-265": {
+      "worker_id": "97e95425-0855-4d10-a9c1-e356831977b2",
+      "claimed_at": "2026-06-01T01:21:41.512Z",
+      "expires_at": "2026-06-01T01:51:41.512Z"
+    },
+    "POL-266": {
+      "worker_id": "9b50667e-412d-4463-8619-c9f71ac7f81e",
+      "claimed_at": "2026-06-01T01:21:42.070Z",
+      "expires_at": "2026-06-01T01:51:42.070Z"
+    },
+    "POL-262": {
+      "worker_id": "62b66e99-979c-4bd3-a9fc-c283759dc11f",
+      "claimed_at": "2026-06-01T01:21:42.627Z",
+      "expires_at": "2026-06-01T01:51:42.627Z"
+    },
+    "POL-264": {
+      "worker_id": "76bdee76-f6f1-49e3-9551-b74d817cd40a",
+      "claimed_at": "2026-06-01T01:21:43.186Z",
+      "expires_at": "2026-06-01T01:51:43.186Z"
+    },
+    "POL-261": {
+      "worker_id": "8f99b19f-4eeb-4295-8f28-3f49e31f64ce",
+      "claimed_at": "2026-06-01T01:21:43.745Z",
+      "expires_at": "2026-06-01T01:51:43.745Z"
+    },
+    "POL-259": {
+      "worker_id": "e5174a70-af47-45a9-b110-beeae46abdcc",
+      "claimed_at": "2026-06-01T01:21:44.306Z",
+      "expires_at": "2026-06-01T01:51:44.306Z"
+    },
+    "POL-258": {
+      "worker_id": "71a62deb-5aa5-467a-bb26-2c40b2233d8a",
+      "claimed_at": "2026-06-01T01:21:44.861Z",
+      "expires_at": "2026-06-01T01:51:44.861Z"
+    },
+    "POL-267": {
+      "worker_id": "aabbdd60-049c-46b5-a4e2-758c3f24aee3",
+      "claimed_at": "2026-06-01T01:21:45.418Z",
+      "expires_at": "2026-06-01T01:51:45.418Z"
+    },
+    "POL-241": {
+      "worker_id": "fe3fa288-8cdd-4b5e-bd6a-48591b948657",
+      "claimed_at": "2026-06-01T01:21:45.979Z",
+      "expires_at": "2026-06-01T01:51:45.979Z"
+    },
+    "POL-233": {
+      "worker_id": "f488a760-4c04-4744-a0cd-6f5740113e99",
+      "claimed_at": "2026-06-01T01:21:46.541Z",
+      "expires_at": "2026-06-01T01:51:46.541Z"
+    },
+    "POL-269": {
+      "worker_id": "8e9578ec-2f65-48e5-a644-9acbd6db0255",
+      "claimed_at": "2026-06-01T01:21:47.097Z",
+      "expires_at": "2026-06-01T01:51:47.097Z"
+    },
+    "POL-256": {
+      "worker_id": "6754dffe-a8ed-49f1-88b9-f2c7cf7510db",
+      "claimed_at": "2026-06-01T01:21:47.659Z",
+      "expires_at": "2026-06-01T01:51:47.659Z"
+    }
+  },
+  "packet_pointers": {
+    "POL-268": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-268/packets/POL-268-e22da269-7273-40b9-b231-3a82211609d5.json",
+    "POL-260": ".polaris/clusters/POL-268/packets/POL-260-29c7672a-23c7-4fdd-85df-f1bd20cee787.json",
+    "POL-257": ".polaris/clusters/POL-268/packets/POL-257-84fbdfc7-5d13-4ba6-a246-7747ac2dc930.json",
+    "POL-263": ".polaris/clusters/POL-268/packets/POL-263-30043779-b265-412a-994e-544f4ae8f0c2.json",
+    "POL-265": ".polaris/clusters/POL-268/packets/POL-265-2540ebc9-4f83-4102-9294-9be55f2df858.json",
+    "POL-266": ".polaris/clusters/POL-268/packets/POL-266-860c2911-f8ef-4e21-a5bd-0620ec1565f9.json",
+    "POL-262": ".polaris/clusters/POL-268/packets/POL-262-5319fdce-fdb3-4e9b-86e6-56fabeacac5d.json",
+    "POL-264": ".polaris/clusters/POL-268/packets/POL-264-1dd190bd-a5e1-4634-bda1-a7eacf22f10c.json",
+    "POL-261": ".polaris/clusters/POL-268/packets/POL-261-2b3a7ba5-4c1a-4999-8997-ae889abe8ef3.json",
+    "POL-259": ".polaris/clusters/POL-268/packets/POL-259-fba37e9a-08cc-45a4-b62d-d2cb59b7e957.json",
+    "POL-258": ".polaris/clusters/POL-268/packets/POL-258-c99dcaa3-3c36-4fb6-9afd-eeee6dd05faf.json",
+    "POL-267": ".polaris/clusters/POL-268/packets/POL-267-88731d57-cea8-4b58-b9e3-0ba9139bb356.json",
+    "POL-241": ".polaris/clusters/POL-268/packets/POL-241-d12ae7d0-1215-4f19-9e71-f344b3964e8d.json",
+    "POL-233": ".polaris/clusters/POL-268/packets/POL-233-24cd3970-6a8e-455c-bca4-b11579c85cbc.json",
+    "POL-269": ".polaris/clusters/POL-268/packets/POL-269-551b2653-d3d1-42ef-b261-83a38fbe01c0.json",
+    "POL-256": ".polaris/clusters/POL-268/packets/POL-256-2e0d528b-dd8f-434b-ba3f-c3968ddbf17b.json"
+  },
+  "result_pointers": {},
+  "validation_results": {},
+  "commits": {},
+  "tracker_mutations": {},
+  "blockers": []
+}

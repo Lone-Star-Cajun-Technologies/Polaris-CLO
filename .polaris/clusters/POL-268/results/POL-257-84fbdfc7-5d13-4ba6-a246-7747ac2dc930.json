@@ -1,0 +1,8 @@
+{
+  "run_id": "polaris-run-pol-268-2026-06-01-001",
+  "child_id": "POL-257",
+  "status": "success",
+  "commit": "f39194d",
+  "validation": "passed",
+  "error_message": null
+}
