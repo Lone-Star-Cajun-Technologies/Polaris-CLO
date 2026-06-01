@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { runLoopDispatch, checkAcknowledgmentTimeout } from "./dispatch.js";
 import { readState } from "./checkpoint.js";
 import { createBootstrapSeal } from "./run-bootstrap.js";
+import { buildWorkerInstructions } from "./adapters/worker-instructions.js";
 
 function makeTestDir(): string {
   const dir = join(tmpdir(), `polaris-dispatch-test-${Date.now()}-${Math.random().toString(16).slice(2)}`);
@@ -1049,5 +1050,105 @@ describe("runLoopDispatch", () => {
     expect(packet.active_child).toBe("POL-145");
     expect(packet.instructions.issue_context?.body).toContain("## Goal");
     expect(packet.instructions.allowed_scope).toContain("src/loop/dispatch.ts");
+  });
+});
+
+// ── result_file_contract contract tests ───────────────────────────────────────
+// Verify that every generated packet JSON always carries a canonical
+// top-level result_file_contract, and that the prompt renders the same path.
+
+describe("result_file_contract — dispatch contract consistency", () => {
+  let testDir: string;
+
+  beforeEach(() => {
+    testDir = makeTestDir();
+  });
+
+  afterEach(() => {
+    rmSync(testDir, { recursive: true, force: true });
+  });
+
+  it("saved packet JSON always has top-level result_file_contract", () => {
+    const stateFile = writeState(testDir, baseState());
+
+    const output = captureStdout(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+    const packet = JSON.parse(output) as Record<string, unknown>;
+
+    expect(packet.result_file_contract).toBeDefined();
+    const rfc = packet.result_file_contract as Record<string, unknown>;
+    expect(typeof rfc.result_file).toBe("string");
+    expect((rfc.result_file as string).length).toBeGreaterThan(0);
+  });
+
+  it("result_file path follows .polaris/clusters/<cluster>/results/<child>-<uuid>.json", () => {
+    const stateFile = writeState(testDir, baseState());
+
+    const output = captureStdout(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+    const packet = JSON.parse(output) as Record<string, unknown>;
+
+    const rfc = packet.result_file_contract as Record<string, unknown>;
+    const resultFile = rfc.result_file as string;
+
+    expect(resultFile).toContain(".polaris");
+    expect(resultFile).toContain("clusters");
+    expect(resultFile).toContain("POL-142");
+    expect(resultFile).toContain("results");
+    expect(resultFile).toContain("POL-145");
+    expect(resultFile.endsWith(".json")).toBe(true);
+  });
+
+  it("worker prompt includes the same result file path as result_file_contract", () => {
+    const stateFile = writeState(testDir, baseState());
+
+    const output = captureStdout(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+    const packet = JSON.parse(output) as Record<string, unknown>;
+
+    const rfc = packet.result_file_contract as Record<string, unknown>;
+    const resultFilePath = rfc.result_file as string;
+
+    const prompt = buildWorkerInstructions(packet as Parameters<typeof buildWorkerInstructions>[0]);
+    expect(prompt).toContain(`SEALED RESULT FILE: ${resultFilePath}`);
+  });
+
+  it("saved packet file on disk has result_file_contract matching stdout packet", () => {
+    const stateFile = writeState(testDir, baseState());
+
+    const output = captureStdout(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+    const stdoutPacket = JSON.parse(output) as Record<string, unknown>;
+
+    const updated = readState(stateFile);
+    const dispatchRecord = updated.open_children_meta?.["POL-145"]?.dispatch_record;
+    const packetPath = resolve(testDir, dispatchRecord!.packet_path!);
+
+    const diskPacket = JSON.parse(readFileSync(packetPath, "utf-8")) as Record<string, unknown>;
+
+    expect(diskPacket.result_file_contract).toBeDefined();
+    expect(diskPacket.result_file_contract).toEqual(stdoutPacket.result_file_contract);
+  });
+
+  it("options.resultFile override is reflected in result_file_contract", () => {
+    const stateFile = writeState(testDir, baseState());
+    const customResultFile = join(testDir, "my-custom-result.json");
+
+    const output = captureStdout(() =>
+      runLoopDispatch({ repoRoot: testDir, stateFile, resultFile: customResultFile }),
+    );
+    const packet = JSON.parse(output) as Record<string, unknown>;
+
+    const rfc = packet.result_file_contract as Record<string, unknown>;
+    expect(rfc.result_file).toBe(customResultFile);
+  });
+
+  it("dry-run packet (from compileImplPacket) and non-dry-run dispatch produce same contract shape", () => {
+    const stateFile = writeState(testDir, baseState());
+
+    // Non-dry-run: result via runLoopDispatch
+    const output = captureStdout(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+    const livePacket = JSON.parse(output) as Record<string, unknown>;
+    const liveRfc = livePacket.result_file_contract as Record<string, unknown>;
+
+    expect(liveRfc).toBeDefined();
+    expect(typeof liveRfc.result_file).toBe("string");
+    expect(Object.keys(liveRfc)).toEqual(["result_file"]);
   });
 });

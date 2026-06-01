@@ -214,8 +214,8 @@ export interface WorkerPacket extends BootstrapPacket {
   lifecycle: WorkerLifecycleContract;
   /** Fields the worker MUST include in its compact return JSON. */
   return_contract: string[];
-  /** Optional contract for writing a sealed result file instead of stdout. */
-  result_file_contract?: SealedResultFileContract;
+  /** Contract for writing a sealed result file. Every dispatched packet must include this. */
+  result_file_contract: SealedResultFileContract;
   /** Prompt dispatch mode: compact (default for narrow children) or full. */
   prompt_mode: WorkerPromptMode;
   /** Lightweight prompt size metrics recorded at compile time. */
@@ -240,20 +240,14 @@ export function isWorkerPacket(packet: BootstrapPacket): packet is WorkerPacket 
     return false;
   }
 
-  // If result_file_contract is present, validate its shape.
-  if ('result_file_contract' in p) {
-    const rfc = p.result_file_contract;
-    // undefined means no contract — that's valid (resultFile was not specified)
-    if (rfc !== undefined) {
-      if (rfc === null || typeof rfc !== 'object' || Array.isArray(rfc)) {
-        return false;
-      }
-      const rfcRecord = rfc as Record<string, unknown>;
-      return typeof rfcRecord.result_file === 'string';
-    }
+  // result_file_contract is required on every v2.1 packet.
+  const rfc = p.result_file_contract;
+  if (rfc === null || rfc === undefined || typeof rfc !== 'object' || Array.isArray(rfc)) {
+    return false;
   }
+  const rfcRecord = rfc as Record<string, unknown>;
+  return typeof rfcRecord.result_file === 'string';
 
-  return true;
 }
 
 // ── Return contracts ──────────────────────────────────────────────────────────
@@ -311,7 +305,7 @@ export interface CompileStartupPacketInput {
   stateFile: string;
   telemetryFile: string;
   maxConcurrentWorkers?: number;
-  resultFile?: string;
+  resultFile: string;
 }
 
 /**
@@ -355,7 +349,7 @@ export function compileStartupPacket(input: CompileStartupPacketInput): WorkerPa
     prompt_mode: 'full',
     prompt_metrics: { mode: 'full', char_count: 0, estimated_tokens: 0 },
     role_context: roleContextForWorkerRole('startup'),
-    result_file_contract: input.resultFile ? { result_file: input.resultFile } : undefined,
+    result_file_contract: { result_file: input.resultFile },
     context: {
       branch: input.branch,
       worker_role: 'startup',
@@ -374,7 +368,7 @@ export interface CompileImplPacketInput {
   allowedScope?: string[];
   validationCommands?: string[];
   maxConcurrentWorkers?: number;
-  resultFile?: string;
+  resultFile: string;
   /**
    * Prompt dispatch mode. Defaults to 'compact' for narrow children.
    * Pass 'full' for cross-cutting or architectural children.
@@ -464,7 +458,7 @@ export function compileImplPacket(input: CompileImplPacketInput): WorkerPacket {
     prompt_mode: promptMode,
     prompt_metrics: promptResult.metrics,
     role_context: roleContextForWorkerRole('impl'),
-    result_file_contract: input.resultFile ? { result_file: input.resultFile } : undefined,
+    result_file_contract: { result_file: input.resultFile },
     context: {
       branch: input.branch,
       worker_role: 'impl',
@@ -482,7 +476,7 @@ export interface CompileFinalizePacketInput {
   telemetryFile: string;
   targetBranch?: string;
   maxConcurrentWorkers?: number;
-  resultFile?: string;
+  resultFile: string;
 }
 
 /**
@@ -526,7 +520,7 @@ export function compileFinalizePacket(input: CompileFinalizePacketInput): Worker
     prompt_mode: 'full',
     prompt_metrics: { mode: 'full', char_count: 0, estimated_tokens: 0 },
     role_context: roleContextForWorkerRole('finalize'),
-    result_file_contract: input.resultFile ? { result_file: input.resultFile } : undefined,
+    result_file_contract: { result_file: input.resultFile },
     context: {
       branch: input.branch,
       worker_role: 'finalize',
@@ -544,7 +538,7 @@ export interface CompilePreflightPacketInput {
   stateFile: string;
   telemetryFile: string;
   maxConcurrentWorkers?: number;
-  resultFile?: string;
+  resultFile: string;
 }
 
 /**
@@ -582,7 +576,7 @@ export function compilePreflightPacket(input: CompilePreflightPacketInput): Work
     prompt_mode: 'full',
     prompt_metrics: { mode: 'full', char_count: 0, estimated_tokens: 0 },
     role_context: roleContextForWorkerRole('preflight'),
-    result_file_contract: input.resultFile ? { result_file: input.resultFile } : undefined,
+    result_file_contract: { result_file: input.resultFile },
     context: {
       branch: input.branch,
       worker_role: 'preflight',

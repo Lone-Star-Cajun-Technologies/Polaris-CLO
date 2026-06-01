@@ -59,13 +59,9 @@ function buildCompiledInstructions(packet: BootstrapPacket): string {
     `REQUIRED RETURN FIELDS: ${return_contract.join(", ")}`,
     `STATE FILE: ${packet.state_file}`,
     `TELEMETRY FILE: ${packet.telemetry_file}`,
-    ...(packet.result_file_contract?.result_file
-      ? [
-          `SEALED RESULT FILE: ${packet.result_file_contract.result_file}`,
-          `Write a JSON object to the sealed result file with: run_id, child_id, status ("success" or "failure"), commit, validation, and error_message when applicable.`,
-          `Also print the compact return JSON to stdout as the final line.`,
-        ]
-      : []),
+    `SEALED RESULT FILE: ${packet.result_file_contract.result_file}`,
+    `Write a JSON object to the sealed result file with: run_id, child_id, status ("success" or "failure"), commit, validation, and error_message when applicable.`,
+    `Also print the compact return JSON to stdout as the final line.`,
     ``,
     LIFECYCLE_TEARDOWN_NOTICE,
     ``,

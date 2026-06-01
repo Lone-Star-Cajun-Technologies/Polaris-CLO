@@ -18,6 +18,7 @@ import {
   PREFLIGHT_RETURN_CONTRACT,
   type WorkerPacket,
 } from "./worker-packet.js";
+import { buildWorkerInstructions } from "./adapters/worker-instructions.js";
 import type { BootstrapPacket } from "./adapters/types.js";
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -28,6 +29,7 @@ const BASE = {
   branch: "feature/pol-120",
   stateFile: "/repo/.taskchain_artifacts/polaris-run/current-state.json",
   telemetryFile: "/repo/.taskchain_artifacts/polaris-run/runs/run-001/telemetry.jsonl",
+  resultFile: "/repo/.polaris/clusters/POL-120/results/POL-121-test-uuid.json",
 };
 
 // ── isWorkerPacket type guard ─────────────────────────────────────────────────
@@ -50,13 +52,16 @@ describe("isWorkerPacket", () => {
     expect(isWorkerPacket(packet)).toBe(true);
   });
 
-  it("returns true for a compiled WorkerPacket with result_file_contract", () => {
-    const packet = compileImplPacket({
-      ...BASE,
-      childId: "POL-121",
-      resultFile: "/tmp/result.json",
-    });
+  it("returns true for a compiled WorkerPacket (always has result_file_contract)", () => {
+    const packet = compileImplPacket({ ...BASE, childId: "POL-121" });
     expect(isWorkerPacket(packet)).toBe(true);
+    expect(packet.result_file_contract.result_file).toBe(BASE.resultFile);
+  });
+
+  it("returns false if result_file_contract is missing", () => {
+    const packet = compileImplPacket({ ...BASE, childId: "POL-121" });
+    const { result_file_contract: _, ...withoutContract } = packet as any;
+    expect(isWorkerPacket(withoutContract as any)).toBe(false);
   });
 
   it("returns false if result_file_contract is malformed", () => {
@@ -186,13 +191,15 @@ describe("compileImplPacket", () => {
     expect(p.return_contract).toEqual(IMPL_RETURN_CONTRACT);
   });
 
-  it("populates result_file_contract when resultFile is provided", () => {
-    const p = compileImplPacket({
-      ...BASE,
-      childId: "POL-121",
-      resultFile: "/tmp/result.json",
-    });
-    expect(p.result_file_contract).toEqual({ result_file: "/tmp/result.json" });
+  it("always populates result_file_contract from resultFile", () => {
+    const p = compileImplPacket({ ...BASE, childId: "POL-121" });
+    expect(p.result_file_contract).toEqual({ result_file: BASE.resultFile });
+  });
+
+  it("uses the provided resultFile in result_file_contract", () => {
+    const customResultFile = "/tmp/custom-result.json";
+    const p = compileImplPacket({ ...BASE, childId: "POL-121", resultFile: customResultFile });
+    expect(p.result_file_contract).toEqual({ result_file: customResultFile });
   });
 
   it("is a valid BootstrapPacket (has all required v1 fields)", () => {
@@ -235,9 +242,9 @@ describe("compileFinalizePacket", () => {
     expect(p.return_contract).toEqual(FINALIZE_RETURN_CONTRACT);
   });
 
-  it("populates result_file_contract when resultFile is provided", () => {
-    const p = compileFinalizePacket({ ...BASE, resultFile: "/tmp/result.json" });
-    expect(p.result_file_contract).toEqual({ result_file: "/tmp/result.json" });
+  it("always populates result_file_contract from resultFile", () => {
+    const p = compileFinalizePacket(BASE);
+    expect(p.result_file_contract).toEqual({ result_file: BASE.resultFile });
   });
 
   it("does not reference skill files", () => {
@@ -259,6 +266,11 @@ describe("compileStartupPacket", () => {
   it("return_contract matches STARTUP_RETURN_CONTRACT", () => {
     const p = compileStartupPacket(BASE);
     expect(p.return_contract).toEqual(STARTUP_RETURN_CONTRACT);
+  });
+
+  it("always populates result_file_contract from resultFile", () => {
+    const p = compileStartupPacket(BASE);
+    expect(p.result_file_contract).toEqual({ result_file: BASE.resultFile });
   });
 });
 
@@ -290,9 +302,9 @@ describe("compilePreflightPacket", () => {
     expect(p.return_contract).toEqual(PREFLIGHT_RETURN_CONTRACT);
   });
 
-  it("populates result_file_contract when resultFile is provided", () => {
-    const p = compilePreflightPacket({ ...BASE, resultFile: "/tmp/result.json" });
-    expect(p.result_file_contract).toEqual({ result_file: "/tmp/result.json" });
+  it("always populates result_file_contract from resultFile", () => {
+    const p = compilePreflightPacket(BASE);
+    expect(p.result_file_contract).toEqual({ result_file: BASE.resultFile });
   });
 });
 
@@ -429,5 +441,45 @@ describe("allowed_scope derivation from issue body", () => {
       },
     });
     expect(p.instructions.allowed_scope).toEqual([]);
+  });
+});
+
+// ── result_file_contract prompt consistency ───────────────────────────────────
+// Verify the sealed result file path is identical in the JSON contract and the
+// rendered worker prompt — ensuring no ad-hoc rendering diverges from the packet.
+
+describe("result_file_contract — prompt consistency", () => {
+  it("worker prompt includes the exact result file path from result_file_contract", () => {
+    const p = compileImplPacket({ ...BASE, childId: "POL-121" });
+    const prompt = buildWorkerInstructions(p);
+    expect(prompt).toContain(`SEALED RESULT FILE: ${p.result_file_contract.result_file}`);
+    expect(p.result_file_contract.result_file).toBe(BASE.resultFile);
+  });
+
+  it("every packet type includes SEALED RESULT FILE in its rendered prompt", () => {
+    const implPacket = compileImplPacket({ ...BASE, childId: "POL-121" });
+    const startupPacket = compileStartupPacket(BASE);
+    const finalizePacket = compileFinalizePacket(BASE);
+    const preflightPacket = compilePreflightPacket(BASE);
+
+    for (const packet of [implPacket, startupPacket, finalizePacket, preflightPacket]) {
+      const prompt = buildWorkerInstructions(packet);
+      expect(prompt).toContain("SEALED RESULT FILE:");
+      expect(prompt).toContain(BASE.resultFile);
+    }
+  });
+
+  it("isWorkerPacket rejects packets without result_file_contract", () => {
+    const p = compileImplPacket({ ...BASE, childId: "POL-121" });
+    const withoutRfc = { ...p } as Partial<WorkerPacket>;
+    delete withoutRfc.result_file_contract;
+    expect(isWorkerPacket(withoutRfc as BootstrapPacket)).toBe(false);
+  });
+
+  it("result_file_contract serializes to JSON top-level (no undefined drop)", () => {
+    const p = compileImplPacket({ ...BASE, childId: "POL-121" });
+    const serialized = JSON.parse(JSON.stringify(p)) as Record<string, unknown>;
+    expect(serialized.result_file_contract).toBeDefined();
+    expect((serialized.result_file_contract as Record<string, unknown>).result_file).toBe(BASE.resultFile);
   });
 });
