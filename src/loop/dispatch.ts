@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { dirname, join, isAbsolute, resolve, relative } from "node:path";
 import { readState, validateState, writeStateAtomic, type LoopState, type ChildDispatchRecord, type DispatchMode, type WorkerRuntimeState, type WorkerAssignmentRecord } from "./checkpoint.js";
 import { compileImplPacket, type WorkerPacket, type WorkerRoleContext } from "./worker-packet.js";
+import { parseIssueBody } from "./body-parser.js";
 import { loadConfig } from "../config/loader.js";
 import type { ExecutionRole, RoleProviderPolicy, PolarisConfig } from "../config/schema.js";
 import { readClusterStateSync, writeClusterStateSync } from "../cluster-state/store.js";
@@ -729,8 +730,15 @@ function buildPacket(
         id: childId,
         title: childMeta.title ?? childId,
         key_requirements: [],
+        body: childMeta.body,
       }
     : undefined;
+
+  // Scope precedence: child body → parent/cluster-root body fallback.
+  const childScope = issueContext?.body ? parseIssueBody(issueContext.body).scope : [];
+  const resolvedScope = childScope.length > 0
+    ? childScope
+    : parseIssueBody(state.open_children_meta?.[state.cluster_id]?.body ?? '').scope;
 
   return compileImplPacket({
     runId: state.run_id,
@@ -740,6 +748,7 @@ function buildPacket(
     stateFile: canonicalPath(stateFile),
     telemetryFile,
     issueContext,
+    allowedScope: resolvedScope.length > 0 ? resolvedScope : undefined,
     maxConcurrentWorkers: 1,
     promptMode: selectPromptMode(childId, state),
     resultFile: resultFile ? canonicalPath(absoluteResultFile(repoRoot, resultFile)) : undefined,
@@ -923,6 +932,21 @@ export function runLoopDispatch(options: DispatchOptions): void {
     options.repoRoot,
     options.resultFile,
   );
+
+  // Fail packet generation if body is present but scope cannot be derived.
+  // A body without a scope section produces an unactionable packet that would
+  // block the worker immediately. Body absence is caught separately by the
+  // parent loop's preflight gate.
+  const childBodyForCheck = state.open_children_meta?.[childId]?.body;
+  const childBodyPresent = !!(childBodyForCheck && childBodyForCheck.trim().length > 0);
+  if (packet.worker_role === 'impl' && childBodyPresent && packet.instructions.allowed_scope.length === 0) {
+    fail(
+      `Packet generation failed for ${childId}: body has no scope section. ` +
+      `Add a "## Scope" or "## Expected code areas" section to the issue body. ` +
+      `(Missing: allowed_scope)`,
+    );
+  }
+
   const targetRole = roleContextToExecutionRole(packet.role_context.role);
 
   // ── Resolve provider and dispatch mode ─────────────────────────────────────

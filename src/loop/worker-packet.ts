@@ -16,6 +16,7 @@ import {
   type WorkerPromptMode,
   type WorkerPromptMetrics,
 } from "./worker-prompt.js";
+import { parseIssueBody } from "./body-parser.js";
 
 // ── Worker roles ─────────────────────────────────────────────────────────────
 
@@ -390,8 +391,19 @@ export function compileImplPacket(input: CompileImplPacketInput): WorkerPacket {
   const childTitle = input.issueContext?.title ?? input.childId;
   const promptMode = input.promptMode ?? 'compact';
 
-  const requirementLines =
-    input.issueContext?.key_requirements.map((r, i) => `   ${i + 1}. ${r}`) ?? [];
+  // Derive scope/validation/requirements from body when not explicitly provided.
+  const bodyParsed = input.issueContext?.body ? parseIssueBody(input.issueContext.body) : null;
+  const resolvedScope: string[] = input.allowedScope?.length
+    ? input.allowedScope
+    : bodyParsed?.scope ?? [];
+  const resolvedValidation: string[] = input.validationCommands?.length
+    ? input.validationCommands
+    : bodyParsed?.validationCommands ?? [];
+  const resolvedRequirements: string[] = input.issueContext?.key_requirements.length
+    ? input.issueContext.key_requirements
+    : bodyParsed?.requirements ?? [];
+
+  const requirementLines = resolvedRequirements.map((r, i) => `   ${i + 1}. ${r}`);
 
   const bodyLines = input.issueContext?.body
     ? [`Issue description:\n${input.issueContext.body}`]
@@ -419,8 +431,8 @@ export function compileImplPacket(input: CompileImplPacketInput): WorkerPacket {
     stateFile: input.stateFile,
     telemetryFile: input.telemetryFile,
     issueContext: input.issueContext,
-    allowedScope: input.allowedScope,
-    validationCommands: input.validationCommands,
+    allowedScope: resolvedScope,
+    validationCommands: resolvedValidation,
     mode: promptMode,
   });
 
@@ -435,8 +447,8 @@ export function compileImplPacket(input: CompileImplPacketInput): WorkerPacket {
     instructions: {
       primary_goal: promptResult.prompt,
       steps,
-      allowed_scope: input.allowedScope ?? [],
-      validation_commands: input.validationCommands ?? [],
+      allowed_scope: resolvedScope,
+      validation_commands: resolvedValidation,
       issue_context: input.issueContext,
     },
     lifecycle: defaultLifecycle(input.maxConcurrentWorkers ?? 1, 'commit-and-exit'),

@@ -340,3 +340,94 @@ describe("WorkerPacket structural compatibility", () => {
     expect(bp.active_child).toBe("POL-121");
   });
 });
+
+// ── Scope derivation from issue body ─────────────────────────────────────────
+
+const BODY_WITH_SCOPE = `## Goal
+Fix the packet generator scope pipeline.
+
+## Scope
+- src/loop/**
+- src/cli/**
+
+## Validation
+- npm test
+- npm run build
+`;
+
+describe("allowed_scope derivation from issue body", () => {
+  it("derives allowed_scope from ## Scope section in body", () => {
+    const p = compileImplPacket({
+      ...BASE,
+      childId: "POL-277",
+      issueContext: {
+        id: "POL-277",
+        title: "FIX: Fail packet generation when scope is empty",
+        key_requirements: [],
+        body: BODY_WITH_SCOPE,
+      },
+    });
+    expect(p.instructions.allowed_scope).toEqual(["src/loop/**", "src/cli/**"]);
+  });
+
+  it("allowed_scope from body appears in the generated packet", () => {
+    const p = compileImplPacket({
+      ...BASE,
+      childId: "POL-277",
+      issueContext: {
+        id: "POL-277",
+        title: "FIX",
+        key_requirements: [],
+        body: BODY_WITH_SCOPE,
+      },
+    });
+    // The packet's allowed_scope and primary_goal must both reflect the body scope
+    expect(p.instructions.allowed_scope.length).toBeGreaterThan(0);
+    expect(p.instructions.primary_goal).toContain("src/loop");
+  });
+
+  it("explicit allowedScope overrides body-derived scope", () => {
+    const p = compileImplPacket({
+      ...BASE,
+      childId: "POL-277",
+      allowedScope: ["src/finalize/**"],
+      issueContext: {
+        id: "POL-277",
+        title: "FIX",
+        key_requirements: [],
+        body: BODY_WITH_SCOPE,
+      },
+    });
+    expect(p.instructions.allowed_scope).toEqual(["src/finalize/**"]);
+  });
+
+  it("derives validation_commands from ## Validation section in body", () => {
+    const p = compileImplPacket({
+      ...BASE,
+      childId: "POL-277",
+      issueContext: {
+        id: "POL-277",
+        title: "FIX",
+        key_requirements: [],
+        body: BODY_WITH_SCOPE,
+      },
+    });
+    expect(p.instructions.validation_commands).toContain("npm test");
+    expect(p.instructions.validation_commands).toContain("npm run build");
+  });
+
+  it("allowed_scope remains empty when body has no scope section (no body parser magic)", () => {
+    // Empty allowed_scope is valid at compile time — gate fires at dispatch level
+    const p = compileImplPacket({
+      ...BASE,
+      childId: "POL-277",
+      issueContext: {
+        id: "POL-277",
+        title: "FIX",
+        key_requirements: [],
+        body: "## Goal\nFix something.\n",
+      },
+    });
+    expect(p.instructions.allowed_scope).toEqual([]);
+  });
+});
