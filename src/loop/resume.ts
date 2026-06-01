@@ -312,10 +312,40 @@ export function runLoopResume(options: ResumeOptions): void {
 
   const actualSha = computeStateSha(stateFile);
   if (actualSha !== resumePacket.current_state_sha) {
-    console.error(
-      "state packet stale — re-run `polaris loop status` to verify current state",
-    );
-    process.exit(1);
+    // A SHA mismatch normally means the state drifted after the bootstrap
+    // packet was written — "state packet stale".
+    //
+    // Exception: `loop abort` legitimately rewrites current-state.json after
+    // the packet is recorded (it clears active_child, balances dispatch epochs,
+    // and sets status to "blocked").  Resume is safe when the state is
+    // blocked-idle: no active dispatch and no outstanding worker.
+    if (resumeState.status === "blocked") {
+      if (resumeState.active_child && resumeState.active_child !== "") {
+        console.error(
+          "cannot resume: status is blocked with active_child set — resolve the active dispatch first",
+        );
+        process.exit(1);
+      }
+      const boundary = resumeState.dispatch_boundary;
+      if (!boundary) {
+        console.error(
+          "cannot resume: status is blocked but dispatch_boundary is missing — state is inconsistent",
+        );
+        process.exit(1);
+      }
+      if (boundary.dispatch_epoch !== boundary.continue_epoch) {
+        console.error(
+          "cannot resume: status is blocked with unbalanced dispatch boundary — a dispatch is still pending",
+        );
+        process.exit(1);
+      }
+      // Blocked-idle: safe to proceed. Step 5 below will clear the blocked status.
+    } else {
+      console.error(
+        "state packet stale — re-run `polaris loop status` to verify current state",
+      );
+      process.exit(1);
+    }
   }
 
   // Step 4: Check allowBranchDivergence
