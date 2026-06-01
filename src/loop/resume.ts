@@ -327,7 +327,13 @@ export function runLoopResume(options: ResumeOptions): void {
         process.exit(1);
       }
       const boundary = resumeState.dispatch_boundary;
-      if (boundary && boundary.dispatch_epoch !== boundary.continue_epoch) {
+      if (!boundary) {
+        console.error(
+          "cannot resume: status is blocked but dispatch_boundary is missing — state is inconsistent",
+        );
+        process.exit(1);
+      }
+      if (boundary.dispatch_epoch !== boundary.continue_epoch) {
         console.error(
           "cannot resume: status is blocked with unbalanced dispatch boundary — a dispatch is still pending",
         );
