@@ -415,4 +415,73 @@ describe("runLoopAbort", () => {
       ".polaris/clusters/POL-100/results/POL-281-old-dispatch-abc.json",
     );
   });
+
+  it("does NOT clear active_child when a heartbeat exists (worker may still be running)", () => {
+    const stateWithHeartbeat = {
+      ...staleDispatchState,
+      open_children_meta: {
+        ...staleDispatchState.open_children_meta,
+        "POL-281": {
+          ...staleDispatchState.open_children_meta["POL-281"],
+          dispatch_record: {
+            ...staleDispatchState.open_children_meta["POL-281"].dispatch_record,
+            last_heartbeat_at: "2024-01-01T00:05:00.000Z",
+          },
+        },
+      },
+    };
+    const stateFile = writeState(testDir, stateWithHeartbeat);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
+      throw new Error("process.exit called");
+    });
+    vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+
+    try {
+      expect(() =>
+        runLoopAbort({ reason: "aborting with live heartbeat", repoRoot: testDir, stateFile }),
+      ).toThrow("process.exit called");
+    } finally {
+      exitSpy.mockRestore();
+      vi.restoreAllMocks();
+    }
+
+    const saved = JSON.parse(readFileSync(stateFile, "utf-8"));
+    // Blocker recorded but dispatch evidence left intact for manual resolution
+    expect(saved.status).toBe("blocked");
+    expect(saved.active_child).toBe("POL-281");
+    expect(saved.dispatch_boundary.continue_epoch).toBe(1); // unchanged
+    expect(saved.open_children_meta["POL-281"].dispatch_record.status).toBe("dispatched");
+  });
+
+  it("does NOT clear active_child when a result file exists (worker completed, needs loop continue)", () => {
+    // Write the expected result file so existsSync returns true
+    const resultPath = join(
+      testDir,
+      ".polaris", "clusters", "POL-100", "results", "POL-281-old-dispatch-abc.json",
+    );
+    mkdirSync(join(testDir, ".polaris", "clusters", "POL-100", "results"), { recursive: true });
+    writeFileSync(resultPath, JSON.stringify({ status: "done" }));
+
+    const stateFile = writeState(testDir, staleDispatchState);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
+      throw new Error("process.exit called");
+    });
+    vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+
+    try {
+      expect(() =>
+        runLoopAbort({ reason: "aborting with result present", repoRoot: testDir, stateFile }),
+      ).toThrow("process.exit called");
+    } finally {
+      exitSpy.mockRestore();
+      vi.restoreAllMocks();
+    }
+
+    const saved = JSON.parse(readFileSync(stateFile, "utf-8"));
+    // Blocker recorded but dispatch evidence left intact; operator must run loop continue first
+    expect(saved.status).toBe("blocked");
+    expect(saved.active_child).toBe("POL-281");
+    expect(saved.dispatch_boundary.continue_epoch).toBe(1); // unchanged
+    expect(saved.open_children_meta["POL-281"].dispatch_record.status).toBe("dispatched");
+  });
 });

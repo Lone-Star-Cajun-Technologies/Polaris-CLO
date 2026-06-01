@@ -91,8 +91,12 @@ function detectStaleDispatch(state: LoopState, repoRoot: string): StaleDispatchI
     hasResultFile = existsSync(resultPath);
   }
 
+  // Only treat as stale when the worker left no evidence at all.
+  // If a heartbeat exists the worker may still be running; if a result file
+  // exists the worker completed and its output must be handled before clearing.
+  // In either case the operator must resolve the situation manually.
   return {
-    isStale: true,
+    isStale: !hasHeartbeat && !hasResultFile,
     hasHeartbeat,
     hasResultFile,
     abortedDispatchId: dr?.dispatch_id,
@@ -132,16 +136,6 @@ export function runLoopAbort(options: AbortOptions): void {
     // the operator runs `polaris loop resume` to exit the blocked state.
     const stuckChildId = state.active_child;
     effectiveChildId = options.childId ?? stuckChildId ?? "";
-
-    if (staleInfo.hasHeartbeat || staleInfo.hasResultFile) {
-      process.stderr.write(
-        `Warning: stale dispatch for ${stuckChildId} had` +
-        `${staleInfo.hasHeartbeat ? " a heartbeat" : ""}` +
-        `${staleInfo.hasHeartbeat && staleInfo.hasResultFile ? " and" : ""}` +
-        `${staleInfo.hasResultFile ? " a result file" : ""}` +
-        `. Clearing dispatch state per operator request.\n`,
-      );
-    }
 
     const existingMeta = state.open_children_meta ?? {};
     const childMeta = existingMeta[stuckChildId] ?? {};
