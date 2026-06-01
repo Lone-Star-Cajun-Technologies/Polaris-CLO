@@ -175,7 +175,7 @@ Machine-readable list of allowed paths or globs. Use explicit repo paths.
 - Use the header `## Scope` exactly — not "Implementation scope", "Expected code areas", "Files", or any other variant. Aliases exist for backward compatibility only; new issues must use `## Scope`.
 - List explicit repo paths or globs, one per bullet.
 - If scope is not yet determinable, write:
-  ```
+  ```markdown
   ## Scope
   - TBD — BLOCKED: scope missing
   ```

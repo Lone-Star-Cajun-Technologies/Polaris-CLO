@@ -34,7 +34,7 @@ and note the ambiguity in a comment.
 - If scope can be clearly inferred from the objective or goal, write the inferred paths and
   note that they were inferred: `- src/loop/** (inferred from objective)`.
 - If scope is genuinely not determinable from the existing body, write:
-  ```
+  ```markdown
   ## Scope
   - TBD — BLOCKED: scope missing
   ```
@@ -45,7 +45,7 @@ and note the ambiguity in a comment.
 - If acceptance criteria exist under any heading, move them to `## Acceptance Criteria`.
 - If validation commands exist (e.g. `npm test`, CI commands), move them to `## Validation`.
 - If no validation commands exist, write the standard minimum:
-  ```
+  ```markdown
   ## Validation
   - npm run build
   - npm test
@@ -74,7 +74,7 @@ is resolved by a human.
 Use this prompt with a capable AI assistant to reconcile a single issue.
 Replace `<ISSUE_BODY>` and `<ISSUE_TITLE>` with the actual content.
 
-```
+```text
 You are reconciling a Polaris Linear issue into the canonical 8-section format.
 
 Issue title: <ISSUE_TITLE>
