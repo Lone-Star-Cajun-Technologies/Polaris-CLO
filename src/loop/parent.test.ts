@@ -1316,6 +1316,50 @@ describe("runParentLoop", () => {
 
   // ── Sealed result contract / pre-dispatch-failure regressions ─────────────
 
+  it("halts with preflight-failed when packet primary goal is placeholder text", async () => {
+    vi.mocked(createAdapter).mockReturnValue(makeMockAdapter([SUCCESS_RESULT]));
+    const stateFile = makeStateFileWithMeta(
+      tmpDir,
+      ["POL-100"],
+      {
+        "POL-100": {
+          title: "Implement foo",
+          body: "## Goal\nTBD\n\n## Scope\n- src/**\n",
+        },
+      },
+    );
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(result.haltReason).toBe("preflight-failed");
+    expect(result.haltingChild).toBe("POL-100");
+    expect(result.message).toContain("placeholder primary goal");
+  });
+
+  it("halts with worker-error when worker commit contains only artifact files", async () => {
+    const calls: MockCall[] = [];
+    vi.mocked(createAdapter).mockReturnValue(makeMockAdapter([SUCCESS_RESULT], calls));
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+
+    // Inject a mock that reports the commit only touches artifact paths
+    const result = await runParentLoop({
+      stateFile,
+      repoRoot: tmpDir,
+      getCommitFiles: (_commit, _repoRoot) => [
+        ".polaris/clusters/POL-99/results/POL-100-dispatch.json",
+        ".polaris/clusters/POL-99/packets/POL-100-dispatch.json",
+      ],
+    });
+
+    expect(result.haltReason).toBe("worker-error");
+    expect(result.haltingChild).toBe("POL-100");
+    expect(result.message).toContain("only artifact files");
+  });
+
   it("adapter with pre_dispatch_failure rolls back active_child and returns worker-error", async () => {
     // Regression for: loop run --adapter agent-subtask ENOENT when no dispatcher.
     // When adapter sets pre_dispatch_failure: true it never launched a worker.

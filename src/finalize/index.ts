@@ -3,6 +3,7 @@ import { join, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 import { loadConfig } from "../config/loader.js";
 import { readState } from "../loop/checkpoint.js";
+import { classifyArtifactPath } from "./artifact-policy.js";
 import { runCanonCheck } from "../smartdocs-engine/canon-check.js";
 import { stepMapUpdate } from "./steps/01-map-update.js";
 import { stepMapValidate } from "./steps/02-map-validate.js";
@@ -166,6 +167,29 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
     console.warn(`[6/13] Unknown tracker adapter '${trackerType}' — skipping reconciliation.`);
   }
 
+
+  // Step 6.5: Implementation evidence gate
+  // Require at least one non-artifact staged file before committing. A finalize
+  // commit with only Polaris artifact files means no real implementation work
+  // was recorded — abort to prevent a phantom delivery.
+  {
+    const stagedOutput = execFileSync("git", ["diff", "--cached", "--name-only"], {
+      cwd: repoRoot,
+      encoding: "utf-8",
+    }).trim();
+    const stagedFiles = stagedOutput ? stagedOutput.split("\n").filter(Boolean) : [];
+    const implFiles = stagedFiles.filter(
+      (f) => classifyArtifactPath(f, state.cluster_id) === "non-artifact",
+    );
+    if (implFiles.length === 0) {
+      process.stderr.write(
+        "finalize aborted: No implementation evidence found. " +
+        "No non-artifact source files are staged. " +
+        "Ensure implementation changes are staged before finalizing.\n",
+      );
+      process.exit(1);
+    }
+  }
 
   // Step 7: Single final commit: source changes + durable Polaris artifacts
   console.log("[7/13] Committing durable Polaris state + map..."); // Step count updated
