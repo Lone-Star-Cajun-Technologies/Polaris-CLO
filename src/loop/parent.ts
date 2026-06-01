@@ -58,22 +58,27 @@ import {
 const CLAIM_TTL_MS = 30 * 60 * 1000;
 
 /**
- * Returns the list of files touched by a git commit, or null when the commit
- * cannot be resolved (short hash in a non-repo context, missing repo, etc.).
- * Callers treat null as "cannot verify" and skip the artifact-only check.
+ * Returns the list of files touched by a git commit.
+ * Throws an error when the commit cannot be resolved (short hash in a non-repo context, missing repo, etc.).
+ * Callers treat errors as verification failures (fail closed).
  */
 function defaultGetCommitFiles(commit: string, repoRoot: string): string[] | null {
-  if (!/^[0-9a-f]{40}$/i.test(commit)) {
-    return null;
-  }
   try {
-    const output = execFileSync("git", ["show", "--name-only", "--format=", commit], {
+    // First resolve the commit to its full SHA
+    const resolvedCommit = execFileSync("git", ["rev-parse", "--verify", commit], {
+      cwd: repoRoot,
+      encoding: "utf-8",
+    }).trim();
+
+    // Now use the resolved SHA to get the files
+    const output = execFileSync("git", ["show", "--name-only", "--format=", resolvedCommit], {
       cwd: repoRoot,
       encoding: "utf-8",
     });
     return output.trim().split("\n").filter(Boolean);
-  } catch {
-    return null;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(`Cannot verify commit ${commit}: ${msg}`);
   }
 }
 
@@ -131,7 +136,7 @@ export interface ParentLoopOptions {
   /**
    * Optional override for getting files changed in a git commit.
    * Injected for testing; defaults to `defaultGetCommitFiles`.
-   * Returns null when the commit cannot be resolved (fail-open).
+   * Throws when the commit cannot be resolved (fail closed).
    */
   getCommitFiles?: (commit: string, repoRoot: string) => string[] | null;
 }
@@ -1319,32 +1324,50 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     // (.polaris/**, .taskchain_artifacts/**) indicates no real implementation
     // work was done — reject it to prevent phantom completions.
     // Uses getCommitFiles from options for testability; defaults to a git-backed
-    // implementation that returns null (fail-open) when the commit cannot be
-    // resolved (e.g. short hash in a test env, or non-git directory).
+    // implementation that throws when the commit cannot be resolved (fail closed).
     if (!dryRun && workerStatus === 'done' && lastCommit && lastCommit.trim().length > 0) {
       const getFiles = options.getCommitFiles ?? defaultGetCommitFiles;
-      const commitFiles = getFiles(lastCommit, repoRoot);
-      if (commitFiles !== null) {
-        const nonArtifact = commitFiles.filter(
-          (f) => classifyArtifactPath(f, state.cluster_id) === 'non-artifact',
-        );
-        if (nonArtifact.length === 0) {
-          const errMsg = `Worker commit ${lastCommit} for ${nextChild} contains only artifact files; no implementation evidence found`;
-          appendTelemetry(telemetryFile, {
-            event: "child-error",
-            run_id: state.run_id,
-            child_id: nextChild,
-            error: errMsg,
-            commit: lastCommit,
-            timestamp: new Date().toISOString(),
-          });
-          return {
-            haltReason: 'worker-error',
-            childrenDispatched,
-            haltingChild: nextChild,
-            message: errMsg,
-          };
+      try {
+        const commitFiles = getFiles(lastCommit, repoRoot);
+        if (commitFiles !== null) {
+          const nonArtifact = commitFiles.filter(
+            (f) => classifyArtifactPath(f, state.cluster_id) === 'non-artifact',
+          );
+          if (nonArtifact.length === 0) {
+            const errMsg = `Worker commit ${lastCommit} for ${nextChild} contains only artifact files; no implementation evidence found`;
+            appendTelemetry(telemetryFile, {
+              event: "child-error",
+              run_id: state.run_id,
+              child_id: nextChild,
+              error: errMsg,
+              commit: lastCommit,
+              timestamp: new Date().toISOString(),
+            });
+            return {
+              haltReason: 'worker-error',
+              childrenDispatched,
+              haltingChild: nextChild,
+              message: errMsg,
+            };
+          }
         }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        const errMsg = `Cannot verify worker commit ${lastCommit} for ${nextChild}: ${msg}`;
+        appendTelemetry(telemetryFile, {
+          event: "child-error",
+          run_id: state.run_id,
+          child_id: nextChild,
+          error: errMsg,
+          commit: lastCommit,
+          timestamp: new Date().toISOString(),
+        });
+        return {
+          haltReason: 'worker-error',
+          childrenDispatched,
+          haltingChild: nextChild,
+          message: errMsg,
+        };
       }
     }
 
