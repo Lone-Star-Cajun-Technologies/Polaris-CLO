@@ -151,7 +151,7 @@
     }
   },
   "packet_pointers": {
-    "POL-268": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-268/packets/POL-268-e22da269-7273-40b9-b231-3a82211609d5.json",
+    "POL-268": ".polaris/clusters/POL-268/packets/POL-268-e22da269-7273-40b9-b231-3a82211609d5.json",
     "POL-260": ".polaris/clusters/POL-268/packets/POL-260-29c7672a-23c7-4fdd-85df-f1bd20cee787.json",
     "POL-257": ".polaris/clusters/POL-268/packets/POL-257-84fbdfc7-5d13-4ba6-a246-7747ac2dc930.json",
     "POL-263": ".polaris/clusters/POL-268/packets/POL-263-30043779-b265-412a-994e-544f4ae8f0c2.json",

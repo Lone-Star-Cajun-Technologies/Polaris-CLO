@@ -3,5 +3,7 @@
   "run_id": "polaris-run-pol-268-2026-06-01-001",
   "child_id": "POL-268",
   "status": "failure",
+  "commit": null,
+  "validation": null,
   "error_message": "Native ephemeral agent subtask dispatch is unavailable in this host environment. Use manual handoff or a configured terminal-cli adapter."
 }
