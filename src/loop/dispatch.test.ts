@@ -1022,4 +1022,32 @@ describe("runLoopDispatch", () => {
     expect(packet.instructions.issue_context?.body).toBeUndefined();
     expect(packet.instructions.allowed_scope).toEqual([]);
   });
+
+  it("packet body and scope hydrated from clusters.json when open_children_meta entry is entirely absent", () => {
+    // Child has no entry at all in open_children_meta; body comes entirely from snapshot.
+    const stateFile = writeState(
+      testDir,
+      baseState({
+        open_children_meta: {
+          // POL-145 entry omitted entirely
+          "POL-146": { title: "Parent delivery", labels: ["implement"] },
+        },
+      }),
+    );
+    writeClusterSnapshotFile(testDir, "POL-142", {
+      "POL-142": { title: "Cluster root" },
+      "POL-145": {
+        title: "Add dispatch command",
+        body: "## Goal\nAdd dispatch.\n\n## Scope\n- src/loop/dispatch.ts\n",
+      },
+    });
+    writeClusterStateFile(testDir, "POL-142", ["POL-145", "POL-146"]);
+
+    const output = captureStdout(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+    const packet = JSON.parse(output);
+
+    expect(packet.active_child).toBe("POL-145");
+    expect(packet.instructions.issue_context?.body).toContain("## Goal");
+    expect(packet.instructions.allowed_scope).toContain("src/loop/dispatch.ts");
+  });
 });

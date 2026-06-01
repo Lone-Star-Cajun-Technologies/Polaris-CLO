@@ -1537,4 +1537,30 @@ describe("runParentLoop", () => {
       expect(packet.instructions.allowed_scope).toContain("src/finalize/**");
     }
   });
+
+  it("resolves body from clusters.json when open_children_meta entry is entirely absent", async () => {
+    const calls: MockCall[] = [];
+    vi.mocked(createAdapter).mockReturnValue(makeMockAdapter([SUCCESS_RESULT], calls));
+    // State has no entry for POL-100 in open_children_meta at all
+    const stateFile = makeStateFileWithMeta(
+      tmpDir,
+      ["POL-100"],
+      {}, // no meta entry for POL-100
+    );
+    makeClusterSnapshotWithBodies(tmpDir, "POL-99", {
+      "POL-99": { title: "Parent cluster" },
+      "POL-100": { title: "Implement foo", body: "## Goal\nFix the thing.\n\n## Scope\n- src/loop/**\n" },
+    });
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(result.haltReason).not.toBe("preflight-failed");
+    expect(calls).toHaveLength(1);
+    const packet = calls[0].packet;
+    expect(isWorkerPacket(packet)).toBe(true);
+    if (isWorkerPacket(packet)) {
+      expect(packet.instructions.issue_context?.body).toContain("## Goal");
+      expect(packet.instructions.allowed_scope).toContain("src/loop/**");
+    }
+  });
 });

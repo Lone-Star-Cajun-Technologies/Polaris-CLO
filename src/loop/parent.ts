@@ -292,10 +292,10 @@ function buildPacket(
     ? cachedBody
     : readBodyFromClusterSnapshot(state.cluster_id, activeChild, repoRoot);
 
-  const issueContext = childMeta
+  const issueContext = (childMeta || resolvedChildBody)
     ? {
         id: activeChild,
-        title: childMeta.title ?? activeChild,
+        title: childMeta?.title ?? activeChild,
         key_requirements: [],
         body: resolvedChildBody,
       }
