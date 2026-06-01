@@ -259,7 +259,7 @@ export const initializeClusterState = async (clusterId: string, repoRoot?: strin
     ? activeCluster.children.filter((id) => id !== clusterRoot)
     : activeCluster.children;
   const childrenToInitialize =
-    runnableChildren.length > 0 ? runnableChildren : activeCluster.children;
+    runnableChildren.length > 0 ? runnableChildren : [clusterId];
 
   const childStates: ChildState[] = childrenToInitialize.map(childId => ({
     id: childId,
