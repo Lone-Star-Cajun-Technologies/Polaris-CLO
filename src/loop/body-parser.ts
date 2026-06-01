@@ -52,6 +52,11 @@ const REQUIREMENTS_HEADERS = new Set([
   'criteria',
 ]);
 
+/**
+ * Split a markdown text into sections keyed by their normalized `##` header lines.
+ *
+ * @returns A Map where each key is a section header normalized by trimming and lowercasing, and each value is the raw content following that header (excluding the header line).
+ */
 function parseSections(body: string): Map<string, string> {
   const sections = new Map<string, string>();
   const parts = body.split(/^##\s+/m);
@@ -65,6 +70,12 @@ function parseSections(body: string): Map<string, string> {
   return sections;
 }
 
+/**
+ * Extracts bullet list items from the given text and returns them as trimmed strings.
+ *
+ * @param text - Section content to scan for bullet list lines (lines starting with `- ` or `* `)
+ * @returns The extracted list item strings, trimmed of whitespace; empty items are omitted.
+ */
 function parseListItems(text: string): string[] {
   return text
     .split('\n')
@@ -73,6 +84,13 @@ function parseListItems(text: string): string[] {
     .filter((s) => s.length > 0);
 }
 
+/**
+ * Extracts list items from the first section whose header matches a provided set.
+ *
+ * @param sections - Map of normalized header names to their section content; iteration follows the map's order
+ * @param headers - Set of normalized header names to match against section headers
+ * @returns An array of parsed list-item strings from the first matching section, or an empty array if no match is found
+ */
 function findSection(sections: Map<string, string>, headers: Set<string>): string[] {
   for (const [header, content] of sections) {
     if (headers.has(header)) {
@@ -85,10 +103,10 @@ function findSection(sections: Map<string, string>, headers: Set<string>): strin
 /**
  * Parse a markdown issue body into structured fields.
  *
- * Sections recognized:
- * - `## Scope` / `## Expected code areas` / `## Code areas` → `scope`
- * - `## Validation` / `## Validation commands` → `validationCommands`
- * - `## Acceptance Criteria` / `## Requirements` → `requirements`
+ * Recognizes `##` sections and extracts bullet list items (`-` or `*`) from the first matching header for each field.
+ *
+ * @param body - The markdown issue body to parse.
+ * @returns An object with `scope`, `validationCommands`, and `requirements` arrays containing extracted list items; each array is empty when the input is empty/whitespace or when no matching section is found.
  */
 export function parseIssueBody(body: string): ParsedIssueBody {
   if (!body || !body.trim()) {

@@ -716,6 +716,21 @@ function selectChild(state: LoopState, requestedChild?: string): string {
   return state.open_children[0];
 }
 
+/**
+ * Constructs a WorkerPacket for dispatching a specific child using the current loop state and repository context.
+ *
+ * The packet includes run/cluster/child identifiers, branch (derived from state or git), canonicalized paths for
+ * state and optional result files, prompt mode, and an `allowedScope` resolved from the child's issue body with a
+ * fallback to the cluster/root issue body when present.
+ *
+ * @param state - The current LoopState used to populate packet metadata
+ * @param childId - The target child identifier to include in the packet
+ * @param stateFile - Path to the loop state file to embed in the packet (will be canonicalized)
+ * @param telemetryFile - Path to the telemetry file to include in the packet
+ * @param repoRoot - Repository root used to determine branch and resolve non-absolute result paths
+ * @param resultFile - Optional path for the expected result file; non-absolute paths are resolved against `repoRoot`
+ * @returns The constructed WorkerPacket ready for dispatch
+ */
 function buildPacket(
   state: LoopState,
   childId: string,
@@ -848,6 +863,13 @@ function syncClusterDispatchState(
   );
 }
 
+/**
+ * Dispatches one child task from the loop state: prepares a worker packet, persists artifacts, updates state, and emits telemetry.
+ *
+ * Performs child selection (or uses the provided childId), builds the packet, resolves provider and dispatch mode, writes cluster-scoped packet/result artifacts, creates and persists a dispatch record, attempts delegated assignment when required, synchronizes cluster dispatch state, appends ledger and telemetry events, and writes the packet JSON to stdout.
+ *
+ * @param options - DispatchOptions controlling where to read/write state and artifacts (includes `stateFile`, `repoRoot`, optional `childId`, optional `resultFile`, and an optional `provider` override)
+ */
 export function runLoopDispatch(options: DispatchOptions): void {
   let state: LoopState;
   try {

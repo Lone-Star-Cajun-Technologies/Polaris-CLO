@@ -383,8 +383,16 @@ export interface CompileImplPacketInput {
 }
 
 /**
- * Build a compiled impl worker packet.
- * Workers receive pre-baked steps and do NOT need to read a skill file.
+ * Create a compiled implementation (impl) WorkerPacket for executing a single child task.
+ *
+ * If `input.issueContext.body` is present, `allowed_scope`, `validation_commands`, and requirement
+ * text are derived from the parsed body when corresponding explicit fields are not provided.
+ *
+ * @param input - Configuration and contextual data (run/cluster/child identifiers, file paths,
+ *   optional issueContext, scope/validation overrides, concurrency, prompt mode, and optional
+ *   result file) used to construct the packet
+ * @returns A WorkerPacket pre-populated with instructions, lifecycle, prompt data, role context,
+ *   and the IMPL return contract suitable for an implementation worker
  */
 export function compileImplPacket(input: CompileImplPacketInput): WorkerPacket {
   const childRef = input.issueContext?.id ?? input.childId;

@@ -212,8 +212,13 @@ function appendRunStartedLedgerEvent(repoRoot: string, state: LoopState): void {
 }
 
 /**
- * Build a compiled WorkerPacket for impl dispatch.
- * Workers receive pre-baked instructions — no skill re-ingestion required.
+ * Builds the compiled WorkerPacket used to dispatch an implementation (impl) child.
+ *
+ * @param stateFile - Absolute path to the current-state.json file used by the worker
+ * @param telemetryFile - Path to the telemetry JSONL file the worker should append to
+ * @param repoRoot - Repository root used to resolve branch and paths
+ * @param resultFile - Optional override path where the worker should write its result
+ * @returns The compiled WorkerPacket configured for `activeChild`
  */
 function buildPacket(
   state: LoopState,
