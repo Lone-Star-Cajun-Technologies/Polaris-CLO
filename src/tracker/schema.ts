@@ -42,7 +42,20 @@ export const executionGraphV2Schema = z.object({
     z.object({
       id: z.string(),
       title: z.string(),
+      /**
+       * Runnable children only — issue IDs to be dispatched to workers.
+       * Does not include the cluster root or context/reference nodes.
+       * When the cluster root itself is the only work item (leaf cluster),
+       * it appears here and also as cluster_root.
+       */
       children: z.array(z.string()),
+      /**
+       * The issue that was passed as the target to `polaris run`.
+       * This is a context/coordination node. It must not be dispatched
+       * as a worker child unless it is also the only entry in children
+       * (leaf cluster with no implementation sub-issues).
+       */
+      cluster_root: z.string().optional(),
     })
   ),
 

@@ -255,9 +255,14 @@ describe("LinearAdapter", () => {
     expect(linearClient.getIssueById).toHaveBeenCalledWith("POL-198");
     expect(linearClient.getIssueById).toHaveBeenCalledWith("child-issue-id");
     expect(fullGraph.activeCluster).toBe("POL-198");
-    expect(fullGraph.clusters["POL-198"].children.slice().sort()).toEqual(
-      ["POL-198", "POL-199", "POL-200", "POL-42"].sort(),
-    );
+
+    // Root (POL-198) is a context node — it must not appear as a runnable child.
+    // Relation targets (POL-42, POL-199) are context/dependency references — also excluded.
+    // Only the direct Linear sub-issue (POL-200) is a runnable child.
+    expect(fullGraph.clusters["POL-198"].children).toEqual(["POL-200"]);
+    expect(fullGraph.clusters["POL-198"].cluster_root).toBe("POL-198");
+
+    // All nodes remain in the graph for dependency/reference purposes.
     expect(fullGraph.nodes["POL-198"]).toEqual({
       id: "POL-198",
       title: "Root issue",
@@ -270,8 +275,49 @@ describe("LinearAdapter", () => {
       status: "In Progress",
       body: "Child issue body text.",
     });
+    expect(fullGraph.nodes["POL-42"]).toBeDefined();
+    expect(fullGraph.nodes["POL-199"]).toBeDefined();
+
+    // Dependency edges are still correctly mapped.
     expect(fullGraph.dependencies["POL-198"]).toEqual(["POL-42"]);
     expect(fullGraph.dependencies["POL-199"]).toEqual(["POL-198"]);
+  });
+
+  it("excludes relation-referenced issues from runnable children in single-target mode", async () => {
+    // POL-42 (blocks root) and POL-199 (blocked by root) are context/dependency references.
+    // They must appear in nodes (graph reference) but must NOT appear in children.
+    const adapter = new LinearAdapter(config, linearClient);
+    const graph = await adapter.syncIn("POL-198");
+    const fullGraph = graph.fullGraph;
+
+    // Relation targets are in the graph for edge/dependency resolution.
+    expect(fullGraph.nodes["POL-42"]).toBeDefined();
+    expect(fullGraph.nodes["POL-199"]).toBeDefined();
+
+    // But they must never appear in the runnable children list.
+    expect(fullGraph.clusters["POL-198"].children).not.toContain("POL-42");
+    expect(fullGraph.clusters["POL-198"].children).not.toContain("POL-199");
+    expect(fullGraph.clusters["POL-198"].children).not.toContain("POL-198");
+  });
+
+  it("treats the root as a runnable leaf when it has no Linear children", async () => {
+    linearClient.getIssueById.mockReset();
+    linearClient.getIssueById.mockResolvedValue({
+      id: "leaf-issue-id",
+      identifier: "POL-300",
+      title: "Leaf issue",
+      state: { id: "status-id-5", name: "Todo" },
+      relations: { nodes: [] },
+      inverseRelations: { nodes: [] },
+      children: { nodes: [] },
+    });
+    const adapter = new LinearAdapter(config, linearClient);
+    const graph = await adapter.syncIn("POL-300");
+    const fullGraph = graph.fullGraph;
+
+    // No sub-issues → root itself is the runnable leaf.
+    expect(fullGraph.clusters["POL-300"].children).toEqual(["POL-300"]);
+    expect(fullGraph.clusters["POL-300"].cluster_root).toBe("POL-300");
   });
 
   it("ignores unknown relation types safely", async () => {
