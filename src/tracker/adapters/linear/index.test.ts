@@ -40,6 +40,7 @@ describe("LinearAdapter", () => {
       {
         id: "issue-1",
         title: "Test Issue 1",
+        description: "Body of issue 1.",
         state: { id: "status-id-1", name: "Todo" },
         relations: {
           nodes: [
@@ -57,6 +58,7 @@ describe("LinearAdapter", () => {
       {
         id: "issue-2",
         title: "Test Issue 2",
+        description: "Body of issue 2.",
         state: { id: "status-id-2", name: "In Progress" },
         relations: { nodes: [] },
         inverseRelations: { nodes: [] },
@@ -68,6 +70,7 @@ describe("LinearAdapter", () => {
       id: "root-issue-id",
       identifier: "POL-198",
       title: "Root issue",
+      description: "Root issue body text.",
       state: { id: "status-id-3", name: "Todo" },
       relations: {
         nodes: [
@@ -92,6 +95,7 @@ describe("LinearAdapter", () => {
       id: "child-issue-id",
       identifier: "POL-200",
       title: "Child issue",
+      description: "Child issue body text.",
       state: { id: "status-id-4", name: "In Progress" },
       relations: { nodes: [] },
       inverseRelations: { nodes: [] },
@@ -135,12 +139,37 @@ describe("LinearAdapter", () => {
       id: "issue-1",
       title: "Test Issue 1",
       status: "Todo",
+      body: "Body of issue 1.",
     });
     expect(fullGraph.nodes["issue-2"]).toEqual({
       id: "issue-2",
       title: "Test Issue 2",
       status: "In Progress",
+      body: "Body of issue 2.",
     });
+  });
+
+  it("stores the issue body in the node when description is present", async () => {
+    const adapter = new LinearAdapter(config, linearClient);
+    const graph = await adapter.syncIn();
+    expect(graph.getNode("issue-1")?.body).toBe("Body of issue 1.");
+    expect(graph.getNode("issue-2")?.body).toBe("Body of issue 2.");
+  });
+
+  it("omits body from node when description is absent", async () => {
+    linearClient.listIssues.mockResolvedValueOnce([
+      {
+        id: "no-body-issue",
+        title: "Issue without body",
+        state: { id: "status-id-1", name: "Todo" },
+        relations: { nodes: [] },
+        inverseRelations: { nodes: [] },
+        children: { nodes: [] },
+      },
+    ]);
+    const adapter = new LinearAdapter(config, linearClient);
+    const graph = await adapter.syncIn();
+    expect(graph.getNode("no-body-issue")?.body).toBeUndefined();
   });
 
   it("should correctly map Linear issue dependencies", async () => {
@@ -233,11 +262,13 @@ describe("LinearAdapter", () => {
       id: "POL-198",
       title: "Root issue",
       status: "Todo",
+      body: "Root issue body text.",
     });
     expect(fullGraph.nodes["POL-200"]).toEqual({
       id: "POL-200",
       title: "Child issue",
       status: "In Progress",
+      body: "Child issue body text.",
     });
     expect(fullGraph.dependencies["POL-198"]).toEqual(["POL-42"]);
     expect(fullGraph.dependencies["POL-199"]).toEqual(["POL-198"]);

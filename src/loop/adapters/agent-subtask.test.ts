@@ -172,4 +172,21 @@ describe("AgentSubtaskAdapter — compiled WorkerPacket", () => {
     expect(result.exit_code).toBe(1);
     expect(result.stderr).toContain("unavailable");
   });
+
+  it("sets pre_dispatch_failure: true when no dispatcher is configured", async () => {
+    const packet = compileImplPacket({ ...WORKER_PACKET_BASE, childId: "POL-121" });
+    const adapter = new AgentSubtaskAdapter(undefined);
+    const result = await adapter.dispatch(packet, { provider: "agent-subtask" });
+    expect(result.pre_dispatch_failure).toBe(true);
+  });
+
+  it("does NOT set pre_dispatch_failure when dispatcher is available but throws", async () => {
+    const packet = compileImplPacket({ ...WORKER_PACKET_BASE, childId: "POL-121" });
+    const adapter = new AgentSubtaskAdapter(async () => {
+      throw new Error("worker crashed");
+    });
+    const result = await adapter.dispatch(packet, { provider: "agent-subtask" });
+    expect(result.exit_code).toBe(1);
+    expect(result.pre_dispatch_failure).toBeUndefined();
+  });
 });

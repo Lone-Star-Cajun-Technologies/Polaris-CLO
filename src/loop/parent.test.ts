@@ -116,6 +116,7 @@ function makeStateFile(
   const stateFile = join(dir, "current-state.json");
   const openChildren = overrides.open_children ?? ["POL-100", "POL-101", "POL-102"];
   const completedChildren = overrides.completed_children ?? [];
+  const allChildren = [...new Set([...openChildren, ...completedChildren])];
   const state = {
     schema_version: "1.0",
     run_id: "test-run-001",
@@ -132,7 +133,7 @@ function makeStateFile(
     next_open_child: openChildren[0] ?? null,
     completed_children: completedChildren,
     open_children: openChildren,
-    open_children_meta: {},
+    open_children_meta: Object.fromEntries(allChildren.map((id) => [id, { title: id, body: `Default test body for ${id}.` }])),
     context_budget: {
       children_completed: overrides.children_completed ?? 0,
       files_touched_total: 0,
@@ -685,7 +686,7 @@ describe("runParentLoop", () => {
     const stateFile = makeStateFileWithMeta(
       tmpDir,
       ["POL-200"],
-      { "POL-200": { title: "Analyze: scheduler behavior" } },
+      { "POL-200": { title: "Analyze: scheduler behavior", body: "Analyze the scheduler." } },
     );
 
     const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
@@ -735,7 +736,7 @@ describe("runParentLoop", () => {
     const stateFile = makeStateFileWithMeta(
       tmpDir,
       ["POL-200"],
-      { "POL-200": { title: "Implement: add budget guardrail", labels: ["feature"] } },
+      { "POL-200": { title: "Implement: add budget guardrail", body: "Add a guardrail.", labels: ["feature"] } },
     );
 
     const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
@@ -750,7 +751,7 @@ describe("runParentLoop", () => {
     const stateFile = makeStateFileWithMeta(
       tmpDir,
       ["POL-200"],
-      { "POL-200": { title: "Analyze: scheduler behavior" } },
+      { "POL-200": { title: "Analyze: scheduler behavior", body: "Analyze the scheduler." } },
     );
 
     const result = await runParentLoop({
@@ -787,7 +788,7 @@ describe("runParentLoop", () => {
     const stateFile = makeStateFileWithMeta(
       tmpDir,
       ["POL-200"],
-      { "POL-200": { title: "Analyze: scheduler behavior" } },
+      { "POL-200": { title: "Analyze: scheduler behavior", body: "Analyze the scheduler." } },
     );
 
     const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
@@ -1038,5 +1039,177 @@ describe("runParentLoop", () => {
     expect(result.stderr).toContain("Polaris parent loop halted: analyze-parent");
     expect(result.stderr).toContain("polaris-run targets IMPLEMENT parents");
     expect(calls).toHaveLength(0);
+  });
+
+  // ── Body preflight gate ───────────────────────────────────────────────────
+
+  it("halts with preflight-failed when next child has no body", async () => {
+    vi.mocked(createAdapter).mockReturnValue(makeMockAdapter([SUCCESS_RESULT]));
+    const stateFile = makeStateFileWithMeta(
+      tmpDir,
+      ["POL-100"],
+      { "POL-100": { title: "Implement foo" } }, // no body
+    );
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(result.haltReason).toBe("preflight-failed");
+    expect(result.haltingChild).toBe("POL-100");
+    expect(result.message).toContain("POL-100");
+    expect(result.message).toContain("no body/description");
+  });
+
+  it("halts with preflight-failed when next child body is whitespace-only", async () => {
+    vi.mocked(createAdapter).mockReturnValue(makeMockAdapter([SUCCESS_RESULT]));
+    const stateFile = makeStateFileWithMeta(
+      tmpDir,
+      ["POL-100"],
+      { "POL-100": { title: "Implement foo", body: "   " } },
+    );
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(result.haltReason).toBe("preflight-failed");
+    expect(result.message).toContain("no body/description");
+  });
+
+  it("does NOT halt preflight when child has a body", async () => {
+    const calls: MockCall[] = [];
+    vi.mocked(createAdapter).mockReturnValue(makeMockAdapter([SUCCESS_RESULT], calls));
+    const stateFile = makeStateFileWithMeta(
+      tmpDir,
+      ["POL-100"],
+      { "POL-100": { title: "Implement foo", body: "As a user I want..." } },
+    );
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(result.haltReason).not.toBe("preflight-failed");
+    expect(calls).toHaveLength(1);
+  });
+
+  it("preflight gate does not fire in dry-run mode (body check skipped)", async () => {
+    const calls: MockCall[] = [];
+    vi.mocked(createAdapter).mockReturnValue(makeMockAdapter([SUCCESS_RESULT], calls));
+    const stateFile = makeStateFileWithMeta(
+      tmpDir,
+      ["POL-100"],
+      { "POL-100": { title: "Implement foo" } }, // no body — but dry-run skips the gate
+    );
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir, dryRun: true });
+
+    expect(result.haltReason).not.toBe("preflight-failed");
+  });
+
+  it("emits preflight-body-missing telemetry event when child has no body", async () => {
+    vi.mocked(createAdapter).mockReturnValue(makeMockAdapter([SUCCESS_RESULT]));
+    const stateFile = makeStateFileWithMeta(
+      tmpDir,
+      ["POL-100"],
+      { "POL-100": { title: "Implement foo" } },
+    );
+
+    await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    const telemetry = readJsonLines(join(tmpDir, "runs", "test-run-001", "telemetry.jsonl"));
+    const event = telemetry.find((e) => e["event"] === "preflight-body-missing");
+    expect(event).toBeDefined();
+    expect(event?.["child_id"]).toBe("POL-100");
+  });
+
+  it("does not mutate state when preflight gate fires", async () => {
+    vi.mocked(createAdapter).mockReturnValue(makeMockAdapter([SUCCESS_RESULT]));
+    const stateFile = makeStateFileWithMeta(
+      tmpDir,
+      ["POL-100"],
+      { "POL-100": { title: "Implement foo" } },
+    );
+    const stateBefore = readFileSync(stateFile, "utf-8");
+
+    await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    const stateAfter = readFileSync(stateFile, "utf-8");
+    expect(stateAfter).toBe(stateBefore);
+  });
+
+  // ── Sealed result contract / pre-dispatch-failure regressions ─────────────
+
+  it("adapter with pre_dispatch_failure rolls back active_child and returns worker-error", async () => {
+    // Regression for: loop run --adapter agent-subtask ENOENT when no dispatcher.
+    // When adapter sets pre_dispatch_failure: true it never launched a worker.
+    // Parent must roll back state (active_child stays empty) and halt cleanly.
+    const preDispatchFailureAdapter: ExecutionAdapter = {
+      name: "mock-no-dispatcher",
+      async dispatch(_packet, _options): Promise<DispatchResult> {
+        return {
+          exit_code: 1,
+          pre_dispatch_failure: true,
+          provider_used: "none",
+          command_run: "mock-no-dispatcher",
+          summary: "Native subtask dispatch unavailable in this host environment.",
+          stderr: "Native subtask dispatch unavailable in this host environment.",
+        };
+      },
+    };
+    vi.mocked(createAdapter).mockReturnValue(preDispatchFailureAdapter);
+
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+
+    const { readState } = await import("./checkpoint.js");
+    const stateBefore = readState(stateFile);
+    expect(stateBefore.active_child).toBe("");
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(result.haltReason).toBe("worker-error");
+    expect(result.haltingChild).toBe("POL-100");
+    expect(result.message).toContain("cannot dispatch");
+
+    // State must be rolled back — active_child cleared, dispatch epoch not advanced
+    const stateAfter = readState(stateFile);
+    expect(stateAfter.active_child).toBe("");
+    expect(stateAfter.dispatch_boundary?.dispatch_epoch).toBe(
+      stateBefore.dispatch_boundary?.dispatch_epoch ?? 0,
+    );
+  });
+
+  it("adapter returning exit_code=1 without pre_dispatch_failure does NOT read sealed result file (no ENOENT)", async () => {
+    // Regression: parent.ts previously tried to readFileSync the sealed result file
+    // even when the adapter returned exit_code=1. This caused ENOENT because no
+    // worker ran. Now it must skip the read and return worker-error cleanly.
+    const failingAdapter: ExecutionAdapter = {
+      name: "mock-fail",
+      async dispatch(_packet, _options): Promise<DispatchResult> {
+        // Return failure WITHOUT writing the sealed result file and WITHOUT
+        // setting pre_dispatch_failure (simulates a worker that crashed mid-run).
+        return {
+          exit_code: 1,
+          provider_used: "mock-fail",
+          command_run: "mock-fail-worker",
+          summary: "Worker process exited with code 1",
+          stderr: "Worker process exited with code 1",
+        };
+      },
+    };
+    vi.mocked(createAdapter).mockReturnValue(failingAdapter);
+
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+
+    // Should not throw (no ENOENT) — must return a structured result
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(result.haltReason).toBe("worker-error");
+    expect(result.haltingChild).toBe("POL-100");
+    // active_child is left set (dispatch was partially recorded) — that is expected
+    // for non-pre_dispatch_failure failures where the worker may have partially run.
   });
 });

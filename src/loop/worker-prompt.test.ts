@@ -250,7 +250,7 @@ describe("buildPromptFromPacketInput", () => {
     expect(prompt).toContain("Issue: POL-131 — Add .smartdocignore parser");
   });
 
-  it("uses first requirement as goal when issueContext provided", () => {
+  it("uses first requirement as goal when issueContext provided without body", () => {
     const { prompt } = buildPromptFromPacketInput({
       issueId: "POL-131",
       title: "Add .smartdocignore parser",
@@ -266,6 +266,48 @@ describe("buildPromptFromPacketInput", () => {
       mode: "compact",
     });
     expect(prompt).toContain("Parse .smartdocignore from repo root");
+  });
+
+  it("uses body as the goal when body is present, overriding requirements", () => {
+    const { prompt } = buildPromptFromPacketInput({
+      issueId: "POL-131",
+      title: "Add .smartdocignore parser",
+      worktree: ".",
+      branch: "feat/test",
+      stateFile: "state.json",
+      telemetryFile: "telemetry.jsonl",
+      issueContext: {
+        id: "POL-131",
+        title: "Add .smartdocignore parser",
+        key_requirements: ["Parse .smartdocignore from repo root"],
+        body: "Parse the .smartdocignore file and use it to skip excluded paths during ingest.",
+      },
+      mode: "compact",
+    });
+    // Body must appear in the Goal section
+    expect(prompt).toContain("Parse the .smartdocignore file and use it to skip excluded paths");
+  });
+
+  it("body appears in Expanded Issue Context in full mode", () => {
+    const { prompt } = buildPromptFromPacketInput({
+      issueId: "POL-131",
+      title: "Add .smartdocignore parser",
+      worktree: ".",
+      branch: "feat/test",
+      stateFile: "state.json",
+      telemetryFile: "telemetry.jsonl",
+      issueContext: {
+        id: "POL-131",
+        title: "Add .smartdocignore parser",
+        key_requirements: [],
+        body: "Parse the .smartdocignore file from the repo root.",
+      },
+      mode: "full",
+    });
+    expect(prompt).toContain("Expanded Issue Context");
+    // Body should appear in the expanded section (in addition to the Goal section)
+    const expandedIdx = prompt.indexOf("Expanded Issue Context");
+    expect(prompt.slice(expandedIdx)).toContain("Parse the .smartdocignore file from the repo root.");
   });
 
   it("returns compact metrics by default for narrow input", () => {

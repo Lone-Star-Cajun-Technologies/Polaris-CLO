@@ -120,6 +120,8 @@ export interface IssueContext {
   id: string;
   title: string;
   key_requirements: string[];
+  /** Markdown body/description of the issue. Included verbatim in packet instructions. */
+  body?: string;
 }
 
 export interface CompiledSteps {
@@ -391,9 +393,14 @@ export function compileImplPacket(input: CompileImplPacketInput): WorkerPacket {
   const requirementLines =
     input.issueContext?.key_requirements.map((r, i) => `   ${i + 1}. ${r}`) ?? [];
 
+  const bodyLines = input.issueContext?.body
+    ? [`Issue description:\n${input.issueContext.body}`]
+    : [];
+
   const steps = [
     `Verify: read ${input.stateFile} and confirm active_child === "${input.childId}".`,
     `Implement ${childRef}: "${childTitle}".`,
+    ...bodyLines,
     ...(requirementLines.length > 0 ? [`Requirements:`, ...requirementLines] : []),
     `Run validation commands and confirm all pass.`,
     `Create exactly ONE git commit: [${input.childId}] ${childTitle}.`,

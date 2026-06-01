@@ -163,8 +163,8 @@ describe("ephemeral execution smoke", () => {
       open_children: ["POL-112"],
       next_open_child: "POL-112",
       open_children_meta: {
-        "POL-105": { title: "IMPLEMENT: Issue hierarchy and ephemeral execution refactor" },
-        "POL-112": { title: "IMPLEMENT: Write Polaris ephemeral execution smoke test and validation harness" },
+        "POL-105": { title: "IMPLEMENT: Issue hierarchy and ephemeral execution refactor", body: "Refactor the issue hierarchy." },
+        "POL-112": { title: "IMPLEMENT: Write Polaris ephemeral execution smoke test and validation harness", body: "Write the smoke test harness." },
       },
     });
 

@@ -157,7 +157,7 @@ export interface LoopState {
   completed_children: string[];
   completed_children_results?: Record<string, ChildResultSummary>;
   open_children: string[];
-  open_children_meta?: Record<string, { type?: string; title?: string; labels?: string[]; result_file?: string; dispatch_record?: ChildDispatchRecord }>;
+  open_children_meta?: Record<string, { type?: string; title?: string; body?: string; labels?: string[]; result_file?: string; dispatch_record?: ChildDispatchRecord }>;
   step_cursor: string | null;
   context_budget: {
     children_completed: number;
@@ -266,6 +266,9 @@ export function validateState(state: unknown): string[] {
         }
         if ("title" in childMeta && childMeta["title"] !== undefined && typeof childMeta["title"] !== "string") {
           errors.push(`open_children_meta["${childId}"].title must be a string`);
+        }
+        if ("body" in childMeta && childMeta["body"] !== undefined && typeof childMeta["body"] !== "string") {
+          errors.push(`open_children_meta["${childId}"].body must be a string`);
         }
         if ("labels" in childMeta && childMeta["labels"] !== undefined) {
           if (!Array.isArray(childMeta["labels"]) || !childMeta["labels"].every((l: unknown) => typeof l === "string")) {

@@ -18,6 +18,7 @@ interface LinearIssue {
   id: string;
   identifier?: string;
   title: string;
+  description?: string;
   state?: { id: string; name: string };
   parent?: LinearIssueRef | null;
   children?: LinearConnection<LinearIssueRef>;
@@ -29,6 +30,7 @@ interface LinearIssueRef {
   id: string;
   identifier?: string;
   title?: string;
+  description?: string;
   state?: { id: string; name: string };
 }
 
@@ -139,12 +141,14 @@ class LinearGraphqlClient implements LinearApiClient {
               id
               identifier
               title
+              description
               state { id name }
               children {
                 nodes {
                   id
                   identifier
                   title
+                  description
                   state { id name }
                 }
               }
@@ -204,6 +208,7 @@ class LinearGraphqlClient implements LinearApiClient {
             id
             identifier
             title
+            description
             state { id name }
             children {
               nodes {
@@ -291,6 +296,7 @@ export class LinearAdapter {
         id: nodeId,
         title: issue.title ?? issue.identifier ?? issue.id,
         status: statusName,
+        ...(issue.description ? { body: issue.description } : {}),
       };
       return nodeId;
     }
@@ -305,6 +311,9 @@ export class LinearAdapter {
     }
     if ((nodes[nodeId].status === "Unknown" || !nodes[nodeId].status) && issue.state) {
       nodes[nodeId].status = statusName;
+    }
+    if (issue.description && !nodes[nodeId].body) {
+      nodes[nodeId].body = issue.description;
     }
     return nodeId;
   }

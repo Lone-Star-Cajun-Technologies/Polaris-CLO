@@ -254,6 +254,10 @@ export function buildWorkerPrompt(input: WorkerPromptInput): WorkerPromptResult 
     lines.push('');
     lines.push('## Expanded Issue Context');
     lines.push(`**${input.issueContext.id}**: ${input.issueContext.title}`);
+    if (input.issueContext.body) {
+      lines.push('');
+      lines.push(input.issueContext.body);
+    }
     if (input.issueContext.key_requirements.length > 0) {
       lines.push('');
       lines.push('Key requirements:');
@@ -298,15 +302,20 @@ export function buildPromptFromPacketInput(
   input: BuildPromptFromPacketInput,
 ): WorkerPromptResult {
   const requirements = input.issueContext?.key_requirements ?? [];
+  const body = input.issueContext?.body?.trim();
+
+  // Body is the canonical goal text — it is the full issue description written by the
+  // product team. Use it verbatim so the worker acts on the real spec, not a title stub.
+  // Fall back to first requirement, then to a minimal "Implement X" placeholder.
+  const goal = body
+    ?? (requirements.length > 0 ? requirements[0] : `Implement ${input.issueId}: "${input.title}".`);
 
   return buildWorkerPrompt({
     issueId: input.issueId,
     title: input.title,
     worktree: input.worktree,
     branch: input.branch,
-    goal: requirements.length > 0
-      ? requirements[0]
-      : `Implement ${input.issueId}: "${input.title}".`,
+    goal,
     scopeTouch: input.allowedScope ?? [],
     scopeAvoid: [],
     acceptanceCriteria: requirements.length > 1 ? requirements.slice(1) : requirements,

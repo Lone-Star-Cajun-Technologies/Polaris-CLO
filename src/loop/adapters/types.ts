@@ -58,6 +58,12 @@ export interface DispatchResult {
   summary?: string;
   stdout?: string;
   stderr?: string;
+  /**
+   * When true, the adapter returned before launching any worker — no execution
+   * was attempted and no result file was written. The parent MAY safely roll
+   * back dispatch state to keep the run cleanly resumable.
+   */
+  pre_dispatch_failure?: boolean;
 }
 
 export interface ExecutionAdapter {

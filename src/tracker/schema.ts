@@ -26,6 +26,8 @@ export const executionGraphV2Schema = z.object({
       title: z.string(),
       status: z.string(),
       sessionType: z.string().optional(),
+      /** Markdown body / description of the issue. */
+      body: z.string().optional(),
     })
   ),
 

@@ -99,7 +99,8 @@ export type ParentLoopHaltReason =
   | 'state-invalid' // current-state.json failed validation
   | 'analyze-parent' // Cluster root is an ANALYZE issue
   | 'analyze-drift' // Next child is an analyze issue and allow_analyze_children is false
-  | 'supervised-mode-child-complete'; // Child completed in supervised mode
+  | 'supervised-mode-child-complete' // Child completed in supervised mode
+  | 'preflight-failed'; // A child failed preflight validation (e.g. missing body)
 
 export interface ParentLoopResult {
   /** Final halt reason. */
@@ -229,6 +230,7 @@ function buildPacket(
         id: activeChild,
         title: childMeta.title ?? activeChild,
         key_requirements: [],
+        body: childMeta.body,
       }
     : undefined;
 
@@ -743,6 +745,31 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
       };
     }
 
+    // ── Child body preflight gate ────────────────────────────────────────────
+    //
+    // HARD GATE: Every child MUST have a body/description in open_children_meta
+    // before dispatch. A missing body means the worker cannot generate an
+    // actionable packet — dispatching would produce low-quality or incorrect work.
+    // Re-sync the cluster from Linear (tracker sync-in) to populate body fields.
+    {
+      const childBody = state.open_children_meta?.[nextChild]?.body;
+      if (!dryRun && (!childBody || childBody.trim().length === 0)) {
+        const errMsg = `Child ${nextChild} has no body/description; cannot generate actionable packet.`;
+        appendTelemetry(telemetryFile, {
+          event: "preflight-body-missing",
+          run_id: state.run_id,
+          child_id: nextChild,
+          timestamp: new Date().toISOString(),
+        });
+        return {
+          haltReason: 'preflight-failed',
+          childrenDispatched,
+          haltingChild: nextChild,
+          message: errMsg,
+        };
+      }
+    }
+
     // ── Step 03: Dispatch worker via configured adapter ──────────────────
     //
     // ADAPTER HANDOFF semantics: dispatching the worker and then continuing
@@ -764,6 +791,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     const resultFile = childResultFilePath(state, nextChild, repoRoot, dispatchId);
     const packetPath = buildClusterArtifactPaths(repoRoot, state.cluster_id, nextChild, dispatchId).packetPath;
     mkdirSync(dirname(resultFile), { recursive: true });
+    const statePreDispatch = state;
     let stateBeforeDispatch = state;
     const packet = buildPacket(state, nextChild, stateFile, telemetryFile, repoRoot, resultFile);
 
@@ -901,11 +929,34 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
 
     // ── Step 04: Receive and validate compact worker return JSON ─────────
     let finalWorkerSummary: WorkerSummary | null = null;
-    let sealedFileContent: string | undefined;
 
-    if (packet.result_file_contract?.result_file && !dryRun) {
+    // Pre-dispatch failure: adapter returned before launching any worker.
+    // No result file was written. Roll back dispatch state so the run is
+    // cleanly resumable without manual `loop abort` intervention.
+    if (dispatchResult.pre_dispatch_failure && !dryRun) {
+      writeStateAtomic(stateFile, statePreDispatch);
+      appendTelemetry(telemetryFile, {
+        event: "pre-dispatch-failure",
+        run_id: state.run_id,
+        child_id: nextChild,
+        adapter: adapterName,
+        error: dispatchResult.summary ?? "adapter returned pre-dispatch failure",
+        timestamp: new Date().toISOString(),
+      });
+      return {
+        haltReason: 'worker-error',
+        childrenDispatched,
+        haltingChild: nextChild,
+        message: `Adapter "${adapterName}" cannot dispatch ${nextChild}: ${dispatchResult.summary ?? "no dispatcher available"}`,
+      };
+    }
+
+    // Only read the sealed result file when the adapter reports success.
+    // A non-zero exit_code means the worker never produced a sealed result —
+    // attempting readFileSync would cause ENOENT.
+    if (dispatchResult.exit_code === 0 && packet.result_file_contract?.result_file && !dryRun) {
       try {
-        sealedFileContent = readFileSync(packet.result_file_contract.result_file, 'utf-8');
+        const sealedFileContent = readFileSync(packet.result_file_contract.result_file, 'utf-8');
         const parsed = JSON.parse(sealedFileContent) as unknown;
         if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
           throw new Error(`Sealed result file has unexpected shape (expected object, got ${Array.isArray(parsed) ? 'array' : typeof parsed})`);
