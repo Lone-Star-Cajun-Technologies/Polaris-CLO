@@ -498,30 +498,59 @@ export class LinearAdapter {
     };
     const clusterChildren = new Set<string>();
 
+    // In single-target mode the first issue is the cluster root — a context node,
+    // not a dispatch target. Only its fetched descendants are runnable children.
+    // Relation-referenced issues go into the nodes map for graph reference but
+    // must not be promoted to runnable children.
+    const clusterRootNodeId =
+      issueIdentifier && issues.length > 0 ? this.issueNodeId(issues[0]) : null;
+
     for (const issue of issues) {
       this.mapIssueRelations(issue, nodes, dependencies);
-      clusterChildren.add(this.issueNodeId(issue));
-      for (const relation of issue.relations?.nodes ?? []) {
-        if (relation.issue) {
-          clusterChildren.add(this.issueNodeId(relation.issue));
+
+      if (clusterRootNodeId !== null) {
+        // Single-target mode: every fetched descendant except the root is runnable.
+        const nodeId = this.issueNodeId(issue);
+        if (nodeId !== clusterRootNodeId) {
+          clusterChildren.add(nodeId);
         }
-        if (relation.relatedIssue) {
-          clusterChildren.add(this.issueNodeId(relation.relatedIssue));
+        // Relation targets are added to nodes by mapIssueRelations above but
+        // are intentionally excluded from runnable children here.
+      } else {
+        // Team/project mode: all fetched issues plus their relations are runnable.
+        clusterChildren.add(this.issueNodeId(issue));
+        for (const relation of issue.relations?.nodes ?? []) {
+          if (relation.issue) {
+            clusterChildren.add(this.issueNodeId(relation.issue));
+          }
+          if (relation.relatedIssue) {
+            clusterChildren.add(this.issueNodeId(relation.relatedIssue));
+          }
         }
-      }
-      for (const relation of issue.inverseRelations?.nodes ?? []) {
-        if (relation.issue) {
-          clusterChildren.add(this.issueNodeId(relation.issue));
+        for (const relation of issue.inverseRelations?.nodes ?? []) {
+          if (relation.issue) {
+            clusterChildren.add(this.issueNodeId(relation.issue));
+          }
+          if (relation.relatedIssue) {
+            clusterChildren.add(this.issueNodeId(relation.relatedIssue));
+          }
         }
-        if (relation.relatedIssue) {
-          clusterChildren.add(this.issueNodeId(relation.relatedIssue));
+        for (const childIssue of issue.children?.nodes ?? []) {
+          clusterChildren.add(this.issueNodeId(childIssue));
         }
-      }
-      for (const childIssue of issue.children?.nodes ?? []) {
-        clusterChildren.add(this.issueNodeId(childIssue));
       }
     }
-    clusters[activeClusterId].children = Array.from(clusterChildren);
+
+    // Single-target leaf: root has no implementation children → root is itself runnable.
+    if (clusterRootNodeId !== null && clusterChildren.size === 0) {
+      clusterChildren.add(clusterRootNodeId);
+    }
+
+    clusters[activeClusterId] = {
+      ...clusters[activeClusterId],
+      children: Array.from(clusterChildren),
+      ...(clusterRootNodeId !== null ? { cluster_root: clusterRootNodeId } : {}),
+    };
 
     const graph: ExecutionGraphV2 = {
       schemaVersion: "v2",

@@ -45,13 +45,12 @@
     "POL-281": {
       "id": "POL-281",
       "title": "Linear Issue: POL-281",
+      "cluster_root": "POL-281",
       "children": [
-        "POL-281",
-        "POL-280",
-        "POL-279",
-        "POL-278",
         "POL-277",
-        "POL-268"
+        "POL-278",
+        "POL-279",
+        "POL-280"
       ]
     }
   },

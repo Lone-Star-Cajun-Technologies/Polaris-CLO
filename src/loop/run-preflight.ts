@@ -52,7 +52,17 @@ async function loadOrSyncGraph(clusterId: string, repoRoot: string): Promise<Loc
 
 function buildBootstrapPlan(clusterId: string, graph: LocalGraph): BootstrapPlan {
   const activeCluster = graph.getActiveCluster();
-  const openChildren = activeCluster.children.length > 0 ? activeCluster.children : [clusterId];
+
+  // Exclude the cluster root from runnable children when it has implementation
+  // children. The root is a context/coordination node. If after filtering nothing
+  // remains (leaf cluster), fall back to [clusterId] so the root runs as the sole
+  // work item — matching single-target leaf semantics.
+  const clusterRoot = activeCluster.cluster_root;
+  const runnableChildren = clusterRoot
+    ? activeCluster.children.filter((id) => id !== clusterRoot)
+    : activeCluster.children;
+  const openChildren = runnableChildren.length > 0 ? runnableChildren : [clusterId];
+
   const openChildrenMeta: BootstrapPlan["openChildrenMeta"] = {};
 
   const clusterNode = graph.getNode(clusterId);

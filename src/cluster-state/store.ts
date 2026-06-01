@@ -253,7 +253,15 @@ export const initializeClusterState = async (clusterId: string, repoRoot?: strin
     throw new Error(`Cluster ${clusterId} not found in graph.`);
   }
 
-  const childStates: ChildState[] = activeCluster.children.map(childId => ({
+  // Exclude cluster root from child states — mirrors buildBootstrapPlan logic.
+  const clusterRoot = activeCluster.cluster_root;
+  const runnableChildren = clusterRoot
+    ? activeCluster.children.filter((id) => id !== clusterRoot)
+    : activeCluster.children;
+  const childrenToInitialize =
+    runnableChildren.length > 0 ? runnableChildren : activeCluster.children;
+
+  const childStates: ChildState[] = childrenToInitialize.map(childId => ({
     id: childId,
     status: 'ready',
   }));

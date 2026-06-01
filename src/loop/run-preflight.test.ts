@@ -354,6 +354,51 @@ describe("ensureClusterRunState", () => {
     }
   });
 
+  it("excludes cluster_root from open_children when implementation children are present", async () => {
+    const repoRoot = makeRepo();
+    try {
+      const dir = join(repoRoot, ".polaris", "clusters", "POL-281");
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(
+        join(dir, "clusters.json"),
+        JSON.stringify({
+          schemaVersion: "v2",
+          source: { id: "POL-281", type: "Linear", analysis: { id: "initial-sync", doc: "test" } },
+          nodes: {
+            "POL-281": { id: "POL-281", title: "Root", status: "Todo" },
+            "POL-277": { id: "POL-277", title: "Child A", status: "Todo" },
+            "POL-278": { id: "POL-278", title: "Child B", status: "Todo" },
+          },
+          dependencies: {},
+          clusters: {
+            "POL-281": {
+              id: "POL-281",
+              title: "Cluster POL-281",
+              cluster_root: "POL-281",
+              children: ["POL-277", "POL-278"],
+            },
+          },
+          activeCluster: "POL-281",
+        }),
+        "utf-8",
+      );
+
+      const stateFile = join(repoRoot, ".taskchain_artifacts", "polaris-run", "current-state.json");
+      const bootstrapHandler = vi.fn();
+
+      await ensureClusterRunState({ clusterId: "POL-281", stateFile, repoRoot, bootstrapHandler });
+
+      expect(bootstrapHandler).toHaveBeenCalledWith(
+        expect.objectContaining({
+          clusterId: "POL-281",
+          openChildren: ["POL-277", "POL-278"],
+        }),
+      );
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
   it("rebootstraps parseable invalid ghost-complete state from a direct-provider worker", async () => {
     const repoRoot = makeRepo();
     try {
