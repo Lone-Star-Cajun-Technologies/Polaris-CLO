@@ -484,6 +484,30 @@ export function appendAbortEvent(telemetryFile: string, event: AbortEvent): void
   appendFileSync(telemetryFile, JSON.stringify(timestampedEvent) + "\n", "utf-8");
 }
 
+export interface StaleDispatchAbortedEvent {
+  event: "stale-dispatch-aborted";
+  run_id: string;
+  /** Child whose stuck dispatch was cleared */
+  child_id: string;
+  reason: string;
+  /** dispatch_id of the cleared (stale) dispatch record, if known */
+  aborted_dispatch_id?: string;
+  /** Whether a heartbeat existed at abort time */
+  had_heartbeat: boolean;
+  /** Whether the expected result file existed at abort time */
+  had_result_file: boolean;
+  timestamp: string;
+}
+
+export function appendStaleDispatchAbortedEvent(
+  telemetryFile: string,
+  event: StaleDispatchAbortedEvent,
+): void {
+  const timestampedEvent = { ...event, timestamp: getMonotonicTimestamp() };
+  mkdirSync(dirname(telemetryFile), { recursive: true });
+  appendFileSync(telemetryFile, JSON.stringify(timestampedEvent) + "\n", "utf-8");
+}
+
 /**
  * Reads the issue body for a node from the durable cluster snapshot at
  * `.polaris/clusters/<clusterId>/clusters.json`. Returns undefined when the
