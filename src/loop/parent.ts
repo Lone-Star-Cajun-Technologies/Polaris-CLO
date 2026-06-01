@@ -281,7 +281,7 @@ function buildPacket(
   stateFile: string,
   telemetryFile: string,
   repoRoot: string,
-  resultFile?: string,
+  resultFile: string,
 ): WorkerPacket {
   const branch = state.branch ?? getCurrentBranch(repoRoot);
 
@@ -1118,7 +1118,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     // Only read the sealed result file when the adapter reports success.
     // A non-zero exit_code means the worker never produced a sealed result —
     // attempting readFileSync would cause ENOENT.
-    if (dispatchResult.exit_code === 0 && packet.result_file_contract?.result_file && !dryRun) {
+    if (dispatchResult.exit_code === 0 && !dryRun) {
       try {
         const sealedFileContent = readFileSync(packet.result_file_contract.result_file, 'utf-8');
         const parsed = JSON.parse(sealedFileContent) as unknown;
@@ -1338,7 +1338,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
         run_id: state.run_id,
         child_id: nextChild,
         error: errMsg,
-        result_file: packet.result_file_contract?.result_file,
+        result_file: packet.result_file_contract.result_file,
         timestamp: new Date().toISOString(),
       });
       return {
@@ -1470,7 +1470,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
           clusterId: state.cluster_id,
           childId: nextChild,
           repoRoot,
-          resultFile: packet.result_file_contract?.result_file,
+          resultFile: packet.result_file_contract.result_file,
           validationSummary,
           lastCommit,
         });

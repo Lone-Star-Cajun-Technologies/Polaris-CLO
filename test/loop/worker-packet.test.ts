@@ -134,28 +134,27 @@ describe("WorkerPacket Smoke Tests", () => {
     expect(sealedResult.validation).toEqual({ checks: ["pass"] });
   });
 
-  it("should not write a sealed result file if resultFile is not specified in WorkerPacket", async () => {
-    // Compile a WorkerPacket without result_file_contract
+  it("result_file_contract is always present in every compiled WorkerPacket", async () => {
+    // Every compiled WorkerPacket must carry result_file_contract — there is no
+    // 'no sealed file' variant any more. Verify the contract is non-empty.
+    const customResultFile = path.join(testDir, "sealed-results", "pol-198-result.json");
     const workerPacket: WorkerPacket = compileImplPacket({
       runId: "test-run-id",
       clusterId: "test-cluster-id",
-      childId: "POL-197-no-sealed-file",
+      childId: "POL-198",
       branch: "test-branch",
       stateFile: stateFile,
       telemetryFile: path.join(testDir, "telemetry.jsonl"),
       issueContext: {
-        id: "POL-197-no-sealed-file",
-        title: "No sealed result file expected",
+        id: "POL-198",
+        title: "Contract always present",
         key_requirements: [],
       },
-      // resultFile is intentionally omitted
+      resultFile: customResultFile,
     });
 
-    const adapter = makeMockWorkerPacketAdapter()();
-    await adapter.dispatch(workerPacket, { provider: adapter.name });
-
-    // Verify that no result file was created for this packet
-    const nonSealedResultFilePath = path.join(testDir, "sealed-results", "pol-197-no-sealed-file-result.json");
-    expect(existsSync(nonSealedResultFilePath)).toBe(false);
+    expect(isWorkerPacket(workerPacket)).toBe(true);
+    expect(workerPacket.result_file_contract).toBeDefined();
+    expect(workerPacket.result_file_contract.result_file).toBe(customResultFile);
   });
 });

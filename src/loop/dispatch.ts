@@ -737,7 +737,7 @@ function buildPacket(
   stateFile: string,
   telemetryFile: string,
   repoRoot: string,
-  resultFile?: string,
+  resultFile: string,
 ): WorkerPacket {
   const childMeta = state.open_children_meta?.[childId];
   // Hydrate body from cluster snapshot when runtime state lacks it.
@@ -776,7 +776,7 @@ function buildPacket(
     allowedScope: resolvedScope.length > 0 ? resolvedScope : undefined,
     maxConcurrentWorkers: 1,
     promptMode: selectPromptMode(childId, state),
-    resultFile: resultFile ? canonicalPath(absoluteResultFile(repoRoot, resultFile)) : undefined,
+    resultFile: canonicalPath(absoluteResultFile(repoRoot, resultFile)),
   });
 }
 
@@ -945,6 +945,22 @@ export function runLoopDispatch(options: DispatchOptions): void {
   const childId = selectChild(state, options.childId);
   const dispatchId = randomUUID();
 
+  // Compute canonical artifact paths before building the packet so that
+  // result_file_contract is always present in the saved JSON.
+  // options.resultFile acts as an override; the cluster-scoped path is the default.
+  const { packetPath, resultPath, relativePacketPath, relativeResultPath } = buildClusterArtifactPaths(
+    options.repoRoot,
+    state.cluster_id,
+    childId,
+    dispatchId,
+  );
+  const canonicalResultFile = options.resultFile
+    ? canonicalPath(absoluteResultFile(options.repoRoot, options.resultFile))
+    : resultPath;
+  // Use canonicalResultFile as the effective result path when options.resultFile is provided
+  const effectiveResultPath = canonicalResultFile;
+  const relativeEffectiveResultPath = relative(options.repoRoot, effectiveResultPath);
+
   // ── Build packet before writing state ───────────────────────────────────────
   // We need to build the packet first to know its content for the artifact.
   // Use a preliminary state to build the packet (we'll update state after).
@@ -962,7 +978,7 @@ export function runLoopDispatch(options: DispatchOptions): void {
     options.stateFile,
     telemetryFile,
     options.repoRoot,
-    options.resultFile,
+    canonicalResultFile,
   );
 
   // Fail packet generation if body is present but scope cannot be derived.
@@ -1008,12 +1024,7 @@ export function runLoopDispatch(options: DispatchOptions): void {
   // ── Write durable dispatch evidence ────────────────────────────────────────
   // Create cluster-scoped packet artifact BEFORE updating state.
   // This ensures "dispatched" only means a durable record exists.
-  const { packetPath, resultPath, relativePacketPath, relativeResultPath } = buildClusterArtifactPaths(
-    options.repoRoot,
-    state.cluster_id,
-    childId,
-    dispatchId,
-  );
+  // (packetPath / resultPath etc. were already computed above before packet build)
 
   // Write packet artifact - this MUST succeed before we report dispatch success
   try {
@@ -1037,7 +1048,7 @@ export function runLoopDispatch(options: DispatchOptions): void {
     state.cluster_id,
     childId,
     relativePacketPath,
-    relativeResultPath,
+    relativeEffectiveResultPath,
     packet.role_context,
     resolvedProvider,
     providerDecision.selectionReason,
@@ -1107,7 +1118,7 @@ export function runLoopDispatch(options: DispatchOptions): void {
     prompt_mode: packet.prompt_mode,
     prompt_estimated_tokens: packet.prompt_metrics.estimated_tokens,
     packet_path: packetPath,
-    expected_result_path: resultPath,
+    expected_result_path: effectiveResultPath,
     dispatch_mode: dispatchRecord.dispatch_mode,
     runtime_state: dispatchRecord.runtime_state,
     provider: dispatchRecord.provider ?? null,
