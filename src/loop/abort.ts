@@ -1,12 +1,15 @@
-import { join } from "node:path";
+import { existsSync } from "node:fs";
+import { join, isAbsolute } from "node:path";
 import { randomUUID } from "node:crypto";
 import {
   readState,
   validateState,
   writeStateAtomic,
   appendAbortEvent,
+  appendStaleDispatchAbortedEvent,
   type LoopState,
 } from "./checkpoint.js";
+import { getMachineState } from "./dispatch-boundary.js";
 import {
   DEFAULT_LEDGER_PATH,
   LedgerWriter,
@@ -53,6 +56,49 @@ function appendBlockedLedgerEvent(repoRoot: string, state: LoopState, childId: s
   } satisfies RunBlockedEvent);
 }
 
+interface StaleDispatchInfo {
+  isStale: boolean;
+  hasHeartbeat: boolean;
+  hasResultFile: boolean;
+  abortedDispatchId?: string;
+}
+
+/**
+ * Detect whether the current state has a stuck dispatch with no worker activity.
+ * A dispatch is considered stale when active_child is set, the machine state is
+ * "dispatched", but the worker has no heartbeat and the expected result file is absent.
+ * This covers both the "packet-created" runtime state and older delegated dispatches
+ * that never progressed.
+ */
+function detectStaleDispatch(state: LoopState, repoRoot: string): StaleDispatchInfo {
+  if (!state.active_child || state.active_child === "") {
+    return { isStale: false, hasHeartbeat: false, hasResultFile: false };
+  }
+
+  if (getMachineState(state) !== "dispatched") {
+    return { isStale: false, hasHeartbeat: false, hasResultFile: false };
+  }
+
+  const dr = state.open_children_meta?.[state.active_child]?.dispatch_record;
+
+  const hasHeartbeat = !!(dr?.last_heartbeat_at);
+
+  let hasResultFile = false;
+  if (dr?.expected_result_path) {
+    const resultPath = isAbsolute(dr.expected_result_path)
+      ? dr.expected_result_path
+      : join(repoRoot, dr.expected_result_path);
+    hasResultFile = existsSync(resultPath);
+  }
+
+  return {
+    isStale: true,
+    hasHeartbeat,
+    hasResultFile,
+    abortedDispatchId: dr?.dispatch_id,
+  };
+}
+
 export function runLoopAbort(options: AbortOptions): void {
   const { reason, repoRoot } = options;
   const stateFile =
@@ -74,31 +120,100 @@ export function runLoopAbort(options: AbortOptions): void {
     process.exit(1);
   }
 
-  const childId = options.childId ?? state.active_child ?? "";
   const timestamp = new Date().toISOString();
+  const staleInfo = detectStaleDispatch(state, repoRoot);
 
-  const updatedState = {
-    ...state,
-    status: "blocked",
-    blocker: {
-      reason,
-      child_id: childId,
-      timestamp,
-      resolved: false,
-    },
-  };
+  let updatedState: LoopState;
+  let effectiveChildId: string;
+
+  if (staleInfo.isStale) {
+    // Stale dispatch: clear active_child, balance dispatch_boundary epochs, and
+    // mark the old dispatch record as failed so fresh dispatch can proceed after
+    // the operator runs `polaris loop resume` to exit the blocked state.
+    const stuckChildId = state.active_child;
+    effectiveChildId = options.childId ?? stuckChildId ?? "";
+
+    if (staleInfo.hasHeartbeat || staleInfo.hasResultFile) {
+      process.stderr.write(
+        `Warning: stale dispatch for ${stuckChildId} had` +
+        `${staleInfo.hasHeartbeat ? " a heartbeat" : ""}` +
+        `${staleInfo.hasHeartbeat && staleInfo.hasResultFile ? " and" : ""}` +
+        `${staleInfo.hasResultFile ? " a result file" : ""}` +
+        `. Clearing dispatch state per operator request.\n`,
+      );
+    }
+
+    const existingMeta = state.open_children_meta ?? {};
+    const childMeta = existingMeta[stuckChildId] ?? {};
+    const oldDr = childMeta.dispatch_record;
+
+    updatedState = {
+      ...state,
+      active_child: "",
+      step_cursor: state.step_cursor === "dispatch" ? null : state.step_cursor,
+      dispatch_boundary: state.dispatch_boundary
+        ? {
+            ...state.dispatch_boundary,
+            // Balance epochs so the machine returns to checkpointed/idle,
+            // allowing a fresh dispatch once the blocked status is cleared.
+            continue_epoch: state.dispatch_boundary.dispatch_epoch,
+          }
+        : state.dispatch_boundary,
+      status: "blocked",
+      blocker: {
+        reason,
+        child_id: effectiveChildId,
+        timestamp,
+        resolved: false,
+      },
+      open_children_meta: {
+        ...existingMeta,
+        [stuckChildId]: {
+          ...childMeta,
+          ...(oldDr
+            ? { dispatch_record: { ...oldDr, status: "failed" as const, runtime_state: "failed" as const } }
+            : {}),
+        },
+      },
+    };
+  } else {
+    effectiveChildId = options.childId ?? state.active_child ?? "";
+    updatedState = {
+      ...state,
+      status: "blocked",
+      blocker: {
+        reason,
+        child_id: effectiveChildId,
+        timestamp,
+        resolved: false,
+      },
+    };
+  }
 
   writeStateAtomic(stateFile, updatedState);
-  appendBlockedLedgerEvent(repoRoot, updatedState, childId, reason);
+  appendBlockedLedgerEvent(repoRoot, updatedState, effectiveChildId, reason);
 
   const artifactDir =
     state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "polaris-run");
   const telemetryFile = join(artifactDir, "runs", state.run_id, "telemetry.jsonl");
 
+  if (staleInfo.isStale) {
+    appendStaleDispatchAbortedEvent(telemetryFile, {
+      event: "stale-dispatch-aborted",
+      run_id: state.run_id,
+      child_id: state.active_child,
+      reason,
+      aborted_dispatch_id: staleInfo.abortedDispatchId,
+      had_heartbeat: staleInfo.hasHeartbeat,
+      had_result_file: staleInfo.hasResultFile,
+      timestamp,
+    });
+  }
+
   appendAbortEvent(telemetryFile, {
     event: "loop-aborted",
     run_id: state.run_id,
-    child_id: childId,
+    child_id: effectiveChildId,
     reason,
     timestamp,
   });
