@@ -415,6 +415,7 @@ describe("runLoopContinue: dispatch boundary enforcement", () => {
         child_id: "POL-101",
         status: "success",
         commit: "abc1234",
+        validation: "passed",
       }),
     );
     state.open_children_meta = {

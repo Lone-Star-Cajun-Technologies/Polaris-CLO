@@ -1,6 +1,8 @@
-import { join } from "node:path";
+import { join, isAbsolute, resolve } from "node:path";
 import { existsSync, readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
+import { readClusterStateSync, writeClusterStateSync } from "../cluster-state/store.js";
+import type { ClusterState, ChildState, ValidationResult } from "../cluster-state/types.js";
 import {
   readState,
   validateState,
@@ -40,12 +42,17 @@ function resolveResultFileForChild(state: LoopState, childId: string): string | 
   return meta?.result_file ?? meta?.dispatch_record?.expected_result_path ?? null;
 }
 
+type ContinueEvidenceResult =
+  | { ok: true; commit: string; rawValidation: unknown; resultFile: string }
+  | { ok: false; reason: string };
+
 function verifyCompletionEvidenceForContinue(
   state: LoopState,
   completedChild: string,
-): { ok: true; commit: string } | { ok: false; reason: string } {
+  repoRoot: string,
+): ContinueEvidenceResult {
   if (state.completed_children.includes(completedChild)) {
-    return { ok: true, commit: state.last_commit ?? "" };
+    return { ok: true, commit: state.last_commit ?? "", rawValidation: undefined, resultFile: "" };
   }
 
   const resultFile = resolveResultFileForChild(state, completedChild);
@@ -55,7 +62,9 @@ function verifyCompletionEvidenceForContinue(
       reason: `cannot checkpoint ${completedChild}: no result_file evidence found in state metadata`,
     };
   }
-  if (!existsSync(resultFile)) {
+
+  const resolvedResultFile = isAbsolute(resultFile) ? resultFile : resolve(repoRoot, resultFile);
+  if (!existsSync(resolvedResultFile)) {
     return {
       ok: false,
       reason: `cannot checkpoint ${completedChild}: expected result file is missing (${resultFile})`,
@@ -64,7 +73,7 @@ function verifyCompletionEvidenceForContinue(
 
   let parsed: Record<string, unknown>;
   try {
-    const content = readFileSync(resultFile, "utf-8");
+    const content = readFileSync(resolvedResultFile, "utf-8");
     const raw = JSON.parse(content) as unknown;
     if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
       return {
@@ -90,13 +99,111 @@ function verifyCompletionEvidenceForContinue(
 
   const commit = String(parsed["commit"] ?? parsed["commit_hash"] ?? "").trim();
   if (!commit) {
-    return {
-      ok: false,
-      reason: `cannot checkpoint ${completedChild}: result file is missing commit evidence`,
-    };
+    if (!readPacketFlag(state, completedChild, repoRoot, "artifact_only")) {
+      return {
+        ok: false,
+        reason: `cannot checkpoint ${completedChild}: result file is missing commit evidence`,
+      };
+    }
+    return { ok: true, commit: "", rawValidation: parsed["validation"], resultFile };
   }
 
-  return { ok: true, commit };
+  return { ok: true, commit, rawValidation: parsed["validation"], resultFile };
+}
+
+function resolvePacketPath(state: LoopState, childId: string, repoRoot: string): string | null {
+  const dispatchRecord = state.open_children_meta?.[childId]?.dispatch_record;
+  const packetPath = dispatchRecord?.packet_path;
+  if (!packetPath) return null;
+  return isAbsolute(packetPath) ? packetPath : resolve(repoRoot, packetPath);
+}
+
+function readPacketFlag(
+  state: LoopState,
+  childId: string,
+  repoRoot: string,
+  flag: "artifact_only" | "validation_waiver",
+): unknown {
+  const packetPath = resolvePacketPath(state, childId, repoRoot);
+  if (!packetPath || !existsSync(packetPath)) return undefined;
+  try {
+    const packet = JSON.parse(readFileSync(packetPath, "utf-8")) as Record<string, unknown>;
+    const fromRoot = packet[flag];
+    if (fromRoot !== undefined) return fromRoot;
+    const instructions = packet["instructions"];
+    if (instructions && typeof instructions === "object" && !Array.isArray(instructions)) {
+      return (instructions as Record<string, unknown>)[flag];
+    }
+    return undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function hasValidationEvidence(validation: unknown): boolean {
+  if (validation === undefined || validation === null) return false;
+  if (typeof validation === "boolean") return validation;
+  if (typeof validation === "string") {
+    const n = validation.trim().toLowerCase();
+    return ["passed", "pass", "success", "ok"].includes(n);
+  }
+  if (typeof validation === "object" && !Array.isArray(validation)) {
+    const v = validation as Record<string, unknown>;
+    if (Array.isArray(v["passed"]) && (v["passed"] as unknown[]).length > 0) return true;
+    if (v["passed"] === true) return true;
+    if (typeof v["status"] === "string" && ["passed", "pass", "success", "ok"].includes(v["status"].toLowerCase())) return true;
+  }
+  return false;
+}
+
+function isValidationWaiver(value: unknown): boolean {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") return value.trim().length > 0;
+  if (value && typeof value === "object" && !Array.isArray(value)) return Object.keys(value).length > 0;
+  return false;
+}
+
+function toValidationResult(rawValidation: unknown): ValidationResult {
+  return {
+    passed: hasValidationEvidence(rawValidation),
+    output: typeof rawValidation === "string"
+      ? rawValidation
+      : rawValidation != null ? JSON.stringify(rawValidation) : "",
+  };
+}
+
+function bridgeEvidenceToClusterState(
+  repoRoot: string,
+  clusterId: string,
+  childId: string,
+  commit: string,
+  rawValidation: unknown,
+  resultFile: string,
+): void {
+  const existing = readClusterStateSync(clusterId, repoRoot);
+  if (!existing) {
+    process.stderr.write(
+      `Warning: cluster-state.json not found for ${clusterId}; skipping evidence bridge for ${childId}\n`,
+    );
+    return;
+  }
+
+  const updatedChildStates: ChildState[] = existing.child_states.some((cs) => cs.id === childId)
+    ? existing.child_states.map((cs) =>
+        cs.id === childId ? { ...cs, status: "done" as const, commit: commit || undefined } : cs,
+      )
+    : [...existing.child_states, { id: childId, status: "done" as const, commit: commit || undefined }];
+
+  const updated: ClusterState = {
+    ...existing,
+    state_generation: existing.state_generation + 1,
+    child_states: updatedChildStates,
+    commits: commit ? { ...existing.commits, [childId]: commit } : existing.commits,
+    result_pointers: resultFile ? { ...existing.result_pointers, [childId]: resultFile } : existing.result_pointers,
+    validation_results: { ...existing.validation_results, [childId]: toValidationResult(rawValidation) },
+  };
+
+  writeClusterStateSync(clusterId, updated, repoRoot);
 }
 
 function readSessionTypeFile(repoRoot: string): string | undefined {
@@ -226,13 +333,27 @@ export function runLoopContinue(options: ContinueOptions): void {
   const nextChild = remainingOpenChildren[0] ?? null;
 
   let completionCommit = "";
+  let completionResultFile = "";
+  let completionValidation: unknown = undefined;
   if (state.dispatch_boundary && completedChild) {
-    const evidence = verifyCompletionEvidenceForContinue(state, completedChild);
+    const evidence = verifyCompletionEvidenceForContinue(state, completedChild, repoRoot);
     if (!evidence.ok) {
       console.error(`Error: ${evidence.reason}`);
       process.exit(1);
     }
     completionCommit = evidence.commit;
+    completionResultFile = evidence.resultFile;
+    completionValidation = evidence.rawValidation;
+
+    if (!hasValidationEvidence(completionValidation)) {
+      const waiver = readPacketFlag(state, completedChild, repoRoot, "validation_waiver");
+      if (!isValidationWaiver(waiver)) {
+        console.error(
+          `Error: cannot checkpoint ${completedChild}: result file has no passing validation evidence and no validation_waiver was set in the packet`,
+        );
+        process.exit(1);
+      }
+    }
   }
 
   // Determine session type (state field takes precedence, file is secondary signal)
@@ -252,10 +373,28 @@ export function runLoopContinue(options: ContinueOptions): void {
         Object.entries(state.open_children_meta).filter(([id]) => !completedSet.has(id)),
       )
     : undefined;
+
+  // Record per-child result summary in loop state (belt-and-suspenders for finalize evidence)
+  const updatedCompletedChildrenResults: Record<string, import("./checkpoint.js").ChildResultSummary> = {
+    ...(state.completed_children_results ?? {}),
+  };
+  if (completedChild && completionResultFile) {
+    updatedCompletedChildrenResults[completedChild] = {
+      status: "done",
+      validation: hasValidationEvidence(completionValidation) ? "passed" : "skipped",
+      commit: completionCommit || null,
+      next_recommended_action: "continue",
+    };
+  }
+
   const updatedState = {
     ...state,
     active_child: "",
     completed_children: newCompletedChildren,
+    completed_children_results:
+      Object.keys(updatedCompletedChildrenResults).length > 0
+        ? updatedCompletedChildrenResults
+        : state.completed_children_results,
     open_children: remainingOpenChildren,
     open_children_meta: prunedOpenChildrenMeta,
     step_cursor: "checkpoint",
@@ -272,6 +411,18 @@ export function runLoopContinue(options: ContinueOptions): void {
 
   // Step 1 (cont): Atomic write of updated current-state.json
   const sha = writeStateAtomic(stateFile, updatedState);
+
+  // Bridge completion evidence to cluster-state.json so finalize can verify without open_children_meta
+  if (state.dispatch_boundary && completedChild && completionResultFile) {
+    bridgeEvidenceToClusterState(
+      repoRoot,
+      state.cluster_id,
+      completedChild,
+      completionCommit,
+      completionValidation,
+      completionResultFile,
+    );
+  }
   appendContinueLedgerEvents(repoRoot, updatedState, completedChild);
 
   // Step 2: Append JSONL checkpoint event

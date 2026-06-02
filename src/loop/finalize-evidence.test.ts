@@ -192,4 +192,77 @@ describe("verifyCompletedChildFinalizeEvidence", () => {
     expect(report.ok).toBe(false);
     expect(report.failures[0]?.reasons.join(" ")).toContain("artifact_only: true");
   });
+
+  it("passes finalize when cluster-state has bridged commit+validation and open_children_meta is absent for completed child", () => {
+    // Simulates the state after loop continue bridges evidence: no open_children_meta for the
+    // completed child, but cluster-state.commits and cluster-state.validation_results are set.
+    const repoRoot = makeRepo("bridge-pass");
+    const childId = "POL-5";
+    const commit = makeCommit(repoRoot, "src/feature.ts", "export const x = 1;\n");
+
+    const stateWithoutMeta = {
+      schema_version: "1.0",
+      run_id: "run-1",
+      cluster_id: "POL-999",
+      active_child: "",
+      completed_children: [childId],
+      open_children: [],
+      // no open_children_meta for childId — it was pruned by loop continue
+      open_children_meta: {},
+      step_cursor: null,
+      context_budget: { children_completed: 1 },
+      status: "cluster-complete",
+      next_open_child: null,
+    };
+
+    writeJson(repoRoot, ".taskchain_artifacts/polaris-run/current-state.json", stateWithoutMeta);
+    // cluster-state has the bridged evidence written by loop continue
+    writeJson(repoRoot, ".polaris/clusters/POL-999/cluster-state.json", {
+      commits: { [childId]: commit },
+      result_pointers: {},
+      validation_results: { [childId]: { passed: true, output: "npm test" } },
+    });
+
+    const report = verifyCompletedChildFinalizeEvidence(
+      repoRoot,
+      join(repoRoot, ".taskchain_artifacts/polaris-run/current-state.json"),
+    );
+    expect(report.ok).toBe(true);
+    expect(report.failures).toEqual([]);
+  });
+
+  it("still fails finalize when cluster-state has no evidence and open_children_meta is absent", () => {
+    // Confirms finalize does not infer success from completed_children alone.
+    const repoRoot = makeRepo("bridge-absent");
+    const childId = "POL-6";
+
+    const stateWithoutMeta = {
+      schema_version: "1.0",
+      run_id: "run-1",
+      cluster_id: "POL-999",
+      active_child: "",
+      completed_children: [childId],
+      open_children: [],
+      open_children_meta: {},
+      step_cursor: null,
+      context_budget: { children_completed: 1 },
+      status: "cluster-complete",
+      next_open_child: null,
+    };
+
+    writeJson(repoRoot, ".taskchain_artifacts/polaris-run/current-state.json", stateWithoutMeta);
+    writeJson(repoRoot, ".polaris/clusters/POL-999/cluster-state.json", {
+      commits: {},
+      result_pointers: {},
+      validation_results: {},
+    });
+
+    const report = verifyCompletedChildFinalizeEvidence(
+      repoRoot,
+      join(repoRoot, ".taskchain_artifacts/polaris-run/current-state.json"),
+    );
+    expect(report.ok).toBe(false);
+    expect(report.failures[0]?.childId).toBe(childId);
+    expect(report.failures[0]?.reasons.join(" ")).toContain("no commit hash");
+  });
 });
