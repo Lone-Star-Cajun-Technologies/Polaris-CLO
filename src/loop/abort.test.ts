@@ -233,6 +233,7 @@ describe("runLoopAbort", () => {
     open_children_meta: {
       "POL-281": {
         title: "Fix bug",
+        body: "## Goal\nFix the bug.\n\n## Scope\n- src/**\n\n## Validation\n- npm test",
         dispatch_record: {
           dispatch_id: "old-dispatch-abc",
           child_id: "POL-281",
@@ -246,7 +247,10 @@ describe("runLoopAbort", () => {
           runtime_state: "packet-created",
         },
       },
-      "POL-282": { title: "Next task" },
+      "POL-282": {
+        title: "Next task",
+        body: "## Goal\nImplement next task.\n\n## Scope\n- src/**\n\n## Validation\n- npm test",
+      },
     },
     step_cursor: "dispatch",
     context_budget: { children_completed: 1, max_children_per_session: 3 },

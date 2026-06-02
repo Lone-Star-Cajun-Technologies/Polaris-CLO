@@ -60,6 +60,8 @@ function writeStateFile(dir: string, state: Partial<LoopState> & { run_id: strin
   return stateFile;
 }
 
+const MINIMAL_CHILD_BODY = `## Goal\nImplement the fix.\n\n## Scope\n- src/**\n\n## Validation\n- npm test`;
+
 function makeFreshState(overrides: Partial<LoopState> = {}): LoopState {
   const runId = "polaris-run-test-boundary-001";
   const clusterId = "POL-100";
@@ -70,6 +72,10 @@ function makeFreshState(overrides: Partial<LoopState> = {}): LoopState {
     active_child: "",
     completed_children: [],
     open_children: ["POL-101", "POL-102"],
+    open_children_meta: {
+      "POL-101": { title: "Fix POL-101", body: MINIMAL_CHILD_BODY },
+      "POL-102": { title: "Fix POL-102", body: MINIMAL_CHILD_BODY },
+    },
     step_cursor: null,
     context_budget: { children_completed: 0, max_children_per_session: 5 },
     status: "running",

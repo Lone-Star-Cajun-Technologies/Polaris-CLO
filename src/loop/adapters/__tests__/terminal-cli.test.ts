@@ -120,6 +120,8 @@ describe("TerminalCliAdapter", () => {
           stateFile: "/tmp/polaris-test/current-state.json",
           telemetryFile: "/tmp/polaris-test/telemetry.jsonl",
           resultFile,
+          allowedScope: ["src/**"],
+          validationCommands: ["npm test"],
         });
 
         await adapter.dispatch(packet, { provider: "claude" });

@@ -346,6 +346,8 @@ describe("runLoopResume", () => {
   // reporting "state packet stale".
 
   // Shared blocked-idle state shape used across these tests.
+  const MINIMAL_BODY = "## Goal\nImplement the fix.\n\n## Scope\n- src/**\n\n## Validation\n- npm test";
+
   function makeBlockedIdleState(testDir: string) {
     return {
       schema_version: "1.0",
@@ -355,6 +357,9 @@ describe("runLoopResume", () => {
       active_child: "",
       completed_children: ["POL-23"],
       open_children: ["POL-24"],
+      open_children_meta: {
+        "POL-24": { title: "Fix POL-24", body: MINIMAL_BODY },
+      },
       step_cursor: null as null,
       context_budget: { children_completed: 1, max_children_per_session: 3 },
       status: "blocked",
