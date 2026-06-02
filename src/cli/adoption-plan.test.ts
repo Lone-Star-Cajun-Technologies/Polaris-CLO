@@ -99,18 +99,21 @@ describe("adoption-plan", () => {
     });
   });
 
-  it("supports dry-run artifact generation without writing files", () => {
+  it("writes plan artifacts for dry-run generation", () => {
     const artifacts = generateAdoptionPlanArtifacts("/repo", inventoryFixture, {
       dryRun: true,
       now: new Date("2026-05-31T12:34:56.000Z"),
     });
 
-    expect(artifacts.wroteFiles).toBe(false);
-    expect(mockedMkdirSync).not.toHaveBeenCalled();
-    expect(mockedWriteFileSync).not.toHaveBeenCalled();
+    expect(artifacts.plan.dry_run).toBe(true);
+    expect(artifacts.wroteFiles).toBe(true);
+    expect(mockedMkdirSync).toHaveBeenCalledWith("/repo/.polaris", { recursive: true });
+    expect(mockedWriteFileSync).toHaveBeenCalledTimes(2);
     expect(artifacts.jsonPath).toBe("/repo/.polaris/adoption-plan.json");
     expect(artifacts.markdownPath).toBe("/repo/.polaris/adoption-plan.md");
     expect(artifacts.markdown).toContain("# Adoption Plan");
+    expect(artifacts.markdown).toContain("| Metric | Value |");
+    expect(artifacts.markdown).toContain("## Phase A");
   });
 
   it("writes JSON and Markdown artifacts when dry-run is false", () => {
@@ -131,7 +134,7 @@ describe("adoption-plan", () => {
     expect(mockedWriteFileSync).toHaveBeenNthCalledWith(
       2,
       "/repo/.polaris/adoption-plan.md",
-      expect.stringContaining("| Order | Phase | Category | Action |"),
+      expect.stringContaining("| Metric | Value |"),
       "utf-8",
     );
   });

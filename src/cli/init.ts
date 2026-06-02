@@ -582,13 +582,15 @@ export async function runInit(options: InitOptions = {}): Promise<void> {
 
   const updated = buildInitConfig(existing, detected, detectedRepoAnalysis, Boolean(options.adopt));
 
-  if (options.dryRun) {
+  if (options.dryRun && !options.adopt) {
     process.stdout.write(`${JSON.stringify(updated, null, 2)}\n`);
     return;
   }
 
   if (options.adopt) {
-    writeAdoptionConfigLock(repoRoot, configPath, existing, detected, detectedRepoAnalysis);
+    if (!options.dryRun) {
+      writeAdoptionConfigLock(repoRoot, configPath, existing, detected, detectedRepoAnalysis);
+    }
   } else {
     writeFileSync(configPath, `${JSON.stringify(updated, null, 2)}\n`, "utf-8");
     const providerSummary =
@@ -628,6 +630,12 @@ export async function runInit(options: InitOptions = {}): Promise<void> {
      inventory,
      { dryRun: options.dryRun, now },
    );
+
+  if (options.dryRun) {
+   process.stdout.write(`${adoptionArtifacts.markdown}\n`);
+   process.stdout.write("Adoption dry run: Phase C writes skipped.\n");
+   return;
+  }
 
   let approved = false;
   if (options.yes) {
