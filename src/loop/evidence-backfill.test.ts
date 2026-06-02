@@ -94,9 +94,12 @@ describe("isPlaceholderCommit", () => {
     expect(isPlaceholderCommit(null)).toBe(true);
   });
 
-  it("rejects strings with uppercase hex (not valid git short SHA form)", () => {
-    // Git SHAs are always lowercase hex
-    expect(isPlaceholderCommit("AF422BBA")).toBe(true);
+  it("accepts uppercase hex SHA (git accepts case-insensitive object names)", () => {
+    expect(isPlaceholderCommit("AF422BBA2433E6C8")).toBe(false);
+  });
+
+  it("accepts 64-char SHA-256 hash", () => {
+    expect(isPlaceholderCommit("a".repeat(64))).toBe(false);
   });
 });
 
@@ -365,6 +368,65 @@ describe("backfillClusterStateEvidence — edge cases", () => {
 
     expect(report.backfilled).toHaveLength(1);
     expect(report.backfilled[0]!.commit).toBe("deadbeef");
+  });
+
+  it("evicts claim_metadata for backfilled children", () => {
+    const root = makeRoot("claim-evict");
+    setupStandardFixtures(root);
+    // Inject a stale claim for POL-278 into cluster-state
+    const cs = readJson(root, `.polaris/clusters/${CLUSTER_ID}/cluster-state.json`) as Record<string, unknown>;
+    const withClaim = {
+      ...(cs as object),
+      claim_metadata: {
+        "POL-278": { worker_id: "w-1", claimed_at: "2026-06-01T00:00:00Z", expires_at: "2026-06-01T01:00:00Z" },
+      },
+    };
+    writeJson(root, `.polaris/clusters/${CLUSTER_ID}/cluster-state.json`, withClaim);
+
+    backfillClusterStateEvidence({
+      repoRoot: root,
+      stateFile: join(root, ".taskchain_artifacts/polaris-run/current-state.json"),
+    });
+
+    const updated = readJson(root, `.polaris/clusters/${CLUSTER_ID}/cluster-state.json`) as Record<string, unknown>;
+    const claims = updated["claim_metadata"] as Record<string, unknown>;
+    expect(claims["POL-278"]).toBeUndefined();
+  });
+
+  it("uses result_file from open_children_meta over dispatch_record.expected_result_path", () => {
+    const root = makeRoot("result-file-meta");
+    const overridePath = `.polaris/clusters/${CLUSTER_ID}/results/POL-DDD-override.json`;
+    const defaultPath = `.polaris/clusters/${CLUSTER_ID}/results/POL-DDD-default.json`;
+    writeJson(root, ".taskchain_artifacts/polaris-run/current-state.json",
+      makeStateFile({
+        clusterId: CLUSTER_ID,
+        completedChildren: ["POL-DDD"],
+        openChildrenMeta: {
+          "POL-DDD": {
+            result_file: overridePath,
+            dispatch_record: {
+              expected_result_path: defaultPath,
+            },
+          },
+        },
+      }));
+    writeJson(root, `.polaris/clusters/${CLUSTER_ID}/cluster-state.json`,
+      makeClusterState(CLUSTER_ID, ["POL-DDD"]));
+    // Only write the override path — default should not be used
+    writeJson(root, overridePath, {
+      child_id: "POL-DDD",
+      status: "done",
+      commit: "cafe1234",
+      validation: { passed: ["npm run build"] },
+    });
+
+    const report = backfillClusterStateEvidence({
+      repoRoot: root,
+      stateFile: join(root, ".taskchain_artifacts/polaris-run/current-state.json"),
+    });
+
+    expect(report.backfilled).toHaveLength(1);
+    expect(report.backfilled[0]!.commit).toBe("cafe1234");
   });
 
   it("does not weaken finalize — cluster-state already backfilled is idempotent-safe on re-run", () => {
