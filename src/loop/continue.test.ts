@@ -715,6 +715,46 @@ describe("runLoopContinue", () => {
     });
   });
 
+  it("fails continue when result file contains a non-hex placeholder commit", () => {
+    const clusterDir = join(testDir, ".polaris", "clusters", "POL-5");
+    const resultFile = join(clusterDir, "results", "POL-23-placeholder.json");
+    mkdirSync(join(clusterDir, "results"), { recursive: true });
+    writeFileSync(
+      resultFile,
+      JSON.stringify({
+        child_id: "POL-23",
+        status: "done",
+        commit: "pending-single-commit",
+        validation: "passed",
+      }),
+    );
+    const state = {
+      schema_version: "1.0",
+      run_id: "pol-5-session-1",
+      cluster_id: "POL-5",
+      active_child: "POL-23",
+      completed_children: [],
+      open_children: ["POL-23", "POL-24"],
+      open_children_meta: { "POL-23": { result_file: resultFile } },
+      step_cursor: "dispatch",
+      context_budget: { children_completed: 0, max_children_per_session: 3 },
+      status: "running",
+      next_open_child: "POL-23",
+      dispatch_boundary: { dispatch_epoch: 1, continue_epoch: 0, last_dispatched_child: "POL-23" },
+    };
+    const stateFile = writeState(testDir, state);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
+      throw new Error("process.exit called");
+    });
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    expect(() => runLoopContinue({ stateFile, repoRoot: testDir })).toThrow("process.exit called");
+    expect(errorSpy.mock.calls.some((args) => String(args[0]).includes("not a valid git hash"))).toBe(true);
+
+    exitSpy.mockRestore();
+    errorSpy.mockRestore();
+  });
+
   it("fails continue when result file has no validation and packet has no validation_waiver", () => {
     const clusterDir = join(testDir, ".polaris", "clusters", "POL-5");
     const resultFile = join(clusterDir, "results", "POL-23-sealed.json");

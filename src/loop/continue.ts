@@ -108,6 +108,14 @@ function verifyCompletionEvidenceForContinue(
     return { ok: true, commit: "", rawValidation: parsed["validation"], resultFile };
   }
 
+  // Reject placeholder strings that are not valid git hashes (hex, ≥7 chars)
+  if (!/^[0-9a-f]{7,}$/i.test(commit)) {
+    return {
+      ok: false,
+      reason: `cannot checkpoint ${completedChild}: result commit "${commit}" is not a valid git hash (expected hex string of ≥7 chars)`,
+    };
+  }
+
   return { ok: true, commit, rawValidation: parsed["validation"], resultFile };
 }
 
