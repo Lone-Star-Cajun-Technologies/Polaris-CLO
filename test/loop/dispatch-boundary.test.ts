@@ -406,8 +406,9 @@ describe("runLoopContinue: dispatch boundary enforcement", () => {
     // State with dispatch completed: dispatch_epoch(1) > continue_epoch(0)
     const state = makeDispatchedState("POL-101");
     state.open_children = ["POL-101", "POL-102"]; // POL-101 is active
-    const resultFile = join(testDir, ".polaris", "clusters", "POL-100", "results", "POL-101-sealed.json");
-    mkdirSync(join(testDir, ".polaris", "clusters", "POL-100", "results"), { recursive: true });
+    const clusterDir = join(testDir, ".polaris", "clusters", "POL-100");
+    const resultFile = join(clusterDir, "results", "POL-101-sealed.json");
+    mkdirSync(join(clusterDir, "results"), { recursive: true });
     writeFileSync(
       resultFile,
       JSON.stringify({
@@ -416,6 +417,22 @@ describe("runLoopContinue: dispatch boundary enforcement", () => {
         status: "success",
         commit: "abc1234",
         validation: "passed",
+      }),
+    );
+    writeFileSync(
+      join(clusterDir, "cluster-state.json"),
+      JSON.stringify({
+        schema_version: "1.0",
+        cluster_id: "POL-100",
+        state_generation: 1,
+        child_states: [],
+        claim_metadata: {},
+        packet_pointers: {},
+        result_pointers: {},
+        validation_results: {},
+        commits: {},
+        tracker_mutations: {},
+        blockers: [],
       }),
     );
     state.open_children_meta = {

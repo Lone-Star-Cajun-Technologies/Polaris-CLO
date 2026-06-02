@@ -541,8 +541,9 @@ describe("runLoopContinue", () => {
   });
 
   it("allows checkpoint with dispatch-boundary when result evidence includes commit", () => {
-    const resultFile = join(testDir, ".polaris", "clusters", "POL-5", "results", "POL-23-sealed.json");
-    mkdirSync(join(testDir, ".polaris", "clusters", "POL-5", "results"), { recursive: true });
+    const clusterDir = join(testDir, ".polaris", "clusters", "POL-5");
+    const resultFile = join(clusterDir, "results", "POL-23-sealed.json");
+    mkdirSync(join(clusterDir, "results"), { recursive: true });
     writeFileSync(
       resultFile,
       JSON.stringify({
@@ -551,6 +552,22 @@ describe("runLoopContinue", () => {
         status: "success",
         commit: "abc1234",
         validation: "ok",
+      }),
+    );
+    writeFileSync(
+      join(clusterDir, "cluster-state.json"),
+      JSON.stringify({
+        schema_version: "1.0",
+        cluster_id: "POL-5",
+        state_generation: 1,
+        child_states: [],
+        claim_metadata: {},
+        packet_pointers: {},
+        result_pointers: {},
+        validation_results: {},
+        commits: {},
+        tracker_mutations: {},
+        blockers: [],
       }),
     );
     const state = {

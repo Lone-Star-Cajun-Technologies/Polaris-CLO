@@ -190,10 +190,9 @@ function bridgeEvidenceToClusterState(
 ): void {
   const existing = readClusterStateSync(clusterId, repoRoot);
   if (!existing) {
-    process.stderr.write(
-      `Warning: cluster-state.json not found for ${clusterId}; skipping evidence bridge for ${childId}\n`,
+    throw new Error(
+      `cluster-state.json not found for cluster ${clusterId}; cannot persist evidence for ${childId}`,
     );
-    return;
   }
 
   const updatedChildStates: ChildState[] = existing.child_states.some((cs) => cs.id === childId)
@@ -202,11 +201,14 @@ function bridgeEvidenceToClusterState(
       )
     : [...existing.child_states, { id: childId, status: "done" as const, commit: commit || undefined }];
 
+  // Evict any stale commit entry for this child before conditionally re-adding
+  const { [childId]: _staleCommit, ...remainingCommits } = existing.commits;
+
   const updated: ClusterState = {
     ...existing,
     state_generation: existing.state_generation + 1,
     child_states: updatedChildStates,
-    commits: commit ? { ...existing.commits, [childId]: commit } : existing.commits,
+    commits: commit ? { ...remainingCommits, [childId]: commit } : remainingCommits,
     result_pointers: resultFile ? { ...existing.result_pointers, [childId]: resultFile } : existing.result_pointers,
     validation_results: { ...existing.validation_results, [childId]: toValidationResult(rawValidation) },
   };
@@ -417,20 +419,30 @@ export function runLoopContinue(options: ContinueOptions): void {
     dispatch_boundary: advanceContinueEpoch(state.dispatch_boundary),
   };
 
-  // Step 1 (cont): Atomic write of updated current-state.json
-  const sha = writeStateAtomic(stateFile, updatedState);
-
-  // Bridge completion evidence to cluster-state.json so finalize can verify without open_children_meta
+  // Bridge evidence to cluster-state BEFORE committing the pruned loop state.
+  // Failing here leaves open_children_meta intact so the operator can retry.
   if (state.dispatch_boundary && completedChild && completionResultFile) {
-    bridgeEvidenceToClusterState(
-      repoRoot,
-      state.cluster_id,
-      completedChild,
-      completionCommit,
-      completionValidation,
-      completionResultFile,
-    );
+    try {
+      bridgeEvidenceToClusterState(
+        repoRoot,
+        state.cluster_id,
+        completedChild,
+        completionCommit,
+        completionValidation,
+        completionResultFile,
+      );
+    } catch (error) {
+      console.error(
+        `Error: failed to persist cluster-state evidence for ${completedChild}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      process.exit(1);
+    }
   }
+
+  // Step 1 (cont): Atomic write of updated current-state.json (open_children_meta pruned after bridge)
+  const sha = writeStateAtomic(stateFile, updatedState);
   appendContinueLedgerEvents(repoRoot, updatedState, completedChild);
 
   // Step 2: Append JSONL checkpoint event
