@@ -16,6 +16,7 @@ import { createInitCommand, runInit } from "./init.js";
 import { createDocsCommand, createDoctrineCommand } from "../smartdocs-engine/index.js";
 import { createConfigCommand, runConfigShow } from "../config/show.js";
 import { installCliSubtaskBridge } from "../loop/adapters/cli-subtask-bridge.js";
+import { assertFinalizeEvidenceOrThrow } from "../loop/finalize-evidence.js";
 
 import { createTrackerCommand } from "./tracker.js";
 import { createSkillCommand } from "../skill-packet/index.js";
@@ -47,6 +48,10 @@ export function createPolarisCommand(options: PolarisCommandOptions = {}): Comma
   const repoRoot = options.repoRoot ?? resolve(process.cwd());
   installCliSubtaskBridge(repoRoot);
   const statusHandler = options.runLoopStatus ?? runLoopStatus;
+  const finalizeHandler = options.runFinalize ?? (async (finalizeOptions: Parameters<typeof runFinalize>[0]) => {
+    assertFinalizeEvidenceOrThrow(finalizeOptions.repoRoot, finalizeOptions.stateFile);
+    await runFinalize(finalizeOptions);
+  });
 
   const program = new Command("polaris")
     .description("Polaris taskchain operator CLI")
@@ -85,7 +90,7 @@ export function createPolarisCommand(options: PolarisCommandOptions = {}): Comma
   program.addCommand(
     createFinalizeCommand({
       repoRoot,
-      runFinalize: options.runFinalize,
+      runFinalize: finalizeHandler,
     }),
   );
 
