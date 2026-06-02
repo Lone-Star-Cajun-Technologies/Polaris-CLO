@@ -32,6 +32,7 @@ import {
   verifyChildCommitCustody,
   hasNonArtifactSourceChanges,
   buildCustodyRecord,
+  buildDeliveryBranchName,
   BranchCustodyViolation,
   PROTECTED_BASE_BRANCHES,
 } from "../../src/loop/git-custody.js";
@@ -80,6 +81,27 @@ function makeTempDir(): string {
   // Fake git dir so getCurrentBranch falls back to env
   mkdirSync(join(dir, ".git"), { recursive: true });
   return dir;
+}
+
+/** Real git repo that stays on main (no delivery branch created). */
+function makeMainRepo(): { dir: string; mainSha: string } {
+  const dir = join(tmpdir(), `polaris-custody-test-${randomUUID().slice(0, 8)}`);
+  mkdirSync(dir, { recursive: true });
+
+  const git = (...args: string[]) =>
+    execFileSync("git", args, { cwd: dir, encoding: "utf-8" });
+
+  git("init", "-b", "main");
+  git("config", "user.email", "test@polaris.local");
+  git("config", "user.name", "Polaris Test");
+  git("config", "commit.gpgsign", "false");
+
+  writeFileSync(join(dir, "README.md"), "# Polaris\n");
+  git("add", "README.md");
+  git("commit", "-m", "chore: init");
+  const mainSha = git("rev-parse", "HEAD").trim();
+
+  return { dir, mainSha };
 }
 
 const MINIMAL_CHILD_BODY =
@@ -263,7 +285,7 @@ describe("hasNonArtifactSourceChanges (with real git)", () => {
     git("add", "src.ts");
     git("commit", "-m", "feat: source change");
 
-    expect(hasNonArtifactSourceChanges(dir, "main", "POL-268")).toBe(true);
+    expect(hasNonArtifactSourceChanges(dir, "main", "POL-268", "delivery/pol-268")).toBe(true);
   });
 
   it("returns false when only .polaris/ artifacts changed", () => {
@@ -279,7 +301,7 @@ describe("hasNonArtifactSourceChanges (with real git)", () => {
     git("add", ".polaris/runs/ledger.jsonl");
     git("commit", "-m", "chore: artifact only");
 
-    expect(hasNonArtifactSourceChanges(dir, "main", "POL-268")).toBe(false);
+    expect(hasNonArtifactSourceChanges(dir, "main", "POL-268", "delivery/pol-268")).toBe(false);
   });
 
   it("returns false when only .taskchain_artifacts/ changed", () => {
@@ -296,13 +318,13 @@ describe("hasNonArtifactSourceChanges (with real git)", () => {
     git("commit", "-m", "chore: scratch only");
 
     // .taskchain_artifacts is workspace-scratch, not non-artifact
-    expect(hasNonArtifactSourceChanges(dir, "main", "POL-268")).toBe(false);
+    expect(hasNonArtifactSourceChanges(dir, "main", "POL-268", "delivery/pol-268")).toBe(false);
   });
 
   it("returns false when no changes beyond base", () => {
     ({ dir } = makeGitRepo("delivery/pol-268"));
     // No additional commits on delivery branch
-    expect(hasNonArtifactSourceChanges(dir, "main", "POL-268")).toBe(false);
+    expect(hasNonArtifactSourceChanges(dir, "main", "POL-268", "delivery/pol-268")).toBe(false);
   });
 });
 
@@ -318,9 +340,63 @@ describe("runLoopDispatch: branch custody enforcement", () => {
     vi.restoreAllMocks();
   });
 
-  it("refuses to dispatch implementation worker on base/main branch", () => {
+  it("auto-creates delivery branch on first dispatch from main", () => {
+    // Real git repo is needed so git checkout -b can actually execute.
+    const { dir: gitDir } = makeMainRepo();
+    testDir = gitDir;
+    mkdirSync(join(testDir, ".polaris", "runs"), { recursive: true });
+
+    const state = makeFreshState();
+    const stateFile = writeStateFile(testDir, state);
+
+    const origStdout = process.stdout.write.bind(process.stdout);
+    process.stdout.write = () => true;
+    try {
+      runLoopDispatch({ stateFile, repoRoot: testDir });
+    } finally {
+      process.stdout.write = origStdout;
+    }
+
+    // Cluster state should record the auto-created delivery branch.
+    const clusterState = readClusterStateSync("POL-268", testDir);
+    const expectedBranch = buildDeliveryBranchName("POL-268");
+    expect(clusterState?.delivery_branch).toBe(expectedBranch);
+
+    // Git should now be checked out on the delivery branch.
+    const currentBranch = execFileSync("git", ["branch", "--show-current"], {
+      cwd: testDir,
+      encoding: "utf-8",
+    }).trim();
+    expect(currentBranch).toBe(expectedBranch);
+  });
+
+  it("fails with custody violation when dispatching on main after delivery branch is recorded", () => {
     testDir = makeTempDir();
-    // Simulate being on main branch via env var
+    // Pre-seed cluster state with a recorded delivery branch so we take the
+    // "custody already recorded" path, which asserts branch match rather than
+    // auto-creating.
+    const clusterDir = join(testDir, ".polaris", "clusters", "POL-268");
+    mkdirSync(clusterDir, { recursive: true });
+    writeFileSync(
+      join(clusterDir, "cluster-state.json"),
+      JSON.stringify({
+        schema_version: "1.0",
+        cluster_id: "POL-268",
+        state_generation: 1,
+        child_states: [],
+        claim_metadata: {},
+        packet_pointers: {},
+        result_pointers: {},
+        validation_results: {},
+        commits: {},
+        tracker_mutations: {},
+        blockers: [],
+        base_branch: "main",
+        base_sha: "abc123",
+        delivery_branch: "pol-268-delivery",
+      }),
+    );
+
     process.env["POLARIS_BRANCH"] = "main";
     try {
       mkdirSync(join(testDir, ".polaris", "runs"), { recursive: true });
@@ -329,31 +405,6 @@ describe("runLoopDispatch: branch custody enforcement", () => {
 
       const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
         throw new Error("process.exit called");
-      });
-      const origStderr = process.stderr.write.bind(process.stderr);
-      process.stderr.write = () => true;
-
-      try {
-        expect(() => runLoopDispatch({ stateFile, repoRoot: testDir })).toThrow();
-      } finally {
-        exitSpy.mockRestore();
-        process.stderr.write = origStderr;
-      }
-    } finally {
-      delete process.env["POLARIS_BRANCH"];
-    }
-  });
-
-  it("stderr contains custody violation message when dispatching on main", () => {
-    testDir = makeTempDir();
-    process.env["POLARIS_BRANCH"] = "main";
-    try {
-      mkdirSync(join(testDir, ".polaris", "runs"), { recursive: true });
-      const state = makeFreshState();
-      const stateFile = writeStateFile(testDir, state);
-
-      const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
-        throw new Error("process.exit");
       });
       const stderrChunks: string[] = [];
       const origStderr = process.stderr.write.bind(process.stderr);
@@ -369,8 +420,7 @@ describe("runLoopDispatch: branch custody enforcement", () => {
         process.stderr.write = origStderr;
       }
 
-      const allStderr = stderrChunks.join("");
-      expect(allStderr.toLowerCase()).toContain("custody");
+      expect(stderrChunks.join("").toLowerCase()).toContain("custody");
     } finally {
       delete process.env["POLARIS_BRANCH"];
     }

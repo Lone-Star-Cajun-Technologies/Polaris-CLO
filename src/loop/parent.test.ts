@@ -287,6 +287,7 @@ function createImplementationCommit(dir: string, relativePath: string = "src/sel
   execFileSync("git", ["init"], { cwd: dir, stdio: "ignore" });
   execFileSync("git", ["config", "user.name", "Polaris Test"], { cwd: dir });
   execFileSync("git", ["config", "user.email", "polaris-test@example.com"], { cwd: dir });
+  execFileSync("git", ["config", "commit.gpgsign", "false"], { cwd: dir });
   const absolutePath = join(dir, relativePath);
   mkdirSync(dirname(absolutePath), { recursive: true });
   writeFileSync(absolutePath, "export const selfComplete = true;\n", "utf-8");

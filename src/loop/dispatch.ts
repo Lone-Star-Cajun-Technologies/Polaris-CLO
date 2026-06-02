@@ -2,9 +2,10 @@ import { appendFileSync, mkdirSync, realpathSync, writeFileSync } from "node:fs"
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import {
-  assertNotOnBaseBranch,
   assertDeliveryBranchMatch,
   buildCustodyRecord,
+  buildDeliveryBranchName,
+  ensureDeliveryBranch,
   isProtectedBranch,
   type CustodyRecord,
 } from "./git-custody.js";
@@ -1073,27 +1074,36 @@ export function runLoopDispatch(options: DispatchOptions): void {
   // branch.
   let custodyRecord: CustodyRecord | undefined;
   {
-    const dispatchCurrentBranch = getCurrentBranch(options.repoRoot);
+    let dispatchCurrentBranch = getCurrentBranch(options.repoRoot);
     const directMainMode = loadedConfig?.loop?.allowBranchDivergence === true;
 
     if (!directMainMode) {
-      try {
-        assertNotOnBaseBranch(dispatchCurrentBranch);
-      } catch (err) {
-        fail(err instanceof Error ? err.message : String(err));
-      }
-
-      // Verify we are still on the recorded delivery branch (if any).
       const existingForCustody = readClusterStateSync(state.cluster_id, options.repoRoot);
+
       if (existingForCustody?.delivery_branch) {
+        // Custody already recorded — current branch must match.
         try {
           assertDeliveryBranchMatch(dispatchCurrentBranch, existingForCustody.delivery_branch);
         } catch (err) {
           fail(err instanceof Error ? err.message : String(err));
         }
       } else {
-        // No delivery branch recorded yet — establish custody now.
-        // assertNotOnBaseBranch above already guarantees dispatchCurrentBranch is not protected.
+        // First dispatch — ensure we are on a delivery (non-base) branch.
+        if (isProtectedBranch(dispatchCurrentBranch)) {
+          // Auto-create and switch to the cluster's delivery branch.
+          const deliveryBranchName = buildDeliveryBranchName(state.cluster_id);
+          try {
+            ensureDeliveryBranch(options.repoRoot, deliveryBranchName);
+            dispatchCurrentBranch = deliveryBranchName;
+          } catch (err) {
+            fail(
+              `Cannot create delivery branch "${deliveryBranchName}": ` +
+                `${err instanceof Error ? err.message : String(err)}. ` +
+                `Switch to a delivery branch before dispatching.`,
+            );
+          }
+        }
+        // Record custody for this cluster.
         const configBaseBranch = loadedConfig?.finalize?.targetBranch ?? "main";
         custodyRecord = buildCustodyRecord(options.repoRoot, dispatchCurrentBranch, configBaseBranch);
       }

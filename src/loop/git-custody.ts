@@ -114,8 +114,33 @@ export function verifyChildCommitCustody(
 }
 
 /**
- * Returns true when the range base..HEAD contains at least one non-artifact
- * source file change (i.e. a real implementation change beyond Polaris artifacts).
+ * Returns the canonical delivery branch name for a cluster.
+ * e.g. "POL-268" → "pol-268-delivery"
+ */
+export function buildDeliveryBranchName(clusterId: string): string {
+  return clusterId.toLowerCase().replace(/_/g, "-") + "-delivery";
+}
+
+/**
+ * Creates and switches to `branchName` (git checkout -b).
+ * If the branch already exists, switches to it instead (git checkout).
+ * Throws when both operations fail.
+ */
+export function ensureDeliveryBranch(repoRoot: string, branchName: string): void {
+  try {
+    execFileSync("git", ["checkout", "-b", branchName], { cwd: repoRoot, stdio: "ignore" });
+  } catch {
+    execFileSync("git", ["checkout", branchName], { cwd: repoRoot, stdio: "ignore" });
+  }
+}
+
+/**
+ * Returns true when the range baseBranch...deliveryBranch contains at least
+ * one non-artifact source file change (i.e. a real implementation change beyond
+ * Polaris artifacts).
+ *
+ * Pass the explicit delivery branch ref so the comparison is independent of
+ * the current HEAD position.
  *
  * Files under .polaris/ and .taskchain_artifacts/ are not counted as
  * implementation evidence.
@@ -124,11 +149,12 @@ export function hasNonArtifactSourceChanges(
   repoRoot: string,
   baseBranch: string,
   clusterId: string,
+  deliveryBranch: string,
 ): boolean {
   try {
     const output = execFileSync(
       "git",
-      ["diff", "--name-only", `${baseBranch}...HEAD`],
+      ["diff", "--name-only", `${baseBranch}...${deliveryBranch}`],
       { cwd: repoRoot, encoding: "utf-8" },
     ).trim();
     if (!output) return false;

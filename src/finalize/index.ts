@@ -176,11 +176,25 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
     const directMainMode = config.loop?.allowBranchDivergence === true;
 
     if (!directMainMode && baseBranch && deliveryBranch) {
-      const hasImplChanges = hasNonArtifactSourceChanges(repoRoot, baseBranch, state.cluster_id);
+      // Assert finalize is running on the recorded delivery branch.
+      if (branch !== deliveryBranch) {
+        process.stderr.write(
+          `finalize aborted: branch custody violation — not on delivery branch. ` +
+            `Expected "${deliveryBranch}", got "${branch}".\n`,
+        );
+        process.exit(1);
+      }
+
+      const hasImplChanges = hasNonArtifactSourceChanges(
+        repoRoot,
+        baseBranch,
+        state.cluster_id,
+        deliveryBranch,
+      );
       if (!hasImplChanges) {
         process.stderr.write(
           `finalize aborted: branch custody violation — no non-artifact source changes found in ` +
-            `${baseBranch}...HEAD. Child commits may already be on the base branch, ` +
+            `${baseBranch}...${deliveryBranch}. Child commits may already be on the base branch, ` +
             `or no implementation work was recorded on this delivery branch.\n`,
         );
         process.exit(1);
