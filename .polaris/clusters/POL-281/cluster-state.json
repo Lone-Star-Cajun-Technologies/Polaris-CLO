@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "cluster_id": "POL-281",
-  "state_generation": 1,
+  "state_generation": 2,
   "child_states": [
     {
       "id": "POL-277",
@@ -9,22 +9,50 @@
     },
     {
       "id": "POL-278",
-      "status": "ready"
+      "status": "done",
+      "commit": "af422bba2433e6c833c3944e45a619224c326570"
     },
     {
       "id": "POL-279",
-      "status": "ready"
+      "status": "done",
+      "commit": "43ef1484ae0a029a0efb876a8c51b79fcb92f970"
     },
     {
       "id": "POL-280",
-      "status": "ready"
+      "status": "done",
+      "commit": "6ce3d945654eb7faa26c30751146b90c86daba24"
     }
   ],
   "claim_metadata": {},
-  "packet_pointers": {},
-  "result_pointers": {},
-  "validation_results": {},
-  "commits": {},
+  "packet_pointers": {
+    "POL-280": ".polaris/clusters/POL-281/packets/POL-280-612eb225-de3d-4bfb-96b3-8ddf6e95bda3.json",
+    "POL-279": ".polaris/clusters/POL-281/packets/POL-279-bd870307-37da-400a-8833-7917f9656432.json",
+    "POL-278": ".polaris/clusters/POL-281/packets/POL-278-8ed1f1fe-bfa2-4a50-9b36-549a37e850e0.json"
+  },
+  "result_pointers": {
+    "POL-280": ".polaris/clusters/POL-281/results/POL-280-612eb225-de3d-4bfb-96b3-8ddf6e95bda3.json",
+    "POL-279": ".polaris/clusters/POL-281/results/POL-279-bd870307-37da-400a-8833-7917f9656432.json",
+    "POL-278": ".polaris/clusters/POL-281/results/POL-278-8ed1f1fe-bfa2-4a50-9b36-549a37e850e0.json"
+  },
+  "validation_results": {
+    "POL-280": {
+      "passed": true,
+      "output": "backfilled from .polaris/clusters/POL-281/results/POL-280-612eb225-de3d-4bfb-96b3-8ddf6e95bda3.json"
+    },
+    "POL-279": {
+      "passed": true,
+      "output": "backfilled from .polaris/clusters/POL-281/results/POL-279-bd870307-37da-400a-8833-7917f9656432.json"
+    },
+    "POL-278": {
+      "passed": true,
+      "output": "backfilled from .polaris/clusters/POL-281/results/POL-278-8ed1f1fe-bfa2-4a50-9b36-549a37e850e0.json"
+    }
+  },
+  "commits": {
+    "POL-280": "6ce3d945654eb7faa26c30751146b90c86daba24",
+    "POL-279": "43ef1484ae0a029a0efb876a8c51b79fcb92f970",
+    "POL-278": "af422bba2433e6c833c3944e45a619224c326570"
+  },
   "tracker_mutations": {},
   "blockers": []
 }

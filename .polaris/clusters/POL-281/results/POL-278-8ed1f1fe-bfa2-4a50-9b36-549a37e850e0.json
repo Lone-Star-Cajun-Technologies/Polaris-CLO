@@ -1,0 +1,18 @@
+{
+  "child_id": "POL-278",
+  "status": "done",
+  "commit": "af422bba2433e6c833c3944e45a619224c326570",
+  "validation": {
+    "attempted": [
+      "npm test -- --grep \"terminal-cli|adapter.*scope\"",
+      "npm test -- -t \"terminal-cli|adapter.*scope\"",
+      "npm run build"
+    ],
+    "passed": [
+      "npm test -- -t \"terminal-cli|adapter.*scope\"",
+      "npm run build"
+    ],
+    "notes": "Vitest in this repo does not support --grep; used -t equivalent."
+  },
+  "next_recommended_action": "resume-parent"
+}
