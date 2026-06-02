@@ -1,0 +1,18 @@
+{
+  "child_id": "POL-279",
+  "status": "done",
+  "commit": "43ef1484ae0a029a0efb876a8c51b79fcb92f970",
+  "validation": {
+    "attempted": [
+      "npm test -- --grep \"finalize|artifact.*only\"",
+      "npm test -- -t \"finalize|artifact.*only\"",
+      "npm run build"
+    ],
+    "passed": [
+      "npm test -- -t \"finalize|artifact.*only\"",
+      "npm run build"
+    ],
+    "notes": "Vitest in this repo does not support --grep; used -t equivalent."
+  },
+  "next_recommended_action": "Proceed to next open child POL-278"
+}

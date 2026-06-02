@@ -9,6 +9,7 @@ import { runLoopDispatch } from "./dispatch.js";
 import { runParentLoop } from "./parent.js";
 import { runLoopBootstrapInit, type BootstrapInitOptions } from "./run-bootstrap.js";
 import { ensureClusterRunState } from "./run-preflight.js";
+import { backfillClusterStateEvidence } from "./evidence-backfill.js";
 import type { ExecutionAdapterMode } from "./execution-adapter.js";
 
 export interface LoopCommandHandlers {
@@ -292,6 +293,47 @@ export function createLoopCommand(handlers: LoopCommandHandlers = {}): Command {
         bootstrapHandler(bootstrapOptions);
       },
     );
+
+  loop
+    .command("backfill-evidence")
+    .description(
+      "mutating: backfill cluster-state commits/validation from sealed result files for completed children. " +
+      "Rejects placeholder commits. Does not weaken finalize.",
+    )
+    .option("-r, --repo-root <path>", "Repository root", repoRootDefault)
+    .option("--state-file <path>", "Override path to current-state.json")
+    .option("--dry-run", "Report what would be written without mutating cluster-state.json")
+    .action((options: { repoRoot: string; stateFile?: string; dryRun?: boolean }) => {
+      const repoRoot = options.repoRoot;
+      const stateFile = defaultStateFile(repoRoot, options.stateFile);
+      const report = backfillClusterStateEvidence({ repoRoot, stateFile, dryRun: options.dryRun });
+
+      const backfilledIds = report.backfilled.map((b) => b.childId);
+      const skippedLines = report.skipped.map((s) => `  SKIP ${s.childId}: ${s.reason}`);
+
+      if (backfilledIds.length > 0) {
+        process.stdout.write(
+          `Backfilled ${backfilledIds.length} children: ${backfilledIds.join(", ")}\n`,
+        );
+        for (const b of report.backfilled) {
+          process.stdout.write(`  OK   ${b.childId}: commit=${b.commit}\n`);
+        }
+      } else {
+        process.stdout.write("No children backfilled.\n");
+      }
+
+      if (skippedLines.length > 0) {
+        process.stdout.write(skippedLines.join("\n") + "\n");
+      }
+
+      if (options.dryRun) {
+        process.stdout.write("(dry-run: cluster-state.json not written)\n");
+      }
+
+      if (report.skipped.length > 0 && backfilledIds.length === 0) {
+        process.exit(1);
+      }
+    });
 
   return loop;
 }

@@ -1,0 +1,80 @@
+{
+  "schema_version": "2.1",
+  "worker_role": "impl",
+  "run_id": "polaris-run-pol-281-2026-06-02-001",
+  "cluster_id": "POL-281",
+  "active_child": "POL-278",
+  "state_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json",
+  "telemetry_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-281-2026-06-02-001/telemetry.jsonl",
+  "instructions": {
+    "primary_goal": "Issue: POL-278 — FIX: Extend empty-scope guard from agent-subtask adapter to terminal-cli adapter\nWorktree: .\nBranch: main\n\n## Goal\n## Objective\n\nExtend the empty-scope guard to the terminal-cli adapter so implementation packets with no allowed scope are rejected regardless of provider.\n\n## Context\n\n`src/loop/adapters/agent-subtask.ts` already contains an empty-scope guard for implementation packets.\n\n```typescript\nif (isWorkerPacket(packet) && packet.worker_role === 'impl') {\n  const allowed = Array.isArray(packet.instructions?.allowed_scope) ? packet.instructions.allowed_scope : [];\n  if (allowed.length === 0) {\n    // returns blocked result, exit_code: 1\n  }\n}\n```\n\nThe `terminal-cli` adapter used for Copilot workers in PR 72 has no equivalent guard. All 15 Copilot-dispatched children in PR 72 passed through terminal-cli with empty-scope packets and completed almost immediately.\n\n## Goal\n\nEnsure terminal-cli enforces the same actionable-packet requirement as agent-subtask.\n\nAdd the empty-scope guard to terminal-cli, and optionally extract the guard into a shared `validateWorkerPacket()` helper so current and future adapters use the same validation path.\n\n## Scope\n\n* `src/loop/adapters/terminal-cli.ts` — add empty-scope guard\n* `src/loop/adapters/agent-subtask.ts` — optionally extract shared validator\n* `src/loop/adapters/` — optional shared validator module\n\n## Acceptance Criteria\n\n* Terminal-cli returns a blocked result when `allowed_scope` is empty for an implementation packet.\n* Agent-subtask retains existing guard behavior.\n* If a shared validator is extracted, both adapters delegate to it.\n* A new adapter test proves empty-scope implementation packets via terminal-cli are blocked with `exit_code: 1`.\n\n## Validation\n\n* `npm test -- --grep \"terminal-cli|adapter.*scope\"`\n* `npm run build`\n\n## Ordering\n\nBlocked conceptually by [POL-277](https://linear.app/lsctech/issue/POL-277/fix-fail-packet-generation-when-impl-child-has-empty-allowed-scope-or). Packet generation should stop empty-scope packets earlier, and this issue adds adapter-level defense in depth.\n\n## Non-goals\n\n* Do not rely on provider-specific behavior to enforce implementation packet validity.\n* Do not remove or weaken the existing agent-subtask guard.\n* Do not expand this issue into unrelated adapter refactors.\n\n## Scope\nTouch only:\n- `src/loop/adapters/terminal-cli.ts` — add empty-scope guard\n- `src/loop/adapters/agent-subtask.ts` — optionally extract shared validator\n- `src/loop/adapters/` — optional shared validator module\n\n## Acceptance Criteria\n\n## Validation\n- `npm test -- --grep \"terminal-cli|adapter.*scope\"`\n- `npm run build`\n\n## Commit\n[POL-278] FIX: Extend empty-scope guard from agent-subtask adapter to terminal-cli adapter\n\n## Governance\n- Update /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json: move \"POL-278\" from open_children to completed_children.\n- Append a telemetry event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-281-2026-06-02-001/telemetry.jsonl.\n\n## Worker Progress Telemetry (MANDATORY)\nThe parent CANNOT see your work. You MUST emit heartbeat events so the parent knows you are alive and making progress.\n\nAfter EVERY step, append a JSONL event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-281-2026-06-02-001/telemetry.jsonl:\n```jsonl\n{\"event\":\"worker-heartbeat\",\"run_id\":\"<from packet>\",\"child_id\":\"POL-278\",\"step_cursor\":\"<current step>\",\"timestamp\":\"<ISO8601>\",\"progress_pct\":<0-100>,\"files_changed\":<count>,\"current_file\":\"<file being edited>\"}\n```\n\nRequired heartbeat points:\n  1. Immediately after reading this packet (step_cursor: \"start\")\n  2. After verifying state file (step_cursor: \"verify\")\n  3. After EACH file edit (step_cursor: \"implement\")\n  4. After running validation (step_cursor: \"validate\")\n  5. After creating commit (step_cursor: \"commit\")\n  6. Before terminating (step_cursor: \"complete\" or \"failed\")\n\nIf heartbeats stop, the parent will assume you crashed and may dispatch a replacement worker.\n\n## Approval Escalation (when uncertain)\nYou have a sealed packet defining your exact scope, allowed files, and validation commands. Use this to decide:\n\nRule 1 - Auto-approve WITHIN scope (normal work):\n  - If the operation touches files within `instructions.allowed_scope` → Just do it\n  - If the command is in `instructions.validation_commands` → Just run it\n  - Low risk, expected work → No need to ask, emit heartbeat with step_cursor: \"implement\"\n\nRule 2 - ESCALATE out-of-scope or high-risk:\n  - File outside allowed_scope → Emit worker-blocked with approval_type: \"out-of-scope\"\n  - Destructive operation (rm -rf, major refactor) → Emit worker-blocked with approval_type: \"destructive\"\n  - External API calls with cost → Emit worker-blocked with approval_type: \"cost\"\n  - Changing secrets/.env → Emit worker-blocked with approval_type: \"security\"\n  - Unclear requirements → Emit worker-blocked with approval_type: \"ambiguous\"\n\nTo escalate, emit IMMEDIATELY to telemetry:\n```jsonl\n{\"event\":\"worker-blocked\",\"run_id\":\"<from packet>\",\"child_id\":\"POL-278\",\"reason\":\"needs-approval\",\"approval_type\":\"<out-of-scope|destructive|cost|security|ambiguous>\",\"description\":\"<specifically what needs approval>\",\"blocker_id\":\"<unique-id>\",\"timestamp\":\"<ISO8601>\"}\n```\n\nThen: Continue heartbeats every 30s with step_cursor: \"blocked-awaiting-approval\"\nWait for parent response. If no response in 5 minutes → TERMINATE with approval-timeout.\n\nRemember: Your packet scope is your authority. Within scope = proceed. Outside scope = escalate.\n\n## Route Cognition Delta\nAfter implementation, apply route-local cognition delta — only if something materially changed.\n\n**POLARIS.md** — update only when ALL of the following are true:\n  - You touched a file in that folder (not a distant folder).\n  - The change materially affects: folder responsibilities, commands/workflows,\n    execution constraints, ownership/routing, or operational behavior.\n  - The current POLARIS.md content is actually wrong or incomplete as a result.\n  DO NOT update POLARIS.md for: formatting fixes, comment changes, tiny refactors,\n  internal implementation details, or any change that leaves the operational guidance\n  still accurate. When in doubt, do not update.\n\n**SUMMARY.md** — update only when: linked docs/specs changed, canon relationships\n  changed, architecture meaning changed, or doctrine/spec linkage changed.\n  SUMMARY.md is informational only. Do not create it if missing — that is a hint for\n  operators, not a task for workers. Keep it short. Never add operational doctrine.\n\n**Never** scan unrelated folders. **Never** regenerate all route docs.\nIf no material change occurred, skip this section entirely.\n\n## Report Back\n- files changed\n- validation results\n- commit hash\n- blockers\n\nTERMINATE SESSION IMMEDIATELY. Do not select or execute the next child.",
+    "steps": [
+      "Verify: read /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json and confirm active_child === \"POL-278\".",
+      "Implement POL-278: \"FIX: Extend empty-scope guard from agent-subtask adapter to terminal-cli adapter\".",
+      "Issue description:\n## Objective\n\nExtend the empty-scope guard to the terminal-cli adapter so implementation packets with no allowed scope are rejected regardless of provider.\n\n## Context\n\n`src/loop/adapters/agent-subtask.ts` already contains an empty-scope guard for implementation packets.\n\n```typescript\nif (isWorkerPacket(packet) && packet.worker_role === 'impl') {\n  const allowed = Array.isArray(packet.instructions?.allowed_scope) ? packet.instructions.allowed_scope : [];\n  if (allowed.length === 0) {\n    // returns blocked result, exit_code: 1\n  }\n}\n```\n\nThe `terminal-cli` adapter used for Copilot workers in PR 72 has no equivalent guard. All 15 Copilot-dispatched children in PR 72 passed through terminal-cli with empty-scope packets and completed almost immediately.\n\n## Goal\n\nEnsure terminal-cli enforces the same actionable-packet requirement as agent-subtask.\n\nAdd the empty-scope guard to terminal-cli, and optionally extract the guard into a shared `validateWorkerPacket()` helper so current and future adapters use the same validation path.\n\n## Scope\n\n* `src/loop/adapters/terminal-cli.ts` — add empty-scope guard\n* `src/loop/adapters/agent-subtask.ts` — optionally extract shared validator\n* `src/loop/adapters/` — optional shared validator module\n\n## Acceptance Criteria\n\n* Terminal-cli returns a blocked result when `allowed_scope` is empty for an implementation packet.\n* Agent-subtask retains existing guard behavior.\n* If a shared validator is extracted, both adapters delegate to it.\n* A new adapter test proves empty-scope implementation packets via terminal-cli are blocked with `exit_code: 1`.\n\n## Validation\n\n* `npm test -- --grep \"terminal-cli|adapter.*scope\"`\n* `npm run build`\n\n## Ordering\n\nBlocked conceptually by [POL-277](https://linear.app/lsctech/issue/POL-277/fix-fail-packet-generation-when-impl-child-has-empty-allowed-scope-or). Packet generation should stop empty-scope packets earlier, and this issue adds adapter-level defense in depth.\n\n## Non-goals\n\n* Do not rely on provider-specific behavior to enforce implementation packet validity.\n* Do not remove or weaken the existing agent-subtask guard.\n* Do not expand this issue into unrelated adapter refactors.",
+      "Requirements:",
+      "   1. Terminal-cli returns a blocked result when `allowed_scope` is empty for an implementation packet.",
+      "   2. Agent-subtask retains existing guard behavior.",
+      "   3. If a shared validator is extracted, both adapters delegate to it.",
+      "   4. A new adapter test proves empty-scope implementation packets via terminal-cli are blocked with `exit_code: 1`.",
+      "Run validation commands and confirm all pass.",
+      "Create exactly ONE git commit: [POL-278] FIX: Extend empty-scope guard from agent-subtask adapter to terminal-cli adapter.",
+      "Update /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json: move \"POL-278\" from open_children to completed_children.",
+      "Append a telemetry event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-281-2026-06-02-001/telemetry.jsonl.",
+      "Write compact return JSON to stdout (fields: child_id, status, commit, validation, next_recommended_action).",
+      "TERMINATE SESSION IMMEDIATELY. Do not select or execute the next child."
+    ],
+    "allowed_scope": [
+      "`src/loop/adapters/terminal-cli.ts` — add empty-scope guard",
+      "`src/loop/adapters/agent-subtask.ts` — optionally extract shared validator",
+      "`src/loop/adapters/` — optional shared validator module"
+    ],
+    "validation_commands": [
+      "`npm test -- --grep \"terminal-cli|adapter.*scope\"`",
+      "`npm run build`"
+    ],
+    "issue_context": {
+      "id": "POL-278",
+      "title": "FIX: Extend empty-scope guard from agent-subtask adapter to terminal-cli adapter",
+      "key_requirements": [],
+      "body": "## Objective\n\nExtend the empty-scope guard to the terminal-cli adapter so implementation packets with no allowed scope are rejected regardless of provider.\n\n## Context\n\n`src/loop/adapters/agent-subtask.ts` already contains an empty-scope guard for implementation packets.\n\n```typescript\nif (isWorkerPacket(packet) && packet.worker_role === 'impl') {\n  const allowed = Array.isArray(packet.instructions?.allowed_scope) ? packet.instructions.allowed_scope : [];\n  if (allowed.length === 0) {\n    // returns blocked result, exit_code: 1\n  }\n}\n```\n\nThe `terminal-cli` adapter used for Copilot workers in PR 72 has no equivalent guard. All 15 Copilot-dispatched children in PR 72 passed through terminal-cli with empty-scope packets and completed almost immediately.\n\n## Goal\n\nEnsure terminal-cli enforces the same actionable-packet requirement as agent-subtask.\n\nAdd the empty-scope guard to terminal-cli, and optionally extract the guard into a shared `validateWorkerPacket()` helper so current and future adapters use the same validation path.\n\n## Scope\n\n* `src/loop/adapters/terminal-cli.ts` — add empty-scope guard\n* `src/loop/adapters/agent-subtask.ts` — optionally extract shared validator\n* `src/loop/adapters/` — optional shared validator module\n\n## Acceptance Criteria\n\n* Terminal-cli returns a blocked result when `allowed_scope` is empty for an implementation packet.\n* Agent-subtask retains existing guard behavior.\n* If a shared validator is extracted, both adapters delegate to it.\n* A new adapter test proves empty-scope implementation packets via terminal-cli are blocked with `exit_code: 1`.\n\n## Validation\n\n* `npm test -- --grep \"terminal-cli|adapter.*scope\"`\n* `npm run build`\n\n## Ordering\n\nBlocked conceptually by [POL-277](https://linear.app/lsctech/issue/POL-277/fix-fail-packet-generation-when-impl-child-has-empty-allowed-scope-or). Packet generation should stop empty-scope packets earlier, and this issue adds adapter-level defense in depth.\n\n## Non-goals\n\n* Do not rely on provider-specific behavior to enforce implementation packet validity.\n* Do not remove or weaken the existing agent-subtask guard.\n* Do not expand this issue into unrelated adapter refactors."
+    }
+  },
+  "lifecycle": {
+    "terminate_after_completion": true,
+    "max_concurrent": 1,
+    "cleanup_on_exit": "commit-and-exit"
+  },
+  "return_contract": [
+    "child_id",
+    "status",
+    "commit",
+    "validation",
+    "next_recommended_action"
+  ],
+  "prompt_mode": "compact",
+  "prompt_metrics": {
+    "mode": "compact",
+    "char_count": 6930,
+    "estimated_tokens": 1733
+  },
+  "role_context": {
+    "role": "worker",
+    "role_authority": "implementation",
+    "may_implement": true,
+    "may_assign_workers": false,
+    "prohibited_actions": [
+      "modify-cluster-plan",
+      "dispatch-children",
+      "polaris-loop-dispatch",
+      "polaris-loop-continue"
+    ]
+  },
+  "result_file_contract": {
+    "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-281/results/POL-278-8ed1f1fe-bfa2-4a50-9b36-549a37e850e0.json"
+  },
+  "context": {
+    "branch": "main",
+    "worker_role": "impl"
+  }
+}
