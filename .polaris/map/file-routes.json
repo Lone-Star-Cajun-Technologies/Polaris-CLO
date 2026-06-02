@@ -341,8 +341,8 @@
     "taskchain": "polaris-cognition",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-02T05:14:45.506Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-06-02T21:17:53.958Z",
+    "updated_by": "polaris-map-update",
     "tags": [
       "cognition"
     ],
@@ -380,8 +380,8 @@
     "taskchain": "polaris-cognition",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-02T05:14:45.506Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-06-02T21:17:53.958Z",
+    "updated_by": "polaris-map-update",
     "tags": [
       "cognition",
       "test"
@@ -394,8 +394,8 @@
     "taskchain": "polaris-cognition",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-02T05:14:45.506Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-06-02T21:17:53.958Z",
+    "updated_by": "polaris-map-update",
     "tags": [
       "cognition",
       "entry-point"
@@ -408,8 +408,8 @@
     "taskchain": "polaris-cognition",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-02T05:14:45.506Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-06-02T21:17:53.958Z",
+    "updated_by": "polaris-map-update",
     "tags": [
       "cognition",
       "test"
@@ -422,8 +422,8 @@
     "taskchain": "polaris-cognition",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-02T05:14:45.506Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-06-02T21:17:53.958Z",
+    "updated_by": "polaris-map-update",
     "tags": [
       "cognition"
     ],
@@ -448,8 +448,8 @@
     "taskchain": "polaris-cognition",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-02T05:14:45.506Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-06-02T21:17:53.958Z",
+    "updated_by": "polaris-map-update",
     "tags": [
       "cognition"
     ],
@@ -2114,8 +2114,8 @@
     "taskchain": "polaris-map",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-02T05:14:45.506Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-06-02T21:17:53.958Z",
+    "updated_by": "polaris-map-update",
     "tags": [
       "map"
     ],

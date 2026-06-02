@@ -1,0 +1,66 @@
+{
+  "schema_version": "1.0",
+  "cluster_id": "POL-283",
+  "state_generation": 6,
+  "child_states": [
+    {
+      "id": "POL-284",
+      "status": "done"
+    },
+    {
+      "id": "POL-285",
+      "status": "done"
+    },
+    {
+      "id": "POL-286",
+      "status": "done",
+      "commit": "7b2eb28"
+    },
+    {
+      "id": "POL-287",
+      "status": "done",
+      "commit": "3b3e515"
+    }
+  ],
+  "claim_metadata": {
+    "POL-286": {
+      "worker_id": "reconstructed-pol-286",
+      "claimed_at": "2026-06-02T20:45:42.000Z",
+      "expires_at": "2026-06-02T21:15:42.000Z"
+    },
+    "POL-287": {
+      "worker_id": "c82835d1-2686-4e76-be1c-52c07ebd6782",
+      "claimed_at": "2026-06-02T21:04:00.713Z",
+      "expires_at": "2026-06-02T21:34:00.713Z"
+    }
+  },
+  "packet_pointers": {
+    "POL-286": ".polaris/clusters/POL-283/packets/POL-286-40d9cfb7-8592-465f-85ae-49cebbde9aee.json",
+    "POL-287": ".polaris/clusters/POL-283/packets/POL-287-85887458-08f6-4cc0-8a09-9050a41b24e2.json"
+  },
+  "result_pointers": {
+    "POL-286": ".polaris/clusters/POL-283/results/POL-286-40d9cfb7-8592-465f-85ae-49cebbde9aee.json",
+    "POL-287": ".polaris/clusters/POL-283/results/POL-287-85887458-08f6-4cc0-8a09-9050a41b24e2.json"
+  },
+  "validation_results": {
+    "POL-286": {
+      "passed": true,
+      "output": "{\"attempted\":[\"npm run build\",\"npm test\",\"Integration test: simulate a worker that writes a pending note and verify loop continue dispatches the librarian and archives the note\"],\"passed\":[\"npm run build\",\"npm test\",\"Integration test: simulate a worker that writes a pending note and verify loop continue dispatches the librarian and archives the note\"],\"notes\":\"Copilot validation reported build passed and npm test passed with 1259 tests, including test/loop/cognition-librarian-continue.test.ts.\"}"
+    },
+    "POL-287": {
+      "passed": true,
+      "output": "passed"
+    }
+  },
+  "commits": {
+    "POL-284": "1e0d9ee",
+    "POL-285": "e522662",
+    "POL-286": "7b2eb28",
+    "POL-287": "3b3e515"
+  },
+  "tracker_mutations": {},
+  "blockers": [],
+  "base_branch": "main",
+  "base_sha": "b4dac70bf0e7c633a38dde3583fe4bd705ad0bed",
+  "delivery_branch": "philmeaux/pol-283-implement-complete-cognition-librarian-lifecycle-wiring-and"
+}

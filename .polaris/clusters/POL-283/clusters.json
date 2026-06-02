@@ -1,0 +1,103 @@
+{
+  "schemaVersion": "v2",
+  "source": {
+    "id": "POL-283",
+    "type": "Linear",
+    "analysis": {
+      "id": "initial-sync",
+      "doc": "Synchronized from Linear issue identifier: POL-283"
+    }
+  },
+  "nodes": {
+    "POL-283": {
+      "id": "POL-283",
+      "title": "IMPLEMENT: Complete cognition librarian lifecycle wiring and adaptive coverage policy",
+      "status": "Todo",
+      "body": "## Objective\n\nComplete the integration plumbing for the cognition librarian lifecycle that was specified but not wired during the [POL-249](https://linear.app/lsctech/issue/POL-249/implement-define-and-enforce-folder-local-work-note-staging-and) cluster, and add the adaptive folder coverage policy identified by [POL-200](https://linear.app/lsctech/issue/POL-200/analyze-adaptive-folder-cognition-and-librarian-role-lifecycle) analysis.\n\n## Context\n\n[POL-249](https://linear.app/lsctech/issue/POL-249/implement-define-and-enforce-folder-local-work-note-staging-and) and its children ([POL-250](https://linear.app/lsctech/issue/POL-250/implement-create-polariscognition-staging-folder-structure-and)–255) are marked Done in Linear. [POL-254](https://linear.app/lsctech/issue/POL-254/implement-implement-foreman-cognition-librarian-dispatch-and-patch) successfully delivered `src/cognition/librarian-dispatch.ts` and `src/cognition/librarian-types.ts` with full dispatch/validation logic. [POL-255](https://linear.app/lsctech/issue/POL-255/implement-archive-model-cognition-index-and-provenance-records-for) delivered `src/cognition/archive.ts`. However, git forensics during [POL-200](https://linear.app/lsctech/issue/POL-200/analyze-adaptive-folder-cognition-and-librarian-role-lifecycle) analysis revealed that several child commits were empty or partial:\n\n* [POL-252](https://linear.app/lsctech/issue/POL-252/implement-extend-compactreturn-to-include-work-note-path-and-validate) commit was empty — `CompactReturn` was never extended with `work_note_paths`\n* [POL-251](https://linear.app/lsctech/issue/POL-251/implement-define-worker-note-schema-and-update-worker-packet-to) commit did not modify `worker.ts` — workers still use the deprecated direct-write pattern\n* [POL-250](https://linear.app/lsctech/issue/POL-250/implement-create-polariscognition-staging-folder-structure-and) commit did not create `.polaris/cognition/` directory structure\n* [POL-254](https://linear.app/lsctech/issue/POL-254/implement-implement-foreman-cognition-librarian-dispatch-and-patch) committed the dispatch module but did NOT wire `dispatchCognitionLibrarian` into `loop/continue.ts`\n\nThe dispatch module is ready; the integration plumbing is not.\n\n## Source Analysis\n\n* Analysis issue: [POL-200](https://linear.app/lsctech/issue/POL-200/analyze-adaptive-folder-cognition-and-librarian-role-lifecycle)\n* Analysis artifact: `smartdocs/specs/active/pol-200-adaptive-folder-cognition-librarian-lifecycle.md`\n* Spec: `smartdocs/specs/active/folder-cognition-staging-librarian.md`\n\n## Goal\n\nDeliver the staged cognition model end to end: workers write notes, `loop continue` dispatches the librarian per folder, patches are validated and applied, notes are archived. Add the adaptive coverage policy that defines which folders proactively receive cognition files.\n\n## Scope\n\n* Create `.polaris/cognition/` staging directory structure with gitignore entry\n* Extend `CompactReturn` with `work_note_paths?: string[]`\n* Update `src/loop/worker.ts` to write cognition notes before emitting CompactReturn\n* Wire `dispatchCognitionLibrarian` into `src/loop/continue.ts` after each child completes (non-blocking)\n* Define and implement the adaptive folder coverage policy (3-tier model from [POL-200](https://linear.app/lsctech/issue/POL-200/analyze-adaptive-folder-cognition-and-librarian-role-lifecycle) analysis §1.3)\n* Update `.polaris/roles/librarian.md` to distinguish SmartDocs Librarian from Cognition Librarian\n\n## Acceptance Criteria\n\n* Workers write staged notes to `.polaris/cognition/pending/<folder-slug>/` before emitting CompactReturn\n* `CompactReturn` includes `work_note_paths` and the foreman collects them\n* `loop continue` calls `dispatchCognitionLibrarian` after each child and emits telemetry\n* Cognition librarian failures do not halt cluster execution\n* Archive and provenance records are written for reconciled notes\n* Adaptive coverage policy is documented and enforced\n\n## Validation\n\n* `npm run build`\n* `npm test`\n* Verify the delivered child set composes into the end-to-end staged cognition reconciliation flow\n\n## Ordering\n\nExecute children in dependency order as defined in the cluster plan.\n\n## Non-goals\n\n* Do not allow direct worker mutation of `POLARIS.md` or `SUMMARY.md` (new children — existing code not changed yet)\n* Do not re-implement `librarian-dispatch.ts`, `librarian-types.ts`, or `archive.ts` — they are complete\n* Do not require cognition files in every repo folder"
+    },
+    "POL-255": {
+      "id": "POL-255",
+      "title": "IMPLEMENT: Archive model, cognition-index, and provenance records for reconciled notes",
+      "status": "Done"
+    },
+    "POL-254": {
+      "id": "POL-254",
+      "title": "IMPLEMENT: Implement foreman cognition-librarian dispatch and patch validation",
+      "status": "Done"
+    },
+    "POL-200": {
+      "id": "POL-200",
+      "title": "ANALYZE: Adaptive folder cognition and Librarian role lifecycle",
+      "status": "Done"
+    },
+    "POL-252": {
+      "id": "POL-252",
+      "title": "IMPLEMENT: Extend CompactReturn to include work_note_path and validate note presence",
+      "status": "Done"
+    },
+    "POL-251": {
+      "id": "POL-251",
+      "title": "IMPLEMENT: Define worker note schema and update worker packet to require note writing",
+      "status": "Done"
+    },
+    "POL-250": {
+      "id": "POL-250",
+      "title": "IMPLEMENT: Create .polaris/cognition/ staging folder structure and POLARIS.md contract",
+      "status": "Done"
+    },
+    "POL-249": {
+      "id": "POL-249",
+      "title": "IMPLEMENT: Define and enforce folder-local work note staging and cognition librarian reconciliation model",
+      "status": "Done"
+    },
+    "POL-287": {
+      "id": "POL-287",
+      "title": "IMPLEMENT: Define and implement adaptive folder cognition coverage policy",
+      "status": "Todo",
+      "body": "## Objective\n\nImplement the adaptive folder cognition coverage policy from [POL-200](https://linear.app/lsctech/issue/POL-200/analyze-adaptive-folder-cognition-and-librarian-role-lifecycle) analysis §1.3, defining which folders should proactively receive `POLARIS.md` / `SUMMARY.md` and protecting user-created cognition files.\n\n## Context\n\nThe current `isCognitionSkippedFolder()` is reactive — it decides whether to skip a folder when a change has already been detected. There is no proactive policy for which folders should receive cognition files. The [POL-200](https://linear.app/lsctech/issue/POL-200/analyze-adaptive-folder-cognition-and-librarian-role-lifecycle) analysis (§1.3) defines a 3-tier model.\n\n## Goal\n\nImplement the 3-tier coverage policy, the coverage floor, and the user-protection guard so the cognition system is low-noise and non-destructive.\n\n## Scope\n\n### Tier 1 — Polaris-owned folders (always get cognition)\n\nDefine a `POLARIS_OWNED_COGNITION_FOLDERS` constant listing folders that always receive `POLARIS.md`:\n\n* `.polaris/`\n* `src/` and each immediate `src/<subdirectory>/`\n* `smartdocs/specs/active/`\n* `smartdocs/doctrine/active/` (when it exists)\n\nExpose a `isPolarisOwnedFolder(folderRel: string): boolean` function from `src/cognition/route-cognition-delta.ts`.\n\n### Tier 2 — Adaptive signal-based folders\n\nA folder is eligible for cognition file creation when ALL of:\n\n1. Contains ≥1 non-test, non-generated source file\n2. `detectOperationalReasons(touchedFiles)` returns non-empty for files in that folder\n3. `isCognitionSkippedFolder()` returns false\n\nNo change needed to existing logic — document this as the definition of \"eligible\" in POLARIS.md.\n\n### Tier 3 — User-protection guard\n\nImplement `isUserCreatedCognitionSurface(filePath: string, repoRoot: string): boolean`:\n\n* Returns true if the file predates Polaris initialization (compare mtime vs. `.polaris/` creation date)\n* OR if the file appears in a Polaris-managed surfaces manifest at `.polaris/cognition/managed-surfaces.json`\n\nUpdate `applyRouteCognitionDelta` and `applySummaryDelta` to check `isUserCreatedCognitionSurface` before writing. If user-created, skip and emit a `cognition-user-surface-protected` telemetry event instead.\n\n### Coverage floor\n\nDocument in `src/cognition/POLARIS.md`:\n\n* Never create cognition in folders containing ONLY test files, generated files, or hidden config\n* This is already enforced by `isCognitionSkippedFolder()` — document it explicitly\n\n## Validation\n\n* `npm run build`\n* `npm test`\n* Unit tests for `isPolarisOwnedFolder` and `isUserCreatedCognitionSurface`\n* Verify `applyRouteCognitionDelta` skips a user-created surface and emits telemetry\n\n## Acceptance Criteria\n\n* `isPolarisOwnedFolder` correctly identifies Polaris-owned folders\n* `isUserCreatedCognitionSurface` correctly identifies pre-existing files\n* Worker cannot overwrite a user-created `POLARIS.md` or `SUMMARY.md` without explicit operator approval\n* Coverage policy is documented in `src/cognition/POLARIS.md`\n\n## Non-goals\n\n* Do not require every repo folder to carry cognition files\n* Do not introduce hosted Polaris APIs"
+    },
+    "POL-286": {
+      "id": "POL-286",
+      "title": "IMPLEMENT: Wire dispatchCognitionLibrarian into loop continue after each child",
+      "status": "Todo",
+      "body": "## Objective\n\nWire `dispatchCognitionLibrarian` into `src/loop/continue.ts` so cognition reconciliation runs after every child completes — before the next child's bootstrap packet is generated.\n\n## Context\n\n[POL-254](https://linear.app/lsctech/issue/POL-254/implement-implement-foreman-cognition-librarian-dispatch-and-patch) delivered the full `dispatchCognitionLibrarian` + `validateAndApplyLibrarianResult` implementation in `src/cognition/librarian-dispatch.ts`. However, it was never called from the run loop. The function is exported but unreachable. [POL-285](https://linear.app/lsctech/issue/POL-285/implement-extend-compactreturn-with-work-note-paths-and-update-worker) will add `work_note_paths` to CompactReturn. This child reads those paths from the foreman's state and dispatches the librarian.\n\n## Goal\n\nClose the final integration gap: foreman collects `work_note_paths`, dispatches the cognition librarian per folder, validates and applies patches, archives notes.\n\n## Scope\n\n### `src/loop/continue.ts`\n\nAfter bridging completion evidence to cluster-state and before generating the bootstrap packet for the next child:\n\n1. Read `work_note_paths` from the CompactReturn result (already parsed in the evidence verification step)\n2. If `work_note_paths` is non-empty, call `await dispatchCognitionLibrarian({ runId, clusterId, workNotePaths, repoRoot, adapter, provider, telemetryFile })`\n3. Log outcomes per folder to telemetry (already emitted by `dispatchCognitionLibrarian` internals)\n4. Continue regardless of outcome — librarian failure is NON-BLOCKING\n\n### Telemetry\n\nThe `cognition-librarian-dispatched`, `cognition-librarian-result-received`, `cognition-librarian-patch-applied`, and `cognition-librarian-patch-rejected` events are already emitted by `dispatchCognitionLibrarian`. No additional telemetry wiring needed.\n\n### Adapter wiring\n\n`dispatchCognitionLibrarian` requires an `ExecutionAdapter` instance. Use the same adapter that `loop continue` uses for the next child dispatch. The adapter is resolved from config (already available in the continue flow).\n\n## Validation\n\n* `npm run build`\n* `npm test`\n* Integration test: simulate a worker that writes a pending note and verify `loop continue` dispatches the librarian and archives the note\n\n## Acceptance Criteria\n\n* `loop continue` calls `dispatchCognitionLibrarian` when `work_note_paths` is non-empty\n* A librarian dispatch failure does not halt cluster execution (error is logged to telemetry only)\n* Notes with `docs_impact: none` are skipped (already handled by `dispatchCognitionLibrarian` internals)\n* Telemetry events are present in the run's `telemetry.jsonl`\n\n## Non-goals\n\n* Do not deprecate `applyRouteCognitionDelta` direct-write in this child — phase-out is separate\n* Do not require librarian success for `loop continue` to advance"
+    },
+    "POL-285": {
+      "id": "POL-285",
+      "title": "IMPLEMENT: Extend CompactReturn with work_note_paths and update worker to write cognition notes",
+      "status": "Todo",
+      "body": "## Objective\n\nAdd `work_note_paths` to `CompactReturn` and update `src/loop/worker.ts` so workers write a folder-scoped cognition note before emitting CompactReturn.\n\n## Context\n\n[POL-251](https://linear.app/lsctech/issue/POL-251/implement-define-worker-note-schema-and-update-worker-packet-to) and [POL-252](https://linear.app/lsctech/issue/POL-252/implement-extend-compactreturn-to-include-work-note-path-and-validate) were marked Done but their commits were empty. The `CompactReturn` schema still lacks `work_note_paths`, and `worker.ts` still calls `applyRouteCognitionDelta` / `applySummaryDelta` directly (deprecated direct-write pattern). The dispatch module (`librarian-dispatch.ts`) expects `work_note_paths` from the CompactReturn to know which notes to reconcile.\n\n## Goal\n\nClose the worker → staging gap: workers declare their work notes in CompactReturn; the foreman can read those paths in `loop continue`.\n\n## Scope\n\n### `src/loop/compact-return.ts`\n\n* Add `work_note_paths?: string[]` — optional array of repo-relative paths to pending notes written by the worker\n* Update `validateCompactReturn` to accept (not require) the field — missing is valid (not all children produce notes)\n\n### `src/loop/worker.ts`\n\n* After implementation work and before emitting CompactReturn, write one work note to `.polaris/cognition/pending/<folder-slug>/<run-id>-<child-id>.md`\n* Determine `folder_slug` from primary affected folder (most-changed files)\n* Set `docs_impact` based on whether `applyRouteCognitionDelta` / `applySummaryDelta` would warrant update\n* Include required frontmatter fields per spec §2.2\n* Keep prose body ≤150 words\n* Emit `work_note_paths: [<path>]` in CompactReturn\n\n### `.polaris/roles/librarian.md`\n\n* Add section distinguishing SmartDocs Librarian from Cognition Librarian\n* Scope SmartDocs Librarian to `smartdocs/` only; reference cognition-librarian role for folder cognition reconciliation\n\n## Validation\n\n* `npm run build`\n* `npm test`\n* Verify an integration test or smoke test shows a note written to `.polaris/cognition/pending/` after a worker completes\n\n## Acceptance Criteria\n\n* `CompactReturn` schema includes `work_note_paths` (optional)\n* `worker.ts` writes a valid note before emitting CompactReturn\n* `.polaris/roles/librarian.md` clearly distinguishes the two librarian concepts\n\n## Non-goals\n\n* Do not wire `dispatchCognitionLibrarian` into `loop continue` here — that is the next child (POL-286)\n* Do not deprecate `applyRouteCognitionDelta` yet — phase-out is after the full loop is wired"
+    },
+    "POL-284": {
+      "id": "POL-284",
+      "title": "IMPLEMENT: Create .polaris/cognition/ staging directory structure and gitignore entry",
+      "status": "Todo",
+      "body": "## Objective\n\nCreate the `.polaris/cognition/` staging directory structure that worker note writing and cognition librarian dispatch depend on.\n\n## Context\n\n[POL-250](https://linear.app/lsctech/issue/POL-250/implement-create-polariscognition-staging-folder-structure-and) was marked Done but its commit did not create the `.polaris/cognition/` directory. The directory, subdirectories, placeholder files, and gitignore entry are all missing. Nothing can proceed without this foundation.\n\n## Goal\n\nCreate the staging root, pending and archive subdirectories, the POLARIS.md contract, and the gitignore entry for ephemeral pending notes.\n\n## Scope\n\n* Create `.polaris/cognition/pending/.gitkeep`\n* Create `.polaris/cognition/archive/.gitkeep`\n* Create `.polaris/cognition/POLARIS.md` (staging root contract — defines worker note placement and librarian access scope)\n* Add `.polaris/cognition/pending/` to `.gitignore` (ephemeral staging, not committed)\n* Verify archive/ is tracked (no gitignore entry)\n\n## Validation\n\n* `npm run build`\n* `npm test`\n* verify `.polaris/cognition/pending/` is gitignored\n* verify `.polaris/cognition/archive/` is tracked\n\n## Acceptance Criteria\n\n* `.polaris/cognition/` directory structure exists as specified in `smartdocs/specs/active/folder-cognition-staging-librarian.md` §1\n\n## Non-goals\n\n* Do not implement worker note writing here — that is [POL-283](https://linear.app/lsctech/issue/POL-283/implement-complete-cognition-librarian-lifecycle-wiring-and-adaptive)-B\n* Do not create any pending notes manually"
+    }
+  },
+  "dependencies": {
+    "POL-287": [
+      "POL-286"
+    ],
+    "POL-286": [
+      "POL-285"
+    ],
+    "POL-285": [
+      "POL-284"
+    ]
+  },
+  "clusters": {
+    "POL-283": {
+      "id": "POL-283",
+      "title": "Linear Issue: POL-283",
+      "children": [
+        "POL-287",
+        "POL-286",
+        "POL-285",
+        "POL-284"
+      ],
+      "cluster_root": "POL-283"
+    }
+  },
+  "activeCluster": "POL-283"
+}
