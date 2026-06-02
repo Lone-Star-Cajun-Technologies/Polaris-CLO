@@ -20,6 +20,7 @@ import {
   type RepoScanInventory,
 } from "./adoption-plan.js";
 import { scanAdoptionInventory as scanRepoAdoptionInventory } from "./adoption-inventory.js";
+import { generateFolderCognition as generateRepoFolderCognition } from "./adopt-cognition.js";
 import { runMapIndex } from "../map/index.js";
 import { handleInstructionFiles } from "./adopt-instructions.js";
 
@@ -57,6 +58,8 @@ export interface InitOptions {
     repoRoot: string,
     inventory: RepoScanInventory,
   ) => { moved: number; skipped: number };
+  /** Injected folder cognition generation step — for unit testing. */
+  generateFolderCognition?: (plan: AdoptionPlan, inventory: RepoScanInventory) => Promise<void>;
   /** Injected timestamp for deterministic testing. */
   now?: Date;
 }
@@ -567,6 +570,11 @@ export function runInit(options: InitOptions = {}): void {
   process.stdout.write(
     `SmartDocs migration step completed: moved ${migrationResult.moved}, skipped ${migrationResult.skipped}.\n`,
   );
+  void (options.generateFolderCognition ?? generateRepoFolderCognition)(
+    adoptionArtifacts.plan,
+    inventory,
+  );
+  process.stdout.write("Folder cognition generation step completed.\n");
   handleInstructionFiles(adoptionArtifacts.plan, inventory);
   process.stdout.write("Instruction file handling step completed.\n");
   if (adoptionArtifacts.plan.steps.some((step) => step.category === "stage")) {
