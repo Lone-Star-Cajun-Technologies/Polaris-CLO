@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs";
+import * as child_process from "node:child_process";
 import { join } from "node:path";
-import { runInit } from "./init.js";
+import { finalizeAdoption, runInit } from "./init.js";
 
 vi.mock("node:fs", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:fs")>();
@@ -15,11 +16,20 @@ vi.mock("node:fs", async (importOriginal) => {
   };
 });
 
+vi.mock("node:child_process", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("node:child_process")>();
+  return {
+    ...actual,
+    execFileSync: vi.fn(),
+  };
+});
+
 const mockedExistsSync = vi.mocked(fs.existsSync);
 const mockedReadFileSync = vi.mocked(fs.readFileSync);
 const mockedWriteFileSync = vi.mocked(fs.writeFileSync);
 const mockedMkdirSync = vi.mocked(fs.mkdirSync);
 const mockedRenameSync = vi.mocked(fs.renameSync);
+const mockedExecFileSync = vi.mocked(child_process.execFileSync);
 
 let stdoutOutput = "";
 const originalWrite = process.stdout.write.bind(process.stdout);
@@ -27,6 +37,7 @@ const originalWrite = process.stdout.write.bind(process.stdout);
 beforeEach(() => {
   vi.resetAllMocks();
   stdoutOutput = "";
+  mockedExecFileSync.mockReturnValue("");
   vi.spyOn(process.stdout, "write").mockImplementation((data: unknown) => {
     stdoutOutput += String(data);
     return true;
@@ -658,5 +669,121 @@ describe("runInit — adopt approval gate", () => {
       join(REPO_ROOT, "smartdocs/raw/design.md"),
     );
     expect(stdoutOutput).toContain("SmartDocs migration step completed: moved 1, skipped 0.");
+  });
+});
+
+describe("finalizeAdoption", () => {
+  it("exits early when all adoption steps are already complete", async () => {
+    await finalizeAdoption({
+      plan_id: "adoption-complete",
+      generated_at: "2026-06-01T00:00:00.000Z",
+      repo_state: "existing",
+      approved: true,
+      approved_at: "2026-06-01T00:00:00.000Z",
+      dry_run: false,
+      steps: [
+        {
+          step_id: "stage-adoption",
+          order: 1,
+          phase: "C",
+          category: "stage",
+          action: "modify",
+          dest_path: ".git/index",
+          description: "Stage adoption outputs.",
+          destructive: true,
+          requires_approval: true,
+          estimated_risk: "medium",
+          status: "completed",
+          completed_at: "2026-06-01T00:00:00.000Z",
+        },
+      ],
+      impact_summary: {
+        files_to_create: 0,
+        files_to_move: 0,
+        files_to_modify: 0,
+        instruction_files_affected: 0,
+        smartdocs_candidates_moved: 0,
+        cognition_files_to_generate: 0,
+      },
+    });
+
+    expect(stdoutOutput).toContain("Adoption already complete.");
+    expect(mockedExecFileSync).not.toHaveBeenCalled();
+  });
+
+  it("stages adoption outputs and unstages runtime artifacts", async () => {
+    mockedExistsSync.mockImplementation((path: fs.PathLike) => {
+      const value = String(path);
+      return value.endsWith(".gitignore") || value.endsWith(".polaris/map/index.json");
+    });
+    mockedReadFileSync.mockImplementation((path: fs.PathLike) => {
+      const value = String(path);
+      if (value.endsWith(".gitignore")) {
+        return "node_modules/\n";
+      }
+      if (value.endsWith(".polaris/map/index.json")) {
+        return JSON.stringify({ coverage_pct: 42 });
+      }
+      return "";
+    });
+    mockedExecFileSync
+      .mockReturnValueOnce("")
+      .mockReturnValueOnce(".polaris/runs/ledger.jsonl\n.polaris/adoption-plan.json\n")
+      .mockReturnValueOnce("");
+
+    await finalizeAdoption(
+      {
+        plan_id: "adoption-finalize",
+        generated_at: "2026-06-01T00:00:00.000Z",
+        repo_state: "existing",
+        approved: true,
+        approved_at: null,
+        dry_run: false,
+        steps: [
+          {
+            step_id: "stage-adoption",
+            order: 1,
+            phase: "C",
+            category: "stage",
+            action: "modify",
+            dest_path: ".git/index",
+            description: "Stage adoption outputs.",
+            destructive: true,
+            requires_approval: true,
+            estimated_risk: "medium",
+            status: "pending",
+          },
+        ],
+        impact_summary: {
+          files_to_create: 2,
+          files_to_move: 3,
+          files_to_modify: 4,
+          instruction_files_affected: 1,
+          smartdocs_candidates_moved: 3,
+          cognition_files_to_generate: 6,
+        },
+      },
+      {
+        repoRoot: REPO_ROOT,
+      },
+    );
+
+    expect(mockedWriteFileSync).toHaveBeenCalledWith(
+      join(REPO_ROOT, ".gitignore"),
+      expect.stringContaining(".polaris/runs/"),
+      "utf-8",
+    );
+    expect(mockedExecFileSync).toHaveBeenCalledWith(
+      "git",
+      expect.arrayContaining(["add", "-A", "--"]),
+      expect.objectContaining({ cwd: REPO_ROOT }),
+    );
+    expect(mockedExecFileSync).toHaveBeenCalledWith(
+      "git",
+      ["restore", "--staged", "--", ".polaris/runs/ledger.jsonl"],
+      expect.objectContaining({ cwd: REPO_ROOT }),
+    );
+    expect(stdoutOutput).toContain("Adoption changes staged.");
+    expect(stdoutOutput).toContain("excluded_runtime_paths=");
   });
 });
