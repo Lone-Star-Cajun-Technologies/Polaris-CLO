@@ -1,5 +1,5 @@
 import { join, isAbsolute, resolve } from "node:path";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, appendFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { readClusterStateSync, writeClusterStateSync } from "../cluster-state/store.js";
 import { verifyChildCommitCustody } from "./git-custody.js";
@@ -27,6 +27,7 @@ import {
   type ChildCompletedEvent,
   type LedgerRunType,
 } from "./ledger.js";
+import { dispatchCognitionLibrarian } from "../cognition/librarian-dispatch.js";
 
 export interface ContinueOptions {
   stateFile: string;
@@ -179,6 +180,25 @@ function toValidationResult(rawValidation: unknown): ValidationResult {
       ? rawValidation
       : rawValidation != null ? JSON.stringify(rawValidation) : "",
   };
+}
+
+function extractWorkNotePathsFromResult(
+  resultFile: string,
+  repoRoot: string,
+): string[] {
+  try {
+    const resolvedPath = isAbsolute(resultFile) ? resultFile : resolve(repoRoot, resultFile);
+    if (!existsSync(resolvedPath)) return [];
+    const content = readFileSync(resolvedPath, "utf-8");
+    const parsed = JSON.parse(content) as Record<string, unknown>;
+    const paths = parsed["work_note_paths"];
+    if (Array.isArray(paths) && paths.every((p) => typeof p === "string")) {
+      return paths as string[];
+    }
+    return [];
+  } catch {
+    return [];
+  }
 }
 
 function bridgeEvidenceToClusterState(
@@ -545,6 +565,50 @@ export function runLoopContinue(options: ContinueOptions): void {
       reason: "analyze session cannot auto-continue into implementation",
       timestamp: new Date().toISOString(),
     });
+  }
+
+  // Step 4.5: Dispatch cognition librarian (non-blocking — failure does not halt cluster execution)
+  if (completedChild && completionResultFile) {
+    const workNotePaths = extractWorkNotePathsFromResult(completionResultFile, repoRoot);
+    if (workNotePaths.length > 0) {
+      setImmediate(async () => {
+        try {
+          const adapter = (options.adapter ?? effectiveExecution.adapter) as ExecutionAdapterMode | undefined;
+          if (adapter) {
+            await dispatchCognitionLibrarian({
+              runId: state.run_id,
+              clusterId: state.cluster_id,
+              workNotePaths,
+              repoRoot,
+              adapter: adapter as any,
+              provider: provider ?? effectiveConfig.execution.rotation?.[0] ?? "codex",
+              telemetryFile,
+            });
+          }
+        } catch (err) {
+          // Non-blocking: log to telemetry but continue execution
+          try {
+            appendFileSync(
+              telemetryFile,
+              JSON.stringify({
+                event: "cognition-librarian-dispatch-error",
+                run_id: state.run_id,
+                child_id: completedChild,
+                error: err instanceof Error ? err.message : String(err),
+                timestamp: new Date().toISOString(),
+              }) + "\n",
+              "utf-8"
+            );
+          } catch {
+            console.warn(
+              `Warning: failed to dispatch cognition librarian for ${completedChild}: ${
+                err instanceof Error ? err.message : String(err)
+              }`,
+            );
+          }
+        }
+      });
+    }
   }
 
   // Steps 4-5: Generate and write bootstrap packet
