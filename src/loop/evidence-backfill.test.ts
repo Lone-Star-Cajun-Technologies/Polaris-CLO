@@ -287,6 +287,71 @@ describe("backfillClusterStateEvidence — edge cases", () => {
     expect(report.skipped[0]!.reason).toMatch(/no result file/);
   });
 
+  it("skips child when result file belongs to a different child", () => {
+    const root = makeRoot("wrong-child");
+    writeJson(root, ".taskchain_artifacts/polaris-run/current-state.json",
+      makeStateFile({ clusterId: CLUSTER_ID, completedChildren: ["POL-EEE"] }));
+    writeJson(root, `.polaris/clusters/${CLUSTER_ID}/cluster-state.json`,
+      makeClusterState(CLUSTER_ID, ["POL-EEE"]));
+    writeJson(root, `.polaris/clusters/${CLUSTER_ID}/results/POL-EEE-uuid.json`, {
+      child_id: "POL-FFF",  // belongs to FFF, not EEE
+      status: "done",
+      commit: "abc1234",
+      validation: { passed: ["npm run build"] },
+    });
+
+    const report = backfillClusterStateEvidence({
+      repoRoot: root,
+      stateFile: join(root, ".taskchain_artifacts/polaris-run/current-state.json"),
+    });
+
+    expect(report.backfilled).toHaveLength(0);
+    expect(report.skipped[0]!.reason).toMatch(/belongs to POL-FFF/);
+  });
+
+  it("skips child when result status is not done", () => {
+    const root = makeRoot("not-done");
+    writeJson(root, ".taskchain_artifacts/polaris-run/current-state.json",
+      makeStateFile({ clusterId: CLUSTER_ID, completedChildren: ["POL-GGG"] }));
+    writeJson(root, `.polaris/clusters/${CLUSTER_ID}/cluster-state.json`,
+      makeClusterState(CLUSTER_ID, ["POL-GGG"]));
+    writeJson(root, `.polaris/clusters/${CLUSTER_ID}/results/POL-GGG-uuid.json`, {
+      child_id: "POL-GGG",
+      status: "failed",
+      commit: "abc1234",
+      validation: { passed: ["npm run build"] },
+    });
+
+    const report = backfillClusterStateEvidence({
+      repoRoot: root,
+      stateFile: join(root, ".taskchain_artifacts/polaris-run/current-state.json"),
+    });
+
+    expect(report.backfilled).toHaveLength(0);
+    expect(report.skipped[0]!.reason).toMatch(/not done.*failed/i);
+  });
+
+  it("accepts result file with no child_id field (legacy files without ownership marker)", () => {
+    const root = makeRoot("no-child-id");
+    writeJson(root, ".taskchain_artifacts/polaris-run/current-state.json",
+      makeStateFile({ clusterId: CLUSTER_ID, completedChildren: ["POL-HHH"] }));
+    writeJson(root, `.polaris/clusters/${CLUSTER_ID}/cluster-state.json`,
+      makeClusterState(CLUSTER_ID, ["POL-HHH"]));
+    writeJson(root, `.polaris/clusters/${CLUSTER_ID}/results/POL-HHH-uuid.json`, {
+      // no child_id — legacy format
+      status: "done",
+      commit: "abc1234",
+      validation: { passed: ["npm run build"] },
+    });
+
+    const report = backfillClusterStateEvidence({
+      repoRoot: root,
+      stateFile: join(root, ".taskchain_artifacts/polaris-run/current-state.json"),
+    });
+
+    expect(report.backfilled).toHaveLength(1);
+  });
+
   it("skips child with missing validation when no validation_waiver on packet", () => {
     const root = makeRoot("no-validation");
     writeJson(root, ".taskchain_artifacts/polaris-run/current-state.json",

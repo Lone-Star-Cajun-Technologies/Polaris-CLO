@@ -142,6 +142,25 @@ export function backfillClusterStateEvidence(options: BackfillOptions): Backfill
       continue;
     }
 
+    // Guard: result file must belong to this child (prevents mis-routing from prefix scan or wrong pointer).
+    const resultChildId = result["child_id"] ?? result["childId"] ?? result["id"];
+    if (resultChildId !== undefined && resultChildId !== childId) {
+      skipped.push({
+        childId,
+        reason: `result file belongs to ${String(resultChildId)}, not ${childId}`,
+      });
+      continue;
+    }
+
+    // Guard: result must indicate completion.
+    if (result["status"] !== undefined && result["status"] !== "done") {
+      skipped.push({
+        childId,
+        reason: `result status is not done: ${String(result["status"])}`,
+      });
+      continue;
+    }
+
     // Reject placeholder commits.
     const rawCommit = result["commit"] ?? result["commit_hash"];
     if (isPlaceholderCommit(rawCommit)) {
