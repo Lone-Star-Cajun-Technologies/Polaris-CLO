@@ -37,7 +37,7 @@
       },
       "orchestrator": {
         "providers": ["codex", "copilot"],
-        "allowNativeSubagent": true
+        "allowNativeSubagent": false
       },
       "analyst": {
         "providers": ["claude", "codex"],
