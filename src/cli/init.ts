@@ -6,6 +6,7 @@ import {
   mkdirSync,
   renameSync,
 } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { resolve, join, dirname } from "node:path";
 import { Command } from "commander";
 import {
@@ -36,6 +37,8 @@ export interface InitOptions {
   status?: boolean;
   /** Auto-approve adoption plan prompt (for CI). */
   yes?: boolean;
+  /** Stage and commit adoption output (when used with --adopt). */
+  commit?: boolean;
   /** Injected adoption inventory scanner — for unit testing. */
   scanAdoptionInventory?: (repoRoot: string) => RepoScanInventory;
   /** Injected adoption plan generator — for unit testing. */
@@ -71,6 +74,26 @@ const DOC_ROOT_HINTS = [
   "guides",
 ];
 const MANIFEST_HINTS = ["package.json", "pyproject.toml", "go.mod", "Cargo.toml"];
+const RUNTIME_ARTIFACT_EXCLUSIONS = [
+  ".polaris/runs/",
+  ".polaris/bootstrap/",
+  ".polaris/clusters/",
+  ".polaris/session-type",
+] as const;
+
+const RUNTIME_ARTIFACT_IGNORE_BLOCK = [
+  "# Polaris runtime artifacts — do not commit",
+  ...RUNTIME_ARTIFACT_EXCLUSIONS,
+].join("\n");
+
+const PLAN_COMPLETE_STATUSES = new Set(["completed", "skipped"]);
+
+interface FinalizeAdoptionOptions {
+  repoRoot?: string;
+  commit?: boolean;
+  now?: Date;
+  commitMessage?: string;
+}
 
 function detectRepoState(repoRoot: string): RepoState {
   if (existsSync(join(repoRoot, ".polaris"))) {
@@ -142,6 +165,176 @@ function asRecord(value: unknown): Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : {};
+}
+
+function areAllPlanStepsComplete(plan: AdoptionPlanArtifacts["plan"]): boolean {
+  return plan.steps.length > 0 && plan.steps.every((step) => PLAN_COMPLETE_STATUSES.has(step.status));
+}
+
+function ensureRuntimeArtifactExclusions(repoRoot: string): void {
+  const gitignorePath = join(repoRoot, ".gitignore");
+  const existing = existsSync(gitignorePath) ? readFileSync(gitignorePath, "utf-8") : "";
+  const lines = existing.split(/\r?\n/);
+  const missing = [RUNTIME_ARTIFACT_IGNORE_BLOCK].filter((block) => {
+    const required = block.split("\n");
+    return !required.every((line) => lines.includes(line));
+  });
+
+  if (missing.length === 0) {
+    return;
+  }
+
+  const trimmed = existing.trimEnd();
+  const separator = trimmed.length > 0 ? "\n\n" : "";
+  const next = `${trimmed}${separator}${missing.join("\n")}\n`;
+  writeFileSync(gitignorePath, next, "utf-8");
+}
+
+function readBaselineCoverage(repoRoot: string): string {
+  const mapIndexPath = join(repoRoot, ".polaris", "map", "index.json");
+  if (!existsSync(mapIndexPath)) {
+    return "n/a";
+  }
+
+  try {
+    const parsed = JSON.parse(readFileSync(mapIndexPath, "utf-8")) as Record<string, unknown>;
+    const baseline = parsed.adoption_baseline_coverage_pct;
+    if (typeof baseline === "number") {
+      return `${baseline}%`;
+    }
+    const coverage = parsed.coverage_pct;
+    if (typeof coverage === "number") {
+      return `${coverage}%`;
+    }
+  } catch {
+    return "n/a";
+  }
+
+  return "n/a";
+}
+
+function updatePlanForFinalization(
+  repoRoot: string,
+  plan: AdoptionPlanArtifacts["plan"],
+  now: Date,
+): AdoptionPlanArtifacts["plan"] {
+  const completedAt = now.toISOString();
+  const updatedPlan = {
+    ...plan,
+    approved: true,
+    approved_at: plan.approved_at ?? completedAt,
+    steps: plan.steps.map((step) =>
+      PLAN_COMPLETE_STATUSES.has(step.status)
+        ? step
+        : {
+            ...step,
+            status: "completed" as const,
+            completed_at: completedAt,
+            error: undefined,
+          },
+    ),
+  };
+
+  writeFileSync(
+    join(repoRoot, ".polaris", "adoption-plan.json"),
+    `${JSON.stringify(updatedPlan, null, 2)}\n`,
+    "utf-8",
+  );
+
+  return updatedPlan;
+}
+
+function stageAdoptionOutputs(repoRoot: string, plan: AdoptionPlanArtifacts["plan"]): void {
+  const stagePaths = new Set<string>([
+    ".polaris/adoption-plan.json",
+    ".polaris/adoption-inventory.json",
+    ".polaris/adoption-provenance.json",
+    "polaris.config.json",
+    ".polaris/map",
+    "POLARIS.md",
+    "SUMMARY.md",
+    ".gitignore",
+  ]);
+
+  for (const step of plan.steps) {
+    if (step.source_path) {
+      stagePaths.add(step.source_path);
+    }
+    if (step.dest_path) {
+      stagePaths.add(step.dest_path);
+    }
+  }
+
+  execFileSync("git", ["add", "-A", "--", ...stagePaths], { cwd: repoRoot, stdio: "pipe" });
+}
+
+function unstageRuntimeArtifacts(repoRoot: string): void {
+  const stagedPaths = execFileSync("git", ["diff", "--cached", "--name-only"], {
+    cwd: repoRoot,
+    encoding: "utf-8",
+  })
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const blocked = stagedPaths.filter((path) =>
+    RUNTIME_ARTIFACT_EXCLUSIONS.some(
+      (excluded) => path === excluded.replace(/\/$/, "") || path.startsWith(excluded),
+    ),
+  );
+
+  if (blocked.length === 0) {
+    return;
+  }
+
+  execFileSync("git", ["restore", "--staged", "--", ...blocked], { cwd: repoRoot, stdio: "pipe" });
+}
+
+function createAdoptionCommitMessage(plan: AdoptionPlanArtifacts["plan"]): string {
+  const moved = plan.impact_summary.smartdocs_candidates_moved;
+  const cognition = plan.impact_summary.cognition_files_to_generate;
+  return `chore: adopt Polaris init — ${moved} files moved, ${cognition} cognition files generated`;
+}
+
+function printAdoptionSummary(repoRoot: string, plan: AdoptionPlanArtifacts["plan"]): void {
+  const baselineCoverage = readBaselineCoverage(repoRoot);
+  process.stdout.write(
+    `Adoption summary: moved=${plan.impact_summary.smartdocs_candidates_moved}, cognition=${plan.impact_summary.cognition_files_to_generate}, instruction_files=${plan.impact_summary.instruction_files_affected}, baseline_coverage=${baselineCoverage}, excluded_runtime_paths=${RUNTIME_ARTIFACT_EXCLUSIONS.join(", ")}\n`,
+  );
+}
+
+export function finalizeAdoption(plan: AdoptionPlanArtifacts["plan"]): Promise<void>;
+export function finalizeAdoption(
+  plan: AdoptionPlanArtifacts["plan"],
+  options: FinalizeAdoptionOptions,
+): Promise<void>;
+export function finalizeAdoption(
+  plan: AdoptionPlanArtifacts["plan"],
+  options: FinalizeAdoptionOptions = {},
+): Promise<void> {
+  if (areAllPlanStepsComplete(plan)) {
+    process.stdout.write("Adoption already complete.\n");
+    return Promise.resolve();
+  }
+
+  const repoRoot = options.repoRoot ?? resolve(process.cwd());
+  ensureRuntimeArtifactExclusions(repoRoot);
+  const updatedPlan = updatePlanForFinalization(repoRoot, plan, options.now ?? new Date());
+  stageAdoptionOutputs(repoRoot, updatedPlan);
+  unstageRuntimeArtifacts(repoRoot);
+  printAdoptionSummary(repoRoot, updatedPlan);
+
+  if (options.commit) {
+    const message = options.commitMessage ?? createAdoptionCommitMessage(updatedPlan);
+    execFileSync("git", ["commit", "-m", message], { cwd: repoRoot, stdio: "pipe" });
+    process.stdout.write(`Adoption commit created: ${message}\n`);
+  } else {
+    process.stdout.write(
+      "Adoption changes staged. Review with `git diff --cached` and commit when ready.\n",
+    );
+  }
+
+  return Promise.resolve();
 }
 
 /**
@@ -271,6 +464,19 @@ export function runInit(options: InitOptions = {}): void {
     return;
   }
 
+  const adoptionPlanPath = join(repoRoot, ".polaris", "adoption-plan.json");
+  if (existsSync(adoptionPlanPath)) {
+    try {
+      const existingPlan = JSON.parse(readFileSync(adoptionPlanPath, "utf-8")) as AdoptionPlanArtifacts["plan"];
+      if (areAllPlanStepsComplete(existingPlan)) {
+        process.stdout.write("Adoption already complete.\n");
+        return;
+      }
+    } catch {
+      // Fall through and regenerate adoption artifacts.
+    }
+  }
+
   const now = options.now ?? new Date();
   const scanAdoptionInventory =
     options.scanAdoptionInventory ?? ((root: string) => scanRepoAdoptionInventory(root, { now }));
@@ -296,6 +502,15 @@ export function runInit(options: InitOptions = {}): void {
   process.stdout.write(
     `SmartDocs migration step completed: moved ${migrationResult.moved}, skipped ${migrationResult.skipped}.\n`,
   );
+  if (adoptionArtifacts.plan.steps.some((step) => step.category === "stage")) {
+    finalizeAdoption(adoptionArtifacts.plan, {
+      repoRoot,
+      commit: options.commit,
+      now,
+    });
+    return;
+  }
+
   process.stdout.write("Adoption approved. Proceeding with mutation phases.\n");
 }
 
@@ -309,13 +524,15 @@ export function createInitCommand(options: InitOptions = {}): Command {
     .option("--status", "detect and print current repository state without writing files")
     .option("--adopt", "run existing repository adoption flow")
     .option("--yes", "auto-approve adoption plan when used with --adopt")
-    .action((cmdOptions: { dryRun?: boolean; status?: boolean; adopt?: boolean; yes?: boolean }) => {
+    .option("--commit", "create an adoption commit when used with --adopt")
+    .action((cmdOptions: { dryRun?: boolean; status?: boolean; adopt?: boolean; yes?: boolean; commit?: boolean }) => {
       runInit({
         ...options,
         dryRun: cmdOptions.dryRun,
         status: cmdOptions.status,
         adopt: cmdOptions.adopt,
         yes: cmdOptions.yes,
+        commit: cmdOptions.commit,
       });
     });
 
