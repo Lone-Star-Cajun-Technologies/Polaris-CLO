@@ -122,15 +122,35 @@ export function buildDeliveryBranchName(clusterId: string): string {
 }
 
 /**
- * Creates and switches to `branchName` (git checkout -b).
- * If the branch already exists, switches to it instead (git checkout).
- * Throws when both operations fail.
+ * Creates and switches to `branchName`, or switches to it if it already exists.
+ * Checks for branch existence explicitly before choosing the git operation so
+ * that errors from unrelated failures are not silently swallowed.
+ * Throws with context when the checkout fails.
  */
 export function ensureDeliveryBranch(repoRoot: string, branchName: string): void {
+  const branchExists = (() => {
+    try {
+      execFileSync("git", ["rev-parse", "--verify", `refs/heads/${branchName}`], {
+        cwd: repoRoot,
+        stdio: "ignore",
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  })();
+
+  const args = branchExists ? ["checkout", branchName] : ["checkout", "-b", branchName];
   try {
-    execFileSync("git", ["checkout", "-b", branchName], { cwd: repoRoot, stdio: "ignore" });
-  } catch {
-    execFileSync("git", ["checkout", branchName], { cwd: repoRoot, stdio: "ignore" });
+    execFileSync("git", args, { cwd: repoRoot, stdio: "pipe" });
+  } catch (err) {
+    const stderr =
+      err instanceof Error && "stderr" in err ? String((err as NodeJS.ErrnoException & { stderr: unknown }).stderr).trim() : "";
+    throw new Error(
+      `ensureDeliveryBranch: git ${args.join(" ")} failed` +
+        (stderr ? `: ${stderr}` : "") +
+        ` (branch="${branchName}", repoRoot="${repoRoot}")`,
+    );
   }
 }
 
