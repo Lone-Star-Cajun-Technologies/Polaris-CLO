@@ -15,10 +15,12 @@ import {
 } from "../config/provider-detect.js";
 import {
   generateAdoptionPlanArtifacts,
+  type AdoptionPlan,
   type AdoptionPlanArtifacts,
   type RepoScanInventory,
 } from "./adoption-plan.js";
 import { scanAdoptionInventory as scanRepoAdoptionInventory } from "./adoption-inventory.js";
+import { runMapIndex } from "../map/index.js";
 
 export interface InitOptions {
   /** Absolute path to the repo root (defaults to cwd). */
@@ -213,6 +215,68 @@ function readBaselineCoverage(repoRoot: string): string {
   return "n/a";
 }
 
+export function runAdoptionAtlas(plan: AdoptionPlan): Promise<void>;
+export function runAdoptionAtlas(plan: AdoptionPlan, repoRoot: string): Promise<void>;
+export function runAdoptionAtlas(plan: AdoptionPlan, repoRoot = resolve(process.cwd())): Promise<void> {
+  if (!plan.steps.some((step) => step.category === "atlas-generate")) {
+    return Promise.resolve();
+  }
+
+  try {
+    runMapIndex(repoRoot, false, false, { seedCognition: false, skipThreshold: true });
+
+    const mapDir = join(repoRoot, ".polaris", "map");
+    const indexPath = join(mapDir, "index.json");
+    if (!existsSync(indexPath)) {
+      throw new Error("Adoption atlas generation did not produce .polaris/map/index.json");
+    }
+
+    const atlasIndex = asRecord(JSON.parse(readFileSync(indexPath, "utf-8")));
+    const entries = asRecord(atlasIndex.entries);
+    const hasSmartDocsRawEntry = Object.keys(entries).some((filePath) =>
+      filePath.startsWith("smartdocs/raw/"),
+    );
+    if (!hasSmartDocsRawEntry) {
+      throw new Error("Adoption atlas validation failed: no smartdocs/raw/ entries found in atlas");
+    }
+
+    const needsReviewPath = join(mapDir, "needs-review.json");
+    const needsReviewEntries = existsSync(needsReviewPath)
+      ? asRecord(JSON.parse(readFileSync(needsReviewPath, "utf-8")))
+      : {};
+
+    const totalFiles =
+      typeof atlasIndex.file_count === "number"
+        ? atlasIndex.file_count
+        : Object.keys(entries).length;
+    const needsReviewCount = Object.keys(needsReviewEntries).length;
+    const needsReviewPct = totalFiles > 0 ? (needsReviewCount / totalFiles) * 100 : 0;
+    if (needsReviewPct > 20) {
+      process.stdout.write(
+        `[WARN] Adoption atlas needs-review debt is ${needsReviewPct.toFixed(1)}% (${needsReviewCount}/${totalFiles}); continuing.\n`,
+      );
+    }
+
+    const baselineCoverage =
+      typeof atlasIndex.coverage_pct === "number" ? atlasIndex.coverage_pct : 0;
+    writeFileSync(
+      indexPath,
+      `${JSON.stringify(
+        {
+          ...atlasIndex,
+          adoption_baseline_coverage_pct: baselineCoverage,
+        },
+        null,
+        2,
+      )}\n`,
+      "utf-8",
+    );
+    return Promise.resolve();
+  } catch (error) {
+    return Promise.reject(error);
+  }
+}
+
 function updatePlanForFinalization(
   repoRoot: string,
   plan: AdoptionPlanArtifacts["plan"],
@@ -319,22 +383,22 @@ export function finalizeAdoption(
 
   const repoRoot = options.repoRoot ?? resolve(process.cwd());
   ensureRuntimeArtifactExclusions(repoRoot);
-  const updatedPlan = updatePlanForFinalization(repoRoot, plan, options.now ?? new Date());
-  stageAdoptionOutputs(repoRoot, updatedPlan);
-  unstageRuntimeArtifacts(repoRoot);
-  printAdoptionSummary(repoRoot, updatedPlan);
+  return runAdoptionAtlas(plan, repoRoot).then(() => {
+    const updatedPlan = updatePlanForFinalization(repoRoot, plan, options.now ?? new Date());
+    stageAdoptionOutputs(repoRoot, updatedPlan);
+    unstageRuntimeArtifacts(repoRoot);
+    printAdoptionSummary(repoRoot, updatedPlan);
 
-  if (options.commit) {
-    const message = options.commitMessage ?? createAdoptionCommitMessage(updatedPlan);
-    execFileSync("git", ["commit", "-m", message], { cwd: repoRoot, stdio: "pipe" });
-    process.stdout.write(`Adoption commit created: ${message}\n`);
-  } else {
-    process.stdout.write(
-      "Adoption changes staged. Review with `git diff --cached` and commit when ready.\n",
-    );
-  }
-
-  return Promise.resolve();
+    if (options.commit) {
+      const message = options.commitMessage ?? createAdoptionCommitMessage(updatedPlan);
+      execFileSync("git", ["commit", "-m", message], { cwd: repoRoot, stdio: "pipe" });
+      process.stdout.write(`Adoption commit created: ${message}\n`);
+    } else {
+      process.stdout.write(
+        "Adoption changes staged. Review with `git diff --cached` and commit when ready.\n",
+      );
+    }
+  });
 }
 
 /**
