@@ -182,8 +182,11 @@ export function hasNonArtifactSourceChanges(
     return changedFiles.some(
       (f) => classifyArtifactPath(f, clusterId) === "non-artifact",
     );
-  } catch {
-    return false;
+  } catch (err) {
+    throw new Error(
+      `hasNonArtifactSourceChanges: git diff failed for ${baseBranch}...${deliveryBranch}: ` +
+        (err instanceof Error ? err.message : String(err)),
+    );
   }
 }
 
