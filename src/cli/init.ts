@@ -25,7 +25,7 @@ import {
   persistApprovedAdoptionPlan,
   promptApproval,
 } from "./adopt-approve.js";
-import { scanAdoptionInventory as scanRepoAdoptionInventory } from "./adoption-inventory.js";
+import { scanRepo as scanRepoAdoptionInventory } from "./adopt-scan.js";
 import { generateFolderCognition as generateRepoFolderCognition } from "./adopt-cognition.js";
 import { migrateSmartDocs } from "./adopt-smartdocs.js";
 import { runMapIndex } from "../map/index.js";
@@ -53,7 +53,9 @@ export interface InitOptions {
   /** Stage and commit adoption output (when used with --adopt). */
   commit?: boolean;
   /** Injected adoption inventory scanner — for unit testing. */
-  scanAdoptionInventory?: (repoRoot: string) => RepoScanInventory;
+  scanAdoptionInventory?: (repoRoot: string) => RepoScanInventory | Promise<RepoScanInventory>;
+  /** Allow overwriting an existing adoption inventory artifact. */
+  rescan?: boolean;
   /** Injected adoption plan generator — for unit testing. */
   generateAdoptionArtifacts?: (
     repoRoot: string,
@@ -621,8 +623,15 @@ export async function runInit(options: InitOptions = {}): Promise<void> {
 
   const now = options.now ?? new Date();
   const scanAdoptionInventory =
-    options.scanAdoptionInventory ?? ((root: string) => scanRepoAdoptionInventory(root, { now }));
-  const inventory = scanAdoptionInventory(repoRoot);
+    options.scanAdoptionInventory ??
+    ((root: string) => scanRepoAdoptionInventory(root, { now, rescan: options.rescan }));
+  const inventoryResult = scanAdoptionInventory(repoRoot);
+  let inventory: RepoScanInventory;
+  if (inventoryResult && typeof (inventoryResult as Promise<RepoScanInventory>).then === "function") {
+    inventory = await inventoryResult;
+  } else {
+    inventory = inventoryResult as RepoScanInventory;
+  }
   const loadedArtifacts = options.resume ? loadAdoptionPlanArtifacts(repoRoot) : null;
   const adoptionArtifacts =
    loadedArtifacts ?? (options.generateAdoptionArtifacts ?? generateAdoptionPlanArtifacts)(
