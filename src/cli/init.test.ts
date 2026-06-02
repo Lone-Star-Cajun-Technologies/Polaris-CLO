@@ -11,6 +11,7 @@ vi.mock("node:fs", async (importOriginal) => {
     existsSync: vi.fn(),
     readFileSync: vi.fn(),
     writeFileSync: vi.fn(),
+    appendFileSync: vi.fn(),
     mkdirSync: vi.fn(),
     renameSync: vi.fn(),
   };
@@ -27,6 +28,7 @@ vi.mock("node:child_process", async (importOriginal) => {
 const mockedExistsSync = vi.mocked(fs.existsSync);
 const mockedReadFileSync = vi.mocked(fs.readFileSync);
 const mockedWriteFileSync = vi.mocked(fs.writeFileSync);
+const mockedAppendFileSync = vi.mocked(fs.appendFileSync);
 const mockedMkdirSync = vi.mocked(fs.mkdirSync);
 const mockedRenameSync = vi.mocked(fs.renameSync);
 const mockedExecFileSync = vi.mocked(child_process.execFileSync);
@@ -332,8 +334,12 @@ describe("runInit — repo state detection", () => {
       }),
     });
 
-    expect(mockedWriteFileSync).toHaveBeenCalledOnce();
-    const [, content] = mockedWriteFileSync.mock.calls[0] as [string, string, string];
+    expect(mockedWriteFileSync).toHaveBeenCalledTimes(2);
+    const configWrite = mockedWriteFileSync.mock.calls.find(([path]) => path === CONFIG_PATH);
+    const planWrite = mockedWriteFileSync.mock.calls.find(
+      ([path]) => path === join(REPO_ROOT, ".polaris", "adoption-plan.json"),
+    );
+    const [, content] = configWrite as [string, string, string];
     const written = JSON.parse(content) as Record<string, unknown>;
     expect(written).toMatchObject({
       execution: {
@@ -345,6 +351,11 @@ describe("runInit — repo state detection", () => {
         mode: "supervised",
       },
     });
+    expect(JSON.parse((planWrite as [string, string, string])[1])).toMatchObject({
+      approved: true,
+      plan_id: "adoption-test",
+    });
+    expect(stdoutOutput).toContain("Adoption approval bypassed via --yes.");
     expect(stdoutOutput).toContain("Adoption approved. Proceeding with mutation phases.");
   });
 
@@ -504,7 +515,14 @@ describe("runInit — repo state detection", () => {
       }),
     });
 
-    expect(mockedWriteFileSync).not.toHaveBeenCalled();
+    expect(mockedWriteFileSync).toHaveBeenCalledTimes(1);
+    expect(mockedWriteFileSync.mock.calls[0]?.[0]).toBe(
+      join(REPO_ROOT, ".polaris", "adoption-plan.json"),
+    );
+    expect(JSON.parse(mockedWriteFileSync.mock.calls[0]?.[1] as string)).toMatchObject({
+      approved: true,
+      plan_id: "adoption-test",
+    });
     expect(stdoutOutput).toContain("Provider config already locked — skipping.");
   });
 });
@@ -657,6 +675,105 @@ describe("runInit — adopt approval gate", () => {
     });
 
     expect(readAdoptionApproval).not.toHaveBeenCalled();
+    expect(mockedAppendFileSync).toHaveBeenCalledOnce();
+    const [telemetryPath, telemetryContent] = mockedAppendFileSync.mock.calls[0] as [
+      string,
+      string,
+      string,
+    ];
+    expect(telemetryPath).toBe(join(REPO_ROOT, ".polaris", "adoption-telemetry.jsonl"));
+    expect(JSON.parse(telemetryContent)).toMatchObject({
+      event: "adoption-approval-bypassed",
+      run_mode: "yes",
+      plan_id: "adoption-test",
+    });
+    const adoptionWrites = mockedWriteFileSync.mock.calls.filter(
+      ([path]) => path === join(REPO_ROOT, ".polaris", "adoption-plan.json"),
+    );
+    expect(adoptionWrites).toHaveLength(1);
+    expect(JSON.parse(adoptionWrites[0]?.[1] as string)).toMatchObject({
+      approved: true,
+      plan_id: "adoption-test",
+    });
+    expect(stdoutOutput).toContain("Adoption approval bypassed via --yes.");
+    expect(stdoutOutput).toContain("Adoption approved. Proceeding with mutation phases.");
+  });
+
+  it("resumes an already approved adoption plan without prompting", () => {
+    const config = {
+      version: "1.0",
+    };
+    const plan = {
+      plan_id: "adoption-resume",
+      generated_at: "2026-05-31T00:00:00.000Z",
+      repo_state: "existing",
+      approved: true,
+      approved_at: "2026-05-31T00:01:00.000Z",
+      dry_run: false,
+      steps: [],
+      impact_summary: {
+        files_to_create: 0,
+        files_to_move: 0,
+        files_to_modify: 0,
+        instruction_files_affected: 0,
+        smartdocs_candidates_moved: 0,
+        cognition_files_to_generate: 0,
+      },
+    };
+
+    mockedExistsSync.mockImplementation((path: fs.PathLike) => {
+      const value = String(path);
+      return value === CONFIG_PATH || value === join(REPO_ROOT, ".polaris", "adoption-plan.json");
+    });
+    mockedReadFileSync.mockImplementation((path: fs.PathLike) => {
+      const value = String(path);
+      if (value === CONFIG_PATH) {
+        return JSON.stringify(config);
+      }
+      if (value === join(REPO_ROOT, ".polaris", "adoption-plan.json")) {
+        return JSON.stringify(plan);
+      }
+      if (value === join(REPO_ROOT, ".polaris", "adoption-plan.md")) {
+        return "# Adoption Plan\n";
+      }
+      return "";
+    });
+    const generateAdoptionArtifacts = vi.fn();
+    const readAdoptionApproval = vi.fn();
+
+    runInit({
+      repoRoot: REPO_ROOT,
+      adopt: true,
+      resume: true,
+      detectProviders: vi.fn().mockReturnValue([]),
+      detectRepoAnalysisProviders: vi.fn().mockReturnValue([]),
+      scanAdoptionInventory: vi.fn().mockReturnValue({
+        scan_date: "2026-05-31T00:00:00.000Z",
+        repo_state: "existing",
+        package_manager: null,
+        source_roots: [],
+        docs_roots: [],
+        test_commands: [],
+        build_commands: [],
+        package_scripts: {},
+        generated_roots: [],
+        cache_roots: [],
+        fixture_roots: [],
+        agent_instruction_files: [],
+        existing_smartdocs_dirs: [],
+        architecture_notes: [],
+        likely_canonical_folders: [],
+        smartdocs_candidates: [],
+        ignore_candidates: [],
+      }),
+      generateAdoptionArtifacts,
+      readAdoptionApproval,
+    });
+
+    expect(generateAdoptionArtifacts).not.toHaveBeenCalled();
+    expect(readAdoptionApproval).not.toHaveBeenCalled();
+    expect(stdoutOutput).toContain("# Adoption Plan");
+    expect(stdoutOutput).not.toContain("Proceed with adoption?");
     expect(stdoutOutput).toContain("Adoption approved. Proceeding with mutation phases.");
   });
 
