@@ -1,37 +1,43 @@
 {
   "schema_version": "1.0",
-  "run_id": "polaris-run-pol-281-2026-06-01-001",
+  "run_id": "polaris-run-pol-281-2026-06-02-001",
   "cluster_id": "POL-281",
   "skill": "polaris-run",
   "branch": "",
   "session_type": "implement",
-  "active_child": "POL-281",
-  "completed_children": [],
-  "open_children": [
-    "POL-281",
+  "active_child": "POL-277",
+  "completed_children": [
     "POL-280",
     "POL-279",
     "POL-278",
-    "POL-277",
-    "POL-268"
+    "POL-277"
   ],
+  "open_children": [],
   "open_children_meta": {
     "POL-281": {
       "title": "IMPLEMENT",
-      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-281/results/POL-281-80ea0abc-845d-4002-b9fc-ec1ad23b5db1.json",
+      "body": "## Objective\n\nImplement the [POL-277](https://linear.app/lsctech/issue/POL-277/fix-fail-packet-generation-when-impl-child-has-empty-allowed-scope-or) through [POL-280](https://linear.app/lsctech/issue/POL-280/fix-parent-loop-must-validate-commit-evidence-even-when-worker-wrote) hardening cluster so Polaris cannot dispatch empty or non-actionable worker packets and cannot produce delivery PRs from fake worker completions.\n\n## Context\n\nThis issue is the implementation parent for the PR 72 failure diagnosis. PR 72 showed that Polaris could dispatch children with empty scope, empty validation, placeholder goals, and no actionable issue body. Workers then self-reported completion with empty commits, and finalize opened a PR even though no implementation evidence existed.\n\nThe diagnosis found three compounding failures:\n\n1. Packet generation allowed empty or placeholder child metadata.\n2. Worker adapters could complete or report failure without proving real in-scope work.\n3. Finalize trusted runtime state without verifying non-artifact commit evidence, result artifacts, and validation output.\n\nPolaris must treat empty instructions as a preflight failure, not as runnable work.\n\n## Goal\n\nMake the PR 72 failure mode impossible by enforcing actionable packet requirements, validating worker completion evidence, and rejecting finalize flows that lack non-artifact implementation proof.\n\n## Scope\n\n* [POL-277](https://linear.app/lsctech/issue/POL-277/fix-fail-packet-generation-when-impl-child-has-empty-allowed-scope-or): fail packet generation or parent preflight when a child has no body, no allowed scope, or no validation commands.\n* [POL-278](https://linear.app/lsctech/issue/POL-278/fix-extend-empty-scope-guard-from-agent-subtask-adapter-to-terminal): extend empty-scope and actionable-packet guards to the terminal-cli adapter path.\n* [POL-279](https://linear.app/lsctech/issue/POL-279/fix-polaris-finalize-must-verify-non-artifact-commit-diff-per-child): make finalize reject delivery when children have no non-artifact commit evidence or missing result evidence.\n* [POL-280](https://linear.app/lsctech/issue/POL-280/fix-parent-loop-must-validate-commit-evidence-even-when-worker-wrote): make parent loop validate worker self-completion against commit evidence and sealed result state before checkpointing completion.\n* `src/loop/parent.ts`\n* `src/loop/run-preflight.ts`\n* `src/loop/run-bootstrap.ts`\n* `src/loop/checkpoint.ts`\n* `src/loop/worker-packet.ts`\n* `src/loop/worker-prompt.ts`\n* `src/loop/adapters/agent-subtask.ts`\n* `src/loop/adapters/terminal-cli.ts`\n* `src/loop/adapters/types.ts`\n* `src/finalize/**`\n* `src/cluster-state/**`\n* Tests covering loop parent, packet generation, adapters, finalize, and cluster-state reconciliation\n\n## Acceptance Criteria\n\n* [POL-281](https://linear.app/lsctech/issue/POL-281/implement) packet generation includes this issue body in the worker packet and prompt.\n* A child with an empty or whitespace-only body fails before dispatch state is mutated.\n* A child with empty allowed scope fails before dispatch or adapter execution.\n* A child with empty validation commands fails unless explicitly marked as no-validation-required with a reason.\n* The agent-subtask path does not attempt to read a sealed result file when no native dispatcher launched a worker.\n* The terminal-cli path enforces the same actionable-packet requirements.\n* Parent loop does not checkpoint self-reported worker completion without sealed result and commit or result evidence.\n* Finalize rejects a cluster where completed children have empty commits, no non-artifact changes, missing result artifacts, or inconsistent cluster-state evidence.\n* Tests cover the PR 72 failure mode and prove it cannot produce another empty delivery PR.\n* Existing tests continue to pass.\n\n## Validation\n\n* `npm run build`\n* `npm test`\n* `npx vitest run src/loop src/finalize src/cluster-state`\n* `npm run polaris -- loop status`\n\n## Ordering\n\nImplement in child order from [POL-277](https://linear.app/lsctech/issue/POL-277/fix-fail-packet-generation-when-impl-child-has-empty-allowed-scope-or) through [POL-280](https://linear.app/lsctech/issue/POL-280/fix-parent-loop-must-validate-commit-evidence-even-when-worker-wrote). Packet-generation gating is first, adapter and parent-loop hardening follow, and finalize verification closes the cluster. This issue should produce implementation changes, not only analysis.\n\n## Non-goals\n\n* Do not manually create sealed result files to bypass adapter failures.\n* Do not weaken the new packet or body gates to make tests pass.\n* Do not allow provider fallback or external routing changes in this issue unless required to keep dispatch safe.\n* Do not treat runtime scratch files as implementation evidence."
+    },
+    "POL-277": {
+      "title": "FIX: Fail packet generation when impl child has empty allowed_scope or placeholder goal",
+      "body": "## Objective\n\nFail packet generation for implementation children when the issue body does not produce actionable scope, goal, or validation instructions.\n\n## Context\n\nPR 72 for [POL-268](https://linear.app/lsctech/issue/POL-268/implement-polaris-init-and-repository-adoption-workflow) produced 16 empty commits across 16 children. Every packet carried `allowed_scope: []`, `validation_commands: []`, and a placeholder `primary_goal`. The child issues did not provide Goal, Scope, Acceptance Criteria, or Validation content that could be extracted into a runnable worker packet.\n\nWorkers received non-actionable packets and completed almost immediately with zero files changed.\n\nThe packet generator currently emits packets from issue metadata even when the issue body contains no usable implementation scope.\n\n## Goal\n\nAdd a hard gate in packet generation or the dispatch path that refuses to emit an implementation worker packet when any of the following are true:\n\n1. `allowed_scope` is empty.\n2. `primary_goal` is a placeholder.\n3. `validation_commands` is empty and `validation_waiver` is absent.\n\n## Scope\n\n* `src/loop/` \u2014 packet generation and dispatch path\n* `src/cli/` \u2014 dispatch command if the gate belongs there\n\n## Acceptance Criteria\n\n* `npm run polaris -- loop dispatch` exits non-zero and emits `packet-generation-failed` telemetry when scope is empty.\n* The error message names the missing field and the child issue ID.\n* Existing tests for well-formed packets continue to pass.\n* A new test proves dispatch fails clearly when an issue has no usable scope body.\n\n## Validation\n\n* `npm test -- --grep \"packet.*empty.*scope|empty.*allowed_scope\"`\n* `npm run build`\n\n## Ordering\n\nHighest-priority fix. All other guardrails are defense in depth against a packet that should never have been generated.\n\n## Non-goals\n\n* Do not allow placeholder goals, empty scope, or empty validation to pass through packet generation.\n* Do not defer this validation exclusively to adapter or finalize layers.\n* Do not change unrelated dispatch behavior outside actionable-packet gating.",
       "dispatch_record": {
-        "dispatch_id": "80ea0abc-845d-4002-b9fc-ec1ad23b5db1",
-        "child_id": "POL-281",
-        "run_id": "polaris-run-pol-281-2026-06-01-001",
+        "dispatch_id": "c5326a50-091f-4a56-9b2c-a29e3c574e4a",
+        "child_id": "POL-277",
+        "run_id": "polaris-run-pol-281-2026-06-02-001",
         "cluster_id": "POL-281",
-        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-281/packets/POL-281-80ea0abc-845d-4002-b9fc-ec1ad23b5db1.json",
-        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-281/results/POL-281-80ea0abc-845d-4002-b9fc-ec1ad23b5db1.json",
-        "provider": "agent-subtask",
-        "dispatched_at": "2026-06-01T04:34:21.021Z",
+        "packet_path": ".polaris/clusters/POL-281/packets/POL-277-84f1c2d5-a0ec-475f-8e2b-0d0f628653d1.json",
+        "expected_result_path": ".polaris/clusters/POL-281/results/POL-277-84f1c2d5-a0ec-475f-8e2b-0d0f628653d1.json",
+        "provider": "copilot",
+        "provider_selection_reason": "role-policy",
+        "providers_tried": [
+          "copilot"
+        ],
+        "dispatched_at": "2026-06-02T02:59:40.947Z",
         "status": "dispatched",
         "dispatch_mode": "direct-worker",
         "runtime_state": "packet-created",
-        "worker_id": "polaris-run-pol-281-2026-06-01-001:POL-281:1780288461021",
+        "worker_id": "d5dd51da-9c48-4663-8368-ae1a03610f9e",
         "session_id": null,
         "attachment_capable": false,
         "role": "worker",
@@ -39,41 +45,27 @@
         "may_implement": true,
         "session_type": "implementation"
       }
-    },
-    "POL-280": {
-      "title": "FIX: Parent loop must validate commit evidence even when worker wrote its own state completion"
-    },
-    "POL-279": {
-      "title": "FIX: polaris finalize must verify non-artifact commit diff per child before creating PR"
-    },
-    "POL-278": {
-      "title": "FIX: Extend empty-scope guard from agent-subtask adapter to terminal-cli adapter"
-    },
-    "POL-277": {
-      "title": "FIX: Fail packet generation when impl child has empty allowed_scope or placeholder goal"
-    },
-    "POL-268": {
-      "title": "IMPLEMENT: Polaris init and repository adoption workflow"
     }
   },
   "step_cursor": "dispatch",
   "context_budget": {
-    "children_completed": 0,
+    "children_completed": 4,
     "max_children_per_session": 1
   },
   "status": "running",
-  "next_open_child": "POL-281",
+  "next_open_child": "",
   "artifact_dir": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run",
   "dispatch_boundary": {
-    "dispatch_epoch": 1,
-    "continue_epoch": 0,
-    "last_dispatched_child": "POL-281"
+    "dispatch_epoch": 4,
+    "continue_epoch": 3,
+    "last_dispatched_child": "POL-277"
   },
   "run_bootstrap_seal": {
     "sealer": "polaris-loop-bootstrap",
-    "run_id": "polaris-run-pol-281-2026-06-01-001",
+    "run_id": "polaris-run-pol-281-2026-06-02-001",
     "cluster_id": "POL-281",
-    "open_children_sha": "26e4e1faf1d67e16e0969a925aa58d892e5e45e52bf7e6c67c83d60e41b085db",
-    "sealed_at": "2026-06-01T04:34:21.016Z"
-  }
+    "open_children_sha": "9fa1750f399c9e879b7dacac62506a891424f1840591d90b99ddeade6d82fbc3",
+    "sealed_at": "2026-06-02T01:55:22.720Z"
+  },
+  "updated_at": "2026-06-02T03:06:44.548711Z"
 }

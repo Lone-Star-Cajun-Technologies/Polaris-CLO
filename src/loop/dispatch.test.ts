@@ -26,8 +26,16 @@ function baseState(overrides: Partial<Record<string, unknown>> = {}) {
     completed_children: ["POL-144"],
     open_children: ["POL-145", "POL-146"],
     open_children_meta: {
-      "POL-145": { title: "Add dispatch command", labels: ["implement"] },
-      "POL-146": { title: "Parent delivery", labels: ["implement"] },
+      "POL-145": {
+        title: "Add dispatch command",
+        labels: ["implement"],
+        body: "## Goal\nAdd dispatch command support.\n\n## Scope\n- src/loop/dispatch.ts\n\n## Validation\n- npm test\n",
+      },
+      "POL-146": {
+        title: "Parent delivery",
+        labels: ["implement"],
+        body: "## Goal\nFinalize parent delivery updates.\n\n## Scope\n- src/loop/parent.ts\n\n## Validation\n- npm test\n",
+      },
     },
     step_cursor: "checkpoint",
     context_budget: { children_completed: 1, max_children_per_session: 3 },
@@ -989,7 +997,7 @@ describe("runLoopDispatch", () => {
       "POL-142": { title: "Cluster root" },
       "POL-145": {
         title: "Add dispatch command",
-        body: "## Goal\nAdd dispatch.\n\n## Scope\n- src/loop/dispatch.ts\n",
+        body: "## Goal\nAdd dispatch.\n\n## Scope\n- src/loop/dispatch.ts\n\n## Validation\n- npm test\n",
       },
     });
     writeClusterStateFile(testDir, "POL-142", ["POL-145", "POL-146"]);
@@ -1002,10 +1010,80 @@ describe("runLoopDispatch", () => {
     expect(packet.instructions.allowed_scope).toContain("src/loop/dispatch.ts");
   });
 
-  it("packet proceeds without body when neither state nor clusters.json has body", () => {
+  it("fails packet generation when issue goal is a placeholder", () => {
+    const artifactDir = join(testDir, ".taskchain_artifacts", "polaris-run");
     const stateFile = writeState(
       testDir,
       baseState({
+        artifact_dir: artifactDir,
+        open_children_meta: {
+          "POL-145": {
+            title: "Add dispatch command",
+            labels: ["implement"],
+            body: "## Goal\nTBD\n\n## Scope\n- src/loop/dispatch.ts\n\n## Validation\n- npm test\n",
+          },
+          "POL-146": { title: "Parent delivery", labels: ["implement"] },
+        },
+      }),
+    );
+    writeClusterStateFile(testDir, "POL-142", ["POL-145", "POL-146"]);
+
+    const stderr = expectDispatchError(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+    expect(stderr).toContain("POL-145");
+    expect(stderr).toContain("primary_goal");
+
+    const telemetryFile = join(artifactDir, "runs", "pol-142-session-1", "telemetry.jsonl");
+    const packetFailedEvents = readFileSync(telemetryFile, "utf-8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line))
+      .filter((event) => event.event === "packet-generation-failed");
+    expect(packetFailedEvents[packetFailedEvents.length - 1]).toMatchObject({
+      child_id: "POL-145",
+      missing_field: "primary_goal",
+    });
+  });
+
+  it("fails packet generation when validation commands are empty without waiver", () => {
+    const artifactDir = join(testDir, ".taskchain_artifacts", "polaris-run");
+    const stateFile = writeState(
+      testDir,
+      baseState({
+        artifact_dir: artifactDir,
+        open_children_meta: {
+          "POL-145": {
+            title: "Add dispatch command",
+            labels: ["implement"],
+            body: "## Goal\nImplement dispatch update.\n\n## Scope\n- src/loop/dispatch.ts\n",
+          },
+          "POL-146": { title: "Parent delivery", labels: ["implement"] },
+        },
+      }),
+    );
+    writeClusterStateFile(testDir, "POL-142", ["POL-145", "POL-146"]);
+
+    const stderr = expectDispatchError(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+    expect(stderr).toContain("POL-145");
+    expect(stderr).toContain("validation_commands");
+
+    const telemetryFile = join(artifactDir, "runs", "pol-142-session-1", "telemetry.jsonl");
+    const packetFailedEvents = readFileSync(telemetryFile, "utf-8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line))
+      .filter((event) => event.event === "packet-generation-failed");
+    expect(packetFailedEvents[packetFailedEvents.length - 1]).toMatchObject({
+      child_id: "POL-145",
+      missing_field: "validation_commands",
+    });
+  });
+
+  it("fails packet dispatch for empty allowed_scope when issue has no usable scope body", () => {
+    const artifactDir = join(testDir, ".taskchain_artifacts", "polaris-run");
+    const stateFile = writeState(
+      testDir,
+      baseState({
+        artifact_dir: artifactDir,
         open_children_meta: {
           "POL-145": { title: "Add dispatch command", labels: ["implement"] },
           "POL-146": { title: "Parent delivery", labels: ["implement"] },
@@ -1015,13 +1093,25 @@ describe("runLoopDispatch", () => {
     writeClusterStateFile(testDir, "POL-142", ["POL-145", "POL-146"]);
     // No clusters.json written — snapshot absent
 
-    const output = captureStdout(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
-    const packet = JSON.parse(output);
+    const stderr = expectDispatchError(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+    expect(stderr).toContain("POL-145");
+    expect(stderr).toContain("allowed_scope");
 
-    expect(packet.active_child).toBe("POL-145");
-    // No body available, so issue_context body is undefined and scope is empty
-    expect(packet.instructions.issue_context?.body).toBeUndefined();
-    expect(packet.instructions.allowed_scope).toEqual([]);
+    const updated = readState(stateFile);
+    expect(updated.active_child).toBe("");
+    expect(updated.open_children).toEqual(["POL-145", "POL-146"]);
+
+    const telemetryFile = join(artifactDir, "runs", "pol-142-session-1", "telemetry.jsonl");
+    const packetFailedEvents = readFileSync(telemetryFile, "utf-8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line))
+      .filter((event) => event.event === "packet-generation-failed");
+    expect(packetFailedEvents).toHaveLength(1);
+    expect(packetFailedEvents[0]).toMatchObject({
+      child_id: "POL-145",
+      missing_field: "allowed_scope",
+    });
   });
 
   it("packet body and scope hydrated from clusters.json when open_children_meta entry is entirely absent", () => {
@@ -1039,7 +1129,7 @@ describe("runLoopDispatch", () => {
       "POL-142": { title: "Cluster root" },
       "POL-145": {
         title: "Add dispatch command",
-        body: "## Goal\nAdd dispatch.\n\n## Scope\n- src/loop/dispatch.ts\n",
+        body: "## Goal\nAdd dispatch.\n\n## Scope\n- src/loop/dispatch.ts\n\n## Validation\n- npm test\n",
       },
     });
     writeClusterStateFile(testDir, "POL-142", ["POL-145", "POL-146"]);
