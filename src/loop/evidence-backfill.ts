@@ -1,11 +1,10 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { join, resolve, relative } from "node:path";
+import { join, resolve, relative, isAbsolute } from "node:path";
 import { readState } from "./checkpoint.js";
 import { readClusterStateSync, writeClusterStateSync } from "../cluster-state/store.js";
 import type { ClusterState, ValidationResult } from "../cluster-state/types.js";
 
-// Aligns with the guard in continue.ts: case-insensitive, ≥7 hex chars, no upper cap
-// (accepts SHA-256 repos with 64-char hashes and uppercase object names).
+// Matches abbreviated/full hex SHAs (>=7 chars), case-insensitive — rejects placeholder strings.
 const HEX_SHA_RE = /^[0-9a-f]{7,}$/i;
 
 export function isPlaceholderCommit(commit: unknown): boolean {
@@ -23,14 +22,20 @@ function readJsonFile(filePath: string): unknown | undefined {
 }
 
 // Scan a directory for the first (sorted) file whose name starts with `<childId>-` or equals `<childId>.json`.
-// Sorting makes selection deterministic even when multiple result/packet files exist for the same child.
 function findFileByChildPrefix(dir: string, childId: string): string | undefined {
   if (!existsSync(dir)) return undefined;
-  const entries = readdirSync(dir).sort();
-  const match = entries.find(
-    (name) => name === `${childId}.json` || name.startsWith(`${childId}-`),
-  );
-  return match ? join(dir, match) : undefined;
+  for (const name of readdirSync(dir).sort()) {
+    if (name === `${childId}.json` || name.startsWith(`${childId}-`)) {
+      return join(dir, name);
+    }
+  }
+  return undefined;
+}
+
+function resolveStatePath(repoRoot: string, filePath: unknown): string | undefined {
+  if (typeof filePath !== "string" || filePath.trim().length === 0) return undefined;
+  const trimmed = filePath.trim();
+  return isAbsolute(trimmed) ? trimmed : resolve(repoRoot, trimmed);
 }
 
 function hasPassingValidation(value: unknown): boolean {
@@ -116,9 +121,10 @@ export function backfillClusterStateEvidence(options: BackfillOptions): Backfill
     const childMeta = state.open_children_meta?.[childId];
     const dispatchRecord = childMeta?.dispatch_record;
     for (const candidate of [childMeta?.result_file, dispatchRecord?.expected_result_path]) {
-      if (typeof candidate === "string" && candidate.trim().length > 0) {
-        const abs = resolve(repoRoot, candidate);
-        if (existsSync(abs)) { resultFilePath = abs; break; }
+      const abs = resolveStatePath(repoRoot, candidate);
+      if (abs && existsSync(abs)) {
+        resultFilePath = abs;
+        break;
       }
     }
     if (!resultFilePath) {
@@ -190,8 +196,6 @@ function applyBackfillToClusterState(params: {
     throw new Error(`cluster-state.json not found for ${clusterId} — cannot apply backfill`);
   }
 
-  const updatedClaimMetadata = { ...existing.claim_metadata };
-
   const updated: ClusterState = {
     ...existing,
     state_generation: existing.state_generation + 1,
@@ -199,7 +203,7 @@ function applyBackfillToClusterState(params: {
     result_pointers: { ...existing.result_pointers },
     packet_pointers: { ...existing.packet_pointers },
     validation_results: { ...existing.validation_results },
-    claim_metadata: updatedClaimMetadata,
+    claim_metadata: { ...existing.claim_metadata },
     child_states: existing.child_states.map((cs) => ({ ...cs })),
   };
 
@@ -214,9 +218,7 @@ function applyBackfillToClusterState(params: {
       output: `backfilled from ${entry.resultFile}`,
     };
     updated.validation_results[entry.childId] = validationResult;
-
-    // Evict stale claim so child is no longer shown as claimed/dispatched.
-    delete updatedClaimMetadata[entry.childId];
+    delete updated.claim_metadata[entry.childId];
 
     const childState = updated.child_states.find((cs) => cs.id === entry.childId);
     if (childState) {
