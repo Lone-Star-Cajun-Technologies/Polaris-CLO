@@ -1,0 +1,16 @@
+{
+  "child_id": "POL-277",
+  "status": "done",
+  "commit": "pending-single-commit",
+  "validation": {
+    "passed": [
+      "npm test -- -t \"packet.*empty.*scope|empty.*allowed_scope\"",
+      "npm run build"
+    ],
+    "failed": [
+      "npm test -- --grep \"packet.*empty.*scope|empty.*allowed_scope\" (unsupported option --grep in this vitest version)"
+    ],
+    "notes": "Vitest in this repo does not support --grep; used -t equivalent."
+  },
+  "next_recommended_action": "Run parent continue/finalize flow for POL-281."
+}

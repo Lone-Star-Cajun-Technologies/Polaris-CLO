@@ -181,6 +181,67 @@ function fail(message: string): never {
   process.exit(1);
 }
 
+function hasValidationWaiver(value: unknown): boolean {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") return value.trim().length > 0;
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return Object.keys(value).length > 0;
+  }
+  return false;
+}
+
+interface PacketGenerationFailure {
+  missingField: "allowed_scope" | "primary_goal" | "validation_commands";
+  message: string;
+}
+
+function detectPacketGenerationFailure(packet: WorkerPacket): PacketGenerationFailure | null {
+  if (packet.worker_role !== "impl") return null;
+
+  const childId = packet.active_child || "unknown-child";
+  const allowedScope = Array.isArray(packet.instructions.allowed_scope)
+    ? packet.instructions.allowed_scope
+    : [];
+  if (allowedScope.length === 0) {
+    return {
+      missingField: "allowed_scope",
+      message: `Packet generation failed for ${childId}: missing actionable allowed_scope.`,
+    };
+  }
+
+  const issueBody = packet.instructions.issue_context?.body?.trim() ?? "";
+  const parsedGoal = issueBody ? parseIssueBody(issueBody).goal.trim() : "";
+  const issueTitle = packet.instructions.issue_context?.title ?? childId;
+  const fallbackPromptGoal = `## Goal\nImplement ${childId}: "${issueTitle}".`;
+  const placeholderGoal =
+    packet.instructions.primary_goal.includes(fallbackPromptGoal) ||
+    /^(?:tbd|todo|placeholder)\b/i.test(parsedGoal);
+  if (placeholderGoal) {
+    return {
+      missingField: "primary_goal",
+      message: `Packet generation failed for ${childId}: primary_goal is a placeholder.`,
+    };
+  }
+
+  const validationCommands = Array.isArray(packet.instructions.validation_commands)
+    ? packet.instructions.validation_commands
+    : [];
+  const packetWithFlags = packet as unknown as {
+    validation_waiver?: unknown;
+    instructions?: { validation_waiver?: unknown };
+  };
+  const validationWaiver = packetWithFlags.validation_waiver
+    ?? packetWithFlags.instructions?.validation_waiver;
+  if (validationCommands.length === 0 && !hasValidationWaiver(validationWaiver)) {
+    return {
+      missingField: "validation_commands",
+      message: `Packet generation failed for ${childId}: validation_commands is empty and validation_waiver is missing.`,
+    };
+  }
+
+  return null;
+}
+
 function appendTelemetry(telemetryFile: string, event: Record<string, unknown>): void {
   mkdirSync(dirname(telemetryFile), { recursive: true });
   appendFileSync(telemetryFile, JSON.stringify(event) + "\n", "utf-8");
@@ -981,18 +1042,17 @@ export function runLoopDispatch(options: DispatchOptions): void {
     canonicalResultFile,
   );
 
-  // Fail packet generation if body is present but scope cannot be derived.
-  // A body without a scope section produces an unactionable packet that would
-  // block the worker immediately. Body absence is caught separately by the
-  // parent loop's preflight gate. Use the resolved body from the packet so
-  // snapshot-hydrated bodies are covered by the same check.
-  const childBodyPresent = !!(packet.instructions.issue_context?.body?.trim());
-  if (packet.worker_role === 'impl' && childBodyPresent && packet.instructions.allowed_scope.length === 0) {
-    fail(
-      `Packet generation failed for ${childId}: body has no scope section. ` +
-      `Add a "## Scope" or "## Expected code areas" section to the issue body. ` +
-      `(Missing: allowed_scope)`,
-    );
+  const packetFailure = detectPacketGenerationFailure(packet);
+  if (packetFailure) {
+    appendTelemetry(telemetryFile, {
+      event: "packet-generation-failed",
+      run_id: state.run_id,
+      child_id: childId,
+      missing_field: packetFailure.missingField,
+      error: packetFailure.message,
+      timestamp: new Date().toISOString(),
+    });
+    fail(`${packetFailure.message} (missing_field=${packetFailure.missingField}, child_id=${childId})`);
   }
 
   const targetRole = roleContextToExecutionRole(packet.role_context.role);

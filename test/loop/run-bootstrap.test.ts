@@ -491,12 +491,17 @@ describe("runLoopDispatch: bootstrap seal gate", () => {
     const stateFile = join(testDir, ".polaris", "runs", "current-state.json");
     mkdirSync(join(testDir, ".polaris", "runs"), { recursive: true });
 
+    const minimalBody = "## Goal\nImplement.\n\n## Scope\n- src/**\n\n## Validation\n- npm test";
     // Bootstrap first (the correct path)
     suppressOutput(() =>
       runLoopBootstrapInit({
         clusterId: "POL-100",
         runId: "polaris-run-pol-100-2026-05-27-001",
         openChildren: ["POL-101", "POL-102"],
+        openChildrenMeta: {
+          "POL-101": { title: "POL-101", body: minimalBody },
+          "POL-102": { title: "POL-102", body: minimalBody },
+        },
         stateFile,
         repoRoot: testDir,
       }),
@@ -640,12 +645,17 @@ describe("bootstrap → dispatch flow", () => {
 
   it("after dispatch, dispatch_epoch = 1 and seal is preserved", () => {
     const stateFile = join(testDir, ".polaris", "runs", "current-state.json");
+    const minimalBody = "## Goal\nImplement.\n\n## Scope\n- src/**\n\n## Validation\n- npm test";
 
     suppressOutput(() =>
       runLoopBootstrapInit({
         clusterId: "POL-910",
         runId: "polaris-run-pol-910-2026-05-27-001",
         openChildren: ["POL-911", "POL-912"],
+        openChildrenMeta: {
+          "POL-911": { title: "POL-911", body: minimalBody },
+          "POL-912": { title: "POL-912", body: minimalBody },
+        },
         stateFile,
         repoRoot: testDir,
       }),
@@ -662,12 +672,16 @@ describe("bootstrap → dispatch flow", () => {
 
   it("seal is preserved after dispatch (not stripped from state)", () => {
     const stateFile = join(testDir, ".polaris", "runs", "current-state.json");
+    const minimalBody = "## Goal\nImplement.\n\n## Scope\n- src/**\n\n## Validation\n- npm test";
 
     suppressOutput(() =>
       runLoopBootstrapInit({
         clusterId: "POL-920",
         runId: "polaris-run-pol-920-2026-05-27-001",
         openChildren: ["POL-921"],
+        openChildrenMeta: {
+          "POL-921": { title: "POL-921", body: minimalBody },
+        },
         stateFile,
         repoRoot: testDir,
       }),

@@ -1323,6 +1323,11 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
       }
     }
 
+    const workerWroteCompletion =
+      reloadedStateValid &&
+      (state.completed_children.includes(nextChild) ||
+        state.context_budget.children_completed > childrenCompletedBeforeDispatch);
+
     const lastCommit =
       (finalWorkerSummary as Record<string, unknown>)?.['commit'] as string | undefined ??
       (finalWorkerSummary as Record<string, unknown>)?.['commit_hash'] as string | undefined;
@@ -1360,6 +1365,23 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
       const getFiles = options.getCommitFiles ?? defaultGetCommitFiles;
       try {
         const commitFiles = getFiles(lastCommit, repoRoot);
+        if (workerWroteCompletion && commitFiles === null) {
+          const errMsg = `Cannot verify worker commit ${lastCommit} for ${nextChild}: commit does not resolve to a git object`;
+          appendTelemetry(telemetryFile, {
+            event: "child-error",
+            run_id: state.run_id,
+            child_id: nextChild,
+            error: errMsg,
+            commit: lastCommit,
+            timestamp: new Date().toISOString(),
+          });
+          return {
+            haltReason: 'worker-error',
+            childrenDispatched,
+            haltingChild: nextChild,
+            message: errMsg,
+          };
+        }
         if (commitFiles !== null) {
           const nonArtifact = commitFiles.filter(
             (f) => classifyArtifactPath(f, state.cluster_id) === 'non-artifact',
@@ -1407,11 +1429,6 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     // If the reloaded state already reflects the completed child,
     // the worker owns the completion checkpoint and the parent
     // must not rewrite it.
-    const workerWroteCompletion =
-      reloadedStateValid &&
-      (state.completed_children.includes(nextChild) ||
-        state.context_budget.children_completed > childrenCompletedBeforeDispatch);
-
     if (!workerWroteCompletion) {
       // ── Dispatch boundary: verify dispatch happened before advancing ──────
       // The parent dispatched via adapter, so dispatch_boundary should show

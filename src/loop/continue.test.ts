@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { runLoopContinue } from "./continue.js";
 import { validateState, readState } from "./checkpoint.js";
+import { readClusterStateSync } from "../cluster-state/store.js";
 
 function makeTestDir(): string {
   const dir = join(tmpdir(), `polaris-loop-test-${Date.now()}`);
@@ -540,8 +541,9 @@ describe("runLoopContinue", () => {
   });
 
   it("allows checkpoint with dispatch-boundary when result evidence includes commit", () => {
-    const resultFile = join(testDir, ".polaris", "clusters", "POL-5", "results", "POL-23-sealed.json");
-    mkdirSync(join(testDir, ".polaris", "clusters", "POL-5", "results"), { recursive: true });
+    const clusterDir = join(testDir, ".polaris", "clusters", "POL-5");
+    const resultFile = join(clusterDir, "results", "POL-23-sealed.json");
+    mkdirSync(join(clusterDir, "results"), { recursive: true });
     writeFileSync(
       resultFile,
       JSON.stringify({
@@ -550,6 +552,22 @@ describe("runLoopContinue", () => {
         status: "success",
         commit: "abc1234",
         validation: "ok",
+      }),
+    );
+    writeFileSync(
+      join(clusterDir, "cluster-state.json"),
+      JSON.stringify({
+        schema_version: "1.0",
+        cluster_id: "POL-5",
+        state_generation: 1,
+        child_states: [],
+        claim_metadata: {},
+        packet_pointers: {},
+        result_pointers: {},
+        validation_results: {},
+        commits: {},
+        tracker_mutations: {},
+        blockers: [],
       }),
     );
     const state = {
@@ -586,5 +604,284 @@ describe("runLoopContinue", () => {
     const updated = readState(stateFile);
     expect(updated.completed_children).toEqual(["POL-23"]);
     expect(updated.last_commit).toBe("abc1234");
+  });
+
+  it("bridges commit and validation_results into cluster-state.json after successful continue", () => {
+    const clusterDir = join(testDir, ".polaris", "clusters", "POL-5");
+    const resultFile = join(clusterDir, "results", "POL-23-sealed.json");
+    mkdirSync(join(clusterDir, "results"), { recursive: true });
+    writeFileSync(
+      resultFile,
+      JSON.stringify({
+        child_id: "POL-23",
+        status: "done",
+        commit: "deadbeef1234",
+        validation: { passed: ["npm test", "npm run build"] },
+      }),
+    );
+    // Minimal cluster-state.json (must exist for bridge to write)
+    writeFileSync(
+      join(clusterDir, "cluster-state.json"),
+      JSON.stringify({
+        schema_version: "1.0",
+        cluster_id: "POL-5",
+        state_generation: 1,
+        child_states: [{ id: "POL-23", status: "dispatched" }],
+        claim_metadata: {},
+        packet_pointers: {},
+        result_pointers: {},
+        validation_results: {},
+        commits: {},
+        tracker_mutations: {},
+        blockers: [],
+      }),
+    );
+    const state = {
+      schema_version: "1.0",
+      run_id: "pol-5-session-1",
+      cluster_id: "POL-5",
+      active_child: "POL-23",
+      completed_children: [],
+      open_children: ["POL-23", "POL-24"],
+      open_children_meta: {
+        "POL-23": { result_file: resultFile },
+      },
+      step_cursor: "dispatch",
+      context_budget: { children_completed: 0, max_children_per_session: 3 },
+      status: "running",
+      next_open_child: "POL-23",
+      dispatch_boundary: { dispatch_epoch: 1, continue_epoch: 0, last_dispatched_child: "POL-23" },
+    };
+    const stateFile = writeState(testDir, state);
+    const origLog = console.log;
+    console.log = () => {};
+    try {
+      runLoopContinue({ stateFile, repoRoot: testDir });
+    } finally {
+      console.log = origLog;
+    }
+
+    const cs = readClusterStateSync("POL-5", testDir);
+    expect(cs).not.toBeNull();
+    expect(cs!.commits["POL-23"]).toBe("deadbeef1234");
+    expect(cs!.result_pointers["POL-23"]).toBe(resultFile);
+    expect(cs!.validation_results["POL-23"]).toMatchObject({ passed: true });
+    const childState = cs!.child_states.find((c) => c.id === "POL-23");
+    expect(childState?.status).toBe("done");
+    expect(childState?.commit).toBe("deadbeef1234");
+  });
+
+  it("writes completed_children_results into current-state.json after continue with evidence", () => {
+    const clusterDir = join(testDir, ".polaris", "clusters", "POL-5");
+    const resultFile = join(clusterDir, "results", "POL-23-sealed.json");
+    mkdirSync(join(clusterDir, "results"), { recursive: true });
+    writeFileSync(
+      resultFile,
+      JSON.stringify({
+        child_id: "POL-23",
+        status: "done",
+        commit: "deadbeef1234",
+        validation: "passed",
+      }),
+    );
+    writeFileSync(
+      join(clusterDir, "cluster-state.json"),
+      JSON.stringify({
+        schema_version: "1.0",
+        cluster_id: "POL-5",
+        state_generation: 1,
+        child_states: [],
+        claim_metadata: {},
+        packet_pointers: {},
+        result_pointers: {},
+        validation_results: {},
+        commits: {},
+        tracker_mutations: {},
+        blockers: [],
+      }),
+    );
+    const state = {
+      schema_version: "1.0",
+      run_id: "pol-5-session-1",
+      cluster_id: "POL-5",
+      active_child: "POL-23",
+      completed_children: [],
+      open_children: ["POL-23", "POL-24"],
+      open_children_meta: { "POL-23": { result_file: resultFile } },
+      step_cursor: "dispatch",
+      context_budget: { children_completed: 0, max_children_per_session: 3 },
+      status: "running",
+      next_open_child: "POL-23",
+      dispatch_boundary: { dispatch_epoch: 1, continue_epoch: 0, last_dispatched_child: "POL-23" },
+    };
+    const stateFile = writeState(testDir, state);
+    const origLog = console.log;
+    console.log = () => {};
+    try {
+      runLoopContinue({ stateFile, repoRoot: testDir });
+    } finally {
+      console.log = origLog;
+    }
+
+    const updated = readState(stateFile);
+    expect(updated.completed_children_results?.["POL-23"]).toMatchObject({
+      status: "done",
+      validation: "passed",
+      commit: "deadbeef1234",
+      next_recommended_action: "continue",
+    });
+  });
+
+  it("fails continue when result file contains a non-hex placeholder commit", () => {
+    const clusterDir = join(testDir, ".polaris", "clusters", "POL-5");
+    const resultFile = join(clusterDir, "results", "POL-23-placeholder.json");
+    mkdirSync(join(clusterDir, "results"), { recursive: true });
+    writeFileSync(
+      resultFile,
+      JSON.stringify({
+        child_id: "POL-23",
+        status: "done",
+        commit: "pending-single-commit",
+        validation: "passed",
+      }),
+    );
+    const state = {
+      schema_version: "1.0",
+      run_id: "pol-5-session-1",
+      cluster_id: "POL-5",
+      active_child: "POL-23",
+      completed_children: [],
+      open_children: ["POL-23", "POL-24"],
+      open_children_meta: { "POL-23": { result_file: resultFile } },
+      step_cursor: "dispatch",
+      context_budget: { children_completed: 0, max_children_per_session: 3 },
+      status: "running",
+      next_open_child: "POL-23",
+      dispatch_boundary: { dispatch_epoch: 1, continue_epoch: 0, last_dispatched_child: "POL-23" },
+    };
+    const stateFile = writeState(testDir, state);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
+      throw new Error("process.exit called");
+    });
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    expect(() => runLoopContinue({ stateFile, repoRoot: testDir })).toThrow("process.exit called");
+    expect(errorSpy.mock.calls.some((args) => String(args[0]).includes("not a valid git hash"))).toBe(true);
+
+    exitSpy.mockRestore();
+    errorSpy.mockRestore();
+  });
+
+  it("fails continue when result file has no validation and packet has no validation_waiver", () => {
+    const clusterDir = join(testDir, ".polaris", "clusters", "POL-5");
+    const resultFile = join(clusterDir, "results", "POL-23-sealed.json");
+    const packetFile = join(clusterDir, "packets", "POL-23.json");
+    mkdirSync(join(clusterDir, "results"), { recursive: true });
+    mkdirSync(join(clusterDir, "packets"), { recursive: true });
+    writeFileSync(
+      resultFile,
+      JSON.stringify({
+        child_id: "POL-23",
+        status: "done",
+        commit: "abc1234",
+        // no validation field
+      }),
+    );
+    writeFileSync(packetFile, JSON.stringify({ instructions: {} }));
+    const state = {
+      schema_version: "1.0",
+      run_id: "pol-5-session-1",
+      cluster_id: "POL-5",
+      active_child: "POL-23",
+      completed_children: [],
+      open_children: ["POL-23", "POL-24"],
+      open_children_meta: {
+        "POL-23": {
+          result_file: resultFile,
+          dispatch_record: { packet_path: packetFile, expected_result_path: resultFile },
+        },
+      },
+      step_cursor: "dispatch",
+      context_budget: { children_completed: 0, max_children_per_session: 3 },
+      status: "running",
+      next_open_child: "POL-23",
+      dispatch_boundary: { dispatch_epoch: 1, continue_epoch: 0, last_dispatched_child: "POL-23" },
+    };
+    const stateFile = writeState(testDir, state);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
+      throw new Error("process.exit called");
+    });
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    expect(() => runLoopContinue({ stateFile, repoRoot: testDir })).toThrow("process.exit called");
+    expect(errorSpy.mock.calls.some((args) => String(args[0]).includes("no passing validation evidence"))).toBe(true);
+
+    exitSpy.mockRestore();
+    errorSpy.mockRestore();
+  });
+
+  it("succeeds continue when result file has no validation but packet has validation_waiver", () => {
+    const clusterDir = join(testDir, ".polaris", "clusters", "POL-5");
+    const resultFile = join(clusterDir, "results", "POL-23-sealed.json");
+    const packetFile = join(clusterDir, "packets", "POL-23.json");
+    mkdirSync(join(clusterDir, "results"), { recursive: true });
+    mkdirSync(join(clusterDir, "packets"), { recursive: true });
+    writeFileSync(
+      resultFile,
+      JSON.stringify({
+        child_id: "POL-23",
+        status: "done",
+        commit: "abc1234",
+        // no validation field
+      }),
+    );
+    writeFileSync(packetFile, JSON.stringify({ instructions: { validation_waiver: "docs-only change" } }));
+    writeFileSync(
+      join(clusterDir, "cluster-state.json"),
+      JSON.stringify({
+        schema_version: "1.0",
+        cluster_id: "POL-5",
+        state_generation: 1,
+        child_states: [],
+        claim_metadata: {},
+        packet_pointers: {},
+        result_pointers: {},
+        validation_results: {},
+        commits: {},
+        tracker_mutations: {},
+        blockers: [],
+      }),
+    );
+    const state = {
+      schema_version: "1.0",
+      run_id: "pol-5-session-1",
+      cluster_id: "POL-5",
+      active_child: "POL-23",
+      completed_children: [],
+      open_children: ["POL-23", "POL-24"],
+      open_children_meta: {
+        "POL-23": {
+          result_file: resultFile,
+          dispatch_record: { packet_path: packetFile, expected_result_path: resultFile },
+        },
+      },
+      step_cursor: "dispatch",
+      context_budget: { children_completed: 0, max_children_per_session: 3 },
+      status: "running",
+      next_open_child: "POL-23",
+      dispatch_boundary: { dispatch_epoch: 1, continue_epoch: 0, last_dispatched_child: "POL-23" },
+    };
+    const stateFile = writeState(testDir, state);
+    const origLog = console.log;
+    console.log = () => {};
+    try {
+      runLoopContinue({ stateFile, repoRoot: testDir });
+    } finally {
+      console.log = origLog;
+    }
+
+    const updated = readState(stateFile);
+    expect(updated.completed_children).toContain("POL-23");
+    expect(updated.completed_children_results?.["POL-23"]?.validation).toBe("skipped");
   });
 });
