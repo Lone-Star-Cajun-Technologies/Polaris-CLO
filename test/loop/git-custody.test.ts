@@ -178,7 +178,7 @@ describe("verifyChildCommitCustody (with real git)", () => {
   let dir: string;
 
   afterEach(() => {
-    rmSync(dir, { recursive: true, force: true });
+    if (dir) rmSync(dir, { recursive: true, force: true });
   });
 
   it("returns null when commit is on delivery branch but not on base", () => {
@@ -251,7 +251,7 @@ describe("hasNonArtifactSourceChanges (with real git)", () => {
   let dir: string;
 
   afterEach(() => {
-    rmSync(dir, { recursive: true, force: true });
+    if (dir) rmSync(dir, { recursive: true, force: true });
   });
 
   it("returns true when non-artifact source file changed", () => {

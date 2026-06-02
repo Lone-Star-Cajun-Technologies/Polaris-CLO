@@ -1093,9 +1093,8 @@ export function runLoopDispatch(options: DispatchOptions): void {
         }
       } else {
         // No delivery branch recorded yet — establish custody now.
-        const configBaseBranch =
-          loadedConfig?.finalize?.targetBranch ??
-          (isProtectedBranch(dispatchCurrentBranch) ? dispatchCurrentBranch : "main");
+        // assertNotOnBaseBranch above already guarantees dispatchCurrentBranch is not protected.
+        const configBaseBranch = loadedConfig?.finalize?.targetBranch ?? "main";
         custodyRecord = buildCustodyRecord(options.repoRoot, dispatchCurrentBranch, configBaseBranch);
       }
     }

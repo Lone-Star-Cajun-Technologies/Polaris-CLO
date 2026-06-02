@@ -172,10 +172,8 @@ describe("provider policy: rotation filtered by worker policy", () => {
     const { provider, threw } = captureDispatch(stateFile, testDir);
 
     expect(threw).toBe(false);
-    // codex is the first rotation entry that is in the policy
-    // (claude is in rotation but NOT in policy; copilot is in policy but NOT in rotation)
-    expect(["codex", "copilot"]).toContain(provider);
-    expect(provider).not.toBe("claude");
+    // codex is the first rotation entry in the filtered list (claude not in policy; copilot not in rotation)
+    expect(provider).toBe("codex");
   });
 
   it("never selects claude when worker policy excludes it", () => {
@@ -199,8 +197,8 @@ describe("provider policy: rotation filtered by worker policy", () => {
     const { provider, threw } = captureDispatch(stateFile, testDir);
 
     expect(threw).toBe(false);
-    expect(provider).not.toBe("claude");
-    expect(["codex", "copilot"]).toContain(provider);
+    // codex comes first in the filtered rotation ([claude,codex,copilot] ∩ [copilot,codex] → [codex,copilot])
+    expect(provider).toBe("codex");
   });
 
   it("falls back to first policy provider when rotation has no overlap with policy", () => {
