@@ -517,7 +517,7 @@ export async function runInit(options: InitOptions = {}): Promise<void> {
 
   if (!options.adopt && repoState === "existing") {
     process.stdout.write(
-      "This repo has existing content. Run `polaris init --adopt` to begin adoption.\nThis repo has existing content. Run polaris init --adopt to begin adoption.\n",
+      "This repo has existing content. Run `polaris init --adopt` to begin adoption.\n",
     );
     return;
   }
@@ -639,7 +639,7 @@ export async function runInit(options: InitOptions = {}): Promise<void> {
   );
 
   if (smartDocsMigrationSteps.length > 0) {
-    migrateSmartDocs(adoptionArtifacts.plan, repoRoot);
+    await migrateSmartDocs(adoptionArtifacts.plan, repoRoot);
     const moved = adoptionArtifacts.plan.steps.filter(
       (step) => step.category === "smartdocs-migrate" && step.status === "completed",
     ).length;
@@ -658,15 +658,15 @@ export async function runInit(options: InitOptions = {}): Promise<void> {
       `SmartDocs migration step completed: moved ${migrationResult.moved}, skipped ${migrationResult.skipped}.\n`,
     );
   }
-  void (options.generateFolderCognition ?? generateRepoFolderCognition)(
+  await (options.generateFolderCognition ?? generateRepoFolderCognition)(
     adoptionArtifacts.plan,
     inventory,
   );
   process.stdout.write("Folder cognition generation step completed.\n");
-  handleInstructionFiles(adoptionArtifacts.plan, inventory);
+  await handleInstructionFiles(adoptionArtifacts.plan, inventory);
   process.stdout.write("Instruction file handling step completed.\n");
   if (adoptionArtifacts.plan.steps.some((step) => step.category === "stage")) {
-    finalizeAdoption(adoptionArtifacts.plan, {
+    await finalizeAdoption(adoptionArtifacts.plan, {
       repoRoot,
       commit: options.commit,
       now,

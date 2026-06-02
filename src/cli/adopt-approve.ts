@@ -57,10 +57,7 @@ export async function promptApproval(
   const repoRoot = options.repoRoot ?? process.cwd();
   const stdout = options.stdout ?? process.stdout;
   const stdin = options.stdin ?? process.stdin;
-  const markdownPath = adoptionPlanMarkdownPath(repoRoot);
-  const markdown = existsSync(markdownPath)
-    ? readFileSync(markdownPath, "utf-8")
-    : renderAdoptionPlanMarkdown(plan);
+  const markdown = renderAdoptionPlanMarkdown(plan);
 
   stdout.write(`${markdown.replace(/\s*$/, "")}\n\n`);
 

@@ -60,8 +60,9 @@ export function detectRepoState(repoRoot: string): RepoState {
   const hasSourceRoots = hasAny(topLevelEntries, SOURCE_ROOT_HINTS);
   const hasDocsRoots = hasAny(topLevelEntries, DOC_ROOT_HINTS);
   const hasAgentInstructionFiles = hasAny(topLevelEntries, AGENT_INSTRUCTION_FILES);
+  const hasPolarisConfigFile = existsSync(join(repoRoot, "polaris.config.json"));
 
-  if (hasSourceRoots || hasDocsRoots || hasAgentInstructionFiles) {
+  if (hasDocsRoots || hasAgentInstructionFiles || hasPolarisConfigFile) {
     return "existing";
   }
 

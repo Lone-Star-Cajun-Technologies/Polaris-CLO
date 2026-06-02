@@ -8,6 +8,18 @@ export interface ScanRepoOptions {
   rescan?: boolean;
 }
 
+function isValidRepoScanInventory(parsed: unknown): parsed is RepoScanInventory {
+  if (typeof parsed !== "object" || parsed === null) {
+    return false;
+  }
+  const obj = parsed as Record<string, unknown>;
+  return (
+    Array.isArray(obj.smartdocs_candidates) &&
+    Array.isArray(obj.agent_instruction_files) &&
+    typeof obj.scanned_at === "string"
+  );
+}
+
 function readExistingInventory(repoRoot: string): RepoScanInventory | null {
   const inventoryPath = join(repoRoot, ".polaris", "adoption-inventory.json");
   if (!existsSync(inventoryPath)) {
@@ -15,7 +27,12 @@ function readExistingInventory(repoRoot: string): RepoScanInventory | null {
   }
 
   try {
-    return JSON.parse(readFileSync(inventoryPath, "utf-8")) as RepoScanInventory;
+    const parsed = JSON.parse(readFileSync(inventoryPath, "utf-8"));
+    if (!isValidRepoScanInventory(parsed)) {
+      console.warn("Cached inventory failed validation; performing fresh scan");
+      return null;
+    }
+    return parsed;
   } catch {
     return null;
   }
