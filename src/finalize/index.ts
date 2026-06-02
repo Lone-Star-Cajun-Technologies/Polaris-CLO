@@ -4,6 +4,8 @@ import { execFileSync } from "node:child_process";
 import { loadConfig } from "../config/loader.js";
 import { readState } from "../loop/checkpoint.js";
 import { classifyArtifactPath } from "./artifact-policy.js";
+import { hasNonArtifactSourceChanges, verifyChildCommitCustody } from "../loop/git-custody.js";
+import { readClusterStateSync } from "../cluster-state/store.js";
 import { runCanonCheck } from "../smartdocs-engine/canon-check.js";
 import { stepMapUpdate } from "./steps/01-map-update.js";
 import { stepMapValidate } from "./steps/02-map-validate.js";
@@ -155,6 +157,54 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
           `${formatFinalizeEvidenceFailures(evidenceReport.failures)}\n`,
         );
         process.exit(1);
+      }
+    }
+  }
+
+  // Step 5.6: Branch custody verification
+  // When the cluster state records a delivery_branch and base_branch (set by dispatch),
+  // verify that base..delivery_branch contains at least one non-artifact source change
+  // and that no completed child's commit is already reachable from the base branch.
+  //
+  // Skipped when no custody record is present (backward compatibility with runs
+  // that did not go through the custody-aware dispatch path) or when
+  // loop.allowBranchDivergence is true (direct-main mode).
+  {
+    const clusterState = readClusterStateSync(state.cluster_id, repoRoot);
+    const baseBranch = clusterState?.base_branch;
+    const deliveryBranch = clusterState?.delivery_branch;
+    const directMainMode = config.loop?.allowBranchDivergence === true;
+
+    if (!directMainMode && baseBranch && deliveryBranch) {
+      const hasImplChanges = hasNonArtifactSourceChanges(repoRoot, baseBranch, state.cluster_id);
+      if (!hasImplChanges) {
+        process.stderr.write(
+          `finalize aborted: branch custody violation — no non-artifact source changes found in ` +
+            `${baseBranch}...HEAD. Child commits may already be on the base branch, ` +
+            `or no implementation work was recorded on this delivery branch.\n`,
+        );
+        process.exit(1);
+      }
+
+      // Check each completed child's commit to verify it is not already on the base branch.
+      for (const childId of state.completed_children) {
+        const commitHash =
+          clusterState.commits?.[childId] ??
+          state.completed_children_results?.[childId]?.commit ??
+          null;
+        if (!commitHash) continue;
+        const custodyError = verifyChildCommitCustody(
+          repoRoot,
+          commitHash,
+          deliveryBranch,
+          baseBranch,
+        );
+        if (custodyError) {
+          process.stderr.write(
+            `finalize aborted: branch custody violation for ${childId}: ${custodyError}\n`,
+          );
+          process.exit(1);
+        }
       }
     }
   }

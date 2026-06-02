@@ -74,4 +74,10 @@ export interface ClusterState {
   commits: { [childId: string]: string };
   tracker_mutations: { [childId: string]: TrackerMutationReference };
   blockers: Blocker[];
+  /** Base branch against which this run will deliver a PR (e.g. "main"). */
+  base_branch?: string;
+  /** SHA of base_branch tip at the moment delivery branch custody was established. */
+  base_sha?: string;
+  /** Delivery branch that all workers for this cluster must run on. */
+  delivery_branch?: string;
 }

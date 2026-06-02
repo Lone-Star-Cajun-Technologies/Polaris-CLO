@@ -2,6 +2,7 @@ import { join, isAbsolute, resolve } from "node:path";
 import { existsSync, readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { readClusterStateSync, writeClusterStateSync } from "../cluster-state/store.js";
+import { verifyChildCommitCustody } from "./git-custody.js";
 import type { ClusterState, ChildState, ValidationResult } from "../cluster-state/types.js";
 import {
   readState,
@@ -354,6 +355,26 @@ export function runLoopContinue(options: ContinueOptions): void {
     completionCommit = evidence.commit;
     completionResultFile = evidence.resultFile;
     completionValidation = evidence.rawValidation;
+
+    // ── Branch custody check ──────────────────────────────────────────────────
+    // Reject commits that are already reachable from the base branch.
+    // This catches the case where a worker committed directly to main instead
+    // of to the delivery branch.
+    if (completionCommit) {
+      const custodyState = readClusterStateSync(state.cluster_id, repoRoot);
+      if (custodyState?.delivery_branch && custodyState?.base_branch) {
+        const custodyError = verifyChildCommitCustody(
+          repoRoot,
+          completionCommit,
+          custodyState.delivery_branch,
+          custodyState.base_branch,
+        );
+        if (custodyError) {
+          console.error(`Error: branch custody violation for ${completedChild}: ${custodyError}`);
+          process.exit(1);
+        }
+      }
+    }
 
     if (!hasValidationEvidence(completionValidation)) {
       const waiver = readPacketFlag(state, completedChild, repoRoot, "validation_waiver");
