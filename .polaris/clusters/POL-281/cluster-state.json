@@ -1,11 +1,12 @@
 {
   "schema_version": "1.0",
   "cluster_id": "POL-281",
-  "state_generation": 2,
+  "state_generation": 3,
   "child_states": [
     {
       "id": "POL-277",
-      "status": "ready"
+      "status": "done",
+      "commit": "ecce3e2052505fca00a9e4f26b2895317a433584"
     },
     {
       "id": "POL-278",
@@ -32,7 +33,8 @@
   "result_pointers": {
     "POL-280": ".polaris/clusters/POL-281/results/POL-280-612eb225-de3d-4bfb-96b3-8ddf6e95bda3.json",
     "POL-279": ".polaris/clusters/POL-281/results/POL-279-bd870307-37da-400a-8833-7917f9656432.json",
-    "POL-278": ".polaris/clusters/POL-281/results/POL-278-8ed1f1fe-bfa2-4a50-9b36-549a37e850e0.json"
+    "POL-278": ".polaris/clusters/POL-281/results/POL-278-8ed1f1fe-bfa2-4a50-9b36-549a37e850e0.json",
+    "POL-277": ".polaris/clusters/POL-281/results/POL-277-84f1c2d5-a0ec-475f-8e2b-0d0f628653d1.json"
   },
   "validation_results": {
     "POL-280": {
@@ -46,12 +48,17 @@
     "POL-278": {
       "passed": true,
       "output": "backfilled from .polaris/clusters/POL-281/results/POL-278-8ed1f1fe-bfa2-4a50-9b36-549a37e850e0.json"
+    },
+    "POL-277": {
+      "passed": true,
+      "output": "{\"attempted\":[\"npm test -- --grep \\\"packet.*empty.*scope|empty.*allowed_scope\\\"\",\"npm test -- -t \\\"packet.*empty.*scope|empty.*allowed_scope\\\"\",\"npm test -- -t \\\"goal is a placeholder|goal section is missing\\\"\",\"npm run build\"],\"passed\":[\"npm test -- -t \\\"packet.*empty.*scope|empty.*allowed_scope\\\"\",\"npm test -- -t \\\"goal is a placeholder|goal section is missing\\\"\",\"npm run build\"],\"notes\":\"Vitest in this repo does not support --grep; used -t equivalent.\"}"
     }
   },
   "commits": {
     "POL-280": "6ce3d945654eb7faa26c30751146b90c86daba24",
     "POL-279": "43ef1484ae0a029a0efb876a8c51b79fcb92f970",
-    "POL-278": "af422bba2433e6c833c3944e45a619224c326570"
+    "POL-278": "af422bba2433e6c833c3944e45a619224c326570",
+    "POL-277": "ecce3e2052505fca00a9e4f26b2895317a433584"
   },
   "tracker_mutations": {},
   "blockers": []

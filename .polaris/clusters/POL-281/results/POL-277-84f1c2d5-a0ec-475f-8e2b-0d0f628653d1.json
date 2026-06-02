@@ -1,14 +1,18 @@
 {
   "child_id": "POL-277",
   "status": "done",
-  "commit": "pending-single-commit",
+  "commit": "ecce3e2052505fca00a9e4f26b2895317a433584",
   "validation": {
-    "passed": [
+    "attempted": [
+      "npm test -- --grep \"packet.*empty.*scope|empty.*allowed_scope\"",
       "npm test -- -t \"packet.*empty.*scope|empty.*allowed_scope\"",
+      "npm test -- -t \"goal is a placeholder|goal section is missing\"",
       "npm run build"
     ],
-    "failed": [
-      "npm test -- --grep \"packet.*empty.*scope|empty.*allowed_scope\" (unsupported option --grep in this vitest version)"
+    "passed": [
+      "npm test -- -t \"packet.*empty.*scope|empty.*allowed_scope\"",
+      "npm test -- -t \"goal is a placeholder|goal section is missing\"",
+      "npm run build"
     ],
     "notes": "Vitest in this repo does not support --grep; used -t equivalent."
   },
