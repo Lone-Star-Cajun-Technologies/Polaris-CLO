@@ -150,6 +150,7 @@ describe("TerminalCliAdapter", () => {
         telemetryFile: "/tmp/polaris-test/telemetry.jsonl",
         resultFile: "/tmp/polaris-test/result.json",
         allowedScope: [],
+        validationCommands: ["npm test"],
       });
       const adapter = new TerminalCliAdapter({
         adapter: "terminal-cli",
