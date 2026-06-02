@@ -1,0 +1,79 @@
+{
+  "schemaVersion": "v2",
+  "source": {
+    "id": "POL-288",
+    "type": "Linear",
+    "analysis": {
+      "id": "polaris-analyze-foreman-worker-drift-2026-06-02-001",
+      "doc": "smartdocs/raw/pol-288-foreman-worker-drift-postmortem.md"
+    }
+  },
+  "nodes": {
+    "POL-289": {
+      "id": "POL-289",
+      "title": "IMPLEMENT: Foreman/Worker boundary hardening from POL-283 postmortem",
+      "status": "Backlog",
+      "type": "implement-parent"
+    },
+    "POL-290": {
+      "id": "POL-290",
+      "title": "IMPLEMENT: Quiet Foreman mode — role file and polaris-run chain hardening",
+      "status": "Backlog",
+      "type": "implement-child",
+      "tier": "T1",
+      "priority": "short-term"
+    },
+    "POL-291": {
+      "id": "POL-291",
+      "title": "IMPLEMENT: Worker containment — prohibited write paths in role file and packet schema",
+      "status": "Backlog",
+      "type": "implement-child",
+      "tier": "T1",
+      "priority": "short-term"
+    },
+    "POL-292": {
+      "id": "POL-292",
+      "title": "IMPLEMENT: CLI-owned worker state writes — add `polaris worker complete` command",
+      "status": "Backlog",
+      "type": "implement-child",
+      "tier": "T2",
+      "priority": "medium-term"
+    },
+    "POL-293": {
+      "id": "POL-293",
+      "title": "IMPLEMENT: CLI-owned worker commits — add `polaris worker commit` with scope validation",
+      "status": "Backlog",
+      "type": "implement-child",
+      "tier": "T2",
+      "priority": "medium-term"
+    },
+    "POL-294": {
+      "id": "POL-294",
+      "title": "IMPLEMENT: Foreman/Worker observability — CompactReturn size, scope fidelity, and recovery telemetry",
+      "status": "Backlog",
+      "type": "implement-child",
+      "tier": "T2",
+      "priority": "medium-term"
+    }
+  },
+  "dependencies": {
+    "POL-293": ["POL-292"],
+    "POL-292": ["POL-291"]
+  },
+  "clusters": {
+    "POL-289": {
+      "id": "POL-289",
+      "title": "IMPLEMENT: Foreman/Worker boundary hardening from POL-283 postmortem",
+      "children": ["POL-290", "POL-291", "POL-292", "POL-293", "POL-294"],
+      "cluster_root": "POL-289",
+      "ordering": [
+        "POL-290",
+        "POL-291",
+        "POL-292",
+        "POL-294",
+        "POL-293"
+      ]
+    }
+  },
+  "activeCluster": "POL-289"
+}
