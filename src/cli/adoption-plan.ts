@@ -309,38 +309,48 @@ export function renderAdoptionPlanMarkdown(plan: AdoptionPlan): string {
   lines.push(`- Generated at: ${plan.generated_at}`);
   lines.push(`- Repo state: ${plan.repo_state}`);
   lines.push(`- Approved: ${plan.approved ? "yes" : "no"}`);
+  lines.push(`- Approved at: ${plan.approved_at ?? "n/a"}`);
   lines.push(`- Dry run: ${plan.dry_run ? "yes" : "no"}`);
   lines.push("");
   lines.push("## Impact Summary");
   lines.push("");
-  lines.push(`- Files to create: ${plan.impact_summary.files_to_create}`);
-  lines.push(`- Files to move: ${plan.impact_summary.files_to_move}`);
-  lines.push(`- Files to modify: ${plan.impact_summary.files_to_modify}`);
+  lines.push("| Metric | Value |");
+  lines.push("| --- | ---: |");
+  lines.push(`| Files to create | ${plan.impact_summary.files_to_create} |`);
+  lines.push(`| Files to move | ${plan.impact_summary.files_to_move} |`);
+  lines.push(`| Files to modify | ${plan.impact_summary.files_to_modify} |`);
   lines.push(
-    `- Instruction files affected: ${plan.impact_summary.instruction_files_affected}`,
+    `| Instruction files affected | ${plan.impact_summary.instruction_files_affected} |`,
   );
   lines.push(
-    `- SmartDocs candidates moved: ${plan.impact_summary.smartdocs_candidates_moved}`,
+    `| SmartDocs candidates moved | ${plan.impact_summary.smartdocs_candidates_moved} |`,
   );
   lines.push(
-    `- Cognition files to generate: ${plan.impact_summary.cognition_files_to_generate}`,
+    `| Cognition files to generate | ${plan.impact_summary.cognition_files_to_generate} |`,
   );
   lines.push("");
-  lines.push("## Steps");
-  lines.push("");
-  lines.push(
-    "| Order | Phase | Category | Action | Source | Destination | Approval | Risk | Status | Description |",
-  );
-  lines.push(
-    "| ---: | :---: | --- | --- | --- | --- | :---: | :---: | :---: | --- |",
-  );
 
-  for (const step of plan.steps) {
-    lines.push(
-      `| ${step.order} | ${step.phase} | ${step.category} | ${step.action} | ${step.source_path ?? "-"} | ${step.dest_path ?? "-"} | ${step.requires_approval ? "yes" : "no"} | ${step.estimated_risk} | ${step.status} | ${step.description} |`,
-    );
+  for (const phase of ["A", "B", "C"] as const) {
+    const phaseSteps = plan.steps.filter((step) => step.phase === phase);
+    lines.push(`## Phase ${phase}`);
+    lines.push("");
+
+    if (phaseSteps.length === 0) {
+      lines.push("_No steps._");
+      lines.push("");
+      continue;
+    }
+
+    for (const step of phaseSteps) {
+      const source = step.source_path ? ` source: \`${step.source_path}\`` : "";
+      const dest = step.dest_path ? ` destination: \`${step.dest_path}\`` : "";
+      lines.push(
+        `- **${step.order}. ${step.step_id}** — ${step.category} / ${step.action} / approval ${step.requires_approval ? "required" : "not required"} / risk ${step.estimated_risk} / status ${step.status}${source}${dest}`,
+      );
+      lines.push(`  - ${step.description}`);
+    }
+    lines.push("");
   }
-  lines.push("");
 
   return lines.join("\n");
 }
@@ -356,11 +366,9 @@ export function generateAdoptionPlanArtifacts(
   const json = `${JSON.stringify(plan, null, 2)}\n`;
   const markdown = renderAdoptionPlanMarkdown(plan);
 
-  if (!plan.dry_run) {
-    mkdirSync(join(repoRoot, ".polaris"), { recursive: true });
-    writeFileSync(jsonPath, json, "utf-8");
-    writeFileSync(markdownPath, markdown, "utf-8");
-  }
+  mkdirSync(join(repoRoot, ".polaris"), { recursive: true });
+  writeFileSync(jsonPath, json, "utf-8");
+  writeFileSync(markdownPath, markdown, "utf-8");
 
   return {
     plan,
@@ -368,6 +376,6 @@ export function generateAdoptionPlanArtifacts(
     markdown,
     jsonPath,
     markdownPath,
-    wroteFiles: !plan.dry_run,
+    wroteFiles: true,
   };
 }
