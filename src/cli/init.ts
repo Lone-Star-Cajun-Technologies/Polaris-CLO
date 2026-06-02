@@ -21,6 +21,7 @@ import {
 } from "./adoption-plan.js";
 import { scanAdoptionInventory as scanRepoAdoptionInventory } from "./adoption-inventory.js";
 import { generateFolderCognition as generateRepoFolderCognition } from "./adopt-cognition.js";
+import { migrateSmartDocs } from "./adopt-smartdocs.js";
 import { runMapIndex } from "../map/index.js";
 import { handleInstructionFiles } from "./adopt-instructions.js";
 
@@ -563,13 +564,30 @@ export function runInit(options: InitOptions = {}): void {
     return;
   }
 
-  const migrationResult = (options.applySmartDocsMigration ?? applySmartDocsMigration)(
-    repoRoot,
-    inventory,
+  const smartDocsMigrationSteps = adoptionArtifacts.plan.steps.filter(
+    (step) => step.category === "smartdocs-migrate",
   );
-  process.stdout.write(
-    `SmartDocs migration step completed: moved ${migrationResult.moved}, skipped ${migrationResult.skipped}.\n`,
-  );
+
+  if (smartDocsMigrationSteps.length > 0) {
+    migrateSmartDocs(adoptionArtifacts.plan, repoRoot);
+    const moved = adoptionArtifacts.plan.steps.filter(
+      (step) => step.category === "smartdocs-migrate" && step.status === "completed",
+    ).length;
+    const skipped = adoptionArtifacts.plan.steps.filter(
+      (step) => step.category === "smartdocs-migrate" && step.status === "skipped",
+    ).length;
+    process.stdout.write(
+      `SmartDocs migration step completed: moved ${moved}, skipped ${skipped}.\n`,
+    );
+  } else {
+    const migrationResult = (options.applySmartDocsMigration ?? applySmartDocsMigration)(
+      repoRoot,
+      inventory,
+    );
+    process.stdout.write(
+      `SmartDocs migration step completed: moved ${migrationResult.moved}, skipped ${migrationResult.skipped}.\n`,
+    );
+  }
   void (options.generateFolderCognition ?? generateRepoFolderCognition)(
     adoptionArtifacts.plan,
     inventory,
