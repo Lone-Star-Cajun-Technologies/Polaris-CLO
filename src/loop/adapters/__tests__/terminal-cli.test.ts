@@ -137,6 +137,36 @@ describe("TerminalCliAdapter", () => {
         fs.rmSync(tmpDir, { recursive: true, force: true });
       }
     });
+
+    it("blocks impl packets with empty allowed_scope", async () => {
+      const packet = compileImplPacket({
+        runId: "run-test-0001",
+        clusterId: "POL-5",
+        childId: "POL-14",
+        branch: "feature/pol-14",
+        stateFile: "/tmp/polaris-test/current-state.json",
+        telemetryFile: "/tmp/polaris-test/telemetry.jsonl",
+        resultFile: "/tmp/polaris-test/result.json",
+        allowedScope: [],
+      });
+      const adapter = new TerminalCliAdapter({
+        adapter: "terminal-cli",
+        providers: {
+          codex: { command: "echo", args: ["--child", "{{active_child}}"] },
+        },
+      });
+
+      const result = await adapter.dispatch(packet, { provider: "codex", dryRun: true });
+
+      expect(result.exit_code).toBe(1);
+      expect(result.provider_used).toBe("codex");
+      expect(result.stderr).toContain("empty allowed_scope");
+      expect(JSON.parse(result.summary ?? "{}")).toMatchObject({
+        child_id: "POL-14",
+        status: "blocked",
+        warnings: ["empty-allowed-scope"],
+      });
+    });
   });
 
   describe("dry-run", () => {

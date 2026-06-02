@@ -102,7 +102,28 @@ export class TerminalCliAdapter implements ExecutionAdapter {
   }
 
   async dispatch(packet: BootstrapPacket, options: DispatchOptions): Promise<DispatchResult> {
-    const providerCfg = this.getProvider(options.provider);
+    const provider = options.provider || "terminal-cli";
+    if (isWorkerPacket(packet) && packet.worker_role === "impl") {
+      const allowed = Array.isArray(packet.instructions?.allowed_scope) ? packet.instructions.allowed_scope : [];
+      if (allowed.length === 0) {
+        const blockedMsg = `Worker blocked: impl packet for ${packet.active_child} has empty allowed_scope. Foreman must provide scope or approve override.`;
+        return {
+          exit_code: 1,
+          provider_used: provider,
+          command_run: `terminal-cli:${packet.active_child || "worker"}`,
+          summary: JSON.stringify({
+            child_id: packet.active_child,
+            status: "blocked",
+            validation_summary: blockedMsg,
+            next_action: "escalate",
+            warnings: ["empty-allowed-scope"],
+          }),
+          stderr: blockedMsg,
+        };
+      }
+    }
+
+    const providerCfg = this.getProvider(provider);
     const workerPrompt = buildWorkerInstructions(packet);
 
     // Write packet to a named temp file so args can reference it via {{packet_file}}
@@ -114,18 +135,18 @@ export class TerminalCliAdapter implements ExecutionAdapter {
       const commandLine = formatCommandLine(command, args);
 
       if (options.dryRun) {
-        return this.dryRun(options.provider, command, args, commandLine, packet, packetFile, workerPrompt);
+        return this.dryRun(provider, command, args, commandLine, packet, packetFile, workerPrompt);
       }
 
       if (!resolveCommand(command)) {
         throw new Error(
           `Provider command "${command}" not found on PATH. ` +
-            `Install it or update the "command" field for provider "${options.provider}" ` +
+            `Install it or update the "command" field for provider "${provider}" ` +
             `in polaris.config.json.`
         );
       }
 
-      return await this.runProcess(command, args, commandLine, packet, packetFile, options.provider, workerPrompt);
+      return await this.runProcess(command, args, commandLine, packet, packetFile, provider, workerPrompt);
     } finally {
       try {
         fs.unlinkSync(packetFile);
