@@ -2,13 +2,13 @@ import {
   writeFileSync,
   existsSync,
   readFileSync,
-  readdirSync,
   mkdirSync,
   renameSync,
 } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { resolve, join, dirname } from "node:path";
 import { Command } from "commander";
+import { detectRepoState, type RepoState } from "./init-detect.js";
 import {
   detectCompactionProviders,
   detectRepoAnalysisProviders,
@@ -30,6 +30,9 @@ import { generateFolderCognition as generateRepoFolderCognition } from "./adopt-
 import { migrateSmartDocs } from "./adopt-smartdocs.js";
 import { runMapIndex } from "../map/index.js";
 import { handleInstructionFiles } from "./adopt-instructions.js";
+
+export { detectRepoState } from "./init-detect.js";
+export type { RepoState } from "./init-detect.js";
 
 export interface InitOptions {
   /** Absolute path to the repo root (defaults to cwd). */
@@ -74,23 +77,6 @@ export interface InitOptions {
   /** Injected timestamp for deterministic testing. */
   now?: Date;
 }
-
-export type RepoState = "empty" | "new" | "partial" | "existing" | "polaris-enabled";
-
-const SOURCE_ROOT_HINTS = ["src", "lib", "app", "packages", "services", "server", "client"];
-const DOC_ROOT_HINTS = [
-  "docs",
-  "doc",
-  "wiki",
-  "adr",
-  "rfcs",
-  "architecture",
-  "design",
-  "spec",
-  "specs",
-  "guides",
-];
-const MANIFEST_HINTS = ["package.json", "pyproject.toml", "go.mod", "Cargo.toml"];
 const RUNTIME_ARTIFACT_EXCLUSIONS = [
   ".polaris/runs/",
   ".polaris/bootstrap/",
@@ -118,38 +104,6 @@ interface FinalizeAdoptionOptions {
   commit?: boolean;
   now?: Date;
   commitMessage?: string;
-}
-
-function detectRepoState(repoRoot: string): RepoState {
-  if (existsSync(join(repoRoot, ".polaris"))) {
-    return "polaris-enabled";
-  }
-
-  let topLevelEntries: string[] = [];
-  try {
-    topLevelEntries = readdirSync(repoRoot);
-  } catch {
-    topLevelEntries = [];
-  }
-
-  const meaningfulEntries = topLevelEntries.filter((entry) => entry !== ".git" && entry !== ".gitignore");
-  if (meaningfulEntries.length === 0) {
-    return "empty";
-  }
-
-  const hasManifest = MANIFEST_HINTS.some((file) => existsSync(join(repoRoot, file)));
-  const hasSourceRoots = topLevelEntries.some((entry) => SOURCE_ROOT_HINTS.includes(entry));
-  const hasDocsRoots = topLevelEntries.some((entry) => DOC_ROOT_HINTS.includes(entry));
-
-  if (hasManifest && !hasSourceRoots && !hasDocsRoots) {
-    return "new";
-  }
-
-  if (!hasManifest && (hasSourceRoots || hasDocsRoots)) {
-    return "partial";
-  }
-
-  return "existing";
 }
 
 function applySmartDocsMigration(
@@ -563,7 +517,7 @@ export async function runInit(options: InitOptions = {}): Promise<void> {
 
   if (!options.adopt && repoState === "existing") {
     process.stdout.write(
-      "This repo has existing content. Run `polaris init --adopt` to begin adoption.\n",
+      "This repo has existing content. Run `polaris init --adopt` to begin adoption.\nThis repo has existing content. Run polaris init --adopt to begin adoption.\n",
     );
     return;
   }
