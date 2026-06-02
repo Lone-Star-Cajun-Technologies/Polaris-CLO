@@ -21,6 +21,7 @@ import {
 } from "./adoption-plan.js";
 import { scanAdoptionInventory as scanRepoAdoptionInventory } from "./adoption-inventory.js";
 import { runMapIndex } from "../map/index.js";
+import { handleInstructionFiles } from "./adopt-instructions.js";
 
 export interface InitOptions {
   /** Absolute path to the repo root (defaults to cwd). */
@@ -566,6 +567,8 @@ export function runInit(options: InitOptions = {}): void {
   process.stdout.write(
     `SmartDocs migration step completed: moved ${migrationResult.moved}, skipped ${migrationResult.skipped}.\n`,
   );
+  handleInstructionFiles(adoptionArtifacts.plan, inventory);
+  process.stdout.write("Instruction file handling step completed.\n");
   if (adoptionArtifacts.plan.steps.some((step) => step.category === "stage")) {
     finalizeAdoption(adoptionArtifacts.plan, {
       repoRoot,
