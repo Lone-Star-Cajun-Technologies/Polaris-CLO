@@ -1044,6 +1044,40 @@ describe("runLoopDispatch", () => {
     });
   });
 
+  it("fails packet generation when issue goal section is missing", () => {
+    const artifactDir = join(testDir, ".taskchain_artifacts", "polaris-run");
+    const stateFile = writeState(
+      testDir,
+      baseState({
+        artifact_dir: artifactDir,
+        open_children_meta: {
+          "POL-145": {
+            title: "Add dispatch command",
+            labels: ["implement"],
+            body: "## Objective\nHarden dispatch packet generation.\n\n## Scope\n- src/loop/dispatch.ts\n\n## Validation\n- npm test\n",
+          },
+          "POL-146": { title: "Parent delivery", labels: ["implement"] },
+        },
+      }),
+    );
+    writeClusterStateFile(testDir, "POL-142", ["POL-145", "POL-146"]);
+
+    const stderr = expectDispatchError(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+    expect(stderr).toContain("POL-145");
+    expect(stderr).toContain("primary_goal");
+
+    const telemetryFile = join(artifactDir, "runs", "pol-142-session-1", "telemetry.jsonl");
+    const packetFailedEvents = readFileSync(telemetryFile, "utf-8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line))
+      .filter((event) => event.event === "packet-generation-failed");
+    expect(packetFailedEvents[packetFailedEvents.length - 1]).toMatchObject({
+      child_id: "POL-145",
+      missing_field: "primary_goal",
+    });
+  });
+
   it("fails packet generation when validation commands are empty without waiver", () => {
     const artifactDir = join(testDir, ".taskchain_artifacts", "polaris-run");
     const stateFile = writeState(

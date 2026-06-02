@@ -195,6 +195,10 @@ interface PacketGenerationFailure {
   message: string;
 }
 
+function isPlaceholderGoalText(goal: string): boolean {
+  return /^[\s\[(<{'"`-]*(?:tbd|todo|placeholder|to be determined)\b/i.test(goal);
+}
+
 function detectPacketGenerationFailure(packet: WorkerPacket): PacketGenerationFailure | null {
   if (packet.worker_role !== "impl") return null;
 
@@ -213,13 +217,15 @@ function detectPacketGenerationFailure(packet: WorkerPacket): PacketGenerationFa
   const parsedGoal = issueBody ? parseIssueBody(issueBody).goal.trim() : "";
   const issueTitle = packet.instructions.issue_context?.title ?? childId;
   const fallbackPromptGoal = `## Goal\nImplement ${childId}: "${issueTitle}".`;
+  const missingGoalFromBody = issueBody.length > 0 && parsedGoal.length === 0;
   const placeholderGoal =
     packet.instructions.primary_goal.includes(fallbackPromptGoal) ||
-    /^(?:tbd|todo|placeholder)\b/i.test(parsedGoal);
+    missingGoalFromBody ||
+    isPlaceholderGoalText(parsedGoal);
   if (placeholderGoal) {
     return {
       missingField: "primary_goal",
-      message: `Packet generation failed for ${childId}: primary_goal is a placeholder.`,
+      message: `Packet generation failed for ${childId}: primary_goal is placeholder or missing.`,
     };
   }
 
