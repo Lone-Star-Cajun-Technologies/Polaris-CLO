@@ -94,6 +94,14 @@ const RUNTIME_ARTIFACT_IGNORE_BLOCK = [
 ].join("\n");
 
 const PLAN_COMPLETE_STATUSES = new Set(["completed", "skipped"]);
+const ADOPTION_LOCKED_EXECUTION = {
+  rotation: [],
+  allowCrossAgentFallback: false,
+  adapter: "terminal-cli",
+} as const;
+const ADOPTION_LOCKED_ORCHESTRATION = {
+  mode: "supervised",
+} as const;
 
 interface FinalizeAdoptionOptions {
   repoRoot?: string;
@@ -172,6 +180,101 @@ function asRecord(value: unknown): Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : {};
+}
+
+function isAdoptionConfigLocked(existing: Record<string, unknown>): boolean {
+  const execution = asRecord(existing.execution);
+  const orchestration = asRecord(existing.orchestration);
+
+  return (
+    Array.isArray(execution.rotation) &&
+    execution.rotation.length === 0 &&
+    execution.allowCrossAgentFallback === false &&
+    execution.adapter === ADOPTION_LOCKED_EXECUTION.adapter &&
+    orchestration.mode === ADOPTION_LOCKED_ORCHESTRATION.mode
+  );
+}
+
+function buildInitConfig(
+  existing: Record<string, unknown>,
+  detected: string[],
+  detectedRepoAnalysis: string[],
+  adopt: boolean,
+): Record<string, unknown> {
+  const existingProviders = asRecord(existing.providers);
+  const updatedProviders: Record<string, unknown> = { ...existingProviders };
+
+  if (detected.length > 0) {
+    updatedProviders.compactionProviders = detected;
+  } else {
+    delete updatedProviders.compactionProviders;
+  }
+
+  const existingRepoAnalysis = asRecord(existingProviders.repoAnalysis);
+  const updatedRepoAnalysis: Record<string, unknown> =
+    detectedRepoAnalysis.length > 0
+      ? { ...existingRepoAnalysis, preferred: detectedRepoAnalysis[0] }
+      : Object.fromEntries(
+          Object.entries(existingRepoAnalysis).filter(([key]) => key !== "preferred"),
+        );
+
+  const updated: Record<string, unknown> = {
+    ...existing,
+    version: typeof existing.version === "string" ? existing.version : "1.0",
+  };
+
+  if (adopt) {
+    const existingExecution = asRecord(existing.execution);
+    updated.execution = {
+      ...existingExecution,
+      ...ADOPTION_LOCKED_EXECUTION,
+    };
+
+    const existingOrchestration = asRecord(existing.orchestration);
+    updated.orchestration = {
+      ...existingOrchestration,
+      ...ADOPTION_LOCKED_ORCHESTRATION,
+    };
+  }
+
+  if (Object.keys(updatedProviders).length > 0) {
+    updated.providers = updatedProviders;
+  } else if ("providers" in updated && Object.keys(updatedProviders).length === 0 && detected.length === 0) {
+    delete updated.providers;
+  }
+
+  if (Object.keys(updatedRepoAnalysis).length > 0) {
+    updatedProviders.repoAnalysis = updatedRepoAnalysis;
+    updated.providers = updatedProviders;
+  } else if (updated.providers) {
+    const providers = asRecord(updated.providers);
+    delete providers.repoAnalysis;
+    if (Object.keys(providers).length > 0) {
+      updated.providers = providers;
+    } else {
+      delete updated.providers;
+    }
+  }
+
+  return updated;
+}
+
+function writeAdoptionConfigLock(
+  repoRoot: string,
+  configPath: string,
+  existing: Record<string, unknown>,
+  detected: string[],
+  detectedRepoAnalysis: string[],
+): boolean {
+  if (isAdoptionConfigLocked(existing)) {
+    process.stdout.write("Provider config already locked — skipping.\n");
+    return false;
+  }
+
+  const updated = buildInitConfig(existing, detected, detectedRepoAnalysis, true);
+  writeFileSync(configPath, `${JSON.stringify(updated, null, 2)}\n`, "utf-8");
+  process.stdout.write(`polaris.config.json written to ${configPath}\n`);
+  return true;
 }
 
 function areAllPlanStepsComplete(plan: AdoptionPlanArtifacts["plan"]): boolean {
@@ -452,82 +555,25 @@ export function runInit(options: InitOptions = {}): void {
   const detected = detectCompaction(repoRoot);
   const detectedRepoAnalysis = detectRepoAnalysis(repoRoot);
 
-  // Build updated providers section.
-  const existingProviders = asRecord(existing.providers);
-
-  const updatedProviders: Record<string, unknown> = { ...existingProviders };
-
-  if (detected.length > 0) {
-    updatedProviders.compactionProviders = detected;
-  } else {
-    // Omit the field entirely when no providers are detected.
-    delete updatedProviders.compactionProviders;
-  }
-
-  const existingRepoAnalysis = asRecord(existingProviders.repoAnalysis);
-
-  const updatedRepoAnalysis: Record<string, unknown> =
-    detectedRepoAnalysis.length > 0
-      ? { ...existingRepoAnalysis, preferred: detectedRepoAnalysis[0] }
-      : Object.fromEntries(
-          Object.entries(existingRepoAnalysis).filter(([key]) => key !== "preferred"),
-        );
-
-  if (Object.keys(updatedRepoAnalysis).length > 0) {
-    updatedProviders.repoAnalysis = updatedRepoAnalysis;
-  } else {
-    delete updatedProviders.repoAnalysis;
-  }
-
-  const updated: Record<string, unknown> = {
-    ...existing,
-    version: typeof existing.version === "string" ? existing.version : "1.0",
-  };
-
-  if (options.adopt) {
-    const existingExecution = asRecord(existing.execution);
-    updated.execution = {
-      ...existingExecution,
-      adapter: "terminal-cli",
-      rotation: [],
-      allowCrossAgentFallback: false,
-    };
-
-    const existingOrchestration = asRecord(existing.orchestration);
-    updated.orchestration = {
-      ...existingOrchestration,
-      mode: "supervised",
-    };
-  }
-
-  if (Object.keys(updatedProviders).length > 0) {
-    updated.providers = updatedProviders;
-  } else if ("providers" in updated && Object.keys(updatedProviders).length === 0 && detected.length === 0) {
-    // If existing providers had only compactionProviders and nothing else, clean it up.
-    const remainingKeys = Object.keys(updatedProviders);
-    if (remainingKeys.length === 0) {
-      // Remove providers key if it is now empty.
-      delete updated.providers;
-    }
-  }
-
-  const json = JSON.stringify(updated, null, 2) + "\n";
+  const updated = buildInitConfig(existing, detected, detectedRepoAnalysis, Boolean(options.adopt));
 
   if (options.dryRun) {
-    process.stdout.write(json);
+    process.stdout.write(`${JSON.stringify(updated, null, 2)}\n`);
     return;
   }
 
-  writeFileSync(configPath, json, "utf-8");
-
-  const providerSummary =
-    detected.length > 0
-      ? `Detected providers: ${detected.join(", ")}`
-      : "No compaction providers detected";
-
-  process.stdout.write(
-    `polaris.config.json written to ${configPath}\n${providerSummary}\n`,
-  );
+  if (options.adopt) {
+    writeAdoptionConfigLock(repoRoot, configPath, existing, detected, detectedRepoAnalysis);
+  } else {
+    writeFileSync(configPath, `${JSON.stringify(updated, null, 2)}\n`, "utf-8");
+    const providerSummary =
+      detected.length > 0
+        ? `Detected providers: ${detected.join(", ")}`
+        : "No compaction providers detected";
+    process.stdout.write(
+      `polaris.config.json written to ${configPath}\n${providerSummary}\n`,
+    );
+  }
 
   if (!options.adopt) {
     return;
