@@ -739,8 +739,8 @@
     "taskchain": "polaris-finalize",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-02T05:14:45.506Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-06-02T05:38:19.276Z",
+    "updated_by": "polaris-map-update",
     "tags": [
       "finalize",
       "test"
@@ -766,8 +766,8 @@
     "taskchain": "polaris-finalize",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-02T05:14:45.506Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-06-02T05:38:19.276Z",
+    "updated_by": "polaris-map-update",
     "tags": [
       "finalize",
       "entry-point"

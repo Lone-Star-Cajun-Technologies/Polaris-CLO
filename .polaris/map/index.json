@@ -1,10 +1,10 @@
 {
-  "scan_date": "2026-06-02T05:30:24.171Z",
-  "file_count": 779,
+  "scan_date": "2026-06-02T05:38:19.276Z",
+  "file_count": 777,
   "coverage_pct": 34,
   "instructionCoverage": {
-    "routesCovered": 641,
-    "routesTotal": 779,
+    "routesCovered": 640,
+    "routesTotal": 777,
     "coveragePercent": 82
   },
   "entries": {
@@ -748,8 +748,8 @@
       "taskchain": "polaris-finalize",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-06-02T05:14:45.506Z",
-      "updated_by": "polaris-map-index",
+      "last_updated": "2026-06-02T05:38:19.276Z",
+      "updated_by": "polaris-map-update",
       "tags": [
         "finalize",
         "test"
@@ -775,8 +775,8 @@
       "taskchain": "polaris-finalize",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-06-02T05:14:45.506Z",
-      "updated_by": "polaris-map-index",
+      "last_updated": "2026-06-02T05:38:19.276Z",
+      "updated_by": "polaris-map-update",
       "tags": [
         "finalize",
         "entry-point"
@@ -4495,17 +4495,6 @@
       "tags": [],
       "instructionFile": ".polaris/bootstrap/POLARIS.md"
     },
-    ".polaris/bootstrap/polaris-run-pol-281-2026-06-02-001-2026-06-02T05-12-24-455Z.json": {
-      "domain": "unknown",
-      "route": ".polaris/bootstrap/polaris-run-pol-281-2026-06-02-001-2026-06-02T05-12-24-455Z.json",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-06-02T05:14:45.506Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": ".polaris/bootstrap/POLARIS.md"
-    },
     ".polaris/bootstrap/polaris-run-smart-docs-summary-arch-2026-05-27-001-2026-05-27T16-34-40-530Z.json": {
       "domain": "unknown",
       "route": ".polaris/bootstrap/polaris-run-smart-docs-summary-arch-2026-05-27-001-2026-05-27T16-34-40-530Z.json",
@@ -7108,16 +7097,6 @@
     ".taskchain_artifacts/polaris-run/current-state.json.pre-pol281-20260601-011952.bak": {
       "domain": "unknown",
       "route": ".taskchain_artifacts/polaris-run/current-state.json.pre-pol281-20260601-011952.bak",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-06-02T05:14:45.506Z",
-      "updated_by": "polaris-map-index",
-      "tags": []
-    },
-    ".taskchain_artifacts/polaris-run/current-state.json.pre-root-classification-fix": {
-      "domain": "unknown",
-      "route": ".taskchain_artifacts/polaris-run/current-state.json.pre-root-classification-fix",
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
