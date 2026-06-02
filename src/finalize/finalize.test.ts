@@ -72,6 +72,15 @@ function stageFile(dir: string, relativePath: string, content = "test\n"): void 
   execFileSync("git", ["add", relativePath], { cwd: dir, stdio: "pipe" });
 }
 
+function commitFile(dir: string, relativePath: string, content: string, message: string): string {
+  const fullPath = join(dir, relativePath);
+  mkdirSync(dirname(fullPath), { recursive: true });
+  writeFileSync(fullPath, content);
+  execFileSync("git", ["add", relativePath], { cwd: dir, stdio: "pipe" });
+  execFileSync("git", ["commit", "-m", message], { cwd: dir, stdio: "pipe" });
+  return execFileSync("git", ["rev-parse", "HEAD"], { cwd: dir, encoding: "utf-8" }).trim();
+}
+
 // ---- step 03: schema validate -----------------------------------------------
 
 describe("stepSchemaValidate", () => {
@@ -388,6 +397,140 @@ describe("runFinalize (steps 1–6, skip-delivery)", () => {
         skipDelivery: true,
       }),
     ).rejects.toThrow("process.exit called");
+
+    exitSpy.mockRestore();
+    stderrSpy.mockRestore();
+  });
+});
+
+describe("runFinalize implementation evidence preflight", () => {
+  let testDir: string;
+  beforeEach(() => { testDir = makeTestDir(); });
+  afterEach(() => { rmSync(testDir, { recursive: true, force: true }); });
+
+  it("passes with canonical completed-child commit evidence when only artifacts are staged", async () => {
+    const { runFinalize } = await import("./index.js");
+    const childId = "POL-9";
+    const stateFile = writeState(testDir, {
+      completed_children: [childId],
+      context_budget: { children_completed: 1 },
+    });
+    writeEmptyAtlas(testDir);
+
+    const commit = commitFile(
+      testDir,
+      "src/pol277-evidence.ts",
+      "export const pol277Evidence = true;\n",
+      "impl evidence",
+    );
+
+    const clusterDir = join(testDir, ".polaris", "clusters", "POL-6");
+    mkdirSync(clusterDir, { recursive: true });
+    writeFileSync(
+      join(clusterDir, "cluster-state.json"),
+      `${JSON.stringify({
+        commits: { [childId]: commit },
+        validation_results: { [childId]: { passed: true, output: "npm run build" } },
+        result_pointers: {},
+      }, null, 2)}\n`,
+      "utf-8",
+    );
+    writeFileSync(join(clusterDir, "clusters.json"), "{\"active\":true}\n");
+    mkdirSync(join(clusterDir, "packets"), { recursive: true });
+    mkdirSync(join(clusterDir, "results"), { recursive: true });
+    mkdirSync(join(testDir, ".polaris", "runs"), { recursive: true });
+    writeFileSync(join(testDir, ".polaris", "runs", "ledger.jsonl"), "{\"event\":\"run-complete\"}\n");
+
+    stageFile(testDir, ".taskchain_artifacts/polaris-run/current-state.json", "{\"scratch\":true}\n");
+
+    await expect(runFinalize({ repoRoot: testDir, stateFile, skipDelivery: true })).resolves.toBeUndefined();
+  });
+
+  it("blocks when no staged source files and no completed-child commit evidence exists", async () => {
+    const { runFinalize } = await import("./index.js");
+    const childId = "POL-9";
+    const stateFile = writeState(testDir, {
+      completed_children: [childId],
+      context_budget: { children_completed: 1 },
+    });
+    writeEmptyAtlas(testDir);
+    writeDurableClusterArtifacts(testDir, "POL-6");
+    writeFileSync(
+      join(testDir, ".polaris", "clusters", "POL-6", "cluster-state.json"),
+      `${JSON.stringify({ commits: {}, validation_results: {}, result_pointers: {} }, null, 2)}\n`,
+      "utf-8",
+    );
+    stageFile(testDir, ".taskchain_artifacts/polaris-run/current-state.json", "{\"scratch\":true}\n");
+
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation((() => {
+      throw new Error("process.exit called");
+    }) as never);
+    let stderr = "";
+    const stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(((chunk: string | Uint8Array) => {
+      stderr += String(chunk);
+      return true;
+    }) as never);
+
+    await expect(runFinalize({ repoRoot: testDir, stateFile, skipDelivery: true })).rejects.toThrow("process.exit called");
+    expect(stderr).toContain("No implementation evidence found");
+    expect(stderr).toContain("no commit hash");
+
+    exitSpy.mockRestore();
+    stderrSpy.mockRestore();
+  });
+
+  it("blocks artifact-only child commit evidence when packet does not allow artifact_only", async () => {
+    const { runFinalize } = await import("./index.js");
+    const childId = "POL-9";
+    const stateFile = writeState(testDir, {
+      completed_children: [childId],
+      context_budget: { children_completed: 1 },
+      open_children_meta: {
+        [childId]: {
+          dispatch_record: {
+            packet_path: `.polaris/clusters/POL-6/packets/${childId}.json`,
+          },
+        },
+      },
+    });
+    writeEmptyAtlas(testDir);
+    writeDurableClusterArtifacts(testDir, "POL-6");
+
+    const artifactCommit = commitFile(
+      testDir,
+      ".polaris/clusters/POL-6/results/evidence.json",
+      "{\"ok\":true}\n",
+      "artifact-only evidence",
+    );
+
+    writeFileSync(
+      join(testDir, ".polaris", "clusters", "POL-6", "cluster-state.json"),
+      `${JSON.stringify({
+        commits: { [childId]: artifactCommit },
+        validation_results: { [childId]: { passed: true, output: "npm run build" } },
+        result_pointers: {},
+      }, null, 2)}\n`,
+      "utf-8",
+    );
+    writeFileSync(
+      join(testDir, ".polaris", "clusters", "POL-6", "packets", `${childId}.json`),
+      "{\"instructions\":{}}\n",
+      "utf-8",
+    );
+
+    stageFile(testDir, ".taskchain_artifacts/polaris-run/current-state.json", "{\"scratch\":true}\n");
+
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation((() => {
+      throw new Error("process.exit called");
+    }) as never);
+    let stderr = "";
+    const stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(((chunk: string | Uint8Array) => {
+      stderr += String(chunk);
+      return true;
+    }) as never);
+
+    await expect(runFinalize({ repoRoot: testDir, stateFile, skipDelivery: true })).rejects.toThrow("process.exit called");
+    expect(stderr).toContain("artifact_only: true");
 
     exitSpy.mockRestore();
     stderrSpy.mockRestore();

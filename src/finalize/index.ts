@@ -19,6 +19,7 @@ import { stepUpdateLinear } from "./steps/11-update-linear.js";
 import { stepArchive } from "./steps/12-archive.js";
 import { LocalGraph } from "../tracker/local-graph.js";
 import { TrackerSyncService } from "../tracker/sync/index.js";
+import { formatFinalizeEvidenceFailures, verifyCompletedChildFinalizeEvidence } from "../loop/finalize-evidence.js";
 
 export interface FinalizeOptions {
   repoRoot: string;
@@ -146,12 +147,15 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
       (f) => classifyArtifactPath(f, state.cluster_id) === "non-artifact",
     );
     if (implFiles.length === 0) {
-      process.stderr.write(
-        "finalize aborted: No implementation evidence found. " +
-        "No non-artifact source files are staged. " +
-        "Ensure implementation changes are staged before finalizing.\n",
-      );
-      process.exit(1);
+      const evidenceReport = verifyCompletedChildFinalizeEvidence(repoRoot, stateFile);
+      if (!evidenceReport.ok) {
+        process.stderr.write(
+          "finalize aborted: No implementation evidence found. " +
+          "No non-artifact source files are staged and canonical completed-child evidence failed.\n" +
+          `${formatFinalizeEvidenceFailures(evidenceReport.failures)}\n`,
+        );
+        process.exit(1);
+      }
     }
   }
 
