@@ -36,6 +36,8 @@ function makeTestDir(): string {
   writeFileSync(join(dir, "README.md"), "test\n");
   execFileSync("git", ["add", "."], { cwd: dir });
   execFileSync("git", ["commit", "-m", "init"], { cwd: dir });
+  // Custody requirement: dispatch must not run on a base/protected branch.
+  execFileSync("git", ["checkout", "-b", "feature-branch"], { cwd: dir });
   return dir;
 }
 

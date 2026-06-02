@@ -1,6 +1,14 @@
 import { appendFileSync, mkdirSync, realpathSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
+import {
+  assertDeliveryBranchMatch,
+  buildCustodyRecord,
+  buildDeliveryBranchName,
+  ensureDeliveryBranch,
+  isProtectedBranch,
+  type CustodyRecord,
+} from "./git-custody.js";
 import { dirname, join, isAbsolute, resolve, relative } from "node:path";
 import { readState, validateState, writeStateAtomic, readBodyFromClusterSnapshot, type LoopState, type ChildDispatchRecord, type DispatchMode, type WorkerRuntimeState, type WorkerAssignmentRecord } from "./checkpoint.js";
 import { compileImplPacket, type WorkerPacket, type WorkerRoleContext } from "./worker-packet.js";
@@ -100,67 +108,12 @@ function resolveProviderAndMode(
     };
   }
 
+  // Only catch config-load failures; policy violations must propagate to the caller.
+  let loaded: Required<PolarisConfig> | undefined;
+  let adapter = defaultAdapter;
   try {
-    const loaded = config ?? loadConfig(options.repoRoot);
-    const exec = loaded.execution;
-    const adapter = exec?.adapter ?? defaultAdapter;
-    const rolePolicy = exec?.providerPolicy?.[role];
-    const roleProviders = rolePolicy?.providers ?? [];
-
-    if (roleProviders.length > 0 && roleProviders[0]) {
-      return {
-        provider: roleProviders[0],
-        mode: "direct-worker",
-        adapter,
-        selectionReason: "role-policy",
-        providersTried: [roleProviders[0]],
-      };
-    }
-
-    const roleProvider = exec?.roles?.[role]?.provider;
-    if (roleProvider) {
-      return {
-        provider: roleProvider,
-        mode: "direct-worker",
-        adapter,
-        selectionReason: "role-config",
-        providersTried: [roleProvider],
-      };
-    }
-
-    const rotation = exec?.rotation ?? [];
-
-    if (rotation.length > 0 && rotation[0]) {
-      return {
-        provider: rotation[0],
-        mode: "direct-worker",
-        adapter,
-        selectionReason: "config-rotation",
-        providersTried: [rotation[0]],
-      };
-    }
-
-    const providers = Object.keys(exec?.providers ?? {});
-    if (providers.length > 0 && providers[0]) {
-      return {
-        provider: providers[0],
-        mode: "direct-worker",
-        adapter,
-        selectionReason: "config-first-provider",
-        fallbackFrom: "rotation",
-        fallbackReason: "rotation-empty",
-        providersTried: [providers[0]],
-      };
-    }
-
-    return {
-      provider: undefined,
-      mode: "delegated",
-      adapter,
-      selectionReason: "delegated-no-provider",
-      providersTried: [],
-      exhaustedReason: "no-configured-provider",
-    };
+    loaded = config ?? loadConfig(options.repoRoot);
+    adapter = loaded.execution?.adapter ?? defaultAdapter;
   } catch {
     return {
       provider: undefined,
@@ -173,6 +126,88 @@ function resolveProviderAndMode(
       exhaustedReason: "config-unavailable",
     };
   }
+
+  const exec = loaded.execution;
+  const rolePolicy = exec?.providerPolicy?.[role];
+  const roleProviders = rolePolicy?.providers ?? [];
+  const rotation = exec?.rotation ?? [];
+
+  if (roleProviders.length > 0) {
+    // When a role policy is configured, filter the rotation to only include
+    // providers that are allowed by the policy.  This ensures that a provider
+    // present in rotation but absent from the policy is never selected.
+    const allowedByPolicy = new Set(roleProviders);
+    const configuredProviders = new Set(Object.keys(exec?.providers ?? {}));
+    const filteredRotation = rotation.filter((p) => allowedByPolicy.has(p));
+    if (filteredRotation.length > 0 && filteredRotation[0]) {
+      return {
+        provider: filteredRotation[0],
+        mode: "direct-worker",
+        adapter,
+        selectionReason: "policy-filtered-rotation",
+        providersTried: [filteredRotation[0]],
+      };
+    }
+    // No rotation entry is in the policy — fall back to first policy provider
+    // that is actually configured.  If none is configured, fail before mutation.
+    const availablePolicyProviders = roleProviders.filter((p) => configuredProviders.has(p));
+    if (availablePolicyProviders.length > 0 && availablePolicyProviders[0]) {
+      return {
+        provider: availablePolicyProviders[0],
+        mode: "direct-worker",
+        adapter,
+        selectionReason: "role-policy",
+        providersTried: [availablePolicyProviders[0]],
+      };
+    }
+    // No configured provider satisfies the policy — fail clearly before dispatch.
+    throw new Error(
+      `provider dispatch forbidden: no configured provider satisfies the "${role}" role policy (policy=${roleProviders.join(",")})`,
+    );
+  }
+
+  const roleProvider = exec?.roles?.[role]?.provider;
+  if (roleProvider) {
+    return {
+      provider: roleProvider,
+      mode: "direct-worker",
+      adapter,
+      selectionReason: "role-config",
+      providersTried: [roleProvider],
+    };
+  }
+
+  if (rotation.length > 0 && rotation[0]) {
+    return {
+      provider: rotation[0],
+      mode: "direct-worker",
+      adapter,
+      selectionReason: "config-rotation",
+      providersTried: [rotation[0]],
+    };
+  }
+
+  const providers = Object.keys(exec?.providers ?? {});
+  if (providers.length > 0 && providers[0]) {
+    return {
+      provider: providers[0],
+      mode: "direct-worker",
+      adapter,
+      selectionReason: "config-first-provider",
+      fallbackFrom: "rotation",
+      fallbackReason: "rotation-empty",
+      providersTried: [providers[0]],
+    };
+  }
+
+  return {
+    provider: undefined,
+    mode: "delegated",
+    adapter,
+    selectionReason: "delegated-no-provider",
+    providersTried: [],
+    exhaustedReason: "no-configured-provider",
+  };
 }
 
 function fail(message: string): never {
@@ -896,6 +931,7 @@ function syncClusterDispatchState(
   dispatchRecord: ChildDispatchRecord,
   packetPath: string,
   repoRoot: string,
+  custodyRecord?: CustodyRecord,
 ): void {
   const existingState = readClusterStateSync(state.cluster_id, repoRoot);
   const previousGeneration = existingState?.state_generation;
@@ -917,10 +953,21 @@ function syncClusterDispatchState(
       )
     : [...clusterState.child_states, { id: childId, status: "dispatched" as const }];
 
+  // Record delivery branch custody on first dispatch; never overwrite an existing record.
+  const custodyFields =
+    custodyRecord && !existingState?.delivery_branch
+      ? {
+          base_branch: custodyRecord.base_branch,
+          base_sha: custodyRecord.base_sha,
+          delivery_branch: custodyRecord.delivery_branch,
+        }
+      : {};
+
   writeClusterStateSync(
     state.cluster_id,
     {
       ...clusterState,
+      ...custodyFields,
       state_generation: clusterState.state_generation + 1,
       child_states,
       claim_metadata: {
@@ -966,6 +1013,14 @@ export function runLoopDispatch(options: DispatchOptions): void {
 
   const telemetryFile = resolveTelemetryFile(state, options.repoRoot);
 
+  // Load config once up front so it is available for both custody and provider selection.
+  let loadedConfig: Required<PolarisConfig> | undefined;
+  try {
+    loadedConfig = loadConfig(options.repoRoot);
+  } catch {
+    loadedConfig = undefined;
+  }
+
   // ── Bootstrap seal enforcement ─────────────────────────────────────────────
   // The run MUST have been initialized through `polaris loop bootstrap`.
   // Hand-crafted state (no seal) is refused before any child is dispatched.
@@ -1007,6 +1062,52 @@ export function runLoopDispatch(options: DispatchOptions): void {
       }
     }
     fail(msg);
+  }
+
+  // ── Branch custody enforcement ─────────────────────────────────────────────
+  // Implementation workers must never run on a protected base branch (main,
+  // master, etc.).  The delivery branch is recorded in cluster-state on first
+  // dispatch and every subsequent dispatch is verified against it.
+  //
+  // direct-main mode (loop.allowBranchDivergence: true) skips custody checks
+  // to support repositories that intentionally commit straight to their default
+  // branch.
+  let custodyRecord: CustodyRecord | undefined;
+  {
+    let dispatchCurrentBranch = getCurrentBranch(options.repoRoot);
+    const directMainMode = loadedConfig?.loop?.allowBranchDivergence === true;
+
+    if (!directMainMode) {
+      const existingForCustody = readClusterStateSync(state.cluster_id, options.repoRoot);
+
+      if (existingForCustody?.delivery_branch) {
+        // Custody already recorded — current branch must match.
+        try {
+          assertDeliveryBranchMatch(dispatchCurrentBranch, existingForCustody.delivery_branch);
+        } catch (err) {
+          fail(err instanceof Error ? err.message : String(err));
+        }
+      } else {
+        // First dispatch — ensure we are on a delivery (non-base) branch.
+        if (isProtectedBranch(dispatchCurrentBranch)) {
+          // Auto-create and switch to the cluster's delivery branch.
+          const deliveryBranchName = buildDeliveryBranchName(state.cluster_id);
+          try {
+            ensureDeliveryBranch(options.repoRoot, deliveryBranchName);
+            dispatchCurrentBranch = deliveryBranchName;
+          } catch (err) {
+            fail(
+              `Cannot create delivery branch "${deliveryBranchName}": ` +
+                `${err instanceof Error ? err.message : String(err)}. ` +
+                `Switch to a delivery branch before dispatching.`,
+            );
+          }
+        }
+        // Record custody for this cluster.
+        const configBaseBranch = loadedConfig?.finalize?.targetBranch ?? "main";
+        custodyRecord = buildCustodyRecord(options.repoRoot, dispatchCurrentBranch, configBaseBranch);
+      }
+    }
   }
 
   const childId = selectChild(state, options.childId);
@@ -1064,13 +1165,13 @@ export function runLoopDispatch(options: DispatchOptions): void {
   const targetRole = roleContextToExecutionRole(packet.role_context.role);
 
   // ── Resolve provider and dispatch mode ─────────────────────────────────────
-  let loadedConfig: Required<PolarisConfig> | undefined;
+  // loadedConfig was loaded earlier (above bootstrap seal check)
+  let providerDecision: ReturnType<typeof resolveProviderAndMode>;
   try {
-    loadedConfig = loadConfig(options.repoRoot);
-  } catch {
-    loadedConfig = undefined;
+    providerDecision = resolveProviderAndMode(options, targetRole, loadedConfig);
+  } catch (err) {
+    fail(err instanceof Error ? err.message : String(err));
   }
-  const providerDecision = resolveProviderAndMode(options, targetRole, loadedConfig);
   const { provider: resolvedProvider } = providerDecision;
   const providerPolicy = loadedConfig?.execution.providerPolicy ?? getProviderPolicy(options.repoRoot);
   try {
@@ -1161,7 +1262,7 @@ export function runLoopDispatch(options: DispatchOptions): void {
   };
 
   try {
-    syncClusterDispatchState(state, childId, dispatchRecord, relativePacketPath, options.repoRoot);
+    syncClusterDispatchState(state, childId, dispatchRecord, relativePacketPath, options.repoRoot, custodyRecord);
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     appendTelemetry(telemetryFile, {

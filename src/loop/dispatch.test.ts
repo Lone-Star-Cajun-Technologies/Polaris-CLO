@@ -787,8 +787,10 @@ describe("runLoopDispatch", () => {
 
     const updated = readState(stateFile);
     const dr = updated.open_children_meta?.["POL-145"]?.dispatch_record;
-    expect(dr?.provider).toBe("copilot");
-    expect(dr?.provider_selection_reason).toBe("role-policy");
+    // rotation=["codex"] filtered by policy=["copilot","codex"] → ["codex"]
+    // codex wins (first in filtered rotation); copilot is in policy but not in rotation
+    expect(dr?.provider).toBe("codex");
+    expect(dr?.provider_selection_reason).toBe("policy-filtered-rotation");
   });
 
   it("uses role config provider when provider policy is absent", () => {
