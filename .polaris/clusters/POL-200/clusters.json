@@ -1,53 +1,37 @@
 {
-  "cluster_id": "POL-200",
-  "cluster_type": "analyze",
-  "title": "ANALYZE: Adaptive folder cognition and Librarian role lifecycle",
+  "source_id": "POL-200",
+  "source_type": "linear",
   "created_at": "2026-06-02T19:49:30.000Z",
-  "run_id": "polaris-analyze-adaptive-folder-cognition-librarian-2026-06-02-001",
-  "analysis_artifact": "smartdocs/specs/active/pol-200-adaptive-folder-cognition-librarian-lifecycle.md",
-  "outcome": "implementation-cluster-created",
-  "implementation_cluster": {
-    "parent": "POL-283",
-    "title": "IMPLEMENT: Complete cognition librarian lifecycle wiring and adaptive coverage policy",
-    "children": [
-      {
-        "id": "POL-284",
-        "title": "Create .polaris/cognition/ staging directory structure and gitignore entry",
-        "depends_on": [],
-        "status": "Backlog"
-      },
-      {
-        "id": "POL-285",
-        "title": "Extend CompactReturn with work_note_paths and update worker to write cognition notes",
-        "depends_on": ["POL-284"],
-        "status": "Backlog"
-      },
-      {
-        "id": "POL-286",
-        "title": "Wire dispatchCognitionLibrarian into loop continue after each child",
-        "depends_on": ["POL-285"],
-        "status": "Backlog"
-      },
-      {
-        "id": "POL-287",
-        "title": "Define and implement adaptive folder cognition coverage policy",
-        "depends_on": ["POL-286"],
-        "status": "Backlog"
-      }
-    ]
-  },
-  "key_findings": [
-    "dispatchCognitionLibrarian is fully implemented in src/cognition/librarian-dispatch.ts but never called from loop/continue.ts",
-    "CompactReturn lacks work_note_paths — POL-252 commit was empty",
-    "workers still use deprecated direct-write pattern (applyRouteCognitionDelta/applySummaryDelta)",
-    ".polaris/cognition/ directory does not exist — POL-250 commit was empty",
-    "POL-249 cluster children POL-250, POL-251, POL-252 had empty or partial commits despite Done status in Linear",
-    "Two distinct librarian roles must remain separate: SmartDocs Librarian (docs promotion) vs Cognition Librarian (folder cognition reconciliation)",
-    "Adaptive coverage policy is missing — only reactive skip rules exist",
-    "POL-161 and POL-171 can proceed with acceptable risk; retroactive reconciliation recommended after POL-286"
-  ],
-  "risks": {
-    "pol_161": "MEDIUM — distributed bootstrap workers will accumulate unreviewed direct-write cognition; addressable via retroactive reconciliation after POL-286",
-    "pol_171": "MEDIUM-HIGH — map pruning/tombstoning creates orphaned cognition surfaces; audit src/map/ POLARIS.md before execution"
-  }
+  "clusters": [
+    {
+      "cluster_id": "cluster-01",
+      "children": [
+        {
+          "id": "POL-284",
+          "title": "Create .polaris/cognition/ staging directory structure and gitignore entry",
+          "session_type": "implement",
+          "blockedBy": []
+        },
+        {
+          "id": "POL-285",
+          "title": "Extend CompactReturn with work_note_paths and update worker to write cognition notes",
+          "session_type": "implement",
+          "blockedBy": ["POL-284"]
+        },
+        {
+          "id": "POL-286",
+          "title": "Wire dispatchCognitionLibrarian into loop continue after each child",
+          "session_type": "implement",
+          "blockedBy": ["POL-285"]
+        },
+        {
+          "id": "POL-287",
+          "title": "Define and implement adaptive folder cognition coverage policy",
+          "session_type": "implement",
+          "blockedBy": ["POL-286"]
+        }
+      ]
+    }
+  ]
 }
+

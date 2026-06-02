@@ -1,5 +1,5 @@
 ---
-kind: analysis
+kind: spec
 status: active
 source: POL-200
 created: 2026-06-02
@@ -50,7 +50,7 @@ The Cognition Librarian is a **provider-neutral role** defined by a packet/resul
 
 The foreman enforces five validation rules before applying any patch (from spec §6):
 1. Schema validity — reject entire result on failure
-2. Confidence threshold (≥0.80) — reject entire result below threshold
+2. Confidence threshold (≥ `constraints.require_confidence_threshold`; dispatch currently sets 0.80) — reject entire result below threshold
 3. File scope check — reject entire result if any patch targets a file outside allowed_files
 4. Doctrine bleed check — reject per-patch if SUMMARY.md contains operational imperatives
 5. Size guard — reject per-patch if proposed content exceeds line limits
