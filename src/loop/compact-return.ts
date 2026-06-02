@@ -25,6 +25,8 @@ export interface CompactReturn {
   next_recommended_action: 'continue' | 'stop' | 'investigate';
   /** Optional results from the child execution. */
   result_data?: Record<string, unknown>;
+  /** Optional array of repo-relative paths to pending work notes written by the worker. */
+  work_note_paths?: string[];
 }
 
 /**
@@ -69,6 +71,18 @@ export function validateCompactReturn(value: unknown): string[] {
   if ('result_data' in r && r['result_data'] !== undefined) {
     if (typeof r['result_data'] !== 'object' || r['result_data'] === null || Array.isArray(r['result_data'])) {
       errors.push('result_data must be an object');
+    }
+  }
+  if ('work_note_paths' in r && r['work_note_paths'] !== undefined) {
+    if (!Array.isArray(r['work_note_paths'])) {
+      errors.push('work_note_paths must be an array');
+    } else {
+      for (let i = 0; i < (r['work_note_paths'] as unknown[]).length; i++) {
+        if (typeof (r['work_note_paths'] as unknown[])[i] !== 'string') {
+          errors.push('work_note_paths must contain only strings');
+          break;
+        }
+      }
     }
   }
 

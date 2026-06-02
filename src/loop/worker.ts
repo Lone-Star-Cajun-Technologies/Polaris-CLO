@@ -15,7 +15,7 @@
  * Calling runWorker() will call process.exit() when done.
  */
 
-import { readFileSync, appendFileSync, mkdirSync } from "node:fs";
+import { readFileSync, appendFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { createHash, randomUUID } from "node:crypto";
 import { dirname, resolve, isAbsolute } from "node:path";
 import { execFileSync } from "node:child_process";
@@ -102,6 +102,123 @@ function getHeadShort(cwd: string): string {
   } catch {
     return "";
   }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Work note helpers
+// ────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Determine the primary folder (folder_slug) from touched files.
+ * Returns the folder containing the most changed files, normalized to lowercase with / → -.
+ */
+function determineFolderSlug(touchedFiles: string[]): string {
+  if (touchedFiles.length === 0) {
+    return "root";
+  }
+
+  // Count files by folder depth, preferring the shallowest common folder
+  const folderCounts: Record<string, number> = {};
+  for (const file of touchedFiles) {
+    const parts = file.split("/");
+    // Try each folder level from root down
+    for (let i = 1; i <= parts.length; i++) {
+      const folder = parts.slice(0, i).join("/");
+      folderCounts[folder] = (folderCounts[folder] ?? 0) + 1;
+    }
+  }
+
+  // Find the folder with the most files (deepest common folder)
+  let maxFolder = "root";
+  let maxCount = 0;
+  for (const [folder, count] of Object.entries(folderCounts)) {
+    if (count > maxCount) {
+      maxCount = count;
+      maxFolder = folder;
+    }
+  }
+
+  // Normalize: replace / with -, handle edge cases
+  if (maxFolder === "root" || maxFolder === "") {
+    return "root";
+  }
+  return maxFolder.replace(/\//g, "-").toLowerCase();
+}
+
+/**
+ * Determine docs_impact based on cognition delta results.
+ * Returns one of: none, polaris-update, summary-update, both, archive-only
+ */
+function determineDocsImpact(
+  cognitionDelta: CognitionDeltaResult | null,
+  summaryDelta: SummaryDeltaResult | null,
+): string {
+  const polarisUpdate = cognitionDelta?.updateWarranted ?? false;
+  const summaryUpdate = summaryDelta?.updateWarranted ?? false;
+
+  if (polarisUpdate && summaryUpdate) {
+    return "both";
+  } else if (polarisUpdate) {
+    return "polaris-update";
+  } else if (summaryUpdate) {
+    return "summary-update";
+  }
+  return "none";
+}
+
+/**
+ * Write a work note to .polaris/cognition/pending/<folder-slug>/<run-id>-<child-id>.md
+ * Returns the repo-relative path to the written note.
+ */
+function writeWorkNote(
+  repoRoot: string,
+  runId: string,
+  childId: string,
+  issueId: string,
+  folderSlug: string,
+  touchedFiles: string[],
+  docsImpact: string,
+  commit: string,
+  validationPerformed: string,
+): string {
+  const timestamp = new Date().toISOString();
+  const primaryFolder = folderSlug === "root" ? "" : folderSlug.replace(/-/g, "/");
+
+  // Build frontmatter
+  const frontmatter = [
+    "---",
+    `run_id: ${runId}`,
+    `child_id: ${childId}`,
+    `issue_id: ${issueId}`,
+    `folder: ${primaryFolder || "."}`,
+    `folder_slug: ${folderSlug}`,
+    "affected_files:",
+    ...touchedFiles.map((f) => `  - ${f}`),
+    `validation_performed: ${validationPerformed}`,
+    `docs_impact: ${docsImpact}`,
+    `commit: ${commit}`,
+    `timestamp: ${timestamp}`,
+    "---",
+  ];
+
+  // Build prose body (minimal, ≤150 words)
+  const proseBody = `Completed task ${childId} (${issueId}). Implementation changes applied, validation passed. ${docsImpact !== "none" ? `Cognition surfaces require update (${docsImpact}).` : "No cognition surface updates needed."}`;
+
+  // Combine
+  const noteContent = [...frontmatter, "", proseBody].join("\n");
+
+  // Write to file
+  const notePath = resolve(
+    repoRoot,
+    ".polaris/cognition/pending",
+    folderSlug,
+    `${runId}-${childId}.md`,
+  );
+  mkdirSync(dirname(notePath), { recursive: true });
+  writeFileSync(notePath, noteContent, "utf-8");
+
+  // Return repo-relative path
+  return notePath.replace(repoRoot + "/", "");
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -341,6 +458,48 @@ export async function executeOneChild(
   // tracker_updated is therefore always false from the worker's perspective.
   const trackerUpdated = false;
 
+  // ── Step 07: Write work note ────────────────────────────────────────────
+  let workNotePaths: string[] = [];
+  try {
+    const folderSlug = determineFolderSlug(touchedFiles);
+    const docsImpact = determineDocsImpact(cognitionDelta, summaryDelta);
+    const validationPerformed = "child execution and validation completed";
+    const notePath = writeWorkNote(
+      repoRoot,
+      packet.run_id,
+      childId,
+      childId,
+      folderSlug,
+      touchedFiles,
+      docsImpact,
+      commit,
+      validationPerformed,
+    );
+    workNotePaths = [notePath];
+    appendTelemetry(telemetryFile, {
+      event: "work-note-written",
+      run_id: packet.run_id,
+      child_id: childId,
+      note_path: notePath,
+      folder_slug: folderSlug,
+      docs_impact: docsImpact,
+      timestamp: now(),
+    });
+    telemetryUpdated = true;
+  } catch (err) {
+    // Work note failure is non-fatal — implementation already done
+    // Log but don't block CompactReturn
+    const msg = err instanceof Error ? err.message : String(err);
+    appendTelemetry(telemetryFile, {
+      event: "work-note-error",
+      run_id: packet.run_id,
+      child_id: childId,
+      error: msg,
+      timestamp: now(),
+    });
+    telemetryUpdated = true;
+  }
+
   return {
     child_id: childId,
     status: 'done',
@@ -351,6 +510,7 @@ export async function executeOneChild(
     telemetry_updated: telemetryUpdated,
     next_recommended_action: 'continue',
     result_data: {},
+    work_note_paths: workNotePaths.length > 0 ? workNotePaths : undefined,
   };
 }
 
