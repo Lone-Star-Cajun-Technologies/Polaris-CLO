@@ -1,10 +1,10 @@
 {
-  "scan_date": "2026-06-02T05:38:19.276Z",
-  "file_count": 777,
+  "scan_date": "2026-06-02T16:58:41.636Z",
+  "file_count": 778,
   "coverage_pct": 34,
   "instructionCoverage": {
-    "routesCovered": 640,
-    "routesTotal": 777,
+    "routesCovered": 641,
+    "routesTotal": 778,
     "coveragePercent": 82
   },
   "entries": {
@@ -189,8 +189,8 @@
       "taskchain": "polaris-cli",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-06-02T05:14:45.506Z",
-      "updated_by": "polaris-map-index",
+      "last_updated": "2026-06-02T16:58:41.636Z",
+      "updated_by": "polaris-map-update",
       "tags": [
         "cli"
       ],
@@ -3528,6 +3528,19 @@
         "utils"
       ],
       "instructionFile": "src/utils/POLARIS.md"
+    },
+    "src/cli/init-detect.ts": {
+      "domain": "cli",
+      "route": "src/cli",
+      "taskchain": "polaris-cli",
+      "confidence": 0.9,
+      "classification": "indexed",
+      "last_updated": "2026-06-02T16:58:41.636Z",
+      "updated_by": "polaris-map-update",
+      "tags": [
+        "cli"
+      ],
+      "instructionFile": "src/cli/POLARIS.md"
     },
     ".DS_Store": {
       "domain": "unknown",

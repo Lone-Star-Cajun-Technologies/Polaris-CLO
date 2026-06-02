@@ -1,0 +1,85 @@
+{
+  "schema_version": "2.1",
+  "worker_role": "impl",
+  "run_id": "polaris-run-pol-268-2026-06-02-001",
+  "cluster_id": "POL-268",
+  "active_child": "POL-266",
+  "state_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json",
+  "telemetry_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-268-2026-06-02-001/telemetry.jsonl",
+  "instructions": {
+    "primary_goal": "Issue: POL-266 — POL-266\nWorktree: .\nBranch: main\n\n## Goal\n## Objective\n\nRun `polaris map index` as the final pre-stage atlas step of repository adoption and record the baseline coverage.\n\n## Context\n\nThis is Phase C, Step C5 of the adoption workflow. After migration, cognition generation, and instruction handling, Polaris needs an atlas baseline that reflects the adopted repo state without overwriting the draft cognition files created earlier.\n\n## Goal\n\nAdd `runAdoptionAtlas(plan: AdoptionPlan): Promise<void>` and execute atlas generation with adoption-safe options, then record baseline coverage for future validation comparisons.\n\n## Scope\n\n* `src/cli/adopt-atlas.ts` or `src/cli/init.ts` — add `runAdoptionAtlas(plan: AdoptionPlan): Promise<void>`\n* `src/map/index.ts` — add `seedCognition` and `skipThreshold` options if needed\n* Invoke `runMapIndex()` with:\n  * `seedCognition: false`\n  * no auto-write confidence threshold enforcement\n* After indexing, read `.polaris/map/index.json` and write `adoption_baseline_coverage_pct`\n* Verify at least one file from `smartdocs/raw/` appears in the atlas\n* Log a warning, not an error, if `needs-review.json` exceeds 20% of total files\n\n## Acceptance Criteria\n\n* Adoption atlas generation runs with `seedCognition: false`.\n* `.polaris/map/index.json` records `adoption_baseline_coverage_pct`.\n* At least one `smartdocs/raw/` file is discoverable in the atlas.\n* High adoption debt produces a warning rather than failing the step.\n\n## Validation\n\n* `npm run build`\n* `npm test`\n\n## Ordering\n\nDepends on cognition generation from [POL-264](https://linear.app/lsctech/issue/POL-264/impl-add-folder-cognition-generation-to-polaris-init-adopt) and instruction handling from [POL-265](https://linear.app/lsctech/issue/POL-265/impl-add-agent-instruction-file-handler-to-polaris-init-adopt).\n\n## Non-goals\n\n* Do not overwrite draft cognition files generated during adoption.\n* Do not fail the run solely because adoption debt is high.\n* Do not stage or commit changes in this issue.\n\n## Scope\nTouch only:\n- `src/cli/adopt-atlas.ts` or `src/cli/init.ts` — add `runAdoptionAtlas(plan: AdoptionPlan): Promise<void>`\n- `src/map/index.ts` — add `seedCognition` and `skipThreshold` options if needed\n- Invoke `runMapIndex()` with:\n- `seedCognition: false`\n- no auto-write confidence threshold enforcement\n- After indexing, read `.polaris/map/index.json` and write `adoption_baseline_coverage_pct`\n- Verify at least one file from `smartdocs/raw/` appears in the atlas\n- Log a warning, not an error, if `needs-review.json` exceeds 20% of total files\n\n## Acceptance Criteria\n\n## Validation\n- `npm run build`\n- `npm test`\n\n## Commit\n[POL-266] POL-266\n\n## Governance\n- Update /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json: move \"POL-266\" from open_children to completed_children.\n- Append a telemetry event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-268-2026-06-02-001/telemetry.jsonl.\n\n## Worker Progress Telemetry (MANDATORY)\nThe parent CANNOT see your work. You MUST emit heartbeat events so the parent knows you are alive and making progress.\n\nAfter EVERY step, append a JSONL event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-268-2026-06-02-001/telemetry.jsonl:\n```jsonl\n{\"event\":\"worker-heartbeat\",\"run_id\":\"<from packet>\",\"child_id\":\"POL-266\",\"step_cursor\":\"<current step>\",\"timestamp\":\"<ISO8601>\",\"progress_pct\":<0-100>,\"files_changed\":<count>,\"current_file\":\"<file being edited>\"}\n```\n\nRequired heartbeat points:\n  1. Immediately after reading this packet (step_cursor: \"start\")\n  2. After verifying state file (step_cursor: \"verify\")\n  3. After EACH file edit (step_cursor: \"implement\")\n  4. After running validation (step_cursor: \"validate\")\n  5. After creating commit (step_cursor: \"commit\")\n  6. Before terminating (step_cursor: \"complete\" or \"failed\")\n\nIf heartbeats stop, the parent will assume you crashed and may dispatch a replacement worker.\n\n## Approval Escalation (when uncertain)\nYou have a sealed packet defining your exact scope, allowed files, and validation commands. Use this to decide:\n\nRule 1 - Auto-approve WITHIN scope (normal work):\n  - If the operation touches files within `instructions.allowed_scope` → Just do it\n  - If the command is in `instructions.validation_commands` → Just run it\n  - Low risk, expected work → No need to ask, emit heartbeat with step_cursor: \"implement\"\n\nRule 2 - ESCALATE out-of-scope or high-risk:\n  - File outside allowed_scope → Emit worker-blocked with approval_type: \"out-of-scope\"\n  - Destructive operation (rm -rf, major refactor) → Emit worker-blocked with approval_type: \"destructive\"\n  - External API calls with cost → Emit worker-blocked with approval_type: \"cost\"\n  - Changing secrets/.env → Emit worker-blocked with approval_type: \"security\"\n  - Unclear requirements → Emit worker-blocked with approval_type: \"ambiguous\"\n\nTo escalate, emit IMMEDIATELY to telemetry:\n```jsonl\n{\"event\":\"worker-blocked\",\"run_id\":\"<from packet>\",\"child_id\":\"POL-266\",\"reason\":\"needs-approval\",\"approval_type\":\"<out-of-scope|destructive|cost|security|ambiguous>\",\"description\":\"<specifically what needs approval>\",\"blocker_id\":\"<unique-id>\",\"timestamp\":\"<ISO8601>\"}\n```\n\nThen: Continue heartbeats every 30s with step_cursor: \"blocked-awaiting-approval\"\nWait for parent response. If no response in 5 minutes → TERMINATE with approval-timeout.\n\nRemember: Your packet scope is your authority. Within scope = proceed. Outside scope = escalate.\n\n## Route Cognition Delta\nAfter implementation, apply route-local cognition delta — only if something materially changed.\n\n**POLARIS.md** — update only when ALL of the following are true:\n  - You touched a file in that folder (not a distant folder).\n  - The change materially affects: folder responsibilities, commands/workflows,\n    execution constraints, ownership/routing, or operational behavior.\n  - The current POLARIS.md content is actually wrong or incomplete as a result.\n  DO NOT update POLARIS.md for: formatting fixes, comment changes, tiny refactors,\n  internal implementation details, or any change that leaves the operational guidance\n  still accurate. When in doubt, do not update.\n\n**SUMMARY.md** — update only when: linked docs/specs changed, canon relationships\n  changed, architecture meaning changed, or doctrine/spec linkage changed.\n  SUMMARY.md is informational only. Do not create it if missing — that is a hint for\n  operators, not a task for workers. Keep it short. Never add operational doctrine.\n\n**Never** scan unrelated folders. **Never** regenerate all route docs.\nIf no material change occurred, skip this section entirely.\n\n## Report Back\n- files changed\n- validation results\n- commit hash\n- blockers\n\nTERMINATE SESSION IMMEDIATELY. Do not select or execute the next child.",
+    "steps": [
+      "Verify: read /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json and confirm active_child === \"POL-266\".",
+      "Implement POL-266: \"POL-266\".",
+      "Issue description:\n## Objective\n\nRun `polaris map index` as the final pre-stage atlas step of repository adoption and record the baseline coverage.\n\n## Context\n\nThis is Phase C, Step C5 of the adoption workflow. After migration, cognition generation, and instruction handling, Polaris needs an atlas baseline that reflects the adopted repo state without overwriting the draft cognition files created earlier.\n\n## Goal\n\nAdd `runAdoptionAtlas(plan: AdoptionPlan): Promise<void>` and execute atlas generation with adoption-safe options, then record baseline coverage for future validation comparisons.\n\n## Scope\n\n* `src/cli/adopt-atlas.ts` or `src/cli/init.ts` — add `runAdoptionAtlas(plan: AdoptionPlan): Promise<void>`\n* `src/map/index.ts` — add `seedCognition` and `skipThreshold` options if needed\n* Invoke `runMapIndex()` with:\n  * `seedCognition: false`\n  * no auto-write confidence threshold enforcement\n* After indexing, read `.polaris/map/index.json` and write `adoption_baseline_coverage_pct`\n* Verify at least one file from `smartdocs/raw/` appears in the atlas\n* Log a warning, not an error, if `needs-review.json` exceeds 20% of total files\n\n## Acceptance Criteria\n\n* Adoption atlas generation runs with `seedCognition: false`.\n* `.polaris/map/index.json` records `adoption_baseline_coverage_pct`.\n* At least one `smartdocs/raw/` file is discoverable in the atlas.\n* High adoption debt produces a warning rather than failing the step.\n\n## Validation\n\n* `npm run build`\n* `npm test`\n\n## Ordering\n\nDepends on cognition generation from [POL-264](https://linear.app/lsctech/issue/POL-264/impl-add-folder-cognition-generation-to-polaris-init-adopt) and instruction handling from [POL-265](https://linear.app/lsctech/issue/POL-265/impl-add-agent-instruction-file-handler-to-polaris-init-adopt).\n\n## Non-goals\n\n* Do not overwrite draft cognition files generated during adoption.\n* Do not fail the run solely because adoption debt is high.\n* Do not stage or commit changes in this issue.",
+      "Requirements:",
+      "   1. Adoption atlas generation runs with `seedCognition: false`.",
+      "   2. `.polaris/map/index.json` records `adoption_baseline_coverage_pct`.",
+      "   3. At least one `smartdocs/raw/` file is discoverable in the atlas.",
+      "   4. High adoption debt produces a warning rather than failing the step.",
+      "Run validation commands and confirm all pass.",
+      "Create exactly ONE git commit: [POL-266] POL-266.",
+      "Update /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json: move \"POL-266\" from open_children to completed_children.",
+      "Append a telemetry event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-268-2026-06-02-001/telemetry.jsonl.",
+      "Write compact return JSON to stdout (fields: child_id, status, commit, validation, next_recommended_action).",
+      "TERMINATE SESSION IMMEDIATELY. Do not select or execute the next child."
+    ],
+    "allowed_scope": [
+      "`src/cli/adopt-atlas.ts` or `src/cli/init.ts` — add `runAdoptionAtlas(plan: AdoptionPlan): Promise<void>`",
+      "`src/map/index.ts` — add `seedCognition` and `skipThreshold` options if needed",
+      "Invoke `runMapIndex()` with:",
+      "`seedCognition: false`",
+      "no auto-write confidence threshold enforcement",
+      "After indexing, read `.polaris/map/index.json` and write `adoption_baseline_coverage_pct`",
+      "Verify at least one file from `smartdocs/raw/` appears in the atlas",
+      "Log a warning, not an error, if `needs-review.json` exceeds 20% of total files"
+    ],
+    "validation_commands": [
+      "`npm run build`",
+      "`npm test`"
+    ],
+    "issue_context": {
+      "id": "POL-266",
+      "title": "POL-266",
+      "key_requirements": [],
+      "body": "## Objective\n\nRun `polaris map index` as the final pre-stage atlas step of repository adoption and record the baseline coverage.\n\n## Context\n\nThis is Phase C, Step C5 of the adoption workflow. After migration, cognition generation, and instruction handling, Polaris needs an atlas baseline that reflects the adopted repo state without overwriting the draft cognition files created earlier.\n\n## Goal\n\nAdd `runAdoptionAtlas(plan: AdoptionPlan): Promise<void>` and execute atlas generation with adoption-safe options, then record baseline coverage for future validation comparisons.\n\n## Scope\n\n* `src/cli/adopt-atlas.ts` or `src/cli/init.ts` — add `runAdoptionAtlas(plan: AdoptionPlan): Promise<void>`\n* `src/map/index.ts` — add `seedCognition` and `skipThreshold` options if needed\n* Invoke `runMapIndex()` with:\n  * `seedCognition: false`\n  * no auto-write confidence threshold enforcement\n* After indexing, read `.polaris/map/index.json` and write `adoption_baseline_coverage_pct`\n* Verify at least one file from `smartdocs/raw/` appears in the atlas\n* Log a warning, not an error, if `needs-review.json` exceeds 20% of total files\n\n## Acceptance Criteria\n\n* Adoption atlas generation runs with `seedCognition: false`.\n* `.polaris/map/index.json` records `adoption_baseline_coverage_pct`.\n* At least one `smartdocs/raw/` file is discoverable in the atlas.\n* High adoption debt produces a warning rather than failing the step.\n\n## Validation\n\n* `npm run build`\n* `npm test`\n\n## Ordering\n\nDepends on cognition generation from [POL-264](https://linear.app/lsctech/issue/POL-264/impl-add-folder-cognition-generation-to-polaris-init-adopt) and instruction handling from [POL-265](https://linear.app/lsctech/issue/POL-265/impl-add-agent-instruction-file-handler-to-polaris-init-adopt).\n\n## Non-goals\n\n* Do not overwrite draft cognition files generated during adoption.\n* Do not fail the run solely because adoption debt is high.\n* Do not stage or commit changes in this issue."
+    }
+  },
+  "lifecycle": {
+    "terminate_after_completion": true,
+    "max_concurrent": 1,
+    "cleanup_on_exit": "commit-and-exit"
+  },
+  "return_contract": [
+    "child_id",
+    "status",
+    "commit",
+    "validation",
+    "next_recommended_action"
+  ],
+  "prompt_mode": "compact",
+  "prompt_metrics": {
+    "mode": "compact",
+    "char_count": 6868,
+    "estimated_tokens": 1717
+  },
+  "role_context": {
+    "role": "worker",
+    "role_authority": "implementation",
+    "may_implement": true,
+    "may_assign_workers": false,
+    "prohibited_actions": [
+      "modify-cluster-plan",
+      "dispatch-children",
+      "polaris-loop-dispatch",
+      "polaris-loop-continue"
+    ]
+  },
+  "result_file_contract": {
+    "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-268/results/POL-266-489d50e3-ed2a-4d20-bdef-43903389ed99.json"
+  },
+  "context": {
+    "branch": "main",
+    "worker_role": "impl"
+  }
+}

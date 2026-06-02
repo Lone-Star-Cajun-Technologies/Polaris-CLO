@@ -1,0 +1,15 @@
+{
+  "run_id": "polaris-run-pol-268-2026-06-02-001",
+  "child_id": "POL-264",
+  "status": "success",
+  "commit": "93db6a8f882be9787794aac049f9dcf74c4eb7e9",
+  "validation": {
+    "status": "passed",
+    "passed": true,
+    "checks": {
+      "npm run build": "passed",
+      "npm test": "passed"
+    }
+  },
+  "next_recommended_action": "continue"
+}

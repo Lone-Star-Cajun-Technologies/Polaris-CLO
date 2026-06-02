@@ -1,0 +1,99 @@
+{
+  "schema_version": "2.1",
+  "worker_role": "impl",
+  "run_id": "polaris-run-pol-268-2026-06-02-001",
+  "cluster_id": "POL-268",
+  "active_child": "POL-259",
+  "state_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json",
+  "telemetry_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-268-2026-06-02-001/telemetry.jsonl",
+  "instructions": {
+    "primary_goal": "Issue: POL-259 — POL-259\nWorktree: .\nBranch: main\n\n## Goal\n## Objective\n\nImplement a read-only repository scanner that produces a `RepoScanInventory` describing the repo for adoption planning.\n\n## Context\n\nThe adoption flow needs a structured inventory before any move or mutation work begins. The scanner must inspect the repo without changing files and produce a stable JSON output that later planning steps can consume.\n\n## Goal\n\nCreate `scanRepo(): Promise<RepoScanInventory>` and write the resulting inventory to `.polaris/adoption-inventory.json` so the adoption planner can generate a sequenced execution plan.\n\n## Scope\n\n* `src/cli/adopt-scan.ts` — implement `scanRepo(): Promise<RepoScanInventory>`\n* `src/cli/init.ts` — wire `scanRepo()` into the `--adopt` path\n* `RepoScanInventory` output must include:\n  * `scan_date`\n  * `repo_state`\n  * `package_manager`\n  * `source_roots`\n  * `docs_roots`\n  * `test_commands`\n  * `build_commands`\n  * `package_scripts`\n  * `generated_roots`\n  * `cache_roots`\n  * `fixture_roots`\n  * `agent_instruction_files`\n  * `existing_smartdocs_dirs`\n  * `architecture_notes`\n  * `likely_canonical_folders`\n  * `smartdocs_candidates`\n  * `ignore_candidates`\n* Detection rules must cover package manager lockfiles, common agent instruction files, generated roots, SmartDocs candidates, and likely canonical folders.\n* Write the result to `.polaris/adoption-inventory.json` and never overwrite an existing inventory without `--rescan`.\n\n## Acceptance Criteria\n\n* The scanner returns a `RepoScanInventory` matching the defined schema.\n* The `--adopt` path writes `.polaris/adoption-inventory.json`.\n* Existing inventory is preserved unless `--rescan` is explicitly provided.\n* The scan is read-only aside from writing the inventory output.\n\n## Validation\n\n* `npm test`\n* `npm run build`\n\n## Ordering\n\nDepends on repo state detection from [POL-258](https://linear.app/lsctech/issue/POL-258/impl-add-repo-state-detection-to-polaris-init). Run the scanner only for the `existing` state.\n\n## Non-goals\n\n* Do not move or modify repository content during the scan.\n* Do not generate the adoption plan in this issue.\n* Do not overwrite an existing inventory without explicit `--rescan`.\n\n## Scope\nTouch only:\n- `src/cli/adopt-scan.ts` — implement `scanRepo(): Promise<RepoScanInventory>`\n- `src/cli/init.ts` — wire `scanRepo()` into the `--adopt` path\n- `RepoScanInventory` output must include:\n- `scan_date`\n- `repo_state`\n- `package_manager`\n- `source_roots`\n- `docs_roots`\n- `test_commands`\n- `build_commands`\n- `package_scripts`\n- `generated_roots`\n- `cache_roots`\n- `fixture_roots`\n- `agent_instruction_files`\n- `existing_smartdocs_dirs`\n- `architecture_notes`\n- `likely_canonical_folders`\n- `smartdocs_candidates`\n- `ignore_candidates`\n- Detection rules must cover package manager lockfiles, common agent instruction files, generated roots, SmartDocs candidates, and likely canonical folders.\n- Write the result to `.polaris/adoption-inventory.json` and never overwrite an existing inventory without `--rescan`.\n\n## Acceptance Criteria\n\n## Validation\n- `npm test`\n- `npm run build`\n\n## Commit\n[POL-259] POL-259\n\n## Governance\n- Update /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json: move \"POL-259\" from open_children to completed_children.\n- Append a telemetry event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-268-2026-06-02-001/telemetry.jsonl.\n\n## Worker Progress Telemetry (MANDATORY)\nThe parent CANNOT see your work. You MUST emit heartbeat events so the parent knows you are alive and making progress.\n\nAfter EVERY step, append a JSONL event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-268-2026-06-02-001/telemetry.jsonl:\n```jsonl\n{\"event\":\"worker-heartbeat\",\"run_id\":\"<from packet>\",\"child_id\":\"POL-259\",\"step_cursor\":\"<current step>\",\"timestamp\":\"<ISO8601>\",\"progress_pct\":<0-100>,\"files_changed\":<count>,\"current_file\":\"<file being edited>\"}\n```\n\nRequired heartbeat points:\n  1. Immediately after reading this packet (step_cursor: \"start\")\n  2. After verifying state file (step_cursor: \"verify\")\n  3. After EACH file edit (step_cursor: \"implement\")\n  4. After running validation (step_cursor: \"validate\")\n  5. After creating commit (step_cursor: \"commit\")\n  6. Before terminating (step_cursor: \"complete\" or \"failed\")\n\nIf heartbeats stop, the parent will assume you crashed and may dispatch a replacement worker.\n\n## Approval Escalation (when uncertain)\nYou have a sealed packet defining your exact scope, allowed files, and validation commands. Use this to decide:\n\nRule 1 - Auto-approve WITHIN scope (normal work):\n  - If the operation touches files within `instructions.allowed_scope` → Just do it\n  - If the command is in `instructions.validation_commands` → Just run it\n  - Low risk, expected work → No need to ask, emit heartbeat with step_cursor: \"implement\"\n\nRule 2 - ESCALATE out-of-scope or high-risk:\n  - File outside allowed_scope → Emit worker-blocked with approval_type: \"out-of-scope\"\n  - Destructive operation (rm -rf, major refactor) → Emit worker-blocked with approval_type: \"destructive\"\n  - External API calls with cost → Emit worker-blocked with approval_type: \"cost\"\n  - Changing secrets/.env → Emit worker-blocked with approval_type: \"security\"\n  - Unclear requirements → Emit worker-blocked with approval_type: \"ambiguous\"\n\nTo escalate, emit IMMEDIATELY to telemetry:\n```jsonl\n{\"event\":\"worker-blocked\",\"run_id\":\"<from packet>\",\"child_id\":\"POL-259\",\"reason\":\"needs-approval\",\"approval_type\":\"<out-of-scope|destructive|cost|security|ambiguous>\",\"description\":\"<specifically what needs approval>\",\"blocker_id\":\"<unique-id>\",\"timestamp\":\"<ISO8601>\"}\n```\n\nThen: Continue heartbeats every 30s with step_cursor: \"blocked-awaiting-approval\"\nWait for parent response. If no response in 5 minutes → TERMINATE with approval-timeout.\n\nRemember: Your packet scope is your authority. Within scope = proceed. Outside scope = escalate.\n\n## Route Cognition Delta\nAfter implementation, apply route-local cognition delta — only if something materially changed.\n\n**POLARIS.md** — update only when ALL of the following are true:\n  - You touched a file in that folder (not a distant folder).\n  - The change materially affects: folder responsibilities, commands/workflows,\n    execution constraints, ownership/routing, or operational behavior.\n  - The current POLARIS.md content is actually wrong or incomplete as a result.\n  DO NOT update POLARIS.md for: formatting fixes, comment changes, tiny refactors,\n  internal implementation details, or any change that leaves the operational guidance\n  still accurate. When in doubt, do not update.\n\n**SUMMARY.md** — update only when: linked docs/specs changed, canon relationships\n  changed, architecture meaning changed, or doctrine/spec linkage changed.\n  SUMMARY.md is informational only. Do not create it if missing — that is a hint for\n  operators, not a task for workers. Keep it short. Never add operational doctrine.\n\n**Never** scan unrelated folders. **Never** regenerate all route docs.\nIf no material change occurred, skip this section entirely.\n\n## Report Back\n- files changed\n- validation results\n- commit hash\n- blockers\n\nTERMINATE SESSION IMMEDIATELY. Do not select or execute the next child.",
+    "steps": [
+      "Verify: read /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json and confirm active_child === \"POL-259\".",
+      "Implement POL-259: \"POL-259\".",
+      "Issue description:\n## Objective\n\nImplement a read-only repository scanner that produces a `RepoScanInventory` describing the repo for adoption planning.\n\n## Context\n\nThe adoption flow needs a structured inventory before any move or mutation work begins. The scanner must inspect the repo without changing files and produce a stable JSON output that later planning steps can consume.\n\n## Goal\n\nCreate `scanRepo(): Promise<RepoScanInventory>` and write the resulting inventory to `.polaris/adoption-inventory.json` so the adoption planner can generate a sequenced execution plan.\n\n## Scope\n\n* `src/cli/adopt-scan.ts` — implement `scanRepo(): Promise<RepoScanInventory>`\n* `src/cli/init.ts` — wire `scanRepo()` into the `--adopt` path\n* `RepoScanInventory` output must include:\n  * `scan_date`\n  * `repo_state`\n  * `package_manager`\n  * `source_roots`\n  * `docs_roots`\n  * `test_commands`\n  * `build_commands`\n  * `package_scripts`\n  * `generated_roots`\n  * `cache_roots`\n  * `fixture_roots`\n  * `agent_instruction_files`\n  * `existing_smartdocs_dirs`\n  * `architecture_notes`\n  * `likely_canonical_folders`\n  * `smartdocs_candidates`\n  * `ignore_candidates`\n* Detection rules must cover package manager lockfiles, common agent instruction files, generated roots, SmartDocs candidates, and likely canonical folders.\n* Write the result to `.polaris/adoption-inventory.json` and never overwrite an existing inventory without `--rescan`.\n\n## Acceptance Criteria\n\n* The scanner returns a `RepoScanInventory` matching the defined schema.\n* The `--adopt` path writes `.polaris/adoption-inventory.json`.\n* Existing inventory is preserved unless `--rescan` is explicitly provided.\n* The scan is read-only aside from writing the inventory output.\n\n## Validation\n\n* `npm test`\n* `npm run build`\n\n## Ordering\n\nDepends on repo state detection from [POL-258](https://linear.app/lsctech/issue/POL-258/impl-add-repo-state-detection-to-polaris-init). Run the scanner only for the `existing` state.\n\n## Non-goals\n\n* Do not move or modify repository content during the scan.\n* Do not generate the adoption plan in this issue.\n* Do not overwrite an existing inventory without explicit `--rescan`.",
+      "Requirements:",
+      "   1. The scanner returns a `RepoScanInventory` matching the defined schema.",
+      "   2. The `--adopt` path writes `.polaris/adoption-inventory.json`.",
+      "   3. Existing inventory is preserved unless `--rescan` is explicitly provided.",
+      "   4. The scan is read-only aside from writing the inventory output.",
+      "Run validation commands and confirm all pass.",
+      "Create exactly ONE git commit: [POL-259] POL-259.",
+      "Update /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json: move \"POL-259\" from open_children to completed_children.",
+      "Append a telemetry event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-268-2026-06-02-001/telemetry.jsonl.",
+      "Write compact return JSON to stdout (fields: child_id, status, commit, validation, next_recommended_action).",
+      "TERMINATE SESSION IMMEDIATELY. Do not select or execute the next child."
+    ],
+    "allowed_scope": [
+      "`src/cli/adopt-scan.ts` — implement `scanRepo(): Promise<RepoScanInventory>`",
+      "`src/cli/init.ts` — wire `scanRepo()` into the `--adopt` path",
+      "`RepoScanInventory` output must include:",
+      "`scan_date`",
+      "`repo_state`",
+      "`package_manager`",
+      "`source_roots`",
+      "`docs_roots`",
+      "`test_commands`",
+      "`build_commands`",
+      "`package_scripts`",
+      "`generated_roots`",
+      "`cache_roots`",
+      "`fixture_roots`",
+      "`agent_instruction_files`",
+      "`existing_smartdocs_dirs`",
+      "`architecture_notes`",
+      "`likely_canonical_folders`",
+      "`smartdocs_candidates`",
+      "`ignore_candidates`",
+      "Detection rules must cover package manager lockfiles, common agent instruction files, generated roots, SmartDocs candidates, and likely canonical folders.",
+      "Write the result to `.polaris/adoption-inventory.json` and never overwrite an existing inventory without `--rescan`."
+    ],
+    "validation_commands": [
+      "`npm test`",
+      "`npm run build`"
+    ],
+    "issue_context": {
+      "id": "POL-259",
+      "title": "POL-259",
+      "key_requirements": [],
+      "body": "## Objective\n\nImplement a read-only repository scanner that produces a `RepoScanInventory` describing the repo for adoption planning.\n\n## Context\n\nThe adoption flow needs a structured inventory before any move or mutation work begins. The scanner must inspect the repo without changing files and produce a stable JSON output that later planning steps can consume.\n\n## Goal\n\nCreate `scanRepo(): Promise<RepoScanInventory>` and write the resulting inventory to `.polaris/adoption-inventory.json` so the adoption planner can generate a sequenced execution plan.\n\n## Scope\n\n* `src/cli/adopt-scan.ts` — implement `scanRepo(): Promise<RepoScanInventory>`\n* `src/cli/init.ts` — wire `scanRepo()` into the `--adopt` path\n* `RepoScanInventory` output must include:\n  * `scan_date`\n  * `repo_state`\n  * `package_manager`\n  * `source_roots`\n  * `docs_roots`\n  * `test_commands`\n  * `build_commands`\n  * `package_scripts`\n  * `generated_roots`\n  * `cache_roots`\n  * `fixture_roots`\n  * `agent_instruction_files`\n  * `existing_smartdocs_dirs`\n  * `architecture_notes`\n  * `likely_canonical_folders`\n  * `smartdocs_candidates`\n  * `ignore_candidates`\n* Detection rules must cover package manager lockfiles, common agent instruction files, generated roots, SmartDocs candidates, and likely canonical folders.\n* Write the result to `.polaris/adoption-inventory.json` and never overwrite an existing inventory without `--rescan`.\n\n## Acceptance Criteria\n\n* The scanner returns a `RepoScanInventory` matching the defined schema.\n* The `--adopt` path writes `.polaris/adoption-inventory.json`.\n* Existing inventory is preserved unless `--rescan` is explicitly provided.\n* The scan is read-only aside from writing the inventory output.\n\n## Validation\n\n* `npm test`\n* `npm run build`\n\n## Ordering\n\nDepends on repo state detection from [POL-258](https://linear.app/lsctech/issue/POL-258/impl-add-repo-state-detection-to-polaris-init). Run the scanner only for the `existing` state.\n\n## Non-goals\n\n* Do not move or modify repository content during the scan.\n* Do not generate the adoption plan in this issue.\n* Do not overwrite an existing inventory without explicit `--rescan`."
+    }
+  },
+  "lifecycle": {
+    "terminate_after_completion": true,
+    "max_concurrent": 1,
+    "cleanup_on_exit": "commit-and-exit"
+  },
+  "return_contract": [
+    "child_id",
+    "status",
+    "commit",
+    "validation",
+    "next_recommended_action"
+  ],
+  "prompt_mode": "compact",
+  "prompt_metrics": {
+    "mode": "compact",
+    "char_count": 7325,
+    "estimated_tokens": 1831
+  },
+  "role_context": {
+    "role": "worker",
+    "role_authority": "implementation",
+    "may_implement": true,
+    "may_assign_workers": false,
+    "prohibited_actions": [
+      "modify-cluster-plan",
+      "dispatch-children",
+      "polaris-loop-dispatch",
+      "polaris-loop-continue"
+    ]
+  },
+  "result_file_contract": {
+    "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-268/results/POL-259-110905d0-1e9e-4d0e-9968-7ac2b33b8b6c.json"
+  },
+  "context": {
+    "branch": "main",
+    "worker_role": "impl"
+  }
+}
