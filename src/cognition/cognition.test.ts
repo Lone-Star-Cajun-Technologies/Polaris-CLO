@@ -16,12 +16,14 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdirSync, rmSync, writeFileSync, existsSync, readFileSync } from "node:fs";
+import { mkdirSync, rmSync, writeFileSync, existsSync, readFileSync, utimesSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
 import {
   isCognitionSkippedFolder,
+  isPolarisOwnedFolder,
+  isUserCreatedCognitionSurface,
   detectOperationalReasons,
   findNearestRoutePolarismd,
   applyRouteCognitionDelta,
@@ -81,6 +83,61 @@ describe("isCognitionSkippedFolder", () => {
   it("does not skip src/", () => expect(isCognitionSkippedFolder("src")).toBe(false));
   it("does not skip src/loop", () => expect(isCognitionSkippedFolder("src/loop")).toBe(false));
   it("does not skip scripts/", () => expect(isCognitionSkippedFolder("scripts")).toBe(false));
+});
+
+describe("isPolarisOwnedFolder", () => {
+  it("matches top-level .polaris", () => {
+    expect(isPolarisOwnedFolder(".polaris")).toBe(true);
+  });
+
+  it("matches src root and immediate src subdirectories", () => {
+    expect(isPolarisOwnedFolder("src")).toBe(true);
+    expect(isPolarisOwnedFolder("src/loop")).toBe(true);
+  });
+
+  it("matches active smartdocs cognition folders", () => {
+    expect(isPolarisOwnedFolder("smartdocs/specs/active")).toBe(true);
+    expect(isPolarisOwnedFolder("smartdocs/doctrine/active")).toBe(true);
+  });
+
+  it("does not match nested src grandchildren or unrelated folders", () => {
+    expect(isPolarisOwnedFolder("src/loop/worker")).toBe(false);
+    expect(isPolarisOwnedFolder("docs")).toBe(false);
+  });
+});
+
+describe("isUserCreatedCognitionSurface", () => {
+  let tmp: string;
+  beforeEach(() => { tmp = makeTmp(); });
+  afterEach(() => cleanup(tmp));
+
+  it("returns true when file predates Polaris initialization", () => {
+    mkdirSync(join(tmp, "src", "loop"), { recursive: true });
+    const target = join(tmp, "src", "loop", "POLARIS.md");
+    writeFileSync(target, "# human", "utf-8");
+    const old = new Date("2000-01-01T00:00:00.000Z");
+    utimesSync(target, old, old);
+    mkdirSync(join(tmp, ".polaris"), { recursive: true });
+
+    expect(isUserCreatedCognitionSurface("src/loop/POLARIS.md", tmp)).toBe(true);
+  });
+
+  it("returns true when listed in managed-surfaces manifest", () => {
+    mkdirSync(join(tmp, ".polaris", "cognition"), { recursive: true });
+    writeFileSync(
+      join(tmp, ".polaris", "cognition", "managed-surfaces.json"),
+      JSON.stringify({ surfaces: ["src/loop/SUMMARY.md"] }),
+      "utf-8",
+    );
+    expect(isUserCreatedCognitionSurface("src/loop/SUMMARY.md", tmp)).toBe(true);
+  });
+
+  it("returns false for post-initialization files not listed in manifest", () => {
+    mkdirSync(join(tmp, ".polaris"), { recursive: true });
+    mkdirSync(join(tmp, "src", "loop"), { recursive: true });
+    writeFileSync(join(tmp, "src", "loop", "SUMMARY.md"), "# generated", "utf-8");
+    expect(isUserCreatedCognitionSurface("src/loop/SUMMARY.md", tmp)).toBe(false);
+  });
 });
 
 // ── detectOperationalReasons ──────────────────────────────────────────────────
@@ -650,7 +707,28 @@ describe("detectMissingCognitionSurfaces", () => {
       [".taskchain_artifacts/polaris-run/current-state.json"],
       tmp,
     );
-    expect(missingPolaris).toHaveLength(0);
+    expect(missingPolaris).not.toContain(".taskchain_artifacts/polaris-run");
+  });
+
+  it("always reports existing Polaris-owned folders that are missing POLARIS.md", () => {
+    mkdirSync(join(tmp, ".polaris"), { recursive: true });
+    mkdirSync(join(tmp, "src", "loop"), { recursive: true });
+    mkdirSync(join(tmp, "smartdocs", "specs", "active"), { recursive: true });
+
+    const { missingPolaris } = detectMissingCognitionSurfaces([], tmp);
+    expect(missingPolaris).toContain(".polaris");
+    expect(missingPolaris).toContain("src");
+    expect(missingPolaris).toContain("src/loop");
+    expect(missingPolaris).toContain("smartdocs/specs/active");
+  });
+
+  it("does not mark adaptive folders eligible when changes are test-only", () => {
+    mkdirSync(join(tmp, "scripts", "feature"), { recursive: true });
+    const { missingPolaris } = detectMissingCognitionSurfaces(
+      ["scripts/feature/worker.test.ts"],
+      tmp,
+    );
+    expect(missingPolaris).not.toContain("scripts/feature");
   });
 
   it("does not report root-level folder", () => {
