@@ -101,7 +101,7 @@ Cognition librarian dispatch should run **after each child completes, before the
 
 Recommended placement in `loop continue`:
 
-```
+```text
 loop continue (foreman):
   1. Verify completion evidence for completed child
   2. Bridge evidence to cluster-state
@@ -193,7 +193,7 @@ The absence of `.polaris/cognition/` is a **symptom** — the root cause is that
 
 ## 4. Recommended Lifecycle
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │  Worker session (per child)                                     │
 │                                                                 │
