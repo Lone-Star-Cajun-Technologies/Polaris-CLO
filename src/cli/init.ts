@@ -18,7 +18,13 @@ import {
   type AdoptionPlan,
   type AdoptionPlanArtifacts,
   type RepoScanInventory,
+  renderAdoptionPlanMarkdown,
 } from "./adoption-plan.js";
+import {
+  logAdoptionApprovalTelemetry,
+  persistApprovedAdoptionPlan,
+  promptApproval,
+} from "./adopt-approve.js";
 import { scanAdoptionInventory as scanRepoAdoptionInventory } from "./adoption-inventory.js";
 import { generateFolderCognition as generateRepoFolderCognition } from "./adopt-cognition.js";
 import { migrateSmartDocs } from "./adopt-smartdocs.js";
@@ -38,6 +44,8 @@ export interface InitOptions {
   detectRepoState?: (repoRoot: string) => RepoState;
   /** Run existing repo adoption flow. */
   adopt?: boolean;
+  /** Resume an approved adoption plan without re-prompting. */
+  resume?: boolean;
   /** Print detected repo state and exit without mutating files. */
   status?: boolean;
   /** Auto-approve adoption plan prompt (for CI). */
@@ -140,16 +148,6 @@ function detectRepoState(repoRoot: string): RepoState {
   }
 
   return "existing";
-}
-
-function promptAdoptionApproval(): boolean {
-  process.stdout.write("Approve adoption plan and continue? [y/N] ");
-  try {
-    const response = readFileSync(0, "utf-8").trim().toLowerCase();
-    return response === "y" || response === "yes";
-  } catch {
-    return false;
-  }
 }
 
 function applySmartDocsMigration(
@@ -279,6 +277,33 @@ function writeAdoptionConfigLock(
 
 function areAllPlanStepsComplete(plan: AdoptionPlanArtifacts["plan"]): boolean {
   return plan.steps.length > 0 && plan.steps.every((step) => PLAN_COMPLETE_STATUSES.has(step.status));
+}
+
+function loadAdoptionPlanArtifacts(repoRoot: string): AdoptionPlanArtifacts | null {
+  const jsonPath = join(repoRoot, ".polaris", "adoption-plan.json");
+  const markdownPath = join(repoRoot, ".polaris", "adoption-plan.md");
+
+  if (!existsSync(jsonPath)) {
+    return null;
+  }
+
+  try {
+    const json = readFileSync(jsonPath, "utf-8");
+    const plan = JSON.parse(json) as AdoptionPlanArtifacts["plan"];
+    const markdown = existsSync(markdownPath)
+      ? readFileSync(markdownPath, "utf-8")
+      : renderAdoptionPlanMarkdown(plan);
+    return {
+      plan,
+      json,
+      markdown,
+      jsonPath,
+      markdownPath,
+      wroteFiles: false,
+    };
+  } catch {
+    return null;
+  }
 }
 
 function ensureRuntimeArtifactExclusions(repoRoot: string): void {
@@ -522,7 +547,7 @@ export function finalizeAdoption(
  * Repo-analysis provider detection writes `providers.repoAnalysis.preferred`
  * only when an external provider is detected.
  */
-export function runInit(options: InitOptions = {}): void {
+export async function runInit(options: InitOptions = {}): Promise<void> {
   const repoRoot = options.repoRoot ?? resolve(process.cwd());
   const configPath = join(repoRoot, "polaris.config.json");
   const detectCompaction = options.detectProviders ?? detectCompactionProviders;
@@ -596,22 +621,50 @@ export function runInit(options: InitOptions = {}): void {
   const scanAdoptionInventory =
     options.scanAdoptionInventory ?? ((root: string) => scanRepoAdoptionInventory(root, { now }));
   const inventory = scanAdoptionInventory(repoRoot);
-  const adoptionArtifacts = (options.generateAdoptionArtifacts ?? generateAdoptionPlanArtifacts)(
-    repoRoot,
-    inventory,
-    { dryRun: options.dryRun, now },
-  );
+  const loadedArtifacts = options.resume ? loadAdoptionPlanArtifacts(repoRoot) : null;
+  const adoptionArtifacts =
+   loadedArtifacts ?? (options.generateAdoptionArtifacts ?? generateAdoptionPlanArtifacts)(
+     repoRoot,
+     inventory,
+     { dryRun: options.dryRun, now },
+   );
 
-  process.stdout.write(`${adoptionArtifacts.markdown}\n`);
-
-  const approved = options.yes ? true : (options.readAdoptionApproval ?? promptAdoptionApproval)();
-  if (!approved) {
-    process.stdout.write("Adoption aborted: explicit approval required.\n");
-    return;
+  let approved = false;
+  if (options.yes) {
+   process.stdout.write(`${adoptionArtifacts.markdown}\n`);
+   persistApprovedAdoptionPlan(adoptionArtifacts.plan, repoRoot, now);
+   logAdoptionApprovalTelemetry(repoRoot, {
+     event: "adoption-approval-bypassed",
+     run_mode: "yes",
+     plan_id: adoptionArtifacts.plan.plan_id,
+     timestamp: now.toISOString(),
+   });
+   process.stdout.write("Adoption approval bypassed via --yes.\n");
+   approved = true;
+  } else if (options.resume && adoptionArtifacts.plan.approved) {
+   process.stdout.write(`${adoptionArtifacts.markdown}\n`);
+   if (!adoptionArtifacts.plan.approved_at) {
+     persistApprovedAdoptionPlan(adoptionArtifacts.plan, repoRoot, now);
+   }
+   approved = true;
+  } else if (options.readAdoptionApproval) {
+   process.stdout.write(`${adoptionArtifacts.markdown}\n`);
+   approved = options.readAdoptionApproval();
+   if (approved) {
+     persistApprovedAdoptionPlan(adoptionArtifacts.plan, repoRoot, now);
+   } else {
+     process.stdout.write("Adoption aborted: explicit approval required.\n");
+     return;
+   }
+  } else {
+   approved = await promptApproval(adoptionArtifacts.plan, { repoRoot, now });
+   if (!approved) {
+     return;
+   }
   }
 
   const smartDocsMigrationSteps = adoptionArtifacts.plan.steps.filter(
-    (step) => step.category === "smartdocs-migrate",
+   (step) => step.category === "smartdocs-migrate",
   );
 
   if (smartDocsMigrationSteps.length > 0) {
@@ -662,14 +715,16 @@ export function createInitCommand(options: InitOptions = {}): Command {
     .option("--dry-run", "print generated config to stdout without writing")
     .option("--status", "detect and print current repository state without writing files")
     .option("--adopt", "run existing repository adoption flow")
+    .option("--resume", "resume an approved adoption plan without prompting")
     .option("--yes", "auto-approve adoption plan when used with --adopt")
     .option("--commit", "create an adoption commit when used with --adopt")
-    .action((cmdOptions: { dryRun?: boolean; status?: boolean; adopt?: boolean; yes?: boolean; commit?: boolean }) => {
-      runInit({
+    .action(async (cmdOptions: { dryRun?: boolean; status?: boolean; adopt?: boolean; resume?: boolean; yes?: boolean; commit?: boolean }) => {
+      await runInit({
         ...options,
         dryRun: cmdOptions.dryRun,
         status: cmdOptions.status,
         adopt: cmdOptions.adopt,
+        resume: cmdOptions.resume,
         yes: cmdOptions.yes,
         commit: cmdOptions.commit,
       });
