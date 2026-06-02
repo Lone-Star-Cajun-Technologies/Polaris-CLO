@@ -13,6 +13,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
+import { execFileSync } from "node:child_process";
 import { runParentLoop } from "./parent.js";
 import { createLoopCommand } from "./index.js";
 import { createBootstrapSeal } from "./run-bootstrap.js";
@@ -282,6 +283,18 @@ async function runLoopCommand(command: Command, argv: string[]): Promise<{ stdou
   return { ...output, exitCode };
 }
 
+function createImplementationCommit(dir: string, relativePath: string = "src/self-complete.ts"): string {
+  execFileSync("git", ["init"], { cwd: dir, stdio: "ignore" });
+  execFileSync("git", ["config", "user.name", "Polaris Test"], { cwd: dir });
+  execFileSync("git", ["config", "user.email", "polaris-test@example.com"], { cwd: dir });
+  const absolutePath = join(dir, relativePath);
+  mkdirSync(dirname(absolutePath), { recursive: true });
+  writeFileSync(absolutePath, "export const selfComplete = true;\n", "utf-8");
+  execFileSync("git", ["add", relativePath], { cwd: dir });
+  execFileSync("git", ["commit", "-m", "test commit"], { cwd: dir, stdio: "ignore" });
+  return execFileSync("git", ["rev-parse", "HEAD"], { cwd: dir, encoding: "utf-8" }).trim();
+}
+
 // ── Mock registry so tests can inject a mock adapter ────────────────────────
 
 vi.mock("./adapters/registry.js", () => ({
@@ -539,7 +552,8 @@ describe("runParentLoop", () => {
     expect(result.message).toContain("Cluster complete");
   });
 
-  it("does not double-count when worker already persisted child completion", async () => {
+  it("workerWroteCompletion accepts valid commit evidence and does not double-count", async () => {
+    const commit = createImplementationCommit(tmpDir);
     const stateFile = makeStateFile(tmpDir, {
       open_children: ["POL-100"],
       children_completed: 0,
@@ -575,7 +589,7 @@ describe("runParentLoop", () => {
           mkdirSync(dirname(resultFile), { recursive: true });
           writeFileSync(
             resultFile,
-            JSON.stringify({ child_id: "POL-100", status: "done", commit: "abc1234" }, null, 2),
+            JSON.stringify({ child_id: "POL-100", status: "done", commit }, null, 2),
             "utf-8",
           );
         }
@@ -583,7 +597,7 @@ describe("runParentLoop", () => {
           exit_code: 0,
           provider_used: "mock",
           command_run: "mock-worker",
-          summary: JSON.stringify({ child_id: "POL-100", status: "done", commit: "abc1234" }),
+          summary: JSON.stringify({ child_id: "POL-100", status: "done", commit }),
         };
       },
     };
@@ -599,6 +613,63 @@ describe("runParentLoop", () => {
     expect(result.childrenDispatched).toBe(1);
     expect(finalState.completed_children).toEqual(["POL-100"]);
     expect(finalState.context_budget.children_completed).toBe(1);
+  });
+
+  it("workerWroteCompletion halts with worker-error when commit evidence is empty", async () => {
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+
+    const mockAdapter: ExecutionAdapter = {
+      name: "mock",
+      async dispatch(packet) {
+        const state = JSON.parse(readFileSync(stateFile, "utf-8")) as Record<string, unknown>;
+        const contextBudget = state.context_budget as Record<string, unknown>;
+        writeFileSync(
+          stateFile,
+          JSON.stringify(
+            {
+              ...state,
+              open_children: [],
+              completed_children: ["POL-100"],
+              context_budget: {
+                ...contextBudget,
+                children_completed: 1,
+              },
+              next_open_child: null,
+              status: "cluster-complete",
+            },
+            null,
+            2,
+          ),
+          "utf-8",
+        );
+        const resultFile = isWorkerPacket(packet) ? packet.result_file_contract?.result_file : undefined;
+        if (resultFile) {
+          mkdirSync(dirname(resultFile), { recursive: true });
+          writeFileSync(
+            resultFile,
+            JSON.stringify({ child_id: "POL-100", status: "done", commit: "" }, null, 2),
+            "utf-8",
+          );
+        }
+        return {
+          exit_code: 0,
+          provider_used: "mock",
+          command_run: "mock-worker",
+          summary: JSON.stringify({ child_id: "POL-100", status: "done", commit: "" }),
+        };
+      },
+    };
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(result.haltReason).toBe("worker-error");
+    expect(result.haltingChild).toBe("POL-100");
+    expect(result.message).toContain("without commit evidence");
   });
 
   it("returns state-invalid when current-state.json is malformed", async () => {
