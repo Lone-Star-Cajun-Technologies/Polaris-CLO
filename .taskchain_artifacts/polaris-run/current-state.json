@@ -1,52 +1,100 @@
 {
   "schema_version": "1.0",
-  "run_id": "polaris-run-pol-281-2026-06-02-001",
-  "cluster_id": "POL-281",
+  "run_id": "polaris-run-pol-268-2026-06-02-001",
+  "cluster_id": "POL-268",
   "skill": "polaris-run",
-  "branch": "",
+  "branch": "main",
   "session_type": "implement",
   "active_child": "",
   "completed_children": [
-    "POL-280",
-    "POL-279",
-    "POL-278",
-    "POL-277"
+    "POL-267",
+    "POL-266",
+    "POL-265",
+    "POL-264",
+    "POL-263",
+    "POL-262",
+    "POL-261",
+    "POL-260",
+    "POL-259",
+    "POL-258"
   ],
   "open_children": [],
-  "open_children_meta": {
-    "POL-281": {
-      "title": "IMPLEMENT",
-      "body": "## Objective\n\nImplement the [POL-277](https://linear.app/lsctech/issue/POL-277/fix-fail-packet-generation-when-impl-child-has-empty-allowed-scope-or) through [POL-280](https://linear.app/lsctech/issue/POL-280/fix-parent-loop-must-validate-commit-evidence-even-when-worker-wrote) hardening cluster so Polaris cannot dispatch empty or non-actionable worker packets and cannot produce delivery PRs from fake worker completions.\n\n## Context\n\nThis issue is the implementation parent for the PR 72 failure diagnosis. PR 72 showed that Polaris could dispatch children with empty scope, empty validation, placeholder goals, and no actionable issue body. Workers then self-reported completion with empty commits, and finalize opened a PR even though no implementation evidence existed.\n\nThe diagnosis found three compounding failures:\n\n1. Packet generation allowed empty or placeholder child metadata.\n2. Worker adapters could complete or report failure without proving real in-scope work.\n3. Finalize trusted runtime state without verifying non-artifact commit evidence, result artifacts, and validation output.\n\nPolaris must treat empty instructions as a preflight failure, not as runnable work.\n\n## Goal\n\nMake the PR 72 failure mode impossible by enforcing actionable packet requirements, validating worker completion evidence, and rejecting finalize flows that lack non-artifact implementation proof.\n\n## Scope\n\n* [POL-277](https://linear.app/lsctech/issue/POL-277/fix-fail-packet-generation-when-impl-child-has-empty-allowed-scope-or): fail packet generation or parent preflight when a child has no body, no allowed scope, or no validation commands.\n* [POL-278](https://linear.app/lsctech/issue/POL-278/fix-extend-empty-scope-guard-from-agent-subtask-adapter-to-terminal): extend empty-scope and actionable-packet guards to the terminal-cli adapter path.\n* [POL-279](https://linear.app/lsctech/issue/POL-279/fix-polaris-finalize-must-verify-non-artifact-commit-diff-per-child): make finalize reject delivery when children have no non-artifact commit evidence or missing result evidence.\n* [POL-280](https://linear.app/lsctech/issue/POL-280/fix-parent-loop-must-validate-commit-evidence-even-when-worker-wrote): make parent loop validate worker self-completion against commit evidence and sealed result state before checkpointing completion.\n* `src/loop/parent.ts`\n* `src/loop/run-preflight.ts`\n* `src/loop/run-bootstrap.ts`\n* `src/loop/checkpoint.ts`\n* `src/loop/worker-packet.ts`\n* `src/loop/worker-prompt.ts`\n* `src/loop/adapters/agent-subtask.ts`\n* `src/loop/adapters/terminal-cli.ts`\n* `src/loop/adapters/types.ts`\n* `src/finalize/**`\n* `src/cluster-state/**`\n* Tests covering loop parent, packet generation, adapters, finalize, and cluster-state reconciliation\n\n## Acceptance Criteria\n\n* [POL-281](https://linear.app/lsctech/issue/POL-281/implement) packet generation includes this issue body in the worker packet and prompt.\n* A child with an empty or whitespace-only body fails before dispatch state is mutated.\n* A child with empty allowed scope fails before dispatch or adapter execution.\n* A child with empty validation commands fails unless explicitly marked as no-validation-required with a reason.\n* The agent-subtask path does not attempt to read a sealed result file when no native dispatcher launched a worker.\n* The terminal-cli path enforces the same actionable-packet requirements.\n* Parent loop does not checkpoint self-reported worker completion without sealed result and commit or result evidence.\n* Finalize rejects a cluster where completed children have empty commits, no non-artifact changes, missing result artifacts, or inconsistent cluster-state evidence.\n* Tests cover the PR 72 failure mode and prove it cannot produce another empty delivery PR.\n* Existing tests continue to pass.\n\n## Validation\n\n* `npm run build`\n* `npm test`\n* `npx vitest run src/loop src/finalize src/cluster-state`\n* `npm run polaris -- loop status`\n\n## Ordering\n\nImplement in child order from [POL-277](https://linear.app/lsctech/issue/POL-277/fix-fail-packet-generation-when-impl-child-has-empty-allowed-scope-or) through [POL-280](https://linear.app/lsctech/issue/POL-280/fix-parent-loop-must-validate-commit-evidence-even-when-worker-wrote). Packet-generation gating is first, adapter and parent-loop hardening follow, and finalize verification closes the cluster. This issue should produce implementation changes, not only analysis.\n\n## Non-goals\n\n* Do not manually create sealed result files to bypass adapter failures.\n* Do not weaken the new packet or body gates to make tests pass.\n* Do not allow provider fallback or external routing changes in this issue unless required to keep dispatch safe.\n* Do not treat runtime scratch files as implementation evidence."
-    }
-  },
   "step_cursor": "checkpoint",
   "context_budget": {
-    "children_completed": 4,
+    "children_completed": 10,
     "max_children_per_session": 1
   },
   "status": "cluster-complete",
   "next_open_child": null,
   "artifact_dir": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run",
   "dispatch_boundary": {
-    "dispatch_epoch": 4,
-    "continue_epoch": 4,
-    "last_dispatched_child": "POL-277"
+    "dispatch_epoch": 15,
+    "continue_epoch": 15,
+    "last_dispatched_child": "POL-258"
   },
   "run_bootstrap_seal": {
     "sealer": "polaris-loop-bootstrap",
-    "run_id": "polaris-run-pol-281-2026-06-02-001",
-    "cluster_id": "POL-281",
-    "open_children_sha": "9fa1750f399c9e879b7dacac62506a891424f1840591d90b99ddeade6d82fbc3",
-    "sealed_at": "2026-06-02T01:55:22.720Z"
+    "run_id": "polaris-run-pol-268-2026-06-02-001",
+    "cluster_id": "POL-268",
+    "open_children_sha": "fced78c9d9e68d45cd5e85313e8a90471c423208fa607069a4202db55ca9df8d",
+    "sealed_at": "2026-06-02T14:51:30.259Z"
   },
-  "updated_at": "2026-06-02T03:06:44.548711Z",
+  "open_children_meta": {},
   "completed_children_results": {
-    "POL-277": {
+    "POL-266": {
       "status": "done",
       "validation": "passed",
-      "commit": "ecce3e2052505fca00a9e4f26b2895317a433584",
+      "commit": "15c6cdbb61e619e16d2be9e17f982e52bea99428",
+      "next_recommended_action": "continue"
+    },
+    "POL-265": {
+      "status": "done",
+      "validation": "passed",
+      "commit": "5f48e211138f3b5f1aad0b570deaf3206124b060",
+      "next_recommended_action": "continue"
+    },
+    "POL-264": {
+      "status": "done",
+      "validation": "passed",
+      "commit": "93db6a8903d32bb1a0a7b42a8f4692f5e7173006",
+      "next_recommended_action": "continue"
+    },
+    "POL-261": {
+      "status": "done",
+      "validation": "passed",
+      "commit": "6fa8697448c163e90796647e6439595a43d605e5",
+      "next_recommended_action": "continue"
+    },
+    "POL-260": {
+      "status": "done",
+      "validation": "passed",
+      "commit": "f1136b9b465a76bca43a46d337f9f0e4ee75ebc2",
+      "next_recommended_action": "continue"
+    },
+    "POL-262": {
+      "status": "done",
+      "validation": "passed",
+      "commit": "8597838018256732ab34d4d225c7aa5170522c51",
+      "next_recommended_action": "continue"
+    },
+    "POL-267": {
+      "status": "done",
+      "validation": "passed",
+      "commit": "0e69f990eabad436cc5588915c5f6f7a38015e61",
+      "next_recommended_action": "continue"
+    },
+    "POL-259": {
+      "status": "done",
+      "validation": "passed",
+      "commit": "141146bc62d2963095595fb67e64c9b1eec26fa0",
+      "next_recommended_action": "continue"
+    },
+    "POL-258": {
+      "status": "done",
+      "validation": "passed",
+      "commit": "5f08c01a5a8d840d0bdfdeb021b00b1d2513f60d",
       "next_recommended_action": "continue"
     }
   },
-  "last_commit": "ecce3e2052505fca00a9e4f26b2895317a433584"
+  "last_commit": "5f08c01a5a8d840d0bdfdeb021b00b1d2513f60d"
 }

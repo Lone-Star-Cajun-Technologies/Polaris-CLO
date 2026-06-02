@@ -40,3 +40,4 @@
 {"event":"canon-check-result","run_id":"polaris-run-pol-281-2026-06-02-001","child_id":null,"outcome":"aligned","conflicts":[],"timestamp":"2026-06-02T05:14:53.014Z"}
 {"event":"canon-check-start","run_id":"polaris-run-pol-281-2026-06-02-001","child_id":null,"canon_files_inspected":3,"changed_files_count":17,"timestamp":"2026-06-02T05:18:54.982Z"}
 {"event":"canon-check-result","run_id":"polaris-run-pol-281-2026-06-02-001","child_id":null,"outcome":"aligned","conflicts":[],"timestamp":"2026-06-02T05:18:54.984Z"}
+{"event":"loop-aborted","run_id":"polaris-run-pol-281-2026-06-02-001","child_id":"","reason":"reset stale pre-root-classification dispatch","timestamp":"2026-06-02T13:58:55.908Z"}

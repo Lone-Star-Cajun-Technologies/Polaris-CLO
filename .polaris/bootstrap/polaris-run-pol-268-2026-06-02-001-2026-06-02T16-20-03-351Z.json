@@ -1,0 +1,65 @@
+{
+  "run_id": "polaris-run-pol-268-2026-06-02-001",
+  "skill": "polaris-run",
+  "branch": "main",
+  "base_commit_sha": "f1136b9b465a76bca43a46d337f9f0e4ee75ebc2",
+  "last_completed_step": "checkpoint",
+  "last_completed_child": "POL-260",
+  "next_step": "03-execute-child",
+  "open_children": [
+    "POL-259",
+    "POL-258"
+  ],
+  "artifact_pointers": {
+    "current_state": ".taskchain_artifacts/polaris-run/current-state.json",
+    "telemetry": ".taskchain_artifacts/polaris-run/runs/polaris-run-pol-268-2026-06-02-001/telemetry.jsonl"
+  },
+  "context_budget": {
+    "children_completed": 8,
+    "files_touched_total": 0,
+    "stop_threshold_remaining": -7
+  },
+  "current_state_sha": "33c76fc210361cdc1d0b3268bae697a3434a21bdf6e948d7c72b476444a37111",
+  "resume_instructions": "Run `polaris loop resume polaris-run-pol-268-2026-06-02-001` on branch `main` to continue with POL-259.",
+  "compact_mode": "standard",
+  "execution_adapter": {
+    "mode": "terminal-cli",
+    "autoDispatch": false,
+    "providerCoupling": "shell-process",
+    "priority": 2,
+    "warnings": [],
+    "reason": "terminal CLI worker adapter configured",
+    "compact_bootstrap_state": {
+      "run_id": "polaris-run-pol-268-2026-06-02-001",
+      "cluster_id": "POL-268",
+      "child_id": "POL-259",
+      "state_file": ".taskchain_artifacts/polaris-run/current-state.json",
+      "telemetry_file": ".taskchain_artifacts/polaris-run/runs/polaris-run-pol-268-2026-06-02-001/telemetry.jsonl",
+      "current_state_sha": "33c76fc210361cdc1d0b3268bae697a3434a21bdf6e948d7c72b476444a37111",
+      "branch": "main",
+      "compact_mode": "standard",
+      "return_summary_contract": [
+        "child_id",
+        "status",
+        "commit_hash",
+        "validation_summary",
+        "next_action"
+      ],
+      "allow_analyze_children": false
+    },
+    "dispatch_contract": {
+      "one_child_per_worker": true,
+      "parent_receives_compact_summary_only": true,
+      "child_transcript_retained_by_worker": true,
+      "updates_current_state_and_telemetry": true
+    },
+    "fallback_order": [
+      "agent-subtask",
+      "terminal-cli",
+      "ci",
+      "ssh",
+      "remote-worker",
+      "cross-agent"
+    ]
+  }
+}
