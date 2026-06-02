@@ -68,7 +68,7 @@ export const DEFAULT_CONFIG: Omit<Required<PolarisConfig>, "canon" | "providers"
   },
   budget: {
     mode: "fixed-cap" as "fixed-cap" | "run-until-done" | "stop-on-fail",
-    max_children: 3,
+    max_children: 6,
     stop_on_fail: false,
     allow_analyze_children: false,
   },
