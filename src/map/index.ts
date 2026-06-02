@@ -75,7 +75,17 @@ function loadIgnoreFilter(repoRoot: string): ReturnType<typeof parsePolarisIgnor
   return parsePolarisIgnore(userPatterns);
 }
 
-export function runMapIndex(repoRoot: string, dryRun: boolean, verbose: boolean): void {
+export interface RunMapIndexOptions {
+  seedCognition?: boolean;
+  skipThreshold?: boolean;
+}
+
+export function runMapIndex(
+  repoRoot: string,
+  dryRun: boolean,
+  verbose: boolean,
+  _options: RunMapIndexOptions = {},
+): void {
   if (!existsSync(repoRoot)) {
     console.error(`Repo root not found: ${repoRoot}`);
     process.exit(1);
