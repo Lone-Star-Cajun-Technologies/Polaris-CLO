@@ -1,0 +1,8 @@
+{
+  "child_id": "POL-307",
+  "status": "success",
+  "commit": "b50ec98a117294bb83c0cd5f44061caa90fcb971",
+  "validation": "passed",
+  "next_recommended_action": "continue",
+  "run_id": "polaris-run-pol-303-2026-06-03-001"
+}

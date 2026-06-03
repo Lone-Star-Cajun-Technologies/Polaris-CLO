@@ -1,38 +1,82 @@
 {
-  "source_id": "POL-303",
-  "analyze_source_id": "POL-302",
-  "source_type": "linear",
-  "created_at": "2026-06-03T18:04:00.000Z",
-  "clusters": [
-    {
-      "cluster_id": "cluster-01",
-      "description": "Finalize hardening — state authority, branch/cluster validation, PR metadata, Linear review-gate, and role doctrine enforcement",
-      "children": [
-        {
-          "id": "POL-304",
-          "title": "IMPLEMENT: Add finalize state-file authority gate and branch/cluster cross-validation preflight",
-          "session_type": "implement",
-          "blockedBy": []
-        },
-        {
-          "id": "POL-305",
-          "title": "IMPLEMENT: Harden finalize PR metadata — cluster_id as primary identifier in title and body",
-          "session_type": "implement",
-          "blockedBy": []
-        },
-        {
-          "id": "POL-306",
-          "title": "IMPLEMENT: Linear review-gate — transition to In Review after finalize, prohibit Done transitions",
-          "session_type": "implement",
-          "blockedBy": []
-        },
-        {
-          "id": "POL-307",
-          "title": "IMPLEMENT: Enforce Linear review-gate prohibition in Polaris role doctrine",
-          "session_type": "implement",
-          "blockedBy": ["POL-306"]
-        }
-      ]
+  "schemaVersion": "v2",
+  "source": {
+    "id": "POL-303",
+    "type": "Linear",
+    "analysis": {
+      "id": "initial-sync",
+      "doc": "Synchronized from Linear issue identifier: POL-303"
     }
-  ]
+  },
+  "nodes": {
+    "POL-303": {
+      "id": "POL-303",
+      "title": "IMPLEMENT: Finalize state authority and Linear review-gate lifecycle",
+      "status": "Todo",
+      "body": "## Objective\n\nImplement the four-part fix that prevents finalize from using stale/mismatched state and ensures Linear issues are moved to review, not closed, after delivery.\n\n## Context\n\nProduced by analysis run polaris-analyze-finalize-state-authority-2026-06-03-001 on [POL-302](https://linear.app/lsctech/issue/POL-302/analyze-finalize-state-authority-and-linear-review-gate-lifecycle). During the [POL-296](https://linear.app/lsctech/issue/POL-296/implement-wire-cognition-librarian-into-runtime-staged-note-flow-and) run, finalize consumed a stale compatibility state file (run_id: polaris-run-[POL-289](https://linear.app/lsctech/issue/POL-289/implement-foremanworker-boundary-hardening-from-pol-283-postmortem)-2026-06-03-001) and generated a PR labeled as [POL-289](https://linear.app/lsctech/issue/POL-289/implement-foremanworker-boundary-hardening-from-pol-283-postmortem) while delivering [POL-296](https://linear.app/lsctech/issue/POL-296/implement-wire-cognition-librarian-into-runtime-staged-note-flow-and) commits. Five gaps were identified: non-canonical state path accepted, branch custody check bypassed (no delivery_branch on legacy cluster), no run_id/branch/cluster_id cross-validation, delivery integrity gate approving wrong-cluster commits, and no enforced prohibition on Done transitions.\n\n## Goal\n\nAfter this cluster completes:\n\n* finalize refuses compatibility/legacy state paths as `--state-file` arguments\n* finalize aborts when `state.cluster_id` does not match the current branch\n* PR title and body include `cluster_id` as the primary identifier\n* finalize moves Linear parent issues to In Review (not Done) after delivery, with comment-only fallback when no review state exists\n* Role doctrine explicitly prohibits agent-driven Done transitions\n\n## Scope\n\n* src/finalize/\\*\\*\n* src/loop/checkpoint.ts\n* .polaris/roles/\\*\\*\n\n## Acceptance Criteria\n\n* finalize aborts with clear error when --state-file points to compatibility or legacy path\n* finalize aborts when cluster_id does not match branch name slug\n* PR title format: `polaris finalize: <cluster_id> (<run_id>)`\n* Linear parent moved to In Review after finalize; comment-only when no review state exists\n* No Polaris code path may transition Linear issues to Done or Closed\n* Role doctrine files prohibit Done transitions explicitly\n* All new behaviors covered by unit tests\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/finalize src/loop\n\n## Ordering\n\nNo dependencies on other IMPLEMENT clusters.\n\n## Non-goals\n\n* Do not change the delivery integrity gate logic beyond what is required for cross-validation\n* Do not rewrite the Linear adapter (comment-based approach remains for non-state interactions)\n* Do not implement Cognition Librarian integration (tracked by [POL-282](https://linear.app/lsctech/issue/POL-282/analyze-audit-cognition-librarian-runtime-integration-and-missing))\n* Do not broaden into a generic Linear integration rewrite"
+    },
+    "POL-282": {
+      "id": "POL-282",
+      "title": "ANALYZE: Audit cognition librarian runtime integration and missing worker note flow",
+      "status": "Done"
+    },
+    "POL-289": {
+      "id": "POL-289",
+      "title": "IMPLEMENT: Foreman/Worker boundary hardening from POL-283 postmortem",
+      "status": "Done"
+    },
+    "POL-296": {
+      "id": "POL-296",
+      "title": "IMPLEMENT: Wire cognition librarian into runtime — staged note flow and foreman dispatch",
+      "status": "Done"
+    },
+    "POL-307": {
+      "id": "POL-307",
+      "title": "IMPLEMENT: Enforce Linear review-gate prohibition in Polaris role doctrine",
+      "status": "Todo",
+      "body": "## Objective\n\nAdd explicit prohibition against Done/Closed Linear state transitions to the finalizer, worker, and foreman role doctrine files so all agents operating under these roles are bound by the review-gate policy.\n\n## Context\n\n[POL-302](https://linear.app/lsctech/issue/POL-302/analyze-finalize-state-authority-and-linear-review-gate-lifecycle) analysis identified that there is no role-level prohibition preventing agents from marking Linear issues Done. The code-level prohibition implemented in the sibling child ([POL-303](https://linear.app/lsctech/issue/POL-303/implement-finalize-state-authority-and-linear-review-gate-lifecycle) Child 3) covers the finalize path, but the doctrine must also cover agent sessions directly. An agent running in foreman or worker role must know it may never call `issueUpdate` to transition to Done or Closed, regardless of what the implementation code does. This doctrine is enforced at the role level, not the runtime level.\n\n## Goal\n\nAfter this child is done:\n\n* `.polaris/roles/finalizer.md` (or equivalent) explicitly states: \"Finalize may transition issues to In Review at most. It must never transition to Done or Closed.\"\n* `.polaris/roles/worker.md` explicitly states: \"Workers must not mark Linear issues Done or Closed. Issue state transitions are limited to In Progress or equivalent active states.\"\n* `.polaris/roles/foreman.md` explicitly states: \"Foreman must not mark Linear issues Done or Closed. Only human review may authorize Done.\"\n* Each prohibition includes the rationale (link to [POL-302](https://linear.app/lsctech/issue/POL-302/analyze-finalize-state-authority-and-linear-review-gate-lifecycle) or inline note about human-review authority)\n\n## Scope\n\n* .polaris/roles/\\*\\*\n\n## Acceptance Criteria\n\n* Each of the three role files contains an explicit prohibition section or bullet covering Done/Closed transitions\n* The prohibition references the review-gate policy and states that human review is the only authority for Done\n* No existing role prohibitions are removed or weakened\n* Role files remain well-formed markdown\n\n## Validation\n\n* npm run build\n* grep -r \"Done|Closed\" .polaris/roles/ (manual review that prohibition language is present)\n\n## Ordering\n\nDepends on the Linear review-gate implementation child ([POL-303](https://linear.app/lsctech/issue/POL-303/implement-finalize-state-authority-and-linear-review-gate-lifecycle) Child 3) being done first, so the doctrine reflects the implemented behavior.\n\n## Non-goals\n\n* Do not change role authority levels or add new roles\n* Do not modify POLARIS.md or CLAUDE.md\n* Do not implement any runtime enforcement beyond what is in the role files"
+    },
+    "POL-306": {
+      "id": "POL-306",
+      "title": "IMPLEMENT: Linear review-gate — transition to In Review after finalize, prohibit Done transitions",
+      "status": "Todo",
+      "body": "## Objective\n\nUpdate `stepUpdateLinear` and `postLinearComment` so that finalize attempts to move the parent issue to an In Review state after successful delivery, falling back to comment-only when no review state is available, and explicitly prohibiting Done/Closed transitions in code.\n\n## Context\n\n`src/finalize/steps/11-update-linear.ts` and `src/finalize/linear.ts` currently only call `commentCreate`. This is correct (no unauthorized Done transition) but undocumented and unenforced. The required policy from [POL-302](https://linear.app/lsctech/issue/POL-302/analyze-finalize-state-authority-and-linear-review-gate-lifecycle) is: finalize may move issues to In Review at most; human review is the only authority for Done. See [POL-302](https://linear.app/lsctech/issue/POL-302/analyze-finalize-state-authority-and-linear-review-gate-lifecycle) analysis (section 5) and [POL-303](https://linear.app/lsctech/issue/POL-303/implement-finalize-state-authority-and-linear-review-gate-lifecycle) for full context.\n\n## Goal\n\nAfter this child is done:\n\n* finalize queries available Linear states for the issue's team\n* If a state of type `review` or name matching `In Review`/`Review` is found: call `issueUpdate` to transition the parent to that state\n* If no review state is found: post comment only (current behavior), with message noting the missing state\n* `postLinearComment` (or a new helper) explicitly documents that it must never call `issueUpdate` with a Done or Closed state\n* A code-level guard (assertion or explicit throw) prevents the Done/Closed transition path from being added silently\n\n## Scope\n\n* src/finalize/linear.ts\n* src/finalize/steps/11-update-linear.ts\n\n## Acceptance Criteria\n\n* When LINEAR_API_KEY is set and a review state is available: `issueUpdate` is called with the review state ID\n* When LINEAR_API_KEY is set but no review state exists: only `commentCreate` is called; comment body includes note about missing review state\n* No code path in `linear.ts` may call `issueUpdate` with a state ID that corresponds to Done or Closed\n* New tests cover: review-state-found path, review-state-not-found path, and the Done-prohibited assertion\n* Existing comment-only tests remain passing\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/finalize\n\n## Ordering\n\nNone. Independent of other children in this cluster.\n\n## Non-goals\n\n* Do not implement Cognition Librarian post-run integration ([POL-282](https://linear.app/lsctech/issue/POL-282/analyze-audit-cognition-librarian-runtime-integration-and-missing))\n* Do not change the Linear API key handling or error behavior beyond what is needed\n* Do not implement Linear webhook or two-way sync"
+    },
+    "POL-305": {
+      "id": "POL-305",
+      "title": "IMPLEMENT: Harden finalize PR metadata — cluster_id as primary identifier in title and body",
+      "status": "Todo",
+      "body": "## Objective\n\nChange the PR title format so that `cluster_id` is the primary identifier and add pre-creation cross-validation that aborts before `gh pr create` if cluster/branch agreement cannot be confirmed.\n\n## Context\n\n`src/finalize/github.ts:13` currently generates PR titles as `polaris finalize: ${state.run_id}`. When state is stale ([POL-296](https://linear.app/lsctech/issue/POL-296/implement-wire-cognition-librarian-into-runtime-staged-note-flow-and) incident), this produces a title referencing the wrong cluster. The fix makes `cluster_id` the primary identifier and adds a cross-validation gate before the gh CLI is called. See [POL-302](https://linear.app/lsctech/issue/POL-302/analyze-finalize-state-authority-and-linear-review-gate-lifecycle) analysis and [POL-303](https://linear.app/lsctech/issue/POL-303/implement-finalize-state-authority-and-linear-review-gate-lifecycle) for full context.\n\n## Goal\n\nAfter this child is done:\n\n* PR title format is: `polaris finalize: ${state.cluster_id} (${state.run_id})`\n* PR body includes a `**Cluster ID:**` row\n* `createDraftPr` validates that `state.cluster_id` is non-empty and that `branch` contains the cluster ID slug before calling gh\n* If validation fails: throw with a clear message so finalize aborts before any PR is created\n\n## Scope\n\n* src/finalize/github.ts\n* src/finalize/finalize.test.ts\n\n## Acceptance Criteria\n\n* PR title matches format `polaris finalize: POL-296 (polaris-run-pol-296-2026-06-03-001)` for a normal run\n* PR body contains `**Cluster ID:** POL-296`\n* `createDraftPr` throws if `state.cluster_id` is empty\n* `createDraftPr` throws if branch does not contain the cluster ID slug\n* Existing finalize tests updated to reflect new title format\n* New tests cover the two new throw conditions\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/finalize\n\n## Ordering\n\nNone. Independent of other children in this cluster.\n\n## Non-goals\n\n* Do not change the PR draft/non-draft logic\n* Do not change the gh CLI invocation beyond title/body and the new pre-call check\n* Do not modify Linear update logic (that is Child 3)"
+    },
+    "POL-304": {
+      "id": "POL-304",
+      "title": "IMPLEMENT: Add finalize state-file authority gate and branch/cluster cross-validation preflight",
+      "status": "Todo",
+      "body": "## Objective\n\nAdd three preflight checks to finalize that reject non-canonical state paths and abort on branch/cluster_id/state.branch mismatch.\n\n## Context\n\nDuring the [POL-296](https://linear.app/lsctech/issue/POL-296/implement-wire-cognition-librarian-into-runtime-staged-note-flow-and) incident, finalize was invoked with `--state-file .taskchain_artifacts/polaris-run/current-state.json`. That path is classified as \"compatibility/debug\" in `src/loop/status.ts:147` and must never drive delivery. Additionally, finalize has no check that `state.cluster_id` matches the current git branch, and no check that `state.branch` (when populated) matches the current branch. All three gaps allowed [POL-289](https://linear.app/lsctech/issue/POL-289/implement-foremanworker-boundary-hardening-from-pol-283-postmortem) state to finalize a [POL-296](https://linear.app/lsctech/issue/POL-296/implement-wire-cognition-librarian-into-runtime-staged-note-flow-and) delivery. See [POL-302](https://linear.app/lsctech/issue/POL-302/analyze-finalize-state-authority-and-linear-review-gate-lifecycle) analysis and [POL-303](https://linear.app/lsctech/issue/POL-303/implement-finalize-state-authority-and-linear-review-gate-lifecycle) for full context.\n\n## Goal\n\nAfter this child is done:\n\n* finalize aborts when `--state-file` points to `.taskchain_artifacts/polaris-run/current-state.json` or `.polaris/runs/current-state.json`\n* finalize aborts when `state.cluster_id` does not contain a slug matching the current branch name (case-insensitive, hyphen-normalized)\n* finalize aborts when `state.branch` is non-empty and differs from the current git branch\n* All three aborts emit a clear, actionable error message\n\n## Scope\n\n* src/finalize/index.ts\n* src/finalize/finalize.test.ts\n\n## Acceptance Criteria\n\n* `finalize run --state-file .taskchain_artifacts/polaris-run/current-state.json` exits non-zero with message referencing \"compatibility\" path\n* `finalize run --state-file .polaris/runs/current-state.json` exits non-zero with message referencing \"legacy\" path\n* finalize on branch `pol-296-delivery` with `state.cluster_id = \"POL-289\"` aborts with cluster mismatch message\n* finalize with `state.branch = \"pol-296-delivery\"` while on branch `pol-302-fix` aborts with branch mismatch message\n* finalize with a canonical state path, matching cluster_id, and matching state.branch proceeds normally\n* New preflight checks execute before the existing Step 4 (run checks)\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/finalize\n\n## Ordering\n\nNone. This child has no dependencies.\n\n## Non-goals\n\n* Do not change the delivery integrity gate or branch custody check logic\n* Do not add a `--allow-legacy-state` override flag in this child (defer to follow-up if needed)\n* Do not modify any files outside src/finalize/"
+    },
+    "POL-302": {
+      "id": "POL-302",
+      "title": "ANALYZE: Finalize state authority and Linear review-gate lifecycle",
+      "status": "Done"
+    }
+  },
+  "dependencies": {
+    "POL-307": [
+      "POL-306"
+    ]
+  },
+  "clusters": {
+    "POL-303": {
+      "id": "POL-303",
+      "title": "Linear Issue: POL-303",
+      "children": [
+        "POL-307",
+        "POL-306",
+        "POL-305",
+        "POL-304"
+      ],
+      "cluster_root": "POL-303"
+    }
+  },
+  "activeCluster": "POL-303"
 }
