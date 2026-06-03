@@ -222,7 +222,7 @@ export class TerminalCliAdapter implements ExecutionAdapter {
 
       const child = spawn(command, args, {
         env,
-        stdio: ['pipe', 'pipe', 'inherit'],
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
 
       // Deliver bootstrap packet to worker via stdin
@@ -230,9 +230,14 @@ export class TerminalCliAdapter implements ExecutionAdapter {
       child.stdin.end();
 
       const stdoutChunks: Buffer[] = [];
+      const stderrChunks: Buffer[] = [];
+
       child.stdout.on('data', (chunk: Buffer) => {
-        process.stdout.write(chunk);
         stdoutChunks.push(chunk);
+      });
+
+      child.stderr.on('data', (chunk: Buffer) => {
+        stderrChunks.push(chunk);
       });
 
       child.on('error', (err: NodeJS.ErrnoException) => {
@@ -250,6 +255,7 @@ export class TerminalCliAdapter implements ExecutionAdapter {
 
       child.on('close', (exitCode: number | null) => {
         const stdout = Buffer.concat(stdoutChunks).toString('utf-8').trim();
+        const stderr = Buffer.concat(stderrChunks).toString('utf-8').trim();
         const summary = extractSummary(stdout);
         this.writeSealedResultIfNeeded(packet, summary, stdout, exitCode ?? 1);
         resolve({
@@ -258,6 +264,7 @@ export class TerminalCliAdapter implements ExecutionAdapter {
           command_run: commandLine,
           stdout,
           summary,
+          stderr: stderr || undefined,
         });
       });
     });
