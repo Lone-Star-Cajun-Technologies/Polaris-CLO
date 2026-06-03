@@ -2093,8 +2093,8 @@
     "taskchain": "polaris-core",
     "confidence": 0,
     "classification": "needs-review",
-    "last_updated": "2026-06-02T05:14:45.506Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-06-03T00:52:20.537Z",
+    "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": ".polaris/map/POLARIS.md"
   },
@@ -2104,8 +2104,8 @@
     "taskchain": "polaris-core",
     "confidence": 0,
     "classification": "needs-review",
-    "last_updated": "2026-06-02T05:14:45.506Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-06-03T00:52:20.537Z",
+    "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": ".polaris/map/POLARIS.md"
   },
@@ -2203,8 +2203,8 @@
     "taskchain": "polaris-core",
     "confidence": 0,
     "classification": "needs-review",
-    "last_updated": "2026-06-02T05:14:45.506Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-06-03T00:52:20.537Z",
+    "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": ".polaris/runs/POLARIS.md"
   },
@@ -5522,5 +5522,93 @@
     "last_updated": "2026-06-02T05:14:45.506Z",
     "updated_by": "polaris-map-index",
     "tags": []
+  },
+  ".polaris/clusters/POL-289/cluster-state.json": {
+    "domain": "unknown",
+    "route": ".polaris/clusters/POL-289/cluster-state.json",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-06-03T00:52:20.537Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": ".polaris/clusters/POLARIS.md"
+  },
+  ".polaris/clusters/POL-289/clusters.json": {
+    "domain": "unknown",
+    "route": ".polaris/clusters/POL-289/clusters.json",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-06-03T00:52:20.537Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": ".polaris/clusters/POLARIS.md"
+  },
+  ".polaris/clusters/POL-289/packets/POL-293-feafb409-5a94-4e33-a9ed-30a069a46c26.json": {
+    "domain": "unknown",
+    "route": ".polaris/clusters/POL-289/packets/POL-293-feafb409-5a94-4e33-a9ed-30a069a46c26.json",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-06-03T00:52:20.537Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": ".polaris/clusters/POLARIS.md"
+  },
+  ".polaris/clusters/POL-289/packets/POL-294-2d78ca54-5fba-4905-8d29-2ad5ce6dc500.json": {
+    "domain": "unknown",
+    "route": ".polaris/clusters/POL-289/packets/POL-294-2d78ca54-5fba-4905-8d29-2ad5ce6dc500.json",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-06-03T00:52:20.537Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": ".polaris/clusters/POLARIS.md"
+  },
+  ".polaris/clusters/POL-289/packets/POL-294-33e38d0a-0c93-4c9c-8fa0-acb3ad18f2ce.json": {
+    "domain": "unknown",
+    "route": ".polaris/clusters/POL-289/packets/POL-294-33e38d0a-0c93-4c9c-8fa0-acb3ad18f2ce.json",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-06-03T00:52:20.537Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": ".polaris/clusters/POLARIS.md"
+  },
+  ".polaris/clusters/POL-289/results/POL-292-AEA2FAD4-8BEE-4F01-9C93-D17717B73324.json": {
+    "domain": "unknown",
+    "route": ".polaris/clusters/POL-289/results/POL-292-AEA2FAD4-8BEE-4F01-9C93-D17717B73324.json",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-06-03T00:52:20.537Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": ".polaris/clusters/POLARIS.md"
+  },
+  ".polaris/clusters/POL-289/results/POL-293-feafb409-5a94-4e33-a9ed-30a069a46c26.json": {
+    "domain": "unknown",
+    "route": ".polaris/clusters/POL-289/results/POL-293-feafb409-5a94-4e33-a9ed-30a069a46c26.json",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-06-03T00:52:20.537Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": ".polaris/clusters/POLARIS.md"
+  },
+  ".polaris/clusters/POL-289/results/POL-294-2d78ca54-5fba-4905-8d29-2ad5ce6dc500.json": {
+    "domain": "unknown",
+    "route": ".polaris/clusters/POL-289/results/POL-294-2d78ca54-5fba-4905-8d29-2ad5ce6dc500.json",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-06-03T00:52:20.537Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": ".polaris/clusters/POLARIS.md"
   }
 }
