@@ -197,6 +197,24 @@ export interface CheckpointEvent {
   timestamp: string;
 }
 
+export interface CompactReturnReceivedEvent {
+  event: "compact-return-received";
+  run_id: string;
+  child_id: string;
+  size_bytes: number;
+  timestamp: string;
+}
+
+export interface WorkerScopeFidelityEvent {
+  event: "worker-scope-fidelity";
+  run_id: string;
+  child_id: string;
+  allowed_scope: string[];
+  actual_files_touched: string[];
+  out_of_scope_files: string[];
+  timestamp: string;
+}
+
 export function readState(stateFile: string): LoopState {
   const raw = readFileSync(stateFile, "utf-8");
   return JSON.parse(raw) as LoopState;
@@ -455,6 +473,24 @@ export interface BoundaryEvent {
 export function appendCheckpointEvent(
   telemetryFile: string,
   event: CheckpointEvent,
+): void {
+  const timestampedEvent = { ...event, timestamp: getMonotonicTimestamp() };
+  mkdirSync(dirname(telemetryFile), { recursive: true });
+  appendFileSync(telemetryFile, JSON.stringify(timestampedEvent) + "\n", "utf-8");
+}
+
+export function appendCompactReturnReceivedEvent(
+  telemetryFile: string,
+  event: CompactReturnReceivedEvent,
+): void {
+  const timestampedEvent = { ...event, timestamp: getMonotonicTimestamp() };
+  mkdirSync(dirname(telemetryFile), { recursive: true });
+  appendFileSync(telemetryFile, JSON.stringify(timestampedEvent) + "\n", "utf-8");
+}
+
+export function appendWorkerScopeFidelityEvent(
+  telemetryFile: string,
+  event: WorkerScopeFidelityEvent,
 ): void {
   const timestampedEvent = { ...event, timestamp: getMonotonicTimestamp() };
   mkdirSync(dirname(telemetryFile), { recursive: true });
