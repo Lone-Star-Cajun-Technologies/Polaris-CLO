@@ -1,0 +1,65 @@
+{
+  "schema_version": "1.0",
+  "cluster_id": "POL-289",
+  "state_generation": 6,
+  "child_states": [
+    {
+      "id": "POL-294",
+      "status": "done",
+      "commit": "3a652ac"
+    },
+    {
+      "id": "POL-293",
+      "status": "done",
+      "commit": "7d74b41d053473f2492a51130c979af44f5731cf"
+    },
+    {
+      "id": "POL-292",
+      "status": "ready"
+    },
+    {
+      "id": "POL-291",
+      "status": "ready"
+    },
+    {
+      "id": "POL-290",
+      "status": "ready"
+    }
+  ],
+  "claim_metadata": {
+    "POL-294": {
+      "worker_id": "polaris-run-pol-289-2026-06-03-001:POL-294:1780445090450",
+      "claimed_at": "2026-06-03T00:04:50.450Z",
+      "expires_at": "2026-06-03T00:34:50.450Z"
+    },
+    "POL-293": {
+      "worker_id": "polaris-run-pol-289-2026-06-03-001:POL-293:1780446659674",
+      "claimed_at": "2026-06-03T00:30:59.674Z",
+      "expires_at": "2026-06-03T01:00:59.674Z"
+    }
+  },
+  "packet_pointers": {
+    "POL-294": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-289/packets/POL-294-33e38d0a-0c93-4c9c-8fa0-acb3ad18f2ce.json",
+    "POL-293": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-289/packets/POL-293-feafb409-5a94-4e33-a9ed-30a069a46c26.json"
+  },
+  "result_pointers": {
+    "POL-294": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-289/results/POL-294-2d78ca54-5fba-4905-8d29-2ad5ce6dc500.json",
+    "POL-293": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-289/results/POL-293-feafb409-5a94-4e33-a9ed-30a069a46c26.json"
+  },
+  "validation_results": {
+    "POL-294": {
+      "passed": true,
+      "output": "{\"passed\":true}"
+    },
+    "POL-293": {
+      "passed": true,
+      "output": "{\"passed\":true,\"npm run build\":\"passed\",\"npm test\":\"passed\",\"npx vitest run src/cli src/loop\":\"passed\"}"
+    }
+  },
+  "commits": {
+    "POL-294": "3a652ac",
+    "POL-293": "7d74b41d053473f2492a51130c979af44f5731cf"
+  },
+  "tracker_mutations": {},
+  "blockers": []
+}
