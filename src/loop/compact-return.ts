@@ -74,15 +74,11 @@ export function validateCompactReturn(value: unknown): string[] {
     }
   }
   if ('work_note_paths' in r && r['work_note_paths'] !== undefined) {
-    if (!Array.isArray(r['work_note_paths'])) {
-      errors.push('work_note_paths must be an array');
-    } else {
-      for (let i = 0; i < (r['work_note_paths'] as unknown[]).length; i++) {
-        if (typeof (r['work_note_paths'] as unknown[])[i] !== 'string') {
-          errors.push('work_note_paths must contain only strings');
-          break;
-        }
-      }
+    if (
+      !Array.isArray(r['work_note_paths']) ||
+      r['work_note_paths'].some((path) => typeof path !== 'string')
+    ) {
+      errors.push('work_note_paths must be an array of strings');
     }
   }
 
