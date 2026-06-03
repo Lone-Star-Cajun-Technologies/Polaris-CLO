@@ -83,7 +83,7 @@ If the path is in `packet.prohibited_write_paths`, record as a blocker and skip.
 ## Output
 
 Running list for step 08:
-```
+```yaml
 polaris_md_updates: [
   { file: "<path>", action: "update", change_summary: "<≤50 words>" },
   ...

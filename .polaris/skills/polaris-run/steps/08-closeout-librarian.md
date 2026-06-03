@@ -61,7 +61,7 @@ If packet generation fails: stop and report. Do not dispatch.
 ### 8.2 Dispatch Librarian Session
 
 Dispatch the Librarian as a bounded subagent session:
-```
+```text
 Packet path: .polaris/clusters/<cluster-id>/librarian-packet-<dispatch-id>.json
 Role: closeout-librarian
 Skill: .polaris/skills/closeout-librarian/SKILL.md
@@ -83,7 +83,6 @@ Timeout: 10 minutes (600 seconds). If timeout exceeded:
 1. Record blocker: `librarian-timeout`
 2. Escalate to operator with options:
    - Re-dispatch Librarian
-   - Skip Librarian (operator explicitly accepts degraded cognition state)
    - Halt run
 
 ### 8.4 Validate Librarian Result

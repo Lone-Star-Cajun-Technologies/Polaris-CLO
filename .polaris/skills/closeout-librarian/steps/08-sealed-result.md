@@ -87,7 +87,7 @@ Apply the status determination matrix above.
 
 ### 8.3 Write Evidence Summary
 
-Write a ≤200 word plain-text summary of what the Librarian did and what remains.
+Write a ≤200-word plain-text summary of what the Librarian did and what remains.
 
 ### 8.4 Write Result File
 
@@ -109,7 +109,7 @@ The Closeout Librarian session ends here. No further output, no further writes.
 
 If `packet.result_path` cannot be written:
 1. Write a minimal failure result to stderr:
-   ```
+   ```text
    CLOSEOUT_LIBRARIAN_RESULT_WRITE_FAILED: run_id=<run_id> dispatch_id=<dispatch_id> status=failure
    ```
 2. The Foreman must detect this condition and escalate to the operator.

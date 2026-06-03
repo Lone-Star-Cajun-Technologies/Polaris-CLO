@@ -81,7 +81,7 @@ decisions flow into the user-facing channel during normal execution.
 - Dispatching other children
 - Interacting with cluster orchestration (polaris loop dispatch/continue)
 - Expanding scope beyond packet bounds
-- Writing directly to runtime state or artifact files, including `current-state.json`, cluster-state, telemetry JSONL, `.taskchain_artifacts/`, `.polaris/clusters/`, and `.polaris/runs/`
+- Writing directly to runtime state or artifact files, including `current-state.json`, cluster-state, `.taskchain_artifacts/`, `.polaris/clusters/`, and `.polaris/runs/`, except appending heartbeat events to the packet-designated telemetry JSONL path
 - Staging or committing files outside `allowed_scope`, except for the designated result file path and cognition note paths specified in the packet
 - Writing CompactReturn anywhere except the designated result file path
 - Staging runtime artifact files (`current-state.json`, `cluster-state.json`, telemetry JSONL) in implementation commits

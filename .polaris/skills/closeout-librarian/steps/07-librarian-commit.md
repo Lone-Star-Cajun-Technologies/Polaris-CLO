@@ -39,7 +39,7 @@ from the Librarian result.
 
 ## Commit Message Format
 
-```
+```text
 docs(closeout): reconcile cognition for cluster <cluster_id>
 
 Run: <run_id>
@@ -53,7 +53,7 @@ Files updated:
 ```
 
 Example:
-```
+```text
 docs(closeout): reconcile cognition for cluster POL-303
 
 Run: polaris-run-closeout-librarian-2026-06-03-001

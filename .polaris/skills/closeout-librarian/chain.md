@@ -25,7 +25,7 @@ Linear issue status, PR creation.
 
 ## Step Traversal Order
 
-```
+```text
 01-load-cluster-context       ← Read packet, load cluster evidence, build work inventory
 02-reconcile-polaris-md       ← Update affected POLARIS.md files to reflect current reality
 03-reconcile-summary-md       ← Refresh SUMMARY.md as continuation artifact
@@ -60,7 +60,8 @@ If the target file is in `packet.prohibited_write_paths`, skip and record as blo
 
 All writes occur during steps 02–06. No writes occur during step 07 or after.
 Step 07 creates exactly one git commit containing all documentation changes from this session.
-If no documentation changed (all steps found everything current), step 07 is a no-op commit.
+If no documentation changed (all steps found everything current), step 07 makes no commit.
+The result records `commit_sha: null` in this case — do not create an empty commit.
 
 ### Result Timing
 

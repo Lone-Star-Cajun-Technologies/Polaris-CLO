@@ -91,11 +91,16 @@ May NOT:
 
 ## Output Contract
 
-The Librarian writes a `CloseoutLibrarianResult` JSON to `result_path` before committing.
+The Librarian must commit documentation changes first, then write the sealed
+`CloseoutLibrarianResult` JSON to `result_path`. Runtime order:
+
+1. Commit documentation changes (step 07); obtain `commit_sha`.
+2. Write the sealed `CloseoutLibrarianResult` JSON to `result_path` (step 08).
+
 The result must include:
 - `status`: `"success"`, `"partial"`, `"blocked"`, or `"failure"`
 - Evidence of reconciliation: files updated, docs ingested, links validated
-- Commit SHA (after committing)
+- `commit_sha`: the SHA from the librarian commit (or `null` if no changes were made)
 - Blockers (if any) that require operator action
 
 See: `smartdocs/specs/active/closeout-librarian-spec.md` for full schema.

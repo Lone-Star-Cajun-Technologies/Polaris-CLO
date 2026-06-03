@@ -45,7 +45,7 @@ The Closeout Librarian is distinct from:
 
 ### 1.2 Execution Position
 
-```
+```text
 Cluster Complete
 → (Foreman confirms all children Done)
 → Generate Librarian Packet                  [npm run polaris -- librarian packet <id>]
@@ -88,7 +88,7 @@ npm run polaris -- librarian packet <cluster-id>
 ```
 
 The packet is written to:
-```
+```text
 .polaris/clusters/<cluster-id>/librarian-packet-<dispatch-id>.json
 ```
 
@@ -98,6 +98,7 @@ See `src/cognition/closeout-librarian-types.ts` for the TypeScript interface
 `CloseoutLibrarianPacket`.
 
 Required fields:
+
 | Field | Type | Description |
 |---|---|---|
 | `schema_version` | `"1.0"` | Schema version for forward compatibility |
@@ -218,7 +219,7 @@ The Librarian creates exactly one commit containing:
 - All YAML updates
 
 This commit is separate from worker implementation commits. The git log will show:
-```
+```text
 <worker commit>   docs: implement POL-304: ...
 <worker commit>   docs: implement POL-305: ...
 <librarian commit> docs(closeout): reconcile cognition for cluster POL-303
@@ -235,7 +236,7 @@ The Foreman accepts null commit SHA from the Librarian.
 
 ### 6.3 Commit Message Format
 
-```
+```text
 docs(closeout): reconcile cognition for cluster <cluster_id>
 
 Run: <run_id>

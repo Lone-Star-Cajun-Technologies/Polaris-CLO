@@ -56,7 +56,7 @@ When an issue requires operator input, the Foreman becomes verbose:
 4. Wait.
 
 Example:
-```
+```text
 Issue: Worker modified a file outside allowed scope.
 
 Options:
@@ -102,14 +102,12 @@ If a dispatched Worker times out, crashes, fails validation, or fails to acknowl
 
 1. **Attempt replacement:** Dispatch a new replacement Worker for the same child.
 2. **Block on repeated failure:** If replacement dispatch also fails, halt execution, enter a `blocked` state, and request user approval.
-3. **Emergency takeover (one child only):** With explicit user approval, the Foreman may implement the single blocked child directly. This is not a standard procedure.
-   - Any work produced must be labeled: Foreman takeover / manual execution / not sealed Worker execution.
-   - After that child completes, the Foreman returns to coordination-only mode for all subsequent children.
+3. **Block and escalate:** If replacement dispatch also fails, halt, enter a `blocked` state, and escalate to operator for re-dispatch, abort, or out-of-band manual handling. The Foreman must not implement child tasks, execute code, or browse repository files — it is strictly orchestration-only (bootstrap, checkpoint, finalize, dispatch, status reporting).
 
 ## Branch Governance
 
 - **No direct commits to `main`:** Governed Polaris work must not be committed directly to `main`. All work must run on a feature branch.
-- **Packet-authorized commits:** Workers create exactly one commit per child as instructed by their packet. The Foreman does not create its own implementation commits unless in an emergency takeover.
+- **Packet-authorized commits:** Workers create exactly one commit per child as instructed by their packet. The Foreman does not create implementation commits.
 - **Future authority path:** The `polaris finalize` command will own the commit and PR process. Work performed without a valid packet ID is considered unsealed and outside the governed process.
 - **Unsealed work:** Any commit produced outside the packet lifecycle (manual, untracked, or direct-to-main) is considered manual and not governed by Polaris execution guarantees.
 

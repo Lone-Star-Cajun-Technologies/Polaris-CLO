@@ -289,41 +289,29 @@ led to the Foreman monitoring via `ps` and reading worker output directly.
 
 ## Part 3 — Documentation and Governance Gaps
 
-### G14: No POLARIS.md for `.polaris/skills/closeout-librarian/`
+### G14: ~~No POLARIS.md for `.polaris/skills/closeout-librarian/`~~ — RESOLVED
 
 **Description:** The new `.polaris/skills/closeout-librarian/` directory does not have a
 POLARIS.md describing the skill structure and chain.
 
-**Why it matters:** Inconsistent with the pattern where every .polaris directory with
-operational content has a POLARIS.md.
+**Resolution:** `.polaris/skills/closeout-librarian/POLARIS.md` was created as part of
+this implementation. This gap is resolved.
 
-**Recommended solution:** Create `.polaris/skills/closeout-librarian/POLARIS.md`
-(this is a documentation gap, not an architectural one).
-
-**Classification:** Required during implementation.
+**Classification:** Resolved.
 
 ---
 
-### G15: No Provenance File for Promoted Specs
+### G15: ~~No Provenance File for Promoted Specs~~ — RESOLVED
 
 **Description:** The closeout-librarian-spec.md and related specs created in this work
-do not have `.provenance.json` files. These were created by the implementation engineer,
-not through the docs-ingest pipeline.
+do not have `.provenance.json` files.
 
-**Why it matters:** Specs without provenance files are not discoverable through the
-SmartDocs cognition graph.
+**Resolution:** `.provenance.json` files were created alongside each new spec
+(`closeout-librarian-spec.provenance.json`, `foreman-quiet-mode-spec.provenance.json`,
+`worker-heartbeat-spec.provenance.json`, `runtime-enforcement-spec.provenance.json`).
+This gap is resolved.
 
-**Recommended solution:** Create provenance files for each new spec:
-```json
-{
-  "promoted_from": "inline (engineer-created)",
-  "promoted_at": "<date>",
-  "promoted_by": "closeout-librarian-runtime",
-  "cluster_id": "N/A (design work)"
-}
-```
-
-**Classification:** Required during implementation.
+**Classification:** Resolved.
 
 ---
 
@@ -337,9 +325,13 @@ there is no continuation protocol.
 If this happens after cluster-complete but before Librarian completes, the next session
 would need to detect the orphaned Librarian and handle it.
 
-**Recommended solution:** Add `librarian_status` field to `current-state.json`. When a
-new session resumes a run, it checks: if `librarian_status` is missing or "dispatched"
-(never received a result), re-dispatch the Librarian before proceeding to finalize.
+**Recommended solution:** Add `librarian_status` field to `current-state.json` as a
+transient telemetry hint. When a new session resumes a run, it first validates canonical
+cluster and run state via the run management API or canonical store. Only if canonical
+state grants finalize authority should the session consult `librarian_status` as a
+compatibility hint for re-dispatch decisions. `current-state.json` must not be treated
+as the authoritative source for whether the Librarian has completed — only the canonical
+run state and the actual sealed result file at `result_path` carry that authority.
 
 **Classification:** Required during implementation.
 
@@ -378,8 +370,8 @@ The cluster should not be indefinitely blocked by a failing Librarian.
 | G11 | No detection mechanism for Foreman live repair | Future enhancement |
 | G12 | Worker can call `loop continue` directly | Future enhancement |
 | G13 | Missing heartbeat supervision in chain | Future enhancement |
-| G14 | No POLARIS.md for closeout-librarian skill dir | Required during implementation |
-| G15 | No provenance files for new specs | Required during implementation |
+| G14 | No POLARIS.md for closeout-librarian skill dir | Resolved |
+| G15 | No provenance files for new specs | Resolved |
 | G16 | No continuation protocol for orphaned Librarian | Required during implementation |
 | G17 | No max Librarian dispatch count per cluster | Future enhancement |
 

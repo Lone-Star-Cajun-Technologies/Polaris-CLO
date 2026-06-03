@@ -49,7 +49,7 @@ In quiet mode, the Foreman's context window receives only:
 
 In quiet mode, the Foreman's user-facing output is minimal:
 
-```
+```text
 Dispatching     ← dispatching a child
 Waiting         ← waiting for worker
 Checkpointing   ← running loop continue
@@ -88,7 +88,7 @@ The Foreman becomes verbose ONLY when user action is required.
 
 When an issue requires operator input:
 
-```
+```text
 Issue: <clear description of the problem>
 
 Options:

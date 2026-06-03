@@ -47,7 +47,7 @@ Note which folders have pending cognition notes (from `packet.cognition_notes`).
 
 Produce an internal inventory (not written to disk):
 
-```
+```yaml
 work_inventory:
   cluster_id: <from packet>
   completed_children: [<ids>]

@@ -176,8 +176,8 @@ Telemetry file: `.taskchain_artifacts/polaris-run/runs/<run-id>/telemetry.jsonl`
 | `loop-checkpoint` | `npm run polaris -- loop continue` | 07 — after each child |
 | `analyze-impl-boundary-enforced` | `npm run polaris -- loop continue` | 07 — blocker/state-repair boundary event only |
 | `loop-aborted` | `npm run polaris -- loop abort` | any blocker halt |
-| `pr-opened` | `npm run polaris -- finalize` | 08 |
-| `run-complete` | `npm run polaris -- finalize` | 08 |
+| `pr-opened` | `npm run polaris -- finalize` | 09 |
+| `run-complete` | `npm run polaris -- finalize` | 09 |
 
 Required fields on every event: `event`, `run_id`, `timestamp`.
 

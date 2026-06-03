@@ -28,7 +28,7 @@ This skill is NOT invoked by user command. It is dispatched by the Foreman durin
 step 08 of the `polaris-run` chain after cluster-complete is confirmed.
 
 The Foreman generates the packet via:
-```
+```bash
 npm run polaris -- librarian packet <cluster-id>
 ```
 

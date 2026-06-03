@@ -105,7 +105,7 @@ Update `cognition-index.json` for each affected folder.
 ## Output
 
 Running lists for step 08:
-```
+```yaml
 docs_ingested: [{ source_path, target_path, action: "ingest"|"promote", reason }]
 docs_archived: [{ source_path, target_path: null, action: "archive", reason }]
 cognition_archived: [{ note_path, archive_path }]

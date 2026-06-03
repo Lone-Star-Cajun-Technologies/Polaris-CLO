@@ -67,8 +67,13 @@ result from the cluster state. If no Librarian result is present or status is no
 ```typescript
 // src/finalize/steps/08-create-pr.ts (future)
 const librarianResult = readLibrarianResult(state.librarian_result_path);
-if (!librarianResult || !["success", "partial"].includes(librarianResult.status)) {
-  process.stderr.write("finalize aborted: Closeout Librarian has not completed...\n");
+if (!librarianResult) {
+  process.stderr.write("finalize aborted: Closeout Librarian result not found\n");
+  process.exit(1);
+}
+const gateCheck = checkLibrarianResultGate(librarianResult);
+if (gateCheck !== null) {
+  process.stderr.write(`finalize aborted: ${gateCheck}\n`);
   process.exit(1);
 }
 ```

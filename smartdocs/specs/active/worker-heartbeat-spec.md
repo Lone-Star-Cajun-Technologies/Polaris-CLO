@@ -110,7 +110,7 @@ Workers produce user-facing output ONLY when:
 
 ### 3.3 Structured Telemetry vs User-Facing Channels
 
-```
+```text
 Telemetry channel:     heartbeat JSONL events → telemetry.jsonl
 User-facing channel:   blocked/failed/escalation only → agent output
 ```
@@ -180,7 +180,7 @@ The Foreman does NOT supervise:
 
 When heartbeat is stale, Foreman presents escalation (quiet mode exception):
 
-```
+```text
 Issue: Worker heartbeat expired. No heartbeat received in 120+ seconds.
 Last known step: <step from last heartbeat>
 

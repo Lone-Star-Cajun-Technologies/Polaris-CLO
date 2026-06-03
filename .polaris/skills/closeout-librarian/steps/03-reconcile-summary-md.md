@@ -93,7 +93,7 @@ If no update is needed, record no-change for this folder.
 ## Output
 
 Running list for step 08:
-```
+```yaml
 summary_md_updates: [
   { file: "<path>", action: "update", change_summary: "<≤50 words>" },
   ...

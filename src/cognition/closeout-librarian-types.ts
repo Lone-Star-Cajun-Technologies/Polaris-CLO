@@ -221,6 +221,12 @@ export interface CloseoutLibrarianResult {
 
 /**
  * Validate a CloseoutLibrarianPacket. Returns an array of error strings; empty means valid.
+ *
+ * Performs lightweight top-level checks only: object presence, required field types,
+ * enum values, and array presence. Does NOT validate nested element schemas (e.g.,
+ * individual child_summaries entries), string formats (e.g., ISO dates), or cross-field
+ * consistency. Further semantic validation is performed by the Foreman via
+ * checkLibrarianResultGate and other runtime-spec result checks before finalize.
  */
 export function validateCloseoutLibrarianPacket(value: unknown): string[] {
   const errors: string[] = [];
@@ -271,6 +277,12 @@ export function validateCloseoutLibrarianPacket(value: unknown): string[] {
 
 /**
  * Validate a CloseoutLibrarianResult. Returns an array of error strings; empty means valid.
+ *
+ * Performs lightweight top-level checks only: object presence, required field types,
+ * enum values, and array presence. Does NOT validate nested element schemas, string
+ * formats (e.g., reconciled_at ISO date), or cross-field consistency (e.g., whether
+ * commit_sha matches files_committed). Further semantic validation is performed by the
+ * Foreman via checkLibrarianResultGate and other runtime-spec result checks before finalize.
  */
 export function validateCloseoutLibrarianResult(value: unknown): string[] {
   const errors: string[] = [];
@@ -350,8 +362,11 @@ export function checkLibrarianResultGate(result: CloseoutLibrarianResult): strin
   }
   if (result.status === "blocked") {
     const blocking = result.blockers.filter((b) => b.resolution_required);
+    if (blocking.length === 0) {
+      throw new Error("Invalid result: status 'blocked' but no resolution_required blockers");
+    }
     const desc = blocking.map((b) => b.description).join("; ");
-    return `Closeout Librarian blocked: ${desc || "see result.blockers"}`;
+    return `Closeout Librarian blocked: ${desc}`;
   }
   return `Closeout Librarian failed: ${result.evidence_summary}`;
 }

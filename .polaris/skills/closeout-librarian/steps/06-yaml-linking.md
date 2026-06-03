@@ -85,7 +85,7 @@ For each folder with archived cognition notes (from step 04):
 ## Output
 
 Running list for step 08:
-```
+```yaml
 yaml_updates: [
   { file: "<path>", action: "update", change_summary: "<≤50 words>" },
   ...

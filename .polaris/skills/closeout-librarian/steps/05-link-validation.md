@@ -113,7 +113,7 @@ Build the link validation report for step 08.
 
 ## Output
 
-```
+```yaml
 link_validation_report:
   total_checked: <n>
   valid: <n>
