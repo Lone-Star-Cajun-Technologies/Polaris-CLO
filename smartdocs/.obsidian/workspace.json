@@ -195,6 +195,9 @@
   },
   "active": "eeb5df633462ded9",
   "lastOpenFiles": [
+    "raw/pol-288-foreman-worker-drift-postmortem.md",
+    "specs/active/pol-200-adaptive-folder-cognition-librarian-lifecycle.md",
+    "raw/POL-281_recovery_playbook.md",
     "docs/raw/2026-05-25-claude-plugin-runtime-integration.md",
     "docs/raw/2026-05-23-provider-capability-abstraction.md",
     "docs/raw/cluster-map.md",
@@ -227,9 +230,6 @@
     "docs/architecture/polaris-run-ledger.provenance.json",
     "docs/architecture/polaris-run-ledger.md",
     "docs/doctrine/candidate/polaris-implementation-plan.md",
-    "docs/specs/raw/polaris-dispatch-contract.md",
-    "docs/doctrine/candidate/issue-hierarchy-doctrine.md",
-    "docs/specs/raw/ephemeral-validation-plan.md",
-    "docs/architecture/ephemeral-execution-architecture.md"
+    "docs/specs/raw/polaris-dispatch-contract.md"
   ]
 }
