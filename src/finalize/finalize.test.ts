@@ -45,6 +45,26 @@ function writeState(dir: string, extra: object = {}): string {
   return stateFile;
 }
 
+function writeCanonicalState(dir: string, clusterId: string, extra: object = {}): string {
+  const stateFile = join(dir, ".polaris", "clusters", clusterId, "state.json");
+  mkdirSync(join(dir, ".polaris", "clusters", clusterId), { recursive: true });
+  const state = {
+    schema_version: "1.0",
+    run_id: "test-finalize-001",
+    cluster_id: clusterId,
+    active_child: "",
+    completed_children: ["POL-9", "POL-10", "POL-11"],
+    open_children: [],
+    step_cursor: "CLUSTER-COMPLETE",
+    context_budget: { children_completed: 3 },
+    status: "complete",
+    next_open_child: null,
+    ...extra,
+  };
+  writeFileSync(stateFile, JSON.stringify(state, null, 2));
+  return stateFile;
+}
+
 function writeEmptyAtlas(dir: string): void {
   const mapDir = join(dir, ".polaris", "map");
   mkdirSync(mapDir, { recursive: true });
@@ -340,9 +360,13 @@ describe("runFinalize (steps 1–6, skip-delivery)", () => {
 
   it("runs steps 1–6 end-to-end and creates a commit", async () => {
     const { runFinalize } = await import("./index.js");
-    const stateFile = writeState(testDir);
+    const stateFile = writeCanonicalState(testDir, "POL-6");
     writeEmptyAtlas(testDir);
     writeDurableClusterArtifacts(testDir, "POL-6");
+    
+    // Checkout branch matching the cluster_id
+    execFileSync("git", ["checkout", "-b", "pol-6-delivery"], { cwd: testDir, stdio: "pipe" });
+    
     stageFile(testDir, ".taskchain_artifacts/polaris-run/current-state.json", "{\"scratch\":true}\n");
     // Non-artifact implementation evidence required by the evidence gate
     stageFile(testDir, "src/impl.ts", "export function impl() {}\n");
@@ -411,7 +435,7 @@ describe("runFinalize implementation evidence preflight", () => {
   it("passes with canonical completed-child commit evidence when only artifacts are staged", async () => {
     const { runFinalize } = await import("./index.js");
     const childId = "POL-9";
-    const stateFile = writeState(testDir, {
+    const stateFile = writeCanonicalState(testDir, "POL-6", {
       completed_children: [childId],
       context_budget: { children_completed: 1 },
     });
@@ -453,12 +477,16 @@ describe("runFinalize implementation evidence preflight", () => {
   it("blocks when no staged source files and no completed-child commit evidence exists", async () => {
     const { runFinalize } = await import("./index.js");
     const childId = "POL-9";
-    const stateFile = writeState(testDir, {
+    const stateFile = writeCanonicalState(testDir, "POL-6", {
       completed_children: [childId],
       context_budget: { children_completed: 1 },
     });
     writeEmptyAtlas(testDir);
     writeDurableClusterArtifacts(testDir, "POL-6");
+    
+    // Checkout branch matching the cluster_id
+    execFileSync("git", ["checkout", "-b", "pol-6-delivery"], { cwd: testDir, stdio: "pipe" });
+    
     writeFileSync(
       join(testDir, ".polaris", "clusters", "POL-6", "cluster-state.json"),
       `${JSON.stringify({ commits: {}, validation_results: {}, result_pointers: {} }, null, 2)}\n`,
@@ -486,7 +514,7 @@ describe("runFinalize implementation evidence preflight", () => {
   it("blocks artifact-only child commit evidence when packet does not allow artifact_only", async () => {
     const { runFinalize } = await import("./index.js");
     const childId = "POL-9";
-    const stateFile = writeState(testDir, {
+    const stateFile = writeCanonicalState(testDir, "POL-6", {
       completed_children: [childId],
       context_budget: { children_completed: 1 },
       open_children_meta: {
@@ -499,6 +527,9 @@ describe("runFinalize implementation evidence preflight", () => {
     });
     writeEmptyAtlas(testDir);
     writeDurableClusterArtifacts(testDir, "POL-6");
+
+    // Checkout branch matching the cluster_id
+    execFileSync("git", ["checkout", "-b", "pol-6-delivery"], { cwd: testDir, stdio: "pipe" });
 
     const artifactCommit = commitFile(
       testDir,
@@ -538,5 +569,291 @@ describe("runFinalize implementation evidence preflight", () => {
 
     exitSpy.mockRestore();
     stderrSpy.mockRestore();
+  });
+});
+
+// ---- preflight: state file authority gate ----------------------------------
+
+describe("preflight: state file authority gate", () => {
+  it("rejects .taskchain_artifacts/polaris-run/current-state.json (debug path)", async () => {
+    const { runFinalize } = await import("./index.js");
+    const testDir = makeTestDir();
+
+    try {
+      const stateFile = join(testDir, ".taskchain_artifacts", "polaris-run", "current-state.json");
+      mkdirSync(dirname(stateFile), { recursive: true });
+      writeFileSync(stateFile, JSON.stringify({
+        schema_version: "1.0",
+        run_id: "test-finalize-001",
+        cluster_id: "POL-1",
+        active_child: "",
+        completed_children: [],
+        open_children: [],
+        step_cursor: "CLUSTER-COMPLETE",
+        context_budget: { children_completed: 0 },
+        status: "complete",
+        branch: "",
+      }, null, 2));
+      writeEmptyAtlas(testDir);
+      writeDurableClusterArtifacts(testDir, "POL-1");
+
+      execFileSync("git", ["checkout", "-b", "pol-1-delivery"], { cwd: testDir, stdio: "pipe" });
+
+      const exitSpy = vi.spyOn(process, "exit").mockImplementation((() => {
+        throw new Error("process.exit called");
+      }) as never);
+      let stderr = "";
+      const stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(((chunk: string | Uint8Array) => {
+        stderr += String(chunk);
+        return true;
+      }) as never);
+
+      await expect(runFinalize({ repoRoot: testDir, stateFile })).rejects.toThrow("process.exit called");
+      expect(stderr).toContain("compatibility/debug path");
+
+      exitSpy.mockRestore();
+      stderrSpy.mockRestore();
+    } finally {
+      rmSync(testDir, { recursive: true });
+    }
+  });
+
+  it("rejects .polaris/runs/current-state.json (legacy path)", async () => {
+    const { runFinalize } = await import("./index.js");
+    const testDir = makeTestDir();
+
+    try {
+      const stateFile = join(testDir, ".polaris", "runs", "current-state.json");
+      mkdirSync(dirname(stateFile), { recursive: true });
+      writeFileSync(stateFile, JSON.stringify({
+        schema_version: "1.0",
+        run_id: "test-finalize-001",
+        cluster_id: "POL-1",
+        active_child: "",
+        completed_children: [],
+        open_children: [],
+        step_cursor: "CLUSTER-COMPLETE",
+        context_budget: { children_completed: 0 },
+        status: "complete",
+        branch: "",
+      }, null, 2));
+      writeEmptyAtlas(testDir);
+      writeDurableClusterArtifacts(testDir, "POL-1");
+
+      execFileSync("git", ["checkout", "-b", "pol-1-delivery"], { cwd: testDir, stdio: "pipe" });
+
+      const exitSpy = vi.spyOn(process, "exit").mockImplementation((() => {
+        throw new Error("process.exit called");
+      }) as never);
+      let stderr = "";
+      const stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(((chunk: string | Uint8Array) => {
+        stderr += String(chunk);
+        return true;
+      }) as never);
+
+      await expect(runFinalize({ repoRoot: testDir, stateFile })).rejects.toThrow("process.exit called");
+      expect(stderr).toContain("legacy path");
+
+      exitSpy.mockRestore();
+      stderrSpy.mockRestore();
+    } finally {
+      rmSync(testDir, { recursive: true });
+    }
+  });
+});
+
+// ---- preflight: cluster_id branch match ----
+
+describe("preflight: cluster_id branch match", () => {
+  it("rejects when cluster_id does not match current branch", async () => {
+    const { runFinalize } = await import("./index.js");
+    const testDir = makeTestDir();
+
+    try {
+      const stateFile = join(testDir, ".polaris", "clusters", "POL-289", "state.json");
+      mkdirSync(dirname(stateFile), { recursive: true });
+      writeFileSync(stateFile, JSON.stringify({
+        schema_version: "1.0",
+        run_id: "test-finalize-001",
+        cluster_id: "POL-289",
+        active_child: "",
+        completed_children: [],
+        open_children: [],
+        step_cursor: "CLUSTER-COMPLETE",
+        context_budget: { children_completed: 0 },
+        status: "complete",
+        branch: "",
+      }, null, 2));
+      writeEmptyAtlas(testDir);
+      writeDurableClusterArtifacts(testDir, "POL-289");
+
+      execFileSync("git", ["checkout", "-b", "pol-296-delivery"], { cwd: testDir, stdio: "pipe" });
+
+      const exitSpy = vi.spyOn(process, "exit").mockImplementation((() => {
+        throw new Error("process.exit called");
+      }) as never);
+      let stderr = "";
+      const stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(((chunk: string | Uint8Array) => {
+        stderr += String(chunk);
+        return true;
+      }) as never);
+
+      await expect(runFinalize({ repoRoot: testDir, stateFile })).rejects.toThrow("process.exit called");
+      expect(stderr).toContain("cluster_id mismatch");
+      expect(stderr).toContain("POL-289");
+
+      exitSpy.mockRestore();
+      stderrSpy.mockRestore();
+    } finally {
+      rmSync(testDir, { recursive: true });
+    }
+  });
+
+  it("accepts when cluster_id matches branch (case-insensitive, hyphen-normalized)", async () => {
+    const { runFinalize } = await import("./index.js");
+    const testDir = makeTestDir();
+
+    try {
+      const stateFile = join(testDir, ".polaris", "clusters", "POL-296", "state.json");
+      mkdirSync(dirname(stateFile), { recursive: true });
+      writeFileSync(stateFile, JSON.stringify({
+        schema_version: "1.0",
+        run_id: "test-finalize-001",
+        cluster_id: "POL-296",
+        active_child: "",
+        completed_children: [],
+        open_children: [],
+        step_cursor: "CLUSTER-COMPLETE",
+        context_budget: { children_completed: 0 },
+        status: "complete",
+        branch: "",
+      }, null, 2));
+      writeEmptyAtlas(testDir);
+      writeDurableClusterArtifacts(testDir, "POL-296");
+
+      execFileSync("git", ["checkout", "-b", "pol-296-delivery"], { cwd: testDir, stdio: "pipe" });
+
+      // Stage at least one non-artifact file
+      stageFile(testDir, "src/implementation.ts", "// test\n");
+
+      await expect(runFinalize({ repoRoot: testDir, stateFile, dryRun: true })).resolves.not.toThrow();
+    } finally {
+      rmSync(testDir, { recursive: true });
+    }
+  });
+});
+
+// ---- preflight: state.branch match ----
+
+describe("preflight: state.branch match", () => {
+  it("rejects when state.branch differs from current git branch", async () => {
+    const { runFinalize } = await import("./index.js");
+    const testDir = makeTestDir();
+
+    try {
+      const stateFile = join(testDir, ".polaris", "clusters", "POL-302", "state.json");
+      mkdirSync(dirname(stateFile), { recursive: true });
+      writeFileSync(stateFile, JSON.stringify({
+        schema_version: "1.0",
+        run_id: "test-finalize-001",
+        cluster_id: "POL-302",
+        active_child: "",
+        completed_children: [],
+        open_children: [],
+        step_cursor: "CLUSTER-COMPLETE",
+        context_budget: { children_completed: 0 },
+        status: "complete",
+        branch: "pol-296-delivery",
+      }, null, 2));
+      writeEmptyAtlas(testDir);
+      writeDurableClusterArtifacts(testDir, "POL-302");
+
+      execFileSync("git", ["checkout", "-b", "pol-302-fix"], { cwd: testDir, stdio: "pipe" });
+
+      const exitSpy = vi.spyOn(process, "exit").mockImplementation((() => {
+        throw new Error("process.exit called");
+      }) as never);
+      let stderr = "";
+      const stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(((chunk: string | Uint8Array) => {
+        stderr += String(chunk);
+        return true;
+      }) as never);
+
+      await expect(runFinalize({ repoRoot: testDir, stateFile })).rejects.toThrow("process.exit called");
+      expect(stderr).toContain("state.branch mismatch");
+      expect(stderr).toContain("pol-296-delivery");
+      expect(stderr).toContain("pol-302-fix");
+
+      exitSpy.mockRestore();
+      stderrSpy.mockRestore();
+    } finally {
+      rmSync(testDir, { recursive: true });
+    }
+  });
+
+  it("accepts when state.branch matches current git branch", async () => {
+    const { runFinalize } = await import("./index.js");
+    const testDir = makeTestDir();
+
+    try {
+      const stateFile = join(testDir, ".polaris", "clusters", "POL-296", "state.json");
+      mkdirSync(dirname(stateFile), { recursive: true });
+      writeFileSync(stateFile, JSON.stringify({
+        schema_version: "1.0",
+        run_id: "test-finalize-001",
+        cluster_id: "POL-296",
+        active_child: "",
+        completed_children: [],
+        open_children: [],
+        step_cursor: "CLUSTER-COMPLETE",
+        context_budget: { children_completed: 0 },
+        status: "complete",
+        branch: "pol-296-delivery",
+      }, null, 2));
+      writeEmptyAtlas(testDir);
+      writeDurableClusterArtifacts(testDir, "POL-296");
+
+      execFileSync("git", ["checkout", "-b", "pol-296-delivery"], { cwd: testDir, stdio: "pipe" });
+
+      // Stage at least one non-artifact file
+      stageFile(testDir, "src/implementation.ts", "// test\n");
+
+      await expect(runFinalize({ repoRoot: testDir, stateFile, dryRun: true })).resolves.not.toThrow();
+    } finally {
+      rmSync(testDir, { recursive: true });
+    }
+  });
+
+  it("accepts when state.branch is empty", async () => {
+    const { runFinalize } = await import("./index.js");
+    const testDir = makeTestDir();
+
+    try {
+      const stateFile = join(testDir, ".polaris", "clusters", "POL-296", "state.json");
+      mkdirSync(dirname(stateFile), { recursive: true });
+      writeFileSync(stateFile, JSON.stringify({
+        schema_version: "1.0",
+        run_id: "test-finalize-001",
+        cluster_id: "POL-296",
+        active_child: "",
+        completed_children: [],
+        open_children: [],
+        step_cursor: "CLUSTER-COMPLETE",
+        context_budget: { children_completed: 0 },
+        status: "complete",
+        branch: "",
+      }, null, 2));
+      writeEmptyAtlas(testDir);
+      writeDurableClusterArtifacts(testDir, "POL-296");
+
+      execFileSync("git", ["checkout", "-b", "pol-296-delivery"], { cwd: testDir, stdio: "pipe" });
+
+      // Stage at least one non-artifact file
+      stageFile(testDir, "src/implementation.ts", "// test\n");
+
+      await expect(runFinalize({ repoRoot: testDir, stateFile, dryRun: true })).resolves.not.toThrow();
+    } finally {
+      rmSync(testDir, { recursive: true });
+    }
   });
 });
