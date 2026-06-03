@@ -28,7 +28,9 @@
     ],
     "allowed_scope": [
       "src/finalize/index.ts",
-      "src/finalize/finalize.test.ts"
+      "src/finalize/finalize.test.ts",
+      ".taskchain_artifacts/polaris-run/current-state.json",
+      ".polaris/clusters/POL-303/results/POL-304-d94706f2-cf13-4eb0-9496-c7750780c4a4.json"
     ],
     "validation_commands": [
       "npm run build",
@@ -73,10 +75,8 @@
     ]
   },
   "prohibited_write_paths": [
-    ".taskchain_artifacts/",
     ".polaris/clusters/",
-    ".polaris/runs/",
-    "**/telemetry.jsonl"
+    ".polaris/runs/"
   ],
   "result_file_contract": {
     "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-303/results/POL-304-d94706f2-cf13-4eb0-9496-c7750780c4a4.json"

@@ -9,7 +9,7 @@ import type { LoopState } from "../loop/checkpoint.js";
  * State types that finalize is PROHIBITED from transitioning to.
  * Human review is the ONLY authority for Done/Closed transitions.
  */
-const DONE_STATE_TYPES = new Set(["completed", "cancelled"]);
+const DONE_STATE_TYPES = new Set(["completed", "canceled"]);
 
 /**
  * Guard: throws if the given state type corresponds to Done or Closed.
@@ -183,7 +183,7 @@ export async function postLinearComment(options: PostCommentOptions): Promise<vo
     { issueId, body },
     apiKey,
   );
-  if (data.commentCreate?.success === false) {
+  if (data.commentCreate?.success !== true) {
     throw new Error(`Linear commentCreate failed: ${JSON.stringify(data.commentCreate)}`);
   }
 }
@@ -205,8 +205,9 @@ export async function updateLinearIssueAfterFinalize(options: PostCommentOptions
   let reviewState: WorkflowState | null = null;
   try {
     reviewState = await findReviewState(issueId, apiKey);
-  } catch {
-    // State query failed — fall back to comment-only; do not propagate.
+  } catch (err) {
+    // Log the error so auth/network/GraphQL failures are visible, then fall back to comment-only
+    console.error(`[Linear] findReviewState failed for issue ${issueId}: ${err instanceof Error ? err.message : String(err)}`);
   }
 
   if (reviewState !== null) {
@@ -220,7 +221,7 @@ export async function updateLinearIssueAfterFinalize(options: PostCommentOptions
       { id: issueId, stateId: reviewState.id },
       apiKey,
     );
-    if (updateData.issueUpdate?.success === false) {
+    if (updateData.issueUpdate?.success !== true) {
       throw new Error(`Linear issueUpdate failed: ${JSON.stringify(updateData.issueUpdate)}`);
     }
   }
@@ -240,7 +241,7 @@ export async function updateLinearIssueAfterFinalize(options: PostCommentOptions
     { issueId, body },
     apiKey,
   );
-  if (commentData.commentCreate?.success === false) {
+  if (commentData.commentCreate?.success !== true) {
     throw new Error(`Linear commentCreate failed: ${JSON.stringify(commentData.commentCreate)}`);
   }
 }

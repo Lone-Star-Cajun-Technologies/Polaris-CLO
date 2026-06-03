@@ -892,4 +892,24 @@ describe("createDraftPr validation", () => {
       createDraftPr({ repoRoot: "/tmp", branch: "pol-999-delivery", state, draft: true })
     ).toThrow(/branch.*pol-999-delivery.*does not contain cluster ID slug.*pol-296/);
   });
+
+  it("rejects branch with prefix collision (POL-29 should not match pol-296-delivery)", async () => {
+    const { createDraftPr } = await import("./github.js");
+    const state = makeMinimalState({ cluster_id: "POL-29" });
+    expect(() =>
+      createDraftPr({ repoRoot: "/tmp", branch: "pol-296-delivery", state, draft: true })
+    ).toThrow(/branch.*pol-296-delivery.*does not contain cluster ID slug.*pol-29/);
+  });
+
+  it("accepts branch when cluster ID matches as a full token (POL-29 matches pol-29-delivery)", async () => {
+    const { createDraftPr } = await import("./github.js");
+    const state = makeMinimalState({ cluster_id: "POL-29" });
+    // Mock execFileSync to prevent actual gh command execution
+    const mockExecFileSync = vi.fn(() => "https://github.com/test/repo/pull/42");
+    vi.doMock("node:child_process", () => ({ execFileSync: mockExecFileSync }));
+    // This should not throw
+    expect(() =>
+      createDraftPr({ repoRoot: "/tmp", branch: "pol-29-delivery", state, draft: true })
+    ).not.toThrow();
+  });
 });

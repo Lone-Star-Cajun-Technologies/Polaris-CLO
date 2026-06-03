@@ -78,7 +78,8 @@ function validateClusterIdMatchesBranch(clusterId: string, branch: string): void
   const clusterSlug = extractClusterSlug(clusterId);
   const normalizedBranch = normalizeBranchName(branch);
 
-  if (!normalizedBranch.includes(clusterSlug)) {
+  const slugPattern = new RegExp(`(^|-)${clusterSlug.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(-|$)`);
+  if (!slugPattern.test(normalizedBranch)) {
     process.stderr.write(
       `finalize aborted: cluster_id mismatch — state.cluster_id "${clusterId}" ` +
       `does not match current branch "${branch}".\n` +
@@ -441,8 +442,14 @@ export function createFinalizeCommand(handlers: FinalizeCommandHandlers = {}): C
     .option("--skip-delivery", "perform local finalize steps only; skip push/PR/Linear/archive")
     .action((options: { repoRoot: string; stateFile?: string; dryRun?: boolean; skipDelivery?: boolean }) => {
       const repoRoot = options.repoRoot;
-      const stateFile =
-        options.stateFile ?? join(repoRoot, ".polaris", "runs", "current-state.json");
+      if (!options.stateFile) {
+        process.stderr.write(
+          `finalize error: --state-file is required. Specify a canonical state path such as ` +
+          `.polaris/clusters/<cluster-id>/state.json\n`
+        );
+        process.exit(1);
+      }
+      const stateFile = options.stateFile;
       finalizeHandler({ repoRoot, stateFile, dryRun: options.dryRun, skipDelivery: options.skipDelivery })
         .catch((err: unknown) => {
           process.stderr.write(`finalize error: ${err instanceof Error ? err.message : String(err)}\n`);
