@@ -902,11 +902,12 @@ describe("createDraftPr validation", () => {
   });
 
   it("accepts branch when cluster ID matches as a full token (POL-29 matches pol-29-delivery)", async () => {
-    const { createDraftPr } = await import("./github.js");
-    const state = makeMinimalState({ cluster_id: "POL-29" });
-    // Mock execFileSync to prevent actual gh command execution
+    // Clear module cache and mock execFileSync before importing
+    vi.resetModules();
     const mockExecFileSync = vi.fn(() => "https://github.com/test/repo/pull/42");
     vi.doMock("node:child_process", () => ({ execFileSync: mockExecFileSync }));
+    const { createDraftPr } = await import("./github.js");
+    const state = makeMinimalState({ cluster_id: "POL-29" });
     // This should not throw
     expect(() =>
       createDraftPr({ repoRoot: "/tmp", branch: "pol-29-delivery", state, draft: true })
