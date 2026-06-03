@@ -16,6 +16,9 @@ export {
   detectOperationalReasons,
   findNearestRoutePolarismd,
   isCognitionSkippedFolder,
+  isPolarisOwnedFolder,
+  isUserCreatedCognitionSurface,
+  POLARIS_OWNED_COGNITION_FOLDERS,
   readRoutePolarismd,
 } from "./route-cognition-delta.js";
 

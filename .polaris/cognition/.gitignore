@@ -1,0 +1,7 @@
+# Pending work notes from workers during execution
+*.md
+*.json
+
+# Staging directory for folder cognition reconciliation
+# Notes are written here during child execution, then consumed by the cognition librarian
+# Files are archived after patch application

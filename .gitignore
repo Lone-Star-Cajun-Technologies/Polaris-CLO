@@ -16,3 +16,6 @@ docs/Polaris/.obsidian/
 .taskchain_artifacts/**/*.bak
 .polaris/runs/mutation-queue.json
 .taskchain_artifacts/*/mutation-queue.json
+
+# Cognition staging — ephemeral, not committed
+.polaris/cognition/pending/

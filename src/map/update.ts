@@ -1,11 +1,15 @@
-import { readFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { readFileSync, existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 import { loadConfig } from "../config/loader.js";
 import { parsePolarisIgnore } from "../ignore/parser.js";
 import { SECRET_PATTERNS } from "../ignore/defaults.js";
 import { inferRoute } from "./inference.js";
-import { isCognitionSkippedFolder } from "../cognition/index.js";
+import {
+  detectOperationalReasons,
+  isCognitionSkippedFolder,
+  isPolarisOwnedFolder,
+} from "../cognition/index.js";
 import {
   readFileRoutes,
   readNeedsReview,
@@ -139,19 +143,70 @@ export function detectMissingCognitionSurfaces(
 ): { missingPolaris: string[]; missingSummary: string[] } {
   const missingPolaris = new Set<string>();
   const missingSummary = new Set<string>();
+  const tierOneFolders = new Set<string>([".polaris", "src", "smartdocs/specs/active"]);
 
-  for (const file of changedFiles) {
-    const parts = file.split("/");
-    let foundAncestor = false;
+  if (existsSync(resolve(repoRoot, "smartdocs", "doctrine", "active"))) {
+    tierOneFolders.add("smartdocs/doctrine/active");
+  }
+  if (existsSync(resolve(repoRoot, "src"))) {
+    for (const entry of readdirSync(resolve(repoRoot, "src"), { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      tierOneFolders.add(`src/${entry.name}`);
+    }
+  }
+
+  const hasNonTestNonGeneratedSource = (filePath: string): boolean => {
+    const normalized = filePath.replace(/\\/g, "/");
+    const fileName = normalized.split("/").pop() ?? normalized;
+    if (
+      normalized.startsWith(".") ||
+      /(^|\/)(dist|build|out|coverage|generated|__generated__)\//.test(normalized) ||
+      /(^|\/)\.(?!well-known)/.test(normalized)
+    ) return false;
+    if (
+      /\.test\./.test(fileName) ||
+      /\.spec\./.test(fileName) ||
+      /\.generated\./.test(fileName) ||
+      fileName.endsWith(".d.ts")
+    ) return false;
+    return /\.(ts|tsx|js|jsx|mjs|cjs|py|go|rs|java|kt|swift|rb|php|cs|c|cc|cpp|h|hpp|sh)$/.test(fileName);
+  };
+
+  const detectFolderForFile = (filePath: string): string | null => {
+    const parts = filePath.split("/");
     for (let i = parts.length - 1; i >= 1; i--) {
       const dir = parts.slice(0, i).join("/");
-      if (isCognitionSkippedFolder(dir, repoRoot)) continue;
-      const hasPolarismd = existsSync(resolve(repoRoot, dir, "POLARIS.md"));
-      const hasSummarymd = existsSync(resolve(repoRoot, dir, "SUMMARY.md"));
-      if (!hasPolarismd) missingPolaris.add(dir);
-      if (hasPolarismd && !hasSummarymd) missingSummary.add(dir);
-      foundAncestor = true;
-      break; // Only check nearest eligible ancestor per file
+      if (!dir || isCognitionSkippedFolder(dir, repoRoot)) continue;
+
+      if (isPolarisOwnedFolder(dir)) return dir;
+
+      const folderTouchedFiles = changedFiles.filter((changed) => changed.startsWith(`${dir}/`));
+      const sourceTouchedFiles = folderTouchedFiles.filter(hasNonTestNonGeneratedSource);
+      if (sourceTouchedFiles.length === 0) continue;
+      if (detectOperationalReasons(sourceTouchedFiles).length === 0) continue;
+      return dir;
+    }
+    return null;
+  };
+
+  for (const tierOne of tierOneFolders) {
+    if (!existsSync(resolve(repoRoot, tierOne))) continue;
+    if (isCognitionSkippedFolder(tierOne, repoRoot)) continue;
+
+    const hasPolarismd = existsSync(resolve(repoRoot, tierOne, "POLARIS.md"));
+    const hasSummarymd = existsSync(resolve(repoRoot, tierOne, "SUMMARY.md"));
+    if (!hasPolarismd) missingPolaris.add(tierOne);
+    if (hasPolarismd && !hasSummarymd) missingSummary.add(tierOne);
+  }
+
+  for (const file of changedFiles) {
+    const folder = detectFolderForFile(file);
+    const foundAncestor = Boolean(folder);
+    if (folder) {
+      const hasPolarismd = existsSync(resolve(repoRoot, folder, "POLARIS.md"));
+      const hasSummarymd = existsSync(resolve(repoRoot, folder, "SUMMARY.md"));
+      if (!hasPolarismd) missingPolaris.add(folder);
+      if (hasPolarismd && !hasSummarymd) missingSummary.add(folder);
     }
     // Check root only when explicitly opted in and no non-root ancestor was found
     if (includeRoot && !foundAncestor) {

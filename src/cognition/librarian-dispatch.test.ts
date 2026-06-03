@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { validateAndApplyLibrarianResult } from "./librarian-dispatch.js";
+import type { ExecutionAdapter } from "../loop/adapters/types.js";
+import { dispatchCognitionLibrarian, validateAndApplyLibrarianResult } from "./librarian-dispatch.js";
 import type {
   CognitionLibrarianPacket,
   CognitionLibrarianResult,
@@ -350,5 +351,117 @@ describe("validateAndApplyLibrarianResult", () => {
     expect(outcome.rejection_reason).toBe("all patches rejected");
     expect(outcome.files_written).toEqual([]);
     expect(existsSync(join(tmp, "src/loop/POLARIS.md"))).toBe(false);
+  });
+
+  it("rejects patch targeting a protected user-created cognition surface", () => {
+    mkdirSync(join(tmp, ".polaris", "cognition"), { recursive: true });
+    writeFileSync(
+      join(tmp, ".polaris", "cognition", "managed-surfaces.json"),
+      JSON.stringify({ surfaces: ["src/loop/POLARIS.md"] }),
+      "utf-8",
+    );
+    mkdirSync(join(tmp, "src", "loop"), { recursive: true });
+    writeFileSync(join(tmp, "src", "loop", "POLARIS.md"), "# Human-authored", "utf-8");
+
+    const outcome = validateAndApplyLibrarianResult(
+      makeResult({
+        proposed_patches: [
+          makePatch({ file: "src/loop/POLARIS.md", proposed_content: "# Bot overwrite" }),
+        ],
+      }),
+      tmp,
+      makePacket(),
+    );
+
+    expect(outcome.approved).toBe(false);
+    expect(outcome.patches_applied).toHaveLength(0);
+    expect(outcome.patches_rejected).toHaveLength(1);
+    expect(outcome.patches_rejected[0]!.reason).toMatch(/COGNITION_USER_SURFACE_PROTECTED/);
+    expect(readFileSync(join(tmp, "src", "loop", "POLARIS.md"), "utf-8")).toBe("# Human-authored");
+  });
+});
+
+describe("dispatchCognitionLibrarian telemetry", () => {
+  let tmp: string;
+
+  beforeEach(() => {
+    tmp = makeTmp();
+  });
+
+  afterEach(() => {
+    cleanup(tmp);
+  });
+
+  it("emits cognition-user-surface-protected when protected patch is rejected", async () => {
+    mkdirSync(join(tmp, ".polaris", "cognition", "pending", "src-loop"), { recursive: true });
+    mkdirSync(join(tmp, ".polaris", "cognition"), { recursive: true });
+    writeFileSync(
+      join(tmp, ".polaris", "cognition", "managed-surfaces.json"),
+      JSON.stringify({ surfaces: ["src/loop/POLARIS.md"] }),
+      "utf-8",
+    );
+    mkdirSync(join(tmp, "src", "loop"), { recursive: true });
+    writeFileSync(join(tmp, "src", "loop", "POLARIS.md"), "# Existing user content", "utf-8");
+
+    const notePath = ".polaris/cognition/pending/src-loop/note.md";
+    writeFileSync(
+      join(tmp, notePath),
+      [
+        "---",
+        "folder: src/loop",
+        "folder_slug: src-loop",
+        "docs_impact: polaris",
+        "---",
+        "",
+        "note",
+      ].join("\n"),
+      "utf-8",
+    );
+    const telemetryFile = join(tmp, "telemetry.jsonl");
+    writeFileSync(telemetryFile, "", "utf-8");
+
+    const adapter: ExecutionAdapter = {
+      name: "mock",
+      async dispatch(packet): Promise<{ exit_code: number; provider_used: string; command_run: string }> {
+        const statePath = String(packet.state_file);
+        const librarianPacket = JSON.parse(readFileSync(statePath, "utf-8")) as CognitionLibrarianPacket;
+        const result: CognitionLibrarianResult = makeResult({
+          run_id: librarianPacket.run_id,
+          dispatch_id: librarianPacket.dispatch_id,
+          folder: librarianPacket.folder,
+          folder_slug: librarianPacket.folder_slug,
+          proposed_patches: [
+            makePatch({
+              file: "src/loop/POLARIS.md",
+              proposed_content: "# Bot content",
+            }),
+          ],
+        });
+        writeFileSync(librarianPacket.result_path, JSON.stringify(result), "utf-8");
+        return { exit_code: 0, provider_used: "mock", command_run: "mock" };
+      },
+    };
+
+    await dispatchCognitionLibrarian({
+      runId: "run-telemetry-1",
+      clusterId: "POL-999",
+      workNotePaths: [notePath],
+      repoRoot: tmp,
+      adapter,
+      provider: "mock",
+      telemetryFile,
+      timeoutMs: 5000,
+    });
+
+    const events = readFileSync(telemetryFile, "utf-8")
+      .trim()
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => JSON.parse(line) as Record<string, unknown>);
+    const protectedEvent = events.find((event) => event["event"] === "cognition-user-surface-protected");
+    expect(protectedEvent).toBeDefined();
+    expect(protectedEvent?.["file"]).toBe("src/loop/POLARIS.md");
+    expect(protectedEvent?.["folder_slug"]).toBe("src-loop");
+    expect(readFileSync(join(tmp, "src", "loop", "POLARIS.md"), "utf-8")).toBe("# Existing user content");
   });
 });
