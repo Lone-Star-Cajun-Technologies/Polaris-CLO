@@ -12,9 +12,13 @@ import type { LoopState } from "../loop/checkpoint.js";
 const DONE_STATE_TYPES = new Set(["completed", "cancelled"]);
 
 /**
- * Guard: throws if the given state type corresponds to Done or Closed.
- * Called before every issueUpdate — prevents any future code from silently
- * adding a Done-transition path.
+ * Prevent transitioning an issue to a Done/Closed workflow state.
+ *
+ * Throws an Error if `stateType`, compared case-insensitively, is one of the disallowed Done/Closed types.
+ *
+ * @param stateType - The workflow state's machine/type identifier (case-insensitive check)
+ * @param stateName - The workflow state's human-readable name (used in the thrown error message)
+ * @throws Error when `stateType` corresponds to a Done/Closed state
  */
 export function assertNotDoneState(stateType: string, stateName: string): void {
   if (DONE_STATE_TYPES.has(stateType.toLowerCase())) {
@@ -47,7 +51,15 @@ export interface PostCommentOptions {
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Internal HTTP helper
-// ──────────────────────────────────────────────────────────────────────────────
+/**
+ * Send a GraphQL POST to the Linear API and return the parsed `data` payload.
+ *
+ * @param query - The GraphQL query or mutation string
+ * @param variables - Variables to include with the GraphQL request
+ * @param apiKey - Linear API key used as the `Authorization` header
+ * @returns The `data` field from the Linear GraphQL response parsed to type `T`
+ * @throws Error if the HTTP status is >= 400, the GraphQL response contains `errors`, the response body cannot be parsed as JSON, or the request/network fails
+ */
 
 async function linearGraphQL<T>(
   query: string,
@@ -103,9 +115,12 @@ async function linearGraphQL<T>(
 // ──────────────────────────────────────────────────────────────────────────────
 
 /**
- * Finds an "In Review" workflow state for the issue's team.
- * Matches by state type === "review" first, then by name ("In Review" / "Review").
- * Returns null if the issue has no team or no review-type state exists.
+ * Locate the team's "In Review" workflow state for a given issue.
+ *
+ * Matches workflow states by `type === "review"` (case-insensitive) first; if none match,
+ * falls back to states whose `name` equals "In Review" or "Review" (case-insensitive).
+ *
+ * @returns The matching `WorkflowState` if found; `null` if the issue has no team or no matching review state exists.
  */
 export async function findReviewState(
   issueId: string,
@@ -139,7 +154,20 @@ export async function findReviewState(
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Comment body builder
-// ──────────────────────────────────────────────────────────────────────────────
+/**
+ * Build the Markdown comment body posted to a Linear issue after finalize completes.
+ *
+ * The returned body contains a small table with the run identifier, branch, PR URL,
+ * number of completed child runs, and a map validation result; when `reviewStateMissing`
+ * is true, a warning about the missing "In Review" workflow state is appended.
+ *
+ * @param state - The Loop state object; its `run_id` and `completed_children.length` are included in the comment
+ * @param branch - The git branch name associated with the run
+ * @param prUrl - The pull request URL to display in the comment
+ * @param validationPassed - Whether map validation succeeded; renders as "✓ passed" or "✗ failed"
+ * @param reviewStateMissing - If true, appends a warning that an "In Review" workflow state was not found
+ * @returns The assembled Markdown comment as a single string
+ */
 
 function buildCommentBody(opts: {
   state: LoopState;
@@ -171,7 +199,12 @@ function buildCommentBody(opts: {
 // Public API
 // ──────────────────────────────────────────────────────────────────────────────
 
-/** Posts a finalize-complete comment without attempting a state transition. */
+/**
+ * Post a finalize-complete comment on a Linear issue without changing the issue's workflow state.
+ *
+ * @param options - Object containing `issueId`, `state`, `branch`, `prUrl`, `validationPassed`, and `apiKey`
+ * @throws Error if the Linear `commentCreate` mutation returns `success === false`
+ */
 export async function postLinearComment(options: PostCommentOptions): Promise<void> {
   const { issueId, state, branch, prUrl, validationPassed, apiKey } = options;
   const body = buildCommentBody({ state, branch, prUrl, validationPassed, reviewStateMissing: false });
@@ -189,15 +222,13 @@ export async function postLinearComment(options: PostCommentOptions): Promise<vo
 }
 
 /**
- * Full post-finalize Linear update (review-gate policy):
+ * Finalize a Linear issue by optionally moving it to an "In Review" workflow state and posting a finalize-complete comment.
  *
- * 1. Queries the issue's team for an "In Review" workflow state.
- * 2. If found — calls issueUpdate to transition (NEVER to Done/Closed).
- * 3. If not found — skips state transition; comment body notes the missing state.
- * 4. Always posts a finalize-complete comment.
+ * Discovers an appropriate "In Review" workflow state for the issue; if found, transitions the issue to that state (will not transition to Done/Closed). Always posts a comment summarizing the finalize run; the comment indicates when an "In Review" state was not found.
  *
- * POLICY: This function must NEVER call issueUpdate with a Done or Closed
- * state ID. The assertNotDoneState guard enforces this at runtime.
+ * @param options - Options containing `issueId`, finalize `state`, `branch`, `prUrl`, `validationPassed`, and `apiKey`
+ * @throws Error if a discovered `issueUpdate` or `commentCreate` mutation returns `success === false`
+ * @throws Error if the discovered workflow state is of a prohibited Done/Closed type (enforced by `assertNotDoneState`)
  */
 export async function updateLinearIssueAfterFinalize(options: PostCommentOptions): Promise<void> {
   const { issueId, state, branch, prUrl, validationPassed, apiKey } = options;

@@ -31,6 +31,13 @@ export interface FinalizeOptions {
   skipDelivery?: boolean;
 }
 
+/**
+ * Retrieve the current git branch name for the repository at `repoRoot`.
+ *
+ * @param repoRoot - Filesystem path to the repository root
+ * @returns The branch name as returned by `git rev-parse --abbrev-ref HEAD`, trimmed of surrounding whitespace
+ * @throws Error if the git command fails or the branch cannot be determined
+ */
 function getBranch(repoRoot: string): string {
   try {
     return execFileSync("git", ["rev-parse", "--abbrev-ref", "HEAD"], {
@@ -43,15 +50,35 @@ function getBranch(repoRoot: string): string {
   }
 }
 
+/**
+ * Normalize a Git branch name into a lowercase, dash-separated form.
+ *
+ * @returns The input branch converted to lowercase with all underscores (`_`) replaced by hyphens (`-`)
+ */
 function normalizeBranchName(branch: string): string {
   return branch.toLowerCase().replace(/_/g, "-");
 }
 
+/**
+ * Extracts a normalized cluster slug from a cluster identifier.
+ *
+ * @param clusterId - The cluster identifier to parse for a slug.
+ * @returns The slug normalized to lowercase with underscores replaced by hyphens; if the identifier contains a substring matching the pattern `ABC-123` (uppercase letters, a hyphen, then digits) that substring is used, otherwise the entire identifier is normalized.
+ */
 function extractClusterSlug(clusterId: string): string {
   const match = clusterId.match(/([A-Z]+-\d+)/);
   return match ? normalizeBranchName(match[1]) : normalizeBranchName(clusterId);
 }
 
+/**
+ * Ensures the provided state file path is not a known debug or legacy location.
+ *
+ * If the path ends with ".taskchain_artifacts/polaris-run/current-state.json" or
+ * ".polaris/runs/current-state.json", an error is written to stderr and the process
+ * exits with code 1.
+ *
+ * @param stateFile - Filesystem path to validate
+ */
 function validateStateFilePath(stateFile: string): void {
   const normalizedPath = stateFile.replace(/\\/g, "/");
   const debugPath = ".taskchain_artifacts/polaris-run/current-state.json";
@@ -74,6 +101,15 @@ function validateStateFilePath(stateFile: string): void {
   }
 }
 
+/**
+ * Ensures the cluster identifier is reflected in the current git branch name.
+ *
+ * Normalizes `clusterId` to a slug and compares it against a normalized `branch`; if the branch does not contain the slug,
+ * writes an explanatory error to stderr and terminates the process with exit code 1.
+ *
+ * @param clusterId - The cluster identifier from state (e.g., `state.cluster_id`)
+ * @param branch - The current git branch name
+ */
 function validateClusterIdMatchesBranch(clusterId: string, branch: string): void {
   const clusterSlug = extractClusterSlug(clusterId);
   const normalizedBranch = normalizeBranchName(branch);
@@ -88,6 +124,16 @@ function validateClusterIdMatchesBranch(clusterId: string, branch: string): void
   }
 }
 
+/**
+ * Ensures the branch recorded in the state file matches the current git branch.
+ *
+ * If `stateBranch` is missing or empty, no check is performed. If `stateBranch`
+ * is present and does not equal `branch`, the process is terminated with exit
+ * code 1 after writing a descriptive error to stderr.
+ *
+ * @param stateBranch - The branch value read from the state file (may be undefined)
+ * @param branch - The current git branch name
+ */
 function validateStateBranchMatchesGitBranch(stateBranch: string | undefined, branch: string): void {
   if (!stateBranch || stateBranch.trim() === "") {
     return;
@@ -102,6 +148,17 @@ function validateStateBranchMatchesGitBranch(stateBranch: string | undefined, br
   }
 }
 
+/**
+ * Execute the full finalize pipeline for a Polaris run: validate map and state, run configured checks
+ * and canon/integrity gates, optionally reconcile trackers, commit durable state, push/create PR,
+ * update trackers/telemetry, and archive the run.
+ *
+ * @param options - Finalize options
+ * @param options.repoRoot - Filesystem path to the repository root
+ * @param options.stateFile - Path to the current-state.json file to load and update
+ * @param options.dryRun - If true, run validations and report generation but skip commits, pushes, and delivery
+ * @param options.skipDelivery - If true, perform validation and commit steps but skip push/PR/delivery-related actions
+ */
 export async function runFinalize(options: FinalizeOptions): Promise<void> {
   const { repoRoot, stateFile, dryRun, skipDelivery } = options;
   const config = loadConfig(repoRoot);

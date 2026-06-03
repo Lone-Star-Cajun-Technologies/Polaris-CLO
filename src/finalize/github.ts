@@ -8,6 +8,17 @@ export interface CreatePrOptions {
   draft: boolean;
 }
 
+/**
+ * Create a GitHub pull request for a finalize run by invoking the `gh` CLI in the given repository.
+ *
+ * @param repoRoot - Filesystem path to use as the working directory for the `gh` command
+ * @param branch - Name of the head branch for the pull request; must contain the normalized cluster slug
+ * @param state - Loop state containing `cluster_id`, `run_id`, and `completed_children`; `cluster_id` must be present
+ * @param draft - When true, create the pull request as a draft
+ * @returns The stdout produced by the `gh` command, trimmed
+ * @throws Error if `state.cluster_id` is empty
+ * @throws Error if the provided `branch` (case-insensitive) does not include the cluster slug derived from `state.cluster_id`
+ */
 export function createDraftPr(options: CreatePrOptions): string {
   const { repoRoot, branch, state, draft } = options;
 
