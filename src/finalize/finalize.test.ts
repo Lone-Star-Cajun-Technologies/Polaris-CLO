@@ -417,6 +417,10 @@ describe("runFinalize implementation evidence preflight", () => {
     });
     writeEmptyAtlas(testDir);
 
+    // Create a delivery branch so the delivery-integrity check can diff main...pol-6-delivery.
+    // In real Polaris runs workers commit implementation to the delivery branch, not main.
+    execFileSync("git", ["checkout", "-b", "pol-6-delivery"], { cwd: testDir, stdio: "pipe" });
+
     const commit = commitFile(
       testDir,
       "src/pol277-evidence.ts",

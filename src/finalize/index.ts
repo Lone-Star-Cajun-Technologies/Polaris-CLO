@@ -22,6 +22,7 @@ import { stepArchive } from "./steps/12-archive.js";
 import { LocalGraph } from "../tracker/local-graph.js";
 import { TrackerSyncService } from "../tracker/sync/index.js";
 import { formatFinalizeEvidenceFailures, verifyCompletedChildFinalizeEvidence } from "../loop/finalize-evidence.js";
+import { validateDeliveryIntegrity } from "./delivery-integrity.js";
 
 export interface FinalizeOptions {
   repoRoot: string;
@@ -219,6 +220,46 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
           );
           process.exit(1);
         }
+      }
+    }
+  }
+
+  // Step 5.7: Unconditional delivery integrity gate
+  // Verifies the delivery branch contains actual implementation work relative to the base branch.
+  // Runs regardless of whether branch custody records were established in cluster state,
+  // closing the gap that allowed PR #93 to claim delivery when implementation was already on main.
+  {
+    const directMainMode = config.loop?.allowBranchDivergence === true;
+    if (!directMainMode) {
+      const clusterStateForIntegrity = readClusterStateSync(state.cluster_id, repoRoot);
+      const integrityBaseBranch =
+        clusterStateForIntegrity?.base_branch ??
+        config.finalize?.targetBranch ??
+        "main";
+
+      const childCommits: Record<string, string> = {};
+      for (const childId of state.completed_children) {
+        const commit =
+          clusterStateForIntegrity?.commits?.[childId] ??
+          state.completed_children_results?.[childId]?.commit ??
+          null;
+        if (commit) childCommits[childId] = commit;
+      }
+
+      const integrityResult = validateDeliveryIntegrity({
+        repoRoot,
+        currentBranch: branch,
+        baseBranch: integrityBaseBranch,
+        clusterId: state.cluster_id,
+        completedChildren: state.completed_children,
+        childCommits,
+      });
+
+      if (!integrityResult.ok) {
+        process.stderr.write(
+          `finalize aborted: delivery integrity check failed (${integrityResult.kind}) — ${integrityResult.reason}\n`,
+        );
+        process.exit(1);
       }
     }
   }

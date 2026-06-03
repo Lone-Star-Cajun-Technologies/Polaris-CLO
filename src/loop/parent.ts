@@ -55,6 +55,7 @@ import {
   type LedgerRunType,
   type RunStartedEvent,
 } from "./ledger.js";
+import { resolveProviderAndMode, assertProviderAllowedForRole } from "./dispatch.js";
 
 const CLAIM_TTL_MS = 30 * 60 * 1000;
 
@@ -677,13 +678,27 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
   const notificationFormat = config.orchestration?.notification_format ?? (orchestrationMode === 'auto' ? 'terse' : 'verbose');
   const adapterName =
     legacyEphemeralMode ? "agent-subtask" : (options.adapter ?? config.execution?.adapter ?? "terminal-cli");
-  const providerName =
-    adapterName === "agent-subtask"
-      ? "agent-subtask"
-      : options.provider ??
-        config.execution?.rotation?.[0] ??
-        Object.keys(config.execution?.providers ?? {})[0] ??
-        "default";
+  let providerName: string;
+  if (adapterName === "agent-subtask") {
+    providerName = "agent-subtask";
+  } else {
+    let evidence;
+    try {
+      evidence = resolveProviderAndMode(
+        { stateFile, repoRoot, provider: options.provider },
+        "worker",
+        config,
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return {
+        haltReason: "worker-error",
+        childrenDispatched: 0,
+        message: msg,
+      };
+    }
+    providerName = evidence.provider ?? "default";
+  }
 
   const executionConfig =
     adapterName === "agent-subtask"
@@ -693,6 +708,31 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
   const budgetPolicy = policyFromConfig(state.context_budget, config.budget);
   const allowAnalyzeChildren = allowAnalyzeChildrenFlag || (config.budget?.allow_analyze_children === true);
   const telemetryFile = resolveTelemetryFile(state, repoRoot);
+
+  // Enforce provider policy for explicit --provider flag before entering the loop.
+  // resolveProviderAndMode handles policy-filtered rotation; this gate blocks an
+  // explicit provider that the rotation resolution would not have chosen.
+  if (options.provider && adapterName !== "agent-subtask") {
+    try {
+      assertProviderAllowedForRole(
+        "worker",
+        options.provider,
+        config.execution?.providerPolicy,
+        telemetryFile,
+        "parent-preflight",
+        state.run_id,
+        "pre-loop",
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return {
+        haltReason: "worker-error",
+        childrenDispatched: 0,
+        message: msg,
+      };
+    }
+  }
+
   let childrenDispatched = 0;
 
   // ── Lifecycle manager: enforce one-active-worker policy ─────────────────
