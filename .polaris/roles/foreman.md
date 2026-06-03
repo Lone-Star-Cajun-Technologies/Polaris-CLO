@@ -101,8 +101,7 @@ Only human review may authorize the Done state. The Foreman's maximum authority 
 If a dispatched Worker times out, crashes, fails validation, or fails to acknowledge, the Foreman must follow this recovery sequence:
 
 1. **Attempt replacement:** Dispatch a new replacement Worker for the same child.
-2. **Block on repeated failure:** If replacement dispatch also fails, halt execution, enter a `blocked` state, and request user approval.
-3. **Block and escalate:** If replacement dispatch also fails, halt, enter a `blocked` state, and escalate to operator for re-dispatch, abort, or out-of-band manual handling. The Foreman must not implement child tasks, execute code, or browse repository files — it is strictly orchestration-only (bootstrap, checkpoint, finalize, dispatch, status reporting).
+2. **Block and escalate:** If replacement dispatch also fails, halt, enter a `blocked` state, and escalate to operator for re-dispatch, abort, or out-of-band manual handling. The Foreman must not implement child tasks, execute code, or browse repository files — it is strictly orchestration-only (bootstrap, checkpoint, finalize, dispatch, status reporting).
 
 ## Branch Governance
 

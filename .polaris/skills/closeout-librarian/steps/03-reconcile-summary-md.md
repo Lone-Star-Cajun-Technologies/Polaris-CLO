@@ -80,15 +80,16 @@ Produce the updated SUMMARY.md content:
 4. Ensure the document still reads as a coherent current-state snapshot, not a list of events.
 
 **Constraint:** SUMMARY.md updates must not exceed `packet.constraints.max_summary_addition_lines`
-net new lines per folder (default: 50 lines). Replacements do not count toward this limit.
+net new lines per folder (default: 50 lines). "Net new" means final line count minus original line count. Replacements (same or fewer lines) do not count toward this limit.
 
 ### 3.3 Write
 
 1. Verify the SUMMARY.md path is in `packet.allowed_write_paths`.
+   If not allowed, skip this file and record in `summary_md_updates` with `action: "path_not_allowed"`.
 2. Write the full updated content.
 3. Record in the running `summary_md_updates` list.
 
-If no update is needed, record no-change for this folder.
+If no update is needed, record no-change for this folder using `action: "no_change"`.
 
 ## Output
 
@@ -96,6 +97,8 @@ Running list for step 08:
 ```yaml
 summary_md_updates: [
   { file: "<path>", action: "update", change_summary: "<≤50 words>" },
+  { file: "<path>", action: "no_change" },
+  { file: "<path>", action: "path_not_allowed" },
   ...
 ]
 ```
