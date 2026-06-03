@@ -55,7 +55,7 @@ const CLAIM_TTL_MS = 30 * 60 * 1000;
  * Resolve provider from config when no explicit --provider flag is set.
  * Returns the first configured provider in rotation, or undefined if none configured.
  */
-interface ProviderDecisionEvidence {
+export interface ProviderDecisionEvidence {
   provider?: string;
   mode: DispatchMode;
   adapter: string;
@@ -90,7 +90,7 @@ function roleContextToExecutionRole(role: WorkerRoleContext["role"] | undefined)
   }
 }
 
-function resolveProviderAndMode(
+export function resolveProviderAndMode(
   options: DispatchOptions,
   role: ExecutionRole,
   config?: Required<PolarisConfig>,
@@ -457,7 +457,7 @@ function getProviderPolicy(repoRoot: string): ProviderPolicyByRole | undefined {
   }
 }
 
-function assertProviderAllowedForRole(
+export function assertProviderAllowedForRole(
   role: ExecutionRole,
   provider: string | undefined,
   policy: ProviderPolicyByRole | undefined,

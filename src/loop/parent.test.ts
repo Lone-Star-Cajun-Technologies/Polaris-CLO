@@ -1636,3 +1636,132 @@ describe("runParentLoop", () => {
     }
   });
 });
+
+// ── Provider policy enforcement ──────────────────────────────────────────────
+
+describe("runParentLoop — provider policy enforcement", () => {
+  let tmpDir: string;
+
+  beforeEach(() => {
+    tmpDir = join(tmpdir(), `polaris-parent-policy-test-${Date.now()}`);
+    mkdirSync(join(tmpDir, "runs", "test-run-001"), { recursive: true });
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    try {
+      rmSync(tmpDir, { recursive: true, force: true });
+    } catch {
+      // ignore cleanup errors
+    }
+  });
+
+  it("selects codex when rotation has claude first but providerPolicy.worker excludes claude", async () => {
+    const calls: MockCall[] = [];
+    const mockAdapter = makeMockAdapter([SUCCESS_RESULT], calls);
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    const { loadConfig } = await import("../config/loader.js");
+    vi.mocked(loadConfig).mockReturnValueOnce({
+      orchestration: { mode: "auto", notification_format: "verbose", auto_finalize: false },
+      execution: {
+        adapter: "mock",
+        providers: {
+          claude: { command: "claude-worker" },
+          codex: { command: "codex-worker" },
+          copilot: { command: "copilot-worker" },
+        },
+        rotation: ["claude", "codex", "copilot"],
+        providerPolicy: {
+          worker: { providers: ["copilot", "codex"] },
+        },
+      },
+    } as unknown as Required<import("../config/schema.js").PolarisConfig>);
+
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100"],
+      max_children_per_session: 10,
+    });
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    // Loop should dispatch successfully (not halt with worker-error)
+    expect(result.haltReason).toBe("cluster-complete");
+    expect(calls).toHaveLength(1);
+    // Provider dispatched must NOT be claude — must be one allowed by policy
+    expect(calls[0].options.provider).not.toBe("claude");
+    expect(["copilot", "codex"]).toContain(calls[0].options.provider);
+  });
+
+  it("halts with worker-error when explicit --provider claude is excluded by providerPolicy.worker", async () => {
+    const mockAdapter = makeMockAdapter([SUCCESS_RESULT]);
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    const { loadConfig } = await import("../config/loader.js");
+    vi.mocked(loadConfig).mockReturnValueOnce({
+      orchestration: { mode: "auto", notification_format: "verbose", auto_finalize: false },
+      execution: {
+        adapter: "mock",
+        providers: {
+          claude: { command: "claude-worker" },
+          codex: { command: "codex-worker" },
+        },
+        rotation: ["codex"],
+        providerPolicy: {
+          worker: { providers: ["codex"] },
+        },
+      },
+    } as unknown as Required<import("../config/schema.js").PolarisConfig>);
+
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100"],
+      max_children_per_session: 10,
+    });
+
+    const result = await runParentLoop({
+      stateFile,
+      repoRoot: tmpDir,
+      provider: "claude", // explicit --provider flag
+    });
+
+    expect(result.haltReason).toBe("worker-error");
+    expect(result.message).toContain("forbidden");
+    expect(result.message).toContain("claude");
+  });
+
+  it("dispatches successfully when explicit --provider matches providerPolicy.worker", async () => {
+    const calls: MockCall[] = [];
+    const mockAdapter = makeMockAdapter([SUCCESS_RESULT], calls);
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    const { loadConfig } = await import("../config/loader.js");
+    vi.mocked(loadConfig).mockReturnValueOnce({
+      orchestration: { mode: "auto", notification_format: "verbose", auto_finalize: false },
+      execution: {
+        adapter: "mock",
+        providers: {
+          claude: { command: "claude-worker" },
+          codex: { command: "codex-worker" },
+        },
+        rotation: ["claude"],
+        providerPolicy: {
+          worker: { providers: ["codex"] },
+        },
+      },
+    } as unknown as Required<import("../config/schema.js").PolarisConfig>);
+
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100"],
+      max_children_per_session: 10,
+    });
+
+    const result = await runParentLoop({
+      stateFile,
+      repoRoot: tmpDir,
+      provider: "codex", // explicit --provider that IS in policy
+    });
+
+    expect(result.haltReason).toBe("cluster-complete");
+    expect(calls[0].options.provider).toBe("codex");
+  });
+});
