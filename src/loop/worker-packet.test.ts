@@ -16,6 +16,7 @@ import {
   STARTUP_RETURN_CONTRACT,
   FINALIZE_RETURN_CONTRACT,
   PREFLIGHT_RETURN_CONTRACT,
+  WORKER_PROHIBITED_WRITE_PATHS,
   type WorkerPacket,
 } from "./worker-packet.js";
 import { buildWorkerInstructions } from "./adapters/worker-instructions.js";
@@ -169,6 +170,12 @@ describe("compileImplPacket", () => {
     });
     expect(p.instructions.allowed_scope).toEqual(["src/loop/**"]);
     expect(p.instructions.validation_commands).toEqual(["npm test"]);
+  });
+
+  it("includes prohibited_write_paths on compiled impl packets", () => {
+    const p = compileImplPacket({ ...BASE, childId: "POL-121" });
+    expect(p.prohibited_write_paths).toEqual(WORKER_PROHIBITED_WRITE_PATHS);
+    expect(p.prohibited_write_paths).toBeDefined();
   });
 
   it("has terminate_after_completion: true in lifecycle", () => {
