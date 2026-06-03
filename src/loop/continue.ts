@@ -1,6 +1,7 @@
 import { join, isAbsolute, resolve } from "node:path";
-import { existsSync, readFileSync, appendFileSync } from "node:fs";
+import { existsSync, readFileSync, appendFileSync, statSync } from "node:fs";
 import { randomUUID } from "node:crypto";
+import { execFileSync } from "node:child_process";
 import { readClusterStateSync, writeClusterStateSync } from "../cluster-state/store.js";
 import { verifyChildCommitCustody } from "./git-custody.js";
 import type { ClusterState, ChildState, ValidationResult } from "../cluster-state/types.js";
@@ -10,6 +11,8 @@ import {
   writeStateAtomic,
   appendCheckpointEvent,
   appendBoundaryEvent,
+  appendCompactReturnReceivedEvent,
+  appendWorkerScopeFidelityEvent,
   type LoopState,
 } from "./checkpoint.js";
 import { buildBootstrapPacket, writeBootstrapPacket } from "./bootstrap-packet.js";
@@ -148,6 +151,95 @@ function readPacketFlag(
   } catch {
     return undefined;
   }
+}
+
+function readPacketAllowedScope(state: LoopState, childId: string, repoRoot: string): string[] {
+  const packetPath = resolvePacketPath(state, childId, repoRoot);
+  if (!packetPath || !existsSync(packetPath)) return [];
+  try {
+    const packet = JSON.parse(readFileSync(packetPath, "utf-8")) as Record<string, unknown>;
+    const instructions = packet["instructions"];
+    if (!instructions || typeof instructions !== "object" || Array.isArray(instructions)) return [];
+    const allowedScope = (instructions as Record<string, unknown>)["allowed_scope"];
+    if (!Array.isArray(allowedScope)) return [];
+    return allowedScope.filter((entry): entry is string => typeof entry === "string");
+  } catch {
+    return [];
+  }
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[\\^$+?.()|[\]{}]/g, "\\$&");
+}
+
+function globPatternToRegExp(pattern: string): RegExp {
+  let re = "^";
+  for (let i = 0; i < pattern.length; i++) {
+    const char = pattern[i];
+    if (char === "*") {
+      if (pattern[i + 1] === "*") {
+        if (pattern[i + 2] === "/") {
+          re += "(?:.*/)?";
+          i += 2;
+        } else {
+          re += ".*";
+          i++;
+        }
+      } else {
+        re += "[^/]*";
+      }
+      continue;
+    }
+    if (char === "?") {
+      re += "[^/]";
+      continue;
+    }
+    re += escapeRegExp(char);
+  }
+  re += "$";
+  return new RegExp(re);
+}
+
+function matchesAllowedScope(filePath: string, allowedScope: string[]): boolean {
+  if (allowedScope.length === 0) return false;
+  return allowedScope.some((pattern) => globPatternToRegExp(pattern).test(filePath));
+}
+
+function getChildCommitFiles(repoRoot: string, commit: string): string[] {
+  try {
+    const output = execFileSync(
+      "git",
+      ["show", "--format=", "--name-only", "--no-renames", commit],
+      { cwd: repoRoot, encoding: "utf-8" },
+    ).trim();
+    if (!output) return [];
+    return Array.from(new Set(output.split("\n").map((line) => line.trim()).filter(Boolean)));
+  } catch {
+    return [];
+  }
+}
+
+function countLoopAbortedEvents(telemetryFile: string, runId: string): number {
+  if (!existsSync(telemetryFile)) return 0;
+  const content = readFileSync(telemetryFile, "utf-8").trim();
+  if (!content) return 0;
+  return content
+    .split("\n")
+    .map((line) => {
+      try {
+        return JSON.parse(line) as Record<string, unknown>;
+      } catch {
+        return null;
+      }
+    })
+    .filter((event): event is Record<string, unknown> => !!event)
+    .filter((event) => event.event === "loop-aborted" && event.run_id === runId)
+    .length;
+}
+
+function resolveTelemetryFilePath(state: LoopState, repoRoot: string): string {
+  const artifactDir = state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "polaris-run");
+  return join(artifactDir, "runs", state.run_id, "telemetry.jsonl");
 }
 
 function hasValidationEvidence(validation: unknown): boolean {
@@ -296,6 +388,7 @@ function appendContinueLedgerEvents(repoRoot: string, state: LoopState, complete
   } satisfies ChildCompletedEvent);
 
   if (state.open_children.length === 0) {
+    const telemetryFile = resolveTelemetryFilePath(state, repoRoot);
     writer.append({
       ...base,
       event_id: randomUUID(),
@@ -304,6 +397,7 @@ function appendContinueLedgerEvents(repoRoot: string, state: LoopState, complete
       status: "cluster-complete",
       open_children: [],
       next_child: null,
+      recovery_count: countLoopAbortedEvents(telemetryFile, state.run_id),
     } satisfies ClusterCompleteEvent);
   }
 }
@@ -404,6 +498,46 @@ export function runLoopContinue(options: ContinueOptions): void {
         );
         process.exit(1);
       }
+    }
+  }
+
+  if (completedChild && completionResultFile) {
+    const telemetryFile = resolveTelemetryFilePath(state, repoRoot);
+    try {
+      appendCompactReturnReceivedEvent(
+        telemetryFile,
+        {
+          event: "compact-return-received",
+          run_id: state.run_id,
+          child_id: completedChild,
+          size_bytes: statSync(
+            isAbsolute(completionResultFile) ? completionResultFile : resolve(repoRoot, completionResultFile),
+          ).size,
+          timestamp: new Date().toISOString(),
+        },
+      );
+    } catch {
+      // Telemetry is best-effort; state progression must continue.
+    }
+
+    try {
+      const allowedScope = readPacketAllowedScope(state, completedChild, repoRoot);
+      const actualFilesTouched = completionCommit ? getChildCommitFiles(repoRoot, completionCommit) : [];
+      const outOfScopeFiles = actualFilesTouched.filter((file) => !matchesAllowedScope(file, allowedScope));
+      appendWorkerScopeFidelityEvent(
+        telemetryFile,
+        {
+          event: "worker-scope-fidelity",
+          run_id: state.run_id,
+          child_id: completedChild,
+          allowed_scope: allowedScope,
+          actual_files_touched: actualFilesTouched,
+          out_of_scope_files: outOfScopeFiles,
+          timestamp: new Date().toISOString(),
+        },
+      );
+    } catch {
+      // Telemetry is best-effort; state progression must continue.
     }
   }
 

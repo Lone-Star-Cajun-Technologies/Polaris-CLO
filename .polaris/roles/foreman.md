@@ -32,6 +32,8 @@ The Foreman coordinates worker dispatch and cluster execution. It does not imple
 
 - Inline code implementation
 - Reasoning about source files beyond packet construction
+- Reading or summarizing raw worker output
+- Performing live repair of worker code, packets, or runtime state
 - Expanding child scope beyond cluster plan
 - Modifying packets post-emit
 - Skipping checkpoint steps

@@ -19,6 +19,7 @@ import { installCliSubtaskBridge } from "../loop/adapters/cli-subtask-bridge.js"
 import { assertFinalizeEvidenceOrThrow } from "../loop/finalize-evidence.js";
 
 import { createTrackerCommand } from "./tracker.js";
+import { createWorkerCommand } from "./worker.js";
 import { createSkillCommand } from "../skill-packet/index.js";
 
 export interface PolarisCommandHandlers {
@@ -115,6 +116,12 @@ export function createPolarisCommand(options: PolarisCommandOptions = {}): Comma
 
   program.addCommand(
     createTrackerCommand({
+      repoRoot,
+    }),
+  );
+
+  program.addCommand(
+    createWorkerCommand({
       repoRoot,
     }),
   );

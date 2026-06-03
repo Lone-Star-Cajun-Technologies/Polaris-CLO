@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from "node:fs";
-import { join } from "node:path";
+import { mkdirSync, writeFileSync, readFileSync, existsSync, rmSync, statSync } from "node:fs";
+import { join, dirname } from "node:path";
 import { tmpdir } from "node:os";
+import { execFileSync } from "node:child_process";
 import { runLoopContinue } from "./continue.js";
 import { validateState, readState } from "./checkpoint.js";
 import { readClusterStateSync } from "../cluster-state/store.js";
@@ -20,6 +21,29 @@ function writeState(dir: string, state: object): string {
   mkdirSync(join(dir, ".polaris", "runs"), { recursive: true });
   writeFileSync(stateFile, JSON.stringify(state, null, 2));
   return stateFile;
+}
+
+function makeGitRepoDir(): string {
+  const dir = makeTestDir();
+  rmSync(join(dir, ".git"), { recursive: true, force: true });
+  execFileSync("git", ["init", "-b", "main"], { cwd: dir });
+  execFileSync("git", ["config", "user.email", "polaris@test.invalid"], { cwd: dir });
+  execFileSync("git", ["config", "user.name", "Polaris Test"], { cwd: dir });
+  mkdirSync(join(dir, "src"), { recursive: true });
+  mkdirSync(join(dir, "notes"), { recursive: true });
+  writeFileSync(join(dir, "src", "allowed.ts"), "base\n");
+  writeFileSync(join(dir, "notes", "outside.txt"), "base\n");
+  execFileSync("git", ["add", "."], { cwd: dir });
+  execFileSync("git", ["commit", "-m", "base"], { cwd: dir });
+  execFileSync("git", ["checkout", "-b", "test-branch"], { cwd: dir });
+  return dir;
+}
+
+function writeJson(dir: string, relativePath: string, value: unknown): string {
+  const filePath = join(dir, relativePath);
+  mkdirSync(dirname(filePath), { recursive: true });
+  writeFileSync(filePath, JSON.stringify(value, null, 2));
+  return filePath;
 }
 
 describe("validateState", () => {
@@ -230,6 +254,139 @@ describe("runLoopContinue", () => {
       last_commit: "abc1234",
       pr_url: null,
     });
+  });
+
+  it("emits compact return and scope fidelity telemetry, plus recovery count on cluster-complete", () => {
+    const repoDir = makeGitRepoDir();
+    try {
+      const resultCommit = (() => {
+        writeFileSync(join(repoDir, "src", "allowed.ts"), "child change\n");
+        writeFileSync(join(repoDir, "notes", "outside.txt"), "child change\n");
+        execFileSync("git", ["add", "."], { cwd: repoDir });
+        execFileSync("git", ["commit", "-m", "child"], { cwd: repoDir });
+        return execFileSync("git", ["rev-parse", "HEAD"], { cwd: repoDir, encoding: "utf-8" }).trim();
+      })();
+
+      const telemetryFile = join(
+        repoDir,
+        ".taskchain_artifacts",
+        "polaris-run",
+        "runs",
+        "pol-5-session-1",
+        "telemetry.jsonl",
+      );
+      mkdirSync(dirname(telemetryFile), { recursive: true });
+      writeFileSync(
+        telemetryFile,
+        JSON.stringify({
+          event: "loop-aborted",
+          run_id: "pol-5-session-1",
+          child_id: "POL-23",
+          reason: "blocked",
+          timestamp: "2026-05-28T03:16:13.194Z",
+        }) + "\n",
+      );
+
+      const packetFile = writeJson(repoDir, ".polaris/clusters/POL-5/packets/POL-23.json", {
+        instructions: {
+          allowed_scope: ["src/**/*.ts"],
+        },
+      });
+      const resultFile = writeJson(repoDir, ".polaris/clusters/POL-5/results/POL-23.json", {
+        child_id: "POL-23",
+        status: "done",
+        commit: resultCommit,
+        validation: { passed: true },
+      });
+      const clusterStateFile = writeJson(repoDir, ".polaris/clusters/POL-5/cluster-state.json", {
+        schema_version: "1",
+        cluster_id: "POL-5",
+        state_generation: 1,
+        child_states: [{ id: "POL-23", status: "claimed" }],
+        claim_metadata: {},
+        packet_pointers: {},
+        result_pointers: {},
+        validation_results: {},
+        commits: {},
+        tracker_mutations: {},
+        blockers: [],
+        base_branch: "main",
+        base_sha: execFileSync("git", ["rev-parse", "main"], { cwd: repoDir, encoding: "utf-8" }).trim(),
+        delivery_branch: "test-branch",
+      });
+
+      const state = {
+        schema_version: "1.0",
+        run_id: "pol-5-session-1",
+        cluster_id: "POL-5",
+        branch: "test-branch",
+        active_child: "POL-23",
+        completed_children: [],
+        open_children: ["POL-23"],
+        open_children_meta: {
+          "POL-23": {
+            result_file: resultFile,
+            dispatch_record: {
+              packet_path: packetFile,
+              expected_result_path: resultFile,
+            },
+          },
+        },
+        step_cursor: "03-execute-child",
+        context_budget: { children_completed: 0, max_children_per_session: 3 },
+        status: "running",
+        next_open_child: "POL-23",
+        last_commit: null,
+        artifact_dir: join(repoDir, ".taskchain_artifacts", "polaris-run"),
+        dispatch_boundary: {
+          dispatch_epoch: 1,
+          continue_epoch: 0,
+          last_dispatched_child: "POL-23",
+        },
+      };
+      const stateFile = writeState(repoDir, state);
+
+      const origLog = console.log;
+      console.log = () => {};
+      try {
+        runLoopContinue({ stateFile, repoRoot: repoDir });
+      } finally {
+        console.log = origLog;
+      }
+
+      const telemetry = readFileSync(telemetryFile, "utf-8")
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line));
+      const compact = telemetry.find((entry) => entry.event === "compact-return-received");
+      expect(compact).toMatchObject({
+        run_id: "pol-5-session-1",
+        child_id: "POL-23",
+        size_bytes: statSync(resultFile).size,
+      });
+      const fidelity = telemetry.find((entry) => entry.event === "worker-scope-fidelity");
+      expect(fidelity).toMatchObject({
+        run_id: "pol-5-session-1",
+        child_id: "POL-23",
+        allowed_scope: ["src/**/*.ts"],
+        actual_files_touched: expect.arrayContaining(["notes/outside.txt", "src/allowed.ts"]),
+        out_of_scope_files: ["notes/outside.txt"],
+      });
+
+      const ledgerEvents = readFileSync(join(repoDir, ".polaris", "runs", "ledger.jsonl"), "utf-8")
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line));
+      const clusterComplete = ledgerEvents.find((entry) => entry.event === "cluster-complete");
+      expect(clusterComplete).toMatchObject({
+        run_id: "pol-5-session-1",
+        recovery_count: 1,
+        status: "cluster-complete",
+      });
+      expect(readClusterStateSync("POL-5", repoDir)?.commits["POL-23"]).toBe(resultCommit);
+    } finally {
+      rmSync(repoDir, { recursive: true, force: true });
+    }
   });
 
   it("removes completed child from open_children before selecting next child", () => {

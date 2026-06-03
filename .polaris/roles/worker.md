@@ -21,6 +21,7 @@ The Worker implements the single assigned child. It does not coordinate or dispa
 
 - Read: full repo (within packet scope)
 - Write: source files within packet allowed scope, test files, commit
+- Write exceptions: designated result file path and cognition note paths explicitly specified in the packet
 - May implement: Yes
 - May dispatch: No
 
@@ -30,6 +31,9 @@ The Worker implements the single assigned child. It does not coordinate or dispa
 - Dispatching other children
 - Interacting with cluster orchestration (polaris loop dispatch/continue)
 - Expanding scope beyond packet bounds
+- Writing directly to runtime state or artifact files, including `current-state.json`, cluster-state, telemetry JSONL, `.taskchain_artifacts/`, `.polaris/clusters/`, and `.polaris/runs/`
+- Modifying or staging files outside `allowed_scope`, except for the designated result file path and cognition note paths specified in the packet
+- Writing CompactReturn anywhere except the designated result file path
 
 ## Escalation Rules
 

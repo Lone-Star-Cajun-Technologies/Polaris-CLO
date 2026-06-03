@@ -1,5 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { classifyArtifactPath } from "../finalize/artifact-policy.js";
+import { posix as pathPosix } from "node:path";
 
 export const PROTECTED_BASE_BRANCHES = new Set([
   "main",
@@ -194,6 +195,108 @@ export interface CustodyRecord {
   base_branch: string;
   base_sha: string;
   delivery_branch: string;
+}
+
+export interface WorkerCommitScopeViolation {
+  path: string;
+  kind: "prohibited" | "out-of-scope";
+  pattern: string;
+}
+
+export interface WorkerCommitScopeCheck {
+  staged_files: string[];
+  violations: WorkerCommitScopeViolation[];
+}
+
+function normalizeCommitPath(filePath: string): string {
+  return pathPosix.normalize(filePath.replace(/\\/g, "/")).replace(/^\.\//, "");
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[\\^$+?.()|[\]{}]/g, "\\$&");
+}
+
+function globPatternToRegExp(pattern: string): RegExp {
+  let re = "^";
+  const normalized = normalizeCommitPath(pattern);
+  for (let i = 0; i < normalized.length; i++) {
+    const char = normalized[i];
+    if (char === "*") {
+      if (normalized[i + 1] === "*") {
+        re += ".*";
+        i++;
+      } else {
+        re += "[^/]*";
+      }
+      continue;
+    }
+    if (char === "?") {
+      re += "[^/]";
+      continue;
+    }
+    re += escapeRegExp(char);
+  }
+  re += "$";
+  return new RegExp(re);
+}
+
+function patternMatchesPath(pattern: string, filePath: string): boolean {
+  const normalizedPattern = normalizeCommitPath(pattern);
+  const normalizedPath = normalizeCommitPath(filePath);
+
+  if (/[\\*?\[\]]/.test(normalizedPattern)) {
+    return globPatternToRegExp(normalizedPattern).test(normalizedPath);
+  }
+
+  if (normalizedPattern.endsWith("/")) {
+    return normalizedPath.startsWith(normalizedPattern);
+  }
+
+  return normalizedPath === normalizedPattern || normalizedPath.startsWith(`${normalizedPattern}/`);
+}
+
+function getStagedFiles(repoRoot: string): string[] {
+  const output = execFileSync(
+    "git",
+    ["diff", "--cached", "--name-only", "--diff-filter=ACMR"],
+    { cwd: repoRoot, encoding: "utf-8" },
+  ).trim();
+  if (!output) {
+    return [];
+  }
+  return output.split("\n").map((line) => normalizeCommitPath(line)).filter(Boolean);
+}
+
+export function validateWorkerCommitScope(
+  repoRoot: string,
+  allowedScope: string[],
+  prohibitedWritePaths: string[],
+): WorkerCommitScopeCheck {
+  const stagedFiles = getStagedFiles(repoRoot);
+  const violations: WorkerCommitScopeViolation[] = [];
+
+  for (const stagedFile of stagedFiles) {
+    const prohibitedPattern = prohibitedWritePaths.find((pattern) => patternMatchesPath(pattern, stagedFile));
+    if (prohibitedPattern) {
+      violations.push({
+        path: stagedFile,
+        kind: "prohibited",
+        pattern: prohibitedPattern,
+      });
+      continue;
+    }
+
+    const allowedPattern = allowedScope.find((pattern) => patternMatchesPath(pattern, stagedFile));
+    if (!allowedPattern) {
+      violations.push({
+        path: stagedFile,
+        kind: "out-of-scope",
+        pattern: allowedScope.length > 0 ? allowedScope[0]! : "",
+      });
+    }
+  }
+
+  return { staged_files: stagedFiles, violations };
 }
 
 /**

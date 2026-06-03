@@ -63,6 +63,7 @@ describe("polaris public CLI", () => {
     expect(result.stdout).toContain("doctrine");
     expect(result.stdout).toContain("safe/read-only");
     expect(result.stdout).toContain("config");
+    expect(result.stdout).toContain("worker");
   });
 
   it("exposes docs ingest command with expected flags", async () => {
