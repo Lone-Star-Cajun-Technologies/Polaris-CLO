@@ -123,6 +123,7 @@ export interface ClusterCompleteEvent extends LedgerBaseEvent {
   status: "cluster-complete";
   open_children: [];
   next_child: null;
+  recovery_count: number;
 }
 
 export interface FinalizedEvent extends LedgerBaseEvent {
