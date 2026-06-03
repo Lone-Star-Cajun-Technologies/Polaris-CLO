@@ -25,7 +25,7 @@ export interface CompactReturn {
   next_recommended_action: 'continue' | 'stop' | 'investigate';
   /** Optional results from the child execution. */
   result_data?: Record<string, unknown>;
-  /** Optional staged work note paths produced by the worker. */
+  /** Optional array of repo-relative paths to pending work notes written by the worker. */
   work_note_paths?: string[];
 }
 

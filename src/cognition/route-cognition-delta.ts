@@ -9,7 +9,7 @@
  * explicitly opted in. Bounded by locality — no repo-wide scanning.
  */
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { isDirectoryEligible, parseSmartDocIgnore } from "../smartdocs-engine/smartdoc-ignore.js";
 
@@ -69,6 +69,86 @@ const POLARIS_RUNTIME_GENERATED_PREFIXES = [
   ".polaris/map/",
   ".polaris/runs/",
 ];
+
+export const POLARIS_OWNED_COGNITION_FOLDERS = [
+  ".polaris",
+  "src",
+  "smartdocs/specs/active",
+  "smartdocs/doctrine/active",
+] as const;
+
+function normalizeRelPath(input: string): string {
+  return input.replace(/\\/g, "/").replace(/^\.\/+/, "").replace(/\/+$/, "");
+}
+
+function readManagedSurfaceManifest(repoRoot: string): Set<string> {
+  const manifestPath = join(repoRoot, ".polaris", "cognition", "managed-surfaces.json");
+  if (!existsSync(manifestPath)) return new Set();
+
+  const raw = readFileSync(manifestPath, "utf-8");
+  const parsed = JSON.parse(raw) as unknown;
+  const paths: string[] = [];
+  if (Array.isArray(parsed)) {
+    for (const value of parsed) {
+      if (typeof value === "string") paths.push(value);
+    }
+  } else if (parsed && typeof parsed === "object") {
+    const candidateArrays = [
+      (parsed as Record<string, unknown>)["surfaces"],
+      (parsed as Record<string, unknown>)["managed_surfaces"],
+      (parsed as Record<string, unknown>)["managedSurfaces"],
+      (parsed as Record<string, unknown>)["paths"],
+    ];
+    for (const candidate of candidateArrays) {
+      if (!Array.isArray(candidate)) continue;
+      for (const value of candidate) {
+        if (typeof value === "string") paths.push(value);
+      }
+    }
+  }
+
+  return new Set(paths.map((p) => normalizeRelPath(p)));
+}
+
+/**
+ * Tier 1 folders that are always considered Polaris-owned cognition surfaces.
+ *
+ * Includes fixed roots and dynamic immediate children under src/<subdirectory>.
+ */
+export function isPolarisOwnedFolder(folderRel: string): boolean {
+  const normalized = normalizeRelPath(folderRel);
+  if (!normalized) return false;
+  if (POLARIS_OWNED_COGNITION_FOLDERS.includes(normalized as (typeof POLARIS_OWNED_COGNITION_FOLDERS)[number])) {
+    return true;
+  }
+  return /^src\/[^/]+$/.test(normalized);
+}
+
+/**
+ * Returns true when a cognition surface should be treated as user-created and
+ * therefore protected from worker overwrites.
+ *
+ * A surface is protected when either:
+ * 1) It predates Polaris initialization (.polaris birth/creation time), or
+ * 2) It is listed in .polaris/cognition/managed-surfaces.json.
+ */
+export function isUserCreatedCognitionSurface(filePath: string, repoRoot: string): boolean {
+  const absFile = resolve(repoRoot, filePath);
+  const relFile = normalizeRelPath(relative(repoRoot, absFile));
+  if (!relFile || relFile.startsWith("..")) return false;
+
+  const managed = readManagedSurfaceManifest(repoRoot);
+  if (managed.has(relFile)) return true;
+
+  if (!existsSync(absFile)) return false;
+  const polarisDir = join(repoRoot, ".polaris");
+  if (!existsSync(polarisDir)) return false;
+
+  const fileStat = statSync(absFile);
+  const polarisStat = statSync(polarisDir);
+  const polarisInitializedAt = polarisStat.birthtimeMs > 0 ? polarisStat.birthtimeMs : polarisStat.ctimeMs;
+  return fileStat.mtimeMs < polarisInitializedAt;
+}
 
 /**
  * Returns true when a folder is skipped for route-local cognition:

@@ -22,6 +22,7 @@ import { dirname, join, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 import type { ExecutionAdapter } from "../loop/adapters/types.js";
 import { hasDoctrineBled, isSummaryOversized } from "./summary-delta.js";
+import { isUserCreatedCognitionSurface } from "./route-cognition-delta.js";
 import {
   validateCognitionLibrarianResult,
   type CognitionLibrarianPacket,
@@ -311,6 +312,20 @@ export async function dispatchCognitionLibrarian(
 
     const outcome = validateAndApplyLibrarianResult(result, repoRoot, packet);
 
+    for (const rejected of outcome.patches_rejected) {
+      if (!rejected.reason.startsWith("COGNITION_USER_SURFACE_PROTECTED")) continue;
+      appendTelemetry(telemetryFile, {
+        event: "cognition-user-surface-protected",
+        run_id: runId,
+        dispatch_id: dispatchId,
+        folder: group.folder,
+        folder_slug: group.folder_slug,
+        file: rejected.patch.file,
+        reason: rejected.reason,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
     if (outcome.approved) {
       appendTelemetry(telemetryFile, {
         event: "cognition-librarian-patch-applied",
@@ -416,6 +431,14 @@ export function validateAndApplyLibrarianResult(
   for (const patch of result.proposed_patches) {
     const isSummaryPatch = patch.file === packet.summary_md_path;
     const isPolarisPath = patch.file === packet.polaris_md_path;
+
+    if (isUserCreatedCognitionSurface(patch.file, repoRoot)) {
+      patchesRejected.push({
+        patch,
+        reason: `COGNITION_USER_SURFACE_PROTECTED: "${patch.file}" is protected as user-created cognition surface`,
+      });
+      continue;
+    }
 
     // Rule §6.2: Doctrine bleed — SUMMARY.md must not contain operational imperatives.
     if (isSummaryPatch && hasDoctrineBled(patch.proposed_content)) {
