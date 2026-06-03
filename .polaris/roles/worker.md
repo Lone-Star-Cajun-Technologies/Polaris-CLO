@@ -35,6 +35,14 @@ The Worker implements the single assigned child. It does not coordinate or dispa
 - Modifying or staging files outside `allowed_scope`, except for the designated result file path and cognition note paths specified in the packet
 - Writing CompactReturn anywhere except the designated result file path
 
+## Linear State Transition Prohibition
+
+**Workers must not mark Linear issues Done or Closed.**
+
+Issue state transitions are limited to In Progress or equivalent active states. Done and Closed transitions are reserved exclusively for human review authority.
+
+> **Rationale (POL-302):** The review-gate policy establishes that only a human reviewer may authorize the Done state. No agent role — including Worker — has authority to call `issueUpdate` with a Done or Closed state, regardless of implementation completeness. Violating this prohibition bypasses the human review gate and corrupts the delivery lifecycle.
+
 ## Escalation Rules
 
 - Blocked by dependency or ambiguity → set exit_code=1, populate blockers array in CompactReturn

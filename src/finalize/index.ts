@@ -43,6 +43,66 @@ function getBranch(repoRoot: string): string {
   }
 }
 
+function normalizeBranchName(branch: string): string {
+  return branch.toLowerCase().replace(/_/g, "-");
+}
+
+function extractClusterSlug(clusterId: string): string {
+  const match = clusterId.match(/([A-Z]+-\d+)/);
+  return match ? normalizeBranchName(match[1]) : normalizeBranchName(clusterId);
+}
+
+function validateStateFilePath(stateFile: string): void {
+  const normalizedPath = stateFile.replace(/\\/g, "/");
+  const debugPath = ".taskchain_artifacts/polaris-run/current-state.json";
+  const legacyPath = ".polaris/runs/current-state.json";
+
+  if (normalizedPath.endsWith(debugPath)) {
+    process.stderr.write(
+      `finalize aborted: state file at compatibility/debug path — ${stateFile}\n` +
+      `Canonical state files must be at .polaris/clusters/<cluster-id>/state.json or custom path.\n`,
+    );
+    process.exit(1);
+  }
+
+  if (normalizedPath.endsWith(legacyPath)) {
+    process.stderr.write(
+      `finalize aborted: state file at legacy path — ${stateFile}\n` +
+      `Canonical state files must be at .polaris/clusters/<cluster-id>/state.json or custom path.\n`,
+    );
+    process.exit(1);
+  }
+}
+
+function validateClusterIdMatchesBranch(clusterId: string, branch: string): void {
+  const clusterSlug = extractClusterSlug(clusterId);
+  const normalizedBranch = normalizeBranchName(branch);
+
+  const slugPattern = new RegExp(`(^|-)${clusterSlug.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(-|$)`);
+  if (!slugPattern.test(normalizedBranch)) {
+    process.stderr.write(
+      `finalize aborted: cluster_id mismatch — state.cluster_id "${clusterId}" ` +
+      `does not match current branch "${branch}".\n` +
+      `Expected branch to contain slug "${clusterSlug}" (normalized from "${clusterId}").\n`,
+    );
+    process.exit(1);
+  }
+}
+
+function validateStateBranchMatchesGitBranch(stateBranch: string | undefined, branch: string): void {
+  if (!stateBranch || stateBranch.trim() === "") {
+    return;
+  }
+
+  if (stateBranch !== branch) {
+    process.stderr.write(
+      `finalize aborted: state.branch mismatch — state.branch "${stateBranch}" ` +
+      `does not match current git branch "${branch}".\n`,
+    );
+    process.exit(1);
+  }
+}
+
 export async function runFinalize(options: FinalizeOptions): Promise<void> {
   const { repoRoot, stateFile, dryRun, skipDelivery } = options;
   const config = loadConfig(repoRoot);
@@ -68,6 +128,12 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
   stepSchemaValidate(rawState);
 
   let state = rawState as ReturnType<typeof readState>;
+
+  // Preflight: state file authority gate (must run before Step 4)
+  const branch = getBranch(repoRoot);
+  validateStateFilePath(stateFile);
+  validateClusterIdMatchesBranch(state.cluster_id, branch);
+  validateStateBranchMatchesGitBranch(state.branch, branch);
 
   // Step 4: Run configured checks
   const checks = config.finalize?.runChecks ?? [];
@@ -127,7 +193,6 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
 
   // Step 5: Generate run-report.md (written once, never updated)
   console.log("[5/13] Generating run-report.md..."); // Step count updated
-  const branch = getBranch(repoRoot);
   const reportPath = stepGenerateReport(repoRoot, state, branch, true);
 
   if (dryRun) {
@@ -377,8 +442,14 @@ export function createFinalizeCommand(handlers: FinalizeCommandHandlers = {}): C
     .option("--skip-delivery", "perform local finalize steps only; skip push/PR/Linear/archive")
     .action((options: { repoRoot: string; stateFile?: string; dryRun?: boolean; skipDelivery?: boolean }) => {
       const repoRoot = options.repoRoot;
-      const stateFile =
-        options.stateFile ?? join(repoRoot, ".polaris", "runs", "current-state.json");
+      if (!options.stateFile) {
+        process.stderr.write(
+          `finalize error: --state-file is required. Specify a canonical state path such as ` +
+          `.polaris/clusters/<cluster-id>/state.json\n`
+        );
+        process.exit(1);
+      }
+      const stateFile = options.stateFile;
       finalizeHandler({ repoRoot, stateFile, dryRun: options.dryRun, skipDelivery: options.skipDelivery })
         .catch((err: unknown) => {
           process.stderr.write(`finalize error: ${err instanceof Error ? err.message : String(err)}\n`);

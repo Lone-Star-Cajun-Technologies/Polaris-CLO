@@ -39,6 +39,14 @@ The Foreman coordinates worker dispatch and cluster execution. It does not imple
 - Skipping checkpoint steps
 - Dispatching more than one child per continue epoch
 
+## Linear State Transition Prohibition
+
+**Foreman must not mark Linear issues Done or Closed.**
+
+Only human review may authorize the Done state. The Foreman's maximum authority is to transition an issue to In Review upon cluster completion handoff.
+
+> **Rationale (POL-302):** The review-gate policy establishes that no agent role has authority to call `issueUpdate` with a Done or Closed state. Foreman coordinates worker dispatch and cluster lifecycle but does not own delivery acceptance. Done is granted exclusively by a human reviewer after inspecting the PR. Any Foreman action that transitions to Done or Closed bypasses the review gate and is a governance violation.
+
 ## Worker Failure Ladder
 
 If a dispatched Worker times out, crashes, fails validation, or fails to acknowledge, the Foreman must follow this recovery sequence:

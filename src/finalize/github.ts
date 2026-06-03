@@ -10,8 +10,27 @@ export interface CreatePrOptions {
 
 export function createDraftPr(options: CreatePrOptions): string {
   const { repoRoot, branch, state, draft } = options;
-  const title = `polaris finalize: ${state.run_id}`;
+
+  if (!state.cluster_id) {
+    throw new Error(
+      `createDraftPr: state.cluster_id is empty — cannot create PR without a cluster identifier`
+    );
+  }
+
+  const clusterSlug = state.cluster_id.toLowerCase().replace(/[^a-z0-9]/g, "-");
+  const branchNorm = branch.toLowerCase().replace(/[^a-z0-9]/g, "-");
+  // Boundary-aware: clusterSlug must match as a full token (surrounded by start/end or hyphens)
+  const slugPattern = new RegExp(`(^|-)${clusterSlug.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(-|$)`);
+  if (!slugPattern.test(branchNorm)) {
+    throw new Error(
+      `createDraftPr: branch "${branch}" does not contain cluster ID slug "${clusterSlug}" — ` +
+      `branch/cluster mismatch, aborting PR creation`
+    );
+  }
+
+  const title = `polaris finalize: ${state.cluster_id} (${state.run_id})`;
   const body = [
+    `**Cluster ID:** ${state.cluster_id}`,
     `**Run ID:** ${state.run_id}`,
     `**Branch:** ${branch}`,
     `**Children completed:** ${state.completed_children.length}`,

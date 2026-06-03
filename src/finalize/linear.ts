@@ -1,6 +1,41 @@
 import { request } from "node:https";
 import type { LoopState } from "../loop/checkpoint.js";
 
+// ──────────────────────────────────────────────────────────────────────────────
+// Review-gate policy
+// ──────────────────────────────────────────────────────────────────────────────
+
+/**
+ * State types that finalize is PROHIBITED from transitioning to.
+ * Human review is the ONLY authority for Done/Closed transitions.
+ */
+const DONE_STATE_TYPES = new Set(["completed", "canceled"]);
+
+/**
+ * Guard: throws if the given state type corresponds to Done or Closed.
+ * Called before every issueUpdate — prevents any future code from silently
+ * adding a Done-transition path.
+ */
+export function assertNotDoneState(stateType: string, stateName: string): void {
+  if (DONE_STATE_TYPES.has(stateType.toLowerCase())) {
+    throw new Error(
+      `[Linear review-gate] Finalize is prohibited from transitioning issues to Done or Closed states. ` +
+        `Attempted: "${stateName}" (type: "${stateType}"). ` +
+        `Only human review may mark issues as Done/Closed.`,
+    );
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Types
+// ──────────────────────────────────────────────────────────────────────────────
+
+export interface WorkflowState {
+  id: string;
+  name: string;
+  type: string;
+}
+
 export interface PostCommentOptions {
   issueId: string;
   state: LoopState;
@@ -10,30 +45,17 @@ export interface PostCommentOptions {
   apiKey: string;
 }
 
-export async function postLinearComment(options: PostCommentOptions): Promise<void> {
-  const { issueId, state, branch, prUrl, validationPassed, apiKey } = options;
-  const body = [
-    `**polaris finalize complete** — run \`${state.run_id}\``,
-    ``,
-    `| Field | Value |`,
-    `|---|---|`,
-    `| Branch | \`${branch}\` |`,
-    `| PR | ${prUrl} |`,
-    `| Children completed | ${state.completed_children.length} |`,
-    `| Map validation | ${validationPassed ? "✓ passed" : "✗ failed"} |`,
-  ].join("\n");
+// ──────────────────────────────────────────────────────────────────────────────
+// Internal HTTP helper
+// ──────────────────────────────────────────────────────────────────────────────
 
-  const mutation = `
-    mutation CreateComment($issueId: String!, $body: String!) {
-      commentCreate(input: { issueId: $issueId, body: $body }) {
-        success
-      }
-    }
-  `;
-
-  const payload = JSON.stringify({ query: mutation, variables: { issueId, body } });
-
-  await new Promise<void>((resolve, reject) => {
+async function linearGraphQL<T>(
+  query: string,
+  variables: Record<string, unknown>,
+  apiKey: string,
+): Promise<T> {
+  const payload = JSON.stringify({ query, variables });
+  return new Promise<T>((resolve, reject) => {
     const req = request(
       {
         hostname: "api.linear.app",
@@ -46,26 +68,26 @@ export async function postLinearComment(options: PostCommentOptions): Promise<vo
       },
       (res) => {
         const chunks: Buffer[] = [];
-        res.on("data", (chunk: Buffer) => {
-          chunks.push(chunk);
-        });
+        res.on("data", (chunk: Buffer) => chunks.push(chunk));
         res.on("end", () => {
           if ((res.statusCode ?? 0) >= 400) {
             reject(new Error(`Linear API returned ${res.statusCode}`));
             return;
           }
           try {
-            const body = Buffer.concat(chunks).toString("utf-8");
-            const parsed = JSON.parse(body) as { errors?: unknown[]; data?: { commentCreate?: { success?: boolean } } };
+            const text = Buffer.concat(chunks).toString("utf-8");
+            const parsed = JSON.parse(text) as { errors?: unknown[]; data?: T };
             if (parsed.errors && Array.isArray(parsed.errors) && parsed.errors.length > 0) {
               reject(new Error(`Linear API GraphQL errors: ${JSON.stringify(parsed.errors)}`));
-            } else if (parsed.data?.commentCreate?.success === false) {
-              reject(new Error(`Linear commentCreate failed: ${JSON.stringify(parsed.data.commentCreate)}`));
             } else {
-              resolve();
+              resolve(parsed.data as T);
             }
           } catch (err) {
-            reject(new Error(`Failed to parse Linear API response: ${err instanceof Error ? err.message : String(err)}`));
+            reject(
+              new Error(
+                `Failed to parse Linear API response: ${err instanceof Error ? err.message : String(err)}`,
+              ),
+            );
           }
         });
       },
@@ -74,4 +96,152 @@ export async function postLinearComment(options: PostCommentOptions): Promise<vo
     req.write(payload);
     req.end();
   });
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Review-state discovery
+// ──────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Finds an "In Review" workflow state for the issue's team.
+ * Matches by state type === "review" first, then by name ("In Review" / "Review").
+ * Returns null if the issue has no team or no review-type state exists.
+ */
+export async function findReviewState(
+  issueId: string,
+  apiKey: string,
+): Promise<WorkflowState | null> {
+  const issueData = await linearGraphQL<{ issue?: { team?: { id: string } } }>(
+    `query GetIssueTeam($id: String!) { issue(id: $id) { team { id } } }`,
+    { id: issueId },
+    apiKey,
+  );
+  const teamId = issueData.issue?.team?.id;
+  if (!teamId) return null;
+
+  const statesData = await linearGraphQL<{ workflowStates?: { nodes: WorkflowState[] } }>(
+    `query GetWorkflowStates($teamId: String!) {
+      workflowStates(filter: { team: { id: { eq: $teamId } } }) {
+        nodes { id name type }
+      }
+    }`,
+    { teamId },
+    apiKey,
+  );
+  const states = statesData.workflowStates?.nodes ?? [];
+
+  return (
+    states.find((s) => s.type.toLowerCase() === "review") ??
+    states.find((s) => /^in\s+review$/i.test(s.name) || /^review$/i.test(s.name)) ??
+    null
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Comment body builder
+// ──────────────────────────────────────────────────────────────────────────────
+
+function buildCommentBody(opts: {
+  state: LoopState;
+  branch: string;
+  prUrl: string;
+  validationPassed: boolean;
+  reviewStateMissing: boolean;
+}): string {
+  const lines = [
+    `**polaris finalize complete** — run \`${opts.state.run_id}\``,
+    ``,
+    `| Field | Value |`,
+    `|---|---|`,
+    `| Branch | \`${opts.branch}\` |`,
+    `| PR | ${opts.prUrl} |`,
+    `| Children completed | ${opts.state.completed_children.length} |`,
+    `| Map validation | ${opts.validationPassed ? "✓ passed" : "✗ failed"} |`,
+  ];
+  if (opts.reviewStateMissing) {
+    lines.push(
+      ``,
+      `> ⚠️ No "In Review" workflow state found for this issue's team — issue state was not updated automatically. Transition manually if needed.`,
+    );
+  }
+  return lines.join("\n");
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Public API
+// ──────────────────────────────────────────────────────────────────────────────
+
+/** Posts a finalize-complete comment without attempting a state transition. */
+export async function postLinearComment(options: PostCommentOptions): Promise<void> {
+  const { issueId, state, branch, prUrl, validationPassed, apiKey } = options;
+  const body = buildCommentBody({ state, branch, prUrl, validationPassed, reviewStateMissing: false });
+
+  const data = await linearGraphQL<{ commentCreate?: { success?: boolean } }>(
+    `mutation CreateComment($issueId: String!, $body: String!) {
+      commentCreate(input: { issueId: $issueId, body: $body }) { success }
+    }`,
+    { issueId, body },
+    apiKey,
+  );
+  if (data.commentCreate?.success !== true) {
+    throw new Error(`Linear commentCreate failed: ${JSON.stringify(data.commentCreate)}`);
+  }
+}
+
+/**
+ * Full post-finalize Linear update (review-gate policy):
+ *
+ * 1. Queries the issue's team for an "In Review" workflow state.
+ * 2. If found — calls issueUpdate to transition (NEVER to Done/Closed).
+ * 3. If not found — skips state transition; comment body notes the missing state.
+ * 4. Always posts a finalize-complete comment.
+ *
+ * POLICY: This function must NEVER call issueUpdate with a Done or Closed
+ * state ID. The assertNotDoneState guard enforces this at runtime.
+ */
+export async function updateLinearIssueAfterFinalize(options: PostCommentOptions): Promise<void> {
+  const { issueId, state, branch, prUrl, validationPassed, apiKey } = options;
+
+  let reviewState: WorkflowState | null = null;
+  try {
+    reviewState = await findReviewState(issueId, apiKey);
+  } catch (err) {
+    // Log the error so auth/network/GraphQL failures are visible, then fall back to comment-only
+    console.error(`[Linear] findReviewState failed for issue ${issueId}: ${err instanceof Error ? err.message : String(err)}`);
+  }
+
+  if (reviewState !== null) {
+    // Enforce review-gate: must never transition to Done or Closed.
+    assertNotDoneState(reviewState.type, reviewState.name);
+
+    const updateData = await linearGraphQL<{ issueUpdate?: { success?: boolean } }>(
+      `mutation UpdateIssueState($id: String!, $stateId: String!) {
+        issueUpdate(id: $id, input: { stateId: $stateId }) { success }
+      }`,
+      { id: issueId, stateId: reviewState.id },
+      apiKey,
+    );
+    if (updateData.issueUpdate?.success !== true) {
+      throw new Error(`Linear issueUpdate failed: ${JSON.stringify(updateData.issueUpdate)}`);
+    }
+  }
+
+  const body = buildCommentBody({
+    state,
+    branch,
+    prUrl,
+    validationPassed,
+    reviewStateMissing: reviewState === null,
+  });
+
+  const commentData = await linearGraphQL<{ commentCreate?: { success?: boolean } }>(
+    `mutation CreateComment($issueId: String!, $body: String!) {
+      commentCreate(input: { issueId: $issueId, body: $body }) { success }
+    }`,
+    { issueId, body },
+    apiKey,
+  );
+  if (commentData.commentCreate?.success !== true) {
+    throw new Error(`Linear commentCreate failed: ${JSON.stringify(commentData.commentCreate)}`);
+  }
 }

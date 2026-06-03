@@ -1,10 +1,10 @@
 {
-  "scan_date": "2026-06-03T05:51:34.662Z",
-  "file_count": 781,
+  "scan_date": "2026-06-03T19:05:12.692Z",
+  "file_count": 782,
   "coverage_pct": 34,
   "instructionCoverage": {
-    "routesCovered": 644,
-    "routesTotal": 781,
+    "routesCovered": 645,
+    "routesTotal": 782,
     "coveragePercent": 82
   },
   "entries": {
@@ -5680,8 +5680,8 @@
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
-      "last_updated": "2026-06-02T05:14:45.506Z",
-      "updated_by": "polaris-map-index",
+      "last_updated": "2026-06-03T19:05:12.692Z",
+      "updated_by": "polaris-map-update",
       "tags": [],
       "instructionFile": ".polaris/POLARIS.md"
     },
@@ -5702,8 +5702,8 @@
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
-      "last_updated": "2026-06-02T05:14:45.506Z",
-      "updated_by": "polaris-map-index",
+      "last_updated": "2026-06-03T19:05:12.692Z",
+      "updated_by": "polaris-map-update",
       "tags": [],
       "instructionFile": ".polaris/POLARIS.md"
     },
@@ -9095,6 +9095,17 @@
       "confidence": 0,
       "classification": "needs-review",
       "last_updated": "2026-06-03T05:51:34.662Z",
+      "updated_by": "polaris-map-update",
+      "tags": [],
+      "instructionFile": ".polaris/POLARIS.md"
+    },
+    ".polaris/roles/finalizer.md": {
+      "domain": "unknown",
+      "route": ".polaris/roles/finalizer.md",
+      "taskchain": "polaris-core",
+      "confidence": 0,
+      "classification": "needs-review",
+      "last_updated": "2026-06-03T19:05:12.692Z",
       "updated_by": "polaris-map-update",
       "tags": [],
       "instructionFile": ".polaris/POLARIS.md"

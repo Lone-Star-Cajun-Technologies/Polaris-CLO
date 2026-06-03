@@ -1,5 +1,5 @@
 import type { LoopState } from "../../loop/checkpoint.js";
-import { postLinearComment } from "../linear.js";
+import { updateLinearIssueAfterFinalize } from "../linear.js";
 
 export async function stepUpdateLinear(
   state: LoopState,
@@ -26,6 +26,6 @@ export async function stepUpdateLinear(
     return;
   }
 
-  await postLinearComment({ issueId, state, branch, prUrl, validationPassed, apiKey });
+  await updateLinearIssueAfterFinalize({ issueId, state, branch, prUrl, validationPassed, apiKey });
   console.log(`Linear parent ${issueId} updated.`);
 }

@@ -1,0 +1,12 @@
+{
+  "run_id": "polaris-run-pol-303-2026-06-03-001",
+  "child_id": "POL-304",
+  "status": "success",
+  "commit": "20581c77f8f11815ba0044c4fc5738566052d7ca",
+  "validation": "passed",
+  "summary": "Added three preflight checks to finalize: (1) reject non-canonical state file paths (.taskchain_artifacts/polaris-run/current-state.json and .polaris/runs/current-state.json), (2) validate cluster_id matches current branch (case-insensitive, hyphen-normalized), (3) validate state.branch matches current git branch when non-empty. All checks execute before Step 4 with clear error messages.",
+  "files_changed": [
+    "src/finalize/index.ts",
+    "src/finalize/finalize.test.ts"
+  ]
+}
