@@ -222,6 +222,8 @@ export interface WorkerPacket extends BootstrapPacket {
   prompt_metrics: WorkerPromptMetrics;
   /** Role context injected at compile time — identifies authority boundaries. */
   role_context: WorkerRoleContext;
+  /** Paths workers must never stage or commit. */
+  prohibited_write_paths?: string[];
 }
 
 /** Type guard: returns true when packet is a compiled WorkerPacket. */
@@ -267,6 +269,25 @@ export const FINALIZE_RETURN_CONTRACT: string[] = [
   'commit',
   'next_recommended_action',
 ];
+
+export const WORKER_PROHIBITED_WRITE_PATHS: string[] = [
+  ".taskchain_artifacts/",
+  ".polaris/clusters/",
+  ".polaris/runs/",
+  "**/telemetry.jsonl",
+];
+
+export interface WorkerCommitPolicy {
+  allowedScope: string[];
+  prohibitedWritePaths: string[];
+}
+
+export function getWorkerCommitPolicy(packet: WorkerPacket): WorkerCommitPolicy {
+  return {
+    allowedScope: [...packet.instructions.allowed_scope],
+    prohibitedWritePaths: [...(packet.prohibited_write_paths ?? [])],
+  };
+}
 
 export const PREFLIGHT_RETURN_CONTRACT: string[] = [
   'status',
@@ -458,6 +479,7 @@ export function compileImplPacket(input: CompileImplPacketInput): WorkerPacket {
     prompt_mode: promptMode,
     prompt_metrics: promptResult.metrics,
     role_context: roleContextForWorkerRole('impl'),
+    prohibited_write_paths: WORKER_PROHIBITED_WRITE_PATHS,
     result_file_contract: { result_file: input.resultFile },
     context: {
       branch: input.branch,
