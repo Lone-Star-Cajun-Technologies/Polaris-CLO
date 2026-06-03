@@ -67,6 +67,7 @@ After step 07 evaluates the session:
 
 - **DISPATCH boundary (next-child)**: when another child is eligible, run `npm run polaris -- loop dispatch` or invoke the execution adapter directly. **The runtime enforces dispatch boundaries. Parent/orchestrator inline implementation is forbidden.** State updates occur only at CHECKPOINT boundaries, not between steps.
 - **CHECKPOINT (worker-returned)**: after the dispatched worker returns compact state, run `npm run polaris -- loop continue` to checkpoint state, emit telemetry, and generate or refresh the bootstrap packet. Worker transcripts must not merge back into parent context. This is the only boundary where state updates occur.
+  - CHECKPOINT gate: discard worker output except the CompactReturn JSON object. Do not read, summarize, or repair raw worker output before checkpointing. Preserve the existing step order; the gate sits only at the worker-return boundary.
 - **STOP (blocked)**: halt immediately on blocker. Report unblock condition.
 - **STOP (all-done, awaiting delivery)**: all children Done but delivery not yet requested. Report branch and last commit. Provide delivery command: `Use polaris-run on <PARENT-ID>. Finalize delivery.`
 - **DELIVER**: proceed to step 08 only when all children are Done and the user explicitly requests delivery in this session invocation.
@@ -101,6 +102,12 @@ child selected
 ### No inline fallbacks
 
 There are no soft warnings. There are no inline fallback execution paths. There is no "continue means dispatch" behavior. The only legal transition from child selected to child execution is `polaris loop dispatch`.
+
+### CHECKPOINT gate
+
+At the CHECKPOINT boundary, the orchestrator accepts only the worker's CompactReturn JSON for continuation decisions. All other worker output is discarded and must not be summarized or used for live repair.
+
+This gate does not change the step order. It only narrows what survives the worker-return boundary before `loop continue` runs.
 
 Interactive-agent mode uses an agent/subtask adapter, not shell nesting. Terminal/CI mode may use `scripts/polaris-run.sh` as the `terminal-cli` adapter.
 
