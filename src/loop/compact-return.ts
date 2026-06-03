@@ -25,6 +25,8 @@ export interface CompactReturn {
   next_recommended_action: 'continue' | 'stop' | 'investigate';
   /** Optional results from the child execution. */
   result_data?: Record<string, unknown>;
+  /** Optional staged work note paths produced by the worker. */
+  work_note_paths?: string[];
 }
 
 /**
@@ -69,6 +71,14 @@ export function validateCompactReturn(value: unknown): string[] {
   if ('result_data' in r && r['result_data'] !== undefined) {
     if (typeof r['result_data'] !== 'object' || r['result_data'] === null || Array.isArray(r['result_data'])) {
       errors.push('result_data must be an object');
+    }
+  }
+  if ('work_note_paths' in r && r['work_note_paths'] !== undefined) {
+    if (
+      !Array.isArray(r['work_note_paths']) ||
+      r['work_note_paths'].some((path) => typeof path !== 'string')
+    ) {
+      errors.push('work_note_paths must be an array of strings');
     }
   }
 
