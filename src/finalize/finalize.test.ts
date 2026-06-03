@@ -857,3 +857,39 @@ describe("preflight: state.branch match", () => {
     }
   });
 });
+
+// ---- createDraftPr: validation ----
+
+describe("createDraftPr validation", () => {
+  function makeMinimalState(overrides: Partial<Record<string, unknown>> = {}): import("../loop/checkpoint.js").LoopState {
+    return {
+      schema_version: "1.0",
+      run_id: "polaris-run-pol-296-2026-06-03-001",
+      cluster_id: "POL-296",
+      active_child: "",
+      completed_children: ["POL-297", "POL-298"],
+      open_children: [],
+      step_cursor: "CLUSTER-COMPLETE",
+      context_budget: { children_completed: 2 },
+      status: "complete",
+      next_open_child: null,
+      ...overrides,
+    } as import("../loop/checkpoint.js").LoopState;
+  }
+
+  it("throws if state.cluster_id is empty", async () => {
+    const { createDraftPr } = await import("./github.js");
+    const state = makeMinimalState({ cluster_id: "" });
+    expect(() =>
+      createDraftPr({ repoRoot: "/tmp", branch: "pol-296-delivery", state, draft: true })
+    ).toThrow(/state\.cluster_id is empty/);
+  });
+
+  it("throws if branch does not contain the cluster ID slug", async () => {
+    const { createDraftPr } = await import("./github.js");
+    const state = makeMinimalState({ cluster_id: "POL-296" });
+    expect(() =>
+      createDraftPr({ repoRoot: "/tmp", branch: "pol-999-delivery", state, draft: true })
+    ).toThrow(/branch.*pol-999-delivery.*does not contain cluster ID slug.*pol-296/);
+  });
+});
