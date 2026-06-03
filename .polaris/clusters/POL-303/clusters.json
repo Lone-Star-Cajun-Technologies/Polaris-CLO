@@ -6,7 +6,7 @@
   "clusters": [
     {
       "cluster_id": "cluster-01",
-      "description": "Finalize hardening — state authority, branch/cluster validation, and PR metadata",
+      "description": "Finalize hardening — state authority, branch/cluster validation, PR metadata, Linear review-gate, and role doctrine enforcement",
       "children": [
         {
           "id": "POL-304",

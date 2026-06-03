@@ -96,9 +96,17 @@ does not match current branch '<Y>'."
 ### Preflight D — State recency check
 
 ```
-WARN (do not abort) if state.status is "cluster-complete" but the state's
-completed_children count is 0. This indicates likely stale state.
+ABORT if state.status is "cluster-complete" but state.completed_children count is 0.
+
+Error: "finalize aborted: state integrity check failed — state.status is
+'cluster-complete' but completed_children is empty. This indicates a stale or
+corrupt state file that must not drive delivery."
 ```
+
+Rationale: a `cluster-complete` state with zero completed children is definitively
+inconsistent — no valid run produces this combination. The primary mismatch guards
+(Preflights A–C) prevent most stale-state scenarios, but this check closes the gap
+for states that pass those guards yet still record impossible completion metadata.
 
 ---
 
@@ -150,7 +158,13 @@ If any check fails: abort with a specific message before creating the PR.
 3. **No Polaris component — CLI, agent, or role — may call `issueUpdate` with a `Done` or `Closed` state ID.** This prohibition must appear in:
    - `src/finalize/linear.ts` (code enforcement)
    - `.polaris/roles/` role files (doctrine enforcement)
-4. **Review state lookup:** finalize should query available states for the issue's team and select the first state of type `review` (or name matching `In Review`, `Review`). If none found: post-comment-only fallback.
+4. **Review state lookup:** finalize queries all available states for the issue's team and selects using this deterministic priority:
+   1. First state whose name matches (case-insensitive) `"In Review"` exactly
+   2. First state whose name matches (case-insensitive) `"Review"` exactly
+   3. First state with `type === "review"` in the Linear state type enum
+   4. If none of the above match: post-comment-only fallback (no `issueUpdate` call)
+
+   This ordering ensures that explicitly named review states take precedence over generic type-based matches, and that the selection is deterministic when multiple candidate states exist.
 
 ### Fallback behavior specification
 
