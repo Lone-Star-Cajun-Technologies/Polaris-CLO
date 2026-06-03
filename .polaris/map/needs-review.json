@@ -367,8 +367,8 @@
     "taskchain": "polaris-core",
     "confidence": 0,
     "classification": "needs-review",
-    "last_updated": "2026-06-02T05:14:45.506Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-06-03T05:51:34.662Z",
+    "updated_by": "polaris-map-update",
     "tags": []
   },
   ".polaris/POLARIS.md": {
@@ -5522,5 +5522,38 @@
     "last_updated": "2026-06-02T05:14:45.506Z",
     "updated_by": "polaris-map-index",
     "tags": []
+  },
+  ".polaris/cognition/POLARIS.md": {
+    "domain": "unknown",
+    "route": ".polaris/cognition/POLARIS.md",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-06-03T05:51:34.662Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": ".polaris/cognition/POLARIS.md"
+  },
+  ".polaris/cognition/archive/.gitkeep": {
+    "domain": "unknown",
+    "route": ".polaris/cognition/archive/.gitkeep",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-06-03T05:51:34.662Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": ".polaris/cognition/POLARIS.md"
+  },
+  ".polaris/roles/cognition-librarian.md": {
+    "domain": "unknown",
+    "route": ".polaris/roles/cognition-librarian.md",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-06-03T05:51:34.662Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": ".polaris/POLARIS.md"
   }
 }
