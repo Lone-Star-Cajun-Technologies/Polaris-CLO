@@ -1,0 +1,38 @@
+{
+  "source_id": "POL-303",
+  "analyze_source_id": "POL-302",
+  "source_type": "linear",
+  "created_at": "2026-06-03T18:04:00.000Z",
+  "clusters": [
+    {
+      "cluster_id": "cluster-01",
+      "description": "Finalize hardening — state authority, branch/cluster validation, and PR metadata",
+      "children": [
+        {
+          "id": "POL-304",
+          "title": "IMPLEMENT: Add finalize state-file authority gate and branch/cluster cross-validation preflight",
+          "session_type": "implement",
+          "blockedBy": []
+        },
+        {
+          "id": "POL-305",
+          "title": "IMPLEMENT: Harden finalize PR metadata — cluster_id as primary identifier in title and body",
+          "session_type": "implement",
+          "blockedBy": []
+        },
+        {
+          "id": "POL-306",
+          "title": "IMPLEMENT: Linear review-gate — transition to In Review after finalize, prohibit Done transitions",
+          "session_type": "implement",
+          "blockedBy": []
+        },
+        {
+          "id": "POL-307",
+          "title": "IMPLEMENT: Enforce Linear review-gate prohibition in Polaris role doctrine",
+          "session_type": "implement",
+          "blockedBy": ["POL-306"]
+        }
+      ]
+    }
+  ]
+}
