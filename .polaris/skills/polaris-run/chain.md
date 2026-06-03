@@ -58,7 +58,8 @@ Never assume a globally linked `polaris` command exists.
 05-validate-child             ← worker-owned validation phase
 06-commit-and-update-linear   ← worker-return validation and completion recording
 07-decide-continuation   → DISPATCH boundary | CHECKPOINT after worker return | STOP (blocked/all-done) | DELIVER: go to 08
-08-final-delivery        ← reached when all children Done and delivery requested
+08-closeout-librarian    ← dispatched once per cluster; PR creation blocked until result validated
+09-final-delivery        ← reached only after closeout librarian succeeds
 ```
 
 ## Continuation rules
@@ -70,7 +71,22 @@ After step 07 evaluates the session:
   - CHECKPOINT gate: discard worker output except the CompactReturn JSON object. Do not read, summarize, or repair raw worker output before checkpointing. Preserve the existing step order; the gate sits only at the worker-return boundary.
 - **STOP (blocked)**: halt immediately on blocker. Report unblock condition.
 - **STOP (all-done, awaiting delivery)**: all children Done but delivery not yet requested. Report branch and last commit. Provide delivery command: `Use polaris-run on <PARENT-ID>. Finalize delivery.`
-- **DELIVER**: proceed to step 08 only when all children are Done and the user explicitly requests delivery in this session invocation.
+- **DELIVER**: proceed to step 08 (Closeout Librarian) only when all children are Done and the user explicitly requests delivery in this session invocation.
+
+## Closeout Librarian boundary
+
+**The Closeout Librarian runs exactly once per cluster, between all-children-done and PR creation.**
+
+Step 08 dispatches the Librarian as a bounded session (same model as worker dispatch).
+The Foreman waits for the Librarian's sealed result before proceeding to step 09.
+PR creation (step 09) is blocked until the Librarian result status is `"success"` or `"partial"`.
+
+The Foreman must NOT:
+- Read the Librarian's session transcript
+- Inline the Librarian's work
+- Skip step 08 because it appears slow
+- Repair the Librarian's output manually
+- Run the Librarian after individual workers (cluster-complete only)
 
 ## Dispatch boundary enforcement (runtime-owned)
 
@@ -119,7 +135,9 @@ polaris-run augments the evo-run pattern with three Polaris-specific calls:
 |---|---|---|
 | 07 | `npm run polaris -- loop dispatch` | Dispatch exactly one selected child through the configured execution adapter; this starts child execution |
 | 07 | `npm run polaris -- loop continue` | Post-child checkpoint: emit checkpoint telemetry, update state at checkpoint boundary, generate bootstrap packet, enforce boundary. This is the only time state updates occur between DISPATCH boundaries. |
-| 08 | `npm run polaris -- finalize` | Push branch, open PR, append JSONL closeout events, archive run snapshot |
+| 08 | `npm run polaris -- librarian packet <cluster-id>` | Generate Closeout Librarian packet for the completed cluster |
+| 08 | Librarian subagent dispatch | Dispatch Closeout Librarian; wait for sealed result; validate result before proceeding |
+| 09 | `npm run polaris -- finalize` | Push branch (including librarian commit), open PR, append JSONL closeout events, archive run snapshot |
 
 `npm run polaris -- loop dispatch` is the dispatch command. It selects the configured execution adapter and sends one child worker prompt across the parent/worker boundary.
 

@@ -28,16 +28,65 @@ The Foreman coordinates worker dispatch and cluster execution. It does not imple
 - May dispatch: Yes
 - May implement: No
 
+## Quiet Mode (Default)
+
+**The Foreman operates in quiet mode by default.**
+
+User-facing status updates must be 1–2 words or minimal phrases:
+- `Dispatching`
+- `Waiting`
+- `Checkpointing`
+- `Librarian running`
+- `Finalizing`
+- `Done`
+
+The Foreman must NOT:
+- Narrate worker implementation activity
+- Explain what workers are doing step-by-step
+- Summarize worker execution progress
+- Describe code changes found in worker transcripts
+- Report implementation details to the user during normal execution
+
+**Exception: Verbose escalation when user action is required.**
+
+When an issue requires operator input, the Foreman becomes verbose:
+1. Describe the issue clearly.
+2. Present the available options.
+3. Ask the user to choose.
+4. Wait.
+
+Example:
+```
+Issue: Worker modified a file outside allowed scope.
+
+Options:
+1. Reject result and re-dispatch replacement worker
+2. Accept with exception (record scope violation in result)
+3. Create triage note and halt
+4. Pause for manual review
+
+How would you like to proceed?
+```
+
+The Foreman returns to quiet mode after the operator responds.
+
 ## Prohibited Actions
 
 - Inline code implementation
 - Reasoning about source files beyond packet construction
-- Reading or summarizing raw worker output
+- Reading or summarizing raw worker output or transcripts
+- Reading worker tool-call history
 - Performing live repair of worker code, packets, or runtime state
+- Patching `current-state.json` directly without a CLI command
+- Patching `cluster-state.json` directly without a CLI command
+- Patching `run_bootstrap_seal` directly
+- Amending worker commits directly (`git commit --amend`)
 - Expanding child scope beyond cluster plan
 - Modifying packets post-emit
 - Skipping checkpoint steps
 - Dispatching more than one child per continue epoch
+- Dispatching the Closeout Librarian after individual workers (cluster-complete only)
+- Skipping the Closeout Librarian step when delivery is requested
 
 ## Linear State Transition Prohibition
 
@@ -66,11 +115,36 @@ If a dispatched Worker times out, crashes, fails validation, or fails to acknowl
 
 ## Escalation Rules
 
-- Missed heartbeat (>120s since last_heartbeat_at) → emit escalation-initiated, pause
-- Worker exit_code !== 0 → emit worker-result(failed), escalate
+- Missed heartbeat (>120s since last_heartbeat_at) → emit escalation-initiated, pause; present options to operator
+- Worker exit_code !== 0 → emit worker-result(failed), escalate; present options to operator
 - Dispatch failure → emit worker-assignment-failed, try fallback chain
 - Budget exhaustion → stop cluster, report to operator
-- Seal failure → halt, do not mark child complete
+- Seal failure → halt, do not mark child complete; escalate to operator
+- Scope violation detected → halt, present options: reject/accept/triage/pause
+- Live repair attempted by operator → reject automatically; suggest proper escalation path
+- Closeout Librarian result: blocked or failure → halt finalize, escalate to operator
+- Closeout Librarian timeout → present options: re-dispatch, skip (operator accepts degraded cognition), halt
+
+## State Repair Rules
+
+**The Foreman must not repair runtime state directly.**
+
+If runtime state is corrupted or inconsistent:
+1. Halt with `polaris loop abort`.
+2. Emit `state-corruption-detected` event.
+3. Escalate to operator with:
+   - Description of the corruption
+   - Affected state files
+   - Options: use CLI repair command, manual operator repair, abandon run
+4. Wait for operator direction.
+
+The Foreman does not patch `current-state.json`, `cluster-state.json`, `run_bootstrap_seal`,
+or result files manually. These writes go through CLI commands or are performed by humans.
+
+**Rationale (POL-288):** In polaris-run-pol-283-2026-06-02-002, the Foreman consumed 21.7M
+cached tokens and performed 4 recovery cycles by reading worker transcripts and patching state
+files directly. This violated dispatch boundaries and produced unreliable state.
+State repair must go through proper channels, not Foreman improvisation.
 
 ### Foreman/Worker Dispatch Protocol
 

@@ -1,0 +1,8 @@
+{
+  "promoted_from": "inline (engineer-created during closeout-librarian-runtime implementation)",
+  "promoted_at": "2026-06-03",
+  "promoted_by": "closeout-librarian-runtime",
+  "run_id": "N/A",
+  "cluster_id": "N/A",
+  "notes": "Worker heartbeat model and output rules specification. Addresses scope drift and narration violations documented in pol-288-foreman-worker-drift-postmortem.md."
+}

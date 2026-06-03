@@ -1,0 +1,8 @@
+{
+  "promoted_from": "inline (engineer-created during closeout-librarian-runtime implementation)",
+  "promoted_at": "2026-06-03",
+  "promoted_by": "closeout-librarian-runtime",
+  "run_id": "N/A",
+  "cluster_id": "N/A",
+  "notes": "Authoritative architecture spec for the Closeout Librarian role. Created as part of the Polaris Closeout Librarian runtime flow design and Foreman/Worker behavior hardening."
+}

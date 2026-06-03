@@ -36,6 +36,10 @@ message whose primary instruction is to invoke a named Polaris skill.
 | `docs-promote` | docs-promote | `.polaris/skills/docs-promote/` |
 | `run docs-promote` | docs-promote | `.polaris/skills/docs-promote/` |
 
+> **Note:** `closeout-librarian` is NOT a user-facing command. It is dispatched by the
+> Foreman as a bounded session during step 08 of the `polaris-run` chain. Users do not
+> invoke it directly. The Foreman generates its packet via `npm run polaris -- librarian packet <cluster-id>`.
+
 ---
 
 ## Required routing protocol
