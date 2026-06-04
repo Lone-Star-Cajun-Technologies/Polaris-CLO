@@ -60,3 +60,15 @@ Do not assume global repository context unless explicitly provided by the runtim
 Parent/orchestrator sessions coordinate execution state and worker dispatch.
 
 Worker sessions perform implementation, analysis, validation, and delivery tasks within bounded scope.
+
+## Architectural principles
+
+**Polaris must be tracker agnostic.**
+
+The core runtime (loop, dispatch, finalize, packet compilation, skill generation) must not assume Linear or any specific tracker. Rules:
+
+- Tracker-specific logic belongs exclusively in adapter implementations (`src/tracker/adapters/<name>/`).
+- `WorkerPacket`, `BootstrapPacket`, and all loop/dispatch subsystems operate on `LocalGraph` — never on tracker-specific types.
+- `PolarisConfig.tracker.adapter` must support `"local"` and `"spec"` values in addition to `"linear"` and `"mcp-bridge"`.
+- Hardcoded references to "Linear" in instruction text, packet compilation, or skill generation are defects.
+- `runFinalize()` and all finalize steps must skip cleanly when no tracker adapter is configured.
