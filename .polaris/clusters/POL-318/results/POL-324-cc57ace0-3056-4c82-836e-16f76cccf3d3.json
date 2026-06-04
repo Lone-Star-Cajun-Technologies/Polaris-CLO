@@ -1,0 +1,17 @@
+{
+  "run_id": "polaris-run-pol-318-2026-06-04-001",
+  "cluster_id": "POL-318",
+  "child_id": "POL-324",
+  "status": "done",
+  "commit": "87e475f9b8756467dbfce4b1c1fe4b5534a706a7",
+  "validation": {
+    "passed": true,
+    "evidence": [
+      "npm run build: exit 0",
+      "npx vitest run src/tracker/adapters/spec: 7/7 passed",
+      "npx vitest run src/loop/bootstrap-trackerless: 4/4 passed",
+      "npm test: 1350/1352 passed (2 pre-existing failures unrelated to POL-324)"
+    ]
+  },
+  "next_recommended_action": "finalize"
+}

@@ -1,0 +1,21 @@
+{
+  "run_id": "polaris-run-pol-318-2026-06-04-001",
+  "cluster_id": "POL-318",
+  "child_id": "POL-321",
+  "status": "done",
+  "commit": "def9d02f0cf69c80c7b44c912f01375d855bc7af",
+  "validation": {
+    "passed": [
+      "npm run build",
+      "npx vitest run src/loop/worker-packet",
+      "npx vitest run src/skill-packet/generator"
+    ],
+    "failed": [
+      {
+        "command": "npm test",
+        "evidence": "Pre-existing unrelated failures observed in src/loop/polaris-run-docs.test.ts and src/finalize/linear.test.ts."
+      }
+    ]
+  },
+  "next_recommended_action": "continue"
+}

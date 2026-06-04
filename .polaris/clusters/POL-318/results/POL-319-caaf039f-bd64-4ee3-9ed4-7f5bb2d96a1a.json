@@ -1,0 +1,20 @@
+{
+  "run_id": "polaris-run-pol-318-2026-06-04-001",
+  "cluster_id": "POL-318",
+  "child_id": "POL-319",
+  "status": "done",
+  "commit": "14db95eec64d631492e41af73fcc490dd4b0a196",
+  "validation": {
+    "passed": [
+      "npm run build (exit 0): tsc completed successfully"
+    ],
+    "failed": [
+      "npm test (exit 1): src/finalize/linear.test.ts > assertNotDoneState > throws for 'cancelled' type (expected function to throw)",
+      "npm test (exit 1): src/loop/polaris-run-docs.test.ts > Quiet Foreman mode docs > keeps the polaris-run step order intact (expected -1 to be greater than 2127)"
+    ]
+  },
+  "blockers": [
+    "Packet validation command npm test fails due out-of-scope pre-existing tests in src/finalize/linear.test.ts and src/loop/polaris-run-docs.test.ts."
+  ],
+  "next_recommended_action": "continue"
+}

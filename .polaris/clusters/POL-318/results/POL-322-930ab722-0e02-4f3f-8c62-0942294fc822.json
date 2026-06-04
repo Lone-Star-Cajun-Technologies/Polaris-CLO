@@ -1,0 +1,20 @@
+{
+  "run_id": "polaris-run-pol-318-2026-06-04-001",
+  "cluster_id": "POL-318",
+  "child_id": "POL-322",
+  "status": "done",
+  "commit": "21f2949b51ed14740e34d6dad239be11efea20e4",
+  "validation": {
+    "passed": [
+      "npm run build",
+      "npx vitest run src/tracker/adapters/spec"
+    ],
+    "failed": [
+      {
+        "command": "npm test",
+        "reason": "Repository baseline failures outside POL-322 scope (src/finalize/linear.test.ts and src/loop/polaris-run-docs.test.ts)."
+      }
+    ]
+  },
+  "next_recommended_action": "continue"
+}

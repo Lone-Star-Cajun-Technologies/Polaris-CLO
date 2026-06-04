@@ -1,0 +1,23 @@
+{
+  "run_id": "polaris-run-pol-318-2026-06-04-001",
+  "cluster_id": "POL-318",
+  "child_id": "POL-323",
+  "status": "done",
+  "commit": "6b50bc6a4f753197ada4fbd49acc4eb83e5a96e8",
+  "validation": {
+    "passed": [
+      "npm run build"
+    ],
+    "failed": [
+      {
+        "command": "npm test",
+        "evidence": "Repository baseline failures outside POL-323 scope, including src/loop/polaris-run-docs.test.ts and src/finalize/linear.test.ts."
+      },
+      {
+        "command": "npx vitest run src/finalize",
+        "evidence": "Fails in existing baseline test src/finalize/linear.test.ts (assertNotDoneState > throws for 'cancelled' type)."
+      }
+    ]
+  },
+  "next_recommended_action": "continue"
+}

@@ -1,0 +1,96 @@
+{
+  "schema_version": "1.0",
+  "role": "closeout-librarian",
+  "run_id": "polaris-run-pol-318-2026-06-04-001",
+  "dispatch_id": "86bdb0d8-9b90-4a21-bdd9-9c774a275bb0",
+  "cluster_id": "POL-318",
+  "status": "success",
+  "commit_sha": "148d3ed9a1345c7b73e0ef8385152d2776bfccf6",
+  "commit_message": "docs(closeout): reconcile cognition for cluster POL-318\n\nRun: polaris-run-pol-318-2026-06-04-001\nCluster: POL-318\nChildren: POL-319, POL-320, POL-321, POL-322, POL-323, POL-324\nFiles updated:\n- POLARIS.md: 5 files\n- SUMMARY.md: 6 files\n- docs ingested: 0\n- links repaired: 0",
+  "files_committed": [
+    "src/POLARIS.md",
+    "src/SUMMARY.md",
+    "src/cli/POLARIS.md",
+    "src/cli/SUMMARY.md",
+    "src/config/SUMMARY.md",
+    "src/finalize/POLARIS.md",
+    "src/finalize/SUMMARY.md",
+    "src/finalize/steps/POLARIS.md",
+    "src/finalize/steps/SUMMARY.md",
+    "src/types/POLARIS.md",
+    "src/types/SUMMARY.md"
+  ],
+  "polaris_md_updates": [
+    {
+      "file": "src/POLARIS.md",
+      "action": "update",
+      "change_summary": "Replaced draft placeholders with route authority, boundaries, and runtime assumptions."
+    },
+    {
+      "file": "src/cli/POLARIS.md",
+      "action": "update",
+      "change_summary": "Updated CLI command surface and trackerless spec-flow responsibilities."
+    },
+    {
+      "file": "src/finalize/POLARIS.md",
+      "action": "update",
+      "change_summary": "Reconciled finalize semantics to 14-step flow and librarian gate/tracker adapter behavior."
+    },
+    {
+      "file": "src/finalize/steps/POLARIS.md",
+      "action": "update",
+      "change_summary": "Replaced draft with concrete step-folder ownership, constraints, and assumptions."
+    },
+    {
+      "file": "src/types/POLARIS.md",
+      "action": "update",
+      "change_summary": "Replaced draft with shared contract ownership and tracker-agnostic type guidance."
+    }
+  ],
+  "summary_md_updates": [
+    {
+      "file": "src/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Replaced draft with current runtime overview and finalize gating behavior."
+    },
+    {
+      "file": "src/cli/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Replaced draft with current command delegation model and spec entrypoint behavior."
+    },
+    {
+      "file": "src/config/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Replaced draft with config merge/validation behavior and tracker adapter support."
+    },
+    {
+      "file": "src/finalize/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Updated finalize summary from 13-step to 14-step plus librarian gate behavior."
+    },
+    {
+      "file": "src/finalize/steps/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Replaced draft with current step-folder role and constraints."
+    },
+    {
+      "file": "src/types/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Replaced draft with shared state/work-contract type coverage."
+    }
+  ],
+  "docs_ingested": [],
+  "docs_archived": [],
+  "yaml_updates": [],
+  "cognition_archived": [],
+  "link_validation": {
+    "total_checked": 7,
+    "valid": 7,
+    "broken": 0,
+    "repaired": 0,
+    "unrepairable": []
+  },
+  "blockers": [],
+  "reconciled_at": "2026-06-04T16:54:34.000Z",
+  "evidence_summary": "Reconciled all affected route cognition files that were still draft or stale for this cluster. Updated POLARIS/SUMMARY coverage across src, cli, config, finalize, finalize/steps, and types to reflect tracker-agnostic runtime behavior, closeout librarian gating, and current command/step ownership. No smartdocs ingestion, YAML linking, or cognition archive actions were required. Link validation across all updated files passed with no repairs needed. A single closeout documentation commit was created."
+}

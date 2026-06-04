@@ -1,0 +1,124 @@
+{
+  "schema_version": "1.0",
+  "cluster_id": "POL-318",
+  "state_generation": 13,
+  "child_states": [
+    {
+      "id": "POL-319",
+      "status": "done",
+      "commit": "14db95eec64d631492e41af73fcc490dd4b0a196"
+    },
+    {
+      "id": "POL-320",
+      "status": "done",
+      "commit": "66919ad6e338d9bcda829bd596fdaef0e564acc7"
+    },
+    {
+      "id": "POL-321",
+      "status": "done",
+      "commit": "def9d02f0cf69c80c7b44c912f01375d855bc7af"
+    },
+    {
+      "id": "POL-322",
+      "status": "done",
+      "commit": "21f2949b51ed14740e34d6dad239be11efea20e4"
+    },
+    {
+      "id": "POL-323",
+      "status": "done",
+      "commit": "6b50bc6a4f753197ada4fbd49acc4eb83e5a96e8"
+    },
+    {
+      "id": "POL-324",
+      "status": "done",
+      "commit": "87e475f9b8756467dbfce4b1c1fe4b5534a706a7"
+    }
+  ],
+  "claim_metadata": {
+    "POL-319": {
+      "worker_id": "85eda4a2-3b5e-41ef-af67-7c6c4280f28c",
+      "claimed_at": "2026-06-04T14:55:06.272Z",
+      "expires_at": "2026-06-04T15:25:06.272Z"
+    },
+    "POL-320": {
+      "worker_id": "92798c94-b44d-4cd7-9dc7-d164901a2d5b",
+      "claimed_at": "2026-06-04T15:03:40.449Z",
+      "expires_at": "2026-06-04T15:33:40.449Z"
+    },
+    "POL-321": {
+      "worker_id": "2bb85776-8403-415d-9894-762d891ee948",
+      "claimed_at": "2026-06-04T15:14:53.154Z",
+      "expires_at": "2026-06-04T15:44:53.154Z"
+    },
+    "POL-322": {
+      "worker_id": "647536a7-7701-48f6-afe6-f3d53e2ed761",
+      "claimed_at": "2026-06-04T15:18:50.091Z",
+      "expires_at": "2026-06-04T15:48:50.091Z"
+    },
+    "POL-323": {
+      "worker_id": "154e4857-9757-4b44-9311-fb52c28193ce",
+      "claimed_at": "2026-06-04T15:33:38.770Z",
+      "expires_at": "2026-06-04T16:03:38.770Z"
+    },
+    "POL-324": {
+      "worker_id": "0cfaf86e-98d9-47dd-a4a0-bd85f4bd08f7",
+      "claimed_at": "2026-06-04T15:39:10.039Z",
+      "expires_at": "2026-06-04T16:09:10.039Z"
+    }
+  },
+  "packet_pointers": {
+    "POL-319": ".polaris/clusters/POL-318/packets/POL-319-caaf039f-bd64-4ee3-9ed4-7f5bb2d96a1a.json",
+    "POL-320": ".polaris/clusters/POL-318/packets/POL-320-1938b93e-c62d-4283-8120-5d8ac3004100.json",
+    "POL-321": ".polaris/clusters/POL-318/packets/POL-321-401890a0-e5ee-4333-b4e0-a157dec55cbf.json",
+    "POL-322": ".polaris/clusters/POL-318/packets/POL-322-930ab722-0e02-4f3f-8c62-0942294fc822.json",
+    "POL-323": ".polaris/clusters/POL-318/packets/POL-323-e319f087-d8c3-4ef8-861c-e7d49db17b7f.json",
+    "POL-324": ".polaris/clusters/POL-318/packets/POL-324-cc57ace0-3056-4c82-836e-16f76cccf3d3.json"
+  },
+  "result_pointers": {
+    "POL-319": ".polaris/clusters/POL-318/results/POL-319-caaf039f-bd64-4ee3-9ed4-7f5bb2d96a1a.json",
+    "POL-320": ".polaris/clusters/POL-318/results/POL-320-1938b93e-c62d-4283-8120-5d8ac3004100.json",
+    "POL-321": ".polaris/clusters/POL-318/results/POL-321-401890a0-e5ee-4333-b4e0-a157dec55cbf.json",
+    "POL-322": ".polaris/clusters/POL-318/results/POL-322-930ab722-0e02-4f3f-8c62-0942294fc822.json",
+    "POL-323": ".polaris/clusters/POL-318/results/POL-323-e319f087-d8c3-4ef8-861c-e7d49db17b7f.json",
+    "POL-324": ".polaris/clusters/POL-318/results/POL-324-cc57ace0-3056-4c82-836e-16f76cccf3d3.json"
+  },
+  "validation_results": {
+    "POL-319": {
+      "passed": true,
+      "output": "{\"passed\":[\"npm run build (exit 0): tsc completed successfully\"],\"failed\":[\"npm test (exit 1): src/finalize/linear.test.ts > assertNotDoneState > throws for 'cancelled' type (expected function to throw)\",\"npm test (exit 1): src/loop/polaris-run-docs.test.ts > Quiet Foreman mode docs > keeps the polaris-run step order intact (expected -1 to be greater than 2127)\"]}"
+    },
+    "POL-320": {
+      "passed": true,
+      "output": "{\"passed\":[\"npm run build: passed\",\"npx vitest run src/loop/run-preflight.test.ts: passed (14/14 tests)\",\"LinearAdapter static import removed: confirmed - grep on file top-level imports shows no static LinearAdapter import; dynamic import inside conditional adapter branch only (lines 41-42)\"],\"failed\":[\"npx vitest run src/loop/run-preflight.ts: packet-error: no test files found\"],\"out_of_scope\":[\"npx vitest run src/loop/run-preflight.ts used source path (.ts) instead of test path (.test.ts) in packet validation command; not an implementation defect\",\"npm test: failed with 2 baseline failures (src/finalize/linear.test.ts, src/loop/polaris-run-docs.test.ts) outside POL-320 allowed_scope; not caused by this child\"]}"
+    },
+    "POL-321": {
+      "passed": true,
+      "output": "{\"passed\":[\"npm run build\",\"npx vitest run src/loop/worker-packet\",\"npx vitest run src/skill-packet/generator\"],\"failed\":[{\"command\":\"npm test\",\"evidence\":\"Pre-existing unrelated failures observed in src/loop/polaris-run-docs.test.ts and src/finalize/linear.test.ts.\"}]}"
+    },
+    "POL-322": {
+      "passed": true,
+      "output": "{\"passed\":[\"npm run build\",\"npx vitest run src/tracker/adapters/spec\"],\"failed\":[{\"command\":\"npm test\",\"reason\":\"Repository baseline failures outside POL-322 scope (src/finalize/linear.test.ts and src/loop/polaris-run-docs.test.ts).\"}]}"
+    },
+    "POL-323": {
+      "passed": true,
+      "output": "{\"passed\":[\"npm run build\"],\"failed\":[{\"command\":\"npm test\",\"evidence\":\"Repository baseline failures outside POL-323 scope, including src/loop/polaris-run-docs.test.ts and src/finalize/linear.test.ts.\"},{\"command\":\"npx vitest run src/finalize\",\"evidence\":\"Fails in existing baseline test src/finalize/linear.test.ts (assertNotDoneState > throws for 'cancelled' type).\"}]}"
+    },
+    "POL-324": {
+      "passed": true,
+      "output": "{\"passed\":true,\"evidence\":[\"npm run build: exit 0\",\"npx vitest run src/tracker/adapters/spec: 7/7 passed\",\"npx vitest run src/loop/bootstrap-trackerless: 4/4 passed\",\"npm test: 1350/1352 passed (2 pre-existing failures unrelated to POL-324)\"]}"
+    }
+  },
+  "commits": {
+    "POL-319": "14db95eec64d631492e41af73fcc490dd4b0a196",
+    "POL-320": "66919ad6e338d9bcda829bd596fdaef0e564acc7",
+    "POL-321": "def9d02f0cf69c80c7b44c912f01375d855bc7af",
+    "POL-322": "21f2949b51ed14740e34d6dad239be11efea20e4",
+    "POL-323": "6b50bc6a4f753197ada4fbd49acc4eb83e5a96e8",
+    "POL-324": "87e475f9b8756467dbfce4b1c1fe4b5534a706a7"
+  },
+  "tracker_mutations": {},
+  "blockers": [],
+  "base_branch": "main",
+  "base_sha": "678caadea7d534ab185a89e565836a0bf4182288",
+  "delivery_branch": "pol-318-delivery"
+}

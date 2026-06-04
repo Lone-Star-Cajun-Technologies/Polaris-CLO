@@ -1,0 +1,98 @@
+{
+  "schema_version": "2.1",
+  "worker_role": "impl",
+  "run_id": "polaris-run-pol-318-2026-06-04-001",
+  "cluster_id": "POL-318",
+  "active_child": "POL-324",
+  "state_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json",
+  "telemetry_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-318-2026-06-04-001/telemetry.jsonl",
+  "instructions": {
+    "primary_goal": "Issue: POL-324 — POL-324\nWorktree: .\nBranch: pol-318-delivery\n\n## Goal\n## Objective\n\nDocument the Work Contract architecture in a canonical spec document and add integration tests that verify trackerless bootstrap and dispatch round-trips.\n\n## Context\n\nPart of [POL-318](https://linear.app/lsctech/issue/POL-318/implement-decouple-packets-from-tracker-assumptions-with-spec-to-work). This is the terminal child — it documents what children 1–5 built and verifies the full trackerless execution path works end-to-end.\n\n## Goal\n\n1. Write `docs/Polaris/spec/work-contract-spec.md` documenting:\n   * The Work Contract normalized interface (`WorkContract` type fields and semantics).\n   * How each intake source (tracker, spec, prompt) maps to a WorkContract.\n   * The execution flow: source → WorkContract → LocalGraph → bootstrap → dispatch → finalize.\n   * Trackerless vs. tracker-backed mode differences.\n   * How evidence, commits, validation, and closeout work without a tracker.\n2. Add unit tests in `src/tracker/adapters/spec/index.test.ts` for SpecAdapter with a fixture spec markdown file.\n3. Add integration test in `src/loop/run-bootstrap.test.ts` (or a new file) that exercises trackerless bootstrap: create a spec, run SpecAdapter.syncIn(), call runLoopBootstrapInit(), verify the resulting state has correct cluster_id and open_children.\n\n## Scope\n\n* docs/Polaris/spec/work-contract-spec.md\n* src/tracker/adapters/spec/index.test.ts\n* src/loop/bootstrap-trackerless.integration.test.ts\n\n## Acceptance Criteria\n\n* `docs/Polaris/spec/work-contract-spec.md` exists and covers all 7 points above.\n* `SpecAdapter` unit tests pass with fixture spec file.\n* Trackerless bootstrap integration test passes.\n* `npm run build` passes.\n* `npm test` passes.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/tracker/adapters/spec\n* npx vitest run src/loop/bootstrap-trackerless\n\n## Ordering\n\n* Blocked by child 4 (SpecAdapter must exist) and child 5 (finalize trackerless support must be in place).\n\n## Non-goals\n\n* Do not add end-to-end finalize tests in this child (that is a separate test cluster).\n* Do not document GitHub issue or prompt sources (out of scope for this cluster).\n\n## Scope\nTouch only:\n- docs/Polaris/spec/work-contract-spec.md\n- src/tracker/adapters/spec/index.test.ts\n- src/loop/bootstrap-trackerless.integration.test.ts\n\n## Acceptance Criteria\n\n## Validation\n- npm run build\n- npm test\n- npx vitest run src/tracker/adapters/spec\n- npx vitest run src/loop/bootstrap-trackerless\n\n## Commit\n[POL-324] POL-324\n\n## Governance\n- Update /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json: move \"POL-324\" from open_children to completed_children.\n- Append a telemetry event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-318-2026-06-04-001/telemetry.jsonl.\n\n## Worker Progress Telemetry (MANDATORY)\nThe parent CANNOT see your work. You MUST emit heartbeat events so the parent knows you are alive and making progress.\n\nAfter EVERY step, append a JSONL event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-318-2026-06-04-001/telemetry.jsonl:\n```jsonl\n{\"event\":\"worker-heartbeat\",\"run_id\":\"<from packet>\",\"child_id\":\"POL-324\",\"step_cursor\":\"<current step>\",\"timestamp\":\"<ISO8601>\",\"progress_pct\":<0-100>,\"files_changed\":<count>,\"current_file\":\"<file being edited>\"}\n```\n\nRequired heartbeat points:\n  1. Immediately after reading this packet (step_cursor: \"start\")\n  2. After verifying state file (step_cursor: \"verify\")\n  3. After EACH file edit (step_cursor: \"implement\")\n  4. After running validation (step_cursor: \"validate\")\n  5. After creating commit (step_cursor: \"commit\")\n  6. Before terminating (step_cursor: \"complete\" or \"failed\")\n\nIf heartbeats stop, the parent will assume you crashed and may dispatch a replacement worker.\n\n## Approval Escalation (when uncertain)\nYou have a sealed packet defining your exact scope, allowed files, and validation commands. Use this to decide:\n\nRule 1 - Auto-approve WITHIN scope (normal work):\n  - If the operation touches files within `instructions.allowed_scope` → Just do it\n  - If the command is in `instructions.validation_commands` → Just run it\n  - Low risk, expected work → No need to ask, emit heartbeat with step_cursor: \"implement\"\n\nRule 2 - ESCALATE out-of-scope or high-risk:\n  - File outside allowed_scope → Emit worker-blocked with approval_type: \"out-of-scope\"\n  - Destructive operation (rm -rf, major refactor) → Emit worker-blocked with approval_type: \"destructive\"\n  - External API calls with cost → Emit worker-blocked with approval_type: \"cost\"\n  - Changing secrets/.env → Emit worker-blocked with approval_type: \"security\"\n  - Unclear requirements → Emit worker-blocked with approval_type: \"ambiguous\"\n\nTo escalate, emit IMMEDIATELY to telemetry:\n```jsonl\n{\"event\":\"worker-blocked\",\"run_id\":\"<from packet>\",\"child_id\":\"POL-324\",\"reason\":\"needs-approval\",\"approval_type\":\"<out-of-scope|destructive|cost|security|ambiguous>\",\"description\":\"<specifically what needs approval>\",\"blocker_id\":\"<unique-id>\",\"timestamp\":\"<ISO8601>\"}\n```\n\nThen: Continue heartbeats every 30s with step_cursor: \"blocked-awaiting-approval\"\nWait for parent response. If no response in 5 minutes → TERMINATE with approval-timeout.\n\nRemember: Your packet scope is your authority. Within scope = proceed. Outside scope = escalate.\n\n## Route Cognition Delta\nAfter implementation, apply route-local cognition delta — only if something materially changed.\n\n**POLARIS.md** — update only when ALL of the following are true:\n  - You touched a file in that folder (not a distant folder).\n  - The change materially affects: folder responsibilities, commands/workflows,\n    execution constraints, ownership/routing, or operational behavior.\n  - The current POLARIS.md content is actually wrong or incomplete as a result.\n  DO NOT update POLARIS.md for: formatting fixes, comment changes, tiny refactors,\n  internal implementation details, or any change that leaves the operational guidance\n  still accurate. When in doubt, do not update.\n\n**SUMMARY.md** — update only when: linked docs/specs changed, canon relationships\n  changed, architecture meaning changed, or doctrine/spec linkage changed.\n  SUMMARY.md is informational only. Do not create it if missing — that is a hint for\n  operators, not a task for workers. Keep it short. Never add operational doctrine.\n\n**Never** scan unrelated folders. **Never** regenerate all route docs.\nIf no material change occurred, skip this section entirely.\n\n## Report Back\n- files changed\n- validation results\n- commit hash\n- blockers\n\nTERMINATE SESSION IMMEDIATELY. Do not select or execute the next child.",
+    "steps": [
+      "Verify: read /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json and confirm active_child === \"POL-324\".",
+      "Implement POL-324: \"POL-324\".",
+      "Issue description:\n## Objective\n\nDocument the Work Contract architecture in a canonical spec document and add integration tests that verify trackerless bootstrap and dispatch round-trips.\n\n## Context\n\nPart of [POL-318](https://linear.app/lsctech/issue/POL-318/implement-decouple-packets-from-tracker-assumptions-with-spec-to-work). This is the terminal child — it documents what children 1–5 built and verifies the full trackerless execution path works end-to-end.\n\n## Goal\n\n1. Write `docs/Polaris/spec/work-contract-spec.md` documenting:\n   * The Work Contract normalized interface (`WorkContract` type fields and semantics).\n   * How each intake source (tracker, spec, prompt) maps to a WorkContract.\n   * The execution flow: source → WorkContract → LocalGraph → bootstrap → dispatch → finalize.\n   * Trackerless vs. tracker-backed mode differences.\n   * How evidence, commits, validation, and closeout work without a tracker.\n2. Add unit tests in `src/tracker/adapters/spec/index.test.ts` for SpecAdapter with a fixture spec markdown file.\n3. Add integration test in `src/loop/run-bootstrap.test.ts` (or a new file) that exercises trackerless bootstrap: create a spec, run SpecAdapter.syncIn(), call runLoopBootstrapInit(), verify the resulting state has correct cluster_id and open_children.\n\n## Scope\n\n* docs/Polaris/spec/work-contract-spec.md\n* src/tracker/adapters/spec/index.test.ts\n* src/loop/bootstrap-trackerless.integration.test.ts\n\n## Acceptance Criteria\n\n* `docs/Polaris/spec/work-contract-spec.md` exists and covers all 7 points above.\n* `SpecAdapter` unit tests pass with fixture spec file.\n* Trackerless bootstrap integration test passes.\n* `npm run build` passes.\n* `npm test` passes.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/tracker/adapters/spec\n* npx vitest run src/loop/bootstrap-trackerless\n\n## Ordering\n\n* Blocked by child 4 (SpecAdapter must exist) and child 5 (finalize trackerless support must be in place).\n\n## Non-goals\n\n* Do not add end-to-end finalize tests in this child (that is a separate test cluster).\n* Do not document GitHub issue or prompt sources (out of scope for this cluster).",
+      "Requirements:",
+      "   1. `docs/Polaris/spec/work-contract-spec.md` exists and covers all 7 points above.",
+      "   2. `SpecAdapter` unit tests pass with fixture spec file.",
+      "   3. Trackerless bootstrap integration test passes.",
+      "   4. `npm run build` passes.",
+      "   5. `npm test` passes.",
+      "Run validation commands and confirm all pass.",
+      "Create exactly ONE git commit: [POL-324] POL-324.",
+      "Update /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json: move \"POL-324\" from open_children to completed_children.",
+      "Append a telemetry event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-318-2026-06-04-001/telemetry.jsonl.",
+      "Write compact return JSON to stdout (fields: child_id, status, commit, validation, next_recommended_action).",
+      "TERMINATE SESSION IMMEDIATELY. Do not select or execute the next child."
+    ],
+    "allowed_scope": [
+      "docs/Polaris/spec/work-contract-spec.md",
+      "src/tracker/adapters/spec/index.test.ts",
+      "src/loop/bootstrap-trackerless.integration.test.ts"
+    ],
+    "validation_commands": [
+      "npm run build",
+      "npm test",
+      "npx vitest run src/tracker/adapters/spec",
+      "npx vitest run src/loop/bootstrap-trackerless"
+    ],
+    "issue_context": {
+      "id": "POL-324",
+      "title": "POL-324",
+      "key_requirements": [],
+      "body": "## Objective\n\nDocument the Work Contract architecture in a canonical spec document and add integration tests that verify trackerless bootstrap and dispatch round-trips.\n\n## Context\n\nPart of [POL-318](https://linear.app/lsctech/issue/POL-318/implement-decouple-packets-from-tracker-assumptions-with-spec-to-work). This is the terminal child — it documents what children 1–5 built and verifies the full trackerless execution path works end-to-end.\n\n## Goal\n\n1. Write `docs/Polaris/spec/work-contract-spec.md` documenting:\n   * The Work Contract normalized interface (`WorkContract` type fields and semantics).\n   * How each intake source (tracker, spec, prompt) maps to a WorkContract.\n   * The execution flow: source → WorkContract → LocalGraph → bootstrap → dispatch → finalize.\n   * Trackerless vs. tracker-backed mode differences.\n   * How evidence, commits, validation, and closeout work without a tracker.\n2. Add unit tests in `src/tracker/adapters/spec/index.test.ts` for SpecAdapter with a fixture spec markdown file.\n3. Add integration test in `src/loop/run-bootstrap.test.ts` (or a new file) that exercises trackerless bootstrap: create a spec, run SpecAdapter.syncIn(), call runLoopBootstrapInit(), verify the resulting state has correct cluster_id and open_children.\n\n## Scope\n\n* docs/Polaris/spec/work-contract-spec.md\n* src/tracker/adapters/spec/index.test.ts\n* src/loop/bootstrap-trackerless.integration.test.ts\n\n## Acceptance Criteria\n\n* `docs/Polaris/spec/work-contract-spec.md` exists and covers all 7 points above.\n* `SpecAdapter` unit tests pass with fixture spec file.\n* Trackerless bootstrap integration test passes.\n* `npm run build` passes.\n* `npm test` passes.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/tracker/adapters/spec\n* npx vitest run src/loop/bootstrap-trackerless\n\n## Ordering\n\n* Blocked by child 4 (SpecAdapter must exist) and child 5 (finalize trackerless support must be in place).\n\n## Non-goals\n\n* Do not add end-to-end finalize tests in this child (that is a separate test cluster).\n* Do not document GitHub issue or prompt sources (out of scope for this cluster)."
+    }
+  },
+  "lifecycle": {
+    "terminate_after_completion": true,
+    "max_concurrent": 1,
+    "cleanup_on_exit": "commit-and-exit"
+  },
+  "return_contract": [
+    "child_id",
+    "status",
+    "commit",
+    "validation",
+    "next_recommended_action"
+  ],
+  "prompt_mode": "compact",
+  "prompt_metrics": {
+    "mode": "compact",
+    "char_count": 6720,
+    "estimated_tokens": 1680
+  },
+  "role_context": {
+    "role": "worker",
+    "role_authority": "implementation",
+    "may_implement": true,
+    "may_assign_workers": false,
+    "prohibited_actions": [
+      "modify-cluster-plan",
+      "dispatch-children",
+      "polaris-loop-dispatch",
+      "polaris-loop-continue"
+    ]
+  },
+  "prohibited_write_paths": [
+    ".taskchain_artifacts/",
+    ".polaris/clusters/",
+    ".polaris/runs/",
+    "**/telemetry.jsonl"
+  ],
+  "result_file_contract": {
+    "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-318/results/POL-324-cc57ace0-3056-4c82-836e-16f76cccf3d3.json",
+    "result_required_fields": {
+      "run_id": "polaris-run-pol-318-2026-06-04-001",
+      "cluster_id": "POL-318",
+      "child_id": "<child_id>",
+      "status": "<status>",
+      "commit": "<commit>",
+      "validation": "<validation>",
+      "next_recommended_action": "<next_recommended_action>"
+    }
+  },
+  "context": {
+    "branch": "pol-318-delivery",
+    "worker_role": "impl"
+  }
+}
