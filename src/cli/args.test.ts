@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseCliArgs } from "./args.js";
+import { parseCliArgs, parseSpecPathFromPositional } from "./args.js";
 
 describe("parseCliArgs", () => {
   it("parses --state-file value", () => {
@@ -29,5 +29,10 @@ describe("parseCliArgs", () => {
     const r = parseCliArgs([]);
     expect(r.flags).toEqual({});
     expect(r.positional).toEqual([]);
+  });
+
+  it("extracts spec path from positional args", () => {
+    expect(parseSpecPathFromPositional(["spec", "./spec.md"])).toBe("./spec.md");
+    expect(parseSpecPathFromPositional(["run", "./spec.md"])).toBeNull();
   });
 });

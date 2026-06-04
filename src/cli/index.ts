@@ -7,6 +7,9 @@ import { getVersion } from "./version.js";
 import { createLoopCommand } from "../loop/index.js";
 import { runLoopContinue } from "../loop/continue.js";
 import { runLoopStatus } from "../loop/status.js";
+import { runParentLoop } from "../loop/parent.js";
+import { runLoopBootstrapInit } from "../loop/run-bootstrap.js";
+import { ensureClusterRunState } from "../loop/run-preflight.js";
 import { createMapCommand } from "../map/index.js";
 import { runMapQuery } from "../map/query.js";
 import { createFinalizeCommand } from "../finalize/index.js";
@@ -22,6 +25,7 @@ import { createTrackerCommand } from "./tracker.js";
 import { createWorkerCommand } from "./worker.js";
 import { createSkillCommand } from "../skill-packet/index.js";
 import { createLibrarianCommand } from "./librarian.js";
+import { SpecAdapter } from "../tracker/adapters/spec/index.js";
 
 export interface PolarisCommandHandlers {
   runLoopStatus?: typeof runLoopStatus;
@@ -44,6 +48,13 @@ function resolveStateFile(repoRoot: string, explicit?: string): string {
   if (existsSync(taskchainPath)) return taskchainPath;
   if (existsSync(polarisPath)) return polarisPath;
   return taskchainPath;
+}
+
+function assertSpecPath(specPath: string | undefined, commandName: string): string {
+  if (!specPath || specPath.trim().length === 0) {
+    throw new Error(`${commandName} requires a spec path`);
+  }
+  return resolve(specPath);
 }
 
 export function createPolarisCommand(options: PolarisCommandOptions = {}): Command {
@@ -73,6 +84,112 @@ export function createPolarisCommand(options: PolarisCommandOptions = {}): Comma
         json: commandOptions.json,
       });
     });
+
+  program
+    .command("analyze")
+    .description("analyze entrypoints")
+    .addCommand(
+      new Command("spec")
+        .description("safe/read-only: load a local spec markdown file into a local execution graph")
+        .argument("<path>", "Path to markdown spec file")
+        .option("-r, --repo-root <path>", "Repository root", repoRoot)
+        .action(async (specPath: string, commandOptions: { repoRoot: string }) => {
+          const resolvedRepoRoot = resolve(commandOptions.repoRoot ?? repoRoot);
+          const resolvedSpecPath = assertSpecPath(specPath, "polaris analyze spec");
+          const graph = await new SpecAdapter().syncIn(resolvedSpecPath);
+          const clusterId = graph.fullGraph.activeCluster;
+          const writtenPath = await graph.save(clusterId, resolvedRepoRoot);
+          process.stdout.write(
+            JSON.stringify(
+              {
+                cluster_id: clusterId,
+                source_type: graph.fullGraph.source.type,
+                children: graph.getActiveCluster().children,
+                clusters_file: writtenPath,
+              },
+              null,
+              2,
+            ) + "\n",
+          );
+        }),
+    );
+
+  program
+    .command("run")
+    .description("run entrypoints")
+    .addCommand(
+      new Command("spec")
+        .description("mutating: ingest a local spec markdown file and run normal parent bootstrap/dispatch")
+        .argument("<path>", "Path to markdown spec file")
+        .option("-r, --repo-root <path>", "Repository root", repoRoot)
+        .option("--state-file <path>", "Override path to current-state.json")
+        .option(
+          "--adapter <mode>",
+          "Execution adapter: agent-subtask, terminal-cli, ci, ssh, remote-worker, cross-agent",
+        )
+        .option(
+          "--provider <name>",
+          "AI provider for worker dispatch (e.g. claude, openai, gemini)",
+        )
+        .option("--dry-run", "Log dispatches without executing workers")
+        .option(
+          "--allow-analyze-children",
+          "Allow analyze-type children to be dispatched (overrides budget.allow_analyze_children)",
+        )
+        .action(
+          async (
+            specPath: string,
+            commandOptions: {
+              repoRoot: string;
+              stateFile?: string;
+              adapter?: string;
+              provider?: string;
+              dryRun?: boolean;
+              allowAnalyzeChildren?: boolean;
+            },
+          ) => {
+            const resolvedRepoRoot = resolve(commandOptions.repoRoot ?? repoRoot);
+            const resolvedSpecPath = assertSpecPath(specPath, "polaris run spec");
+            const graph = await new SpecAdapter().syncIn(resolvedSpecPath);
+            const clusterId = graph.fullGraph.activeCluster;
+            await graph.save(clusterId, resolvedRepoRoot);
+
+            const stateFile = resolveStateFile(resolvedRepoRoot, commandOptions.stateFile);
+            await ensureClusterRunState({
+              clusterId,
+              stateFile,
+              repoRoot: resolvedRepoRoot,
+              bootstrapHandler: runLoopBootstrapInit,
+            });
+            const result = await runParentLoop({
+              stateFile,
+              repoRoot: resolvedRepoRoot,
+              adapter: commandOptions.adapter,
+              provider: commandOptions.provider,
+              dryRun: commandOptions.dryRun,
+              allowAnalyzeChildren: commandOptions.allowAnalyzeChildren,
+            });
+
+            const summary = [
+              `Polaris parent loop halted: ${result.haltReason}`,
+              `Cluster: ${clusterId}`,
+              `Children dispatched: ${result.childrenDispatched}`,
+              result.haltingChild ? `Halting child: ${result.haltingChild}` : undefined,
+              result.message,
+            ]
+              .filter((line): line is string => Boolean(line))
+              .join("\n");
+
+            if (result.haltReason === "cluster-complete") {
+              process.stdout.write(`${summary}\n`);
+              return;
+            }
+
+            process.stderr.write(`${summary}\n`);
+            process.exit(1);
+          },
+        ),
+    );
 
   program.addCommand(
     createLoopCommand({

@@ -26,3 +26,10 @@ export function parseCliArgs(argv: string[]): CliArgs {
   }
   return { flags, positional };
 }
+
+export function parseSpecPathFromPositional(positional: string[]): string | null {
+  if (positional.length < 2) {
+    return null;
+  }
+  return positional[0] === "spec" ? positional[1] : null;
+}
