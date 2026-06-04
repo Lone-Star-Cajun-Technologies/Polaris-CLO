@@ -537,7 +537,7 @@ export function compileFinalizePacket(input: CompileFinalizePacketInput): Worker
     `Push branch "${input.branch}" to origin.`,
     `Create PR targeting "${targetBranch}".`,
     `Write PR URL to ${input.stateFile}.`,
-    `Update Linear parent issue ${input.clusterId} to Done.`,
+    `If tracker is configured: update the parent issue ${input.clusterId} to In Review / Done per your tracker adapter. If no tracker: skip this step.`,
     `Append finalize telemetry events to ${input.telemetryFile}.`,
     `Write compact finalize JSON to stdout (fields: ${FINALIZE_RETURN_CONTRACT.join(', ')}).`,
     `TERMINATE SESSION IMMEDIATELY.`,

@@ -42,13 +42,13 @@ function buildAnalyzePacket(config: Required<SkillPacketConfig>): Omit<SkillPack
       "Call polaris loop continue or polaris finalize",
     ],
     allowed_outputs: [
-      "Linear issue descriptions and child issues",
+      "Tracker child issues or local work unit files (depending on work source)",
       "Cluster artifact files (.polaris/clusters/)",
       "Spec documents in docs/",
       "Tracker comments and status updates",
     ],
     deliverables: [
-      "Implementation-ready Linear issues, or",
+      "Implementation-ready work units (tracker issues or local work unit files)",
       "Explanation of why user approval is needed for deeper analysis",
     ],
     stop_conditions: [
