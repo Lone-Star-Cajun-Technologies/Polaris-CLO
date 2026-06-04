@@ -1,0 +1,22 @@
+{
+  "name": "polaris-catalog-chain",
+  "steps": [
+    "01-orient-catalog",
+    "02-reconcile-polaris-md",
+    "03-reconcile-summary-md",
+    "04-classify-and-place",
+    "05-catalog-commit"
+  ],
+  "terminal_steps": ["05-catalog-commit"],
+  "scope": "cognition-and-docs",
+  "forbidden_actions": [
+    "src file mutations",
+    "runtime state file mutations",
+    "polaris loop continue",
+    "polaris finalize",
+    "git push",
+    "pr creation",
+    "mv/cp on smartdocs/ files",
+    "auto-placing low-confidence files"
+  ]
+}

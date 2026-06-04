@@ -33,8 +33,10 @@ message whose primary instruction is to invoke a named Polaris skill.
 | `run polaris-status` | polaris-tools | `.polaris/skills/polaris-tools/` |
 | `docs-ingest` | docs-ingest | `.polaris/skills/docs-ingest/` |
 | `run docs-ingest` | docs-ingest | `.polaris/skills/docs-ingest/` |
-| `docs-promote` | docs-promote | `.polaris/skills/docs-promote/` |
-| `run docs-promote` | docs-promote | `.polaris/skills/docs-promote/` |
+| `polaris-reconcile <POL-###>` | polaris-reconcile | `.polaris/skills/polaris-reconcile/` |
+| `run polaris-reconcile on [issue] <POL-###>` | polaris-reconcile | `.polaris/skills/polaris-reconcile/` |
+| `polaris-catalog <POL-###>` | polaris-catalog | `.polaris/skills/polaris-catalog/` |
+| `run polaris-catalog on [issue] <POL-###>` | polaris-catalog | `.polaris/skills/polaris-catalog/` |
 
 > **Note:** `closeout-librarian` is NOT a user-facing command. It is dispatched by the
 > Foreman as a bounded session during step 08 of the `polaris-run` chain. Users do not

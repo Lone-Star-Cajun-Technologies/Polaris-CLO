@@ -1,0 +1,20 @@
+{
+  "name": "polaris-reconcile-chain",
+  "steps": [
+    "01-orient-reconcile",
+    "02-reconcile-polaris-md",
+    "03-reconcile-summary-md",
+    "04-reconcile-commit"
+  ],
+  "terminal_steps": ["04-reconcile-commit"],
+  "scope": "cognition-only",
+  "forbidden_actions": [
+    "src file mutations",
+    "runtime state file mutations",
+    "document ingestion or promotion",
+    "polaris loop continue",
+    "polaris finalize",
+    "git push",
+    "pr creation"
+  ]
+}
