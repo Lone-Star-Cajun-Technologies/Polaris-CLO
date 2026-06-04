@@ -424,6 +424,8 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
   const trackerType = config.tracker?.adapter;
   if (!trackerType) {
     console.log("[6/14] Tracker not configured — skipping reconciliation.");
+  } else if (trackerType === "local") {
+    console.log("[6/14] Local adapter — skipping remote tracker reconciliation.");
   } else if (trackerType === "linear") {
     console.log("[6/14] Linear adapter is sync-in only — skipping reconciliation (use mcp-bridge for two-way sync).");
   } else if (trackerType === "mcp-bridge") {
@@ -497,10 +499,20 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
   const telemetryFile = join(artifactDir, "runs", state.run_id, "telemetry.jsonl");
   stepAppendJsonl(telemetryFile, state, prUrl);
 
-  // Step 13: Update Linear parent issue
-  console.log("[13/14] Updating Linear...");
-  const linearEnabled = config.tracker?.linear?.enabled ?? false;
-  await stepUpdateLinear(state, branch, prUrl, true, linearEnabled, state.cluster_id);
+  // Step 13: Update tracker issue when Linear integration is enabled
+  console.log("[13/14] Updating tracker (if configured)...");
+  const linearEnabled = trackerType === "local" ? false : (config.tracker?.linear?.enabled ?? false);
+  if (!linearEnabled) {
+    if (trackerType === "local") {
+      console.log("[13/14] Local adapter configured — skipping Linear issue update.");
+    } else if (!trackerType) {
+      console.log("[13/14] Tracker not configured — skipping Linear issue update.");
+    } else {
+      console.log("[13/14] Linear integration disabled — skipping Linear issue update.");
+    }
+  } else {
+    await stepUpdateLinear(state, branch, prUrl, true, linearEnabled, state.cluster_id);
+  }
 
   // Step 14: Archive run snapshot
   console.log("[14/14] Archiving run snapshot...");
