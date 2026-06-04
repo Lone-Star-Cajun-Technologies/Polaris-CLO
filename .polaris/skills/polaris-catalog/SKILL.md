@@ -10,7 +10,7 @@ role: librarian
 
 Run the following command:
 
-```
+```bash
 npm run polaris -- skill packet catalog
 ```
 
@@ -64,7 +64,7 @@ The `packet.unattended` flag controls which low-confidence behavior applies.
 ## Hard rules — what polaris-catalog must NOT do
 
 - Modify implementation source code (`src/`, tests, config)
-- Modify runtime state files (`.taskchain_artifacts/`, telemetry JSONL, cluster-state)
+- Modify runtime state files outside this skill's owned artifacts (cluster-state, other skills' `.taskchain_artifacts/` state, or non-catalog telemetry)
 - Call `npm run polaris -- loop continue` or `npm run polaris -- finalize`
 - Write to `packet.prohibited_write_paths`
 - Git push or create PRs
