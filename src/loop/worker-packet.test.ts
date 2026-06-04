@@ -200,13 +200,13 @@ describe("compileImplPacket", () => {
 
   it("always populates result_file_contract from resultFile", () => {
     const p = compileImplPacket({ ...BASE, childId: "POL-121" });
-    expect(p.result_file_contract).toEqual({ result_file: BASE.resultFile });
+    expect(p.result_file_contract.result_file).toBe(BASE.resultFile);
   });
 
   it("uses the provided resultFile in result_file_contract", () => {
     const customResultFile = "/tmp/custom-result.json";
     const p = compileImplPacket({ ...BASE, childId: "POL-121", resultFile: customResultFile });
-    expect(p.result_file_contract).toEqual({ result_file: customResultFile });
+    expect(p.result_file_contract.result_file).toBe(customResultFile);
   });
 
   it("is a valid BootstrapPacket (has all required v1 fields)", () => {
@@ -251,7 +251,7 @@ describe("compileFinalizePacket", () => {
 
   it("always populates result_file_contract from resultFile", () => {
     const p = compileFinalizePacket(BASE);
-    expect(p.result_file_contract).toEqual({ result_file: BASE.resultFile });
+    expect(p.result_file_contract.result_file).toBe(BASE.resultFile);
   });
 
   it("does not reference skill files", () => {
@@ -277,7 +277,7 @@ describe("compileStartupPacket", () => {
 
   it("always populates result_file_contract from resultFile", () => {
     const p = compileStartupPacket(BASE);
-    expect(p.result_file_contract).toEqual({ result_file: BASE.resultFile });
+    expect(p.result_file_contract.result_file).toBe(BASE.resultFile);
   });
 });
 
@@ -311,7 +311,7 @@ describe("compilePreflightPacket", () => {
 
   it("always populates result_file_contract from resultFile", () => {
     const p = compilePreflightPacket(BASE);
-    expect(p.result_file_contract).toEqual({ result_file: BASE.resultFile });
+    expect(p.result_file_contract.result_file).toBe(BASE.resultFile);
   });
 });
 
@@ -486,7 +486,44 @@ describe("result_file_contract — prompt consistency", () => {
   it("result_file_contract serializes to JSON top-level (no undefined drop)", () => {
     const p = compileImplPacket({ ...BASE, childId: "POL-121" });
     const serialized = JSON.parse(JSON.stringify(p)) as Record<string, unknown>;
-    expect(serialized.result_file_contract).toBeDefined();
-    expect((serialized.result_file_contract as Record<string, unknown>).result_file).toBe(BASE.resultFile);
+    const rfc = serialized.result_file_contract as Record<string, unknown>;
+    expect(rfc).toBeDefined();
+    expect(rfc.result_file).toBe(BASE.resultFile);
+    expect(rfc.result_required_fields).toBeDefined();
+  });
+});
+
+// ── SealedWorkerResult — status: done ────────────────────────────────────────
+
+import type { SealedWorkerResult, SealedResultFileContract } from "./worker-packet.js";
+
+describe("SealedWorkerResult", () => {
+  it("accepts status: done", () => {
+    const result: SealedWorkerResult = {
+      run_id: "run-1",
+      child_id: "POL-314",
+      status: "done",
+      commit: "abc1234",
+      validation: "passed",
+    };
+    expect(result.status).toBe("done");
+  });
+});
+
+describe("SealedResultFileContract", () => {
+  it("includes result_required_fields template", () => {
+    const contract: SealedResultFileContract = {
+      result_file: ".polaris/clusters/POL-313/results/POL-314-abc.json",
+      result_required_fields: {
+        run_id: "<run_id from packet>",
+        cluster_id: "<cluster_id from packet>",
+        child_id: "<active_child from packet>",
+        status: "done",
+        commit: "<git commit sha>",
+        validation: "passed",
+      },
+    };
+    expect(contract.result_required_fields).toBeDefined();
+    expect(contract.result_required_fields!["status"]).toBe("done");
   });
 });

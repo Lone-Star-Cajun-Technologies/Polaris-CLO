@@ -1275,6 +1275,6 @@ describe("result_file_contract — dispatch contract consistency", () => {
 
     expect(liveRfc).toBeDefined();
     expect(typeof liveRfc.result_file).toBe("string");
-    expect(Object.keys(liveRfc)).toEqual(["result_file"]);
+    expect(Object.keys(liveRfc)).toContain("result_file");
   });
 });
