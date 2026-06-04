@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The finalize subsystem implements the atomic 13-step final delivery sequence for a Polaris cluster run. It is the only subsystem that pushes branches, opens PRs, and closes out Linear issues. It runs at session end when all children are Done and the user requests delivery.
+The finalize subsystem implements the atomic 14-step final delivery sequence for a Polaris cluster run. It is the only subsystem that pushes branches, opens PRs, and performs post-PR tracker updates. It runs at session end when all children are Done and the user requests delivery.
 
 ## What belongs here
 
@@ -22,6 +22,7 @@ The finalize subsystem implements the atomic 13-step final delivery sequence for
 
 - The finalize sequence is fixed and ordered. Do not reorder steps or add delivery steps outside `steps/`.
 - Each step file exports a single named function (`step<Name>`). Steps must not call each other directly — the orchestrator in `index.ts` sequences them.
+- Closeout Librarian gating is mandatory before push/PR unless `--skip-librarian` is explicitly set for backward compatibility.
 - Tracker reconciliation runs before the final commit. Only validated cluster-state/result evidence may queue sync-out mutations, and any tracker conflict/failure must abort finalize.
 - Treat `artifact-policy.ts` as the single source of truth for Polaris-owned artifact promotion and commit-hygiene rules; do not duplicate `.polaris/`/`.taskchain_artifacts/` path checks in individual step files.
 - `stepCommit` must only promote durable Polaris evidence plus intentional source/doc changes; live workspace scratch stays out of delivery commits.
@@ -33,10 +34,11 @@ The finalize subsystem implements the atomic 13-step final delivery sequence for
 ## Route model
 
 - Delivery is atomic: if any step fails, the session does not report completion.
-- Tracker sync-out is atomic with finalize: unresolved reconciliation failures block delivery before the final commit.
+- Tracker reconciliation behavior is adapter-specific: `mcp-bridge` reconciles; `linear` and `local` skip reconciliation by design.
+- Closeout Librarian result validation gates finalize progression before remote delivery.
 - The PR is created as a draft (`prDraft: true` by default in config).
 - `polaris finalize` reads `current-state.json` for cluster_id, branch, run_id, and completed_children — it does not re-read Linear for this information.
-- Linear parent issue (cluster_id) is updated in step 11 after the PR URL is known.
+- Tracker update step runs after PR creation; local/disabled tracker modes skip Linear mutation safely.
 
 ## Read before editing
 

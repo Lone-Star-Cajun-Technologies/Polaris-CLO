@@ -1,29 +1,29 @@
-<!-- polaris:draft -->
 # Summary: cli
 
-> Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
-
 ## Purpose
-<!-- One-line statement of what this folder does. -->
+Command wiring for the `polaris` binary and command-family entrypoints.
 
 ## Core Concepts
-<!-- 3–7 key concepts a reader needs before diving into source. -->
+- Commander.js command tree is assembled in `index.ts`.
+- Command implementations live in subsystem routes; this folder only delegates.
+- `analyze spec` and `run spec` flow through `SpecAdapter` to create/load local graphs.
 
 ## Architectural Role
-<!-- How this folder fits into the larger system. -->
+Defines operator-facing invocation surfaces while keeping runtime logic elsewhere.
 
 ## Key Constraints
-<!-- The most important non-obvious behavioral limits. -->
+- Do not embed subsystem business logic in CLI wiring.
+- Missing/invalid subcommands must fail with actionable help.
+- Version reporting must come from package metadata via `getVersion()`.
 
 ## Important Relationships
-<!-- Upstream/downstream dependencies on other folders. -->
+- **Downstream:** `src/loop`, `src/finalize`, `src/map`, `src/config`, `src/smartdocs-engine`
 
 ## Current State
-<!-- What is implemented, what is not yet, known gaps. -->
+Includes dedicated surfaces for spec-driven flows and closeout librarian packet dispatch alongside loop/finalize/map commands.
 
 ## Known Drift
-<!-- Places where the summary may be stale (honesty field. -->
+None identified in this reconciliation pass.
 
 ## Linked Canonical Sources
 - [POLARIS.md](POLARIS.md)
-<!-- Links to spec files, doctrine, etc. -->

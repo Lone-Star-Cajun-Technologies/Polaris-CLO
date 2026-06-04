@@ -1,29 +1,32 @@
-<!-- polaris:draft -->
 # Summary: src
 
-> Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
-
 ## Purpose
-<!-- One-line statement of what this folder does. -->
+Core Polaris runtime code for orchestration, execution, tracker integration, and delivery.
 
 ## Core Concepts
-<!-- 3–7 key concepts a reader needs before diving into source. -->
+- `LocalGraph` is the canonical work graph abstraction.
+- The loop subsystem owns dispatch/checkpoint/resume boundaries.
+- The finalize subsystem owns delivery, including the closeout-librarian gate.
+- Tracker adapters are pluggable; runtime logic remains adapter-agnostic.
 
 ## Architectural Role
-<!-- How this folder fits into the larger system. -->
+Implements the executable engine used by `polaris` CLI commands.
 
 ## Key Constraints
-<!-- The most important non-obvious behavioral limits. -->
+- Source mutation must happen in worker scope, not foreman scope.
+- Runtime state files are controlled by checkpoint/cluster-state stores.
+- Finalize must block when librarian gating or delivery-integrity checks fail.
 
 ## Important Relationships
-<!-- Upstream/downstream dependencies on other folders. -->
+- **Upstream:** repo config (`polaris.config.json`), cluster artifacts in `.polaris/`
+- **Downstream:** GitHub/Linear side effects through finalize + tracker adapters
 
 ## Current State
-<!-- What is implemented, what is not yet, known gaps. -->
+Tracker-aware and trackerless flows are both supported; finalize now enforces a closeout-librarian result gate before remote delivery.
 
 ## Known Drift
-<!-- Places where the summary may be stale (honesty field). -->
+None identified in this reconciliation pass.
 
 ## Linked Canonical Sources
 - [POLARIS.md](POLARIS.md)
-<!-- Links to spec files, doctrine, etc. -->
+- `docs/spec/polaris-architecture-spec.md`

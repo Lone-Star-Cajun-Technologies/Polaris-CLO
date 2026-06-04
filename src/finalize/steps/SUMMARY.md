@@ -1,29 +1,30 @@
-<!-- polaris:draft -->
 # Summary: steps
 
-> Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
-
 ## Purpose
-<!-- One-line statement of what this folder does. -->
+Discrete implementation units for finalize step side effects.
 
 ## Core Concepts
-<!-- 3–7 key concepts a reader needs before diving into source. -->
+- Each numbered file maps to a delivery stage in `runFinalize`.
+- Steps are intentionally small and side-effect scoped.
+- Orchestrator-level gates (librarian gate, delivery integrity, skip flags) live outside this folder.
 
 ## Architectural Role
-<!-- How this folder fits into the larger system. -->
+Provides composable step primitives consumed by finalize orchestration.
 
 ## Key Constraints
-<!-- The most important non-obvious behavioral limits. -->
+- Keep step contracts stable: function names and numbering are externally referenced.
+- Do not move tracker/librarian gate logic into step files unless the orchestrator contract changes.
+- Steps should depend on passed-in state rather than reading global mutable context.
 
 ## Important Relationships
-<!-- Upstream/downstream dependencies on other folders. -->
+- **Upstream:** `src/finalize/index.ts`
+- **Downstream:** git/GitHub/telemetry/Linear side effects
 
 ## Current State
-<!-- What is implemented, what is not yet, known gaps. -->
+Implements map validation, report generation, commit/push/PR/state update, telemetry append, tracker update, and archive steps.
 
 ## Known Drift
-<!-- Places where the summary may be stale (honesty field). -->
+None identified in this reconciliation pass.
 
 ## Linked Canonical Sources
 - [POLARIS.md](POLARIS.md)
-<!-- Links to spec files, doctrine, etc. -->

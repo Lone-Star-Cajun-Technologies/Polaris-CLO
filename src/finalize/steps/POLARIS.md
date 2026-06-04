@@ -1,11 +1,8 @@
-<!-- polaris:draft -->
 # steps
-
-> Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
 
 ## Purpose
 
-<!-- One paragraph describing what this folder does. -->
+Houses finalize step implementations (`step<Name>`) invoked by `src/finalize/index.ts` in strict order.
 
 **Domain:** finalize
 **Route:** src/finalize
@@ -28,15 +25,21 @@
 
 ## What does not belong here
 
-<!-- Explicit exclusions of files or responsibilities. -->
+- Command registration and step sequencing logic (belongs in `src/finalize/index.ts`)
+- Artifact classification policy (belongs in `src/finalize/artifact-policy.ts`)
+- Loop state read/write helpers (belongs in `src/loop/checkpoint.ts`)
 
 ## Editing rules
 
-<!-- Behavioral constraints for agents and humans. -->
+- Export one step function per file; avoid cross-calling other step modules.
+- Keep each step focused on its scoped side effect and fail loudly on hard errors.
+- Preserve current step numbering contracts unless orchestrator step order is intentionally migrated.
 
 ## Architecture assumptions
 
-<!-- What the code assumes about the world. -->
+- `runFinalize` orchestrates ordering, gates, and skip flags.
+- Tracker update step must safely no-op when tracker or credentials are unavailable.
+- State and telemetry paths are provided by orchestrator context.
 
 ## Read before editing
 
@@ -44,4 +47,4 @@
 
 ## Related routes
 
-<!-- Atlas route pointer to sibling or parent folders. -->
+- `polaris.finalize` (parent route)

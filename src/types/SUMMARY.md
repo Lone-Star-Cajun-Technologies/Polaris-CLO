@@ -1,29 +1,29 @@
-<!-- polaris:draft -->
 # Summary: types
 
-> Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
-
 ## Purpose
-<!-- One-line statement of what this folder does. -->
+Holds shared runtime type contracts consumed across Polaris subsystems.
 
 ## Core Concepts
-<!-- 3–7 key concepts a reader needs before diving into source. -->
+- `CurrentState`/audit types model persisted run lifecycle state.
+- `WorkContract` normalizes work intake across tracker-backed and local sources.
+- Integration declaration files support typed external adapter/tool boundaries.
 
 ## Architectural Role
-<!-- How this folder fits into the larger system. -->
+Prevents type drift between loop, finalize, tracker, and CLI surfaces.
 
 ## Key Constraints
-<!-- The most important non-obvious behavioral limits. -->
+- Changes here can break multiple routes; keep contracts backward compatible where feasible.
+- Core contracts should not encode tracker-specific assumptions.
+- Keep declarations focused on structure; behavior belongs in implementation routes.
 
 ## Important Relationships
-<!-- Upstream/downstream dependencies on other folders. -->
+- **Downstream:** `src/loop`, `src/finalize`, `src/tracker`, `src/cli`
 
 ## Current State
-<!-- What is implemented, what is not yet, known gaps. -->
+Includes runtime state contracts and a two-source work contract (`linear` and `local`) for tracker-backed and trackerless execution paths.
 
 ## Known Drift
-<!-- Places where the summary may be stale (honesty field). -->
+None identified in this reconciliation pass.
 
 ## Linked Canonical Sources
 - [POLARIS.md](POLARIS.md)
-<!-- Links to spec files, doctrine, etc. -->

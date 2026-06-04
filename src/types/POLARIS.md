@@ -1,11 +1,8 @@
-<!-- polaris:draft -->
 # types
-
-> Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
 
 ## Purpose
 
-<!-- One paragraph describing what this folder does. -->
+Shared TypeScript contracts used across runtime subsystems for state, work intake normalization, and generated tool declarations.
 
 **Domain:** types
 **Route:** src/types
@@ -13,19 +10,27 @@
 
 ## What belongs here
 
-- `runtime-state.ts` — src/types (types)
+- `runtime-state.ts` — current-state and audit event contracts
+- `work-contract.ts` — normalized tracker/spec work contract types
+- `linear.ts` / `tool-server-linear.d.ts` — generated integration type declarations
 
 ## What does not belong here
 
-<!-- Explicit exclusions of files or responsibilities. -->
+- Runtime business logic or adapter implementations
+- Domain-local types that are only consumed in one folder
+- JSON schema source-of-truth definitions (`src/config/schema.json`)
 
 ## Editing rules
 
-<!-- Behavioral constraints for agents and humans. -->
+- Keep shared types stable and additive when possible; avoid breaking cross-route consumers.
+- Preserve tracker-agnostic naming in core contracts (`WorkContract`, `WorkSource`).
+- When changing shared contracts, update dependent docs/tests in the same change set.
 
 ## Architecture assumptions
 
-<!-- What the code assumes about the world. -->
+- Runtime state persists through `current-state.json` with compatibility fields.
+- Work intake normalizes heterogeneous sources into `WorkContract`.
+- Type declarations here are consumed by both loop/finalize orchestration and adapters.
 
 ## Read before editing
 
@@ -33,4 +38,5 @@
 
 ## Related routes
 
-<!-- Atlas route pointer to sibling or parent folders. -->
+- `polaris.types` (this route)
+- `polaris.loop`, `polaris.finalize`, `polaris.tracker` (primary consumers)

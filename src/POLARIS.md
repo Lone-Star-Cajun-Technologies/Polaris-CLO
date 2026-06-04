@@ -1,32 +1,39 @@
-<!-- polaris:draft -->
 # src
-
-> Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
 
 ## Purpose
 
-<!-- One paragraph describing what this folder does. -->
+Primary runtime surface for Polaris: CLI entrypoints, execution loop, tracker adapters, finalize delivery, configuration, and shared types.
 
 ## What belongs here
 
-<!-- Bulleted file list of contents. -->
+- Runtime modules under domain folders (`cli`, `loop`, `finalize`, `config`, `tracker`, `types`, etc.)
+- Domain-local tests colocated with implementation (`*.test.ts`)
+- Route-local cognition files (`POLARIS.md`, `SUMMARY.md`)
 
 ## What does not belong here
 
-<!-- Explicit exclusions of files or responsibilities. -->
+- SmartDocs canonical doctrine/spec artifacts (`smartdocs/`)
+- Runtime state artifacts (`.polaris/`, `.taskchain_artifacts/`)
+- Ad-hoc scripts that bypass route command boundaries
 
 ## Editing rules
 
-<!-- Behavioral constraints for agents and humans. -->
+- Keep ownership boundaries intact: `cli` wires commands, `loop` orchestrates run state, `finalize` handles delivery, `tracker` owns tracker adapters.
+- Preserve tracker-agnostic behavior in runtime flow; tracker-specific behavior stays in adapters.
+- Prefer extending existing subsystems over introducing cross-route shortcuts.
 
 ## Architecture assumptions
 
-<!-- What the code assumes about the world. -->
+- Polaris run flow is analyze → run/loop dispatch → closeout librarian gate → finalize delivery.
+- `LocalGraph` is the normalized execution graph regardless of upstream work source.
+- Canon and runtime state validation are expected to fail closed.
 
 ## Read before editing
 
-<!-- Links to canonical sources (doctrine, specs). -->
+- `docs/spec/polaris-architecture-spec.md`
+- `smartdocs/specs/active/foreman-worker-architecture.md`
+- `smartdocs/specs/active/closeout-librarian-spec.md`
 
 ## Related routes
 
-<!-- Atlas route pointer to sibling or parent folders. -->
+- `polaris.*` (all runtime surfaces beneath `src/`)

@@ -1,29 +1,31 @@
-<!-- polaris:draft -->
 # Summary: config
 
-> Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
-
 ## Purpose
-<!-- One-line statement of what this folder does. -->
+Loads, merges, and validates `PolarisConfig` for all runtime subsystems.
 
 ## Core Concepts
-<!-- 3–7 key concepts a reader needs before diving into source. -->
+- `DEFAULT_CONFIG` is the authoritative baseline.
+- User config is deep-merged over defaults.
+- Schema/types must stay aligned with defaults and validator behavior.
+- Tracker adapter selection is explicit (`linear`, `mcp-bridge`, `local`) and may be omitted.
 
 ## Architectural Role
-<!-- How this folder fits into the larger system. -->
+Provides one normalized config contract consumed by loop, finalize, map, and tracker subsystems.
 
 ## Key Constraints
-<!-- The most important non-obvious behavioral limits. -->
+- Defaults must always be valid against schema constraints.
+- New config fields require synchronized updates across schema, TS types, and defaults.
+- Callers should use `loadConfig()` rather than raw file reads.
 
 ## Important Relationships
-<!-- Upstream/downstream dependencies on other folders. -->
+- **Upstream:** `polaris.config.json`
+- **Downstream:** `src/loop`, `src/finalize`, `src/tracker`, `src/skill-packet`
 
 ## Current State
-<!-- What is implemented, what is not yet, known gaps. -->
+Config surfaces support trackerless/local execution and remote tracker adapters without requiring Linear as a hard dependency.
 
 ## Known Drift
-<!-- Places where the summary may be stale (honesty field. -->
+None identified in this reconciliation pass.
 
 ## Linked Canonical Sources
 - [POLARIS.md](POLARIS.md)
-<!-- Links to spec files, doctrine, etc. -->
