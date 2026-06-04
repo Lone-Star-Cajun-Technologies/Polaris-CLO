@@ -19,7 +19,6 @@ import {
 } from "../map/atlas.js";
 import { getMonotonicTimestamp } from "../utils/monotonic-timestamp.js";
 import { isIngestIneligible } from "./smartdoc-ignore.js";
-import { addCandidateGovernanceMetadata } from "./doctrine.js";
 import { applySummaryDelta, findNearestSummarymd, detectPrecedenceLevel } from "../cognition/summary-delta.js";
 
 export type DocsClassification =
@@ -81,7 +80,7 @@ const TARGET_DIRS: Record<DocsClassification, string> = {
   "spec-raw": `${CANONICAL_TARGET}/raw`,
   "spec-active": `${CANONICAL_TARGET}/specs/active`,
   "audit-finding": `${CANONICAL_TARGET}/audits/findings`,
-  "doctrine-candidate": `${CANONICAL_TARGET}/doctrine/candidate`,
+  "doctrine-candidate": `${CANONICAL_TARGET}/doctrine/active`,
   architecture: `${CANONICAL_TARGET}/architecture`,
   decision: `${CANONICAL_TARGET}/decisions`,
   "deprecated-noise": `${CANONICAL_TARGET}/runtime/generated`,
@@ -478,13 +477,6 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
     });
 
     if (!options.dryRun) {
-      let output = classification === "doctrine-candidate" ? addCandidateFrontMatter(content, relSource) : content;
-      if (classification === "doctrine-candidate") {
-        output = addCandidateGovernanceMetadata(output, classification);
-      }
-      if (output !== content) {
-        writeFileSync(absSource, output, "utf-8");
-      }
       if (resolve(absSource) !== resolve(destination)) {
         renameSync(absSource, destination);
       }
