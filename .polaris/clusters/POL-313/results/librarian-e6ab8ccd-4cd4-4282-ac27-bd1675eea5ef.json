@@ -1,0 +1,49 @@
+{
+  "schema_version": "1.0",
+  "role": "closeout-librarian",
+  "run_id": "polaris-run-pol-313-2026-06-04-001",
+  "dispatch_id": "e6ab8ccd-4cd4-4282-ac27-bd1675eea5ef",
+  "cluster_id": "POL-313",
+  "status": "partial",
+  "commit_sha": "ee0f0ffb9e0f413d4966cb89cd593d70ecb60bf3",
+  "commit_message": "docs(closeout): reconcile cognition for cluster POL-313\n\nRun: polaris-run-pol-313-2026-06-04-001\nCluster: POL-313\nChildren: POL-314, POL-315, POL-316\nFiles updated:\n- POLARIS.md: 1 files\n- SUMMARY.md: 1 files\n- docs ingested: 0\n- links repaired: 0",
+  "files_committed": [
+    "src/smartdocs-engine/POLARIS.md",
+    "src/smartdocs-engine/SUMMARY.md"
+  ],
+  "polaris_md_updates": [
+    {
+      "file": "src/smartdocs-engine/POLARIS.md",
+      "action": "update",
+      "change_summary": "Reconciled SmartDocs ingest guidance with current smartdocs/ paths, doctrine auto-promotion, and telemetry names."
+    }
+  ],
+  "summary_md_updates": [
+    {
+      "file": "src/smartdocs-engine/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Updated continuation summary for doctrine-classified ingest auto-promotion and doc-auto-promoted telemetry."
+    }
+  ],
+  "docs_ingested": [],
+  "docs_archived": [],
+  "yaml_updates": [],
+  "cognition_archived": [],
+  "link_validation": {
+    "total_checked": 1,
+    "valid": 1,
+    "broken": 0,
+    "repaired": 0,
+    "unrepairable": []
+  },
+  "blockers": [
+    {
+      "type": "conflict-detected",
+      "description": "Active spec smartdocs/specs/active/docs-authority-model.md still describes doctrine-candidate ingest as candidate-first and says active doctrine promotion requires explicit user approval. The completed implementation routes doctrine-classified ingest directly to smartdocs/doctrine/active/. Closeout reconciled route-local cognition only; active spec reconciliation needs separate operator-approved canon work.",
+      "affected_file": "smartdocs/specs/active/docs-authority-model.md",
+      "resolution_required": false
+    }
+  ],
+  "reconciled_at": "2026-06-04T04:58:28Z",
+  "evidence_summary": "Reconciled src/smartdocs-engine cognition after POL-314, POL-315, and POL-316 changed SmartDocs ingest behavior. Updated POLARIS.md and SUMMARY.md to describe smartdocs/ as the canonical structure, doctrine-classified ingest auto-promotion into smartdocs/doctrine/active/, and doc-auto-promoted telemetry. No SmartDocs raw documents or cognition notes were ingested or archived. Active docs-authority-model remains inconsistent with the implemented auto-promotion behavior and is recorded for future operator-approved canon reconciliation."
+}

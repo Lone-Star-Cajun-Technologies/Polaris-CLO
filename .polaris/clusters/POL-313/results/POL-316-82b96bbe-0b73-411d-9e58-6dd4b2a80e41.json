@@ -1,0 +1,32 @@
+{
+  "run_id": "polaris-run-pol-313-2026-06-04-001",
+  "cluster_id": "POL-313",
+  "child_id": "POL-316",
+  "status": "done",
+  "commit": "e4b1c06d4645ca113aff9e263b65199f6e349055",
+  "files_changed": [
+    "src/smartdocs-engine/ingest.test.ts"
+  ],
+  "validation": {
+    "npm run build": {
+      "status": "passed",
+      "evidence": "tsc completed with exit code 0"
+    },
+    "npm test": {
+      "status": "failed",
+      "evidence": "vitest run: 1328 passed, 2 failed; failures were src/finalize/linear.test.ts assertNotDoneState cancelled type and src/loop/polaris-run-docs.test.ts step order"
+    },
+    "npx vitest run src/smartdocs-engine": {
+      "status": "passed",
+      "evidence": "9 test files passed; 160 tests passed"
+    },
+    "npx vitest run src/smartdocs-engine/ingest.test.ts": {
+      "status": "passed",
+      "evidence": "1 test file passed; 14 tests passed"
+    }
+  },
+  "blockers": [
+    "Full npm test has two out-of-scope failures unrelated to src/smartdocs-engine/ingest.test.ts."
+  ],
+  "next_recommended_action": "continue"
+}

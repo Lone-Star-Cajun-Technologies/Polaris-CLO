@@ -1,0 +1,86 @@
+{
+  "schema_version": "2.1",
+  "worker_role": "impl",
+  "run_id": "polaris-run-pol-313-2026-06-04-001",
+  "cluster_id": "POL-313",
+  "active_child": "POL-314",
+  "state_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json",
+  "telemetry_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-313-2026-06-04-001/telemetry.jsonl",
+  "instructions": {
+    "primary_goal": "Issue: POL-314 — POL-314\nWorktree: .\nBranch: pol-313-delivery\n\n## Goal\n## Objective\n\nRemove the `doctrine/candidate/` staging step from `ingestDocs()` so that doctrine-classified documents no longer pass through an intermediate candidate folder.\n\n## Context\n\nPart of [POL-313](https://linear.app/lsctech/issue/POL-313/implement-ingest-auto-promote-with-compact-foreman-notification) cluster. Currently, when `classifyDoc()` returns `\"doctrine-candidate\"`, `ingestDocs()` routes the file to `smartdocs/doctrine/candidate/` and calls `addCandidateFrontMatter()` to stamp a `status: candidate` marker. This staging step is unnecessary — it requires a manual `polaris doctrine promote` invocation before the doc becomes active. This child removes that gate.\n\n## Goal\n\nChange the `TARGET_DIRS` entry for `\"doctrine-candidate\"` in `src/smartdocs-engine/ingest.ts` to point to `smartdocs/doctrine/active/` and remove the call to `addCandidateFrontMatter()` in the ingest loop for doctrine-classified docs. The `addCandidateGovernanceMetadata()` call in `doctrine.ts` should also be removed from the ingest path (governance frontmatter is no longer needed at ingest time since there is no review gate).\n\n## Scope\n\n* `src/smartdocs-engine/ingest.ts`\n* `src/smartdocs-engine/doctrine.ts`\n\n## Acceptance Criteria\n\n- [ ] `TARGET_DIRS[\"doctrine-candidate\"]` points to `smartdocs/doctrine/active/` (or the classification is renamed to `\"doctrine-active\"`)\n- [ ] `addCandidateFrontMatter()` is no longer called during ingest for doctrine-classified docs\n- [ ] `addCandidateGovernanceMetadata()` is no longer called during ingest\n- [ ] No file is written to `smartdocs/doctrine/candidate/` during ingest\n- [ ] `npm run build` passes\n\n## Validation\n\n* npm run build\n* npx vitest run src/smartdocs-engine\n\n## Ordering\n\nExecute first. POL-child-2 (auto-promote notification) depends on this being Done.\n\n## Non-goals\n\n* Do not remove `addCandidateFrontMatter()` or `addCandidateGovernanceMetadata()` functions if they have other callers — only remove the call from the ingest path\n* Do not modify `doctrinePromote()` or `doctrineDraft()` — CLI commands remain unchanged\n* Do not write any tests in this child (covered by POL-child-3)\n\n## Scope\nTouch only:\n- `src/smartdocs-engine/ingest.ts`\n- `src/smartdocs-engine/doctrine.ts`\n\n## Acceptance Criteria\n\n## Validation\n- npm run build\n- npx vitest run src/smartdocs-engine\n\n## Commit\n[POL-314] POL-314\n\n## Governance\n- Update /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json: move \"POL-314\" from open_children to completed_children.\n- Append a telemetry event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-313-2026-06-04-001/telemetry.jsonl.\n\n## Worker Progress Telemetry (MANDATORY)\nThe parent CANNOT see your work. You MUST emit heartbeat events so the parent knows you are alive and making progress.\n\nAfter EVERY step, append a JSONL event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-313-2026-06-04-001/telemetry.jsonl:\n```jsonl\n{\"event\":\"worker-heartbeat\",\"run_id\":\"<from packet>\",\"child_id\":\"POL-314\",\"step_cursor\":\"<current step>\",\"timestamp\":\"<ISO8601>\",\"progress_pct\":<0-100>,\"files_changed\":<count>,\"current_file\":\"<file being edited>\"}\n```\n\nRequired heartbeat points:\n  1. Immediately after reading this packet (step_cursor: \"start\")\n  2. After verifying state file (step_cursor: \"verify\")\n  3. After EACH file edit (step_cursor: \"implement\")\n  4. After running validation (step_cursor: \"validate\")\n  5. After creating commit (step_cursor: \"commit\")\n  6. Before terminating (step_cursor: \"complete\" or \"failed\")\n\nIf heartbeats stop, the parent will assume you crashed and may dispatch a replacement worker.\n\n## Approval Escalation (when uncertain)\nYou have a sealed packet defining your exact scope, allowed files, and validation commands. Use this to decide:\n\nRule 1 - Auto-approve WITHIN scope (normal work):\n  - If the operation touches files within `instructions.allowed_scope` → Just do it\n  - If the command is in `instructions.validation_commands` → Just run it\n  - Low risk, expected work → No need to ask, emit heartbeat with step_cursor: \"implement\"\n\nRule 2 - ESCALATE out-of-scope or high-risk:\n  - File outside allowed_scope → Emit worker-blocked with approval_type: \"out-of-scope\"\n  - Destructive operation (rm -rf, major refactor) → Emit worker-blocked with approval_type: \"destructive\"\n  - External API calls with cost → Emit worker-blocked with approval_type: \"cost\"\n  - Changing secrets/.env → Emit worker-blocked with approval_type: \"security\"\n  - Unclear requirements → Emit worker-blocked with approval_type: \"ambiguous\"\n\nTo escalate, emit IMMEDIATELY to telemetry:\n```jsonl\n{\"event\":\"worker-blocked\",\"run_id\":\"<from packet>\",\"child_id\":\"POL-314\",\"reason\":\"needs-approval\",\"approval_type\":\"<out-of-scope|destructive|cost|security|ambiguous>\",\"description\":\"<specifically what needs approval>\",\"blocker_id\":\"<unique-id>\",\"timestamp\":\"<ISO8601>\"}\n```\n\nThen: Continue heartbeats every 30s with step_cursor: \"blocked-awaiting-approval\"\nWait for parent response. If no response in 5 minutes → TERMINATE with approval-timeout.\n\nRemember: Your packet scope is your authority. Within scope = proceed. Outside scope = escalate.\n\n## Route Cognition Delta\nAfter implementation, apply route-local cognition delta — only if something materially changed.\n\n**POLARIS.md** — update only when ALL of the following are true:\n  - You touched a file in that folder (not a distant folder).\n  - The change materially affects: folder responsibilities, commands/workflows,\n    execution constraints, ownership/routing, or operational behavior.\n  - The current POLARIS.md content is actually wrong or incomplete as a result.\n  DO NOT update POLARIS.md for: formatting fixes, comment changes, tiny refactors,\n  internal implementation details, or any change that leaves the operational guidance\n  still accurate. When in doubt, do not update.\n\n**SUMMARY.md** — update only when: linked docs/specs changed, canon relationships\n  changed, architecture meaning changed, or doctrine/spec linkage changed.\n  SUMMARY.md is informational only. Do not create it if missing — that is a hint for\n  operators, not a task for workers. Keep it short. Never add operational doctrine.\n\n**Never** scan unrelated folders. **Never** regenerate all route docs.\nIf no material change occurred, skip this section entirely.\n\n## Report Back\n- files changed\n- validation results\n- commit hash\n- blockers\n\nTERMINATE SESSION IMMEDIATELY. Do not select or execute the next child.",
+    "steps": [
+      "Verify: read /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json and confirm active_child === \"POL-314\".",
+      "Implement POL-314: \"POL-314\".",
+      "Issue description:\n## Objective\n\nRemove the `doctrine/candidate/` staging step from `ingestDocs()` so that doctrine-classified documents no longer pass through an intermediate candidate folder.\n\n## Context\n\nPart of [POL-313](https://linear.app/lsctech/issue/POL-313/implement-ingest-auto-promote-with-compact-foreman-notification) cluster. Currently, when `classifyDoc()` returns `\"doctrine-candidate\"`, `ingestDocs()` routes the file to `smartdocs/doctrine/candidate/` and calls `addCandidateFrontMatter()` to stamp a `status: candidate` marker. This staging step is unnecessary — it requires a manual `polaris doctrine promote` invocation before the doc becomes active. This child removes that gate.\n\n## Goal\n\nChange the `TARGET_DIRS` entry for `\"doctrine-candidate\"` in `src/smartdocs-engine/ingest.ts` to point to `smartdocs/doctrine/active/` and remove the call to `addCandidateFrontMatter()` in the ingest loop for doctrine-classified docs. The `addCandidateGovernanceMetadata()` call in `doctrine.ts` should also be removed from the ingest path (governance frontmatter is no longer needed at ingest time since there is no review gate).\n\n## Scope\n\n* `src/smartdocs-engine/ingest.ts`\n* `src/smartdocs-engine/doctrine.ts`\n\n## Acceptance Criteria\n\n- [ ] `TARGET_DIRS[\"doctrine-candidate\"]` points to `smartdocs/doctrine/active/` (or the classification is renamed to `\"doctrine-active\"`)\n- [ ] `addCandidateFrontMatter()` is no longer called during ingest for doctrine-classified docs\n- [ ] `addCandidateGovernanceMetadata()` is no longer called during ingest\n- [ ] No file is written to `smartdocs/doctrine/candidate/` during ingest\n- [ ] `npm run build` passes\n\n## Validation\n\n* npm run build\n* npx vitest run src/smartdocs-engine\n\n## Ordering\n\nExecute first. POL-child-2 (auto-promote notification) depends on this being Done.\n\n## Non-goals\n\n* Do not remove `addCandidateFrontMatter()` or `addCandidateGovernanceMetadata()` functions if they have other callers — only remove the call from the ingest path\n* Do not modify `doctrinePromote()` or `doctrineDraft()` — CLI commands remain unchanged\n* Do not write any tests in this child (covered by POL-child-3)",
+      "Requirements:",
+      "   1. [ ] `TARGET_DIRS[\"doctrine-candidate\"]` points to `smartdocs/doctrine/active/` (or the classification is renamed to `\"doctrine-active\"`)",
+      "   2. [ ] `addCandidateFrontMatter()` is no longer called during ingest for doctrine-classified docs",
+      "   3. [ ] `addCandidateGovernanceMetadata()` is no longer called during ingest",
+      "   4. [ ] No file is written to `smartdocs/doctrine/candidate/` during ingest",
+      "   5. [ ] `npm run build` passes",
+      "Run validation commands and confirm all pass.",
+      "Create exactly ONE git commit: [POL-314] POL-314.",
+      "Update /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json: move \"POL-314\" from open_children to completed_children.",
+      "Append a telemetry event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-313-2026-06-04-001/telemetry.jsonl.",
+      "Write compact return JSON to stdout (fields: child_id, status, commit, validation, next_recommended_action).",
+      "TERMINATE SESSION IMMEDIATELY. Do not select or execute the next child."
+    ],
+    "allowed_scope": [
+      "`src/smartdocs-engine/ingest.ts`",
+      "`src/smartdocs-engine/doctrine.ts`"
+    ],
+    "validation_commands": [
+      "npm run build",
+      "npx vitest run src/smartdocs-engine"
+    ],
+    "issue_context": {
+      "id": "POL-314",
+      "title": "POL-314",
+      "key_requirements": [],
+      "body": "## Objective\n\nRemove the `doctrine/candidate/` staging step from `ingestDocs()` so that doctrine-classified documents no longer pass through an intermediate candidate folder.\n\n## Context\n\nPart of [POL-313](https://linear.app/lsctech/issue/POL-313/implement-ingest-auto-promote-with-compact-foreman-notification) cluster. Currently, when `classifyDoc()` returns `\"doctrine-candidate\"`, `ingestDocs()` routes the file to `smartdocs/doctrine/candidate/` and calls `addCandidateFrontMatter()` to stamp a `status: candidate` marker. This staging step is unnecessary — it requires a manual `polaris doctrine promote` invocation before the doc becomes active. This child removes that gate.\n\n## Goal\n\nChange the `TARGET_DIRS` entry for `\"doctrine-candidate\"` in `src/smartdocs-engine/ingest.ts` to point to `smartdocs/doctrine/active/` and remove the call to `addCandidateFrontMatter()` in the ingest loop for doctrine-classified docs. The `addCandidateGovernanceMetadata()` call in `doctrine.ts` should also be removed from the ingest path (governance frontmatter is no longer needed at ingest time since there is no review gate).\n\n## Scope\n\n* `src/smartdocs-engine/ingest.ts`\n* `src/smartdocs-engine/doctrine.ts`\n\n## Acceptance Criteria\n\n- [ ] `TARGET_DIRS[\"doctrine-candidate\"]` points to `smartdocs/doctrine/active/` (or the classification is renamed to `\"doctrine-active\"`)\n- [ ] `addCandidateFrontMatter()` is no longer called during ingest for doctrine-classified docs\n- [ ] `addCandidateGovernanceMetadata()` is no longer called during ingest\n- [ ] No file is written to `smartdocs/doctrine/candidate/` during ingest\n- [ ] `npm run build` passes\n\n## Validation\n\n* npm run build\n* npx vitest run src/smartdocs-engine\n\n## Ordering\n\nExecute first. POL-child-2 (auto-promote notification) depends on this being Done.\n\n## Non-goals\n\n* Do not remove `addCandidateFrontMatter()` or `addCandidateGovernanceMetadata()` functions if they have other callers — only remove the call from the ingest path\n* Do not modify `doctrinePromote()` or `doctrineDraft()` — CLI commands remain unchanged\n* Do not write any tests in this child (covered by POL-child-3)"
+    }
+  },
+  "lifecycle": {
+    "terminate_after_completion": true,
+    "max_concurrent": 1,
+    "cleanup_on_exit": "commit-and-exit"
+  },
+  "return_contract": [
+    "child_id",
+    "status",
+    "commit",
+    "validation",
+    "next_recommended_action"
+  ],
+  "prompt_mode": "compact",
+  "prompt_metrics": {
+    "mode": "compact",
+    "char_count": 6611,
+    "estimated_tokens": 1653
+  },
+  "role_context": {
+    "role": "worker",
+    "role_authority": "implementation",
+    "may_implement": true,
+    "may_assign_workers": false,
+    "prohibited_actions": [
+      "modify-cluster-plan",
+      "dispatch-children",
+      "polaris-loop-dispatch",
+      "polaris-loop-continue"
+    ]
+  },
+  "prohibited_write_paths": [
+    ".taskchain_artifacts/",
+    ".polaris/clusters/",
+    ".polaris/runs/",
+    "**/telemetry.jsonl"
+  ],
+  "result_file_contract": {
+    "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-313/results/POL-314-942eca2c-c1a3-43ee-8856-6d11a6ade1d0.json"
+  },
+  "context": {
+    "branch": "pol-313-delivery",
+    "worker_role": "impl"
+  }
+}

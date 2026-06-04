@@ -1,0 +1,13 @@
+{
+  "run_id": "polaris-run-pol-313-2026-06-04-001",
+  "cluster_id": "POL-313",
+  "child_id": "POL-314",
+  "status": "done",
+  "commit": "9c2cbdecb8cbb4303e948bf6bb92aa5c10828bfc",
+  "validation": "passed",
+  "files_changed": [
+    "src/smartdocs-engine/ingest.ts"
+  ],
+  "blockers": [],
+  "next_recommended_action": "Parent should checkpoint POL-314 and proceed to dependent POL-315."
+}
