@@ -28,7 +28,6 @@
         "args": ["{{worker_prompt}}"]
       }
     },
-    "rotation": ["copilot", "codex", "claude", "gemini"],
     "allowCrossAgentFallback": false,
     "providerPolicy": {
       "worker": {
