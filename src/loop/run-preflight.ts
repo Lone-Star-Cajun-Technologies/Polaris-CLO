@@ -2,7 +2,6 @@ import { existsSync, renameSync } from "node:fs";
 import { join } from "node:path";
 import { readClusterState } from "../cluster-state/store.js";
 import { LocalGraph } from "../tracker/local-graph.js";
-import { LinearAdapter } from "../tracker/adapters/linear/index.js";
 import { loadConfig } from "../config/loader.js";
 import { readState, validateState } from "./checkpoint.js";
 import type { BootstrapInitOptions } from "./run-bootstrap.js";
@@ -38,15 +37,30 @@ async function loadOrSyncGraph(clusterId: string, repoRoot: string): Promise<Loc
     }
 
     const config = loadConfig(repoRoot);
-    if (!config.tracker?.linear?.enabled) {
-      throw new Error(
-        `No local cluster graph found for ${clusterId}. Run 'npm run polaris -- tracker sync-in ${clusterId}' or bootstrap with --children.`,
-      );
+    if (config.tracker?.adapter === "linear" && config.tracker.linear?.enabled) {
+      const { LinearAdapter } = await import("../tracker/adapters/linear/index.js");
+      const graph = await new LinearAdapter(config).syncIn(clusterId);
+      await graph.save(clusterId, repoRoot);
+      return graph;
     }
 
-    const graph = await new LinearAdapter(config).syncIn(clusterId);
-    await graph.save(clusterId, repoRoot);
-    return graph;
+    if (config.tracker?.adapter === "mcp-bridge") {
+      const { McpBridgeAdapter } = await import("../tracker/adapters/mcp-bridge.js");
+      const { TrackerSyncService } = await import("../tracker/sync/index.js");
+      const localGraph = await LocalGraph.load(clusterId, repoRoot);
+      const syncService = new TrackerSyncService(new McpBridgeAdapter(), localGraph, {
+        repoRoot,
+        clusterId,
+      });
+      await syncService.ready;
+      await syncService.syncIn({ trackerId: clusterId });
+      await localGraph.save(clusterId, repoRoot);
+      return localGraph;
+    }
+
+    throw new Error(
+      `No local cluster graph found for ${clusterId}. Create one with: polaris tracker sync-in <id>, or bootstrap directly with: polaris loop bootstrap --cluster-id <id> --children <csv>`,
+    );
   }
 }
 
