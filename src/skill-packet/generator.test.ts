@@ -135,6 +135,29 @@ describe("generateSkillPacket", () => {
       const stops = packet.stop_conditions.join(" ");
       expect(stops).toContain("Worker result evidence");
     });
+
+    describe("run packet delegation note", () => {
+      it("when allow_cross_provider_delegation is false, tells orchestrator to use terminal-cli adapter", () => {
+        const packet = generateSkillPacket("run", {
+          ...DEFAULT_CONFIG,
+          allow_cross_provider_delegation: false,
+        });
+        const note = packet.authority_boundaries.find((b) => b.startsWith("Delegation policy:"));
+        expect(note).toBeDefined();
+        expect(note).toContain("terminal-cli adapter");
+        expect(note).not.toContain("internal child/subagent fallback");
+      });
+
+      it("when allow_cross_provider_delegation is true, permits cross-provider delegation", () => {
+        const packet = generateSkillPacket("run", {
+          ...DEFAULT_CONFIG,
+          allow_cross_provider_delegation: true,
+        });
+        const note = packet.authority_boundaries.find((b) => b.startsWith("Delegation policy:"));
+        expect(note).toBeDefined();
+        expect(note).toContain("permitted");
+      });
+    });
   });
 
   describe("ingest packet", () => {

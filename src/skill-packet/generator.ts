@@ -67,7 +67,7 @@ function buildAnalyzePacket(config: Required<SkillPacketConfig>): Omit<SkillPack
 function buildRunPacket(config: Required<SkillPacketConfig>): Omit<SkillPacket, "packet_id" | "skill_name" | "active_role" | "role_summary" | "source_config_snapshot" | "generated_at"> {
   const delegationNote = config.allow_cross_provider_delegation
     ? "Cross-provider delegation is permitted per configuration."
-    : "Cross-provider delegation is NOT permitted. Use internal child/subagent fallback only.";
+    : "Cross-provider delegation is NOT permitted. Use the terminal-cli adapter with configured providers (e.g. copilot, codex). Do not use native subagent spawning.";
 
   return {
     authority_boundaries: [
