@@ -108,7 +108,7 @@ export const ALLOWED_TRANSITIONS: readonly [DispatchMachineState, DispatchMachin
     // Librarian phase (post cluster-complete, pre PR-creation)
     ["cluster-complete", "librarian-dispatched", "polaris librarian packet + dispatch"],
     ["librarian-dispatched", "librarian-complete", "librarian-sealed-result"],
-    ["librarian-complete", "librarian-complete", "finalize-delivery"],  // delivery proceeds after librarian gate
+    ["librarian-complete", "librarian-complete", "finalize-delivery-attempt"],  // delivery proceeds after librarian gate
   ] as const;
 
 /**

@@ -126,7 +126,16 @@ function checkLibrarianGate(repoRoot: string, clusterId: string): string | null 
     // directory absent — no packet has been generated
   }
 
-  if (packetFiles.length === 0) {
+  const latestPacket = packetFiles
+    .map((file) => join(packetsDir, file))
+    .sort((a, b) => {
+      try {
+        return statSync(b).mtimeMs - statSync(a).mtimeMs;
+      } catch {
+        return b.localeCompare(a);
+      }
+    })[0];
+  if (!latestPacket) {
     return (
       "Closeout Librarian has not been dispatched for this cluster.\n" +
       `  1. Generate packet:  npm run polaris -- librarian packet ${clusterId} --state-file <state-file>\n` +
@@ -136,16 +145,6 @@ function checkLibrarianGate(repoRoot: string, clusterId: string): string | null 
       `Use --skip-librarian to bypass this gate for backward compatibility.`
     );
   }
-
-  const latestPacket = packetFiles
-    .map((file) => join(packetsDir, file))
-    .sort((a, b) => {
-      try {
-        return statSync(b).mtimeMs - statSync(a).mtimeMs;
-      } catch {
-        return b.localeCompare(a);
-      }
-    })[0]!;
   let packetJson: Record<string, unknown>;
   try {
     packetJson = JSON.parse(readFileSync(latestPacket, "utf-8")) as Record<string, unknown>;
