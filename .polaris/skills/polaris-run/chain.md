@@ -81,6 +81,20 @@ Step 08 dispatches the Librarian as a bounded session (same model as worker disp
 The Foreman waits for the Librarian's sealed result before proceeding to step 09.
 PR creation (step 09) is blocked until the Librarian result status is `"success"` or `"partial"`.
 
+**Librarian dispatch message template:**
+
+When dispatching the Closeout Librarian, pass this full message — NOT just the packet path. Replace `<cluster-id>`, `<packet_path>`, `<run_id>`, and `<dispatch_id>` with values from the packet file:
+
+```
+You are the Closeout Librarian for cluster <cluster-id>.
+
+Your sealed packet is at: <packet_path>
+
+Read the packet. Follow the closeout-librarian skill chain. Write your sealed result to the path in the packet's `result_path` field. Return only compact JSON: {"role":"closeout-librarian","status":"done","run_id":"<run_id>","cluster_id":"<cluster-id>","dispatch_id":"<dispatch_id>","commit":"<sha>"}.
+```
+
+Never dispatch the librarian with only the packet path as the message.
+
 The Foreman must NOT:
 - Read the Librarian's session transcript
 - Inline the Librarian's work

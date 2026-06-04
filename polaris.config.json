@@ -46,10 +46,6 @@
       "librarian": {
         "providers": ["gemini","claude","codex","copilot"]
       },
-      "orchestrator": {
-        "providers": [],
-        "allowNativeSubagent": true
-      },
       "finalizer": {
         "providers": ["copilot"]
       }

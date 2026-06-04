@@ -249,20 +249,6 @@ function uniqueDestination(filePath: string): string {
   return candidate;
 }
 
-function addCandidateFrontMatter(content: string, originalPath: string): string {
-  if (content.startsWith("---\n")) return content;
-  const today = new Date().toISOString().slice(0, 10);
-  return [
-    "---",
-    "status: candidate",
-    `candidate-since: ${today}`,
-    `source: ${originalPath}`,
-    "---",
-    "",
-    content,
-  ].join("\n");
-}
-
 function deriveLinkedArea(
   content: string,
   routes: Record<string, FileRouteEntry>,
@@ -505,8 +491,10 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
 
     if (classification === "doctrine-candidate" && !options.dryRun) {
       emitTelemetry(telPath, runId, {
-        event: "doctrine-promoted",
+        event: "doc-auto-promoted",
         file: relDestination,
+        classification,
+        linked_map_area: linkedMapArea,
         cluster_id: clusterId,
       });
     }

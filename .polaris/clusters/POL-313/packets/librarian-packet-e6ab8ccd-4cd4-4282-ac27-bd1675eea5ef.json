@@ -1,0 +1,164 @@
+{
+  "schema_version": "1.0",
+  "role": "closeout-librarian",
+  "run_id": "polaris-run-pol-313-2026-06-04-001",
+  "dispatch_id": "e6ab8ccd-4cd4-4282-ac27-bd1675eea5ef",
+  "cluster_id": "POL-313",
+  "completed_children": [
+    "POL-314",
+    "POL-315",
+    "POL-316"
+  ],
+  "child_summaries": [
+    {
+      "child_id": "POL-314",
+      "title": "POL-314",
+      "commit_sha": "9c2cbdecb8cbb4303e948bf6bb92aa5c10828bfc",
+      "changed_files": [
+        "src/smartdocs-engine/ingest.ts"
+      ],
+      "compact_return_path": ".polaris/clusters/POL-313/results/POL-314-942eca2c-c1a3-43ee-8856-6d11a6ade1d0.json",
+      "cognition_note_path": null
+    },
+    {
+      "child_id": "POL-315",
+      "title": "POL-315",
+      "commit_sha": "a6186ca2c72972f892cefedf04b8161d1edfca4c",
+      "changed_files": [
+        "src/smartdocs-engine/ingest.ts"
+      ],
+      "compact_return_path": ".polaris/clusters/POL-313/results/POL-315-6c1850ca-18e1-45ff-9dbf-b0b12f5d509d.json",
+      "cognition_note_path": null
+    },
+    {
+      "child_id": "POL-316",
+      "title": "POL-316",
+      "commit_sha": "e4b1c06d4645ca113aff9e263b65199f6e349055",
+      "changed_files": [
+        "src/smartdocs-engine/ingest.test.ts"
+      ],
+      "compact_return_path": ".polaris/clusters/POL-313/results/POL-316-82b96bbe-0b73-411d-9e58-6dd4b2a80e41.json",
+      "cognition_note_path": null
+    }
+  ],
+  "run_report_path": null,
+  "current_state_path": ".taskchain_artifacts/polaris-run/current-state.json",
+  "affected_folders": [
+    "src/",
+    "src/smartdocs-engine/"
+  ],
+  "polaris_md_paths": [
+    {
+      "folder": "src/",
+      "folder_slug": "src",
+      "polaris_md": "src/POLARIS.md",
+      "summary_md": "src/SUMMARY.md",
+      "cognition_index": null
+    },
+    {
+      "folder": "src/smartdocs-engine/",
+      "folder_slug": "src-smartdocs-engine",
+      "polaris_md": "src/smartdocs-engine/POLARIS.md",
+      "summary_md": "src/smartdocs-engine/SUMMARY.md",
+      "cognition_index": null
+    }
+  ],
+  "cognition_notes": [],
+  "cognition_archive_paths": [],
+  "smartdocs_raw_paths": [
+    "smartdocs/raw/.gitkeep",
+    "smartdocs/raw/2026-05-23-provider-capability-abstraction.md",
+    "smartdocs/raw/2026-05-25-claude-plugin-runtime-integration.md",
+    "smartdocs/raw/POL-281_recovery_playbook.md",
+    "smartdocs/raw/POL-302-finalize-state-authority-review-gate.md",
+    "smartdocs/raw/POLARIS.md",
+    "smartdocs/raw/Polaris-Smart-Docs-Doctrine.md",
+    "smartdocs/raw/closeout-librarian-gap-analysis.md",
+    "smartdocs/raw/cluster-map.md",
+    "smartdocs/raw/clusters-json-format.md",
+    "smartdocs/raw/ephemeral-validation-plan.md",
+    "smartdocs/raw/ephemeral-validation-plan.provenance.json",
+    "smartdocs/raw/packet-authorized-commit-gate-plan.md",
+    "smartdocs/raw/pol-223-role-system-worker-assignment-child-recovery-analysis.md",
+    "smartdocs/raw/pol-233-smartdocs-normalize-routing-cognition-analysis.md",
+    "smartdocs/raw/pol-240-artifact-promotion-commit-hygiene.md",
+    "smartdocs/raw/pol-257-init-adoption-workflow-analysis.md",
+    "smartdocs/raw/pol-288-foreman-worker-drift-postmortem.md",
+    "smartdocs/raw/polaris-clo.md",
+    "smartdocs/raw/polaris-compact-contracts.md",
+    "smartdocs/raw/polaris-compact-contracts.provenance.json",
+    "smartdocs/raw/polaris-dispatch-contract.md",
+    "smartdocs/raw/polaris-dispatch-contract.provenance.json",
+    "smartdocs/raw/skill-packet-bootloader-model.md",
+    "smartdocs/raw/smartdoc-frontmatter-schema.md",
+    "smartdocs/raw/worker-dispatch-contract-SUMMARY.md",
+    "smartdocs/raw/worker-dispatch-contract.md"
+  ],
+  "existing_specs": [
+    "smartdocs/specs/active/Claude Plugin Runtime Integration Spec.md",
+    "smartdocs/specs/active/POLARIS.md",
+    "smartdocs/specs/active/SUMMARY.md",
+    "smartdocs/specs/active/canon-reconciliation-protocol.md",
+    "smartdocs/specs/active/closeout-librarian-spec.md",
+    "smartdocs/specs/active/connect-compatibility.md",
+    "smartdocs/specs/active/current-state-schema.md",
+    "smartdocs/specs/active/docs-authority-model.md",
+    "smartdocs/specs/active/execution-adapters.md",
+    "smartdocs/specs/active/folder-cognition-staging-librarian.md",
+    "smartdocs/specs/active/foreman-quiet-mode-spec.md",
+    "smartdocs/specs/active/foreman-worker-architecture.md",
+    "smartdocs/specs/active/foreman-worker-migration-plan.md",
+    "smartdocs/specs/active/mcp-confirmed-dispatch-architecture.md",
+    "smartdocs/specs/active/mcp-mutation-safety-model.md",
+    "smartdocs/specs/active/pol-200-adaptive-folder-cognition-librarian-lifecycle.md",
+    "smartdocs/specs/active/pol-76-mcp-bridge-analysis.md",
+    "smartdocs/specs/active/pol-97-cli-operator-surface-analysis.md",
+    "smartdocs/specs/active/polaris-artifact-promotion-commit-hygiene-policy.md",
+    "smartdocs/specs/active/polaris-implementation-plan.md",
+    "smartdocs/specs/active/provider-capability-matrix.md",
+    "smartdocs/specs/active/provider-role-dispatch-governance.md",
+    "smartdocs/specs/active/runtime-enforcement-spec.md",
+    "smartdocs/specs/active/taskchain-authoring.md",
+    "smartdocs/specs/active/taskchain-format.md",
+    "smartdocs/specs/active/windsurf-orchestrator.md",
+    "smartdocs/specs/active/worker-heartbeat-spec.md",
+    "smartdocs/specs/active/worker-lifecycle-state-machine.md",
+    "smartdocs/specs/active/worker-session-contract.md",
+    "smartdocs/specs/active/worker-telemetry-spec.md"
+  ],
+  "existing_doctrine": [
+    "smartdocs/doctrine/active/POLARIS.md",
+    "smartdocs/doctrine/active/SUMMARY.md",
+    "smartdocs/doctrine/active/issue-hierarchy-doctrine.md",
+    "smartdocs/doctrine/active/polaris-implementation-plan.md",
+    "smartdocs/doctrine/active/smartdocs-summary-architecture.md"
+  ],
+  "result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-313/results/librarian-e6ab8ccd-4cd4-4282-ac27-bd1675eea5ef.json",
+  "prohibited_write_paths": [
+    "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json",
+    "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-313/state.json",
+    "/Users/lsctech/Developer/Polaris/.taskchain_artifacts",
+    "/Users/lsctech/Developer/Polaris/.polaris/runs",
+    "/Users/lsctech/Developer/Polaris/.polaris/map",
+    "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-313/packets",
+    "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-313/results",
+    "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-313-2026-06-04-001/telemetry.jsonl",
+    "/Users/lsctech/Developer/Polaris/src",
+    "/Users/lsctech/Developer/Polaris/test",
+    "/Users/lsctech/Developer/Polaris/scripts"
+  ],
+  "allowed_write_paths": [
+    "/Users/lsctech/Developer/Polaris/src/POLARIS.md",
+    "/Users/lsctech/Developer/Polaris/src/smartdocs-engine/POLARIS.md",
+    "/Users/lsctech/Developer/Polaris/src/SUMMARY.md",
+    "/Users/lsctech/Developer/Polaris/src/smartdocs-engine/SUMMARY.md",
+    "/Users/lsctech/Developer/Polaris/smartdocs",
+    "/Users/lsctech/Developer/Polaris/.polaris/cognition/archive",
+    "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-313/results/librarian-e6ab8ccd-4cd4-4282-ac27-bd1675eea5ef.json"
+  ],
+  "constraints": {
+    "max_summary_addition_lines": 50,
+    "require_polaris_confidence_threshold": 0.8,
+    "librarian_timeout_seconds": 600
+  }
+}

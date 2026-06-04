@@ -135,6 +135,30 @@ describe("generateSkillPacket", () => {
       const stops = packet.stop_conditions.join(" ");
       expect(stops).toContain("Worker result evidence");
     });
+
+    describe("run packet delegation note", () => {
+      it("when allow_cross_provider_delegation is false, provides delegation policy with allowed adapters", () => {
+        const packet = generateSkillPacket("run", {
+          ...DEFAULT_CONFIG,
+          allow_cross_provider_delegation: false,
+        });
+        const note = packet.authority_boundaries.find((b) => b.startsWith("Delegation policy:"));
+        expect(note).toBeDefined();
+        expect(note).toContain("NOT permitted");
+        expect(note).toMatch(/(terminal-cli|interactive-agent|agent-subtask)/);
+        expect(note).toContain("prohibited");
+      });
+
+      it("when allow_cross_provider_delegation is true, permits cross-provider delegation", () => {
+        const packet = generateSkillPacket("run", {
+          ...DEFAULT_CONFIG,
+          allow_cross_provider_delegation: true,
+        });
+        const note = packet.authority_boundaries.find((b) => b.startsWith("Delegation policy:"));
+        expect(note).toBeDefined();
+        expect(note).toContain("permitted");
+      });
+    });
   });
 
   describe("ingest packet", () => {

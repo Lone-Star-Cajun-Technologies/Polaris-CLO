@@ -163,7 +163,7 @@ export interface SealedWorkerResult {
   child_id: string;
 
   /** Final status of the worker execution. */
-  status: "success" | "failure" | "in-progress";
+  status: "done" | "success" | "failure" | "in-progress";
 
   /** The git commit hash produced by this worker. Only for 'impl' role. */
   commit?: string;
@@ -190,6 +190,12 @@ export interface SealedResultFileContract {
    * If not present, worker returns compact JSON to stdout (legacy).
    */
   result_file: string;
+  /**
+   * Required field template. Workers MUST write all of these keys with
+   * these exact value shapes into the result_file JSON. Copy run_id,
+   * cluster_id, and child_id from the sealed packet.
+   */
+  result_required_fields?: Record<string, string>;
 }
 
 // ── WorkerPacket ──────────────────────────────────────────────────────────────
@@ -370,7 +376,15 @@ export function compileStartupPacket(input: CompileStartupPacketInput): WorkerPa
     prompt_mode: 'full',
     prompt_metrics: { mode: 'full', char_count: 0, estimated_tokens: 0 },
     role_context: roleContextForWorkerRole('startup'),
-    result_file_contract: { result_file: input.resultFile },
+    result_file_contract: {
+      result_file: input.resultFile,
+      result_required_fields: Object.fromEntries([
+        ['run_id', input.runId],
+        ['cluster_id', input.clusterId],
+        ['child_id', '<active_child from packet>'],
+        ...STARTUP_RETURN_CONTRACT.map(key => [key, `<${key}>`]),
+      ]),
+    },
     context: {
       branch: input.branch,
       worker_role: 'startup',
@@ -480,7 +494,15 @@ export function compileImplPacket(input: CompileImplPacketInput): WorkerPacket {
     prompt_metrics: promptResult.metrics,
     role_context: roleContextForWorkerRole('impl'),
     prohibited_write_paths: WORKER_PROHIBITED_WRITE_PATHS,
-    result_file_contract: { result_file: input.resultFile },
+    result_file_contract: {
+      result_file: input.resultFile,
+      result_required_fields: Object.fromEntries([
+        ['run_id', input.runId],
+        ['cluster_id', input.clusterId],
+        ['child_id', input.childId],
+        ...IMPL_RETURN_CONTRACT.map(key => [key, `<${key}>`]),
+      ]),
+    },
     context: {
       branch: input.branch,
       worker_role: 'impl',
@@ -542,7 +564,15 @@ export function compileFinalizePacket(input: CompileFinalizePacketInput): Worker
     prompt_mode: 'full',
     prompt_metrics: { mode: 'full', char_count: 0, estimated_tokens: 0 },
     role_context: roleContextForWorkerRole('finalize'),
-    result_file_contract: { result_file: input.resultFile },
+    result_file_contract: {
+      result_file: input.resultFile,
+      result_required_fields: Object.fromEntries([
+        ['run_id', input.runId],
+        ['cluster_id', input.clusterId],
+        ['child_id', '<active_child from packet>'],
+        ...FINALIZE_RETURN_CONTRACT.map(key => [key, `<${key}>`]),
+      ]),
+    },
     context: {
       branch: input.branch,
       worker_role: 'finalize',
@@ -598,7 +628,15 @@ export function compilePreflightPacket(input: CompilePreflightPacketInput): Work
     prompt_mode: 'full',
     prompt_metrics: { mode: 'full', char_count: 0, estimated_tokens: 0 },
     role_context: roleContextForWorkerRole('preflight'),
-    result_file_contract: { result_file: input.resultFile },
+    result_file_contract: {
+      result_file: input.resultFile,
+      result_required_fields: Object.fromEntries([
+        ['run_id', input.runId],
+        ['cluster_id', input.clusterId],
+        ['child_id', '<active_child from packet>'],
+        ...PREFLIGHT_RETURN_CONTRACT.map(key => [key, `<${key}>`]),
+      ]),
+    },
     context: {
       branch: input.branch,
       worker_role: 'preflight',

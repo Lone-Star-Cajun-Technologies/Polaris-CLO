@@ -1,11 +1,12 @@
 # Summary: smartdocs-engine
 
 ## Purpose
-Smart Docs lifecycle pipeline — ingests, classifies, seeds, validates, and audits documentation in the Polaris canonical authority structure (`smartdocs/docs/`).
+Smart Docs lifecycle pipeline — ingests, classifies, seeds, validates, and audits documentation in the Polaris canonical authority structure (`smartdocs/`).
 
 ## Key behaviors
-- `smartdocs/docs/` is the canonical authority structure; everything outside it is raw or unclassified.
-- Doctrine lifecycle is one-way: candidate → active → deprecated. No reversal.
+- `smartdocs/` is the canonical authority structure; everything outside it is raw or unclassified.
+- Explicit doctrine lifecycle commands are one-way: candidate → active → deprecated. No reversal.
+- `ingestDocs` auto-promotes doctrine-classified documents into `smartdocs/doctrine/active/` and emits `doc-auto-promoted` telemetry for non-dry-run promotions.
 - `DRAFT_MARKER` guards seeded files from re-seeding over human edits.
 - `classifyDoc` is deterministic — no external calls or randomness.
 - Canon-check emits telemetry only; it does not block execution.
