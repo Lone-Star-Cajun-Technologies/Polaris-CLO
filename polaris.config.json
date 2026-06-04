@@ -43,7 +43,7 @@
         "allowNativeSubagent": true
       },
       "librarian": {
-        "providers": ["gemini","claude","codex","copilot"]
+        "providers": ["claude","codex","gemini","copilot"]
       },
       "finalizer": {
         "providers": ["copilot"]
