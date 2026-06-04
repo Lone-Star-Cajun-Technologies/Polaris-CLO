@@ -2,15 +2,15 @@
 
 ## Purpose
 
-The smartdocs-engine implements the Smart Docs lifecycle for Polaris: doc ingestion and classification, POLARIS.md seed generation, instruction validation, canon checking, doctrine lifecycle, migration, and audit. It is the pipeline that keeps the `smartdocs/docs/` canonical authority structure consistent with the repo.
+The smartdocs-engine implements the Smart Docs lifecycle for Polaris: doc ingestion and classification, POLARIS.md seed generation, instruction validation, canon checking, doctrine lifecycle, migration, and audit. It is the pipeline that keeps the `smartdocs/` authority structure consistent with the repo.
 
 ## What belongs here
 
-- `ingest.ts` — doc classification and placement into `smartdocs/docs/` canonical structure
+- `ingest.ts` — doc classification and placement into the `smartdocs/` canonical structure; doctrine-classified ingest targets `smartdocs/doctrine/active/`
 - `seed-instructions.ts` — POLARIS.md / SUMMARY.md draft generation; `DRAFT_MARKER` ownership
 - `validate-instructions.ts` — POLARIS.md staleness and coverage checks
 - `canon-check.ts` — behavioral assertion comparison against active doctrine/spec docs
-- `doctrine.ts` — doctrine lifecycle (candidate → active → deprecated)
+- `doctrine.ts` — explicit doctrine lifecycle commands (`draft`, `promote`, `deprecate`) for candidate governance flows
 - `migrate.ts`, `audit.ts` — doc migration and ingest risk surface audit
 - `smartdoc-ignore.ts` — ingest and seed eligibility authority
 - `index.ts`, `*.test.ts` — command registration and tests
@@ -30,13 +30,14 @@ The smartdocs-engine implements the Smart Docs lifecycle for Polaris: doc ingest
 - `isDirectoryEligible` is the gating function for seed eligibility. Runtime, hidden, and agent folders are excluded unless explicitly opted in.
 - `runCanonCheck` is called by the loop worker after a child completes. It must not mutate state beyond JSONL telemetry.
 - Ingest classification (`classifyDoc`) must remain deterministic — no randomness or external calls.
-- Doctrine lifecycle is one-way: draft → promote (active) → deprecate. No reversal.
+- Doctrine lifecycle commands are one-way: draft → promote (active) → deprecate. `ingestDocs` has a separate auto-promotion path for doctrine-classified documents.
+- Doctrine auto-promotion telemetry uses `doc-auto-promoted`; reserve `doctrine-promoted` for explicit lifecycle promotion.
 
 ## Route model
 
-- The `smartdocs/docs/` directory is the canonical authority structure. Docs outside it are considered raw or unclassified.
+- The `smartdocs/` directory is the canonical authority structure. Docs outside it are considered raw or unclassified.
 - `.smartdocignore` file at repo root controls which files/directories are excluded from ingest and seed operations.
-- Canon-check compares touched file content against behavioral assertions (modal verbs) in doctrine/spec files under `smartdocs/docs/doctrine/active/` and `smartdocs/docs/specs/active/`.
+- Canon-check compares touched file content against behavioral assertions (modal verbs) in doctrine/spec files under `smartdocs/doctrine/active/` and `smartdocs/specs/active/`.
 - Seed operations read the atlas (`file-routes.json`, `needs-review.json`) to provide domain/route/taskchain context in draft templates.
 
 ## Read before editing
