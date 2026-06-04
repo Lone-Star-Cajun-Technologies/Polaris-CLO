@@ -9,7 +9,7 @@ import type { LoopState } from "../loop/checkpoint.js";
  * State types that finalize is PROHIBITED from transitioning to.
  * Human review is the ONLY authority for Done/Closed transitions.
  */
-const DONE_STATE_TYPES = new Set(["completed", "canceled"]);
+const DONE_STATE_TYPES = new Set(["completed", "canceled", "cancelled"]);
 
 /**
  * Guard: throws if the given state type corresponds to Done or Closed.
