@@ -49,6 +49,18 @@ function makeRepoWithoutCanonical(): string {
   return repoRoot;
 }
 
+function readDocsIngestTelemetry(repoRoot: string): Array<Record<string, unknown>> {
+  const runsDir = join(repoRoot, ".taskchain_artifacts", "polaris-docs-ingest", "runs");
+  const runDirs = readdirSync(runsDir);
+  expect(runDirs).toHaveLength(1);
+  const telemetry = readFileSync(join(runsDir, runDirs[0], "telemetry.jsonl"), "utf-8");
+  return telemetry
+    .trim()
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => JSON.parse(line) as Record<string, unknown>);
+}
+
 describe("classifyDoc", () => {
   it("classifies docs from explicit content signals", () => {
     expect(classifyDoc("# Runtime Summary\n\nSession summary")).toBe("runtime-summary");
@@ -99,6 +111,32 @@ describe("ingestDocs", () => {
 
     // run_id in result matches the telemetry dir
     expect(result.runId).toBe(runDirs[0]);
+  });
+
+  it("auto-promotes doctrine-classified docs directly to active doctrine and emits telemetry", () => {
+    const repoRoot = makeRepo();
+    writeFileSync(
+      join(repoRoot, "smartdocs", "raw", "state-doctrine.md"),
+      "# State Doctrine\n\nAgents must always preserve state.",
+      "utf-8",
+    );
+
+    const [result] = ingestDocs(["smartdocs/raw/state-doctrine.md"], { repoRoot, clusterId: "POL-313" });
+
+    expect(result.classification).toBe("doctrine-candidate");
+    expect(result.destinationPath).toBe(`${CANONICAL_TARGET}/doctrine/active/state-doctrine.md`);
+    expect(existsSync(join(repoRoot, CANONICAL_TARGET, "doctrine", "active", "state-doctrine.md"))).toBe(true);
+    expect(existsSync(join(repoRoot, CANONICAL_TARGET, "doctrine", "candidate"))).toBe(false);
+
+    const telemetry = readDocsIngestTelemetry(repoRoot);
+    expect(telemetry).toContainEqual(
+      expect.objectContaining({
+        event: "doc-auto-promoted",
+        file: `${CANONICAL_TARGET}/doctrine/active/state-doctrine.md`,
+        classification: "doctrine-candidate",
+        cluster_id: "POL-313",
+      }),
+    );
   });
 
   it("rejects batches above the bounded file limit", () => {
@@ -162,6 +200,28 @@ describe("ingestDocs", () => {
     expect(runDirs).toHaveLength(1);
     const telemetry = readFileSync(join(runsDir, runDirs[0], "telemetry.jsonl"), "utf-8");
     expect(telemetry).toContain('"event":"run-start"');
+  });
+
+  it("dry-run reports doctrine auto-promotion target without active writes or auto-promotion telemetry", () => {
+    const repoRoot = makeRepo();
+    writeFileSync(
+      join(repoRoot, "smartdocs", "raw", "dry-doctrine.md"),
+      "# Dry Doctrine\n\nAgents must always preserve telemetry.",
+      "utf-8",
+    );
+
+    const [result] = ingestDocs(["smartdocs/raw/dry-doctrine.md"], { repoRoot, dryRun: true, clusterId: "POL-313" });
+
+    expect(result.dryRun).toBe(true);
+    expect(result.classification).toBe("doctrine-candidate");
+    expect(result.destinationPath).toBe(`${CANONICAL_TARGET}/doctrine/active/dry-doctrine.md`);
+    expect(result.provenancePath).toBeNull();
+    expect(existsSync(join(repoRoot, "smartdocs", "raw", "dry-doctrine.md"))).toBe(true);
+    expect(existsSync(join(repoRoot, CANONICAL_TARGET, "doctrine", "active", "dry-doctrine.md"))).toBe(false);
+    expect(existsSync(join(repoRoot, CANONICAL_TARGET, "doctrine", "candidate"))).toBe(false);
+
+    const telemetry = readDocsIngestTelemetry(repoRoot);
+    expect(telemetry).not.toContainEqual(expect.objectContaining({ event: "doc-auto-promoted" }));
   });
 
   it("halts and emits conflict telemetry when ingested doc contradicts active doctrine", () => {
