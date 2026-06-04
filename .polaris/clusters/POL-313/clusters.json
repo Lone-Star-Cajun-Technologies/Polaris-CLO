@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "v2",
+  "source": {
+    "id": "POL-313",
+    "type": "Linear",
+    "analysis": {
+      "id": "initial-sync",
+      "doc": "Synchronized from Linear issue identifier: POL-313"
+    }
+  },
+  "nodes": {
+    "POL-313": {
+      "id": "POL-313",
+      "title": "IMPLEMENT: Ingest auto-promote with compact foreman notification",
+      "status": "Todo",
+      "body": "## Objective\n\nReplace the manual candidate promotion gate in the SmartDocs ingest pipeline with ingest-owned auto-promotion to `doctrine/active/` and emit a compact informational notification record so the foreman has a lightweight audit trail per promotion.\n\n## Context\n\n[POL-312](https://linear.app/lsctech/issue/POL-312/analyze-ingest-auto-promote-with-compact-foreman-notification) (ANALYZE) identified that the candidate staging step in `ingestDocs()` is an unnecessary gate. Doctrine-classified docs currently land in `smartdocs/doctrine/candidate/` and require a human to run `polaris doctrine promote` to move them to `smartdocs/doctrine/active/`. [POL-180](https://linear.app/lsctech/issue/POL-180/fix-smart-docs-ingest-candidate-marker-handoff) (canceled) surfaced a marker handoff bug as a symptom of this design. The model should own the full ingest → active lifecycle; the foreman needs only a compact informational record per promotion, not a blocking review gate.\n\n## Goal\n\nRemove the `doctrine/candidate/` staging step from the ingest path. Doctrine-classified docs must be written directly to `smartdocs/doctrine/active/` on ingest, and a compact `doc-auto-promoted` telemetry event must be emitted per promotion so operators can audit what moved and when.\n\n## Scope\n\n* `src/smartdocs-engine/ingest.ts`\n* `src/smartdocs-engine/doctrine.ts`\n* `src/smartdocs-engine/ingest.test.ts`\n* `src/smartdocs-engine/index.ts`\n\n## Acceptance Criteria\n\n- [ ] `doctrine-candidate` classification routes directly to `smartdocs/doctrine/active/` (no intermediate candidate folder)\n- [ ] `addCandidateFrontMatter` and candidate marker logic is removed from the doctrine ingest path\n- [ ] A compact `doc-auto-promoted` telemetry event is emitted to the ingest run telemetry for every doctrine doc auto-promoted\n- [ ] Integration tests cover the new auto-promote flow end-to-end\n- [ ] `npm run build` and `npm test` pass\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/smartdocs-engine\n\n## Ordering\n\nChildren execute in order:\n\n1. POL-child-1: Remove candidate stage\n2. POL-child-2: Implement auto-promote + compact notification event\n3. POL-child-3: Integration test\n\n## Non-goals\n\n* Do not modify the `docs-promote` skill or its chain\n* Do not change the `doctrine/active/` folder structure\n* Do not remove `doctrinePromote()` — it may still be used by CLI consumers\n* Do not implement any UI or reporting beyond the telemetry event"
+    },
+    "POL-312": {
+      "id": "POL-312",
+      "title": "ANALYZE: Ingest auto-promote with compact foreman notification",
+      "status": "Done"
+    },
+    "POL-180": {
+      "id": "POL-180",
+      "title": "Fix Smart Docs ingest candidate marker handoff",
+      "status": "Canceled"
+    },
+    "POL-316": {
+      "id": "POL-316",
+      "title": "Integration test: doctrine auto-promote end-to-end via ingestDocs",
+      "status": "Todo",
+      "body": "## Objective\n\nAdd integration tests to `src/smartdocs-engine/ingest.test.ts` that verify the complete auto-promote flow: doctrine-classified docs land directly in `doctrine/active/`, no candidate folder is created, and the `doc-auto-promoted` telemetry event is emitted.\n\n## Context\n\nPart of [POL-313](https://linear.app/lsctech/issue/POL-313/implement-ingest-auto-promote-with-compact-foreman-notification) cluster. This is the final child — it verifies the combined output of [POL-314](https://linear.app/lsctech/issue/POL-314/remove-candidate-stage-from-doctrine-ingest-path) (candidate stage removal) and [POL-315](https://linear.app/lsctech/issue/POL-315/emit-compact-doc-auto-promoted-notification-event-on-doctrine-ingest) (notification event). Existing tests in `ingest.test.ts` may cover `doctrine-candidate` routing to the candidate folder; these must be updated or removed if they now conflict with the new behavior.\n\n## Goal\n\nWrite or update tests in `src/smartdocs-engine/ingest.test.ts` that assert:\n\n1. A file whose content classifies as `\"doctrine-candidate\"` is placed in `smartdocs/doctrine/active/` (not `doctrine/candidate/`)\n2. No file is written to `smartdocs/doctrine/candidate/` during ingest\n3. The telemetry JSONL for the run contains a `doc-auto-promoted` event for the promoted file\n4. Dry-run mode does not write to `doctrine/active/` or emit `doc-auto-promoted`\n\n## Scope\n\n* `src/smartdocs-engine/ingest.test.ts`\n\n## Acceptance Criteria\n\n- [ ] Test confirms doctrine-classified doc destination is `smartdocs/doctrine/active/<filename>`\n- [ ] Test confirms `smartdocs/doctrine/candidate/` is not written to during ingest\n- [ ] Test confirms `doc-auto-promoted` event exists in run telemetry JSONL\n- [ ] Test confirms dry-run produces no file writes and no `doc-auto-promoted` event\n- [ ] Any existing tests that assert the old `doctrine/candidate/` destination are updated to match the new behavior\n- [ ] `npm test` passes\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/smartdocs-engine\n\n## Ordering\n\nDepends on [POL-314](https://linear.app/lsctech/issue/POL-314/remove-candidate-stage-from-doctrine-ingest-path) and [POL-315](https://linear.app/lsctech/issue/POL-315/emit-compact-doc-auto-promoted-notification-event-on-doctrine-ingest) being Done first. This is the terminal child.\n\n## Non-goals\n\n* Do not test `doctrinePromote()` or `doctrineDraft()` CLI commands — those have their own tests\n* Do not add tests outside `src/smartdocs-engine/ingest.test.ts`"
+    },
+    "POL-315": {
+      "id": "POL-315",
+      "title": "Emit compact doc-auto-promoted notification event on doctrine ingest",
+      "status": "Todo",
+      "body": "## Objective\n\nEmit a compact `doc-auto-promoted` telemetry event to the ingest run telemetry file each time a doctrine-classified document is written directly to `smartdocs/doctrine/active/`, so the foreman has a lightweight informational audit trail per promotion.\n\n## Context\n\nPart of [POL-313](https://linear.app/lsctech/issue/POL-313/implement-ingest-auto-promote-with-compact-foreman-notification) cluster. After [POL-314](https://linear.app/lsctech/issue/POL-314/remove-candidate-stage-from-doctrine-ingest-path) removes the candidate stage, doctrine docs land directly in `doctrine/active/`. This child wires the compact notification event so operators can audit what was promoted and when. The event must be informational only — it must not block ingest or cluster execution. The pattern follows the existing `cognition-maintenance-needed` and `doctrine-candidate-proposed` telemetry events already emitted in `ingestDocs()`.\n\n## Goal\n\nIn `src/smartdocs-engine/ingest.ts`, after a doctrine-classified doc is written to `smartdocs/doctrine/active/`, call `emitTelemetry()` with a `doc-auto-promoted` event containing: `file` (destination path), `classification`, `linked_map_area`, `cluster_id`, and `run_id`. The event shape must be compact — single JSON line, no nested objects.\n\n## Scope\n\n* `src/smartdocs-engine/ingest.ts`\n\n## Acceptance Criteria\n\n- [ ] A `doc-auto-promoted` telemetry event is emitted in the ingest telemetry JSONL for each doctrine-classified doc written to `doctrine/active/`\n- [ ] The event contains at minimum: `event`, `run_id`, `file`, `classification`, `linked_map_area`, `cluster_id`, `timestamp`\n- [ ] The event is emitted after a successful file write (not on dry-run)\n- [ ] Dry-run mode does not emit the event\n- [ ] The notification does not block ingest execution on failure (best-effort, consistent with other telemetry calls)\n- [ ] `npm run build` passes\n\n## Validation\n\n* npm run build\n* npx vitest run src/smartdocs-engine\n\n## Ordering\n\nDepends on [POL-314](https://linear.app/lsctech/issue/POL-314/remove-candidate-stage-from-doctrine-ingest-path) being Done first. POL-316 (integration test) depends on this being Done.\n\n## Non-goals\n\n* Do not add any return value or field to `IngestResult` for this event\n* Do not write to any file other than the existing ingest telemetry JSONL\n* Do not emit the event on dry-run"
+    },
+    "POL-314": {
+      "id": "POL-314",
+      "title": "Remove candidate stage from doctrine ingest path",
+      "status": "Todo",
+      "body": "## Objective\n\nRemove the `doctrine/candidate/` staging step from `ingestDocs()` so that doctrine-classified documents no longer pass through an intermediate candidate folder.\n\n## Context\n\nPart of [POL-313](https://linear.app/lsctech/issue/POL-313/implement-ingest-auto-promote-with-compact-foreman-notification) cluster. Currently, when `classifyDoc()` returns `\"doctrine-candidate\"`, `ingestDocs()` routes the file to `smartdocs/doctrine/candidate/` and calls `addCandidateFrontMatter()` to stamp a `status: candidate` marker. This staging step is unnecessary — it requires a manual `polaris doctrine promote` invocation before the doc becomes active. This child removes that gate.\n\n## Goal\n\nChange the `TARGET_DIRS` entry for `\"doctrine-candidate\"` in `src/smartdocs-engine/ingest.ts` to point to `smartdocs/doctrine/active/` and remove the call to `addCandidateFrontMatter()` in the ingest loop for doctrine-classified docs. The `addCandidateGovernanceMetadata()` call in `doctrine.ts` should also be removed from the ingest path (governance frontmatter is no longer needed at ingest time since there is no review gate).\n\n## Scope\n\n* `src/smartdocs-engine/ingest.ts`\n* `src/smartdocs-engine/doctrine.ts`\n\n## Acceptance Criteria\n\n- [ ] `TARGET_DIRS[\"doctrine-candidate\"]` points to `smartdocs/doctrine/active/` (or the classification is renamed to `\"doctrine-active\"`)\n- [ ] `addCandidateFrontMatter()` is no longer called during ingest for doctrine-classified docs\n- [ ] `addCandidateGovernanceMetadata()` is no longer called during ingest\n- [ ] No file is written to `smartdocs/doctrine/candidate/` during ingest\n- [ ] `npm run build` passes\n\n## Validation\n\n* npm run build\n* npx vitest run src/smartdocs-engine\n\n## Ordering\n\nExecute first. POL-child-2 (auto-promote notification) depends on this being Done.\n\n## Non-goals\n\n* Do not remove `addCandidateFrontMatter()` or `addCandidateGovernanceMetadata()` functions if they have other callers — only remove the call from the ingest path\n* Do not modify `doctrinePromote()` or `doctrineDraft()` — CLI commands remain unchanged\n* Do not write any tests in this child (covered by POL-child-3)"
+    }
+  },
+  "dependencies": {},
+  "clusters": {
+    "POL-313": {
+      "id": "POL-313",
+      "title": "Linear Issue: POL-313",
+      "children": [
+        "POL-314",
+        "POL-315",
+        "POL-316"
+      ],
+      "cluster_root": "POL-313"
+    }
+  },
+  "activeCluster": "POL-313"
+}
