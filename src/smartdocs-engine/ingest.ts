@@ -491,8 +491,10 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
 
     if (classification === "doctrine-candidate" && !options.dryRun) {
       emitTelemetry(telPath, runId, {
-        event: "doctrine-promoted",
+        event: "doc-auto-promoted",
         file: relDestination,
+        classification,
+        linked_map_area: linkedMapArea,
         cluster_id: clusterId,
       });
     }
