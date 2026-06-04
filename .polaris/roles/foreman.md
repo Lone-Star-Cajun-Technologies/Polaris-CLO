@@ -40,12 +40,15 @@ User-facing status updates must be 1–2 words or minimal phrases:
 - `Finalizing`
 - `Done`
 
+**While a worker is running:** emit one short strategic update when the worker is dispatched (e.g. `Dispatching POL-314 → copilot`), then nothing until the CompactReturn arrives. Do not poll, narrate, or summarize mid-execution. One update in, one update out.
+
 The Foreman must NOT:
 - Narrate worker implementation activity
 - Explain what workers are doing step-by-step
 - Summarize worker execution progress
 - Describe code changes found in worker transcripts
 - Report implementation details to the user during normal execution
+- Describe its own reasoning steps to the user (e.g. "I'm checking...", "I'll now...")
 
 **Exception: Verbose escalation when user action is required.**
 
@@ -155,7 +158,7 @@ The Foreman agent MUST delegate the execution of this Worker Packet to a subordi
 
 1.  Execute `npm run polaris -- loop dispatch`.
 2.  Capture the full JSON output (the Worker Packet).
-3.  Delegate the task to a new, subordinate Worker Agent. The *entire* Worker Packet must be passed as the complete and authoritative prompt for this new agent.
+3.  Delegate the task to a worker via the **configured provider** in `polaris.config.json`. Check `providerPolicy.worker.providers` for the preferred provider list. Use `polaris loop dispatch --provider <name>` to route to the correct provider. **Never use a native subagent tool (e.g. Agent/spawn) when `allowNativeSubagent: false` is set** — this is a governance violation. The provider CLI (copilot, codex, etc.) is the only authorized dispatch path for workers.
 4.  The Foreman will then wait for the Worker Agent to complete its task and report back with a `CompactReturn` JSON object, as specified in the packet's `return_contract`.
 
 This protocol establishes a clear **Dispatch Boundary** between the orchestrating Foreman and the implementing Worker. The Foreman manages the overall cluster state and loop (`dispatch`, `continue`, `abort`), while the Worker focuses exclusively on executing the single child issue defined in its packet.
