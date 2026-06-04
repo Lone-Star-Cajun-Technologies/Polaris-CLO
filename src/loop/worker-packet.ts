@@ -378,14 +378,12 @@ export function compileStartupPacket(input: CompileStartupPacketInput): WorkerPa
     role_context: roleContextForWorkerRole('startup'),
     result_file_contract: {
       result_file: input.resultFile,
-      result_required_fields: {
-        run_id: input.runId,
-        cluster_id: input.clusterId,
-        child_id: "<active_child from packet>",
-        status: "done",
-        commit: "<git commit sha of the single implementation commit>",
-        validation: "passed",
-      },
+      result_required_fields: Object.fromEntries([
+        ['run_id', input.runId],
+        ['cluster_id', input.clusterId],
+        ['child_id', '<active_child from packet>'],
+        ...STARTUP_RETURN_CONTRACT.map(key => [key, `<${key}>`]),
+      ]),
     },
     context: {
       branch: input.branch,
@@ -498,14 +496,12 @@ export function compileImplPacket(input: CompileImplPacketInput): WorkerPacket {
     prohibited_write_paths: WORKER_PROHIBITED_WRITE_PATHS,
     result_file_contract: {
       result_file: input.resultFile,
-      result_required_fields: {
-        run_id: input.runId,
-        cluster_id: input.clusterId,
-        child_id: input.childId,
-        status: "done",
-        commit: "<git commit sha of the single implementation commit>",
-        validation: "passed",
-      },
+      result_required_fields: Object.fromEntries([
+        ['run_id', input.runId],
+        ['cluster_id', input.clusterId],
+        ['child_id', input.childId],
+        ...IMPL_RETURN_CONTRACT.map(key => [key, `<${key}>`]),
+      ]),
     },
     context: {
       branch: input.branch,
@@ -570,14 +566,12 @@ export function compileFinalizePacket(input: CompileFinalizePacketInput): Worker
     role_context: roleContextForWorkerRole('finalize'),
     result_file_contract: {
       result_file: input.resultFile,
-      result_required_fields: {
-        run_id: input.runId,
-        cluster_id: input.clusterId,
-        child_id: "<active_child from packet>",
-        status: "done",
-        commit: "<git commit sha of the single implementation commit>",
-        validation: "passed",
-      },
+      result_required_fields: Object.fromEntries([
+        ['run_id', input.runId],
+        ['cluster_id', input.clusterId],
+        ['child_id', '<active_child from packet>'],
+        ...FINALIZE_RETURN_CONTRACT.map(key => [key, `<${key}>`]),
+      ]),
     },
     context: {
       branch: input.branch,
@@ -636,14 +630,12 @@ export function compilePreflightPacket(input: CompilePreflightPacketInput): Work
     role_context: roleContextForWorkerRole('preflight'),
     result_file_contract: {
       result_file: input.resultFile,
-      result_required_fields: {
-        run_id: input.runId,
-        cluster_id: input.clusterId,
-        child_id: "<active_child from packet>",
-        status: "done",
-        commit: "<git commit sha of the single implementation commit>",
-        validation: "passed",
-      },
+      result_required_fields: Object.fromEntries([
+        ['run_id', input.runId],
+        ['cluster_id', input.clusterId],
+        ['child_id', '<active_child from packet>'],
+        ...PREFLIGHT_RETURN_CONTRACT.map(key => [key, `<${key}>`]),
+      ]),
     },
     context: {
       branch: input.branch,

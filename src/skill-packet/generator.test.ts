@@ -137,15 +137,16 @@ describe("generateSkillPacket", () => {
     });
 
     describe("run packet delegation note", () => {
-      it("when allow_cross_provider_delegation is false, tells orchestrator to use terminal-cli adapter", () => {
+      it("when allow_cross_provider_delegation is false, provides delegation policy with allowed adapters", () => {
         const packet = generateSkillPacket("run", {
           ...DEFAULT_CONFIG,
           allow_cross_provider_delegation: false,
         });
         const note = packet.authority_boundaries.find((b) => b.startsWith("Delegation policy:"));
         expect(note).toBeDefined();
-        expect(note).toContain("terminal-cli adapter");
-        expect(note).not.toContain("internal child/subagent fallback");
+        expect(note).toContain("NOT permitted");
+        expect(note).toMatch(/(terminal-cli|interactive-agent|agent-subtask)/);
+        expect(note).toContain("prohibited");
       });
 
       it("when allow_cross_provider_delegation is true, permits cross-provider delegation", () => {
