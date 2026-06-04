@@ -503,9 +503,9 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
       updateMapEntry(repoRoot, destination, linkedEntry);
     }
 
-    if (classification === "doctrine-candidate") {
+    if (classification === "doctrine-candidate" && !options.dryRun) {
       emitTelemetry(telPath, runId, {
-        event: "doctrine-candidate-proposed",
+        event: "doctrine-promoted",
         file: relDestination,
         cluster_id: clusterId,
       });

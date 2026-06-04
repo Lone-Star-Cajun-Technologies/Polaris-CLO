@@ -156,7 +156,7 @@ When the `polaris loop dispatch` command is executed, it returns a JSON object k
 
 The Foreman agent MUST delegate the execution of this Worker Packet to a subordinate **Worker Agent**. The standard procedure is:
 
-1.  Execute `npm run polaris -- loop dispatch`.
+1.  Execute `npm run polaris -- loop dispatch --provider <name>`, where `<name>` is selected from `providerPolicy.worker.providers` in `polaris.config.json`. **If `allowNativeSubagent: false` is set, never use a native subagent tool** — this is a governance violation.
 2.  Capture the full JSON output (the Worker Packet).
 3.  Delegate the task to a worker via the **configured provider** in `polaris.config.json`. Check `providerPolicy.worker.providers` for the preferred provider list. Use `polaris loop dispatch --provider <name>` to route to the correct provider. **Never use a native subagent tool (e.g. Agent/spawn) when `allowNativeSubagent: false` is set** — this is a governance violation. The provider CLI (copilot, codex, etc.) is the only authorized dispatch path for workers.
 4.  The Foreman will then wait for the Worker Agent to complete its task and report back with a `CompactReturn` JSON object, as specified in the packet's `return_contract`.
