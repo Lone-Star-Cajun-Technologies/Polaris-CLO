@@ -83,8 +83,11 @@ export interface ExecutionConfig {
   providers: Record<string, ProviderConfig>;
 
   /**
-   * Ordered list of provider names for sequential rotation.
-   * When --provider is not specified, the first entry is used.
+   * Experimental: ordered list of provider names for cross-run load rotation.
+   * Off by default (empty array). When non-empty, overrides providerPolicy
+   * ordering — the rotation list is filtered by the role policy rather than
+   * the role policy acting as a priority list. Leave empty unless intentionally
+   * enabling rotation; use providerPolicy.providers ordering instead.
    */
   rotation?: string[];
 
