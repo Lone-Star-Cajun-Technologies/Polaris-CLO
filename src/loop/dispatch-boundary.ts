@@ -45,6 +45,12 @@ export const INLINE_EXECUTION_ERROR =
   "Child execution requires dispatch boundary. Parent/orchestrator may not implement child inline. Use npm run polaris -- loop dispatch.";
 
 /**
+ * Error emitted when PR creation is attempted without a passing Librarian gate.
+ */
+export const LIBRARIAN_GATE_ERROR =
+  "PR creation requires Closeout Librarian gate. Generate packet with `polaris librarian packet <cluster-id>`, dispatch the Librarian, then re-run finalize.";
+
+/**
  * Error emitted when `polaris loop continue` is called without a prior dispatch.
  */
 export const DISPATCH_REQUIRED_ERROR =
@@ -60,14 +66,16 @@ export const DISPATCH_REQUIRED_ERROR =
  * dispatch_boundary epochs, and status.
  */
 export type DispatchMachineState =
-  | "idle"              // No active child; awaiting dispatch (initial or post-checkpoint)
-  | "dispatched"        // Dispatch called; worker not yet returned
-  | "worker-running"    // Worker is actively executing (alias for dispatched)
-  | "worker-completed"  // Worker returned; awaiting polaris loop continue
-  | "checkpointed"      // Continue called; ready for next dispatch
-  | "cluster-complete"  // All children done
-  | "blocked"           // Blocker recorded via polaris loop abort
-  | "budget-exhausted"; // Budget cap reached
+  | "idle"                  // No active child; awaiting dispatch (initial or post-checkpoint)
+  | "dispatched"            // Dispatch called; worker not yet returned
+  | "worker-running"        // Worker is actively executing (alias for dispatched)
+  | "worker-completed"      // Worker returned; awaiting polaris loop continue
+  | "checkpointed"          // Continue called; ready for next dispatch
+  | "cluster-complete"      // All children done
+  | "librarian-dispatched"  // Closeout Librarian session in flight
+  | "librarian-complete"    // Librarian wrote sealed result; ready for PR creation
+  | "blocked"               // Blocker recorded via polaris loop abort
+  | "budget-exhausted";     // Budget cap reached
 
 /**
  * Allowed transitions in the dispatch state machine.
@@ -96,6 +104,11 @@ export const ALLOWED_TRANSITIONS: readonly [DispatchMachineState, DispatchMachin
     ["idle", "budget-exhausted", "budget-check"],
     ["dispatched", "budget-exhausted", "budget-check"],
     ["checkpointed", "budget-exhausted", "budget-check"],
+
+    // Librarian phase (post cluster-complete, pre PR-creation)
+    ["cluster-complete", "librarian-dispatched", "polaris librarian packet + dispatch"],
+    ["librarian-dispatched", "librarian-complete", "librarian-sealed-result"],
+    ["librarian-complete", "librarian-complete", "finalize-delivery-attempt"],  // delivery proceeds after librarian gate
   ] as const;
 
 /**

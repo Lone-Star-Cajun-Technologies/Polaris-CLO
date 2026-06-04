@@ -572,6 +572,140 @@ describe("runFinalize implementation evidence preflight", () => {
   });
 });
 
+describe("runFinalize Closeout Librarian gate", () => {
+  let testDir: string;
+  beforeEach(() => { testDir = makeTestDir(); });
+  afterEach(() => { rmSync(testDir, { recursive: true, force: true }); });
+
+  function setupFinalizeRun(clusterId = "POL-6"): string {
+    const stateFile = writeCanonicalState(testDir, clusterId);
+    writeEmptyAtlas(testDir);
+    writeDurableClusterArtifacts(testDir, clusterId);
+    execFileSync("git", ["checkout", "-b", "pol-6-delivery"], { cwd: testDir, stdio: "pipe" });
+    stageFile(testDir, "src/impl.ts", "export const impl = true;\n");
+    return stateFile;
+  }
+
+  function writeLibrarianPacket(
+    clusterId: string,
+    dispatchId: string,
+    resultPath: string,
+    runId = "test-finalize-001",
+  ): string {
+    const packetsDir = join(testDir, ".polaris", "clusters", clusterId, "packets");
+    mkdirSync(packetsDir, { recursive: true });
+    const packetPath = join(packetsDir, `librarian-packet-${dispatchId}.json`);
+    writeFileSync(
+      packetPath,
+      JSON.stringify({ schema_version: "1.0", role: "closeout-librarian", run_id: runId, dispatch_id: dispatchId, cluster_id: clusterId, result_path: resultPath }, null, 2),
+      "utf-8",
+    );
+    return packetPath;
+  }
+
+  function writeLibrarianResult(
+    resultPath: string,
+    clusterId: string,
+    dispatchId: string,
+    status: "success" | "partial" | "blocked" | "failure" = "success",
+    runId = "test-finalize-001",
+  ): void {
+    mkdirSync(dirname(resultPath), { recursive: true });
+    writeFileSync(
+      resultPath,
+      JSON.stringify({
+        schema_version: "1.0",
+        role: "closeout-librarian",
+        run_id: runId,
+        dispatch_id: dispatchId,
+        cluster_id: clusterId,
+        status,
+        commit_sha: null,
+        commit_message: "docs: closeout librarian",
+        files_committed: [],
+        polaris_md_updates: [],
+        summary_md_updates: [],
+        docs_ingested: [],
+        docs_archived: [],
+        yaml_updates: [],
+        cognition_archived: [],
+        link_validation: { checked: 0, broken: [], warnings: [] },
+        blockers: [],
+        reconciled_at: new Date().toISOString(),
+        evidence_summary: "ok",
+      }, null, 2),
+      "utf-8",
+    );
+  }
+
+  it("aborts when no librarian packet exists", async () => {
+    const { runFinalize } = await import("./index.js");
+    const stateFile = setupFinalizeRun();
+
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation((() => {
+      throw new Error("process.exit called");
+    }) as never);
+    let stderr = "";
+    const stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(((chunk: string | Uint8Array) => {
+      stderr += String(chunk);
+      return true;
+    }) as never);
+
+    await expect(runFinalize({ repoRoot: testDir, stateFile })).rejects.toThrow("process.exit called");
+    expect(stderr).toContain("Closeout Librarian has not been dispatched");
+
+    exitSpy.mockRestore();
+    stderrSpy.mockRestore();
+  });
+
+  it("aborts when packet exists but result is missing", async () => {
+    const { runFinalize } = await import("./index.js");
+    const stateFile = setupFinalizeRun();
+    const resultPath = join(testDir, ".polaris", "clusters", "POL-6", "results", "librarian-d-1.json");
+    writeLibrarianPacket("POL-6", "d-1", resultPath);
+
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation((() => {
+      throw new Error("process.exit called");
+    }) as never);
+    let stderr = "";
+    const stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(((chunk: string | Uint8Array) => {
+      stderr += String(chunk);
+      return true;
+    }) as never);
+
+    await expect(runFinalize({ repoRoot: testDir, stateFile })).rejects.toThrow("process.exit called");
+    expect(stderr).toContain("Closeout Librarian has not written its sealed result yet");
+
+    exitSpy.mockRestore();
+    stderrSpy.mockRestore();
+  });
+
+  it("proceeds past the gate when a valid librarian result exists", async () => {
+    const { runFinalize } = await import("./index.js");
+    const stateFile = setupFinalizeRun();
+    const resultPath = join(testDir, ".polaris", "clusters", "POL-6", "results", "librarian-d-2.json");
+    writeLibrarianPacket("POL-6", "d-2", resultPath);
+    writeLibrarianResult(resultPath, "POL-6", "d-2");
+
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    await expect(runFinalize({ repoRoot: testDir, stateFile })).rejects.toThrow();
+    const logs = logSpy.mock.calls.map(([line]) => String(line));
+    expect(logs.some((line) => line.includes("Closeout Librarian gate passed."))).toBe(true);
+    logSpy.mockRestore();
+  });
+
+  it("bypasses gate checks when --skip-librarian is set", async () => {
+    const { runFinalize } = await import("./index.js");
+    const stateFile = setupFinalizeRun();
+
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    await expect(runFinalize({ repoRoot: testDir, stateFile, skipLibrarian: true })).rejects.toThrow();
+    const logs = logSpy.mock.calls.map(([line]) => String(line));
+    expect(logs.some((line) => line.includes("Closeout Librarian gate skipped (--skip-librarian)."))).toBe(true);
+    logSpy.mockRestore();
+  });
+});
+
 // ---- preflight: state file authority gate ----------------------------------
 
 describe("preflight: state file authority gate", () => {

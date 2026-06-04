@@ -21,6 +21,7 @@ import { assertFinalizeEvidenceOrThrow } from "../loop/finalize-evidence.js";
 import { createTrackerCommand } from "./tracker.js";
 import { createWorkerCommand } from "./worker.js";
 import { createSkillCommand } from "../skill-packet/index.js";
+import { createLibrarianCommand } from "./librarian.js";
 
 export interface PolarisCommandHandlers {
   runLoopStatus?: typeof runLoopStatus;
@@ -128,6 +129,12 @@ export function createPolarisCommand(options: PolarisCommandOptions = {}): Comma
 
   program.addCommand(
     createSkillCommand({
+      repoRoot,
+    }),
+  );
+
+  program.addCommand(
+    createLibrarianCommand({
       repoRoot,
     }),
   );

@@ -1,6 +1,12 @@
 import { Command } from "commander";
 import { join, resolve } from "node:path";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { execFileSync } from "node:child_process";
+import {
+  checkLibrarianResultGate,
+  validateCloseoutLibrarianResult,
+  type CloseoutLibrarianResult,
+} from "../cognition/closeout-librarian-types.js";
 import { loadConfig } from "../config/loader.js";
 import { readState } from "../loop/checkpoint.js";
 import { classifyArtifactPath } from "./artifact-policy.js";
@@ -29,6 +35,7 @@ export interface FinalizeOptions {
   stateFile: string;
   dryRun?: boolean;
   skipDelivery?: boolean;
+  skipLibrarian?: boolean;
 }
 
 function getBranch(repoRoot: string): string {
@@ -103,20 +110,103 @@ function validateStateBranchMatchesGitBranch(stateBranch: string | undefined, br
   }
 }
 
+/**
+ * Check that the Closeout Librarian has run and its result passes the gate.
+ * Returns null if finalize may proceed; returns a human-readable blocker string if not.
+ */
+function checkLibrarianGate(repoRoot: string, clusterId: string): string | null {
+  const packetsDir = join(repoRoot, ".polaris", "clusters", clusterId, "packets");
+
+  let packetFiles: string[] = [];
+  try {
+    packetFiles = readdirSync(packetsDir)
+      .filter((f) => f.startsWith("librarian-packet-") && f.endsWith(".json"))
+      .sort();
+  } catch {
+    // directory absent — no packet has been generated
+  }
+
+  const latestPacket = packetFiles
+    .map((file) => join(packetsDir, file))
+    .sort((a, b) => {
+      try {
+        return statSync(b).mtimeMs - statSync(a).mtimeMs;
+      } catch {
+        return b.localeCompare(a);
+      }
+    })[0];
+  if (!latestPacket) {
+    return (
+      "Closeout Librarian has not been dispatched for this cluster.\n" +
+      `  1. Generate packet:  npm run polaris -- librarian packet ${clusterId} --state-file <state-file>\n` +
+      `  2. Dispatch the Librarian with the generated packet path as the sole session prompt.\n` +
+      `  3. Wait for the Librarian to write its sealed result.\n` +
+      `  4. Re-run finalize.\n` +
+      `Use --skip-librarian to bypass this gate for backward compatibility.`
+    );
+  }
+  let packetJson: Record<string, unknown>;
+  try {
+    packetJson = JSON.parse(readFileSync(latestPacket, "utf-8")) as Record<string, unknown>;
+  } catch {
+    return `Cannot read Librarian packet at ${latestPacket}. Regenerate with: npm run polaris -- librarian packet ${clusterId}`;
+  }
+
+  const resultPath = packetJson["result_path"];
+  if (typeof resultPath !== "string") {
+    return `Librarian packet is malformed: missing result_path. Regenerate with: npm run polaris -- librarian packet ${clusterId}`;
+  }
+
+  if (!existsSync(resultPath)) {
+    return (
+      "Closeout Librarian has not written its sealed result yet.\n" +
+      `  Expected result at: ${resultPath}\n` +
+      `  Dispatch the Librarian session and wait for it to write its sealed result, then re-run finalize.`
+    );
+  }
+
+  let resultJson: unknown;
+  try {
+    resultJson = JSON.parse(readFileSync(resultPath, "utf-8"));
+  } catch {
+    return `Cannot read Librarian result at ${resultPath}. The file may be corrupt.`;
+  }
+
+  const validationErrors = validateCloseoutLibrarianResult(resultJson);
+  if (validationErrors.length > 0) {
+    return `Librarian result is invalid: ${validationErrors.join("; ")}`;
+  }
+
+  // Cross-validate dispatch_id and run_id
+  const result = resultJson as Record<string, unknown>;
+  if (packetJson["dispatch_id"] !== result["dispatch_id"]) {
+    return `Librarian result dispatch_id mismatch (packet: ${packetJson["dispatch_id"]}, result: ${result["dispatch_id"]}). Regenerate and re-dispatch.`;
+  }
+  if (packetJson["run_id"] !== result["run_id"]) {
+    return `Librarian result run_id mismatch (packet: ${packetJson["run_id"]}, result: ${result["run_id"]}).`;
+  }
+
+  try {
+    return checkLibrarianResultGate(resultJson as CloseoutLibrarianResult);
+  } catch (err) {
+    return `Librarian result gate error: ${err instanceof Error ? err.message : String(err)}`;
+  }
+}
+
 export async function runFinalize(options: FinalizeOptions): Promise<void> {
-  const { repoRoot, stateFile, dryRun, skipDelivery } = options;
+  const { repoRoot, stateFile, dryRun, skipDelivery, skipLibrarian } = options;
   const config = loadConfig(repoRoot);
 
   // Step 1: polaris map update --changed
-  console.log("[1/13] Updating map..."); // Step count updated
+  console.log("[1/14] Updating map..."); // Step count updated
   stepMapUpdate(repoRoot);
 
   // Step 2: polaris map validate — fail fast
-  console.log("[2/13] Validating map..."); // Step count updated
+  console.log("[2/14] Validating map..."); // Step count updated
   stepMapValidate(repoRoot);
 
   // Step 3: Validate current-state.json schema
-  console.log("[3/13] Validating current-state.json schema..."); // Step count updated
+  console.log("[3/14] Validating current-state.json schema..."); // Step count updated
   let rawState: unknown;
   try {
     rawState = readState(stateFile);
@@ -138,16 +228,16 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
   // Step 4: Run configured checks
   const checks = config.finalize?.runChecks ?? [];
   if (checks.length > 0) {
-    console.log(`[4/13] Running ${checks.length} configured check(s) and staging preflight...`); // Step count updated
+    console.log(`[4/14] Running ${checks.length} configured check(s) and staging preflight...`); // Step count updated
   } else {
-    console.log("[4/13] Running staging preflight..."); // Step count updated
+    console.log("[4/14] Running staging preflight..."); // Step count updated
   }
   stepRunChecks(repoRoot, checks, { activeClusterId: state.cluster_id, skipDelivery });
 
   // Step 4.5: Canon reconciliation check
   const canonCheckEnabled = config.canon?.checkOnFinalize !== false;
   if (canonCheckEnabled) {
-    console.log("[4.5/13] Running canon reconciliation check..."); // Step count updated
+    console.log("[4.5/14] Running canon reconciliation check..."); // Step count updated
     let changedFiles: string[] = [];
     try {
       const baseBranch = config.finalize?.targetBranch ?? "main";
@@ -192,11 +282,11 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
   }
 
   // Step 5: Generate run-report.md (written once, never updated)
-  console.log("[5/13] Generating run-report.md..."); // Step count updated
+  console.log("[5/14] Generating run-report.md..."); // Step count updated
   const reportPath = stepGenerateReport(repoRoot, state, branch, true);
 
   if (dryRun) {
-    console.log("[6–13/13] Dry run — skipping reconciliation, commit and delivery."); // Step count updated
+    console.log("[6–14/14] Dry run — skipping reconciliation, commit and delivery.");
     console.log("Finalize dry run complete.");
     return;
   }
@@ -333,11 +423,11 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
   // LinearAdapter is sync-in only; only McpBridgeAdapter supports full reconciliation.
   const trackerType = config.tracker?.adapter;
   if (!trackerType) {
-    console.log("[6/13] Tracker not configured — skipping reconciliation.");
+    console.log("[6/14] Tracker not configured — skipping reconciliation.");
   } else if (trackerType === "linear") {
-    console.log("[6/13] Linear adapter is sync-in only — skipping reconciliation (use mcp-bridge for two-way sync).");
+    console.log("[6/14] Linear adapter is sync-in only — skipping reconciliation (use mcp-bridge for two-way sync).");
   } else if (trackerType === "mcp-bridge") {
-    console.log("[6/13] Running tracker reconciliation...");
+    console.log("[6/14] Running tracker reconciliation...");
     try {
       const localGraph = await LocalGraph.load(state.cluster_id, repoRoot);
       const { McpBridgeAdapter } = await import("../tracker/adapters/mcp-bridge.js");
@@ -361,46 +451,59 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
       process.exit(1);
     }
   } else {
-    console.warn(`[6/13] Unknown tracker adapter '${trackerType}' — skipping reconciliation.`);
+    console.warn(`[6/14] Unknown tracker adapter '${trackerType}' — skipping reconciliation.`);
   }
 
   // Step 7: Single final commit: source changes + durable Polaris artifacts
-  console.log("[7/13] Committing durable Polaris state + map..."); // Step count updated
+  console.log("[7/14] Committing durable Polaris state + map..."); // Step count updated
   const resolvedStateFile = resolve(stateFile);
   stepCommit(repoRoot, state, resolvedStateFile, reportPath);
 
   if (skipDelivery) {
-    console.log("[8–13/13] Delivery skipped (--skip-delivery)."); // Step count updated
-    console.log("polaris finalize steps 1–7 complete."); // Step count updated
+    console.log("[8–14/14] Delivery skipped (--skip-delivery).");
+    console.log("polaris finalize steps 1–7 complete.");
     return;
   }
 
-  // Step 8: git push
-  console.log("[8/13] Pushing branch..."); // Step count updated
+  // Step 8: Closeout Librarian gate
+  if (!skipLibrarian) {
+    console.log("[8/14] Checking Closeout Librarian gate...");
+    const librarianBlocker = checkLibrarianGate(repoRoot, state.cluster_id);
+    if (librarianBlocker) {
+      process.stderr.write(`finalize aborted: Closeout Librarian gate failed.\n${librarianBlocker}\n`);
+      process.exit(1);
+    }
+    console.log("[8/14] Closeout Librarian gate passed.");
+  } else {
+    console.log("[8/14] Closeout Librarian gate skipped (--skip-librarian).");
+  }
+
+  // Step 9: git push
+  console.log("[9/14] Pushing branch...");
   stepPush(repoRoot, branch);
 
-  // Step 9: Create draft PR
+  // Step 10: Create draft PR
   const prDraft = config.finalize?.prDraft ?? true;
-  console.log("[9/13] Creating draft PR..."); // Step count updated
+  console.log("[10/14] Creating draft PR...");
   const prUrl = stepCreatePr(repoRoot, branch, state, prDraft);
 
-  // Step 10: Write PR URL to current-state.json
-  console.log("[10/13] Writing PR URL to state..."); // Step count updated
+  // Step 11: Write PR URL to current-state.json
+  console.log("[11/14] Writing PR URL to state...");
   state = stepUpdateState(resolvedStateFile, state, prUrl);
 
-  // Step 11: Append JSONL events
-  console.log("[11/13] Appending JSONL events..."); // Step count updated
+  // Step 12: Append JSONL events
+  console.log("[12/14] Appending JSONL events...");
   const artifactDir = state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "polaris-run");
   const telemetryFile = join(artifactDir, "runs", state.run_id, "telemetry.jsonl");
   stepAppendJsonl(telemetryFile, state, prUrl);
 
-  // Step 12: Update Linear parent issue
-  console.log("[12/13] Updating Linear..."); // Step count updated
+  // Step 13: Update Linear parent issue
+  console.log("[13/14] Updating Linear...");
   const linearEnabled = config.tracker?.linear?.enabled ?? false;
   await stepUpdateLinear(state, branch, prUrl, true, linearEnabled, state.cluster_id);
 
-  // Step 13: Archive run snapshot
-  console.log("[13/13] Archiving run snapshot..."); // Step count updated
+  // Step 14: Archive run snapshot
+  console.log("[14/14] Archiving run snapshot...");
   stepArchive(repoRoot, state, resolvedStateFile, reportPath);
 
   console.log("polaris finalize complete.");
@@ -440,7 +543,8 @@ export function createFinalizeCommand(handlers: FinalizeCommandHandlers = {}): C
     .option("--state-file <path>", "Path to current-state.json")
     .option("--dry-run", "non-mutating preview: validate and generate report without committing or pushing")
     .option("--skip-delivery", "perform local finalize steps only; skip push/PR/Linear/archive")
-    .action((options: { repoRoot: string; stateFile?: string; dryRun?: boolean; skipDelivery?: boolean }) => {
+    .option("--skip-librarian", "skip the Closeout Librarian gate (backward compatibility only)")
+    .action((options: { repoRoot: string; stateFile?: string; dryRun?: boolean; skipDelivery?: boolean; skipLibrarian?: boolean }) => {
       const repoRoot = options.repoRoot;
       if (!options.stateFile) {
         process.stderr.write(
@@ -450,7 +554,7 @@ export function createFinalizeCommand(handlers: FinalizeCommandHandlers = {}): C
         process.exit(1);
       }
       const stateFile = options.stateFile;
-      finalizeHandler({ repoRoot, stateFile, dryRun: options.dryRun, skipDelivery: options.skipDelivery })
+      finalizeHandler({ repoRoot, stateFile, dryRun: options.dryRun, skipDelivery: options.skipDelivery, skipLibrarian: options.skipLibrarian })
         .catch((err: unknown) => {
           process.stderr.write(`finalize error: ${err instanceof Error ? err.message : String(err)}\n`);
           process.exit(1);
