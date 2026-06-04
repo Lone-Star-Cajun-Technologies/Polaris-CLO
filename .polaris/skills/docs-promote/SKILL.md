@@ -1,8 +1,23 @@
 ---
 name: docs-promote
-description: Review docs in smartdocs/raw/ and smartdocs/doctrine/candidate/ against linked code and active doctrine, then promote or deprecate using the Polaris CLI. Requires agent judgment — reads linked source areas, surfaces conflicts, and calls promote/deprecate only with explicit confirmation.
+status: retired
+retired_by: polaris-catalog
+description: RETIRED — use polaris-catalog instead. docs-promote has been replaced by polaris-catalog, which combines cognition reconciliation with confidence-gated document classification.
 role: librarian
 role_file: .polaris/roles/librarian.md
+---
+
+## RETIRED
+
+This skill has been retired. Use `polaris-catalog` instead.
+
+`polaris-catalog` provides the same document classification and placement behavior with
+confidence-gated automation (high confidence = auto-place, low confidence = ask or hold),
+plus POLARIS.md and SUMMARY.md reconciliation in the same invocation.
+
+Do not invoke this skill. If you received this message after attempting `docs-promote`,
+stop and use `polaris-catalog <POL-###>` instead.
+
 ---
 
 ## Polaris Skill Bootloader
