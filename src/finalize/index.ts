@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { join, resolve } from "node:path";
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import {
   checkLibrarianResultGate,
@@ -137,7 +137,15 @@ function checkLibrarianGate(repoRoot: string, clusterId: string): string | null 
     );
   }
 
-  const latestPacket = join(packetsDir, packetFiles[packetFiles.length - 1]!);
+  const latestPacket = packetFiles
+    .map((file) => join(packetsDir, file))
+    .sort((a, b) => {
+      try {
+        return statSync(b).mtimeMs - statSync(a).mtimeMs;
+      } catch {
+        return b.localeCompare(a);
+      }
+    })[0]!;
   let packetJson: Record<string, unknown>;
   try {
     packetJson = JSON.parse(readFileSync(latestPacket, "utf-8")) as Record<string, unknown>;
@@ -179,7 +187,11 @@ function checkLibrarianGate(repoRoot: string, clusterId: string): string | null 
     return `Librarian result run_id mismatch (packet: ${packetJson["run_id"]}, result: ${result["run_id"]}).`;
   }
 
-  return checkLibrarianResultGate(resultJson as CloseoutLibrarianResult);
+  try {
+    return checkLibrarianResultGate(resultJson as CloseoutLibrarianResult);
+  } catch (err) {
+    return `Librarian result gate error: ${err instanceof Error ? err.message : String(err)}`;
+  }
 }
 
 export async function runFinalize(options: FinalizeOptions): Promise<void> {

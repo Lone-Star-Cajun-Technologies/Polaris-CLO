@@ -71,7 +71,7 @@ export type DispatchMachineState =
   | "worker-running"        // Worker is actively executing (alias for dispatched)
   | "worker-completed"      // Worker returned; awaiting polaris loop continue
   | "checkpointed"          // Continue called; ready for next dispatch
-  | "cluster-complete"      // All children done; Librarian not yet dispatched
+  | "cluster-complete"      // All children done
   | "librarian-dispatched"  // Closeout Librarian session in flight
   | "librarian-complete"    // Librarian wrote sealed result; ready for PR creation
   | "blocked"               // Blocker recorded via polaris loop abort
@@ -108,7 +108,7 @@ export const ALLOWED_TRANSITIONS: readonly [DispatchMachineState, DispatchMachin
     // Librarian phase (post cluster-complete, pre PR-creation)
     ["cluster-complete", "librarian-dispatched", "polaris librarian packet + dispatch"],
     ["librarian-dispatched", "librarian-complete", "librarian-sealed-result"],
-    ["librarian-complete", "cluster-complete", "finalize-delivery"],  // delivery proceeds from librarian-complete
+    ["librarian-complete", "librarian-complete", "finalize-delivery"],  // delivery proceeds after librarian gate
   ] as const;
 
 /**

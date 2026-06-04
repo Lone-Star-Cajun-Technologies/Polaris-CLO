@@ -24,8 +24,13 @@ export interface GenerateLibrarianPacketOptions {
 }
 
 export function generateLibrarianPacket(options: GenerateLibrarianPacketOptions): string {
-  const { repoRoot, clusterId } = options;
-  const stateFile = options.stateFile ?? resolveStateFile(repoRoot, clusterId);
+  const repoRoot = path.resolve(options.repoRoot);
+  const { clusterId } = options;
+  const stateFile = options.stateFile
+    ? (path.isAbsolute(options.stateFile)
+      ? options.stateFile
+      : path.resolve(repoRoot, options.stateFile))
+    : resolveStateFile(repoRoot, clusterId);
   const state = readState(stateFile);
 
   if (state.cluster_id !== clusterId) {
