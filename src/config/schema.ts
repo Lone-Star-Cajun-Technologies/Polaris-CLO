@@ -1,3 +1,5 @@
+import type { WorkSource } from "../types/work-contract.js";
+
 export interface ProviderConfig {
   /**
    * Executable name or absolute path. May contain $ENV_VAR references.
@@ -145,6 +147,7 @@ export interface PolarisConfig {
     sessionTerminationMode?: "emit-marker" | "exit-0";
     allowBranchDivergence?: boolean;
   };
+  work_source?: WorkSource;
   orchestration?: {
     /**
      * Orchestration mode.
@@ -176,7 +179,7 @@ export interface PolarisConfig {
   };
   tracker?: {
     /** Which remote tracker adapter to use. Omit to disable remote reconciliation. */
-    adapter?: "linear" | "mcp-bridge";
+    adapter?: "linear" | "mcp-bridge" | "local";
     'local-file'?: {
       enabled?: boolean;
     };
