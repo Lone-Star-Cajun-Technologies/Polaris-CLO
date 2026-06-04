@@ -29,6 +29,7 @@ function makeGitRepoDir(): string {
   execFileSync("git", ["init", "-b", "main"], { cwd: dir });
   execFileSync("git", ["config", "user.email", "polaris@test.invalid"], { cwd: dir });
   execFileSync("git", ["config", "user.name", "Polaris Test"], { cwd: dir });
+  execFileSync("git", ["config", "commit.gpgsign", "false"], { cwd: dir });
   mkdirSync(join(dir, "src"), { recursive: true });
   mkdirSync(join(dir, "notes"), { recursive: true });
   writeFileSync(join(dir, "src", "allowed.ts"), "base\n");

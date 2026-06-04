@@ -30,7 +30,8 @@ describe("Quiet Foreman mode docs", () => {
       "05-validate-child",
       "06-commit-and-update-linear",
       "07-decide-continuation",
-      "08-final-delivery",
+      "08-closeout-librarian",
+      "09-final-delivery",
     ];
 
     let lastIndex = -1;
