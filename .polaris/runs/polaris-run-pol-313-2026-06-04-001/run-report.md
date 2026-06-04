@@ -1,8 +1,8 @@
 # Run Report: polaris-run-pol-313-2026-06-04-001
 
-**Status:** complete
+**Status:** cluster-complete
 **Branch:** pol-313-delivery
-**PR:** https://github.com/ItIsYeBananaduck/Polaris/pull/102
+**PR:** TBD — set at delivery step 9
 **Children completed:** 3 of 3
 **Validation:** passed
 
