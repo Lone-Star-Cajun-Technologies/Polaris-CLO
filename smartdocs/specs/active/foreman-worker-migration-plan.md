@@ -10,6 +10,9 @@ superseded_by:
 depends_on: 
 validates: 
 source_paths: 
+ingest-run-id: migrated
+classified-as: unknown
+ingested-at: 2026-06-04T06:33:09.404Z
 ---
 
 # Foreman-Worker Migration Plan

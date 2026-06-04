@@ -11,6 +11,10 @@ superseded_by: ""
 depends_on: ""
 validates: ""
 source_paths: src/smartdocs-engine/validate-instructions.ts,src/smartdocs-engine/seed-instructions.ts
+ingest-run-id: polaris-docs-ingest-docs-ingest-2026-05-28-003
+classified-as: doctrine-candidate
+linked-map-area: .codex/skills/polaris-run/chain.md
+ingested-at: 2026-05-28T06:23:01.681Z
 ---
 
 # Smart Docs Summary Architecture

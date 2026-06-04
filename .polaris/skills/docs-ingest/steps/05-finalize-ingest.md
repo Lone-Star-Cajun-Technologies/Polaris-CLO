@@ -27,7 +27,7 @@ Close out the ingest session cleanly. Emit telemetry. Write final state. Report.
    **docs-ingest complete**
    Processed:           <n> files
    Placed:
-     <original> → <smartdocs/docs/target>
+     <original> → <smartdocs/target>
      ...
    Pending user approval: <files requiring approval, if any> | none
    Conflicts:           <none | list with resolution required>

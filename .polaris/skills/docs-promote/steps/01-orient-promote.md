@@ -22,7 +22,7 @@ Establish bounded promotion context before touching any files. Confirm what to r
    ```
    If this write fails: halt. Do not continue.
 
-3. **Confirm canonical target** — verify `smartdocs/docs/` exists. If not: halt and report.
+3. **Confirm canonical target** — verify `smartdocs/` exists. If not: halt and report.
 
 4. **Restate working context** in under 6 bullets:
    - `run_id` and fresh/resumed
@@ -38,7 +38,7 @@ allowed_files:
   - .polaris/map/index.json
 stop_rules:
   - run-start telemetry write fails
-  - smartdocs/docs/ not found
+  - smartdocs/ not found
 ```
 
 ## Artifact update

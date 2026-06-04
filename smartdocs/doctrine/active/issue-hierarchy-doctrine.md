@@ -14,6 +14,9 @@ superseded_by: ""
 depends_on: ""
 validates: ""
 source_paths: src/loop/index.ts,src/cli/index.ts
+ingest-run-id: polaris-docs-ingest-docs-ingest-2026-05-28-002
+classified-as: doctrine-candidate
+ingested-at: 2026-05-28T06:22:37.642Z
 ---
 
 # Issue Hierarchy Doctrine

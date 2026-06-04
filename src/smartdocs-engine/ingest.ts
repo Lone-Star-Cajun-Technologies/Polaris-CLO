@@ -19,6 +19,7 @@ import {
 } from "../map/atlas.js";
 import { getMonotonicTimestamp } from "../utils/monotonic-timestamp.js";
 import { isIngestIneligible } from "./smartdoc-ignore.js";
+import { stampIngestFrontMatter } from "./doctrine.js";
 import { applySummaryDelta, findNearestSummarymd, detectPrecedenceLevel } from "../cognition/summary-delta.js";
 
 export type DocsClassification =
@@ -46,7 +47,6 @@ export interface IngestResult {
   classification: DocsClassification;
   linkedMapArea: string | null;
   runId: string;
-  provenancePath: string | null;
   dryRun: boolean;
   /** Relative path of the nearest route SUMMARY.md that may need updating. */
   nearestSummary: string | null;
@@ -99,12 +99,28 @@ export const SMART_DOCS_SCAFFOLD_DIRS = [
 
 const APPROVAL_REQUIRED = new Set<DocsClassification>(["spec-active", "architecture", "decision"]);
 
-const MODAL_REQUIRES = /\b(?:must|always)\s+(\w+)/gi;
-const MODAL_PROHIBITS = /\b(?:never|must\s+not)\s+(\w+)/gi;
+/**
+ * Conflict detection uses subject-verb-keyword triples rather than bare
+ * verb-keyword pairs. A conflict only fires when both the subject AND the
+ * keyword match between the ingested doc and an active doctrine file.
+ * This prevents false positives such as:
+ *   doctrine:  "SUMMARY.md must contain (standard schema)"
+ *   ingested:  "Workers must not contain stale assumptions"
+ * — same keyword (`contain`), completely different subjects.
+ */
+const MODAL_REQUIRES_RE = /([A-Za-z][\w/.\-]{0,40})\s+(?:must|always)\s+(\w+)/gi;
+const MODAL_PROHIBITS_RE = /([A-Za-z][\w/.\-]{0,40})\s+(?:never|must\s+not)\s+(\w+)/gi;
 const CONFLICT_STOPWORDS = new Set([
   "this", "that", "with", "from", "have", "been", "will", "when", "then",
-  "else", "each", "every", "also", "note", "not", "used", "only",
+  "else", "each", "every", "also", "note", "not", "used", "only", "be",
+  "are", "the", "and", "for", "its", "any", "all",
 ]);
+
+/** A (normalised-subject, verb-keyword) pair extracted from content. */
+interface VerbTriple {
+  subject: string;
+  keyword: string;
+}
 
 function readJson<T>(filePath: string, fallback: T): T {
   try {
@@ -305,14 +321,34 @@ function updateMapEntry(
   });
 }
 
-function extractVerbKeywords(content: string, pattern: RegExp): Set<string> {
-  const result = new Set<string>();
+function extractVerbTriples(content: string, pattern: RegExp): VerbTriple[] {
+  const result: VerbTriple[] = [];
   const re = new RegExp(pattern.source, pattern.flags);
   for (const match of content.matchAll(re)) {
-    const kw = match[1]?.toLowerCase();
-    if (kw && kw.length >= 4 && !CONFLICT_STOPWORDS.has(kw)) result.add(kw);
+    const subject = match[1]?.toLowerCase().replace(/[^a-z0-9./\-]/g, "");
+    const keyword = match[2]?.toLowerCase();
+    if (
+      subject && keyword &&
+      keyword.length >= 3 &&
+      !CONFLICT_STOPWORDS.has(keyword) &&
+      !CONFLICT_STOPWORDS.has(subject)
+    ) {
+      result.push({ subject, keyword });
+    }
   }
   return result;
+}
+
+/** Returns true if two triple sets share a (subject, keyword) pair. */
+function triplesConflict(a: VerbTriple[], b: VerbTriple[]): { subject: string; keyword: string } | null {
+  for (const ta of a) {
+    for (const tb of b) {
+      if (ta.subject === tb.subject && ta.keyword === tb.keyword) {
+        return { subject: ta.subject, keyword: ta.keyword };
+      }
+    }
+  }
+  return null;
 }
 
 function detectDoctrineConflict(
@@ -331,8 +367,8 @@ function detectDoctrineConflict(
 
   if (files.length === 0) return null;
 
-  const ingestedRequires = extractVerbKeywords(content, MODAL_REQUIRES);
-  const ingestedProhibits = extractVerbKeywords(content, MODAL_PROHIBITS);
+  const ingestedRequires = extractVerbTriples(content, MODAL_REQUIRES_RE);
+  const ingestedProhibits = extractVerbTriples(content, MODAL_PROHIBITS_RE);
 
   for (const file of files) {
     let docContent: string;
@@ -342,24 +378,25 @@ function detectDoctrineConflict(
       continue;
     }
 
-    const docRequires = extractVerbKeywords(docContent, MODAL_REQUIRES);
-    const docProhibits = extractVerbKeywords(docContent, MODAL_PROHIBITS);
+    const docRequires = extractVerbTriples(docContent, MODAL_REQUIRES_RE);
+    const docProhibits = extractVerbTriples(docContent, MODAL_PROHIBITS_RE);
 
-    for (const kw of ingestedProhibits) {
-      if (docRequires.has(kw)) {
-        return {
-          conflictingFile: file,
-          detail: `ingested doc prohibits "${kw}" but ${file} requires it`,
-        };
-      }
+    // ingested prohibits X; doctrine requires X — same subject
+    const prohibitConflict = triplesConflict(ingestedProhibits, docRequires);
+    if (prohibitConflict) {
+      return {
+        conflictingFile: file,
+        detail: `ingested doc prohibits "${prohibitConflict.keyword}" for "${prohibitConflict.subject}" but ${file} requires it`,
+      };
     }
-    for (const kw of ingestedRequires) {
-      if (docProhibits.has(kw)) {
-        return {
-          conflictingFile: file,
-          detail: `ingested doc requires "${kw}" but ${file} prohibits it`,
-        };
-      }
+
+    // ingested requires X; doctrine prohibits X — same subject
+    const requireConflict = triplesConflict(ingestedRequires, docProhibits);
+    if (requireConflict) {
+      return {
+        conflictingFile: file,
+        detail: `ingested doc requires "${requireConflict.keyword}" for "${requireConflict.subject}" but ${file} prohibits it`,
+      };
     }
   }
 
@@ -466,26 +503,18 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
       if (resolve(absSource) !== resolve(destination)) {
         renameSync(absSource, destination);
       }
-      writeFileSync(
-        provenancePath,
-        JSON.stringify(
-          {
-            currentPath: relDestination,
-            originalPath: relSource,
-            ingestedAt: new Date().toISOString(),
-            ingestRunId: runId,
-            ingestClusterId: clusterId,
-            relatedRunId: runId,
-            relatedIssue: clusterId,
-            classifiedAs: classification,
-            linkedMapArea,
-            conflictsDetected: false,
-          },
-          null,
-          2,
-        ) + "\n",
-        "utf-8",
+      const stampedContent = stampIngestFrontMatter(
+        readFileSync(destination, "utf-8"),
+        {
+          originalPath: relSource,
+          classifiedAs: classification,
+          ingestRunId: runId,
+          ingestClusterId: clusterId,
+          linkedMapArea,
+          ingestedAt: new Date().toISOString(),
+        },
       );
+      writeFileSync(destination, stampedContent, "utf-8");
       updateMapEntry(repoRoot, destination, linkedEntry);
     }
 
@@ -554,7 +583,6 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
       classification,
       linkedMapArea,
       runId,
-      provenancePath: options.dryRun ? null : relative(repoRoot, provenancePath).replace(/\\/g, "/"),
       dryRun: Boolean(options.dryRun),
       nearestSummary,
       summaryDeltaWarranted: summaryDelta.updateWarranted,
@@ -588,7 +616,6 @@ export function printIngestResults(results: IngestResult[]): void {
     console.log(`classification: ${result.classification}`);
     console.log(`linked_map_area: ${result.linkedMapArea ?? "none"}`);
     console.log(`run_id: ${result.runId}`);
-    if (result.provenancePath) console.log(`provenance: ${result.provenancePath}`);
     if (result.nearestSummary) console.log(`nearest_summary: ${result.nearestSummary}${result.summaryDeltaWarranted ? " (delta warranted)" : ""}`);
   }
 }

@@ -1,0 +1,2 @@
+{"event":"run-start","run_id":"polaris-docs-ingest-docs-ingest-2026-06-04-007","prior_run_id":"polaris-docs-ingest-docs-ingest-2026-06-04-006","timestamp":"2026-06-04T06:15:02.996Z"}
+{"event":"docs-ingest-conflict-detected","file":"smartdocs/raw/POL-302-finalize-state-authority-review-gate.md","conflicting_doctrine_file":"smartdocs-summary-architecture.md","detail":"ingested doc requires \"contain\" but smartdocs-summary-architecture.md prohibits it","cluster_id":null,"run_id":"polaris-docs-ingest-docs-ingest-2026-06-04-007","timestamp":"2026-06-04T06:15:03.004Z"}

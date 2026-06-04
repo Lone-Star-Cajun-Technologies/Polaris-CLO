@@ -98,7 +98,12 @@ describe("ingestDocs", () => {
     expect(result.destinationPath).toBe(`${CANONICAL_TARGET}/raw/ingest-plan.md`);
     expect(result.linkedMapArea).toBe("src/smartdocs-engine");
     expect(existsSync(join(repoRoot, CANONICAL_TARGET, "raw", "ingest-plan.md"))).toBe(true);
-    expect(existsSync(join(repoRoot, CANONICAL_TARGET, "raw", "ingest-plan.provenance.json"))).toBe(true);
+    // Provenance stamped in frontmatter — no sidecar written
+    expect(existsSync(join(repoRoot, CANONICAL_TARGET, "raw", "ingest-plan.provenance.json"))).toBe(false);
+    const placedContent = readFileSync(join(repoRoot, CANONICAL_TARGET, "raw", "ingest-plan.md"), "utf-8");
+    expect(placedContent).toContain("ingest-run-id:");
+    expect(placedContent).toContain("classified-as: spec-raw");
+    expect(placedContent).toContain("source: smartdocs/raw/ingest-plan.md");
 
     // Telemetry written to polaris-docs-ingest path using the generated run_id
     const runsDir = join(repoRoot, ".taskchain_artifacts", "polaris-docs-ingest", "runs");
@@ -187,7 +192,6 @@ describe("ingestDocs", () => {
     expect(result.dryRun).toBe(true);
     expect(result.classification).toBe("spec-raw");
     expect(result.destinationPath).toBe(`${CANONICAL_TARGET}/raw/spec-dry.md`);
-    expect(result.provenancePath).toBeNull();
 
     // Source file still exists (not moved)
     expect(existsSync(join(repoRoot, "smartdocs", "raw", "spec-dry.md"))).toBe(true);
@@ -215,7 +219,6 @@ describe("ingestDocs", () => {
     expect(result.dryRun).toBe(true);
     expect(result.classification).toBe("doctrine-candidate");
     expect(result.destinationPath).toBe(`${CANONICAL_TARGET}/doctrine/active/dry-doctrine.md`);
-    expect(result.provenancePath).toBeNull();
     expect(existsSync(join(repoRoot, "smartdocs", "raw", "dry-doctrine.md"))).toBe(true);
     expect(existsSync(join(repoRoot, CANONICAL_TARGET, "doctrine", "active", "dry-doctrine.md"))).toBe(false);
     expect(existsSync(join(repoRoot, CANONICAL_TARGET, "doctrine", "candidate"))).toBe(false);
@@ -224,10 +227,11 @@ describe("ingestDocs", () => {
     expect(telemetry).not.toContainEqual(expect.objectContaining({ event: "doc-auto-promoted" }));
   });
 
-  it("halts and emits conflict telemetry when ingested doc contradicts active doctrine", () => {
+  it("halts and emits conflict telemetry when ingested doc contradicts active doctrine on same subject", () => {
     const repoRoot = makeRepo();
-    // "must preserve" → docRequires captures "preserve"
-    // "never preserve" → ingestedProhibits captures "preserve" → conflict
+    // doctrine:  "Agents must preserve telemetry" → triple { subject:"agents", keyword:"preserve" } in requires
+    // ingested:  "Agents never preserve telemetry" → triple { subject:"agents", keyword:"preserve" } in prohibits
+    // same subject+keyword → real conflict
     writeFileSync(
       join(repoRoot, CANONICAL_TARGET, "doctrine", "active", "state-integrity.md"),
       "# State Integrity Doctrine\n\nAgents must preserve telemetry files.\n",
@@ -249,6 +253,28 @@ describe("ingestDocs", () => {
     expect(runDirs).toHaveLength(1);
     const telemetry = readFileSync(join(runsDir, runDirs[0], "telemetry.jsonl"), "utf-8");
     expect(telemetry).toContain('"event":"docs-ingest-conflict-detected"');
+  });
+
+  it("does not false-positive when same keyword applies to different subjects", () => {
+    const repoRoot = makeRepo();
+    // doctrine:  "SUMMARY.md must contain (standard schema)" → subject=summary.md, keyword=contain
+    // ingested:  "Workers must not contain stale assumptions" → subject=workers, keyword=contain
+    // different subjects → no conflict
+    writeFileSync(
+      join(repoRoot, CANONICAL_TARGET, "doctrine", "active", "smartdocs-summary-architecture.md"),
+      "# Summary Architecture\n\nSUMMARY.md must contain the standard schema sections.\nSUMMARY.md must not contain rules or behavioral assertions.\n",
+      "utf-8",
+    );
+    writeFileSync(
+      join(repoRoot, "smartdocs", "raw", "pol-313-analysis.md"),
+      "# POL-313 Analysis\n\nWorkers must not contain stale assumptions.\nThe runtime must never contain inconsistent state.",
+      "utf-8",
+    );
+
+    // Should ingest cleanly — no conflict
+    expect(() =>
+      ingestDocs(["smartdocs/raw/pol-313-analysis.md"], { repoRoot }),
+    ).not.toThrow();
   });
 
   it("writes durable state to polaris-docs-ingest after a successful ingest", () => {

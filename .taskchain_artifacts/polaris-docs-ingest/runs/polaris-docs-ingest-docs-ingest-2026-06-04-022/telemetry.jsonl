@@ -1,0 +1,4 @@
+{"event":"run-start","run_id":"polaris-docs-ingest-docs-ingest-2026-06-04-022","prior_run_id":"polaris-docs-ingest-docs-ingest-2026-06-04-021","timestamp":"2026-06-04T06:38:03.584Z"}
+{"event":"docs-ingest-classified","file":"smartdocs/raw/ephemeral-validation-plan.md","classification":"spec-raw","destination":"smartdocs/raw/ephemeral-validation-plan.md","linked_map_area":null,"cluster_id":null,"run_id":"polaris-docs-ingest-docs-ingest-2026-06-04-022","timestamp":"2026-06-04T06:38:03.599Z"}
+{"event":"docs-ingest","file":"smartdocs/raw/ephemeral-validation-plan.md","classification":"spec-raw","destination":"smartdocs/raw/ephemeral-validation-plan.md","linked_map_area":null,"cluster_id":null,"run_id":"polaris-docs-ingest-docs-ingest-2026-06-04-022","timestamp":"2026-06-04T06:38:03.603Z"}
+{"event":"docs-ingest-complete","count":1,"cluster_id":null,"run_id":"polaris-docs-ingest-docs-ingest-2026-06-04-022","timestamp":"2026-06-04T06:38:03.610Z"}

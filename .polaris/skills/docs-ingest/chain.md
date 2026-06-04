@@ -19,16 +19,16 @@ Always use the repo-local Polaris CLI:
 npm run polaris -- docs ingest [--file <path>] [--batch <cluster-id>] [--dry-run]
 ```
 
-Drop zone: `smartdocs/docs/raw/` — this is the single ingest entry point.
+Drop zone: `smartdocs/raw/` — this is the single ingest entry point.
 
 Never assume a globally linked `polaris` command exists.
 
 ## Canonical Smart Docs target
 
-`smartdocs/docs/` is the authoritative Smart Docs ingest target. There is one drop zone: `smartdocs/docs/raw/`.
+`smartdocs/` is the authoritative Smart Docs ingest target. There is one drop zone: `smartdocs/raw/`.
 
 - Root `docs/` is legacy/non-canonical — do not write new Smart Docs there.
-- There are no sub-raw folders (`specs/raw/`, `doctrine/raw/`, `audits/raw/` do not exist). All drops land in `smartdocs/docs/raw/` and are routed from there.
+- There are no sub-raw folders (`specs/raw/`, `doctrine/raw/`, `audits/raw/` do not exist). All drops land in `smartdocs/raw/` and are routed from there.
 
 **Architectural intent:** Smart Docs exist to reduce repo-understanding token burn. Agents should move from:
 
@@ -59,7 +59,7 @@ Smart Docs function as architectural compression, routing context, local subsyst
 **Any step:**
 - Conflict directly contradicts active doctrine → halt, report, require user resolution
 - High-authority placement attempted (`doctrine/active/`, `architecture/`, `decisions/`) without explicit approval → halt and surface for review
-- `Polaris-Docs/docs/` not found → halt, report missing canonical target
+- `smartdocs/` not found → halt, report missing canonical target
 - `run-start` telemetry write fails → halt
 
 **Step 03 (conflict check):**
@@ -70,13 +70,13 @@ Smart Docs function as architectural compression, routing context, local subsyst
 
 | Area | Authority | Who may write | Promotion path |
 |---|---|---|---|
-| `smartdocs/docs/raw/` | none | any agent freely | `polaris doctrine draft` → `doctrine/candidate/` or `polaris doctrine spec-promote` → `specs/active/` |
-| `smartdocs/docs/runtime/` | low | polaris-run, polaris-finalize | no promotion; informational only |
-| `smartdocs/docs/specs/active/` | medium | `polaris doctrine spec-promote --approve` only | moved to `implemented/` or `superseded/` |
-| `smartdocs/docs/doctrine/candidate/` | low | docs ingest + `polaris doctrine draft` | `polaris doctrine promote` (user-approved) |
-| `smartdocs/docs/doctrine/active/` | high | `polaris doctrine promote` (user-approved) | `polaris doctrine deprecate` (user-approved) |
-| `smartdocs/docs/architecture/` | high | user-approved only | explicit ADR process |
-| `smartdocs/docs/decisions/` | high | user-approved only | explicit ADR process |
+| `smartdocs/raw/` | none | any agent freely | `polaris doctrine draft` → `doctrine/candidate/` or `polaris doctrine spec-promote` → `specs/active/` |
+| `smartdocs/runtime/` | low | polaris-run, polaris-finalize | no promotion; informational only |
+| `smartdocs/specs/active/` | medium | `polaris doctrine spec-promote --approve` only | moved to `implemented/` or `superseded/` |
+| `smartdocs/doctrine/candidate/` | low | docs ingest + `polaris doctrine draft` | `polaris doctrine promote` (user-approved) |
+| `smartdocs/doctrine/active/` | high | `polaris doctrine promote` (user-approved) | `polaris doctrine deprecate` (user-approved) |
+| `smartdocs/architecture/` | high | user-approved only | explicit ADR process |
+| `smartdocs/decisions/` | high | user-approved only | explicit ADR process |
 
 ## Run ID format
 
@@ -105,10 +105,10 @@ Required fields on every event: `event`, `run_id`, `timestamp`. Add `file` where
 
 ## Context budget
 
-One ingest cluster per session. Default batch: 3–4 files. Configurable:
+One ingest cluster per session. Default batch: 10 files. Configurable:
 
 ```json
-{ "docs": { "ingestBatchSize": 4 } }
+{ "docs": { "ingestBatchSize": 10 } }
 ```
 
 Stop after completing one cluster. Bootstrap packet guidance directs the next session to the next pending cluster.

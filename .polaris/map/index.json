@@ -1,11 +1,11 @@
 {
-  "scan_date": "2026-06-04T05:00:09.940Z",
-  "file_count": 782,
-  "coverage_pct": 34,
+  "scan_date": "2026-06-04T06:40:29.983Z",
+  "file_count": 795,
+  "coverage_pct": 35,
   "instructionCoverage": {
-    "routesCovered": 645,
-    "routesTotal": 782,
-    "coveragePercent": 82
+    "routesCovered": 657,
+    "routesTotal": 795,
+    "coveragePercent": 83
   },
   "entries": {
     "src/__mocks__/tool-server-linear.ts": {
@@ -3542,6 +3542,185 @@
       ],
       "instructionFile": "src/cli/POLARIS.md"
     },
+    "smartdocs/runtime/summaries/pol-288-foreman-worker-drift-postmortem.md": {
+      "domain": "cognition",
+      "route": "src/cognition",
+      "taskchain": "polaris-cognition",
+      "confidence": 0.85,
+      "classification": "indexed",
+      "last_updated": "2026-06-04T06:07:28.679Z",
+      "updated_by": "polaris-docs-ingest",
+      "tags": [
+        "docs",
+        "ingested"
+      ],
+      "instructionFile": "src/cognition/POLARIS.md"
+    },
+    "smartdocs/architecture/closeout-librarian-gap-analysis.md": {
+      "domain": "finalize",
+      "route": "src/finalize",
+      "taskchain": "polaris-finalize",
+      "confidence": 0.85,
+      "classification": "indexed",
+      "last_updated": "2026-06-04T06:09:33.449Z",
+      "updated_by": "polaris-docs-ingest",
+      "tags": [
+        "docs",
+        "ingested"
+      ],
+      "instructionFile": "src/finalize/steps/POLARIS.md"
+    },
+    "smartdocs/raw/POL-281_recovery_playbook.md": {
+      "domain": "unknown",
+      "route": ".polaris/map/index.json",
+      "taskchain": "polaris-core",
+      "confidence": 0.85,
+      "classification": "indexed",
+      "last_updated": "2026-06-04T06:15:02.742Z",
+      "updated_by": "polaris-docs-ingest",
+      "tags": [
+        "docs",
+        "ingested"
+      ],
+      "instructionFile": ".polaris/map/POLARIS.md"
+    },
+    "smartdocs/doctrine/active/pol-223-role-system-worker-assignment-child-recovery-analysis.md": {
+      "domain": "loop",
+      "route": "src/loop",
+      "taskchain": "polaris-loop",
+      "confidence": 0.85,
+      "classification": "indexed",
+      "last_updated": "2026-06-04T06:23:12.894Z",
+      "updated_by": "polaris-docs-ingest",
+      "tags": [
+        "docs",
+        "ingested"
+      ],
+      "instructionFile": "src/loop/POLARIS.md"
+    },
+    "smartdocs/runtime/run-reports/pol-233-smartdocs-normalize-routing-cognition-analysis.md": {
+      "domain": "cognition",
+      "route": "src/cognition",
+      "taskchain": "polaris-cognition",
+      "confidence": 0.85,
+      "classification": "indexed",
+      "last_updated": "2026-06-04T06:23:13.191Z",
+      "updated_by": "polaris-docs-ingest",
+      "tags": [
+        "docs",
+        "ingested"
+      ],
+      "instructionFile": "src/cognition/POLARIS.md"
+    },
+    "smartdocs/runtime/run-reports/pol-257-init-adoption-workflow-analysis.md": {
+      "domain": "cli",
+      "route": "src/cli",
+      "taskchain": "polaris-cli",
+      "confidence": 0.85,
+      "classification": "indexed",
+      "last_updated": "2026-06-04T06:23:13.466Z",
+      "updated_by": "polaris-docs-ingest",
+      "tags": [
+        "docs",
+        "ingested"
+      ],
+      "instructionFile": "src/cli/POLARIS.md"
+    },
+    "smartdocs/doctrine/active/2026-05-23-provider-capability-abstraction.md": {
+      "domain": "config",
+      "route": "src/config",
+      "taskchain": "polaris-config",
+      "confidence": 0.85,
+      "classification": "indexed",
+      "last_updated": "2026-06-04T06:35:06.724Z",
+      "updated_by": "polaris-docs-ingest",
+      "tags": [
+        "docs",
+        "ingested"
+      ],
+      "instructionFile": "src/config/POLARIS.md"
+    },
+    "smartdocs/architecture/2026-05-25-claude-plugin-runtime-integration.md": {
+      "domain": "cli",
+      "route": "src/cli",
+      "taskchain": "polaris-cli",
+      "confidence": 0.85,
+      "classification": "indexed",
+      "last_updated": "2026-06-04T06:35:17.283Z",
+      "updated_by": "polaris-docs-ingest",
+      "tags": [
+        "docs",
+        "ingested"
+      ],
+      "instructionFile": "src/cli/POLARIS.md"
+    },
+    "smartdocs/architecture/2026-06-04-pol-313-dispatch-failures.md": {
+      "domain": "loop",
+      "route": "src/loop",
+      "taskchain": "polaris-loop",
+      "confidence": 0.85,
+      "classification": "indexed",
+      "last_updated": "2026-06-04T06:35:28.237Z",
+      "updated_by": "polaris-docs-ingest",
+      "tags": [
+        "docs",
+        "ingested"
+      ],
+      "instructionFile": "src/loop/POLARIS.md"
+    },
+    "smartdocs/architecture/worker-dispatch-contract-SUMMARY.md": {
+      "domain": "loop",
+      "route": "src/loop",
+      "taskchain": "polaris-loop",
+      "confidence": 0.85,
+      "classification": "indexed",
+      "last_updated": "2026-06-04T06:35:42.911Z",
+      "updated_by": "polaris-docs-ingest",
+      "tags": [
+        "docs",
+        "ingested"
+      ],
+      "instructionFile": "src/loop/POLARIS.md"
+    },
+    "smartdocs/runtime/run-reports/pol-240-artifact-promotion-commit-hygiene.md": {
+      "domain": "loop",
+      "route": "src/loop",
+      "taskchain": "polaris-loop",
+      "confidence": 0.85,
+      "classification": "indexed",
+      "last_updated": "2026-06-04T06:37:04.877Z",
+      "updated_by": "polaris-docs-ingest",
+      "tags": [
+        "docs",
+        "ingested"
+      ],
+      "instructionFile": "src/loop/POLARIS.md"
+    },
+    "smartdocs/doctrine/active/smartdoc-frontmatter-schema.md": {
+      "domain": "cognition",
+      "route": "src/cognition",
+      "taskchain": "polaris-cognition",
+      "confidence": 0.85,
+      "classification": "indexed",
+      "last_updated": "2026-06-04T06:37:05.147Z",
+      "updated_by": "polaris-docs-ingest",
+      "tags": [
+        "docs",
+        "ingested"
+      ],
+      "instructionFile": "src/cognition/POLARIS.md"
+    },
+    "smartdocs/raw/ephemeral-validation-plan.md": {
+      "domain": "unknown",
+      "route": "smartdocs/raw/ephemeral-validation-plan.md",
+      "taskchain": "polaris-core",
+      "confidence": 0,
+      "classification": "needs-review",
+      "last_updated": "2026-06-02T05:14:45.506Z",
+      "updated_by": "polaris-map-index",
+      "tags": [],
+      "instructionFile": "smartdocs/raw/POLARIS.md"
+    },
     ".DS_Store": {
       "domain": "unknown",
       "route": ".DS_Store",
@@ -6973,7 +7152,7 @@
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
-      "last_updated": "2026-06-02T05:30:24.171Z",
+      "last_updated": "2026-06-04T06:38:47.786Z",
       "updated_by": "polaris-map-update",
       "tags": []
     },
@@ -7641,8 +7820,8 @@
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
-      "last_updated": "2026-06-02T05:14:45.506Z",
-      "updated_by": "polaris-map-index",
+      "last_updated": "2026-06-04T06:38:47.786Z",
+      "updated_by": "polaris-map-update",
       "tags": [],
       "instructionFile": "smartdocs/POLARIS.md"
     },
@@ -8133,17 +8312,6 @@
     "smartdocs/raw/clusters-json-format.md": {
       "domain": "unknown",
       "route": "smartdocs/raw/clusters-json-format.md",
-      "taskchain": "polaris-core",
-      "confidence": 0,
-      "classification": "needs-review",
-      "last_updated": "2026-06-02T05:14:45.506Z",
-      "updated_by": "polaris-map-index",
-      "tags": [],
-      "instructionFile": "smartdocs/raw/POLARIS.md"
-    },
-    "smartdocs/raw/ephemeral-validation-plan.md": {
-      "domain": "unknown",
-      "route": "smartdocs/raw/ephemeral-validation-plan.md",
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
@@ -9109,6 +9277,16 @@
       "updated_by": "polaris-map-update",
       "tags": [],
       "instructionFile": ".polaris/POLARIS.md"
+    },
+    ".taskchain_artifacts/polaris-run/runs/polaris-run-pol-313-2026-06-04-001/telemetry.jsonl": {
+      "domain": "unknown",
+      "route": ".taskchain_artifacts/polaris-run/runs/polaris-run-pol-313-2026-06-04-001/telemetry.jsonl",
+      "taskchain": "polaris-core",
+      "confidence": 0,
+      "classification": "needs-review",
+      "last_updated": "2026-06-04T06:38:47.786Z",
+      "updated_by": "polaris-map-update",
+      "tags": []
     }
   }
 }

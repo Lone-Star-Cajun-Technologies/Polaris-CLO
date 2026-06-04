@@ -5,7 +5,7 @@ import { ensureDocsScaffold, ingestDocs, printIngestResults } from "./ingest.js"
 import { migrateDocs, printMigrateResults } from "./migrate.js";
 import { seedInstructions, seedInstructionsAll, seedSummary, seedSummaryAll, type IneligibleEntry } from "./seed-instructions.js";
 import { validateInstructions, printReport } from "./validate-instructions.js";
-import { doctrineDraft, doctrinePromote, doctrineDeprecate, specPromote } from "./doctrine.js";
+import { doctrineDraft, doctrinePromote, doctrineDeprecate, specPromote, migrateProvenance } from "./doctrine.js";
 import { auditIngestRiskSurface, formatAuditMarkdown, formatAuditSummaryTable } from "./audit.js";
 
 export interface DocsCommandOptions {
@@ -156,6 +156,45 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
           migrationRunId: options.migrationRunId,
         });
         printMigrateResults(result);
+      } catch (err) {
+        console.error(err instanceof Error ? err.message : String(err));
+        process.exit(1);
+      }
+    });
+
+  docs
+    .command("migrate-provenance")
+    .description("Migrate .provenance.json sidecars into paired .md file frontmatter and delete the sidecars")
+    .option("--dry-run", "Report what would be migrated without writing or deleting anything")
+    .option("-r, --repo-root <path>", "Repository root", defaultRepoRoot)
+    .action((options: { dryRun?: boolean; repoRoot: string }) => {
+      try {
+        const result = migrateProvenance({ repoRoot: options.repoRoot, dryRun: options.dryRun });
+        if (options.dryRun) {
+          const wouldStamp = result.records.filter((r) => r.status === "skipped-dry-run");
+          const noMd = result.records.filter((r) => r.status === "skipped-no-md");
+          console.log(`[dry-run] would stamp ${wouldStamp.length} file(s), skip ${noMd.length} orphaned sidecar(s)`);
+          for (const r of wouldStamp) {
+            console.log(`  stamp: ${r.mdFile}  (sidecar: ${r.sidecar})`);
+          }
+          for (const r of noMd) {
+            console.log(`  orphan (no .md): ${r.sidecar}`);
+          }
+        } else {
+          console.log(`migrate-provenance complete — stamped: ${result.stamped}, skipped: ${result.skipped}, errors: ${result.errors}`);
+          for (const r of result.records) {
+            if (r.status === "stamped") {
+              console.log(`  stamped: ${r.mdFile}`);
+            } else if (r.status === "error") {
+              console.log(`  error: ${r.mdFile} — ${r.error}`);
+            } else if (r.status === "skipped-no-md") {
+              console.log(`  orphan: ${r.sidecar}`);
+            }
+          }
+          if (result.stamped > 0) {
+            console.log(`lifecycle: ${result.lifecyclePath}`);
+          }
+        }
       } catch (err) {
         console.error(err instanceof Error ? err.message : String(err));
         process.exit(1);

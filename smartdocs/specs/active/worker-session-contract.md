@@ -10,6 +10,9 @@ superseded_by:
 depends_on: 
 validates: 
 source_paths: src/loop/dispatch-state.ts
+ingest-run-id: migrated
+classified-as: unknown
+ingested-at: 2026-06-04T06:33:09.406Z
 ---
 
 # Worker Session Contract Spec

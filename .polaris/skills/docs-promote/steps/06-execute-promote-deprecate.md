@@ -43,10 +43,10 @@ Candidates with `decision: rejected` or `deferred`: skip. Record in state as `sk
 
 ```yaml
 allowed_files:
-  - smartdocs/docs/raw/ (write — files will be moved by CLI)
-  - smartdocs/docs/doctrine/candidate/ (write — files will be moved by CLI)
-  - smartdocs/docs/doctrine/active/ (write — files will be moved by CLI)
-  - smartdocs/docs/specs/active/ (write — files will be moved by CLI)
+  - smartdocs/raw/ (write — files will be moved by CLI)
+  - smartdocs/doctrine/candidate/ (write — files will be moved by CLI)
+  - smartdocs/doctrine/active/ (write — files will be moved by CLI)
+  - smartdocs/specs/active/ (write — files will be moved by CLI)
   - .taskchain_artifacts/docs-promote/current-state.json
 stop_rules:
   - any CLI command exits non-zero → halt immediately

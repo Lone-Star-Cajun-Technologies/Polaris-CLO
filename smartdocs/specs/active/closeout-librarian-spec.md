@@ -13,6 +13,9 @@ source_paths:
   - src/cognition/closeout-librarian-types.ts
   - .polaris/skills/polaris-run/steps/08-closeout-librarian.md
   - .polaris/skills/polaris-run/steps/09-final-delivery.md
+ingest-run-id: migrated
+classified-as: unknown
+ingested-at: 2026-06-04T06:33:09.397Z
 ---
 
 # Closeout Librarian Architecture Spec

@@ -1,3 +1,12 @@
+---
+source: smartdocs/docs/raw/ephemeral-execution-architecture.md
+ingest-run-id: polaris-docs-ingest-docs-ingest-2026-05-28-002
+classified-as: architecture
+linked-map-area: .taskchain_artifacts/polaris-run/current-state.json
+ingested-at: 2026-05-28T06:22:37.632Z
+status: raw
+---
+
 # Ephemeral Execution Architecture
 
 ## Purpose

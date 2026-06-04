@@ -14,6 +14,10 @@ superseded_by: ""
 depends_on: ""
 validates: ""
 source_paths: ""
+ingest-run-id: polaris-docs-ingest-docs-ingest-2026-05-28-003
+classified-as: doctrine-candidate
+linked-map-area: docs/spec/issue-hierarchy-doctrine.md
+ingested-at: 2026-05-28T06:23:01.670Z
 ---
 
 # Polaris Implementation Plan

@@ -1,3 +1,12 @@
+---
+source: smartdocs/docs/raw/polaris-run-ledger.md
+ingest-run-id: polaris-docs-ingest-docs-ingest-2026-05-28-003
+classified-as: architecture
+linked-map-area: .polaris/runs/ledger.jsonl
+ingested-at: 2026-05-28T06:23:01.677Z
+status: raw
+---
+
 # Polaris Run Ledger Specification
 
 Authoritative specification for the global Polaris run ledger. This document defines the architecture, JSONL event schema, resume algorithm, storage strategy, conflict rules, CLI command surface, cross-agent handoff protocol, and migration path from the bootstrap-packet-only model.

@@ -1,6 +1,6 @@
 ---
 name: docs-promote
-description: Review docs in smartdocs/docs/raw/ and smartdocs/docs/doctrine/candidate/ against linked code and active doctrine, then promote or deprecate using the Polaris CLI. Requires agent judgment — reads linked source areas, surfaces conflicts, and calls promote/deprecate only with explicit confirmation.
+description: Review docs in smartdocs/raw/ and smartdocs/doctrine/candidate/ against linked code and active doctrine, then promote or deprecate using the Polaris CLI. Requires agent judgment — reads linked source areas, surfaces conflicts, and calls promote/deprecate only with explicit confirmation.
 role: librarian
 role_file: .polaris/roles/librarian.md
 ---
@@ -43,9 +43,9 @@ Use this skill when documents have been ingested and need to be reviewed for pro
 
 ## Hard rules — what docs-promote may do
 
-- Read `smartdocs/docs/raw/` and `smartdocs/docs/doctrine/candidate/` to identify promotion candidates
+- Read `smartdocs/raw/` and `smartdocs/doctrine/candidate/` to identify promotion candidates
 - Read linked source files (from `linkedMapArea` in provenance sidecar) to verify relevance and staleness
-- Read `smartdocs/docs/doctrine/active/` and `smartdocs/docs/specs/active/` to check for conflicts
+- Read `smartdocs/doctrine/active/` and `smartdocs/specs/active/` to check for conflicts
 - Call `npm run polaris -- doctrine spec-promote <path>` to surface the conflict report (without `--approve`)
 - Call `npm run polaris -- doctrine spec-promote <path> --approve` **only after** surfacing the report and receiving explicit user confirmation
 - Call `npm run polaris -- doctrine promote <path>` for doctrine candidates that pass governance checks

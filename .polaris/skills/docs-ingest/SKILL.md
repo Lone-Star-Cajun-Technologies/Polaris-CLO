@@ -1,6 +1,6 @@
 ---
 name: docs-ingest
-description: Classify, route, and link documents from the raw drop zone into the canonical smartdocs/docs/ authority structure. Docs routing only — no source code changes, no implementation execution.
+description: Classify, route, and link documents from the raw drop zone into the canonical smartdocs/ authority structure. Docs routing only — no source code changes, no implementation execution.
 role: librarian
 role_file: .polaris/roles/librarian.md
 ---
@@ -43,9 +43,9 @@ Use this skill when documents need to be classified and routed into the canonica
 
 ## Hard rules — what docs-ingest may do
 
-- Read documents from `smartdocs/docs/raw/`
+- Read documents from `smartdocs/raw/`
 - Classify documents by content analysis and front-matter
-- Route documents to correct authority directories within `smartdocs/docs/`
+- Route documents to correct authority directories within `smartdocs/`
 - Write provenance records alongside placed files
 - Update Polaris map entries to link docs to code areas
 - Propose doctrine candidates (route to `doctrine/candidate/`; never promote to `doctrine/active/` without user approval)
@@ -53,13 +53,13 @@ Use this skill when documents need to be classified and routed into the canonica
 
 ## Drop zone rule
 
-**All newly generated documents must be placed in `smartdocs/docs/raw/` first.**
+**All newly generated documents must be placed in `smartdocs/raw/` first.**
 
 No document may be written directly to `specs/active/`, `doctrine/active/`, `architecture/`, or `decisions/`. Every document enters through `raw/` and is promoted only after classification and approval.
 
 ## Hard rules — what docs-ingest must NOT do
 
-- Write new Smart Docs to root `docs/` — `smartdocs/docs/` is the canonical target
+- Write new Smart Docs to root `docs/` — `smartdocs/` is the canonical target
 - Silently promote documents to `doctrine/active/`, `specs/active/`, `architecture/`, or `decisions/`
 - Mutate source files (`src/`, tests, config)
 - Call `npm run polaris -- loop continue` or `npm run polaris -- finalize`

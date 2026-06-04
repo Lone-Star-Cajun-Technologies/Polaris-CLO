@@ -43,10 +43,10 @@ Emit `docs-promote-conflict-report` telemetry for each candidate with their conf
 
 ```yaml
 allowed_files:
-  - smartdocs/docs/raw/ (read only)
-  - smartdocs/docs/doctrine/candidate/ (read only)
-  - smartdocs/docs/doctrine/active/ (read only)
-  - smartdocs/docs/specs/active/ (read only)
+  - smartdocs/raw/ (read only)
+  - smartdocs/doctrine/candidate/ (read only)
+  - smartdocs/doctrine/active/ (read only)
+  - smartdocs/specs/active/ (read only)
   - .taskchain_artifacts/docs-promote/current-state.json
 stop_rules:
   - CLI command exits non-zero unexpectedly (capture output; do not halt batch — record error per candidate)

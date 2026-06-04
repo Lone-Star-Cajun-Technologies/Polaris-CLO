@@ -1,3 +1,12 @@
+---
+source: smartdocs/docs/raw/thin-parent-orchestration.md
+ingest-run-id: polaris-docs-ingest-docs-ingest-2026-05-29-005
+classified-as: architecture
+linked-map-area: AGENTS.md
+ingested-at: 2026-05-29T04:49:43.560Z
+status: raw
+---
+
 # Thin-Parent Orchestration and Sealed Execution Model
 
 This document specifies the architecture for a thin-parent orchestration model in Polaris. The primary goal is to create a clear separation of concerns between the parent orchestrator and child workers, minimizing context pressure on the parent and enabling robust, repeatable, and automatable execution of complex tasks.

@@ -12,8 +12,8 @@ Build the candidate list. Read every co-located provenance sidecar to know what 
 ## Actions
 
 1. **List candidates**:
-   - `smartdocs/docs/raw/*.md`
-   - `smartdocs/docs/doctrine/candidate/*.md`
+   - `smartdocs/raw/*.md`
+   - `smartdocs/doctrine/candidate/*.md`
 
 2. **For each candidate**, read `<filename>.provenance.json` if present. Extract:
    - `linkedMapArea` — code area this doc covers
@@ -31,8 +31,8 @@ Build the candidate list. Read every co-located provenance sidecar to know what 
 
 ```yaml
 allowed_files:
-  - smartdocs/docs/raw/ (read only)
-  - smartdocs/docs/doctrine/candidate/ (read only)
+  - smartdocs/raw/ (read only)
+  - smartdocs/doctrine/candidate/ (read only)
   - .taskchain_artifacts/docs-promote/current-state.json
 stop_rules:
   - directory read fails

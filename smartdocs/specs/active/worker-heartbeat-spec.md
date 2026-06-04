@@ -11,6 +11,9 @@ source_paths:
   - .polaris/roles/worker.md
 related:
   - pol-288-foreman-worker-drift-postmortem.md
+ingest-run-id: migrated
+classified-as: unknown
+ingested-at: 2026-06-04T06:33:09.405Z
 ---
 
 # Worker Heartbeat Model Specification

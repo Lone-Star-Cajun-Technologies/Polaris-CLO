@@ -10,6 +10,9 @@ source_paths:
   - .polaris/skills/polaris-run/chain.md
 related:
   - pol-288-foreman-worker-drift-postmortem.md
+ingest-run-id: migrated
+classified-as: unknown
+ingested-at: 2026-06-04T06:33:09.401Z
 ---
 
 # Foreman Quiet Mode Specification

@@ -51,6 +51,14 @@
       }
     }
   },
+  "budget": {
+    "mode": "fixed-cap",
+    "max_children": 6,
+    "stop_on_fail": false
+  },
+  "docs": {
+    "ingestBatchSize": 10
+  },
   "tracker": {
    "adapter": "linear",
    "linear": {

@@ -14,6 +14,9 @@ source_paths:
   - src/loop/dispatch.ts
 related:
   - pol-288-foreman-worker-drift-postmortem.md
+ingest-run-id: migrated
+classified-as: unknown
+ingested-at: 2026-06-04T06:33:09.404Z
 ---
 
 # Runtime Enforcement Strategy

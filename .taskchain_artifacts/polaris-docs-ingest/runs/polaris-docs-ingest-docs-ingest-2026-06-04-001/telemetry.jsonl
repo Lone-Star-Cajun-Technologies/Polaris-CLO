@@ -1,0 +1,2 @@
+{"event":"run-start","run_id":"polaris-docs-ingest-docs-ingest-2026-06-04-001","prior_run_id":null,"timestamp":"2026-06-04T06:07:20.302Z"}
+{"event":"docs-ingest-conflict-detected","file":"smartdocs/raw/POL-313 Runtime Failure Analysis.md","conflicting_doctrine_file":"smartdocs-summary-architecture.md","detail":"ingested doc requires \"contain\" but smartdocs-summary-architecture.md prohibits it","cluster_id":null,"run_id":"polaris-docs-ingest-docs-ingest-2026-06-04-001","timestamp":"2026-06-04T06:07:20.311Z"}

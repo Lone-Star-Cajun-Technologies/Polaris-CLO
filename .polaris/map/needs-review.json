@@ -3430,7 +3430,7 @@
     "taskchain": "polaris-core",
     "confidence": 0,
     "classification": "needs-review",
-    "last_updated": "2026-06-02T05:30:24.171Z",
+    "last_updated": "2026-06-04T06:38:47.786Z",
     "updated_by": "polaris-map-update",
     "tags": []
   },
@@ -4098,8 +4098,8 @@
     "taskchain": "polaris-core",
     "confidence": 0,
     "classification": "needs-review",
-    "last_updated": "2026-06-02T05:14:45.506Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-06-04T06:38:47.786Z",
+    "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": "smartdocs/POLARIS.md"
   },
@@ -5566,5 +5566,15 @@
     "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": ".polaris/POLARIS.md"
+  },
+  ".taskchain_artifacts/polaris-run/runs/polaris-run-pol-313-2026-06-04-001/telemetry.jsonl": {
+    "domain": "unknown",
+    "route": ".taskchain_artifacts/polaris-run/runs/polaris-run-pol-313-2026-06-04-001/telemetry.jsonl",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-06-04T06:38:47.786Z",
+    "updated_by": "polaris-map-update",
+    "tags": []
   }
 }

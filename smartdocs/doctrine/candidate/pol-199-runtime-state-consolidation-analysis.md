@@ -6,6 +6,10 @@ doc-type: doctrine-candidate
 confidence: 0.0
 recommended-action: hold
 overlap-analysis: pending
+ingest-run-id: polaris-docs-ingest-docs-ingest-2026-05-29-001
+classified-as: doctrine-candidate
+linked-map-area: src/finalize
+ingested-at: 2026-05-29T04:47:58.189Z
 ---
 
 # POL-199 Runtime State Consolidation Analysis

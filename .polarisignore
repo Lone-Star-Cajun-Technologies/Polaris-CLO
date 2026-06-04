@@ -1,0 +1,8 @@
+# Runtime artifacts — never map these
+.taskchain_artifacts/**
+smartdocs/.obsidian/**
+node_modules/**
+dist/**
+coverage/**
+*.jsonl
+*.json.bak

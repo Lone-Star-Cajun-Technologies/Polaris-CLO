@@ -43,13 +43,13 @@ Never assume a globally linked `polaris` command exists.
 
 | State | Path |
 |---|---|
-| Drop zone | `smartdocs/docs/raw/` |
-| Doctrine staging | `smartdocs/docs/doctrine/candidate/` |
-| Active doctrine | `smartdocs/docs/doctrine/active/` |
-| Deprecated doctrine | `smartdocs/docs/doctrine/deprecated/` |
-| Active specs | `smartdocs/docs/specs/active/` |
-| Implemented specs | `smartdocs/docs/specs/implemented/` |
-| Superseded specs | `smartdocs/docs/specs/superseded/` |
+| Drop zone | `smartdocs/raw/` |
+| Doctrine staging | `smartdocs/doctrine/candidate/` |
+| Active doctrine | `smartdocs/doctrine/active/` |
+| Deprecated doctrine | `smartdocs/doctrine/deprecated/` |
+| Active specs | `smartdocs/specs/active/` |
+| Implemented specs | `smartdocs/specs/implemented/` |
+| Superseded specs | `smartdocs/specs/superseded/` |
 
 ## Run ID format
 

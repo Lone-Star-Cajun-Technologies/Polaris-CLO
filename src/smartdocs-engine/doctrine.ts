@@ -5,6 +5,7 @@ import {
   readdirSync,
   readFileSync,
   renameSync,
+  statSync,
   unlinkSync,
   writeFileSync,
 } from "node:fs";
@@ -182,6 +183,73 @@ export function addCandidateGovernanceMetadata(content: string, docType: string)
     .map(([k, v]) => `${k}: ${v}`)
     .join("\n");
   return `---\n${fields}\n---\n\n${normalized}`;
+}
+
+export interface IngestStamp {
+  originalPath: string;
+  classifiedAs: string;
+  ingestRunId: string;
+  ingestClusterId: string | null;
+  linkedMapArea: string | null;
+  ingestedAt: string;
+}
+
+/**
+ * Stamp ingest provenance directly into a SmartDoc's frontmatter.
+ *
+ * Instead of writing a separate `.provenance.json` sidecar, this writes
+ * the same metadata into the file's own YAML frontmatter using canonical
+ * schema fields. Existing frontmatter keys are never overwritten.
+ *
+ * Fields written (only if not already present):
+ *   - `source`          ← originalPath
+ *   - `ingest-run-id`   ← ingestRunId
+ *   - `ingest-cluster`  ← ingestClusterId
+ *   - `classified-as`   ← classifiedAs
+ *   - `linked-map-area` ← linkedMapArea
+ *   - `ingested-at`     ← ISO timestamp
+ *   - `status`          ← "raw" (if not already set)
+ *
+ * @param content   - The current file content (will be read from disk by caller)
+ * @param stamp     - Ingest metadata to embed
+ * @returns The updated file content with provenance stamped in frontmatter
+ */
+export function stampIngestFrontMatter(content: string, stamp: IngestStamp): string {
+  const fields: Record<string, string> = {
+    source: stamp.originalPath,
+    "ingest-run-id": stamp.ingestRunId,
+    ...(stamp.ingestClusterId ? { "ingest-cluster": stamp.ingestClusterId } : {}),
+    "classified-as": stamp.classifiedAs,
+    ...(stamp.linkedMapArea ? { "linked-map-area": stamp.linkedMapArea } : {}),
+    "ingested-at": stamp.ingestedAt,
+    status: "raw",
+  };
+
+  const normalized = content.replace(/\r\n/g, "\n");
+
+  if (normalized.startsWith("---\n")) {
+    const end = normalized.indexOf("\n---", 4);
+    if (end !== -1) {
+      const frontMatter = normalized.slice(4, end);
+      const afterFrontMatter = normalized.slice(end + 4);
+      const existingKeys = new Set(
+        frontMatter
+          .split("\n")
+          .filter((l) => l.includes(":"))
+          .map((l) => l.slice(0, l.indexOf(":")).trim().toLowerCase()),
+      );
+      const additions: string[] = [];
+      for (const [key, val] of Object.entries(fields)) {
+        if (!existingKeys.has(key.toLowerCase())) additions.push(`${key}: ${val}`);
+      }
+      if (additions.length === 0) return normalized;
+      return `---\n${frontMatter}\n${additions.join("\n")}\n---${afterFrontMatter}`;
+    }
+  }
+
+  // No frontmatter — create one
+  const block = Object.entries(fields).map(([k, v]) => `${k}: ${v}`).join("\n");
+  return `---\n${block}\n---\n\n${normalized}`;
 }
 
 function appendLifecycle(lifecyclePath: string, event: Record<string, unknown>): void {
@@ -605,4 +673,134 @@ export function specPromote(path: string, options: SpecPromoteOptions): SpecProm
   });
 
   return { source, destination, runId, lifecyclePath, conflicts, halted: false, report };
+}
+
+export interface ProvenanceMigrationRecord {
+  sidecar: string;
+  mdFile: string;
+  status: "stamped" | "skipped-no-md" | "skipped-dry-run" | "error";
+  error?: string;
+}
+
+export interface ProvenanceMigrationResult {
+  runId: string;
+  lifecyclePath: string;
+  records: ProvenanceMigrationRecord[];
+  stamped: number;
+  skipped: number;
+  errors: number;
+}
+
+export interface MigrateProvenanceOptions {
+  repoRoot: string;
+  dryRun?: boolean;
+  runId?: string;
+}
+
+/**
+ * Migrate .provenance.json sidecars to in-file frontmatter stamps.
+ *
+ * Walks all of smartdocs/ recursively, finds every .provenance.json file,
+ * reads the paired .md file, calls stampIngestFrontMatter() to embed provenance
+ * in its frontmatter, writes the updated .md, then deletes the sidecar.
+ *
+ * In dry-run mode: reports what would be done without writing or deleting anything.
+ */
+export function migrateProvenance(options: MigrateProvenanceOptions): ProvenanceMigrationResult {
+  const repoRoot = resolve(options.repoRoot);
+  const runId = options.runId ?? `polaris-provenance-migration-${new Date().toISOString().slice(0, 10)}-001`;
+  const lifecyclePath = join(repoRoot, ".taskchain_artifacts", "polaris-doctrine", runId, "lifecycle.jsonl");
+
+  const smartdocsDir = join(repoRoot, "smartdocs");
+  if (!existsSync(smartdocsDir)) {
+    throw new Error(`migrateProvenance: smartdocs/ directory not found at ${smartdocsDir}`);
+  }
+
+  const records: ProvenanceMigrationRecord[] = [];
+
+  function walk(dir: string): void {
+    let entries: string[];
+    try {
+      entries = readdirSync(dir);
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      const full = join(dir, entry);
+      try {
+        const stat = statSync(full);
+        if (stat.isDirectory()) {
+          walk(full);
+        } else if (entry.endsWith(".provenance.json")) {
+          const mdPath = full.replace(/\.provenance\.json$/, ".md");
+          const relSidecar = relative(repoRoot, full).replace(/\\/g, "/");
+          const relMd = relative(repoRoot, mdPath).replace(/\\/g, "/");
+
+          if (!existsSync(mdPath)) {
+            records.push({ sidecar: relSidecar, mdFile: relMd, status: "skipped-no-md" });
+            appendLifecycle(lifecyclePath, {
+              event: "provenance-migration-skipped",
+              run_id: runId,
+              sidecar: relSidecar,
+              reason: "no paired .md file",
+              timestamp: new Date().toISOString(),
+            });
+            continue;
+          }
+
+          if (options.dryRun) {
+            records.push({ sidecar: relSidecar, mdFile: relMd, status: "skipped-dry-run" });
+            continue;
+          }
+
+          try {
+            // Read sidecar fields to build the stamp
+            const sidecar = JSON.parse(readFileSync(full, "utf-8")) as Record<string, unknown>;
+            const mdContent = readFileSync(mdPath, "utf-8");
+            const stamp: IngestStamp = {
+              originalPath: (sidecar.originalPath as string | undefined) ?? relMd,
+              classifiedAs: (sidecar.classifiedAs as string | undefined) ?? "unknown",
+              ingestRunId: (sidecar.ingestRunId as string | undefined) ?? "migrated",
+              ingestClusterId: (sidecar.ingestClusterId as string | undefined) ?? null,
+              linkedMapArea: (sidecar.linkedMapArea as string | undefined) ?? null,
+              ingestedAt: (sidecar.ingestedAt as string | undefined) ?? new Date().toISOString(),
+            };
+
+            const stamped = stampIngestFrontMatter(mdContent, stamp);
+            writeFileSync(mdPath, stamped, "utf-8");
+            unlinkSync(full);
+
+            records.push({ sidecar: relSidecar, mdFile: relMd, status: "stamped" });
+            appendLifecycle(lifecyclePath, {
+              event: "provenance-migration-stamped",
+              run_id: runId,
+              sidecar: relSidecar,
+              md_file: relMd,
+              timestamp: new Date().toISOString(),
+            });
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            records.push({ sidecar: relSidecar, mdFile: relMd, status: "error", error: msg });
+            appendLifecycle(lifecyclePath, {
+              event: "provenance-migration-error",
+              run_id: runId,
+              sidecar: relSidecar,
+              error: msg,
+              timestamp: new Date().toISOString(),
+            });
+          }
+        }
+      } catch {
+        continue;
+      }
+    }
+  }
+
+  walk(smartdocsDir);
+
+  const stamped = records.filter((r) => r.status === "stamped").length;
+  const skipped = records.filter((r) => r.status === "skipped-no-md" || r.status === "skipped-dry-run").length;
+  const errors = records.filter((r) => r.status === "error").length;
+
+  return { runId, lifecyclePath: relative(repoRoot, lifecyclePath).replace(/\\/g, "/"), records, stamped, skipped, errors };
 }

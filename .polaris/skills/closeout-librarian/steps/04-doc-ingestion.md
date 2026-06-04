@@ -37,7 +37,7 @@ For each candidate document:
 
 **The Closeout Librarian may promote to:**
 - `smartdocs/specs/active/` (specifications for implemented behavior)
-- `smartdocs/docs/` classification tiers (raw → candidate)
+- `smartdocs/` classification tiers (raw → candidate)
 
 **The Closeout Librarian may NOT promote to:**
 - `smartdocs/doctrine/active/` — requires explicit operator approval

@@ -11,6 +11,7 @@ import {
   addCandidateGovernanceMetadata,
   parseFrontMatter,
   specPromote,
+  migrateProvenance,
 } from "./doctrine.js";
 
 function makeTempDir(): string {
@@ -579,5 +580,64 @@ describe("specPromote", () => {
     const event = JSON.parse(readFileSync(result.lifecyclePath, "utf-8").trim().split("\n")[0]);
     expect(event.event).toBe("spec-promote");
     expect(event.run_id).toBe("spec-lifecycle-001");
+  });
+});
+
+describe("migrateProvenance", () => {
+  let repoRoot: string;
+
+  beforeEach(() => {
+    repoRoot = makeTempDir();
+  });
+
+  it("stamps frontmatter into paired .md and deletes the sidecar", () => {
+    const mdPath = join(repoRoot, "smartdocs", "doctrine", "active", "some-doc.md");
+    const sidecarPath = join(repoRoot, "smartdocs", "doctrine", "active", "some-doc.provenance.json");
+    writeFileSync(mdPath, "# Some Doc\n\nContent here.", "utf-8");
+    writeFileSync(sidecarPath, JSON.stringify({
+      originalPath: "smartdocs/raw/some-doc.md",
+      classifiedAs: "doctrine-candidate",
+      ingestRunId: "test-run-001",
+      ingestClusterId: "POL-001",
+      linkedMapArea: "src/loop",
+      ingestedAt: "2026-01-01T00:00:00.000Z",
+    }), "utf-8");
+
+    const result = migrateProvenance({ repoRoot, runId: "migrate-test-001" });
+
+    expect(result.stamped).toBe(1);
+    expect(result.errors).toBe(0);
+    expect(existsSync(sidecarPath)).toBe(false);
+    const content = readFileSync(mdPath, "utf-8");
+    expect(content).toContain("classified-as: doctrine-candidate");
+    expect(content).toContain("source: smartdocs/raw/some-doc.md");
+    expect(content).toContain("ingest-run-id: test-run-001");
+  });
+
+  it("dry-run reports without writing or deleting", () => {
+    const mdPath = join(repoRoot, "smartdocs", "doctrine", "active", "dry-doc.md");
+    const sidecarPath = join(repoRoot, "smartdocs", "doctrine", "active", "dry-doc.provenance.json");
+    const originalContent = "# Dry Doc\n\nContent here.";
+    writeFileSync(mdPath, originalContent, "utf-8");
+    writeFileSync(sidecarPath, JSON.stringify({ originalPath: "smartdocs/raw/dry-doc.md", classifiedAs: "doctrine-candidate", ingestRunId: "run-x", ingestClusterId: null, linkedMapArea: null, ingestedAt: "2026-01-01T00:00:00.000Z" }), "utf-8");
+
+    const result = migrateProvenance({ repoRoot, dryRun: true, runId: "dry-migrate-001" });
+
+    expect(result.stamped).toBe(0);
+    expect(result.records[0].status).toBe("skipped-dry-run");
+    expect(existsSync(sidecarPath)).toBe(true);
+    expect(readFileSync(mdPath, "utf-8")).toBe(originalContent);
+  });
+
+  it("records skipped-no-md for orphaned sidecars", () => {
+    const sidecarPath = join(repoRoot, "smartdocs", "doctrine", "active", "orphan.provenance.json");
+    writeFileSync(sidecarPath, JSON.stringify({ originalPath: "smartdocs/raw/orphan.md", classifiedAs: "doctrine-candidate", ingestRunId: "run-x", ingestClusterId: null, linkedMapArea: null, ingestedAt: "2026-01-01T00:00:00.000Z" }), "utf-8");
+
+    const result = migrateProvenance({ repoRoot, runId: "orphan-test-001" });
+
+    expect(result.stamped).toBe(0);
+    expect(result.skipped).toBe(1);
+    expect(result.records[0].status).toBe("skipped-no-md");
+    expect(existsSync(sidecarPath)).toBe(true);
   });
 });
