@@ -56,7 +56,7 @@ stop_rules:
 When another child remains open:
 - Report only compact state: last completed child ID, commit hash, next open child ID and title.
 - Dispatch the next child with `npm run polaris -- loop dispatch` or the execution adapter directly.
-- The dispatch adapter is `execution.adapter` from `polaris.config.json`. When `execution.providerPolicy.worker.allowNativeSubagent: false`, verify that `execution.adapter` is `terminal-cli` before dispatching. If it is not `terminal-cli`, STOP immediately and report a config/governance violation — do not attempt native subagent tools.
+- The dispatch adapter is `execution.adapter` from `polaris.config.json`. When `execution.providerPolicy.worker.allowNativeSubagent: false`, verify that `execution.adapter` is not `agent-subtask` before dispatching. If it is `agent-subtask`, STOP immediately and report a config/governance violation — do not attempt native subagent tools. Non-native adapters (`terminal-cli`, `ci`, `ssh`, `remote-worker`, `cross-agent`) are all valid when `allowNativeSubagent: false`.
 - In terminal mode, `scripts/polaris-run.sh` is the `terminal-cli` adapter and may invoke the configured CLI command.
 - Wait for the worker compact return before calling `npm run polaris -- loop continue`.
 - Do not push. Do not create a PR.

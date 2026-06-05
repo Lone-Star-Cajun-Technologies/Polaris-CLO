@@ -1,6 +1,6 @@
 ---
 name: polaris-run
-description: Execute one governed Polaris Linear parent cluster per session, dispatching up to budget.max_children children (configured in polaris.config.json, default 6) with explicit dispatch boundaries and post-child checkpointing.
+description: Execute one governed Polaris Linear parent cluster per session, dispatching children until all are done or the configured budget is exhausted (budget.mode and budget.max_children in polaris.config.json), with explicit dispatch boundaries and post-child checkpointing.
 role: foreman
 role_file: .polaris/roles/foreman.md
 ---
