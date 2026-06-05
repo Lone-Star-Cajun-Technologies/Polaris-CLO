@@ -85,6 +85,23 @@
         }
       }
     },
+    "graph": {
+      "type": "object",
+      "properties": {
+        "outputPath": {
+          "type": "string",
+          "default": ".polaris/graph"
+        },
+        "invalidationTriggers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["repo-change", "config-change"]
+          },
+          "default": ["repo-change", "config-change"]
+        }
+      }
+    },
     "execution": {
       "type": "object",
       "properties": {

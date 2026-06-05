@@ -104,7 +104,12 @@ function readGovernanceState(graphOutputPath: string): GraphGovernanceState | nu
     return null;
   }
 
-  const parsed = JSON.parse(readFileSync(statePath, "utf-8")) as Partial<GraphGovernanceState>;
+  let parsed: Partial<GraphGovernanceState>;
+  try {
+    parsed = JSON.parse(readFileSync(statePath, "utf-8")) as Partial<GraphGovernanceState>;
+  } catch {
+    return null;
+  }
   if (typeof parsed.configHash !== "string" || typeof parsed.headCommit !== "string") {
     return null;
   }

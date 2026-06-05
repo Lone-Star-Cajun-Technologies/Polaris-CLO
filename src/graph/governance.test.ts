@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { describe, expect, it } from "vitest";
@@ -89,6 +89,17 @@ describe("checkGraphInvalidation", () => {
     const config = baseConfig();
 
     expect(checkGraphInvalidation(config, repoRoot)).toEqual({ stale: false });
+    expect(checkGraphInvalidation(config, repoRoot)).toEqual({ stale: false });
+  });
+
+  it("treats malformed governance state as missing and reseeds state", () => {
+    const repoRoot = createRepo();
+    const config = baseConfig();
+    const statePath = join(repoRoot, ".polaris/graph/governance-state.json");
+
+    mkdirSync(join(repoRoot, ".polaris/graph"), { recursive: true });
+    writeFileSync(statePath, "{invalid json", "utf-8");
+
     expect(checkGraphInvalidation(config, repoRoot)).toEqual({ stale: false });
   });
 });
