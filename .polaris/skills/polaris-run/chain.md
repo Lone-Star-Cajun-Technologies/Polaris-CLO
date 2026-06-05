@@ -163,7 +163,7 @@ Track in `.taskchain_artifacts/polaris-run/current-state.json` under `context_bu
 
 | Counter | Meaning | Stop threshold |
 |---------|---------|----------------|
-| `children_completed` | Children fully Done this session | ≥ `budget.max_children` from `polaris.config.json` (default 6) → STOP (budget exhausted); the CLI runtime enforces this; do not stop before this threshold |
+| `children_completed` | Children fully Done this session | `fixed-cap` mode only: ≥ `budget.max_children` from `polaris.config.json` (default 6) → STOP (budget exhausted); no count cap in `run-until-done`/`stop-on-fail` modes; the CLI runtime enforces this |
 | `files_touched_total` | Total files changed this session | > 50 → STOP (safety) |
 | `last_child_files_touched` | Files changed by last child | > 20 → STOP (safety) |
 
