@@ -104,7 +104,7 @@ describe("AgentSubtaskAdapter — compiled WorkerPacket", () => {
     // Compiled instructions must contain the primary_goal, not generic "ephemeral" boilerplate
     expect(capturedInstructions).toContain(packet.instructions.primary_goal);
     expect(capturedInstructions).toContain("impl");
-    expect(capturedInstructions).toContain("TERMINATE");
+    expect(capturedInstructions).toContain("LIFECYCLE CONTRACT");
   });
 
   it("includes lifecycle teardown notice in compiled instructions", async () => {
@@ -118,7 +118,7 @@ describe("AgentSubtaskAdapter — compiled WorkerPacket", () => {
 
     await adapter.dispatch(packet, { provider: "agent-subtask" });
     expect(capturedInstructions).toContain("LIFECYCLE CONTRACT");
-    expect(capturedInstructions).toContain("TERMINATE THIS SESSION IMMEDIATELY");
+    expect(capturedInstructions).toContain("FINAL RESPONSE must be EXCLUSIVELY the compact return JSON");
   });
 
   it("uses the return_contract from WorkerPacket, not the legacy fallback", async () => {
