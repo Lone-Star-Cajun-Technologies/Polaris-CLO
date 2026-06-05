@@ -11,6 +11,7 @@ Smart Docs lifecycle pipeline — ingests, classifies, seeds, validates, and aud
 - `classifyDoc` is deterministic — no external calls or randomness.
 - Canon-check emits telemetry only; it does not block execution.
 - Seed operations (POLARIS.md, SUMMARY.md) skip root by default.
+- Generated runtime artifacts such as `.polaris/graph/**`, SQLite files, and DB snapshots are ignored by default.
 
 ## Relationships
 - **Upstream**: `src/map` (atlas signals for seed templates), `src/cognition` (validation after seed)
