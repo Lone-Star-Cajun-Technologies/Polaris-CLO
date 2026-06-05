@@ -1,4 +1,4 @@
-# smartdocs/docs/specs/active
+# smartdocs/specs/active
 
 ## Purpose
 
