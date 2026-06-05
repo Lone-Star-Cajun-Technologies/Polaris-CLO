@@ -1,0 +1,67 @@
+{
+  "schema_version": "1.0",
+  "run_id": "polaris-run-pol-318-2026-06-04-001",
+  "cluster_id": "POL-318",
+  "skill": "polaris-run",
+  "branch": "",
+  "session_type": "implement",
+  "active_child": "",
+  "completed_children": [],
+  "open_children": [
+    "POL-319",
+    "POL-320",
+    "POL-321",
+    "POL-322",
+    "POL-323",
+    "POL-324"
+  ],
+  "open_children_meta": {
+    "POL-318": {
+      "title": "IMPLEMENT: Decouple packets from tracker assumptions with spec-to-work-contract intake"
+    },
+    "POL-319": {
+      "title": "Define WorkContract type and extend PolarisConfig for multi-source support",
+      "body": "## Objective\nIntroduce the normalized WorkContract interface and extend PolarisConfig to express work source type, enabling all downstream subsystems to operate source-agnostically.\n\n## Scope\n- src/types/work-contract.ts\n- src/config/schema.ts\n- src/config/defaults.ts\n\n## Validation\n- npm run build\n- npm test"
+    },
+    "POL-320": {
+      "title": "Replace LinearAdapter direct fallback in run-preflight with source-agnostic graph loading",
+      "body": "## Objective\nRemove the direct LinearAdapter import and fallback from loadOrSyncGraph() in run-preflight.ts, replacing it with a source-agnostic graph loading path.\n\n## Scope\n- src/loop/run-preflight.ts\n\n## Validation\n- npm run build\n- npm test\n- npx vitest run src/loop/run-preflight.ts"
+    },
+    "POL-321": {
+      "title": "Remove tracker-specific text from packet compiler and skill packet generator",
+      "body": "## Objective\nReplace all hardcoded Linear references in the packet compiler instruction text and skill packet generator output with tracker-conditional or tracker-agnostic language.\n\n## Scope\n- src/loop/worker-packet.ts\n- src/skill-packet/generator.ts\n\n## Validation\n- npm run build\n- npm test\n- npx vitest run src/loop/worker-packet\n- npx vitest run src/skill-packet/generator"
+    },
+    "POL-322": {
+      "title": "Implement spec-to-contract intake adapter and wire polaris analyze/run spec CLI commands",
+      "body": "## Objective\nCreate a SpecAdapter that reads a markdown spec file and produces a LocalGraph, and wire polaris analyze spec <path> and polaris run spec <path> CLI entry points to use it.\n\n## Scope\n- src/tracker/adapters/spec/index.ts\n- src/tracker/adapters/local/index.ts\n- src/cli/index.ts\n- src/cli/args.ts\n\n## Validation\n- npm run build\n- npm test\n- npx vitest run src/tracker/adapters/spec"
+    },
+    "POL-323": {
+      "title": "Ensure finalize is fully trackerless-capable when no tracker adapter is configured",
+      "body": "## Objective\nAudit and harden runFinalize() so that every tracker-dependent step skips cleanly when no tracker adapter is configured or when tracker.adapter === local.\n\n## Scope\n- src/finalize/index.ts\n- src/finalize/steps/11-update-linear.ts\n\n## Validation\n- npm run build\n- npm test\n- npx vitest run src/finalize"
+    },
+    "POL-324": {
+      "title": "Write work-contract spec doc and add integration tests for trackerless execution",
+      "body": "## Objective\nDocument the Work Contract architecture in a canonical spec document and add integration tests that verify trackerless bootstrap and dispatch round-trips.\n\n## Scope\n- docs/Polaris/spec/work-contract-spec.md\n- src/tracker/adapters/spec/index.test.ts\n- src/loop/bootstrap-trackerless.integration.test.ts\n\n## Validation\n- npm run build\n- npm test\n- npx vitest run src/tracker/adapters/spec\n- npx vitest run src/loop/bootstrap-trackerless"
+    }
+  },
+  "step_cursor": null,
+  "context_budget": {
+    "children_completed": 0,
+    "max_children_per_session": 1
+  },
+  "status": "running",
+  "next_open_child": "POL-319",
+  "artifact_dir": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run",
+  "dispatch_boundary": {
+    "dispatch_epoch": 0,
+    "continue_epoch": 0,
+    "last_dispatched_child": null
+  },
+  "run_bootstrap_seal": {
+    "sealer": "polaris-loop-bootstrap",
+    "run_id": "polaris-run-pol-318-2026-06-04-001",
+    "cluster_id": "POL-318",
+    "open_children_sha": "266d47848f4415c3ba1a80b552ca2dc631112d73edf88f92d98f625409b4fb06",
+    "sealed_at": "2026-06-04T14:51:24.572Z"
+  }
+}

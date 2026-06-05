@@ -1,0 +1,2 @@
+{"event":"run-start","run_id":"polaris-docs-ingest-docs-ingest-2026-06-05-003","prior_run_id":"polaris-docs-ingest-docs-ingest-2026-06-04-022","timestamp":"2026-06-05T05:19:49.500Z"}
+{"event":"docs-ingest-skipped-endpoint-artifact","file":"smartdocs/doctrine/candidate/2026-06-04-polaris-adoption-architecture-design.md","reason":"ignored by .smartdocignore/defaults: smartdocs/doctrine/candidate/2026-06-04-polaris-adoption-architecture-design.md","cluster_id":null,"run_id":"polaris-docs-ingest-docs-ingest-2026-06-05-003","timestamp":"2026-06-05T05:19:49.506Z"}
