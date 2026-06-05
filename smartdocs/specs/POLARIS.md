@@ -1,4 +1,4 @@
-# smartdocs/docs/specs
+# smartdocs/specs
 
 ## Purpose
 

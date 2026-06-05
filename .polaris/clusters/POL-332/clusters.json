@@ -1,37 +1,76 @@
 {
-  "source_id": "POL-332",
-  "analyze_source_id": "POL-325",
-  "source_type": "linear",
-  "created_at": "2026-06-05T15:05:15.000Z",
-  "clusters": [
-    {
-      "cluster_id": "cluster-01",
-      "children": [
-        {
-          "id": "POL-333",
-          "title": "Analyze CodeGraph source architecture and data model",
-          "session_type": "analyze",
-          "blockedBy": []
-        },
-        {
-          "id": "POL-334",
-          "title": "Map Polaris repository intelligence capability gaps vs CodeGraph",
-          "session_type": "analyze",
-          "blockedBy": ["POL-333"]
-        },
-        {
-          "id": "POL-335",
-          "title": "Evaluate CodeGraph integration options (A–D) and governance implications",
-          "session_type": "analyze",
-          "blockedBy": ["POL-333", "POL-334"]
-        },
-        {
-          "id": "POL-336",
-          "title": "Produce SmartDocs recommendation document for CodeGraph integration",
-          "session_type": "analyze",
-          "blockedBy": ["POL-333", "POL-334", "POL-335"]
-        }
-      ]
+  "schemaVersion": "v2",
+  "source": {
+    "id": "POL-332",
+    "type": "Linear",
+    "analysis": {
+      "id": "initial-sync",
+      "doc": "Synchronized from Linear issue identifier: POL-332"
     }
-  ]
+  },
+  "nodes": {
+    "POL-332": {
+      "id": "POL-332",
+      "title": "IMPLEMENT: CodeGraph integration analysis",
+      "status": "Todo",
+      "body": "## Objective\n\nExecute the CodeGraph integration analysis for [POL-325](https://linear.app/lsctech/issue/POL-325/analyze-codegraph-integration-as-polaris-repository-intelligence-layer), producing a SmartDocs recommendation document that identifies which MIT-licensed CodeGraph components to selectively adopt into Polaris as a proprietary integrated capability.\n\n## Context\n\nCreated by polaris-analyze from [POL-325](https://linear.app/lsctech/issue/POL-325/analyze-codegraph-integration-as-polaris-repository-intelligence-layer) (Analyze CodeGraph integration as Polaris repository intelligence layer). Strategic direction: selectively extract components from the MIT-licensed CodeGraph source and integrate them directly into the Polaris codebase — producing a proprietary combined result. Option A (direct dependency) and Option B (optional external backend) are off the table. The evaluation focuses on Option C (selective component adoption) vs Option D (clean reimplementation inspired by CodeGraph).\n\n## Goal\n\nDeliver a SmartDocs analysis document (`smartdocs/specs/active/`) that identifies the specific CodeGraph components worth extracting (graph model, SQLite layer, tree-sitter parsing), documents the MIT attribution requirements, and produces an integration roadmap for incorporating those components into `src/`.\n\n## Scope\n\n* smartdocs/specs/active/\n* smartdocs/specs/raw/\n* docs/Polaris/\n* src/config/provider-detect.ts\n* src/config/schema.ts\n* src/map/\n* src/cognition/\n* src/loop/worker-prompt.ts\n* src/loop/worker-packet.ts\n\n## Acceptance Criteria\n\n* SmartDocs analysis document produced at `smartdocs/specs/active/pol-325-codegraph-integration-analysis.md`\n* Document covers all five deliverable sections from [POL-325](https://linear.app/lsctech/issue/POL-325/analyze-codegraph-integration-as-polaris-repository-intelligence-layer): Repository Analysis, Capability Matrix, Integration Options (C vs D), Recommendation, and Governance\n* MIT attribution requirements documented\n* Specific components identified for extraction with target `src/` locations\n* Recommendation includes a clear rationale and proposed integration roadmap\n* All four child analysis tasks completed in dependency order\n\n## Validation\n\n* npm run build\n* npm test\n\n## Ordering\n\nNo dependency on other IMPLEMENT clusters. Can begin immediately.\n\n## Non-goals\n\n* No evaluation of Option A (direct CodeGraph dependency) or Option B (optional external backend provider)\n* No production code changes in src/ during analysis\n* No PRs or branch pushes during analysis phase"
+    },
+    "POL-336": {
+      "id": "POL-336",
+      "title": "Produce SmartDocs recommendation document for CodeGraph integration",
+      "status": "Todo",
+      "body": "## Objective\n\nSynthesize findings from [POL-333](https://linear.app/lsctech/issue/POL-333/analyze-codegraph-source-architecture-and-data-model), [POL-334](https://linear.app/lsctech/issue/POL-334/map-polaris-repository-intelligence-capability-gaps-vs-codegraph), and [POL-335](https://linear.app/lsctech/issue/POL-335/evaluate-codegraph-integration-options-a-d-and-governance-implications) into a final SmartDocs recommendation document that delivers a per-component integration roadmap for bringing selected CodeGraph capabilities into the Polaris proprietary codebase.\n\n## Context\n\nPart of [POL-325](https://linear.app/lsctech/issue/POL-325/analyze-codegraph-integration-as-polaris-repository-intelligence-layer) (CodeGraph integration analysis). Terminal analysis child. Strategic direction confirmed: selective MIT component adoption (Option C) vs Polaris-native reimplementation (Option D), on a per-component basis. The combined result is proprietary. Inputs:\n\n* `smartdocs/specs/raw/pol-325-codegraph-architecture.md` (from [POL-333](https://linear.app/lsctech/issue/POL-333/analyze-codegraph-source-architecture-and-data-model))\n* `smartdocs/specs/raw/pol-325-capability-matrix.md` (from [POL-334](https://linear.app/lsctech/issue/POL-334/map-polaris-repository-intelligence-capability-gaps-vs-codegraph))\n* `smartdocs/specs/raw/pol-325-integration-options.md` (from [POL-335](https://linear.app/lsctech/issue/POL-335/evaluate-codegraph-integration-options-a-d-and-governance-implications))\n\n## Goal\n\nProduce a final SmartDocs spec at `smartdocs/specs/active/pol-325-codegraph-integration-analysis.md` containing:\n\n1. Executive summary and strategic direction (proprietary integration via selective MIT adoption)\n2. CodeGraph architecture summary\n3. Component extraction plan: per-component C vs D verdict with target `src/` locations\n4. MIT attribution requirements: which notices to retain and where\n5. Governance model for graph artifacts (storage, cognition exclusion, lifecycle)\n6. Phased implementation roadmap with follow-on IMPLEMENT issues\n7. Risks and open questions\n\nCreate follow-on IMPLEMENT issues for the actual integration work and link them from the document. Close [POL-325](https://linear.app/lsctech/issue/POL-325/analyze-codegraph-integration-as-polaris-repository-intelligence-layer) as complete.\n\n## Scope\n\n* smartdocs/specs/active/\n* smartdocs/specs/raw/\n\n## Acceptance Criteria\n\n* SmartDocs document written to `smartdocs/specs/active/pol-325-codegraph-integration-analysis.md`\n* Document has valid SmartDocs frontmatter (kind, status, source, created)\n* Per-component integration plan present with C vs D verdicts\n* MIT attribution section present and accurate\n* Follow-on IMPLEMENT issues created and linked\n* [POL-325](https://linear.app/lsctech/issue/POL-325/analyze-codegraph-integration-as-polaris-repository-intelligence-layer) closed as complete\n\n## Validation\n\n* npm run build\n\n## Ordering\n\nDepends on [POL-333](https://linear.app/lsctech/issue/POL-333/analyze-codegraph-source-architecture-and-data-model), [POL-334](https://linear.app/lsctech/issue/POL-334/map-polaris-repository-intelligence-capability-gaps-vs-codegraph), and [POL-335](https://linear.app/lsctech/issue/POL-335/evaluate-codegraph-integration-options-a-d-and-governance-implications).\n\n## Non-goals\n\n* No src/ changes\n* No implementation of the integration\n* No PR or branch push"
+    },
+    "POL-335": {
+      "id": "POL-335",
+      "title": "Evaluate CodeGraph integration options (A–D) and governance implications",
+      "status": "Todo",
+      "body": "## Objective\n\nEvaluate Option C (selective component extraction) vs Option D (Polaris-native reimplementation inspired by CodeGraph) and produce a clear recommendation on which path to take for each candidate component.\n\n## Context\n\nPart of [POL-325](https://linear.app/lsctech/issue/POL-325/analyze-codegraph-integration-as-polaris-repository-intelligence-layer) (CodeGraph integration analysis). Depends on [POL-333](https://linear.app/lsctech/issue/POL-333/analyze-codegraph-source-architecture-and-data-model) (CodeGraph architecture) and [POL-334](https://linear.app/lsctech/issue/POL-334/map-polaris-repository-intelligence-capability-gaps-vs-codegraph) (capability matrix with extract/reimplement/skip verdicts). Strategic direction confirmed: MIT-licensed components will be incorporated directly into the Polaris proprietary codebase. Options A and B are out of scope. The question is whether to extract CodeGraph code directly (Option C) or use it as a reference to write Polaris-native equivalents (Option D), on a per-component basis.\n\n## Goal\n\nFor each extraction candidate from [POL-334](https://linear.app/lsctech/issue/POL-334/map-polaris-repository-intelligence-capability-gaps-vs-codegraph), evaluate:\n\n* **Option C**: lift the MIT source directly into `src/` (with attribution). Assess: code quality, coupling to CodeGraph internals, tree-sitter version compatibility, SQLite schema fit with Polaris atlas.\n* **Option D**: reimplement the concept natively in Polaris TypeScript. Assess: effort, risk, divergence from a proven design.\n\nDocument MIT attribution requirements: the copyright notice must be retained in any source files taken from CodeGraph. The overall Polaris product remains proprietary — MIT does not require open-sourcing the combined work.\n\n## Scope\n\n* src/config/schema.ts\n* src/config/provider-detect.ts\n* src/config/defaults.ts\n* polaris.config.json\n* smartdocs/specs/raw/\n\n## Acceptance Criteria\n\n* Evaluation document written to `smartdocs/specs/raw/pol-325-integration-options.md`\n* Option C vs D assessed per component (not as a single monolithic choice)\n* MIT attribution obligations documented: what notices must be retained, in which files\n* Governance section covers: graph artifact storage, exclusion from cognition ingestion, graph data lifecycle as a runtime artifact\n* Tracker-agnostic architecture principle compliance confirmed for the chosen path\n\n## Validation\n\n* npm run build\n\n## Ordering\n\nDepends on [POL-333](https://linear.app/lsctech/issue/POL-333/analyze-codegraph-source-architecture-and-data-model) and [POL-334](https://linear.app/lsctech/issue/POL-334/map-polaris-repository-intelligence-capability-gaps-vs-codegraph).\n\n## Non-goals\n\n* Option A and Option B are explicitly out of scope — do not evaluate them\n* No src/ code changes\n* No implementation of any option"
+    },
+    "POL-334": {
+      "id": "POL-334",
+      "title": "Map Polaris repository intelligence capability gaps vs CodeGraph",
+      "status": "Todo",
+      "body": "## Objective\n\nCompare CodeGraph capabilities against the current Polaris map/cognition/SmartDocs stack and identify which specific CodeGraph components are worth extracting for direct integration into Polaris.\n\n## Context\n\nPart of [POL-325](https://linear.app/lsctech/issue/POL-325/analyze-codegraph-integration-as-polaris-repository-intelligence-layer) (CodeGraph integration analysis). Depends on [POL-333](https://linear.app/lsctech/issue/POL-333/analyze-codegraph-source-architecture-and-data-model) (CodeGraph architecture findings). Strategic direction: selective MIT component adoption into a proprietary Polaris codebase — not an external dependency. This capability matrix should drive the component selection decision, not just document overlap.\n\n## Goal\n\nProduce a capability matrix and component extraction candidate list. For each CodeGraph subsystem identified in [POL-333](https://linear.app/lsctech/issue/POL-333/analyze-codegraph-source-architecture-and-data-model), assess: (1) what Polaris currently has, (2) what CodeGraph adds, (3) whether it's worth extracting or reimplementing. Primary candidates expected: graph data model (nodes/edges/symbols), SQLite persistence layer, tree-sitter parsing logic.\n\n## Scope\n\n* src/map/\n* src/cognition/\n* src/config/provider-detect.ts\n* src/config/schema.ts\n* src/loop/worker-prompt.ts\n* src/loop/worker-packet.ts\n* src/smartdocs-engine/\n* smartdocs/specs/raw/\n\n## Acceptance Criteria\n\n* Capability matrix written to `smartdocs/specs/raw/pol-325-capability-matrix.md`\n* Matrix covers all four columns: Polaris atlas, GitNexus, SmartDocs, CodeGraph\n* Each CodeGraph subsystem assessed with an explicit **extract / reimplement / skip** verdict and rationale\n* MIT attribution obligations noted per component (which source files carry the notice)\n* Gap analysis focused on worker context and token efficiency improvements\n* Proposed target `src/` locations for each extraction candidate\n\n## Validation\n\n* npm run build\n\n## Ordering\n\nDepends on [POL-333](https://linear.app/lsctech/issue/POL-333/analyze-codegraph-source-architecture-and-data-model).\n\n## Non-goals\n\n* No evaluation of keeping CodeGraph as an external runtime dependency\n* No recommendation (that is [POL-336](https://linear.app/lsctech/issue/POL-336/produce-smartdocs-recommendation-document-for-codegraph-integration)'s responsibility)\n* No src/ changes"
+    },
+    "POL-333": {
+      "id": "POL-333",
+      "title": "Analyze CodeGraph source architecture and data model",
+      "status": "Todo",
+      "body": "## Objective\n\nRead and document the internal architecture, subsystems, and data model of the CodeGraph project from its MIT-licensed source.\n\n## Context\n\nPart of [POL-325](https://linear.app/lsctech/issue/POL-325/analyze-codegraph-integration-as-polaris-repository-intelligence-layer) (CodeGraph integration analysis). This is the foundational research child — subsequent children depend on this output. CodeGraph source: [https://github.com/colbymchenry/codegraph/tree/main](<https://github.com/colbymchenry/codegraph/tree/main>)\n\n## Goal\n\nProduce a structured findings document covering: major subsystems, tree-sitter parsing approach, symbol extraction model, graph node/edge schema, SQLite storage model, relationship resolution, MCP integration surface, and indexing strategy. Document should be sufficient for downstream capability comparison and integration option evaluation.\n\n## Scope\n\n* smartdocs/specs/raw/\n* docs/Polaris/\n\n## Acceptance Criteria\n\n* Architecture overview document written to `smartdocs/specs/raw/pol-325-codegraph-architecture.md`\n* Document covers: subsystems, data model (nodes, edges, symbols), storage (SQLite schema), indexing strategy, MCP integration surface\n* Tree-sitter parser coverage (languages/symbol types) documented\n* Local-first operation model and runtime dependencies documented\n\n## Validation\n\n* npm run build\n\n## Ordering\n\nNone — this child has no dependencies and executes first.\n\n## Non-goals\n\n* No evaluation of integration options\n* No Polaris capability comparison\n* No src/ changes"
+    },
+    "POL-325": {
+      "id": "POL-325",
+      "title": "Analyze CodeGraph integration as Polaris repository intelligence layer",
+      "status": "Done"
+    }
+  },
+  "dependencies": {
+    "POL-336": [
+      "POL-334",
+      "POL-335",
+      "POL-333"
+    ],
+    "POL-335": [
+      "POL-333",
+      "POL-334"
+    ],
+    "POL-334": [
+      "POL-333"
+    ]
+  },
+  "clusters": {
+    "POL-332": {
+      "id": "POL-332",
+      "title": "Linear Issue: POL-332",
+      "children": [
+        "POL-336",
+        "POL-335",
+        "POL-334",
+        "POL-333"
+      ],
+      "cluster_root": "POL-332"
+    }
+  },
+  "activeCluster": "POL-332"
 }

@@ -9,5 +9,5 @@ Canonical SmartDocs spec tree.
 - `superseded/` is archival.
 
 ## Relationships
-- **Parent**: `smartdocs/docs`
+- **Parent**: `smartdocs/`
 - **Linked canonical source**: [POLARIS.md](POLARIS.md)
