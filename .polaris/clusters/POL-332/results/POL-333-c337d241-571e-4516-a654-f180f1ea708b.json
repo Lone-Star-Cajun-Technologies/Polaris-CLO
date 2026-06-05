@@ -6,7 +6,8 @@
   "commit": "4117ef791b3f3b5debef959c1638c8bfffb397d2",
   "validation": {
     "passed": [
-      "npm run build"
+      "npm run build",
+      "npm test"
     ],
     "failed": []
   },

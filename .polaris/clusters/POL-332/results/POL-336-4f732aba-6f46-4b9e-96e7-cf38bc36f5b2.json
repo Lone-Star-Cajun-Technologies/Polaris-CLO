@@ -4,6 +4,8 @@
   "child_id": "POL-336",
   "status": "done",
   "commit": "bf0a92b3ef842b35b239f69f5a134bd5fd16f05c",
-  "validation": "passed",
+  "validation": {
+    "status": "passed"
+  },
   "next_recommended_action": "continue"
 }
