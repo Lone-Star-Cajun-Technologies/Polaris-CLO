@@ -103,7 +103,7 @@ describe("buildWorkerPrompt", () => {
 
   it("compact prompt contains governance instructions", () => {
     const { prompt } = buildWorkerPrompt(makeBaseInput());
-    expect(prompt).toContain("open_children to completed_children");
+    expect(prompt).toContain("Do NOT modify open_children or completed_children");
     expect(prompt).toContain("telemetry.jsonl");
     expect(prompt).toContain("TERMINATE SESSION IMMEDIATELY");
   });

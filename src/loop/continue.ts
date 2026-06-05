@@ -42,6 +42,7 @@ export interface ContinueOptions {
   allowAnalyzeChildren?: boolean;
 }
 
+/** Resolves the expected sealed result file path for a child from its dispatch metadata. */
 function resolveResultFileForChild(state: LoopState, childId: string): string | null {
   const meta = state.open_children_meta?.[childId];
   return meta?.result_file ?? meta?.dispatch_record?.expected_result_path ?? null;
@@ -51,24 +52,37 @@ type ContinueEvidenceResult =
   | { ok: true; commit: string; rawValidation: unknown; resultFile: string }
   | { ok: false; reason: string };
 
+/**
+ * Verifies that a completed child has adequate sealed-result evidence before checkpointing.
+ * When a worker has pre-moved itself into completed_children, falls through to full evidence
+ * check if a result file is present rather than accepting stale state.
+ */
 function verifyCompletionEvidenceForContinue(
   state: LoopState,
   completedChild: string,
   repoRoot: string,
 ): ContinueEvidenceResult {
+  const resultFile = resolveResultFileForChild(state, completedChild);
+  const resolvedResultFile = resultFile
+    ? isAbsolute(resultFile)
+      ? resultFile
+      : resolve(repoRoot, resultFile)
+    : null;
+
   if (state.completed_children.includes(completedChild)) {
-    return { ok: true, commit: state.last_commit ?? "", rawValidation: undefined, resultFile: "" };
+    // Worker pre-moved itself into completed_children (protocol violation, but tolerated).
+    // Fall through to full evidence check when a result file exists; otherwise accept as-is.
+    if (!resolvedResultFile || !existsSync(resolvedResultFile)) {
+      return { ok: true, commit: state.last_commit ?? "", rawValidation: undefined, resultFile: "" };
+    }
   }
 
-  const resultFile = resolveResultFileForChild(state, completedChild);
-  if (!resultFile) {
+  if (!resultFile || !resolvedResultFile) {
     return {
       ok: false,
       reason: `cannot checkpoint ${completedChild}: no result_file evidence found in state metadata`,
     };
   }
-
-  const resolvedResultFile = isAbsolute(resultFile) ? resultFile : resolve(repoRoot, resultFile);
   if (!existsSync(resolvedResultFile)) {
     return {
       ok: false,
