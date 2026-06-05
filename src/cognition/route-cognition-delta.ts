@@ -66,6 +66,7 @@ const POLARIS_RUNTIME_COGNITION_FOLDERS = new Set([
 const POLARIS_RUNTIME_GENERATED_PREFIXES = [
   ".polaris/bootstrap/",
   ".polaris/clusters/",
+  ".polaris/graph/",
   ".polaris/map/",
   ".polaris/runs/",
 ];
@@ -168,7 +169,8 @@ export function isCognitionSkippedFolder(folderRel: string, repoRoot?: string): 
   }
   if (POLARIS_RUNTIME_COGNITION_FOLDERS.has(folderRel)) return false;
   for (const prefix of POLARIS_RUNTIME_GENERATED_PREFIXES) {
-    if (folderRel.startsWith(prefix)) return true;
+    const rootPath = prefix.endsWith("/") ? prefix.slice(0, -1) : prefix;
+    if (folderRel === rootPath || folderRel.startsWith(prefix)) return true;
   }
   // Agent folders are opt-in only
   const topLevel = folderRel.split("/")[0] ?? folderRel;
