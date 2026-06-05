@@ -1,0 +1,9 @@
+{"event":"run-start","run_id":"docs-ingest-adoption-architecture-2026-06-05-001","prior_run_id":null,"timestamp":"2026-06-05T05:12:50Z"}
+{"event":"step-complete","run_id":"docs-ingest-adoption-architecture-2026-06-05-001","step":"01-orient-ingest","timestamp":"2026-06-05T05:12:59Z"}
+{"event":"docs-ingest-classified","run_id":"docs-ingest-adoption-architecture-2026-06-05-001","file":"smartdocs/raw/2026-06-05-adoption-architecture-final-decisions.md","class":"doctrine-candidate","confidence":"high","target":"smartdocs/doctrine/candidate/2026-06-05-adoption-architecture-final-decisions.md","timestamp":"2026-06-05T05:13:27Z"}
+{"event":"step-complete","run_id":"docs-ingest-adoption-architecture-2026-06-05-001","step":"02-classify-batch","timestamp":"2026-06-05T05:13:27Z"}
+{"event":"step-complete","run_id":"docs-ingest-adoption-architecture-2026-06-05-001","step":"03-conflict-check","conflicts":1,"conflict_type":"overlap","timestamp":"2026-06-05T05:14:05Z"}
+{"event":"doctrine-candidate-proposed","run_id":"docs-ingest-adoption-architecture-2026-06-05-001","file":"smartdocs/raw/2026-06-05-adoption-architecture-final-decisions.md","target":"smartdocs/doctrine/candidate/2026-06-05-adoption-architecture-final-decisions.md","timestamp":"2026-06-05T05:14:57Z"}
+{"event":"docs-ingest-placed","run_id":"docs-ingest-adoption-architecture-2026-06-05-001","file":"smartdocs/doctrine/candidate/2026-06-05-adoption-architecture-final-decisions.md","timestamp":"2026-06-05T05:14:57Z"}
+{"event":"step-complete","run_id":"docs-ingest-adoption-architecture-2026-06-05-001","step":"04-place-and-link","timestamp":"2026-06-05T05:14:57Z"}
+{"event":"docs-ingest-complete","run_id":"docs-ingest-adoption-architecture-2026-06-05-001","placed":1,"held":0,"timestamp":"2026-06-05T05:15:09Z"}

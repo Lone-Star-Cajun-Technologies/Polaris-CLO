@@ -1,3 +1,4 @@
+<!-- polaris:doctrine-candidate -->
 ---
 status: raw
 created: 2026-06-05
