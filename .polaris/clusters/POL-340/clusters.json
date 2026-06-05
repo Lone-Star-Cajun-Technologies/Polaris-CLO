@@ -1,31 +1,58 @@
 {
-  "source_id": "POL-340",
-  "analyze_source_id": "POL-340",
-  "source_type": "linear",
-  "created_at": "2026-06-05T16:37:30.000Z",
-  "clusters": [
-    {
-      "cluster_id": "cluster-01",
-      "children": [
-        {
-          "id": "POL-341",
-          "title": "Add graph config section to PolarisConfig with outputPath and invalidationTriggers",
-          "session_type": "implement",
-          "blockedBy": []
-        },
-        {
-          "id": "POL-342",
-          "title": "Exclude graph artifacts from cognition ingestion and atlas validation",
-          "session_type": "implement",
-          "blockedBy": ["POL-341"]
-        },
-        {
-          "id": "POL-343",
-          "title": "Implement graph governance module: MIT provenance writer and invalidation trigger checks",
-          "session_type": "implement",
-          "blockedBy": ["POL-341"]
-        }
-      ]
+  "schemaVersion": "v2",
+  "source": {
+    "id": "POL-340",
+    "type": "Linear",
+    "analysis": {
+      "id": "initial-sync",
+      "doc": "Synchronized from Linear issue identifier: POL-340"
     }
-  ]
+  },
+  "nodes": {
+    "POL-340": {
+      "id": "POL-340",
+      "title": "Implement graph artifact governance and lifecycle controls in Polaris runtime",
+      "status": "Todo",
+      "body": "## Objective\n\nEstablish the governance framework for graph artifacts in the Polaris runtime: storage schema, cognition exclusion, lifecycle invalidation triggers, and MIT provenance attribution.\n\n## Context\n\nFollow-on from [POL-325](https://linear.app/lsctech/issue/POL-325/analyze-codegraph-integration-as-polaris-repository-intelligence-layer) / [POL-336](https://linear.app/lsctech/issue/POL-336/produce-smartdocs-recommendation-document-for-codegraph-integration) (CodeGraph integration analysis). The CodeGraph component extraction will introduce graph artifacts (SQLite DB, graph index files) into the Polaris runtime. Before those artifacts exist, the governance model must be in place: where they live, how they are excluded from cognition/doc ingestion, when they are rebuilt, and how MIT copyright attribution is preserved.\n\n## Goal\n\nThree deliverables:\n\n1. `graph` config section in `PolarisConfig` with `outputPath` (default `.polaris/graph`) and `invalidationTriggers`\n2. Explicit cognition/atlas exclusion of `.polaris/graph/` and `*.sqlite` / `*.db` file types\n3. Graph governance module (`src/graph/governance.ts`) with provenance manifest writer and invalidation trigger checks\n\n## Scope\n\n* src/config/schema.ts\n* src/config/defaults.ts\n* src/config/validator.ts\n* src/cognition/route-cognition-delta.ts\n* src/smartdocs-engine/smartdoc-ignore.ts\n* src/map/validate.ts\n* src/graph/governance.ts (new)\n\n## Acceptance Criteria\n\n* `PolarisConfig.graph.outputPath` exists, defaults to `.polaris/graph`\n* `.polaris/graph/` added to `POLARIS_RUNTIME_GENERATED_PREFIXES` in cognition skip logic\n* `*.sqlite` and `*.db` added to `DEFAULT_SMARTDOCIGNORE_PATTERNS`\n* Atlas validation does not flag `.polaris/graph/` paths\n* `src/graph/governance.ts` writes a `NOTICES` file containing MIT copyright attribution on graph init\n* `npm run build` and `npm test` pass\n\n## Validation\n\n* npm run build\n* npm test\n\n## Ordering\n\nNo dependencies on other IMPLEMENT clusters.\n\n## Non-goals\n\n* No actual graph database implementation or CodeGraph component extraction\n* No changes to the graph query or indexing logic (that comes in the subsequent extraction cluster)"
+    },
+    "POL-343": {
+      "id": "POL-343",
+      "title": "Implement graph governance module: MIT provenance writer and invalidation trigger checks",
+      "status": "Todo",
+      "body": "## Objective\n\nCreate the graph governance module (`src/graph/governance.ts`) implementing: a provenance NOTICES file writer for MIT attribution, and invalidation trigger checks against `graph.invalidationTriggers` config.\n\n## Context\n\nPart of [POL-340](https://linear.app/lsctech/issue/POL-340/implement-graph-artifact-governance-and-lifecycle-controls-in-polaris) (graph artifact governance). Depends on [POL-341](https://linear.app/lsctech/issue/POL-341/add-graph-config-section-to-polarisconfig-with-outputpath-and) (config schema). This is the runtime enforcement layer: when a graph is initialized, write a `NOTICES` file to `graph.outputPath` containing the MIT copyright notice from any extracted CodeGraph source. When a rebuild trigger condition is met (repo change, config change), return an invalidation signal so callers know to rebuild the graph index.\n\n## Goal\n\nNew module `src/graph/governance.ts` with two exports:\n\n1. `writeGraphNotices(outputPath, notices)` — writes a `NOTICES` file listing MIT copyright attributions for each extracted source component. Called once at graph init.\n2. `checkGraphInvalidation(config, repoRoot)` — checks `graph.invalidationTriggers` against current state (config hash, last git commit) and returns `{ stale: boolean, reason?: string }`.\n\n## Scope\n\n* src/graph/governance.ts (new file)\n* src/graph/governance.test.ts (new file)\n* src/graph/POLARIS.md (new — cognition surface for this new directory)\n\n## Acceptance Criteria\n\n* `writeGraphNotices` creates `<outputPath>/NOTICES` with provided attribution strings; is idempotent on re-run\n* `checkGraphInvalidation` returns `{ stale: true, reason: \"config-change\" }` when config hash has changed, `{ stale: true, reason: \"repo-change\" }` when HEAD commit has changed since last graph build, `{ stale: false }` otherwise\n* Module does not import from `src/map/`, `src/cognition/`, or `src/loop/` — it is a standalone utility\n* `npm run build` and `npm test` pass\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/graph/\n\n## Ordering\n\nDepends on [POL-341](https://linear.app/lsctech/issue/POL-341/add-graph-config-section-to-polarisconfig-with-outputpath-and). Can run in parallel with [POL-342](https://linear.app/lsctech/issue/POL-342/exclude-graph-artifacts-from-cognition-ingestion-and-atlas-validation).\n\n## Non-goals\n\n* No graph database build logic\n* No CodeGraph component extraction\n* No changes to cognition or atlas (done in [POL-342](https://linear.app/lsctech/issue/POL-342/exclude-graph-artifacts-from-cognition-ingestion-and-atlas-validation))"
+    },
+    "POL-342": {
+      "id": "POL-342",
+      "title": "Exclude graph artifacts from cognition ingestion and atlas validation",
+      "status": "Todo",
+      "body": "## Objective\n\nExclude graph artifacts at `graph.outputPath` (`.polaris/graph/`) from cognition scanning, SmartDocs ingestion, and atlas validation.\n\n## Context\n\nPart of [POL-340](https://linear.app/lsctech/issue/POL-340/implement-graph-artifact-governance-and-lifecycle-controls-in-polaris) (graph artifact governance). Depends on [POL-341](https://linear.app/lsctech/issue/POL-341/add-graph-config-section-to-polarisconfig-with-outputpath-and) (config schema). Once `graph.outputPath` is defined, the cognition and atlas subsystems must be explicitly hardened to ignore that path and related file types (`*.sqlite`, `*.db`). Without this, a graph build could inadvertently trigger cognition updates or cause atlas validation failures.\n\n## Goal\n\nThree targeted changes:\n\n1. Add `.polaris/graph/` to `POLARIS_RUNTIME_GENERATED_PREFIXES` in `src/cognition/route-cognition-delta.ts` so `isCognitionSkippedFolder` returns true for graph paths.\n2. Add `*.sqlite`, `*.db`, and `.polaris/graph/**` to `DEFAULT_SMARTDOCIGNORE_PATTERNS` in `src/smartdocs-engine/smartdoc-ignore.ts`.\n3. Ensure `src/map/validate.ts` does not flag `.polaris/graph/` entries as stale or missing (atlas exemption).\n\n## Scope\n\n* src/cognition/route-cognition-delta.ts\n* src/smartdocs-engine/smartdoc-ignore.ts\n* src/map/validate.ts\n\n## Acceptance Criteria\n\n* `isCognitionSkippedFolder(\".polaris/graph/something\")` returns `true`\n* `isCognitionSkippedFolder(\".polaris/graph\")` returns `true`\n* `*.sqlite` and `*.db` files ignored by SmartDocs ingest pipeline\n* Atlas validation does not produce errors for `.polaris/graph/` paths\n* Existing cognition and smartdoc-ignore tests pass; new tests added for the graph path\n* `npm run build` and `npm test` pass\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/cognition/ src/smartdocs-engine/ src/map/\n\n## Ordering\n\nDepends on [POL-341](https://linear.app/lsctech/issue/POL-341/add-graph-config-section-to-polarisconfig-with-outputpath-and).\n\n## Non-goals\n\n* No config schema changes (done in [POL-341](https://linear.app/lsctech/issue/POL-341/add-graph-config-section-to-polarisconfig-with-outputpath-and))\n* No governance module (done in the next child)\n* No graph database implementation"
+    },
+    "POL-341": {
+      "id": "POL-341",
+      "title": "Add graph config section to PolarisConfig with outputPath and invalidationTriggers",
+      "status": "Todo",
+      "body": "## Objective\n\nAdd a `graph` configuration section to `PolarisConfig` with `outputPath` and `invalidationTriggers`, and wire in defaults and validation.\n\n## Context\n\nPart of [POL-340](https://linear.app/lsctech/issue/POL-340/implement-graph-artifact-governance-and-lifecycle-controls-in-polaris) (graph artifact governance). This child establishes the config foundation that the cognition exclusion and governance module children depend on. Without a canonical `graph.outputPath` in config, the other children cannot reference a deterministic storage location.\n\n## Goal\n\nExtend `PolarisConfig` in `src/config/schema.ts` with a `graph` section. Set defaults in `src/config/defaults.ts`. Add validation in `src/config/validator.ts`. The `outputPath` determines where all graph artifacts (SQLite DB, index files, NOTICES) are stored; it must default to `.polaris/graph`.\n\n## Scope\n\n* src/config/schema.ts\n* src/config/defaults.ts\n* src/config/validator.ts\n* src/config/loader.test.ts\n* src/config/validator.test.ts\n\n## Acceptance Criteria\n\n* `PolarisConfig.graph` interface defined with `outputPath?: string` and `invalidationTriggers?: Array<\"repo-change\" | \"config-change\">`\n* Default: `graph.outputPath = \".polaris/graph\"`, `graph.invalidationTriggers = [\"repo-change\", \"config-change\"]`\n* Validator rejects non-string `outputPath` and invalid trigger values\n* Existing tests pass; new tests cover the new fields\n* `npm run build` and `npm test` pass\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/config/\n\n## Ordering\n\nNone — executes first.\n\n## Non-goals\n\n* No cognition or atlas changes (that is the next child)\n* No governance module (that is the third child)\n* No graph database implementation"
+    }
+  },
+  "dependencies": {
+    "POL-343": [
+      "POL-341"
+    ],
+    "POL-342": [
+      "POL-341"
+    ]
+  },
+  "clusters": {
+    "POL-340": {
+      "id": "POL-340",
+      "title": "Linear Issue: POL-340",
+      "children": [
+        "POL-343",
+        "POL-342",
+        "POL-341"
+      ],
+      "cluster_root": "POL-340"
+    }
+  },
+  "activeCluster": "POL-340"
 }

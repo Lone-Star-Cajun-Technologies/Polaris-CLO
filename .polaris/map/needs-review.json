@@ -5725,8 +5725,8 @@
     "taskchain": "polaris-core",
     "confidence": 0,
     "classification": "needs-review",
-    "last_updated": "2026-06-05T16:13:05.631Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-06-05T17:26:17.385Z",
+    "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": "src/POLARIS.md"
   },
@@ -5736,8 +5736,8 @@
     "taskchain": "polaris-core",
     "confidence": 0,
     "classification": "needs-review",
-    "last_updated": "2026-06-05T16:13:05.631Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-06-05T17:26:17.385Z",
+    "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": "src/POLARIS.md"
   },

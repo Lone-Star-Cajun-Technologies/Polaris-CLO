@@ -459,8 +459,8 @@
     "taskchain": "polaris-cognition",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-06-05T17:26:17.385Z",
+    "updated_by": "polaris-map-update",
     "tags": [
       "cognition"
     ],
@@ -472,8 +472,8 @@
     "taskchain": "polaris-cognition",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-06-05T17:26:17.385Z",
+    "updated_by": "polaris-map-update",
     "tags": [
       "cognition"
     ],
@@ -644,8 +644,8 @@
     "taskchain": "polaris-config",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-06-05T17:26:17.385Z",
+    "updated_by": "polaris-map-update",
     "tags": [
       "config"
     ],
@@ -657,8 +657,8 @@
     "taskchain": "polaris-config",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-06-05T17:26:17.385Z",
+    "updated_by": "polaris-map-update",
     "tags": [
       "config"
     ],
@@ -2192,8 +2192,8 @@
     "taskchain": "polaris-map",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-06-05T17:26:17.385Z",
+    "updated_by": "polaris-map-update",
     "tags": [
       "map"
     ],
@@ -2205,8 +2205,8 @@
     "taskchain": "polaris-map",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-06-05T17:26:17.385Z",
+    "updated_by": "polaris-map-update",
     "tags": [
       "map"
     ],
@@ -3174,8 +3174,8 @@
     "taskchain": "polaris-smartdocs-engine",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-06-05T17:26:17.385Z",
+    "updated_by": "polaris-map-update",
     "tags": [
       "smartdocs-engine"
     ],
@@ -3187,8 +3187,8 @@
     "taskchain": "polaris-smartdocs-engine",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-06-05T17:26:17.385Z",
+    "updated_by": "polaris-map-update",
     "tags": [
       "smartdocs-engine"
     ],
