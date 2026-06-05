@@ -129,6 +129,47 @@ A repository is usable immediately after Stage 1. No adoption stage blocks execu
 > Polaris initializes durable roles first, then assigns providers/models as configurable
 > occupants of those roles. Roles persist. Model instances are disposable.
 
+### D11 — Librarian Reconciliation Doctrine
+
+> Every completed run requires Librarian reconciliation before final delivery.
+>
+> Implementation complete is not run complete.
+
+Run complete means all of the following are true:
+1. Implementation completed
+2. Sealed worker/result packets exist
+3. Librarian reconciliation completed
+4. Cognition and doc updates are committed or explicitly no-op
+5. Finalize/PR delivery may proceed
+
+The Librarian pass operates from the run/result packet, commits, changed files, linked docs,
+and route cognition. It does not rerun implementation.
+
+**Role authority:**
+
+> A provider may occupy multiple roles, but role authority does not merge.
+>
+> Shared provider is allowed. Shared authority is not.
+
+The Librarian must run under Librarian role authority. The Foreman may dispatch a Librarian
+subagent if no dedicated Librarian provider is configured, but the Foreman must not personally
+perform Librarian work. The subagent runs under Librarian role authority and writes a sealed
+Librarian result.
+
+**Run completion flow:**
+```
+Implementation run
+  → result packet
+  → Librarian subagent/role reconciliation
+  → POLARIS.md / SUMMARY.md / SmartDocs updates
+  → sealed Librarian result
+  → finalize gate passes
+  → PR creation
+```
+
+The Librarian may execute either as part of finalize or as a separate closeout skill before
+finalize. Final delivery is gated on Librarian completion in either case.
+
 ---
 
 ## Agent Document Architecture
