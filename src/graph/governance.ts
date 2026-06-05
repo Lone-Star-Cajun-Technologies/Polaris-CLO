@@ -58,8 +58,11 @@ export function checkGraphInvalidation(config: PolarisConfig, repoRoot: string):
     return { stale: true, reason: "repo-change" };
   }
 
-  writeGovernanceState(graphOutputPath, currentState);
   return { stale: false };
+}
+
+export function recordGraphGovernanceState(graphOutputPath: string, state: GraphGovernanceState): void {
+  writeGovernanceState(graphOutputPath, state);
 }
 
 function buildNoticesContent(notices: string[]): string {
@@ -71,7 +74,7 @@ function buildNoticesContent(notices: string[]): string {
   return `# NOTICES\n\n${cleaned.join("\n\n")}\n`;
 }
 
-function hashConfig(config: PolarisConfig): string {
+export function hashConfig(config: PolarisConfig): string {
   const normalized = stableSerialize(config);
   return createHash("sha256").update(normalized, "utf-8").digest("hex");
 }
@@ -91,7 +94,7 @@ function stableSerialize(value: unknown): string {
   return `{${pairs.join(",")}}`;
 }
 
-function resolveHeadCommit(repoRoot: string): string {
+export function resolveHeadCommit(repoRoot: string): string {
   return execFileSync("git", ["rev-parse", "HEAD"], {
     cwd: repoRoot,
     encoding: "utf-8",

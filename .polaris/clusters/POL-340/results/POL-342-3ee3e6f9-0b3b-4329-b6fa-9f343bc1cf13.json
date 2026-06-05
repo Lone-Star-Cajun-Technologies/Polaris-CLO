@@ -1,6 +1,6 @@
 {
   "child_id": "POL-342",
-  "status": "success",
+  "status": "failure",
   "commit": "2dcd82c0bfdea4b826e6fc4ea4e560ae42845abb",
   "validation": {
     "passed": [
