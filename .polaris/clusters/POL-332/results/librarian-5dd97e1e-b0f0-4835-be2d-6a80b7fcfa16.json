@@ -1,0 +1,73 @@
+{
+  "schema_version": "1.0",
+  "role": "closeout-librarian",
+  "run_id": "polaris-run-pol-332-2026-06-05-001",
+  "dispatch_id": "5dd97e1e-b0f0-4835-be2d-6a80b7fcfa16",
+  "cluster_id": "POL-332",
+  "status": "success",
+  "commit_sha": "05bdf5b2002a1dffc2a1c677d9a1382cd9ab5021",
+  "commit_message": "docs(closeout): reconcile cognition for cluster POL-332",
+  "files_committed": [
+    "smartdocs/specs/POLARIS.md",
+    "smartdocs/specs/SUMMARY.md",
+    "smartdocs/specs/active/POLARIS.md",
+    "smartdocs/specs/active/SUMMARY.md"
+  ],
+  "polaris_md_updates": [
+    {
+      "file": "smartdocs/specs/POLARIS.md",
+      "action": "update",
+      "change_summary": "Updated folder title path to canonical smartdocs/specs."
+    },
+    {
+      "file": "smartdocs/specs/active/POLARIS.md",
+      "action": "update",
+      "change_summary": "Updated folder title path to canonical smartdocs/specs/active."
+    }
+  ],
+  "summary_md_updates": [
+    {
+      "file": "smartdocs/specs/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Corrected parent path to smartdocs root."
+    },
+    {
+      "file": "smartdocs/specs/active/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Corrected parent path and added active POL-325 analysis reference."
+    }
+  ],
+  "docs_ingested": [],
+  "docs_archived": [
+    {
+      "source_path": "smartdocs/specs/raw/pol-325-codegraph-architecture.md",
+      "target_path": null,
+      "action": "archive",
+      "reason": "Cluster evidence analysis source retained in raw while final authority is the active POL-325 integration analysis."
+    },
+    {
+      "source_path": "smartdocs/specs/raw/pol-325-capability-matrix.md",
+      "target_path": null,
+      "action": "archive",
+      "reason": "Cluster evidence analysis source retained in raw while final authority is the active POL-325 integration analysis."
+    },
+    {
+      "source_path": "smartdocs/specs/raw/pol-325-integration-options.md",
+      "target_path": null,
+      "action": "archive",
+      "reason": "Cluster evidence analysis source retained in raw while final authority is the active POL-325 integration analysis."
+    }
+  ],
+  "yaml_updates": [],
+  "cognition_archived": [],
+  "link_validation": {
+    "total_checked": 3,
+    "valid": 3,
+    "broken": 0,
+    "repaired": 0,
+    "unrepairable": []
+  },
+  "blockers": [],
+  "reconciled_at": "2026-06-05T16:11:12Z",
+  "evidence_summary": "Reconciled affected specs canon files by correcting outdated path references in smartdocs/specs and smartdocs/specs/active POLARIS/SUMMARY artifacts and linking the active POL-325 integration analysis in specs/active/SUMMARY. No new docs required ingestion; raw POL-325 analysis artifacts were retained as archived evidence sources. Links in touched files were valid with no repairs needed. A single closeout librarian documentation commit was created and sealed."
+}
