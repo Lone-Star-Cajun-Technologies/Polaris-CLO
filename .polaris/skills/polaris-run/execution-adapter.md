@@ -13,11 +13,11 @@ The adapter boundary is the token boundary. Parent/orchestrator context must not
 
 | Mode | Use | Dispatch |
 |---|---|---|
-| `agent-subtask` | Interactive agent sessions **only when `allowNativeSubagent: true`** | Use the host agent's subtask/agent dispatch capability. **FORBIDDEN when `providerPolicy.*.allowNativeSubagent: false`** — do not search for, invoke, or attempt any native subagent tool. |
+| `agent-subtask` | Interactive agent sessions **only when `allowNativeSubagent: true`** | Use the host agent's subtask/agent dispatch capability. **FORBIDDEN when `execution.providerPolicy.*.allowNativeSubagent: false`** — do not search for, invoke, or attempt any native subagent tool. |
 | `terminal-cli` | Terminal, cron, CI wrapper; **required when `allowNativeSubagent: false`** | Use `scripts/polaris-run.sh` or equivalent shell subprocess with an explicitly configured CLI worker. |
 | `ci` | Remote CI workers | Dispatch a CI job and read the state artifact after completion. |
 
-> **Prohibition**: When `polaris.config.json` sets `providerPolicy.worker.allowNativeSubagent: false` (or `providerPolicy.orchestrator.allowNativeSubagent: false`), the `agent-subtask` mode is unconditionally forbidden. This applies to all host CLIs and providers — Claude, Codex, Copilot, and any other agent runtime each have their own native subagent or parallel-task mechanisms; all are forbidden under this flag. The Foreman must not search for, load, or invoke any such mechanism. The only legal dispatch path is `terminal-cli`.
+> **Prohibition**: When `polaris.config.json` sets `execution.providerPolicy.worker.allowNativeSubagent: false` (or `execution.providerPolicy.orchestrator.allowNativeSubagent: false`), the `agent-subtask` mode is unconditionally forbidden. This applies to all host CLIs and providers — Claude, Codex, Copilot, and any other agent runtime each have their own native subagent or parallel-task mechanisms; all are forbidden under this flag. The Foreman must not search for, load, or invoke any such mechanism. The only legal dispatch path is `terminal-cli`.
 
 ## Contract
 

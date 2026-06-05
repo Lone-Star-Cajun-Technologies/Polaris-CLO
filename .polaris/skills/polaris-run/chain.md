@@ -139,7 +139,7 @@ At the CHECKPOINT boundary, the orchestrator accepts only the worker's CompactRe
 
 This gate does not change the step order. It only narrows what survives the worker-return boundary before `loop continue` runs.
 
-Dispatch uses the adapter configured in `polaris.config.json` (`execution.adapter`). When `adapter: "terminal-cli"`, use `scripts/polaris-run.sh` or the configured CLI command as a subprocess. **When `providerPolicy.*.allowNativeSubagent: false` is set, never use any native subagent or parallel-task mechanism provided by the host CLI** (applies to all providers: Claude, Codex, Copilot, etc.) — this is an unconditional governance violation regardless of session mode or CLI capability.
+Dispatch uses the adapter configured in `polaris.config.json` (`execution.adapter`). When `adapter: "terminal-cli"`, use `scripts/polaris-run.sh` or the configured CLI command as a subprocess. **When `execution.providerPolicy.*.allowNativeSubagent: false` is set, never use any native subagent or parallel-task mechanism provided by the host CLI** (applies to all providers: Claude, Codex, Copilot, etc.) — this is an unconditional governance violation regardless of session mode or CLI capability.
 
 ## Polaris runtime integration
 

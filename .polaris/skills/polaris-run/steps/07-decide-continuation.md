@@ -29,7 +29,7 @@ stop_rules:
   - polaris loop dispatch exits non-zero
   - worker compact return is missing or invalid
   - polaris loop continue exits non-zero (excluding expected boundary event)
-  - budget exhausted: children_completed >= budget.max_children from polaris.config.json
+  - "budget exhausted: children_completed >= budget.max_children from polaris.config.json"
   - all children Done but delivery not yet requested
 ```
 
@@ -56,7 +56,7 @@ stop_rules:
 When another child remains open:
 - Report only compact state: last completed child ID, commit hash, next open child ID and title.
 - Dispatch the next child with `npm run polaris -- loop dispatch` or the execution adapter directly.
-- Use the adapter configured in `polaris.config.json` (`execution.adapter`). When `providerPolicy.worker.allowNativeSubagent: false`, native subagent tools are forbidden — always dispatch via the terminal adapter.
+- Use the adapter configured in `polaris.config.json` (`execution.adapter`). When `execution.providerPolicy.worker.allowNativeSubagent: false`, native subagent tools are forbidden — always dispatch via the terminal adapter.
 - In terminal mode, `scripts/polaris-run.sh` is the `terminal-cli` adapter and may invoke the configured CLI command.
 - Wait for the worker compact return before calling `npm run polaris -- loop continue`.
 - Do not push. Do not create a PR.
