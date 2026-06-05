@@ -23,6 +23,10 @@ export const DEFAULT_CONFIG: Omit<Required<PolarisConfig>, "canon" | "providers"
     sessionTerminationMode: "emit-marker",
     allowBranchDivergence: false,
   },
+  graph: {
+    outputPath: ".polaris/graph",
+    invalidationTriggers: ["repo-change", "config-change"],
+  },
   orchestration: {
     mode: "supervised",
     auto_finalize: false,
