@@ -13,7 +13,7 @@ The adapter boundary is the token boundary. Parent/orchestrator context must not
 
 | Mode | Use | Dispatch |
 |---|---|---|
-| `agent-subtask` | Interactive agent sessions **only when `allowNativeSubagent: true`** | Use the host agent's subtask/agent dispatch capability. **FORBIDDEN for polaris-run worker/orchestrator dispatch when `execution.providerPolicy.worker.allowNativeSubagent: false` or `execution.providerPolicy.orchestrator.allowNativeSubagent: false` applies to the active role** — do not search for, invoke, or attempt any native subagent tool. |
+| `agent-subtask` | Interactive agent sessions (requires `allowNativeSubagent: true`) | Use the host agent's subtask/agent dispatch capability. |
 | `terminal-cli` | Terminal, cron, CI wrapper; **required when the active polaris-run dispatch role sets `allowNativeSubagent: false`** | Use `scripts/polaris-run.sh` or equivalent shell subprocess with an explicitly configured CLI worker. |
 
 > **Prohibition (polaris-run worker and orchestrator dispatch only)**
