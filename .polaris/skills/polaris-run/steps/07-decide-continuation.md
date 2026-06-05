@@ -57,8 +57,8 @@ When another child remains open:
 - Report only compact state: last completed child ID, commit hash, next open child ID and title.
 - Dispatch the next child with `npm run polaris -- loop dispatch` or the execution adapter directly.
 - The dispatch adapter is `execution.adapter` from `polaris.config.json`.
-- When `execution.providerPolicy.worker.allowNativeSubagent: false`, verify that `execution.adapter` is `terminal-cli` before dispatching.
-- If `execution.providerPolicy.worker.allowNativeSubagent: false` and `execution.adapter` is `agent-subtask`, or if `execution.adapter` is any other unsupported adapter, STOP immediately and report a config/governance/runtime violation — do not attempt native subagent tools. The current runtime adapter registry supports only `terminal-cli` and `agent-subtask`.
+- Native subagent dispatch is only allowed when both `execution.providerPolicy.worker.allowNativeSubagent` AND `execution.providerPolicy.orchestrator.allowNativeSubagent` are `true`. When either flag is `false`, verify that `execution.adapter` is `terminal-cli` before dispatching.
+- If either `execution.providerPolicy.worker.allowNativeSubagent` or `execution.providerPolicy.orchestrator.allowNativeSubagent` is `false` and `execution.adapter` is `agent-subtask`, or if `execution.adapter` is any other unsupported adapter, STOP immediately and report a config/governance/runtime violation — do not attempt native subagent tools. The current runtime adapter registry supports only `terminal-cli` and `agent-subtask`.
 - In terminal mode, `scripts/polaris-run.sh` is the `terminal-cli` adapter and may invoke the configured CLI command.
 - Wait for the worker compact return before calling `npm run polaris -- loop continue`.
 - Do not push. Do not create a PR.
