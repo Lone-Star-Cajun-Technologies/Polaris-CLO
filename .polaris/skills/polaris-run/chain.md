@@ -139,7 +139,7 @@ At the CHECKPOINT boundary, the orchestrator accepts only the worker's CompactRe
 
 This gate does not change the step order. It only narrows what survives the worker-return boundary before `loop continue` runs.
 
-Interactive-agent mode uses an agent/subtask adapter, not shell nesting. Terminal/CI mode may use `scripts/polaris-run.sh` as the `terminal-cli` adapter.
+Dispatch uses the adapter configured in `polaris.config.json` (`execution.adapter`). When `adapter: "terminal-cli"`, use `scripts/polaris-run.sh` or the configured CLI command as a subprocess. **Never use a native subagent tool (e.g., the Agent tool in Claude Code) when `providerPolicy.*.allowNativeSubagent: false` is set** — this is an unconditional governance violation regardless of session mode.
 
 ## Polaris runtime integration
 
@@ -163,7 +163,7 @@ Track in `.taskchain_artifacts/polaris-run/current-state.json` under `context_bu
 
 | Counter | Meaning | Stop threshold |
 |---------|---------|----------------|
-| `children_completed` | Children fully Done this session | ≥ 1 → adapter handoff or STOP |
+| `children_completed` | Children fully Done this session | ≥ `budget.max_children` from `polaris.config.json` (default 6) → STOP (budget exhausted); the CLI runtime enforces this; do not stop before this threshold |
 | `files_touched_total` | Total files changed this session | > 50 → STOP (safety) |
 | `last_child_files_touched` | Files changed by last child | > 20 → STOP (safety) |
 
