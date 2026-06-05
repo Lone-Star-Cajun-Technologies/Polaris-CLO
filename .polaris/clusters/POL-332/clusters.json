@@ -1,0 +1,37 @@
+{
+  "source_id": "POL-332",
+  "analyze_source_id": "POL-325",
+  "source_type": "linear",
+  "created_at": "2026-06-05T15:05:15.000Z",
+  "clusters": [
+    {
+      "cluster_id": "cluster-01",
+      "children": [
+        {
+          "id": "POL-333",
+          "title": "Analyze CodeGraph source architecture and data model",
+          "session_type": "analyze",
+          "blockedBy": []
+        },
+        {
+          "id": "POL-334",
+          "title": "Map Polaris repository intelligence capability gaps vs CodeGraph",
+          "session_type": "analyze",
+          "blockedBy": ["POL-333"]
+        },
+        {
+          "id": "POL-335",
+          "title": "Evaluate CodeGraph integration options (A–D) and governance implications",
+          "session_type": "analyze",
+          "blockedBy": ["POL-333", "POL-334"]
+        },
+        {
+          "id": "POL-336",
+          "title": "Produce SmartDocs recommendation document for CodeGraph integration",
+          "session_type": "analyze",
+          "blockedBy": ["POL-333", "POL-334", "POL-335"]
+        }
+      ]
+    }
+  ]
+}
