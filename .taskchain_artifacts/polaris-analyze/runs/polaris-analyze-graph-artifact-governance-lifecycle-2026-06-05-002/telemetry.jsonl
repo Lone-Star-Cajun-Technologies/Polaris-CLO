@@ -1,0 +1,4 @@
+{"event":"run-start","run_id":"polaris-analyze-graph-artifact-governance-lifecycle-2026-06-05-002","timestamp":"2026-06-05T16:35:00.000Z","issue_id":"POL-340","issue_title":"Implement graph artifact governance and lifecycle controls in Polaris runtime"}
+{"event":"step-complete","run_id":"polaris-analyze-graph-artifact-governance-lifecycle-2026-06-05-002","step":"01-fetch-and-orient","timestamp":"2026-06-05T16:35:05.000Z"}
+{"event":"step-complete","run_id":"polaris-analyze-graph-artifact-governance-lifecycle-2026-06-05-002","step":"05-create-cluster-plan","timestamp":"2026-06-05T16:37:30.000Z"}
+{"event":"step-complete","run_id":"polaris-analyze-graph-artifact-governance-lifecycle-2026-06-05-002","step":"06-final-report","timestamp":"2026-06-05T16:37:35.000Z"}
