@@ -163,7 +163,7 @@ export function buildWorkerPrompt(input: WorkerPromptInput): WorkerPromptResult 
 
   // ── State + telemetry (governance — always present) ───────────────────────
   lines.push('## Governance');
-  lines.push(`- Update ${input.stateFile}: move "${input.issueId}" from open_children to completed_children.`);
+  lines.push(`- Do NOT modify open_children or completed_children in ${input.stateFile}. The parent runtime (loop continue) owns state transitions.`);
   lines.push(`- Append a telemetry event to ${input.telemetryFile}.`);
   lines.push('');
 

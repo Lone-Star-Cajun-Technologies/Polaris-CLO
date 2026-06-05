@@ -546,14 +546,9 @@ export function createFinalizeCommand(handlers: FinalizeCommandHandlers = {}): C
     .option("--skip-librarian", "skip the Closeout Librarian gate (backward compatibility only)")
     .action((options: { repoRoot: string; stateFile?: string; dryRun?: boolean; skipDelivery?: boolean; skipLibrarian?: boolean }) => {
       const repoRoot = options.repoRoot;
-      if (!options.stateFile) {
-        process.stderr.write(
-          `finalize error: --state-file is required. Specify a canonical state path such as ` +
-          `.polaris/clusters/<cluster-id>/state.json\n`
-        );
-        process.exit(1);
-      }
-      const stateFile = options.stateFile;
+      const stateFile =
+        options.stateFile ??
+        join(repoRoot, ".taskchain_artifacts", "polaris-run", "current-state.json");
       finalizeHandler({ repoRoot, stateFile, dryRun: options.dryRun, skipDelivery: options.skipDelivery, skipLibrarian: options.skipLibrarian })
         .catch((err: unknown) => {
           process.stderr.write(`finalize error: ${err instanceof Error ? err.message : String(err)}\n`);

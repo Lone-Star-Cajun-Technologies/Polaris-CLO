@@ -57,7 +57,19 @@ function verifyCompletionEvidenceForContinue(
   repoRoot: string,
 ): ContinueEvidenceResult {
   if (state.completed_children.includes(completedChild)) {
-    return { ok: true, commit: state.last_commit ?? "", rawValidation: undefined, resultFile: "" };
+    // Worker pre-moved itself into completed_children (protocol violation, but tolerated).
+    // If a result file is available, fall through to full evidence check so we get a real commit/validation.
+    // Only short-circuit when there is genuinely no result file to read.
+    const resultFile = resolveResultFileForChild(state, completedChild);
+    const resolvedResultFile = resultFile
+      ? isAbsolute(resultFile)
+        ? resultFile
+        : resolve(repoRoot, resultFile)
+      : null;
+    if (!resolvedResultFile || !existsSync(resolvedResultFile)) {
+      return { ok: true, commit: state.last_commit ?? "", rawValidation: undefined, resultFile: "" };
+    }
+    // Fall through to full evidence check below.
   }
 
   const resultFile = resolveResultFileForChild(state, completedChild);
