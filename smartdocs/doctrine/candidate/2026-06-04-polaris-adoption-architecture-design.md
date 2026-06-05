@@ -1,8 +1,10 @@
+<!-- polaris:doctrine-candidate -->
 ---
 status: raw
 created: 2026-06-04
 title: Polaris Adoption Architecture Design
 tags: [adoption, architecture, cognition, token-burn, doctrine]
+superseded_by: smartdocs/doctrine/candidate/2026-06-05-adoption-architecture-final-decisions.md
 ---
 
 # Polaris Adoption Architecture Design

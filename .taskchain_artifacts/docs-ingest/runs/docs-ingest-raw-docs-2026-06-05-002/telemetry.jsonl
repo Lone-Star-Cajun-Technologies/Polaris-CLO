@@ -1,0 +1,10 @@
+{"event":"run-start","run_id":"docs-ingest-raw-docs-2026-06-05-002","prior_run_id":"docs-ingest-adoption-architecture-2026-06-05-001","timestamp":"2026-06-05T05:16:00Z"}
+{"event":"step-complete","run_id":"docs-ingest-raw-docs-2026-06-05-002","step":"01-orient-ingest","files":2,"timestamp":"2026-06-05T05:16:00Z"}
+{"event":"docs-ingest-classified","run_id":"docs-ingest-raw-docs-2026-06-05-002","file":"smartdocs/raw/2026-06-04-polaris-adoption-architecture-design.md","class":"doctrine-candidate","confidence":"high","note":"superseded by 2026-06-05-adoption-architecture-final-decisions.md","target":"smartdocs/doctrine/candidate/","approval_required":false,"timestamp":"2026-06-05T05:16:15Z"}
+{"event":"docs-ingest-classified","run_id":"docs-ingest-raw-docs-2026-06-05-002","file":"smartdocs/raw/2026-06-04-adoption-plan-1-command-surface-agent-files.md","class":"spec-raw","confidence":"high","note":"completed implementation plan — informational record, leave in raw","target":"smartdocs/raw/","approval_required":false,"auto_place":false,"timestamp":"2026-06-05T05:16:15Z"}
+{"event":"step-complete","run_id":"docs-ingest-raw-docs-2026-06-05-002","step":"02-classify-batch","timestamp":"2026-06-05T05:16:15Z"}
+{"event":"step-complete","run_id":"docs-ingest-raw-docs-2026-06-05-002","step":"03-conflict-check","conflicts":0,"timestamp":"2026-06-05T05:16:28Z"}
+{"event":"doctrine-candidate-proposed","run_id":"docs-ingest-raw-docs-2026-06-05-002","file":"smartdocs/doctrine/candidate/2026-06-04-polaris-adoption-architecture-design.md","note":"superseded_by June 5 doc","timestamp":"2026-06-05T05:17:00Z"}
+{"event":"docs-ingest-held","run_id":"docs-ingest-raw-docs-2026-06-05-002","file":"smartdocs/raw/2026-06-04-adoption-plan-1-command-surface-agent-files.md","reason":"spec-raw: completed implementation plan, informational record","timestamp":"2026-06-05T05:17:00Z"}
+{"event":"step-complete","run_id":"docs-ingest-raw-docs-2026-06-05-002","step":"04-place-and-link","timestamp":"2026-06-05T05:17:00Z"}
+{"event":"docs-ingest-complete","run_id":"docs-ingest-raw-docs-2026-06-05-002","placed":1,"held":1,"timestamp":"2026-06-05T05:17:15Z"}
