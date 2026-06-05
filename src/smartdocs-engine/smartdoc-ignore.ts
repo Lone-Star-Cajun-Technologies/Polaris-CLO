@@ -5,6 +5,7 @@ import ignore from "ignore";
 export const DEFAULT_SMARTDOCIGNORE_PATTERNS = [
   ".taskchain_artifacts/**",
   ".polaris/**",
+  ".polaris/graph/**",
   ".codex/**",
   ".claude/**",
   ".github/**",
@@ -36,6 +37,8 @@ export const DEFAULT_SMARTDOCIGNORE_PATTERNS = [
   "**/POLARIS.md",
   "SUMMARY.md",
   "**/SUMMARY.md",
+  "*.sqlite",
+  "*.db",
 ];
 
 export interface IngestEligibility {

@@ -1,0 +1,13 @@
+{
+  "child_id": "POL-341",
+  "status": "success",
+  "commit": "f41af08552cc28fe88e07b6d2a5e095e2f93adfe",
+  "validation": {
+    "passed": [
+      "npm run build",
+      "npx vitest run src/config/"
+    ]
+  },
+  "next_recommended_action": "Investigate the pre-existing src/loop/polaris-run-docs.test.ts expectation mismatch, then rerun npm test.",
+  "run_id": "polaris-run-pol-340-2026-06-05-001"
+}

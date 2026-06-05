@@ -29,6 +29,10 @@ function inRange(value: number, min: number, max: number): boolean {
 }
 
 const SUPPORTED_COMPACTION_PROVIDER_IDS = ["caveman", "gitnexus"] as const;
+const SUPPORTED_GRAPH_INVALIDATION_TRIGGERS = [
+  "repo-change",
+  "config-change",
+] as const;
 const SUPPORTED_EXECUTION_ROLES = [
   "orchestrator",
   "startup",
@@ -178,6 +182,41 @@ export function validateConfig(config: unknown): ValidationResult {
         if (!isString(config.loop.sessionTerminationMode) || !["emit-marker", "exit-0"].includes(config.loop.sessionTerminationMode)) {
           result.valid = false;
           result.errors.push('loop.sessionTerminationMode must be either "emit-marker" or "exit-0"');
+        }
+      }
+    }
+  }
+
+  // graph
+  if ("graph" in config && config.graph !== undefined) {
+    if (!isPlainObject(config.graph)) {
+      result.valid = false;
+      result.errors.push("graph must be an object");
+    } else {
+      if ("outputPath" in config.graph && config.graph.outputPath !== undefined) {
+        if (!isString(config.graph.outputPath)) {
+          result.valid = false;
+          result.errors.push("graph.outputPath must be a string");
+        }
+      }
+      if (
+        "invalidationTriggers" in config.graph &&
+        config.graph.invalidationTriggers !== undefined
+      ) {
+        if (
+          !Array.isArray(config.graph.invalidationTriggers) ||
+          !config.graph.invalidationTriggers.every(
+            (trigger) =>
+              isString(trigger) &&
+              SUPPORTED_GRAPH_INVALIDATION_TRIGGERS.includes(
+                trigger as typeof SUPPORTED_GRAPH_INVALIDATION_TRIGGERS[number],
+              ),
+          )
+        ) {
+          result.valid = false;
+          result.errors.push(
+            'graph.invalidationTriggers must contain only "repo-change" or "config-change"',
+          );
         }
       }
     }
@@ -595,6 +634,7 @@ export function validateConfig(config: unknown): ValidationResult {
     "repo",
     "map",
     "loop",
+    "graph",
     "execution",
     "finalize",
     "tracker",

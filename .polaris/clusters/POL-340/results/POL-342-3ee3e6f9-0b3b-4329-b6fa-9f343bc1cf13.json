@@ -1,0 +1,16 @@
+{
+  "child_id": "POL-342",
+  "status": "failure",
+  "commit": "2dcd82c0bfdea4b826e6fc4ea4e560ae42845abb",
+  "validation": {
+    "passed": [
+      "npm run build",
+      "npx vitest run src/cognition/ src/smartdocs-engine/ src/map/"
+    ],
+    "failed": [
+      "npm test"
+    ]
+  },
+  "next_recommended_action": "Fix the pre-existing failure in src/loop/polaris-run-docs.test.ts, then rerun npm test.",
+  "run_id": "polaris-run-pol-340-2026-06-05-001"
+}

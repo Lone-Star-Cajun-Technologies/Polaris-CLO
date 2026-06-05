@@ -46,6 +46,11 @@ export function runMapValidate(
   const config = loadConfig(repoRoot);
   const outputPath = resolve(repoRoot, config.repo.sidecarOutputPath ?? ".polaris/map");
   const confidenceThreshold = config.map.confidenceThreshold ?? 0.75;
+  const graphOutputPath = (config.graph?.outputPath ?? ".polaris/graph")
+    .replace(/\\/g, "/")
+    .replace(/\/+$/, "");
+  const isGraphArtifactPath = (filePath: string): boolean =>
+    filePath === graphOutputPath || filePath.startsWith(`${graphOutputPath}/`);
 
   const routes = readFileRoutes(outputPath);
   const needsReview = readNeedsReview(outputPath);
@@ -90,6 +95,11 @@ export function runMapValidate(
   const allEntries = [...Object.entries(routes), ...Object.entries(needsReview)];
 
   for (const [filePath, entry] of allEntries) {
+    // Graph output artifacts are generated runtime data and exempt from atlas validation.
+    if (isGraphArtifactPath(filePath)) {
+      continue;
+    }
+
     // 2. Missing source files
     if (!existsSync(resolve(repoRoot, filePath))) {
       missing.push(filePath);
@@ -127,12 +137,13 @@ export function runMapValidate(
   }
 
   // 3. Low-confidence (needs-review count)
-  const needsReviewCount = Object.keys(needsReview).length;
+  const needsReviewCount = Object.keys(needsReview).filter((filePath) => !isGraphArtifactPath(filePath)).length;
 
   // Coverage: indexed / (indexed + needs-review + tracked-not-indexed)
-  // Only count routes for indexedCount, excluding missing files
-  const indexedCount = Object.keys(routes).length - missing.filter(f => routes[f]).length;
-  const trackedCount = Object.keys(exemptions).length;
+  // Only count non-graph routes for indexedCount, excluding missing files.
+  const indexedCount = Object.keys(routes).filter((filePath) => !isGraphArtifactPath(filePath)).length
+    - missing.filter((filePath) => routes[filePath] && !isGraphArtifactPath(filePath)).length;
+  const trackedCount = Object.keys(exemptions).filter((filePath) => !isGraphArtifactPath(filePath)).length;
   const total = indexedCount + needsReviewCount + trackedCount;
   const coveragePct = total > 0 ? Math.round((indexedCount / total) * 100 * 10) / 10 : 0;
 
@@ -171,7 +182,9 @@ export function runMapValidate(
   }
 
   // Low-confidence entries warning
-  const lowConfidence = Object.entries(routes).filter(([, e]) => e.confidence < confidenceThreshold);
+  const lowConfidence = Object.entries(routes).filter(
+    ([filePath, e]) => !isGraphArtifactPath(filePath) && e.confidence < confidenceThreshold,
+  );
   if (lowConfidence.length > 0) {
     console.log(`${warnMark} ${lowConfidence.length} indexed entries below confidence threshold`);
   }

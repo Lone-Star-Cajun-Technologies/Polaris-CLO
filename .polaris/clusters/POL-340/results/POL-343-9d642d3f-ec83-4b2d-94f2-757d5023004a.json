@@ -1,0 +1,16 @@
+{
+  "child_id": "POL-343",
+  "status": "success",
+  "commit": "c2ed86a38bdfa25380fccb2bb222dc526d4ef635",
+  "validation": {
+    "passed": [
+      "npm run build",
+      "npx vitest run src/graph/"
+    ],
+    "failed": [
+      "npm test"
+    ]
+  },
+  "next_recommended_action": "Fix or reconcile the existing out-of-scope failure in src/loop/polaris-run-docs.test.ts, then rerun npm test and seal POL-343 as success.",
+  "run_id": "polaris-run-pol-340-2026-06-05-001"
+}

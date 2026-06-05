@@ -125,6 +125,13 @@ export interface SkillPacketConfig {
   allow_cross_provider_delegation?: boolean;
 }
 
+export type GraphInvalidationTrigger = "repo-change" | "config-change";
+
+export interface GraphConfig {
+  outputPath?: string;
+  invalidationTriggers?: GraphInvalidationTrigger[];
+}
+
 export interface PolarisConfig {
   version?: string;
   repo?: {
@@ -148,6 +155,7 @@ export interface PolarisConfig {
     sessionTerminationMode?: "emit-marker" | "exit-0";
     allowBranchDivergence?: boolean;
   };
+  graph?: GraphConfig;
   orchestration?: {
     /**
      * Orchestration mode.

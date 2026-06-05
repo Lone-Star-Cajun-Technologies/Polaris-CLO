@@ -1,29 +1,41 @@
-<!-- polaris:draft -->
 # Summary: src
 
-> Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
-
 ## Purpose
-<!-- One-line statement of what this folder does. -->
+Application source root for Polaris. The tree contains command entrypoints, loop/runtime orchestration, config loading and validation, cognition/map/Smart Docs governance, graph governance, finalization, tracker adapters, and shared utilities.
 
 ## Core Concepts
-<!-- 3–7 key concepts a reader needs before diving into source. -->
+- Folder-local guidance lives beside implementation in `POLARIS.md`.
+- Cognition and map are read-only analysis layers; they report signals, not writes.
+- Smart Docs governs canonical documentation under `smartdocs/`.
+- Graph governance manages `.polaris/graph/` runtime outputs and invalidation state.
+- Config changes must flow through `src/config/` and the JSON schema/validator.
 
 ## Architectural Role
-<!-- How this folder fits into the larger system. -->
+`src/` is the implementation boundary for the product. The subfolders are intentionally split by concern so workers can edit one subsystem without reinterpreting the rest of the runtime.
 
 ## Key Constraints
-<!-- The most important non-obvious behavioral limits. -->
+- Avoid cross-route coupling; keep shared contracts in types or dedicated adapters.
+- Do not write runtime outputs into source folders.
+- Graph artifacts under `.polaris/graph/` are generated data and excluded from atlas validation and Smart Docs ingest.
+- Route docs should describe current behavior, not history.
 
 ## Important Relationships
-<!-- Upstream/downstream dependencies on other folders. -->
+- `src/loop/` coordinates child execution and invokes cognition/map validation after children complete.
+- `src/config/` defines the config surface consumed by all other routes.
+- `src/cognition/` and `src/map/` provide read-only detection signals for documentation and atlas maintenance.
+- `src/smartdocs-engine/` ingests/promotes docs and maintains canonical authority structure.
+- `src/graph/` writes graph notices and invalidation state.
 
 ## Current State
-<!-- What is implemented, what is not yet, known gaps. -->
+The tree includes the graph governance surface plus config support for `graph.outputPath` and `graph.invalidationTriggers`. Cognition and atlas validation now treat `.polaris/graph/` as generated runtime output.
 
 ## Known Drift
-<!-- Places where the summary may be stale (honesty field). -->
+Draft markers remain in some top-level folder docs when a subroute has not yet been fully reconciled.
 
 ## Linked Canonical Sources
 - [POLARIS.md](POLARIS.md)
-<!-- Links to spec files, doctrine, etc. -->
+- `src/config/POLARIS.md`
+- `src/cognition/POLARIS.md`
+- `src/map/POLARIS.md`
+- `src/graph/POLARIS.md`
+- `src/smartdocs-engine/POLARIS.md`

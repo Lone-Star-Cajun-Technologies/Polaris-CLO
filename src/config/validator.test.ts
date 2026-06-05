@@ -1,6 +1,68 @@
 import { describe, it, expect } from "vitest";
 import { validateConfig } from "./validator.js";
 
+describe("validateConfig — graph", () => {
+  it("accepts config with no graph field", () => {
+    const result = validateConfig({ version: "1.0" });
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it("accepts empty graph object", () => {
+    const result = validateConfig({ graph: {} });
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it("accepts valid graph output path and invalidation triggers", () => {
+    const result = validateConfig({
+      graph: {
+        outputPath: ".polaris/graph",
+        invalidationTriggers: ["repo-change", "config-change"],
+      },
+    });
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it("rejects graph that is not an object", () => {
+    const result = validateConfig({ graph: ".polaris/graph" });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("graph must be an object");
+  });
+
+  it("rejects graph.outputPath that is not a string", () => {
+    const result = validateConfig({ graph: { outputPath: 42 } });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("graph.outputPath must be a string");
+  });
+
+  it("rejects graph.invalidationTriggers that is not an array", () => {
+    const result = validateConfig({
+      graph: { invalidationTriggers: "repo-change" },
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      'graph.invalidationTriggers must contain only "repo-change" or "config-change"',
+    );
+  });
+
+  it("rejects unsupported graph invalidation trigger values", () => {
+    const result = validateConfig({
+      graph: { invalidationTriggers: ["repo-change", "manual"] },
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      'graph.invalidationTriggers must contain only "repo-change" or "config-change"',
+    );
+  });
+
+  it("does not warn on the graph key", () => {
+    const result = validateConfig({ graph: { outputPath: ".polaris/graph" } });
+    expect(result.warnings).not.toContain('Unknown config field: "graph"');
+  });
+});
+
 describe("validateConfig — providers", () => {
   it("accepts config with no providers field", () => {
     const result = validateConfig({ version: "1.0" });

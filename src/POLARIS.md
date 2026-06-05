@@ -1,32 +1,41 @@
-<!-- polaris:draft -->
 # src
-
-> Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
 
 ## Purpose
 
-<!-- One paragraph describing what this folder does. -->
+The `src/` tree contains the Polaris application source: CLI entrypoints, runtime orchestration, config loading and validation, cognition/map/Smart Docs governance, graph governance, tracker adapters, finalization, and shared utilities.
 
 ## What belongs here
 
-<!-- Bulleted file list of contents. -->
+- Route folders such as `cli/`, `loop/`, `runtime/`, `config/`, `cognition/`, `map/`, `smartdocs-engine/`, `graph/`, `finalize/`, and `tracker/`
+- Shared support modules such as `mcp/`, `types/`, `utils/`, `ignore/`, `cluster-state/`, and `skill-packet/`
 
 ## What does not belong here
 
-<!-- Explicit exclusions of files or responsibilities. -->
+- Generated runtime artifacts under `.polaris/`
+- Canonical Smart Docs content under `smartdocs/`
+- Repo build outputs or caches that are not checked-in source
 
 ## Editing rules
 
-<!-- Behavioral constraints for agents and humans. -->
+- Keep route responsibilities isolated; prefer editing the owning subfolder over cross-route imports.
+- Use the owning folder's POLARIS.md before changing code in that folder.
+- Graph governance outputs live under `.polaris/graph/` and are runtime data, not source files.
 
 ## Architecture assumptions
 
-<!-- What the code assumes about the world. -->
+- `src/` is the checked-in source root for the Polaris runtime.
+- Cognition, map, Smart Docs, and graph governance are separate subsystems with their own folder-level contracts.
+- New config or governance surfaces must be reflected in the relevant subfolder docs.
 
 ## Read before editing
 
-<!-- Links to canonical sources (doctrine, specs). -->
+- `src/config/POLARIS.md`
+- `src/cognition/POLARIS.md`
+- `src/map/POLARIS.md`
+- `src/graph/POLARIS.md`
+- `src/smartdocs-engine/POLARIS.md`
+- `src/SUMMARY.md`
 
 ## Related routes
 
-<!-- Atlas route pointer to sibling or parent folders. -->
+- `src/*`

@@ -1,0 +1,90 @@
+{
+  "schema_version": "1.0",
+  "role": "closeout-librarian",
+  "run_id": "polaris-run-pol-340-2026-06-05-001",
+  "dispatch_id": "b7ff5002-9e0b-44f5-951e-b8e80f2802c3",
+  "cluster_id": "POL-340",
+  "status": "success",
+  "commit_sha": "3b8600795288174387eee2595c35e25fd599ddac",
+  "commit_message": "docs(closeout): reconcile cognition for cluster POL-340\n\nRun: polaris-run-pol-340-2026-06-05-001\nCluster: POL-340\nChildren: POL-341, POL-342, POL-343\nFiles updated:\n- POLARIS.md: 5 files\n- SUMMARY.md: 5 files\n- docs ingested: 0\n- links repaired: 0",
+  "files_committed": [
+    "src/POLARIS.md",
+    "src/SUMMARY.md",
+    "src/cognition/POLARIS.md",
+    "src/cognition/SUMMARY.md",
+    "src/config/POLARIS.md",
+    "src/config/SUMMARY.md",
+    "src/map/POLARIS.md",
+    "src/map/SUMMARY.md",
+    "src/smartdocs-engine/POLARIS.md",
+    "src/smartdocs-engine/SUMMARY.md"
+  ],
+  "polaris_md_updates": [
+    {
+      "file": "src/POLARIS.md",
+      "action": "update",
+      "change_summary": "Replaced the seed draft with a current source-root guide covering the new graph governance surface and the main src subroutes."
+    },
+    {
+      "file": "src/cognition/POLARIS.md",
+      "action": "update",
+      "change_summary": "Documented `.polaris/graph/` as a generated runtime descendant excluded from cognition scanning."
+    },
+    {
+      "file": "src/config/POLARIS.md",
+      "action": "update",
+      "change_summary": "Added the graph config contract, including output path and invalidation triggers consumed by graph governance."
+    },
+    {
+      "file": "src/map/POLARIS.md",
+      "action": "update",
+      "change_summary": "Recorded that `.polaris/graph/` artifacts are runtime data ignored by atlas validation and review bookkeeping."
+    },
+    {
+      "file": "src/smartdocs-engine/POLARIS.md",
+      "action": "update",
+      "change_summary": "Noted that generated graph runtime artifacts are excluded by Smart Docs ignore rules and ingest/seed flows."
+    }
+  ],
+  "summary_md_updates": [
+    {
+      "file": "src/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Replaced the draft template with a current source-tree snapshot that includes graph governance and the updated subsystem relationships."
+    },
+    {
+      "file": "src/cognition/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Added the `.polaris/graph/` exclusion to the cognition runtime-surface summary."
+    },
+    {
+      "file": "src/config/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Captured the new graph config section and the current config contract in the summary snapshot."
+    },
+    {
+      "file": "src/map/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Recorded that generated graph artifacts are ignored by atlas validation and review counts."
+    },
+    {
+      "file": "src/smartdocs-engine/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Added the graph runtime artifact ignore rule to the Smart Docs pipeline snapshot."
+    }
+  ],
+  "docs_ingested": [],
+  "docs_archived": [],
+  "yaml_updates": [],
+  "cognition_archived": [],
+  "link_validation": {
+    "total_checked": 0,
+    "valid": 0,
+    "broken": 0,
+    "repaired": 0,
+    "unrepairable": []
+  },
+  "blockers": [],
+  "reconciled_at": "2026-06-05T12:25:16-05:00",
+  "evidence_summary": "Reconciled the source folder guidance and summaries to reflect the new graph governance surface, config.graph settings, and generated-artifact exclusions across cognition, map, and Smart Docs. No docs were ingested, archived, or link-repaired, and no blockers remained."
+}

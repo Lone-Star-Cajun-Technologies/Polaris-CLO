@@ -42,6 +42,9 @@ describe("loadConfig", () => {
             fallback: ["polaris-map"],
           },
         },
+        graph: {
+          outputPath: ".custom/graph",
+        },
       }),
     );
 
@@ -59,6 +62,23 @@ describe("loadConfig", () => {
     expect(config.providers.repoAnalysis).toEqual({
       preferred: "gitnexus",
       fallback: ["polaris-map"],
+    });
+    expect(config.graph).toEqual({
+      outputPath: ".custom/graph",
+      invalidationTriggers: ["repo-change", "config-change"],
+    });
+  });
+
+  it("loads default graph artifact governance config", () => {
+    mockedReadFileSync.mockImplementation(() => {
+      throw Object.assign(new Error("missing"), { code: "ENOENT" });
+    });
+
+    const config = loadConfig("/fake-repo");
+
+    expect(config.graph).toEqual({
+      outputPath: ".polaris/graph",
+      invalidationTriggers: ["repo-change", "config-change"],
     });
   });
 });

@@ -19,6 +19,7 @@ The map subsystem is the Polaris sidecar atlas. It scans the repository, infers 
 - Config loading — belongs in `src/config/`
 - CLI entry point — belongs in `src/cli/`
 - Finalization delivery steps — belongs in `src/finalize/`
+- Graph governance runtime output — belongs in `.polaris/graph/`, not the atlas
 
 ## Editing rules
 
@@ -27,6 +28,7 @@ The map subsystem is the Polaris sidecar atlas. It scans the repository, infers 
 - `computeInstructionCoverage` counts entries with `instructionFile !== undefined`. Do not filter by classification.
 - All atlas JSON writes go through the helpers in `atlas.ts` (`writeFileRoutes`, `writeAtlasIndex`, etc.) — never write directly with `fs`.
 - `needs-review.json` entries must not silently overwrite `file-routes.json` entries on subsequent index runs.
+- `runMapValidate` ignores `.polaris/graph/` artifacts for missing-file, coverage, and low-confidence checks because they are generated graph runtime data.
 
 ## Route model
 
@@ -34,12 +36,14 @@ The map subsystem is the Polaris sidecar atlas. It scans the repository, infers 
 - `instructionFile` is resolved at index/update time, not at query time.
 - Confidence threshold for auto-write is configurable via `config.map.autoWriteAbove` (default `0.85`).
 - The map subsystem never directly executes git commands — it receives changed file paths as arguments or via the update helper.
+- Generated graph output under `.polaris/graph/` is excluded from atlas validation and review bookkeeping.
 
 ## Read before editing
 
 - `docs/Polaris/spec/local-instructions-layer.md` — full `instructionFile` linkage model and coverage metric spec
 - `docs/spec/polaris-architecture-spec.md` — how map fits into the loop/map/finalize triad
 - `src/config/schema.ts` — `PolarisConfig` fields that affect map behavior (`map.autoWriteAbove`, `repo.sidecarOutputPath`)
+- `src/graph/governance.ts` — graph runtime output that atlas validation must ignore
 
 ## Related routes
 

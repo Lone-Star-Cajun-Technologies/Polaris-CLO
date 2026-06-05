@@ -1,108 +1,57 @@
 {
   "schema_version": "1.0",
-  "run_id": "polaris-run-pol-313-2026-06-04-001",
-  "cluster_id": "POL-313",
+  "run_id": "polaris-run-pol-340-2026-06-05-001",
+  "cluster_id": "POL-340",
   "skill": "polaris-run",
   "branch": "",
   "session_type": "implement",
-  "active_child": "",
+  "active_child": "POL-341",
   "completed_children": [
-    "POL-314",
-    "POL-315",
-    "POL-316"
+    "POL-341"
   ],
-  "open_children": [],
-  "step_cursor": "checkpoint",
+  "open_children": [
+    "POL-342",
+    "POL-343"
+  ],
+  "step_cursor": "dispatch",
   "context_budget": {
-    "children_completed": 3,
+    "children_completed": 0,
     "max_children_per_session": 1
   },
-  "status": "complete",
-  "next_open_child": null,
+  "status": "running",
+  "next_open_child": "POL-342",
   "artifact_dir": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run",
   "dispatch_boundary": {
-    "dispatch_epoch": 3,
+    "dispatch_epoch": 1,
     "continue_epoch": 0,
-    "last_dispatched_child": "POL-316"
+    "last_dispatched_child": "POL-341"
   },
   "run_bootstrap_seal": {
     "sealer": "polaris-loop-bootstrap",
-    "run_id": "polaris-run-pol-313-2026-06-04-001",
-    "cluster_id": "POL-313",
-    "open_children_sha": "7f8833175232e3b460baa857d93e1a0b177c0648b632388971e0b0add78e36f8",
-    "sealed_at": "2026-06-04T04:40:17.631Z"
+    "run_id": "polaris-run-pol-340-2026-06-05-001",
+    "cluster_id": "POL-340",
+    "open_children_sha": "d83f8ad325fbac46d465bfef30a499c48d5f1b152c1408db5600b0caf5d7eb7b",
+    "sealed_at": "2026-06-05T16:57:01.486Z"
   },
   "open_children_meta": {
-    "POL-314": {
+    "POL-341": {
       "dispatch_record": {
-        "dispatch_id": "d5a3a719-83e7-4d2d-9aaa-e86915fbb8fa",
-        "child_id": "POL-314",
-        "run_id": "polaris-run-pol-313-2026-06-04-001",
-        "cluster_id": "POL-313",
-        "packet_path": ".polaris/clusters/POL-313/packets/POL-314-942eca2c-c1a3-43ee-8856-6d11a6ade1d0.json",
-        "expected_result_path": ".polaris/clusters/POL-313/results/POL-314-942eca2c-c1a3-43ee-8856-6d11a6ade1d0.json",
+        "dispatch_id": "18311e02-65cb-4b43-83a5-b61b2c924050",
+        "child_id": "POL-341",
+        "run_id": "polaris-run-pol-340-2026-06-05-001",
+        "cluster_id": "POL-340",
+        "packet_path": ".polaris/clusters/POL-340/packets/POL-341-afaf3ed4-3ec2-452d-9d7f-1103571845d8.json",
+        "expected_result_path": ".polaris/clusters/POL-340/results/POL-341-afaf3ed4-3ec2-452d-9d7f-1103571845d8.json",
         "provider": "copilot",
-        "provider_selection_reason": "policy-filtered-rotation",
+        "provider_selection_reason": "role-policy",
         "providers_tried": [
           "copilot"
         ],
-        "dispatched_at": "2026-06-04T04:40:54.041Z",
+        "dispatched_at": "2026-06-05T16:57:17.327Z",
         "status": "dispatched",
         "dispatch_mode": "direct-worker",
         "runtime_state": "packet-created",
-        "worker_id": "6817a2c1-7004-4e91-8956-8a63ebfd8638",
-        "session_id": null,
-        "attachment_capable": false,
-        "role": "worker",
-        "role_authority": "implementation",
-        "may_implement": true,
-        "session_type": "implementation"
-      }
-    },
-    "POL-315": {
-      "dispatch_record": {
-        "dispatch_id": "74e93e20-94d6-44cb-9c1a-abb05b91cd6a",
-        "child_id": "POL-315",
-        "run_id": "polaris-run-pol-313-2026-06-04-001",
-        "cluster_id": "POL-313",
-        "packet_path": ".polaris/clusters/POL-313/packets/POL-315-6c1850ca-18e1-45ff-9dbf-b0b12f5d509d.json",
-        "expected_result_path": ".polaris/clusters/POL-313/results/POL-315-6c1850ca-18e1-45ff-9dbf-b0b12f5d509d.json",
-        "provider": "copilot",
-        "provider_selection_reason": "policy-filtered-rotation",
-        "providers_tried": [
-          "copilot"
-        ],
-        "dispatched_at": "2026-06-04T04:48:19.751Z",
-        "status": "dispatched",
-        "dispatch_mode": "direct-worker",
-        "runtime_state": "packet-created",
-        "worker_id": "3bc1d981-8948-4832-83b9-8e411661c02b",
-        "session_id": null,
-        "attachment_capable": false,
-        "role": "worker",
-        "role_authority": "implementation",
-        "may_implement": true,
-        "session_type": "implementation"
-      }
-    },
-    "POL-316": {
-      "dispatch_record": {
-        "dispatch_id": "09da9273-679d-4401-bb42-59054ad5fec5",
-        "child_id": "POL-316",
-        "run_id": "polaris-run-pol-313-2026-06-04-001",
-        "cluster_id": "POL-313",
-        "packet_path": ".polaris/clusters/POL-313/packets/POL-316-82b96bbe-0b73-411d-9e58-6dd4b2a80e41.json",
-        "expected_result_path": ".polaris/clusters/POL-313/results/POL-316-82b96bbe-0b73-411d-9e58-6dd4b2a80e41.json",
-        "provider": "copilot",
-        "provider_selection_reason": "policy-filtered-rotation",
-        "providers_tried": [
-          "copilot"
-        ],
-        "dispatched_at": "2026-06-04T04:51:16.327Z",
-        "status": "dispatched",
-        "dispatch_mode": "direct-worker",
-        "runtime_state": "packet-created",
-        "worker_id": "68fe0ef6-680a-4d26-b90a-a0b21e0ddd80",
+        "worker_id": "306e75c5-e99e-4d57-af6a-e1b6093252d2",
         "session_id": null,
         "attachment_capable": false,
         "role": "worker",
@@ -111,28 +60,5 @@
         "session_type": "implementation"
       }
     }
-  },
-  "completed_children_results": {
-    "POL-314": {
-      "status": "done",
-      "validation": "passed",
-      "commit": "9c2cbdecb8cbb4303e948bf6bb92aa5c10828bfc",
-      "next_recommended_action": "continue"
-    },
-    "POL-315": {
-      "status": "done",
-      "validation": "passed",
-      "commit": "a6186ca2c72972f892cefedf04b8161d1edfca4c",
-      "next_recommended_action": "continue"
-    },
-    "POL-316": {
-      "status": "done",
-      "validation": "passed",
-      "commit": "e4b1c06d4645ca113aff9e263b65199f6e349055",
-      "next_recommended_action": "continue"
-    }
-  },
-  "last_commit": "e4b1c06d4645ca113aff9e263b65199f6e349055",
-  "updated_at": "2026-06-04T05:00:13.766Z",
-  "pr_url": "https://github.com/ItIsYeBananaduck/Polaris/pull/102"
+  }
 }

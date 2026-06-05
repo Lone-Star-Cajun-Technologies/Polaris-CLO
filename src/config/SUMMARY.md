@@ -1,29 +1,34 @@
-<!-- polaris:draft -->
 # Summary: config
 
-> Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
-
 ## Purpose
-<!-- One-line statement of what this folder does. -->
+Config loading and validation root. This folder merges `polaris.config.json` with defaults and validates the result before other subsystems consume `PolarisConfig`.
 
 ## Core Concepts
-<!-- 3–7 key concepts a reader needs before diving into source. -->
+- Defaults are the trusted baseline and must remain schema-valid.
+- Validation is strict for user-supplied partial config.
+- Deep merge semantics apply for nested objects; arrays replace.
+- New config fields must be reflected in schema, types, defaults, and validator together.
 
 ## Architectural Role
-<!-- How this folder fits into the larger system. -->
+This folder owns the config contract consumed by the rest of the runtime.
 
 ## Key Constraints
-<!-- The most important non-obvious behavioral limits. -->
+- Do not bypass `loadConfig(repoRoot)`.
+- `DEFAULT_CONFIG` must remain valid on its own.
+- Validation errors are returned as the full error array so callers can surface them directly.
 
 ## Important Relationships
-<!-- Upstream/downstream dependencies on other folders. -->
+- Consumed by loop, map, cognition, smartdocs-engine, graph governance, finalize, and tracker code.
 
 ## Current State
-<!-- What is implemented, what is not yet, known gaps. -->
+Config now includes a `graph` section with `outputPath` and `invalidationTriggers` for graph governance. Defaults point to `.polaris/graph` with repo/config invalidation enabled.
 
 ## Known Drift
-<!-- Places where the summary may be stale (honesty field. -->
+`polaris.config.json` remains optional; missing file still uses defaults.
 
 ## Linked Canonical Sources
 - [POLARIS.md](POLARIS.md)
-<!-- Links to spec files, doctrine, etc. -->
+- `src/config/schema.ts`
+- `src/config/validator.ts`
+- `src/config/defaults.ts`
+- `src/config/loader.ts`
