@@ -292,7 +292,7 @@ With 6 children, every per-child metric doubled before any other factor applied.
 
 **HC-3: Polling frequency produced unnecessary narration**
 
-Both Foremanns spent ~62–66% of session time in 30s polling. POL-362's Foreman narrated every poll with multi-sentence commentary even when state was identical to the previous poll. POL-357's Foreman issued bare one-word messages ("Waiting."), which are still technically narration violations but generate roughly 1/20th the token footprint.
+Both Foremen spent ~62–66% of session time in 30s polling. POL-362's Foreman narrated every poll with multi-sentence commentary even when state was identical to the previous poll. POL-357's Foreman issued bare one-word messages ("Waiting."), which are still technically narration violations but generate roughly 1/20th the token footprint.
 
 The chain.md narration suppression rule was partially honored — neither Foreman wrote code inline — but the "no thinking out loud" prohibition was not enforced for polling cycles in either run. POL-362 violated it more severely.
 
@@ -445,7 +445,7 @@ The finalizer's input contract should accept the canonical cluster-state path. T
 
 ### R-6: Instrument per-child Foreman token budget (Low priority)
 
-Add a warning threshold to the Foreman when per-child Foreman context exceeds a configurable token count. In POL-362, the average per-child overhead was ~24,665 tokens (147,793 / 6). In POL-357, ~12,000 tokens per child (72,000 / 6 effective child slots). A token budget alert would surface disproportionate overhead before the session approaches the context limit.
+Add a warning threshold to the Foreman when per-child Foreman context exceeds a configurable token count. In POL-362, the average per-child overhead was ~24,665 tokens (147,793 / 6). In POL-357, the comparable average is ~24,000 tokens per child (72,000 / 3). A token budget alert would surface disproportionate overhead before the session approaches the context limit.
 
 ---
 
@@ -540,5 +540,7 @@ The causal chain, ranked:
 - Transcript: `0ffc010f-POL362transcript.jsonl` (uploaded artifact; session upload ID `951df7ee-5715-56a0-832b-debef281bafe`)
 - 778 JSONL lines: 1 session_meta, 270 event_msg, 501 response_item, 6 turn_context
 - Run ledger: `.polaris/runs/ledger.jsonl` (contains POL-362 `run-started` event)
+- Cluster definition: `.polaris/clusters/POL-362/clusters.json`
+- Cluster state: `.polaris/clusters/POL-362/cluster-state.json`
 - Foreman doctrine: `.polaris/skills/polaris-run/chain.md`
 - Provider config: `polaris.config.json`
