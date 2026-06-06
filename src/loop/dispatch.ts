@@ -1229,6 +1229,46 @@ export function runLoopDispatch(options: DispatchOptions): void {
     fail(err instanceof Error ? err.message : String(err));
   }
 
+  // ── Provider probe on first dispatch ──────────────────────────────────────
+  // Catches auth/format failures before packet commit. Only runs on the first
+  // dispatch for this run (no completed children) in direct-worker mode.
+  if (resolvedProvider && providerDecision.mode === "direct-worker" && state.completed_children.length === 0) {
+    let probeResult: { ok: boolean; error?: string } | undefined;
+    try {
+      probeResult = probeProviderSync(resolvedProvider, loadedConfig);
+    } catch (err) {
+      // Probe infrastructure unavailable — log and continue
+      appendTelemetry(telemetryFile, {
+        event: "provider-probe-skipped",
+        run_id: state.run_id,
+        child_id: childId,
+        provider: resolvedProvider,
+        reason: err instanceof Error ? err.message : String(err),
+        timestamp: new Date().toISOString(),
+      });
+    }
+    if (probeResult !== undefined) {
+      if (!probeResult.ok) {
+        appendTelemetry(telemetryFile, {
+          event: "provider-probe-failed",
+          run_id: state.run_id,
+          child_id: childId,
+          provider: resolvedProvider,
+          error: probeResult.error,
+          timestamp: new Date().toISOString(),
+        });
+        fail(`Provider probe failed for "${resolvedProvider}": ${probeResult.error ?? "unknown error"}. Resolve the provider configuration before dispatching.`);
+      }
+      appendTelemetry(telemetryFile, {
+        event: "provider-probe-passed",
+        run_id: state.run_id,
+        child_id: childId,
+        provider: resolvedProvider,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  }
+
   // ── Write durable dispatch evidence ────────────────────────────────────────
   // Create cluster-scoped packet artifact BEFORE updating state.
   // This ensures "dispatched" only means a durable record exists.
