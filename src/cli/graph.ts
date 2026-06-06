@@ -2,13 +2,12 @@ import { existsSync, readdirSync, realpathSync } from "node:fs";
 import { resolve, join, extname } from "node:path";
 import { Command } from "commander";
 import { loadConfig } from "../config/loader.js";
+import { getDefaultAdapterRegistry } from "../graph/adapter/registry.js";
 import { runExtractionPipeline } from "../graph/parser/pipeline.js";
 import { configureGraphQuery, getCallees, getCallers, getImpactedFiles, lookupSymbol } from "../graph/query/index.js";
 import type { GraphFile, GraphSymbol } from "../graph/query/types.js";
 import { runGraphResolver } from "../graph/resolver/index.js";
 import { GraphStoreAdapter } from "../graph/store/adapter.js";
-
-const SUPPORTED_SOURCE_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);
 
 export interface GraphCommandOptions {
   repoRoot: string;
@@ -257,13 +256,14 @@ function createBuildPlan(repoRoot: string): GraphBuildPlan {
 
 function collectSourceFiles(sourceRoots: readonly string[]): string[] {
   const files: string[] = [];
+  const supportedExtensions = new Set(getDefaultAdapterRegistry().getSupportedExtensions());
 
   for (const root of sourceRoots) {
     if (!existsSync(root)) {
       continue;
     }
     for (const filePath of walkDirectory(root)) {
-      if (SUPPORTED_SOURCE_EXTENSIONS.has(extname(filePath))) {
+      if (supportedExtensions.has(extname(filePath).toLowerCase())) {
         files.push(filePath);
       }
     }

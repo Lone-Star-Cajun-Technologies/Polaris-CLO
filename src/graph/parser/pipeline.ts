@@ -1,10 +1,11 @@
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
+import { extname } from "node:path";
+import type { AdapterRegistry, ExtractedSymbol } from "../adapter/types.js";
+import { getDefaultAdapterRegistry } from "../adapter/registry.js";
 import type { GraphStoreAdapter } from "../store/adapter.js";
 import { insertNode } from "../store/queries.js";
 import type { GraphNode, GraphSymbol } from "../store/types.js";
-import { extractSymbolsFromTree } from "./extract.js";
-import { loadTreeSitterRuntime, type SupportedParserLanguage } from "./loader.js";
 
 export interface ExtractionPipelineLogger {
   warn(message: string): void;
@@ -13,6 +14,7 @@ export interface ExtractionPipelineLogger {
 export interface ExtractionPipelineOptions {
   graphStore: GraphStoreAdapter;
   logger?: ExtractionPipelineLogger;
+  adapterRegistry?: AdapterRegistry;
 }
 
 export interface ExtractionPipelineResult {
@@ -33,7 +35,7 @@ export async function runExtractionPipeline(
   filePaths: readonly string[],
   options: ExtractionPipelineOptions,
 ): Promise<ExtractionPipelineResult> {
-  const runtime = await loadTreeSitterRuntime();
+  const adapterRegistry = options.adapterRegistry ?? getDefaultAdapterRegistry();
   const db = options.graphStore.getDatabase();
   const warningMessages: string[] = [];
   const sortedPaths = Array.from(new Set(filePaths)).sort((left, right) => left.localeCompare(right));
@@ -45,8 +47,8 @@ export async function runExtractionPipeline(
 
   for (const filePath of sortedPaths) {
     try {
-      const language = detectSupportedLanguage(filePath);
-      if (!language) {
+      const adapter = adapterRegistry.getForExtension(extname(filePath));
+      if (!adapter) {
         const warning = `Skipping unsupported file type: ${filePath}`;
         warningMessages.push(warning);
         options.logger?.warn(warning);
@@ -54,12 +56,11 @@ export async function runExtractionPipeline(
       }
 
       const source = readFileSync(filePath, "utf-8");
-      const tree = runtime.parse(source, language);
-      const extracted = extractSymbolsFromTree(tree, language);
+      const extracted = await adapter.extractSymbols(filePath, source);
       const fileId = makeDeterministicId("file", filePath);
       const symbols = extracted.symbols.map((entry, index) => toPersistableSymbol(fileId, filePath, entry, index));
 
-      persistFileSymbols(db, filePath, language, fileId, symbols);
+      persistFileSymbols(db, filePath, extracted.language, fileId, symbols);
 
       succeededFiles += 1;
       persistedNodes += symbols.length;
@@ -83,20 +84,10 @@ export async function runExtractionPipeline(
   };
 }
 
-function detectSupportedLanguage(filePath: string): SupportedParserLanguage | null {
-  if (filePath.endsWith(".ts") || filePath.endsWith(".tsx")) {
-    return "typescript";
-  }
-  if (filePath.endsWith(".js") || filePath.endsWith(".jsx") || filePath.endsWith(".mjs") || filePath.endsWith(".cjs")) {
-    return "javascript";
-  }
-  return null;
-}
-
 function toPersistableSymbol(
   fileId: string,
   filePath: string,
-  entry: ReturnType<typeof extractSymbolsFromTree>["symbols"][number],
+  entry: ExtractedSymbol,
   index: number,
 ): PersistableSymbol {
   const symbolIdSeed = [
@@ -139,7 +130,7 @@ function toPersistableSymbol(
 function persistFileSymbols(
   db: ReturnType<GraphStoreAdapter["getDatabase"]>,
   filePath: string,
-  language: SupportedParserLanguage,
+  language: string,
   fileId: string,
   symbols: PersistableSymbol[],
 ): void {
@@ -153,7 +144,7 @@ function persistFileSymbols(
           id = excluded.id,
           language = excluded.language
       `,
-    ).run(fileId, filePath, normalizeLanguage(language));
+    ).run(fileId, filePath, normalizeLanguage(language, filePath));
 
     db.prepare("DELETE FROM symbols WHERE file_id = ?1").run(fileId);
     db.prepare("DELETE FROM nodes WHERE file_id = ?1").run(fileId);
@@ -190,8 +181,21 @@ function persistFileSymbols(
   }
 }
 
-function normalizeLanguage(language: SupportedParserLanguage): string {
-  return language === "typescript" ? "ts" : "js";
+function normalizeLanguage(language: string, filePath: string): string {
+  const extension = extname(filePath).toLowerCase();
+  if (language === "typescript" || extension === ".ts" || extension === ".tsx") {
+    return "ts";
+  }
+  if (
+    language === "javascript" ||
+    extension === ".js" ||
+    extension === ".jsx" ||
+    extension === ".mjs" ||
+    extension === ".cjs"
+  ) {
+    return "js";
+  }
+  return language;
 }
 
 function mapKindToNodeType(kind: GraphSymbol["kind"]): GraphNode["type"] {
