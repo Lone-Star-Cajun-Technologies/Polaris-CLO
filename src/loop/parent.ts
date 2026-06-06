@@ -1085,7 +1085,9 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     }
 
     if (!dryRun) {
-      logStatus(notificationFormat, `DISPATCH ${nextChild}`);
+      const totalChildren = state.open_children.length + state.completed_children.length;
+      const childIndex = state.completed_children.length + 1;
+      logStatus(notificationFormat, `RUNNING ${nextChild} (${childIndex}/${totalChildren})`);
       appendTelemetry(telemetryFile, {
         event: "child-dispatched",
         run_id: state.run_id,

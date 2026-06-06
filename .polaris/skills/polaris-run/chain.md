@@ -66,11 +66,9 @@ Never assume a globally linked `polaris` command exists.
 
 After step 07 evaluates the session:
 
-- **DISPATCH boundary (next-child)**: when another child is eligible, run `npm run polaris -- loop dispatch` or invoke the execution adapter directly. **The runtime enforces dispatch boundaries. Parent/orchestrator inline implementation is forbidden.** State updates occur only at CHECKPOINT boundaries, not between steps.
-- **CHECKPOINT (worker-returned)**: after the dispatched worker returns compact state, run `npm run polaris -- loop continue` to checkpoint state, emit telemetry, and generate or refresh the bootstrap packet. Worker transcripts must not merge back into parent context. This is the only boundary where state updates occur.
-  - CHECKPOINT gate: the worker's final response is the CompactReturn JSON. Take only the last line of the worker response that is a valid JSON object — discard worker output except the CompactReturn JSON object. Do not read, summarize, or repair any other worker output before checkpointing. If the response contains text before the JSON (preamble or narration), it is a protocol violation by the worker; extract only the JSON object and proceed. Preserve the existing step order; the gate sits only at the worker-return boundary.
+- **DISPATCH (all remaining children)**: run `npm run polaris -- loop run <cluster-id>`. The runtime dispatches all eligible children serially, enforcing dispatch boundaries internally. The Foreman waits for the subprocess to exit. Progress signals are emitted as `[POLARIS] RUNNING <child-id> (N/M)` and `[POLARIS] COMPLETE <child-id> (commit: <sha>)`. No per-child CompactReturn handling or state repair is needed — the runtime owns that boundary.
 - **STOP (blocked)**: halt immediately on blocker. Report unblock condition.
-- **STOP (all-done, awaiting delivery)**: all children Done but delivery not yet requested. Report branch and last commit. Provide delivery command: `Use polaris-run on <PARENT-ID>. Finalize delivery.`
+- **STOP (all-done, awaiting delivery)**: `loop run` exits when all children are done. Report branch and last commit. Provide delivery command: `Use polaris-run on <PARENT-ID>. Finalize delivery.`
 - **DELIVER**: proceed to step 08 (Closeout Librarian) only when all children are Done and the user explicitly requests delivery in this session invocation.
 
 ## Closeout Librarian boundary
@@ -108,57 +106,47 @@ The Foreman must NOT:
 
 This is not advisory. The runtime will hard-fail with `process.exit(1)` on violations.
 
-### Allowed transition sequence (only legal path)
+`loop run` owns the full dispatch→checkpoint loop internally. The Foreman must not call `loop dispatch` or `loop continue` individually — doing so bypasses the boundary enforcement that `loop run` manages.
+
+### Allowed transition (only legal path)
 
 ```
-child selected
-  → polaris loop dispatch        (sets dispatch_boundary.dispatch_epoch++)
-  → worker runs externally       (adapter dispatch, NOT inline)
-  → worker returns CompactReturn
-  → polaris loop continue        (checks dispatch_epoch > continue_epoch, then sets continue_epoch++)
-  → next child (repeat) or cluster-complete
+Foreman → npm run polaris -- loop run <cluster-id>
+  ↓ (subprocess)
+  runtime selects child
+  runtime dispatches worker externally
+  runtime receives CompactReturn → checkpoints → next child
+  runtime emits: [POLARIS] RUNNING <child> (N/M)
+  runtime emits: [POLARIS] COMPLETE <child> (commit: <sha>)
+  (repeat for each child)
+  runtime emits: [POLARIS] COMPLETE (cluster-complete)
+  subprocess exits 0
+Foreman proceeds to step 07 STOP/DELIVER
 ```
 
 ### Hard failures (illegal transitions)
 
 | Attempt | Runtime response |
 |---|---|
-| `polaris loop continue` without prior dispatch | `exit(1)` + `dispatch-required` telemetry event |
-| `polaris loop dispatch` with `active_child` already set | `exit(1)` + `invalid-inline-attempt` telemetry event |
+| Parent calling `loop dispatch` manually | Bypasses `loop run` — governance violation |
+| Parent calling `loop continue` manually | Bypasses `loop run` — governance violation |
 | Parent completing child without dispatch record | `exit(1)` + `illegal-state-transition` telemetry event |
 | `selected → completed` (no dispatch in path) | Hard failure — never allowed |
-| `selected → checkpointed` (no dispatch in path) | Hard failure — never allowed |
 
-### No inline fallbacks
-
-There are no soft warnings. There are no inline fallback execution paths. There is no "continue means dispatch" behavior. The only legal transition from child selected to child execution is `polaris loop dispatch`.
-
-### CHECKPOINT gate
-
-At the CHECKPOINT boundary, the orchestrator accepts only the worker's CompactReturn JSON for continuation decisions. discard worker output except the CompactReturn JSON object. All other worker output is discarded and must not be summarized or used for live repair.
-
-Preserve the existing step order. This gate only narrows what survives the worker-return boundary before `loop continue` runs.
-
-Dispatch uses the adapter configured in `polaris.config.json` (`execution.adapter`).
-When `adapter: "terminal-cli"`, use `scripts/polaris-run.sh` or the configured CLI command as a subprocess.
-**When the active polaris-run dispatch role sets `execution.providerPolicy.worker.allowNativeSubagent: false` or `execution.providerPolicy.orchestrator.allowNativeSubagent: false`, never use any native subagent or parallel-task mechanism provided by the host CLI** (applies to all providers: Claude, Codex, Copilot, etc.). That is an unconditional governance violation regardless of session mode or CLI capability.
-In the current runtime, that leaves `terminal-cli` as the only supported dispatch adapter for that role.
+**When `execution.providerPolicy.worker.allowNativeSubagent: false` or `execution.providerPolicy.orchestrator.allowNativeSubagent: false`, never use any native subagent or parallel-task mechanism** (applies to all providers: Claude, Codex, Copilot, etc.). `loop run` via `terminal-cli` is the only supported dispatch path.
 
 ## Polaris runtime integration
 
-polaris-run augments the evo-run pattern with three Polaris-specific calls:
+polaris-run uses these Polaris CLI calls:
 
 | Step | Polaris call | Purpose |
 |---|---|---|
-| 07 | `npm run polaris -- loop dispatch` | Dispatch exactly one selected child through the configured execution adapter; this starts child execution |
-| 07 | `npm run polaris -- loop continue` | Post-child checkpoint: emit checkpoint telemetry, update state at checkpoint boundary, generate bootstrap packet, enforce boundary. This is the only time state updates occur between DISPATCH boundaries. |
+| 07 | `npm run polaris -- loop run <cluster-id>` | Run all eligible children serially; emits `[POLARIS] RUNNING <child> (N/M)` per child and `[POLARIS] COMPLETE <child> (commit: <sha>)` on completion; exits when cluster-complete or blocked |
 | 08 | `npm run polaris -- librarian packet <cluster-id>` | Generate Closeout Librarian packet for the completed cluster |
 | 08 | Librarian subagent dispatch | Dispatch Closeout Librarian; wait for sealed result; validate result before proceeding |
 | 09 | `npm run polaris -- finalize` | Push branch (including librarian commit), open PR, append JSONL closeout events, archive run snapshot |
 
-`npm run polaris -- loop dispatch` is the dispatch command. It selects the configured execution adapter and sends one child worker prompt across the parent/worker boundary.
-
-`npm run polaris -- loop continue` is post-child only. It reads `.polaris/session-type` and `current-state.json` after the worker has returned, runs the boundary check, checkpoints state, and emits the bootstrap packet. State updates occur only at this explicit checkpoint boundary. The skill reads the packet's compact output to determine whether to halt, deliver, or begin another explicit dispatch phase.
+`npm run polaris -- loop run <cluster-id>` is the standard execution command. It internally manages the dispatch→checkpoint loop for all children, emitting terse progress signals the Foreman can monitor. The Foreman does not call `loop dispatch` or `loop continue` — those boundaries are owned by `loop run`.
 
 ## Context budget
 
