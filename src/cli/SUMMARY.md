@@ -1,29 +1,37 @@
-<!-- polaris:draft -->
 # Summary: cli
 
-> Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
-
 ## Purpose
-<!-- One-line statement of what this folder does. -->
+Command-surface assembly for the `polaris` binary. This folder defines top-level CLI behavior, wires subsystem commands, and enforces consistent help/error semantics.
 
 ## Core Concepts
-<!-- 3–7 key concepts a reader needs before diving into source. -->
+- `index.ts` is wiring-only: it composes command factories and shared handlers.
+- Subsystem command logic belongs outside `src/cli/` (loop/map/finalize/config/docs/graph/etc.).
+- Bare subsystem invocations and unknown commands must fail with actionable guidance.
+- Graph commands (`build`, `query`, `impact`) are surfaced from `graph.ts` and operate on graph store/query services.
+- Worker and librarian command groups exist for runtime-governed execution paths.
 
 ## Architectural Role
-<!-- How this folder fits into the larger system. -->
+This route is the external operator interface for Polaris. It exposes runtime capabilities without owning business logic, preserving separation between command UX and subsystem implementation.
 
 ## Key Constraints
-<!-- The most important non-obvious behavioral limits. -->
+- Keep command registration declarative and centralized in `index.ts`.
+- Do not embed subsystem business logic in CLI handlers.
+- Keep output modes predictable (`--json`, dry-run, human-readable summaries).
+- Preserve non-zero exits for invalid command forms.
 
 ## Important Relationships
-<!-- Upstream/downstream dependencies on other folders. -->
+- Depends on `src/loop/`, `src/map/`, `src/finalize/`, `src/config/`, `src/smartdocs-engine/`, `src/graph/`, and `src/skill-packet/` for command factories.
+- Uses `src/loop/finalize-evidence.ts` and CLI subtask bridge setup to enforce finalize/run invariants.
+- Shares version source with `package.json` through `src/cli/version.ts`.
 
 ## Current State
-<!-- What is implemented, what is not yet, known gaps. -->
+Top-level command groups include status, loop, map, finalize, runs, init, docs/doctrine, config, tracker, worker, graph, skill, and librarian. Graph command UX now supports build/query/impact plans and JSON output.
 
 ## Known Drift
-<!-- Places where the summary may be stale (honesty field. -->
+Older references that describe only the legacy command subset are stale and should defer to `src/cli/index.ts` command registration.
 
 ## Linked Canonical Sources
 - [POLARIS.md](POLARIS.md)
-<!-- Links to spec files, doctrine, etc. -->
+- `src/cli/index.ts`
+- `src/cli/graph.ts`
+- `src/cli/librarian.ts`

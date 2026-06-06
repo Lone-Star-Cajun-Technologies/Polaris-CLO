@@ -2,11 +2,13 @@
 
 ## Purpose
 
-The CLI entry point for Polaris. It registers all top-level commands (`map`, `loop`, `finalize`, `docs`, `config`, `worker`) using Commander.js and wires the `polaris` binary. This module contains no business logic — it delegates entirely to the subsystem command factories.
+The CLI entry point for Polaris. It wires the `polaris` binary, registers all top-level commands via Commander.js, and delegates behavior to subsystem command factories.
 
 ## What belongs here
 
 - `index.ts` — binary entry point; registers subsystem commands via `addCommand()`
+- `graph.ts` — `polaris graph build|query|impact` command group and output formatting
+- `librarian.ts` — closeout librarian packet/result command surface
 - `worker.ts` — worker-owned commit enforcement command factory
 - `version.ts`, `version.test.ts` — version helper and test
 
@@ -33,7 +35,8 @@ The CLI entry point for Polaris. It registers all top-level commands (`map`, `lo
 ## Read before editing
 
 - `package.json` — `"bin"` field and `"version"` field that `getVersion()` reads
-- `src/map/index.ts`, `src/loop/index.ts`, `src/finalize/index.ts` — examples of command factory pattern
+- `src/map/index.ts`, `src/loop/index.ts`, `src/finalize/index.ts` — command factory pattern examples
+- `src/graph/` — graph pipeline/query/store behavior invoked by `graph.ts`
 
 ## Related routes
 
