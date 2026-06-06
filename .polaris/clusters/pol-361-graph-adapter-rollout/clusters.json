@@ -124,7 +124,7 @@
       ]
     }
   ],
-  "execution_order": "C-01 → C-02 → C-03 → C-04 → C-05 → C-06",
+  "priority_sequence": "C-01 → C-02 → C-03 → C-04 → C-05 → C-06",
   "parallelizable": true,
   "budget": {
     "max_children": 6,

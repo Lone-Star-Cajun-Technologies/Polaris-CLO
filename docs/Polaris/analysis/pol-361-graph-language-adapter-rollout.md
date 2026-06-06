@@ -240,7 +240,7 @@ Each new adapter needs:
 
 ## Proposed Mixed-Language Validation Fixture Layout
 
-```
+```plaintext
 src/graph/adapter/__fixtures__/mixed-repo/
   sample.ts
   sample.js
