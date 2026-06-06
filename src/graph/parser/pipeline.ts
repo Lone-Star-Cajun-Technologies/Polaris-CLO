@@ -23,7 +23,13 @@ export interface ExtractionPipelineResult {
   failedFiles: number;
   persistedNodes: number;
   persistedSymbols: number;
+  fallbackFiles: FallbackFile[];
   warnings: string[];
+}
+
+interface FallbackFile {
+  path: string;
+  ext: string;
 }
 
 interface PersistableSymbol {
@@ -44,12 +50,20 @@ export async function runExtractionPipeline(
   let failedFiles = 0;
   let persistedNodes = 0;
   let persistedSymbols = 0;
+  const fallbackFiles: FallbackFile[] = [];
 
   for (const filePath of sortedPaths) {
     try {
-      const adapter = adapterRegistry.getForExtension(extname(filePath));
+      const ext = extname(filePath).toLowerCase();
+      const adapter = adapterRegistry.getForExtension(ext);
       if (!adapter) {
-        const warning = `Skipping unsupported file type: ${filePath}`;
+        const fileId = makeDeterministicId("file", filePath);
+        const language = `unsupported:${ext}`;
+        persistUnsupportedFile(db, filePath, language, fileId);
+        fallbackFiles.push({ path: filePath, ext });
+        succeededFiles += 1;
+        persistedNodes += 1;
+        const warning = `Falling back to file node for unsupported file type: ${filePath}`;
         warningMessages.push(warning);
         options.logger?.warn(warning);
         continue;
@@ -80,6 +94,7 @@ export async function runExtractionPipeline(
     failedFiles,
     persistedNodes,
     persistedSymbols,
+    fallbackFiles,
     warnings: warningMessages,
   };
 }
@@ -173,6 +188,40 @@ function persistFileSymbols(
         item.symbol.exported ? 1 : 0,
       );
     }
+
+    db.exec("COMMIT");
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
+}
+
+function persistUnsupportedFile(
+  db: ReturnType<GraphStoreAdapter["getDatabase"]>,
+  filePath: string,
+  language: string,
+  fileId: string,
+): void {
+  db.exec("BEGIN IMMEDIATE TRANSACTION");
+  try {
+    db.prepare(
+      `
+        INSERT INTO files (id, path, language)
+        VALUES (?1, ?2, ?3)
+        ON CONFLICT(path) DO UPDATE SET
+          id = excluded.id,
+          language = excluded.language
+      `,
+    ).run(fileId, filePath, normalizeLanguage(language, filePath));
+
+    db.prepare("DELETE FROM symbols WHERE file_id = ?1").run(fileId);
+    db.prepare("DELETE FROM nodes WHERE file_id = ?1").run(fileId);
+
+    insertNode(db, {
+      id: fileId,
+      type: "FILE",
+      fileId,
+    });
 
     db.exec("COMMIT");
   } catch (error) {
