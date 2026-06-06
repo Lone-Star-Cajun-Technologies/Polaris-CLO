@@ -1,10 +1,10 @@
 {
-  "scan_date": "2026-06-05T17:26:17.385Z",
-  "file_count": 835,
+  "scan_date": "2026-06-06T03:11:06.119Z",
+  "file_count": 836,
   "coverage_pct": 34,
   "instructionCoverage": {
-    "routesCovered": 785,
-    "routesTotal": 835,
+    "routesCovered": 786,
+    "routesTotal": 836,
     "coveragePercent": 94
   },
   "entries": {
@@ -40,8 +40,8 @@
       "taskchain": "polaris-cli",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-06-05T16:13:05.631Z",
-      "updated_by": "polaris-map-index",
+      "last_updated": "2026-06-06T03:11:06.119Z",
+      "updated_by": "polaris-map-update",
       "tags": [
         "cli"
       ],
@@ -53,8 +53,8 @@
       "taskchain": "polaris-cli",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-06-05T16:13:05.631Z",
-      "updated_by": "polaris-map-index",
+      "last_updated": "2026-06-06T03:11:06.119Z",
+      "updated_by": "polaris-map-update",
       "tags": [
         "cli"
       ],
@@ -3754,6 +3754,19 @@
         "utils"
       ],
       "instructionFile": "src/utils/POLARIS.md"
+    },
+    "src/graph/POLARIS.md": {
+      "domain": "graph",
+      "route": "src/graph",
+      "taskchain": "polaris-graph",
+      "confidence": 0.85,
+      "classification": "indexed",
+      "last_updated": "2026-06-06T03:11:06.119Z",
+      "updated_by": "polaris-map-update",
+      "tags": [
+        "graph"
+      ],
+      "instructionFile": "src/graph/POLARIS.md"
     },
     ".DS_Store": {
       "domain": "unknown",
@@ -9481,7 +9494,7 @@
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
-      "last_updated": "2026-06-05T17:26:17.385Z",
+      "last_updated": "2026-06-06T03:11:06.119Z",
       "updated_by": "polaris-map-update",
       "tags": [],
       "instructionFile": "src/POLARIS.md"
@@ -9492,7 +9505,7 @@
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
-      "last_updated": "2026-06-05T17:26:17.385Z",
+      "last_updated": "2026-06-06T03:11:06.119Z",
       "updated_by": "polaris-map-update",
       "tags": [],
       "instructionFile": "src/POLARIS.md"

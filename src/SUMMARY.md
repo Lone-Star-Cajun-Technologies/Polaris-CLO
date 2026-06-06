@@ -7,7 +7,7 @@ Application source root for Polaris. The tree contains command entrypoints, loop
 - Folder-local guidance lives beside implementation in `POLARIS.md`.
 - Cognition and map are read-only analysis layers; they report signals, not writes.
 - Smart Docs governs canonical documentation under `smartdocs/`.
-- Graph governance manages `.polaris/graph/` runtime outputs and invalidation state.
+- Graph route manages extraction/resolution/query/store behavior and governance outputs under `.polaris/graph/`.
 - Config changes must flow through `src/config/` and the JSON schema/validator.
 
 ## Architectural Role
@@ -24,10 +24,10 @@ Application source root for Polaris. The tree contains command entrypoints, loop
 - `src/config/` defines the config surface consumed by all other routes.
 - `src/cognition/` and `src/map/` provide read-only detection signals for documentation and atlas maintenance.
 - `src/smartdocs-engine/` ingests/promotes docs and maintains canonical authority structure.
-- `src/graph/` writes graph notices and invalidation state.
+- `src/graph/` builds graph artifacts, resolves edges, and serves query helpers for CLI consumers.
 
 ## Current State
-The tree includes the graph governance surface plus config support for `graph.outputPath` and `graph.invalidationTriggers`. Cognition and atlas validation now treat `.polaris/graph/` as generated runtime output.
+The tree includes graph extraction/resolution/query/store modules plus governance controls and config support for `graph.outputPath` and `graph.invalidationTriggers`. Cognition and atlas validation treat `.polaris/graph/` as generated runtime output.
 
 ## Known Drift
 Draft markers remain in some top-level folder docs when a subroute has not yet been fully reconciled.

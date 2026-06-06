@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The `src/` tree contains the Polaris application source: CLI entrypoints, runtime orchestration, config loading and validation, cognition/map/Smart Docs governance, graph governance, tracker adapters, finalization, and shared utilities.
+The `src/` tree contains the Polaris application source: CLI entrypoints, runtime orchestration, config loading and validation, cognition/map/Smart Docs governance, graph extraction/query/governance, tracker adapters, finalization, and shared utilities.
 
 ## What belongs here
 
@@ -24,7 +24,7 @@ The `src/` tree contains the Polaris application source: CLI entrypoints, runtim
 ## Architecture assumptions
 
 - `src/` is the checked-in source root for the Polaris runtime.
-- Cognition, map, Smart Docs, and graph governance are separate subsystems with their own folder-level contracts.
+- Cognition, map, Smart Docs, and graph subsystems are separate and documented with folder-level contracts.
 - New config or governance surfaces must be reflected in the relevant subfolder docs.
 
 ## Read before editing
