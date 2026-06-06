@@ -233,13 +233,9 @@ function getDefaultStore(): GraphStoreAdapter {
     return queryState.defaultStore;
   }
 
-  const store = new GraphStoreAdapter({
-    dbPath: ".polaris/graph/graph.sqlite",
-    graphOutputPath: ".polaris/graph",
-  });
-  store.open();
-  queryState.defaultStore = store;
-  return store;
+  throw new Error(
+    "No graph store configured. Call configureGraphQuery() before using the query API."
+  );
 }
 
 function lookupRelatedSymbols(

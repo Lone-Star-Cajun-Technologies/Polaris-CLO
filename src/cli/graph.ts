@@ -1,4 +1,4 @@
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readdirSync, realpathSync } from "node:fs";
 import { resolve, join, extname } from "node:path";
 import { Command } from "commander";
 import { loadConfig } from "../config/loader.js";
@@ -272,12 +272,15 @@ function collectSourceFiles(sourceRoots: readonly string[]): string[] {
   return Array.from(new Set(files)).sort((left, right) => left.localeCompare(right));
 }
 
-function* walkDirectory(root: string): Generator<string> {
+function* walkDirectory(root: string, visited: Set<string> = new Set()): Generator<string> {
+  const realRoot = realpathSync(root);
+  if (visited.has(realRoot)) return;
+  visited.add(realRoot);
   const entries = readdirSync(root, { withFileTypes: true });
   for (const entry of entries) {
     const fullPath = join(root, entry.name);
     if (entry.isDirectory()) {
-      yield* walkDirectory(fullPath);
+      yield* walkDirectory(fullPath, visited);
       continue;
     }
     yield fullPath;

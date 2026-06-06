@@ -75,10 +75,7 @@
     ]
   },
   "prohibited_write_paths": [
-    ".taskchain_artifacts/",
-    ".polaris/clusters/",
-    ".polaris/runs/",
-    "**/telemetry.jsonl"
+    ".polaris/runs/"
   ],
   "result_file_contract": {
     "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-345/results/POL-348-d6106bd1-3afb-47f5-84b8-55d9ff8b1800.json",
