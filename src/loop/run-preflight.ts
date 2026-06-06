@@ -50,6 +50,52 @@ async function loadOrSyncGraph(clusterId: string, repoRoot: string): Promise<Loc
   }
 }
 
+function topoSort(children: string[], getDeps: (id: string) => string[]): string[] {
+  // Kahn's algorithm — only sorts within the given children set
+  const childSet = new Set(children);
+  const inDegree = new Map<string, number>();
+  const dependents = new Map<string, string[]>(); // dep → [children that need dep]
+
+  for (const child of children) {
+    inDegree.set(child, 0);
+    dependents.set(child, []);
+  }
+
+  for (const child of children) {
+    for (const dep of getDeps(child)) {
+      if (!childSet.has(dep)) continue; // external dep — ignore for ordering
+      inDegree.set(child, (inDegree.get(child) ?? 0) + 1);
+      dependents.get(dep)!.push(child);
+    }
+  }
+
+  const queue: string[] = [];
+  for (const [child, deg] of inDegree) {
+    if (deg === 0) queue.push(child);
+  }
+
+  const sorted: string[] = [];
+  while (queue.length > 0) {
+    const node = queue.shift()!;
+    sorted.push(node);
+    for (const dependent of dependents.get(node) ?? []) {
+      const newDeg = (inDegree.get(dependent) ?? 1) - 1;
+      inDegree.set(dependent, newDeg);
+      if (newDeg === 0) queue.push(dependent);
+    }
+  }
+
+  // If sort is incomplete (cycle), fall back to original order for remaining nodes
+  if (sorted.length < children.length) {
+    const sortedSet = new Set(sorted);
+    for (const child of children) {
+      if (!sortedSet.has(child)) sorted.push(child);
+    }
+  }
+
+  return sorted;
+}
+
 function buildBootstrapPlan(clusterId: string, graph: LocalGraph): BootstrapPlan {
   const activeCluster = graph.getActiveCluster();
 
@@ -61,7 +107,8 @@ function buildBootstrapPlan(clusterId: string, graph: LocalGraph): BootstrapPlan
   const runnableChildren = clusterRoot
     ? activeCluster.children.filter((id) => id !== clusterRoot)
     : activeCluster.children;
-  const openChildren = runnableChildren.length > 0 ? runnableChildren : [clusterId];
+  const unsortedChildren = runnableChildren.length > 0 ? runnableChildren : [clusterId];
+  const openChildren = topoSort(unsortedChildren, (id) => graph.getDependencies(id));
 
   const openChildrenMeta: BootstrapPlan["openChildrenMeta"] = {};
 

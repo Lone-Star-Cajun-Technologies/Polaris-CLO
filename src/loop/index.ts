@@ -10,6 +10,7 @@ import { runParentLoop } from "./parent.js";
 import { runLoopBootstrapInit, type BootstrapInitOptions } from "./run-bootstrap.js";
 import { ensureClusterRunState } from "./run-preflight.js";
 import { backfillClusterStateEvidence } from "./evidence-backfill.js";
+import { runLoopWait } from "./wait.js";
 import type { ExecutionAdapterMode } from "./execution-adapter.js";
 
 export interface LoopCommandHandlers {
@@ -256,6 +257,7 @@ export function createLoopCommand(handlers: LoopCommandHandlers = {}): Command {
     .option("--max-children <n>", "Max children per dispatch session (default: 1)", "1")
     .option("--branch <name>", "Git branch for this run")
     .option("--artifact-dir <path>", "Override artifact directory")
+    .option("--overwrite", "Archive existing state file and start fresh instead of failing")
     .action(
       (options: {
         clusterId: string;
@@ -267,6 +269,7 @@ export function createLoopCommand(handlers: LoopCommandHandlers = {}): Command {
         maxChildren: string;
         branch?: string;
         artifactDir?: string;
+        overwrite?: boolean;
       }) => {
         const openChildren = options.children
           .split(",")
@@ -288,11 +291,30 @@ export function createLoopCommand(handlers: LoopCommandHandlers = {}): Command {
           sessionType: options.sessionType === "analyze" ? "analyze" : "implement",
           maxChildrenPerSession,
           artifactDir: options.artifactDir,
+          overwrite: options.overwrite,
         };
 
         bootstrapHandler(bootstrapOptions);
       },
     );
+
+  loop
+    .command("wait")
+    .description("safe/read-only: block until the active child's result file appears (replaces polling loop status)")
+    .option("-r, --repo-root <path>", "Repository root", repoRootDefault)
+    .option("--state-file <path>", "Override path to current-state.json")
+    .option("--child <id>", "Child ID to wait for (default: active_child from state)")
+    .option("--timeout <ms>", "Timeout in milliseconds (default: 1800000 = 30 min)", "1800000")
+    .option("--poll-interval <ms>", "Poll interval in milliseconds (default: 5000)", "5000")
+    .action((options: { repoRoot: string; stateFile?: string; child?: string; timeout: string; pollInterval: string }) => {
+      runLoopWait({
+        stateFile: defaultStateFile(options.repoRoot, options.stateFile),
+        repoRoot: options.repoRoot,
+        childId: options.child,
+        timeoutMs: parseInt(options.timeout, 10),
+        pollIntervalMs: parseInt(options.pollInterval, 10),
+      });
+    });
 
   loop
     .command("backfill-evidence")

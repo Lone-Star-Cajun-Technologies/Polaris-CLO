@@ -1,4 +1,4 @@
-import { appendFileSync, mkdirSync, realpathSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, realpathSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import {
@@ -214,6 +214,38 @@ function fail(message: string): never {
   process.stderr.write(`Error: ${message}
 `);
   process.exit(1);
+}
+
+function probeProviderSync(
+  resolvedProvider: string,
+  loadedConfig: Required<PolarisConfig> | undefined,
+): { ok: boolean; error?: string } {
+  try {
+    const providers = loadedConfig?.execution?.providers ?? {};
+    const providerCfg = providers[resolvedProvider];
+    if (!providerCfg) {
+      return { ok: false, error: `Unknown provider "${resolvedProvider}"` };
+    }
+    const cmd = providerCfg.command.split(' ')[0] ?? providerCfg.command;
+    if (!cmd) {
+      return { ok: false, error: `Provider "${resolvedProvider}" has no command configured` };
+    }
+    // Check if command is on PATH
+    const isAbs = cmd.startsWith('/');
+    if (isAbs) {
+      return existsSync(cmd)
+        ? { ok: true }
+        : { ok: false, error: `Provider command "${providerCfg.command}" not found on PATH` };
+    }
+    try {
+      execFileSync('which', [cmd], { stdio: 'ignore' });
+      return { ok: true };
+    } catch {
+      return { ok: false, error: `Provider command "${providerCfg.command}" not found on PATH` };
+    }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
 }
 
 function hasValidationWaiver(value: unknown): boolean {
@@ -812,6 +844,15 @@ function selectChild(state: LoopState, requestedChild?: string): string {
   if (requestedChild) {
     if (!state.open_children.includes(requestedChild)) {
       fail(`child ${requestedChild} is not open`);
+    }
+    // Validate all open (non-completed) dependencies are satisfied
+    const childMeta = state.open_children_meta?.[requestedChild];
+    const deps: string[] = (childMeta as { dependencies?: string[] } | undefined)?.dependencies ?? [];
+    const unmetDeps = deps.filter(
+      (dep) => state.open_children.includes(dep) && !state.completed_children.includes(dep),
+    );
+    if (unmetDeps.length > 0) {
+      fail(`child ${requestedChild} has unmet dependencies that must complete first: ${unmetDeps.join(", ")}`);
     }
     return requestedChild;
   }

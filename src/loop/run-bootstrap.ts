@@ -22,14 +22,15 @@
  */
 
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { writeStateAtomic, type LoopState } from "./checkpoint.js";
 import {
   appendDispatchViolationEvent,
 } from "./dispatch-boundary.js";
 import { initialDispatchBoundary } from "./dispatch-boundary.js";
-import { initializeClusterState, readClusterState } from "../cluster-state/store.js";
+import { initializeClusterState, readClusterState, writeClusterState } from "../cluster-state/store.js";
+import { buildDeliveryBranchName } from "./git-custody.js";
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Types
@@ -92,6 +93,8 @@ export interface BootstrapInitOptions {
   maxChildrenPerSession?: number;
   /** Artifact directory override. */
   artifactDir?: string;
+  /** If true, archive existing state file and start fresh instead of failing. */
+  overwrite?: boolean;
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -211,6 +214,7 @@ export function runLoopBootstrapInit(options: BootstrapInitOptions): Promise<voi
     sessionType,
     maxChildrenPerSession,
     artifactDir,
+    overwrite,
   } = options;
 
   if (!clusterId) {
@@ -225,13 +229,14 @@ export function runLoopBootstrapInit(options: BootstrapInitOptions): Promise<voi
 
   const runId = options.runId ?? deriveRunId(clusterId);
   const seal = createBootstrapSeal(runId, clusterId, openChildren);
+  const deliveryBranch = branch ?? buildDeliveryBranchName(clusterId);
 
   const initialState: LoopState = {
     schema_version: "1.0",
     run_id: runId,
     cluster_id: clusterId,
     skill: "polaris-run",
-    branch: branch ?? "",
+    branch: deliveryBranch,
     session_type: sessionType ?? "implement",
     active_child: "",
     completed_children: [],
@@ -251,13 +256,19 @@ export function runLoopBootstrapInit(options: BootstrapInitOptions): Promise<voi
 
   // Check if current-state.json already exists before making any modifications
   if (existsSync(stateFile)) {
-    process.stderr.write(
-      `Error: State file already exists at ${stateFile}\n` +
-      `Cannot overwrite existing run state. Either:\n` +
-      `  1. Use a different --state-file path, or\n` +
-      `  2. Remove the existing state file if you want to start fresh\n`
-    );
-    process.exit(1);
+    if (!overwrite) {
+      process.stderr.write(
+        `Error: State file already exists at ${stateFile}\n` +
+        `Cannot overwrite existing run state. Either:\n` +
+        `  1. Use --overwrite to archive the existing state and start fresh, or\n` +
+        `  2. Use a different --state-file path\n`
+      );
+      process.exit(1);
+    }
+    // Archive the existing state before overwriting
+    const backupPath = `${stateFile}.${Date.now()}.bak`;
+    renameSync(stateFile, backupPath);
+    process.stderr.write(`Warning: Archived existing state to ${backupPath}\n`);
   }
 
   // Initialize cluster-state.json if it doesn't exist.
@@ -268,6 +279,22 @@ export function runLoopBootstrapInit(options: BootstrapInitOptions): Promise<voi
       if (!existingClusterState) {
         process.stderr.write(`Initializing new cluster-state.json for ${clusterId}...\n`);
         await initializeClusterState(clusterId, repoRoot);
+        // Bind the delivery branch immediately so finalize doesn't inherit stale metadata
+        const freshState = await readClusterState(clusterId, repoRoot);
+        if (freshState && !freshState.delivery_branch) {
+          await writeClusterState(clusterId, {
+            ...freshState,
+            delivery_branch: deliveryBranch,
+            base_branch: "main",
+          }, repoRoot);
+        }
+      } else if (!existingClusterState.delivery_branch) {
+        // Existing cluster state without delivery branch — bind it now
+        await writeClusterState(clusterId, {
+          ...existingClusterState,
+          delivery_branch: deliveryBranch,
+          base_branch: existingClusterState.base_branch ?? "main",
+        }, repoRoot);
       }
     } catch (error) {
       process.stderr.write(`Warning: Failed to initialize cluster-state.json for ${clusterId}: ${error instanceof Error ? error.message : String(error)}\n`);
