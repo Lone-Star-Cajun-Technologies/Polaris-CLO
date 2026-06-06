@@ -178,16 +178,15 @@ function checkLibrarianGate(repoRoot: string, clusterId: string): string | null 
   }
 
   // Cross-validate dispatch_id and run_id
-  const result = resultJson as Record<string, unknown>;
-  if (packetJson["dispatch_id"] !== result["dispatch_id"]) {
-    return `Librarian result dispatch_id mismatch (packet: ${packetJson["dispatch_id"]}, result: ${result["dispatch_id"]}). Regenerate and re-dispatch.`;
+  const result = resultJson as CloseoutLibrarianResult;
+  if (packetJson["dispatch_id"] !== result.dispatch_id) {
+    return `Librarian result dispatch_id mismatch (packet: ${packetJson["dispatch_id"]}, result: ${result.dispatch_id}). Regenerate and re-dispatch.`;
   }
-  if (packetJson["run_id"] !== result["run_id"]) {
-    return `Librarian result run_id mismatch (packet: ${packetJson["run_id"]}, result: ${result["run_id"]}).`;
+  if (packetJson["run_id"] !== result.run_id) {
+    return `Librarian result run_id mismatch (packet: ${packetJson["run_id"]}, result: ${result.run_id}).`;
   }
 
   // Validate files_committed against packet scope constraints
-  const result = resultJson as CloseoutLibrarianResult;
   const allowedWritePaths = (packetJson["allowed_write_paths"] ?? []) as string[];
   const prohibitedWritePaths = (packetJson["prohibited_write_paths"] ?? []) as string[];
   const filesCommitted = result.files_committed ?? [];

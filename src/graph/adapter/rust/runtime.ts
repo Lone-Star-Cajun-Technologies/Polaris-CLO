@@ -33,19 +33,22 @@ export async function loadTreeSitterRuntime(): Promise<TreeSitterRuntime> {
   }
 
   cachedRuntimePromise = (async () => {
-    const loaded = await loadTreeSitterModules();
-    const parser = new loaded.parserConstructor();
-    parser.setLanguage(loaded.language);
+    try {
+      const loaded = await loadTreeSitterModules();
+      const parser = new loaded.parserConstructor();
+      parser.setLanguage(loaded.language);
 
-    const runtime: TreeSitterRuntime = {
-      parse(source) {
-        return parser.parse(source);
-      },
-    };
+      const runtime: TreeSitterRuntime = {
+        parse(source) {
+          return parser.parse(source);
+        },
+      };
 
-    cachedRuntime = runtime;
-    cachedRuntimePromise = null;
-    return runtime;
+      cachedRuntime = runtime;
+      return runtime;
+    } finally {
+      cachedRuntimePromise = null;
+    }
   })();
 
   return await cachedRuntimePromise;
