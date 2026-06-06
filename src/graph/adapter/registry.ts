@@ -2,6 +2,9 @@ import type { AdapterRegistry, LanguageAdapter } from "./types.js";
 import { createCAdapter } from "./c/index.js";
 import { createCppAdapter } from "./cpp/index.js";
 import { createCSharpAdapter } from "./csharp/index.js";
+import { createGoAdapter } from "./go/index.js";
+import { createPythonAdapter } from "./python/index.js";
+import { createRustAdapter } from "./rust/index.js";
 import { createShellAdapter } from "./shell/index.js";
 import { createTypeScriptJavaScriptAdapter } from "./typescript-javascript/index.js";
 
@@ -61,6 +64,9 @@ export function getDefaultAdapterRegistry(): AdapterRegistry {
   registry.register(createCAdapter());
   registry.register(createCppAdapter());
   registry.register(createCSharpAdapter());
+  registry.register(createGoAdapter());
+  registry.register(createPythonAdapter());
+  registry.register(createRustAdapter());
   registry.register(createShellAdapter());
   defaultRegistry = registry;
   return defaultRegistry;
