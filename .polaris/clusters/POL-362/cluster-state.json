@@ -62,16 +62,16 @@
     }
   },
   "packet_pointers": {
-    "POL-368": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-362/packets/POL-368-7de662ae-0dc8-46d7-9610-a689d75d9c9d.json",
-    "POL-367": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-362/packets/POL-367-86011a1f-0af7-4085-a291-22b97fcca91b.json",
+    "POL-368": ".polaris/clusters/POL-362/packets/POL-368-7de662ae-0dc8-46d7-9610-a689d75d9c9d.json",
+    "POL-367": ".polaris/clusters/POL-362/packets/POL-367-86011a1f-0af7-4085-a291-22b97fcca91b.json",
     "POL-366": ".polaris/clusters/POL-362/packets/POL-366-6bead4c6-1957-4574-a6c7-42632c6cd97e.json",
     "POL-365": ".polaris/clusters/POL-362/packets/POL-365-57b06c95-8875-4b1e-bd45-f8de361357c4.json",
     "POL-364": ".polaris/clusters/POL-362/packets/POL-364-8c2421bb-9757-4c46-b8a5-913f215e1b5b.json",
     "POL-363": ".polaris/clusters/POL-362/packets/POL-363-405c2891-3118-4872-93d5-475a0fe0ea93.json"
   },
   "result_pointers": {
-    "POL-368": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-362/results/POL-368-7de662ae-0dc8-46d7-9610-a689d75d9c9d.json",
-    "POL-367": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-362/results/POL-367-86011a1f-0af7-4085-a291-22b97fcca91b.json",
+    "POL-368": ".polaris/clusters/POL-362/results/POL-368-7de662ae-0dc8-46d7-9610-a689d75d9c9d.json",
+    "POL-367": ".polaris/clusters/POL-362/results/POL-367-86011a1f-0af7-4085-a291-22b97fcca91b.json",
     "POL-366": ".polaris/clusters/POL-362/results/POL-366-6bead4c6-1957-4574-a6c7-42632c6cd97e.json",
     "POL-365": ".polaris/clusters/POL-362/results/POL-365-57b06c95-8875-4b1e-bd45-f8de361357c4.json",
     "POL-364": ".polaris/clusters/POL-362/results/POL-364-8c2421bb-9757-4c46-b8a5-913f215e1b5b.json",
@@ -80,7 +80,7 @@
   "validation_results": {
     "POL-368": {
       "passed": true,
-      "output": "[object Object]"
+      "output": "{\"passed\":[\"npm run build\",\"npm test\",\"npx vitest run src/graph/adapter/c src/graph/adapter/cpp src/graph/adapter/csharp src/graph/adapter/shell\"]}"
     },
     "POL-367": {
       "passed": true,

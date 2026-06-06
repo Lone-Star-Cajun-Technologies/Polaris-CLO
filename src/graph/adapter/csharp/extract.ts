@@ -56,11 +56,13 @@ function buildSymbol(
     return null;
   }
 
+  const exported = checkExported(node);
+
   return {
     kind,
     name,
     signature,
-    exported: /\bpublic\b/.test(node.text),
+    exported,
     startLine: node.startPosition.row + 1,
     startColumn: node.startPosition.column,
     endLine: node.endPosition.row + 1,
@@ -68,8 +70,26 @@ function buildSymbol(
   };
 }
 
+function checkExported(node: SyntaxNodeLike): boolean {
+  const modifiers = node.childForFieldName?.("modifiers");
+  if (modifiers?.text) {
+    return /\bpublic\b/.test(modifiers.text);
+  }
+
+  const headerText = getNodeHeader(node.text);
+  return /\bpublic\b/.test(headerText);
+}
+
+function getNodeHeader(text: string): string {
+  const openBrace = text.indexOf("{");
+  if (openBrace !== -1) {
+    return text.substring(0, openBrace);
+  }
+  return text;
+}
+
 function extractUsingName(node: SyntaxNodeLike): string | null {
-  const match = node.text.match(/\busing\s+([A-Za-z_][A-Za-z0-9_.]*)\s*;/);
+  const match = node.text.match(/\busing\s+(?:static\s+)?(?:[A-Za-z_][A-Za-z0-9_]*\s*=\s*)?([A-Za-z_][A-Za-z0-9_.]*)\s*;/);
   return match?.[1] ?? null;
 }
 
@@ -94,12 +114,13 @@ function extractName(node: SyntaxNodeLike): string | null {
 }
 
 function isStatic(node: SyntaxNodeLike): boolean {
-  if (/\bstatic\b/.test(node.text)) {
-    return true;
+  const modifiers = node.childForFieldName?.("modifiers");
+  if (modifiers?.text) {
+    return /\bstatic\b/.test(modifiers.text);
   }
 
-  const modifiers = node.childForFieldName?.("modifiers");
-  return Boolean(modifiers?.text && /\bstatic\b/.test(modifiers.text));
+  const headerText = getNodeHeader(node.text);
+  return /\bstatic\b/.test(headerText);
 }
 
 function sanitizeSignature(signature: string): string | null {

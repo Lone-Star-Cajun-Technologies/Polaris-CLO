@@ -66,7 +66,21 @@ function buildSymbol(
 }
 
 function extractUseName(node: SyntaxNodeLike): string | null {
-  const byText = node.text.match(/^\s*(?:pub\s+)?use\s+(.+?)\s*;/m);
+  const argumentField = node.childForFieldName?.("argument");
+  if (argumentField?.text?.trim()) {
+    return argumentField.text.trim();
+  }
+
+  for (const child of node.namedChildren ?? []) {
+    if (child.type === "use_list" || child.type === "scoped_identifier" || child.type === "identifier") {
+      const text = child.text.trim();
+      if (text.length > 0) {
+        return text;
+      }
+    }
+  }
+
+  const byText = node.text.match(/^\s*(?:pub\s+)?use\s+([\s\S]+?)\s*;/m);
   return byText?.[1] ?? null;
 }
 

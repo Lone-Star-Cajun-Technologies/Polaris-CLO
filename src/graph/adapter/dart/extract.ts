@@ -102,7 +102,7 @@ function extractImportSpecifier(node: SyntaxNodeLike): string | null {
     return normalizeQuotedSpecifier(byField.text);
   }
 
-  const match = node.text.match(/^\s*import\s+['"]([^'"]+)['"]/m);
+  const match = node.text.match(/^\s*(?:import|export)\s+['"]([^'"]+)['"]/m);
   return match?.[1] ?? null;
 }
 

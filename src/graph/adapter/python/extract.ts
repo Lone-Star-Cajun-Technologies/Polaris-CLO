@@ -3,7 +3,7 @@ import type { ParseTreeLike, SyntaxNodeLike } from "../../parser/loader.js";
 
 export function extractPythonSymbolsFromTree(tree: ParseTreeLike): AdapterExtractionResult {
   const symbols: ExtractedSymbol[] = [];
-  walkNode(tree.rootNode, symbols, 0);
+  walkNode(tree.rootNode, symbols, 0, 0);
 
   const deduped = dedupeSymbols(symbols);
   deduped.sort(compareExtractedSymbols);
@@ -14,19 +14,20 @@ export function extractPythonSymbolsFromTree(tree: ParseTreeLike): AdapterExtrac
   };
 }
 
-function walkNode(node: SyntaxNodeLike, output: ExtractedSymbol[], classDepth: number): void {
-  const current = toExtractedSymbols(node, classDepth > 0);
+function walkNode(node: SyntaxNodeLike, output: ExtractedSymbol[], classDepth: number, functionDepth: number): void {
+  const current = toExtractedSymbols(node, classDepth, functionDepth);
   if (current.length > 0) {
     output.push(...current);
   }
 
   const nextClassDepth = node.type === "class_definition" ? classDepth + 1 : classDepth;
+  const nextFunctionDepth = node.type === "function_definition" ? functionDepth + 1 : functionDepth;
   for (const child of node.namedChildren ?? []) {
-    walkNode(child, output, nextClassDepth);
+    walkNode(child, output, nextClassDepth, nextFunctionDepth);
   }
 }
 
-function toExtractedSymbols(node: SyntaxNodeLike, insideClass: boolean): ExtractedSymbol[] {
+function toExtractedSymbols(node: SyntaxNodeLike, classDepth: number, functionDepth: number): ExtractedSymbol[] {
   if (node.type === "class_definition") {
     const name = extractClassName(node);
     const symbol = buildSymbol(node, "class", name, null);
@@ -35,7 +36,7 @@ function toExtractedSymbols(node: SyntaxNodeLike, insideClass: boolean): Extract
 
   if (node.type === "function_definition") {
     const name = extractFunctionName(node);
-    const kind: ExtractedSymbol["kind"] = insideClass ? "method" : "function";
+    const kind: ExtractedSymbol["kind"] = (classDepth > 0 && functionDepth === 0) ? "method" : "function";
     const signature = sanitizeSignature(node.text);
     const symbol = buildSymbol(node, kind, name, signature);
     return symbol ? [symbol] : [];

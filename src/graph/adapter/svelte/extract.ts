@@ -9,7 +9,7 @@ export interface SvelteScriptBlock {
 
 export function extractSvelteScriptBlocks(source: string): SvelteScriptBlock[] {
   const blocks: SvelteScriptBlock[] = [];
-  const scriptPattern = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
+  const scriptPattern = /<script\b((?:[^>"']|"[^"]*"|'[^']*')*)>([\s\S]*?)<\/script>/gi;
 
   for (const match of source.matchAll(scriptPattern)) {
     const fullMatch = match[0];

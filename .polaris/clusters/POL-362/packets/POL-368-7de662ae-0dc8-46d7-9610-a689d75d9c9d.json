@@ -53,11 +53,11 @@
       "src/graph/adapter/shell/index.ts",
       "src/graph/adapter/shell/fixtures/",
       "src/graph/adapter/registry.ts",
-      "src/graph/adapter/**fixtures**/mixed-repo/sample.c",
-      "src/graph/adapter/**fixtures**/mixed-repo/sample.cpp",
-      "src/graph/adapter/**fixtures**/mixed-repo/sample.cs",
-      "src/graph/adapter/**fixtures**/mixed-repo/sample.sh",
-      "package.json (add tree-sitter-c, tree-sitter-cpp, tree-sitter-c-sharp)"
+      "src/graph/adapter/fixtures/mixed-repo/sample.c",
+      "src/graph/adapter/fixtures/mixed-repo/sample.cpp",
+      "src/graph/adapter/fixtures/mixed-repo/sample.cs",
+      "src/graph/adapter/fixtures/mixed-repo/sample.sh",
+      "package.json"
     ],
     "validation_commands": [
       "npm run build",

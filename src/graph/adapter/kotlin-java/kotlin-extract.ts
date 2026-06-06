@@ -55,7 +55,16 @@ function extractImportName(node: SyntaxNodeLike): string | null {
 }
 
 function isExported(text: string): boolean {
-  return !/\b(?:private|internal|protected)\b/.test(text);
+  const headerText = getNodeHeader(text);
+  return !/\b(?:private|internal|protected)\b/.test(headerText);
+}
+
+function getNodeHeader(text: string): string {
+  const openBrace = text.indexOf("{");
+  if (openBrace !== -1) {
+    return text.substring(0, openBrace);
+  }
+  return text;
 }
 
 const IDENTIFIER_NODE_TYPES = new Set(["identifier", "simple_identifier", "type_identifier"]);

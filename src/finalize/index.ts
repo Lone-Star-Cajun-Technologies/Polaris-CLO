@@ -10,7 +10,7 @@ import {
 import { loadConfig } from "../config/loader.js";
 import { readState } from "../loop/checkpoint.js";
 import { classifyArtifactPath } from "./artifact-policy.js";
-import { hasNonArtifactSourceChanges, verifyChildCommitCustody } from "../loop/git-custody.js";
+import { hasNonArtifactSourceChanges, verifyChildCommitCustody, patternMatchesPath } from "../loop/git-custody.js";
 import { readClusterStateSync } from "../cluster-state/store.js";
 import { runCanonCheck } from "../smartdocs-engine/canon-check.js";
 import { stepMapUpdate } from "./steps/01-map-update.js";
@@ -186,8 +186,26 @@ function checkLibrarianGate(repoRoot: string, clusterId: string): string | null 
     return `Librarian result run_id mismatch (packet: ${packetJson["run_id"]}, result: ${result["run_id"]}).`;
   }
 
+  // Validate files_committed against packet scope constraints
+  const result = resultJson as CloseoutLibrarianResult;
+  const allowedWritePaths = (packetJson["allowed_write_paths"] ?? []) as string[];
+  const prohibitedWritePaths = (packetJson["prohibited_write_paths"] ?? []) as string[];
+  const filesCommitted = result.files_committed ?? [];
+
+  for (const file of filesCommitted) {
+    const prohibitedMatch = prohibitedWritePaths.find((pattern) => patternMatchesPath(pattern, file));
+    if (prohibitedMatch) {
+      return `Librarian wrote to prohibited path: ${file} (matched pattern: ${prohibitedMatch})`;
+    }
+
+    const allowedMatch = allowedWritePaths.find((pattern) => patternMatchesPath(pattern, file));
+    if (!allowedMatch) {
+      return `Librarian wrote to out-of-scope path: ${file} (not in allowed_write_paths)`;
+    }
+  }
+
   try {
-    return checkLibrarianResultGate(resultJson as CloseoutLibrarianResult);
+    return checkLibrarianResultGate(result);
   } catch (err) {
     return `Librarian result gate error: ${err instanceof Error ? err.message : String(err)}`;
   }

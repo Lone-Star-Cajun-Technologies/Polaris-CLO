@@ -21,23 +21,34 @@ interface LoadedTreeSitter {
 }
 
 let cachedRuntime: TreeSitterRuntime | null = null;
+let cachedRuntimePromise: Promise<TreeSitterRuntime> | null = null;
 
 export async function loadTreeSitterRuntime(): Promise<TreeSitterRuntime> {
   if (cachedRuntime) {
     return cachedRuntime;
   }
 
-  const loaded = await loadTreeSitterModules();
-  const parser = new loaded.parserConstructor();
-  parser.setLanguage(loaded.language);
+  if (cachedRuntimePromise) {
+    return await cachedRuntimePromise;
+  }
 
-  cachedRuntime = {
-    parse(source) {
-      return parser.parse(source);
-    },
-  };
+  cachedRuntimePromise = (async () => {
+    const loaded = await loadTreeSitterModules();
+    const parser = new loaded.parserConstructor();
+    parser.setLanguage(loaded.language);
 
-  return cachedRuntime;
+    const runtime: TreeSitterRuntime = {
+      parse(source) {
+        return parser.parse(source);
+      },
+    };
+
+    cachedRuntime = runtime;
+    cachedRuntimePromise = null;
+    return runtime;
+  })();
+
+  return await cachedRuntimePromise;
 }
 
 async function loadTreeSitterModules(): Promise<LoadedTreeSitter> {

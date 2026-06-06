@@ -38,8 +38,8 @@
       "src/graph/adapter/swift/index.ts",
       "src/graph/adapter/swift/fixtures/",
       "src/graph/adapter/registry.ts",
-      "src/graph/adapter/**fixtures**/mixed-repo/sample.swift",
-      "package.json (add tree-sitter-swift dependency)"
+      "src/graph/adapter/fixtures/mixed-repo/sample.swift",
+      "package.json"
     ],
     "validation_commands": [
       "npm run build",

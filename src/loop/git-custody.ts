@@ -240,7 +240,7 @@ function globPatternToRegExp(pattern: string): RegExp {
   return new RegExp(re);
 }
 
-function patternMatchesPath(pattern: string, filePath: string): boolean {
+export function patternMatchesPath(pattern: string, filePath: string): boolean {
   const normalizedPattern = normalizeCommitPath(pattern);
   const normalizedPath = normalizeCommitPath(filePath);
 

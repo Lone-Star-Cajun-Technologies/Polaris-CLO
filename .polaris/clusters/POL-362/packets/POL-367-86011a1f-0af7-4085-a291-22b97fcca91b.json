@@ -47,10 +47,10 @@
       "src/graph/adapter/rust/index.ts",
       "src/graph/adapter/rust/fixtures/",
       "src/graph/adapter/registry.ts",
-      "src/graph/adapter/**fixtures**/mixed-repo/sample.py",
-      "src/graph/adapter/**fixtures**/mixed-repo/sample.go",
-      "src/graph/adapter/**fixtures**/mixed-repo/sample.rs",
-      "package.json (add tree-sitter-python, tree-sitter-go, tree-sitter-rust)"
+      "src/graph/adapter/fixtures/mixed-repo/sample.py",
+      "src/graph/adapter/fixtures/mixed-repo/sample.go",
+      "src/graph/adapter/fixtures/mixed-repo/sample.rs",
+      "package.json"
     ],
     "validation_commands": [
       "npm run build",

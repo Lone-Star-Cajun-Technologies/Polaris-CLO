@@ -111,10 +111,6 @@ function extractFunctionName(text: string): { name: string; rawName: string } | 
 }
 
 function isMethod(node: SyntaxNodeLike, rawName: string): boolean {
-  if (rawName.includes("::")) {
-    return true;
-  }
-
   let current = node.parent ?? null;
   while (current) {
     if (current.type === "class_specifier" || current.type === "struct_specifier") {

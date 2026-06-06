@@ -40,9 +40,9 @@
       "src/graph/adapter/kotlin-java/index.ts",
       "src/graph/adapter/kotlin-java/fixtures/",
       "src/graph/adapter/registry.ts",
-      "src/graph/adapter/**fixtures**/mixed-repo/sample.java",
-      "src/graph/adapter/**fixtures**/mixed-repo/sample.kt",
-      "package.json (add tree-sitter-java, tree-sitter-kotlin)"
+      "src/graph/adapter/fixtures/mixed-repo/sample.java",
+      "src/graph/adapter/fixtures/mixed-repo/sample.kt",
+      "package.json"
     ],
     "validation_commands": [
       "npm run build",
