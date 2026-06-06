@@ -1230,24 +1230,12 @@ export function runLoopDispatch(options: DispatchOptions): void {
   }
 
   // ── Provider probe on first dispatch ──────────────────────────────────────
-  // Catches auth/format failures before packet commit. Only runs on the first
-  // dispatch for this run (no completed children) in direct-worker mode.
+  // Catches provider configuration failures before packet commit. Only runs on
+  // the first dispatch for this run (no completed children) in direct-worker
+  // mode. Best-effort — never blocks dispatch if probe infrastructure fails.
   if (resolvedProvider && providerDecision.mode === "direct-worker" && state.completed_children.length === 0) {
-    let probeResult: { ok: boolean; error?: string } | undefined;
     try {
-      probeResult = probeProviderSync(resolvedProvider, loadedConfig);
-    } catch (err) {
-      // Probe infrastructure unavailable — log and continue
-      appendTelemetry(telemetryFile, {
-        event: "provider-probe-skipped",
-        run_id: state.run_id,
-        child_id: childId,
-        provider: resolvedProvider,
-        reason: err instanceof Error ? err.message : String(err),
-        timestamp: new Date().toISOString(),
-      });
-    }
-    if (probeResult !== undefined) {
+      const probeResult = probeProviderSync(resolvedProvider, loadedConfig);
       if (!probeResult.ok) {
         appendTelemetry(telemetryFile, {
           event: "provider-probe-failed",
@@ -1257,13 +1245,32 @@ export function runLoopDispatch(options: DispatchOptions): void {
           error: probeResult.error,
           timestamp: new Date().toISOString(),
         });
-        fail(`Provider probe failed for "${resolvedProvider}": ${probeResult.error ?? "unknown error"}. Resolve the provider configuration before dispatching.`);
+        // Only hard-fail when the provider is explicitly unknown (not just missing from PATH)
+        if (probeResult.error?.startsWith(`Unknown provider`)) {
+          fail(`Provider probe failed for "${resolvedProvider}": ${probeResult.error}. Resolve the provider configuration before dispatching.`);
+        }
+        // Command not on PATH — emit warning to stderr but allow dispatch to proceed
+        process.stderr.write(
+          `Warning: provider command for "${resolvedProvider}" not found on PATH. ` +
+          `Dispatch will proceed but execution may fail.\n`
+        );
+      } else {
+        appendTelemetry(telemetryFile, {
+          event: "provider-probe-passed",
+          run_id: state.run_id,
+          child_id: childId,
+          provider: resolvedProvider,
+          timestamp: new Date().toISOString(),
+        });
       }
+    } catch (err) {
+      // Probe infrastructure unavailable — log and continue
       appendTelemetry(telemetryFile, {
-        event: "provider-probe-passed",
+        event: "provider-probe-skipped",
         run_id: state.run_id,
         child_id: childId,
         provider: resolvedProvider,
+        reason: err instanceof Error ? err.message : String(err),
         timestamp: new Date().toISOString(),
       });
     }
