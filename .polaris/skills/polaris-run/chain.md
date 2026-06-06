@@ -135,9 +135,9 @@ There are no soft warnings. There are no inline fallback execution paths. There 
 
 ### CHECKPOINT gate
 
-At the CHECKPOINT boundary, the orchestrator accepts only the worker's CompactReturn JSON for continuation decisions. All other worker output is discarded and must not be summarized or used for live repair.
+At the CHECKPOINT boundary, the orchestrator accepts only the worker's CompactReturn JSON for continuation decisions. discard worker output except the CompactReturn JSON object. All other worker output is discarded and must not be summarized or used for live repair.
 
-This gate does not change the step order. It only narrows what survives the worker-return boundary before `loop continue` runs.
+Preserve the existing step order. This gate only narrows what survives the worker-return boundary before `loop continue` runs.
 
 Interactive-agent mode uses an agent/subtask adapter, not shell nesting. Terminal/CI mode may use `scripts/polaris-run.sh` as the `terminal-cli` adapter.
 
