@@ -8,6 +8,7 @@ import { createJavaAdapter, createKotlinAdapter } from "./kotlin-java/index.js";
 import { createPythonAdapter } from "./python/index.js";
 import { createRustAdapter } from "./rust/index.js";
 import { createShellAdapter } from "./shell/index.js";
+import { createSvelteAdapter } from "./svelte/index.js";
 import { createSwiftAdapter } from "./swift/index.js";
 import { createTypeScriptJavaScriptAdapter } from "./typescript-javascript/index.js";
 
@@ -74,6 +75,7 @@ export function getDefaultAdapterRegistry(): AdapterRegistry {
   registry.register(createPythonAdapter());
   registry.register(createRustAdapter());
   registry.register(createShellAdapter());
+  registry.register(createSvelteAdapter());
   registry.register(createSwiftAdapter());
   defaultRegistry = registry;
   return defaultRegistry;
