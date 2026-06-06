@@ -1,0 +1,100 @@
+{
+  "schema_version": "2.1",
+  "worker_role": "impl",
+  "run_id": "polaris-run-pol-345-2026-06-06-001",
+  "cluster_id": "POL-345",
+  "active_child": "POL-346",
+  "state_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json",
+  "telemetry_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-345-2026-06-06-001/telemetry.jsonl",
+  "instructions": {
+    "primary_goal": "Issue: POL-346 — POL-346\nWorktree: .\nBranch: pol-340-delivery\n\n## Goal\n## Objective\n\nImplement the graph store module: type system, SQLite schema, versioning, DB adapter boundary, and baseline query primitives.\n\n## Context\n\nFirst child of [POL-345](<https://linear.app/lsctech/issue/POL-345>) (IMPLEMENT: Add Polaris function-level repository graph backend). The graph governance framework (`src/graph/governance.ts`, `GraphConfig`) was established in [POL-340](<https://linear.app/lsctech/issue/POL-340>). [POL-337](<https://linear.app/lsctech/issue/POL-337>) covered equivalent scope but targeted `src/map/codegraph/` (wrong module) and lacked canonical template compliance; this child supersedes it with correct placement under `src/graph/store/`.\n\n## Goal\n\nNew module `src/graph/store/` with:\n\n1. Type system: node/edge/file/symbol taxonomy (`GraphNode`, `GraphEdge`, `GraphFile`, `GraphSymbol`, etc.)\n2. SQLite schema baseline with schema versioning table\n3. DB adapter: open/close, schema init, migration guard\n4. Baseline query primitives: insertNode, insertEdge, lookupSymbol, lookupFile\n\n## Scope\n\n* src/graph/store/types.ts\n* src/graph/store/schema.sql\n* src/graph/store/adapter.ts\n* src/graph/store/queries.ts\n* src/graph/store/adapter.test.ts\n\n## Acceptance Criteria\n\n- [ ] `GraphNode`, `GraphEdge`, `GraphFile`, `GraphSymbol` types defined and exported from `src/graph/store/types.ts`\n- [ ] SQLite schema includes `nodes`, `edges`, `files`, `symbols` tables with `schema_version` tracking\n- [ ] DB adapter opens and initializes the schema; is idempotent on repeat calls\n- [ ] `insertNode`, `insertEdge`, `lookupSymbol`, `lookupFile` implemented in `queries.ts`\n- [ ] MIT attribution recorded in governance NOTICES on adapter init (via `writeGraphNotices` from `src/graph/governance.ts`)\n- [ ] `npm run build` and `npm test` pass\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/graph/\n\n## Ordering\n\nNo dependencies — executes first in cluster.\n\n## Non-goals\n\n* No tree-sitter extraction (Child 02)\n* No relationship resolution (Child 03)\n* No query API (Child 04)\n* No CLI surface (Child 05)\n\n## Scope\nTouch only:\n- src/graph/store/types.ts\n- src/graph/store/schema.sql\n- src/graph/store/adapter.ts\n- src/graph/store/queries.ts\n- src/graph/store/adapter.test.ts\n\n## Acceptance Criteria\n\n## Validation\n- npm run build\n- npm test\n- npx vitest run src/graph/\n\n## Commit\n[POL-346] POL-346\n\n## Governance\n- Do NOT modify open_children or completed_children in /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json. The parent runtime (loop continue) owns state transitions.\n- Append a telemetry event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-345-2026-06-06-001/telemetry.jsonl.\n\n## Worker Progress Telemetry (MANDATORY)\nThe parent CANNOT see your work. You MUST emit heartbeat events so the parent knows you are alive and making progress.\n\nAfter EVERY step, append a JSONL event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-345-2026-06-06-001/telemetry.jsonl:\n```jsonl\n{\"event\":\"worker-heartbeat\",\"run_id\":\"<from packet>\",\"child_id\":\"POL-346\",\"step_cursor\":\"<current step>\",\"timestamp\":\"<ISO8601>\",\"progress_pct\":<0-100>,\"files_changed\":<count>,\"current_file\":\"<file being edited>\"}\n```\n\nRequired heartbeat points:\n  1. Immediately after reading this packet (step_cursor: \"start\")\n  2. After verifying state file (step_cursor: \"verify\")\n  3. After EACH file edit (step_cursor: \"implement\")\n  4. After running validation (step_cursor: \"validate\")\n  5. After creating commit (step_cursor: \"commit\")\n  6. Before terminating (step_cursor: \"complete\" or \"failed\")\n\nIf heartbeats stop, the parent will assume you crashed and may dispatch a replacement worker.\n\n## Approval Escalation (when uncertain)\nYou have a sealed packet defining your exact scope, allowed files, and validation commands. Use this to decide:\n\nRule 1 - Auto-approve WITHIN scope (normal work):\n  - If the operation touches files within `instructions.allowed_scope` → Just do it\n  - If the command is in `instructions.validation_commands` → Just run it\n  - Low risk, expected work → No need to ask, emit heartbeat with step_cursor: \"implement\"\n\nRule 2 - ESCALATE out-of-scope or high-risk:\n  - File outside allowed_scope → Emit worker-blocked with approval_type: \"out-of-scope\"\n  - Destructive operation (rm -rf, major refactor) → Emit worker-blocked with approval_type: \"destructive\"\n  - External API calls with cost → Emit worker-blocked with approval_type: \"cost\"\n  - Changing secrets/.env → Emit worker-blocked with approval_type: \"security\"\n  - Unclear requirements → Emit worker-blocked with approval_type: \"ambiguous\"\n\nTo escalate, emit IMMEDIATELY to telemetry:\n```jsonl\n{\"event\":\"worker-blocked\",\"run_id\":\"<from packet>\",\"child_id\":\"POL-346\",\"reason\":\"needs-approval\",\"approval_type\":\"<out-of-scope|destructive|cost|security|ambiguous>\",\"description\":\"<specifically what needs approval>\",\"blocker_id\":\"<unique-id>\",\"timestamp\":\"<ISO8601>\"}\n```\n\nThen: Continue heartbeats every 30s with step_cursor: \"blocked-awaiting-approval\"\nWait for parent response. If no response in 5 minutes → TERMINATE with approval-timeout.\n\nRemember: Your packet scope is your authority. Within scope = proceed. Outside scope = escalate.\n\n## Route Cognition Delta\nAfter implementation, apply route-local cognition delta — only if something materially changed.\n\n**POLARIS.md** — update only when ALL of the following are true:\n  - You touched a file in that folder (not a distant folder).\n  - The change materially affects: folder responsibilities, commands/workflows,\n    execution constraints, ownership/routing, or operational behavior.\n  - The current POLARIS.md content is actually wrong or incomplete as a result.\n  DO NOT update POLARIS.md for: formatting fixes, comment changes, tiny refactors,\n  internal implementation details, or any change that leaves the operational guidance\n  still accurate. When in doubt, do not update.\n\n**SUMMARY.md** — update only when: linked docs/specs changed, canon relationships\n  changed, architecture meaning changed, or doctrine/spec linkage changed.\n  SUMMARY.md is informational only. Do not create it if missing — that is a hint for\n  operators, not a task for workers. Keep it short. Never add operational doctrine.\n\n**Never** scan unrelated folders. **Never** regenerate all route docs.\nIf no material change occurred, skip this section entirely.\n\n## Report Back\n- files changed\n- validation results\n- commit hash\n- blockers\n\nTERMINATE SESSION IMMEDIATELY. Do not select or execute the next child.",
+    "steps": [
+      "Verify: read /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json and confirm active_child === \"POL-346\".",
+      "Implement POL-346: \"POL-346\".",
+      "Issue description:\n## Objective\n\nImplement the graph store module: type system, SQLite schema, versioning, DB adapter boundary, and baseline query primitives.\n\n## Context\n\nFirst child of [POL-345](<https://linear.app/lsctech/issue/POL-345>) (IMPLEMENT: Add Polaris function-level repository graph backend). The graph governance framework (`src/graph/governance.ts`, `GraphConfig`) was established in [POL-340](<https://linear.app/lsctech/issue/POL-340>). [POL-337](<https://linear.app/lsctech/issue/POL-337>) covered equivalent scope but targeted `src/map/codegraph/` (wrong module) and lacked canonical template compliance; this child supersedes it with correct placement under `src/graph/store/`.\n\n## Goal\n\nNew module `src/graph/store/` with:\n\n1. Type system: node/edge/file/symbol taxonomy (`GraphNode`, `GraphEdge`, `GraphFile`, `GraphSymbol`, etc.)\n2. SQLite schema baseline with schema versioning table\n3. DB adapter: open/close, schema init, migration guard\n4. Baseline query primitives: insertNode, insertEdge, lookupSymbol, lookupFile\n\n## Scope\n\n* src/graph/store/types.ts\n* src/graph/store/schema.sql\n* src/graph/store/adapter.ts\n* src/graph/store/queries.ts\n* src/graph/store/adapter.test.ts\n\n## Acceptance Criteria\n\n- [ ] `GraphNode`, `GraphEdge`, `GraphFile`, `GraphSymbol` types defined and exported from `src/graph/store/types.ts`\n- [ ] SQLite schema includes `nodes`, `edges`, `files`, `symbols` tables with `schema_version` tracking\n- [ ] DB adapter opens and initializes the schema; is idempotent on repeat calls\n- [ ] `insertNode`, `insertEdge`, `lookupSymbol`, `lookupFile` implemented in `queries.ts`\n- [ ] MIT attribution recorded in governance NOTICES on adapter init (via `writeGraphNotices` from `src/graph/governance.ts`)\n- [ ] `npm run build` and `npm test` pass\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/graph/\n\n## Ordering\n\nNo dependencies — executes first in cluster.\n\n## Non-goals\n\n* No tree-sitter extraction (Child 02)\n* No relationship resolution (Child 03)\n* No query API (Child 04)\n* No CLI surface (Child 05)",
+      "Requirements:",
+      "   1. [ ] `GraphNode`, `GraphEdge`, `GraphFile`, `GraphSymbol` types defined and exported from `src/graph/store/types.ts`",
+      "   2. [ ] SQLite schema includes `nodes`, `edges`, `files`, `symbols` tables with `schema_version` tracking",
+      "   3. [ ] DB adapter opens and initializes the schema; is idempotent on repeat calls",
+      "   4. [ ] `insertNode`, `insertEdge`, `lookupSymbol`, `lookupFile` implemented in `queries.ts`",
+      "   5. [ ] MIT attribution recorded in governance NOTICES on adapter init (via `writeGraphNotices` from `src/graph/governance.ts`)",
+      "   6. [ ] `npm run build` and `npm test` pass",
+      "Run validation commands and confirm all pass.",
+      "Create exactly ONE git commit: [POL-346] POL-346.",
+      "Do NOT modify open_children or completed_children in /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json. The parent runtime (loop continue) owns that state transition.",
+      "Append a telemetry event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-345-2026-06-06-001/telemetry.jsonl.",
+      "Write compact return JSON to stdout (fields: child_id, status, commit, validation, next_recommended_action).",
+      "TERMINATE SESSION IMMEDIATELY. Do not select or execute the next child."
+    ],
+    "allowed_scope": [
+      "src/graph/store/types.ts",
+      "src/graph/store/schema.sql",
+      "src/graph/store/adapter.ts",
+      "src/graph/store/queries.ts",
+      "src/graph/store/adapter.test.ts"
+    ],
+    "validation_commands": [
+      "npm run build",
+      "npm test",
+      "npx vitest run src/graph/"
+    ],
+    "issue_context": {
+      "id": "POL-346",
+      "title": "POL-346",
+      "key_requirements": [],
+      "body": "## Objective\n\nImplement the graph store module: type system, SQLite schema, versioning, DB adapter boundary, and baseline query primitives.\n\n## Context\n\nFirst child of [POL-345](<https://linear.app/lsctech/issue/POL-345>) (IMPLEMENT: Add Polaris function-level repository graph backend). The graph governance framework (`src/graph/governance.ts`, `GraphConfig`) was established in [POL-340](<https://linear.app/lsctech/issue/POL-340>). [POL-337](<https://linear.app/lsctech/issue/POL-337>) covered equivalent scope but targeted `src/map/codegraph/` (wrong module) and lacked canonical template compliance; this child supersedes it with correct placement under `src/graph/store/`.\n\n## Goal\n\nNew module `src/graph/store/` with:\n\n1. Type system: node/edge/file/symbol taxonomy (`GraphNode`, `GraphEdge`, `GraphFile`, `GraphSymbol`, etc.)\n2. SQLite schema baseline with schema versioning table\n3. DB adapter: open/close, schema init, migration guard\n4. Baseline query primitives: insertNode, insertEdge, lookupSymbol, lookupFile\n\n## Scope\n\n* src/graph/store/types.ts\n* src/graph/store/schema.sql\n* src/graph/store/adapter.ts\n* src/graph/store/queries.ts\n* src/graph/store/adapter.test.ts\n\n## Acceptance Criteria\n\n- [ ] `GraphNode`, `GraphEdge`, `GraphFile`, `GraphSymbol` types defined and exported from `src/graph/store/types.ts`\n- [ ] SQLite schema includes `nodes`, `edges`, `files`, `symbols` tables with `schema_version` tracking\n- [ ] DB adapter opens and initializes the schema; is idempotent on repeat calls\n- [ ] `insertNode`, `insertEdge`, `lookupSymbol`, `lookupFile` implemented in `queries.ts`\n- [ ] MIT attribution recorded in governance NOTICES on adapter init (via `writeGraphNotices` from `src/graph/governance.ts`)\n- [ ] `npm run build` and `npm test` pass\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/graph/\n\n## Ordering\n\nNo dependencies — executes first in cluster.\n\n## Non-goals\n\n* No tree-sitter extraction (Child 02)\n* No relationship resolution (Child 03)\n* No query API (Child 04)\n* No CLI surface (Child 05)"
+    }
+  },
+  "lifecycle": {
+    "terminate_after_completion": true,
+    "max_concurrent": 1,
+    "cleanup_on_exit": "commit-and-exit"
+  },
+  "return_contract": [
+    "child_id",
+    "status",
+    "commit",
+    "validation",
+    "next_recommended_action"
+  ],
+  "prompt_mode": "compact",
+  "prompt_metrics": {
+    "mode": "compact",
+    "char_count": 6641,
+    "estimated_tokens": 1660
+  },
+  "role_context": {
+    "role": "worker",
+    "role_authority": "implementation",
+    "may_implement": true,
+    "may_assign_workers": false,
+    "prohibited_actions": [
+      "modify-cluster-plan",
+      "dispatch-children",
+      "polaris-loop-dispatch",
+      "polaris-loop-continue"
+    ]
+  },
+  "prohibited_write_paths": [
+    ".taskchain_artifacts/",
+    ".polaris/clusters/",
+    ".polaris/runs/",
+    "**/telemetry.jsonl"
+  ],
+  "result_file_contract": {
+    "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-345/results/POL-346-baef40b3-7072-4cff-9337-1732ee7edfbd.json",
+    "result_required_fields": {
+      "run_id": "polaris-run-pol-345-2026-06-06-001",
+      "cluster_id": "POL-345",
+      "child_id": "<child_id>",
+      "status": "<status>",
+      "commit": "<commit>",
+      "validation": "<validation>",
+      "next_recommended_action": "<next_recommended_action>"
+    }
+  },
+  "context": {
+    "branch": "pol-340-delivery",
+    "worker_role": "impl"
+  }
+}

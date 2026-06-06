@@ -1,0 +1,73 @@
+{
+  "schema_version": "1.0",
+  "role": "closeout-librarian",
+  "run_id": "polaris-run-pol-345-2026-06-06-001",
+  "dispatch_id": "10318b32-8e82-4e46-bacb-4da7887a40b9",
+  "cluster_id": "POL-345",
+  "status": "success",
+  "commit_sha": "7d9c48b5902e2f5dfadc02c187c01d70af7e0b20",
+  "commit_message": "docs(closeout): reconcile cognition for cluster POL-345",
+  "files_committed": [
+    "src/POLARIS.md",
+    "src/SUMMARY.md",
+    "src/cli/POLARIS.md",
+    "src/cli/SUMMARY.md",
+    "src/graph/POLARIS.md"
+  ],
+  "polaris_md_updates": [
+    {
+      "file": "src/POLARIS.md",
+      "action": "update",
+      "change_summary": "Refined source-root scope language to reflect graph extraction/query ownership."
+    },
+    {
+      "file": "src/cli/POLARIS.md",
+      "action": "update",
+      "change_summary": "Aligned CLI route scope with graph and librarian command surfaces."
+    },
+    {
+      "file": "src/graph/POLARIS.md",
+      "action": "update",
+      "change_summary": "Reconciled route contract to parser/resolver/query/store plus governance."
+    }
+  ],
+  "summary_md_updates": [
+    {
+      "file": "src/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Updated current-state and relationship language for the expanded graph stack."
+    },
+    {
+      "file": "src/cli/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Replaced draft template with current command-surface summary."
+    }
+  ],
+  "docs_ingested": [
+    {
+      "source_path": "smartdocs/raw/2026-06-05-route-health-welfare-identity-analysis.md",
+      "target_path": null,
+      "action": "skip",
+      "reason": "Raw analysis doc is not cluster POL-345 closeout material."
+    },
+    {
+      "source_path": "smartdocs/raw/POLARIS.md",
+      "target_path": null,
+      "action": "skip",
+      "reason": "No new spec/doctrine promotion required for this closeout."
+    }
+  ],
+  "docs_archived": [],
+  "yaml_updates": [],
+  "cognition_archived": [],
+  "link_validation": {
+    "total_checked": 2,
+    "valid": 2,
+    "broken": 0,
+    "repaired": 0,
+    "unrepairable": []
+  },
+  "blockers": [],
+  "reconciled_at": "2026-06-06T03:11:50Z",
+  "evidence_summary": "Reconciled all affected POLARIS.md and SUMMARY.md files for src, src/cli, and src/graph to match completed cluster behavior (graph build/query/impact, parser/resolver/query/store scope, and current CLI command surface). No SmartDocs promotion was required; raw documents were reviewed and explicitly skipped. Link validation on edited docs found no broken links. Wrote a single closeout documentation commit and sealed this result."
+}
