@@ -16,8 +16,12 @@ describe("CppAdapter", () => {
     const methodDeclarator = createNode("function_declarator", "Widget::render()", 3, 5, 3, 21);
     const methodNode = createNode("declaration", "void Widget::render();", 3, 0, 3, 22, [methodDeclarator]);
 
+    // ns is not a class — ns::func() should be classified as a free function
+    const nsFuncDeclarator = createNode("function_declarator", "ns::func()", 4, 5, 4, 15);
+    const nsFuncNode = createNode("declaration", "void ns::func();", 4, 0, 4, 16, [nsFuncDeclarator]);
+
     const tree: ParseTreeLike = {
-      rootNode: createNode("translation_unit", "", 0, 0, 4, 0, [includeNode, classNode, functionNode, methodNode]),
+      rootNode: createNode("translation_unit", "", 0, 0, 5, 0, [includeNode, classNode, functionNode, methodNode, nsFuncNode]),
     };
 
     const adapter = createCppAdapter({
@@ -33,6 +37,7 @@ describe("CppAdapter", () => {
       { kind: "class", name: "Widget" },
       { kind: "function", name: "build" },
       { kind: "method", name: "render" },
+      { kind: "function", name: "func" },
     ]);
   });
 });
