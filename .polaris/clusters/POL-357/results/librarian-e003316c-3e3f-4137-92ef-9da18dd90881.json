@@ -1,0 +1,48 @@
+{
+  "schema_version": "1.0",
+  "role": "closeout-librarian",
+  "run_id": "polaris-run-pol-357-2026-06-06-001",
+  "dispatch_id": "e003316c-3e3f-4137-92ef-9da18dd90881",
+  "cluster_id": "POL-357",
+  "status": "success",
+  "commit_sha": "186ab64805caf402d3165a9161b7c6ee026114a2",
+  "commit_message": "docs(closeout): reconcile cognition for cluster POL-357\n\nRun: polaris-run-pol-357-2026-06-06-001\nCluster: POL-357\nChildren: POL-358, POL-359, POL-360\nFiles updated:\n- POLARIS.md: 1 files\n- SUMMARY.md: 2 files\n- docs ingested: 0\n- links repaired: 0",
+  "files_committed": [
+    "src/graph/POLARIS.md",
+    "src/SUMMARY.md",
+    "src/cli/SUMMARY.md"
+  ],
+  "polaris_md_updates": [
+    {
+      "file": "src/graph/POLARIS.md",
+      "action": "update",
+      "change_summary": "Reconciled the graph route contract to include language adapters, capability reporting, and file-level degradation."
+    }
+  ],
+  "summary_md_updates": [
+    {
+      "file": "src/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Updated current-state language to reflect graph adapter selection and build coverage reporting."
+    },
+    {
+      "file": "src/cli/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Updated current-state language to include graph build coverage reporting."
+    }
+  ],
+  "docs_ingested": [],
+  "docs_archived": [],
+  "yaml_updates": [],
+  "cognition_archived": [],
+  "link_validation": {
+    "total_checked": 2,
+    "valid": 2,
+    "broken": 0,
+    "repaired": 0,
+    "unrepairable": []
+  },
+  "blockers": [],
+  "reconciled_at": "2026-06-06T16:26:06Z",
+  "evidence_summary": "Reconciled the affected graph route and source-root summary docs to reflect the completed graph adapter migration, capability registry, file-level graceful degradation, and graph build coverage reporting. No SmartDocs ingestion or archival was required for this cluster, and the touched markdown links remained valid. The librarian wrote one closeout commit and sealed the result."
+}

@@ -27,7 +27,7 @@ Application source root for Polaris. The tree contains command entrypoints, loop
 - `src/graph/` builds graph artifacts, resolves edges, and serves query helpers for CLI consumers.
 
 ## Current State
-The tree includes graph extraction/resolution/query/store modules plus governance controls and config support for `graph.outputPath` and `graph.invalidationTriggers`. Cognition and atlas validation treat `.polaris/graph/` as generated runtime output.
+The tree includes graph extraction/resolution/query/store modules plus adapter selection, capability reporting, governance controls, and config support for `graph.outputPath` and `graph.invalidationTriggers`. Graph builds now degrade at file level for unsupported languages and surface coverage reporting. Cognition and atlas validation treat `.polaris/graph/` as generated runtime output.
 
 ## Known Drift
 Draft markers remain in some top-level folder docs when a subroute has not yet been fully reconciled.

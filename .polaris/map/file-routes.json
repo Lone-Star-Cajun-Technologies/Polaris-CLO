@@ -5,7 +5,7 @@
     "taskchain": "polaris-__mocks__",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "__mocks__"
@@ -18,7 +18,7 @@
     "taskchain": "polaris-cli",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cli"
@@ -31,8 +31,8 @@
     "taskchain": "polaris-cli",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-06T03:11:06.119Z",
-    "updated_by": "polaris-map-update",
+    "last_updated": "2026-06-06T16:26:55.937Z",
+    "updated_by": "polaris-map-index",
     "tags": [
       "cli"
     ],
@@ -44,7 +44,7 @@
     "taskchain": "polaris-cli",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-06T03:11:06.119Z",
+    "last_updated": "2026-06-06T16:28:37.377Z",
     "updated_by": "polaris-map-update",
     "tags": [
       "cli"
@@ -57,7 +57,7 @@
     "taskchain": "polaris-cli",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cli"
@@ -70,7 +70,7 @@
     "taskchain": "polaris-cli",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cli"
@@ -83,7 +83,7 @@
     "taskchain": "polaris-cli",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cli"
@@ -96,7 +96,7 @@
     "taskchain": "polaris-cli",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cli"
@@ -109,7 +109,7 @@
     "taskchain": "polaris-cli",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cli"
@@ -122,7 +122,7 @@
     "taskchain": "polaris-cli",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cli",
@@ -136,7 +136,7 @@
     "taskchain": "polaris-cli",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cli"
@@ -149,7 +149,7 @@
     "taskchain": "polaris-cli",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cli",
@@ -163,7 +163,7 @@
     "taskchain": "polaris-cli",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cli"
@@ -176,7 +176,7 @@
     "taskchain": "polaris-cli",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cli",
@@ -190,7 +190,20 @@
     "taskchain": "polaris-cli",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "cli"
+    ],
+    "instructionFile": "src/cli/POLARIS.md"
+  },
+  "src/cli/graph.ts": {
+    "domain": "cli",
+    "route": "src/cli",
+    "taskchain": "polaris-cli",
+    "confidence": 0.9,
+    "classification": "indexed",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cli"
@@ -203,7 +216,7 @@
     "taskchain": "polaris-cli",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cli",
@@ -217,7 +230,7 @@
     "taskchain": "polaris-cli",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cli",
@@ -231,7 +244,7 @@
     "taskchain": "polaris-cli",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cli"
@@ -244,7 +257,7 @@
     "taskchain": "polaris-cli",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cli",
@@ -258,7 +271,7 @@
     "taskchain": "polaris-cli",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cli"
@@ -271,7 +284,7 @@
     "taskchain": "polaris-cli",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cli"
@@ -284,7 +297,7 @@
     "taskchain": "polaris-cli",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cli",
@@ -298,7 +311,7 @@
     "taskchain": "polaris-cli",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cli",
@@ -312,7 +325,7 @@
     "taskchain": "polaris-cli",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cli"
@@ -325,7 +338,7 @@
     "taskchain": "polaris-cli",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cli",
@@ -339,7 +352,7 @@
     "taskchain": "polaris-cli",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cli"
@@ -352,7 +365,7 @@
     "taskchain": "polaris-cli",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cli",
@@ -366,7 +379,7 @@
     "taskchain": "polaris-cli",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cli"
@@ -379,7 +392,7 @@
     "taskchain": "polaris-cluster-state",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cluster-state"
@@ -392,7 +405,7 @@
     "taskchain": "polaris-cluster-state",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cluster-state"
@@ -405,7 +418,7 @@
     "taskchain": "polaris-cluster-state",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cluster-state",
@@ -419,7 +432,7 @@
     "taskchain": "polaris-cluster-state",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cluster-state",
@@ -433,7 +446,7 @@
     "taskchain": "polaris-cluster-state",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cluster-state"
@@ -446,7 +459,7 @@
     "taskchain": "polaris-cluster-state",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cluster-state"
@@ -459,8 +472,8 @@
     "taskchain": "polaris-cognition",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T17:26:17.385Z",
-    "updated_by": "polaris-map-update",
+    "last_updated": "2026-06-06T16:26:55.937Z",
+    "updated_by": "polaris-map-index",
     "tags": [
       "cognition"
     ],
@@ -472,8 +485,8 @@
     "taskchain": "polaris-cognition",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T17:26:17.385Z",
-    "updated_by": "polaris-map-update",
+    "last_updated": "2026-06-06T16:26:55.937Z",
+    "updated_by": "polaris-map-index",
     "tags": [
       "cognition"
     ],
@@ -485,7 +498,7 @@
     "taskchain": "polaris-cognition",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cognition"
@@ -498,7 +511,7 @@
     "taskchain": "polaris-cognition",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cognition"
@@ -511,7 +524,7 @@
     "taskchain": "polaris-cognition",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cognition",
@@ -525,7 +538,7 @@
     "taskchain": "polaris-cognition",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cognition",
@@ -539,7 +552,7 @@
     "taskchain": "polaris-cognition",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cognition",
@@ -553,7 +566,7 @@
     "taskchain": "polaris-cognition",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cognition"
@@ -566,7 +579,7 @@
     "taskchain": "polaris-cognition",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cognition"
@@ -579,7 +592,7 @@
     "taskchain": "polaris-cognition",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cognition"
@@ -592,7 +605,7 @@
     "taskchain": "polaris-cognition",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cognition"
@@ -605,7 +618,7 @@
     "taskchain": "polaris-cognition",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cognition"
@@ -618,7 +631,7 @@
     "taskchain": "polaris-cognition",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "cognition"
@@ -631,7 +644,7 @@
     "taskchain": "polaris-config",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "config"
@@ -644,8 +657,8 @@
     "taskchain": "polaris-config",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T17:26:17.385Z",
-    "updated_by": "polaris-map-update",
+    "last_updated": "2026-06-06T16:26:55.937Z",
+    "updated_by": "polaris-map-index",
     "tags": [
       "config"
     ],
@@ -657,8 +670,8 @@
     "taskchain": "polaris-config",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T17:26:17.385Z",
-    "updated_by": "polaris-map-update",
+    "last_updated": "2026-06-06T16:26:55.937Z",
+    "updated_by": "polaris-map-index",
     "tags": [
       "config"
     ],
@@ -670,7 +683,7 @@
     "taskchain": "polaris-config",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "config"
@@ -683,7 +696,7 @@
     "taskchain": "polaris-config",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "config",
@@ -697,7 +710,7 @@
     "taskchain": "polaris-config",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "config",
@@ -711,7 +724,7 @@
     "taskchain": "polaris-config",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "config"
@@ -724,7 +737,7 @@
     "taskchain": "polaris-config",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "config",
@@ -738,7 +751,7 @@
     "taskchain": "polaris-config",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "config"
@@ -751,7 +764,7 @@
     "taskchain": "polaris-config",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "config"
@@ -764,7 +777,7 @@
     "taskchain": "polaris-config",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "config"
@@ -777,7 +790,7 @@
     "taskchain": "polaris-config",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "config",
@@ -791,7 +804,7 @@
     "taskchain": "polaris-config",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "config"
@@ -804,7 +817,7 @@
     "taskchain": "polaris-config",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "config",
@@ -818,7 +831,7 @@
     "taskchain": "polaris-config",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "config"
@@ -831,7 +844,7 @@
     "taskchain": "polaris-finalize",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "finalize"
@@ -844,7 +857,7 @@
     "taskchain": "polaris-finalize",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "finalize"
@@ -857,7 +870,7 @@
     "taskchain": "polaris-finalize",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "finalize"
@@ -870,7 +883,7 @@
     "taskchain": "polaris-finalize",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "finalize",
@@ -884,7 +897,7 @@
     "taskchain": "polaris-finalize",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "finalize"
@@ -897,7 +910,7 @@
     "taskchain": "polaris-finalize",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "finalize",
@@ -911,7 +924,7 @@
     "taskchain": "polaris-finalize",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "finalize"
@@ -924,7 +937,7 @@
     "taskchain": "polaris-finalize",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "finalize",
@@ -938,7 +951,7 @@
     "taskchain": "polaris-finalize",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "finalize"
@@ -951,7 +964,7 @@
     "taskchain": "polaris-finalize",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "finalize",
@@ -965,7 +978,7 @@
     "taskchain": "polaris-finalize",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "finalize",
@@ -979,7 +992,7 @@
     "taskchain": "polaris-finalize",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "finalize"
@@ -992,7 +1005,7 @@
     "taskchain": "polaris-finalize",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "finalize"
@@ -1005,7 +1018,7 @@
     "taskchain": "polaris-finalize",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "finalize"
@@ -1018,7 +1031,7 @@
     "taskchain": "polaris-finalize",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "finalize"
@@ -1031,7 +1044,7 @@
     "taskchain": "polaris-finalize",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "finalize"
@@ -1044,7 +1057,7 @@
     "taskchain": "polaris-finalize",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "finalize"
@@ -1057,7 +1070,7 @@
     "taskchain": "polaris-finalize",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "finalize"
@@ -1070,7 +1083,7 @@
     "taskchain": "polaris-finalize",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "finalize"
@@ -1083,7 +1096,7 @@
     "taskchain": "polaris-finalize",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "finalize"
@@ -1096,7 +1109,7 @@
     "taskchain": "polaris-finalize",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "finalize"
@@ -1109,7 +1122,7 @@
     "taskchain": "polaris-finalize",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "finalize"
@@ -1122,7 +1135,7 @@
     "taskchain": "polaris-finalize",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "finalize"
@@ -1135,7 +1148,7 @@
     "taskchain": "polaris-finalize",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "finalize"
@@ -1148,7 +1161,7 @@
     "taskchain": "polaris-finalize",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "finalize"
@@ -1161,7 +1174,7 @@
     "taskchain": "polaris-finalize",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "finalize"
@@ -1174,12 +1187,359 @@
     "taskchain": "polaris-finalize",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "finalize"
     ],
     "instructionFile": "src/finalize/steps/POLARIS.md"
+  },
+  "src/graph/POLARIS.md": {
+    "domain": "graph",
+    "route": "src/graph",
+    "taskchain": "polaris-graph",
+    "confidence": 0.9,
+    "classification": "indexed",
+    "last_updated": "2026-06-06T16:28:37.377Z",
+    "updated_by": "polaris-map-update",
+    "tags": [
+      "graph"
+    ],
+    "instructionFile": "src/graph/POLARIS.md"
+  },
+  "src/graph/adapter/registry.ts": {
+    "domain": "graph",
+    "route": "src/graph",
+    "taskchain": "polaris-graph",
+    "confidence": 0.85,
+    "classification": "indexed",
+    "last_updated": "2026-06-06T16:26:55.937Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "graph"
+    ],
+    "instructionFile": "src/graph/POLARIS.md"
+  },
+  "src/graph/adapter/types.ts": {
+    "domain": "graph",
+    "route": "src/graph",
+    "taskchain": "polaris-graph",
+    "confidence": 0.85,
+    "classification": "indexed",
+    "last_updated": "2026-06-06T16:26:55.937Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "graph"
+    ],
+    "instructionFile": "src/graph/POLARIS.md"
+  },
+  "src/graph/adapter/typescript-javascript/adapter.ts": {
+    "domain": "graph",
+    "route": "src/graph",
+    "taskchain": "polaris-graph",
+    "confidence": 0.85,
+    "classification": "indexed",
+    "last_updated": "2026-06-06T16:26:55.937Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "graph"
+    ],
+    "instructionFile": "src/graph/POLARIS.md"
+  },
+  "src/graph/adapter/typescript-javascript/extract.ts": {
+    "domain": "graph",
+    "route": "src/graph",
+    "taskchain": "polaris-graph",
+    "confidence": 0.85,
+    "classification": "indexed",
+    "last_updated": "2026-06-06T16:26:55.937Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "graph"
+    ],
+    "instructionFile": "src/graph/POLARIS.md"
+  },
+  "src/graph/adapter/typescript-javascript/index.ts": {
+    "domain": "graph",
+    "route": "src/graph",
+    "taskchain": "polaris-graph",
+    "confidence": 0.85,
+    "classification": "indexed",
+    "last_updated": "2026-06-06T16:26:55.937Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "graph",
+      "entry-point"
+    ],
+    "instructionFile": "src/graph/POLARIS.md"
+  },
+  "src/graph/adapter/typescript-javascript/runtime.ts": {
+    "domain": "graph",
+    "route": "src/graph",
+    "taskchain": "polaris-graph",
+    "confidence": 0.85,
+    "classification": "indexed",
+    "last_updated": "2026-06-06T16:26:55.937Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "graph"
+    ],
+    "instructionFile": "src/graph/POLARIS.md"
+  },
+  "src/graph/capability/index.ts": {
+    "domain": "graph",
+    "route": "src/graph",
+    "taskchain": "polaris-graph",
+    "confidence": 0.85,
+    "classification": "indexed",
+    "last_updated": "2026-06-06T16:26:55.937Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "graph",
+      "entry-point"
+    ],
+    "instructionFile": "src/graph/POLARIS.md"
+  },
+  "src/graph/governance.test.ts": {
+    "domain": "graph",
+    "route": "src/graph",
+    "taskchain": "polaris-graph",
+    "confidence": 0.9,
+    "classification": "indexed",
+    "last_updated": "2026-06-06T16:26:55.937Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "graph",
+      "test"
+    ],
+    "instructionFile": "src/graph/POLARIS.md"
+  },
+  "src/graph/governance.ts": {
+    "domain": "graph",
+    "route": "src/graph",
+    "taskchain": "polaris-graph",
+    "confidence": 0.9,
+    "classification": "indexed",
+    "last_updated": "2026-06-06T16:26:55.937Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "graph"
+    ],
+    "instructionFile": "src/graph/POLARIS.md"
+  },
+  "src/graph/parser/extract.test.ts": {
+    "domain": "graph",
+    "route": "src/graph",
+    "taskchain": "polaris-graph",
+    "confidence": 0.85,
+    "classification": "indexed",
+    "last_updated": "2026-06-06T16:26:55.937Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "graph",
+      "test"
+    ],
+    "instructionFile": "src/graph/POLARIS.md"
+  },
+  "src/graph/parser/extract.ts": {
+    "domain": "graph",
+    "route": "src/graph",
+    "taskchain": "polaris-graph",
+    "confidence": 0.85,
+    "classification": "indexed",
+    "last_updated": "2026-06-06T16:26:55.937Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "graph"
+    ],
+    "instructionFile": "src/graph/POLARIS.md"
+  },
+  "src/graph/parser/loader.ts": {
+    "domain": "graph",
+    "route": "src/graph",
+    "taskchain": "polaris-graph",
+    "confidence": 0.85,
+    "classification": "indexed",
+    "last_updated": "2026-06-06T16:26:55.937Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "graph"
+    ],
+    "instructionFile": "src/graph/POLARIS.md"
+  },
+  "src/graph/parser/pipeline.ts": {
+    "domain": "graph",
+    "route": "src/graph",
+    "taskchain": "polaris-graph",
+    "confidence": 0.85,
+    "classification": "indexed",
+    "last_updated": "2026-06-06T16:26:55.937Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "graph"
+    ],
+    "instructionFile": "src/graph/POLARIS.md"
+  },
+  "src/graph/query/index.test.ts": {
+    "domain": "graph",
+    "route": "src/graph",
+    "taskchain": "polaris-graph",
+    "confidence": 0.85,
+    "classification": "indexed",
+    "last_updated": "2026-06-06T16:26:55.937Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "graph",
+      "test"
+    ],
+    "instructionFile": "src/graph/POLARIS.md"
+  },
+  "src/graph/query/index.ts": {
+    "domain": "graph",
+    "route": "src/graph",
+    "taskchain": "polaris-graph",
+    "confidence": 0.85,
+    "classification": "indexed",
+    "last_updated": "2026-06-06T16:26:55.937Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "graph",
+      "entry-point"
+    ],
+    "instructionFile": "src/graph/POLARIS.md"
+  },
+  "src/graph/query/types.ts": {
+    "domain": "graph",
+    "route": "src/graph",
+    "taskchain": "polaris-graph",
+    "confidence": 0.85,
+    "classification": "indexed",
+    "last_updated": "2026-06-06T16:26:55.937Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "graph"
+    ],
+    "instructionFile": "src/graph/POLARIS.md"
+  },
+  "src/graph/resolver/build-edges.ts": {
+    "domain": "graph",
+    "route": "src/graph",
+    "taskchain": "polaris-graph",
+    "confidence": 0.85,
+    "classification": "indexed",
+    "last_updated": "2026-06-06T16:26:55.937Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "graph"
+    ],
+    "instructionFile": "src/graph/POLARIS.md"
+  },
+  "src/graph/resolver/index.test.ts": {
+    "domain": "graph",
+    "route": "src/graph",
+    "taskchain": "polaris-graph",
+    "confidence": 0.85,
+    "classification": "indexed",
+    "last_updated": "2026-06-06T16:26:55.937Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "graph",
+      "test"
+    ],
+    "instructionFile": "src/graph/POLARIS.md"
+  },
+  "src/graph/resolver/index.ts": {
+    "domain": "graph",
+    "route": "src/graph",
+    "taskchain": "polaris-graph",
+    "confidence": 0.85,
+    "classification": "indexed",
+    "last_updated": "2026-06-06T16:26:55.937Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "graph",
+      "entry-point"
+    ],
+    "instructionFile": "src/graph/POLARIS.md"
+  },
+  "src/graph/resolver/resolve-imports.ts": {
+    "domain": "graph",
+    "route": "src/graph",
+    "taskchain": "polaris-graph",
+    "confidence": 0.85,
+    "classification": "indexed",
+    "last_updated": "2026-06-06T16:26:55.937Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "graph"
+    ],
+    "instructionFile": "src/graph/POLARIS.md"
+  },
+  "src/graph/store/adapter.test.ts": {
+    "domain": "graph",
+    "route": "src/graph",
+    "taskchain": "polaris-graph",
+    "confidence": 0.85,
+    "classification": "indexed",
+    "last_updated": "2026-06-06T16:26:55.937Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "graph",
+      "test"
+    ],
+    "instructionFile": "src/graph/POLARIS.md"
+  },
+  "src/graph/store/adapter.ts": {
+    "domain": "graph",
+    "route": "src/graph",
+    "taskchain": "polaris-graph",
+    "confidence": 0.85,
+    "classification": "indexed",
+    "last_updated": "2026-06-06T16:26:55.937Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "graph"
+    ],
+    "instructionFile": "src/graph/POLARIS.md"
+  },
+  "src/graph/store/queries.ts": {
+    "domain": "graph",
+    "route": "src/graph",
+    "taskchain": "polaris-graph",
+    "confidence": 0.85,
+    "classification": "indexed",
+    "last_updated": "2026-06-06T16:26:55.937Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "graph"
+    ],
+    "instructionFile": "src/graph/POLARIS.md"
+  },
+  "src/graph/store/schema.sql": {
+    "domain": "graph",
+    "route": "src/graph",
+    "taskchain": "polaris-graph",
+    "confidence": 0.85,
+    "classification": "indexed",
+    "last_updated": "2026-06-06T16:26:55.937Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "graph"
+    ],
+    "instructionFile": "src/graph/POLARIS.md"
+  },
+  "src/graph/store/types.ts": {
+    "domain": "graph",
+    "route": "src/graph",
+    "taskchain": "polaris-graph",
+    "confidence": 0.85,
+    "classification": "indexed",
+    "last_updated": "2026-06-06T16:26:55.937Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "graph"
+    ],
+    "instructionFile": "src/graph/POLARIS.md"
   },
   "src/ignore/.gitkeep": {
     "domain": "ignore",
@@ -1187,7 +1547,7 @@
     "taskchain": "polaris-ignore",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "ignore"
@@ -1200,7 +1560,7 @@
     "taskchain": "polaris-ignore",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "ignore"
@@ -1213,7 +1573,7 @@
     "taskchain": "polaris-ignore",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "ignore"
@@ -1226,7 +1586,7 @@
     "taskchain": "polaris-ignore",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "ignore"
@@ -1239,7 +1599,7 @@
     "taskchain": "polaris-ignore",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "ignore"
@@ -1252,7 +1612,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -1265,7 +1625,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -1278,7 +1638,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -1291,7 +1651,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop",
@@ -1305,7 +1665,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -1318,7 +1678,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -1331,7 +1691,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -1344,7 +1704,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -1357,7 +1717,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -1370,7 +1730,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop",
@@ -1384,7 +1744,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop",
@@ -1398,7 +1758,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -1411,7 +1771,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop",
@@ -1425,7 +1785,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -1438,7 +1798,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop",
@@ -1452,7 +1812,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -1465,7 +1825,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -1478,7 +1838,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -1491,7 +1851,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -1504,7 +1864,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop",
@@ -1518,7 +1878,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -1531,7 +1891,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop",
@@ -1545,7 +1905,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -1558,7 +1918,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop",
@@ -1572,7 +1932,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -1585,7 +1945,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -1598,7 +1958,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -1611,7 +1971,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop",
@@ -1625,7 +1985,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -1638,7 +1998,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -1651,7 +2011,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop",
@@ -1665,7 +2025,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -1678,7 +2038,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop",
@@ -1692,7 +2052,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -1705,7 +2065,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop",
@@ -1719,7 +2079,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop",
@@ -1733,7 +2093,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -1746,7 +2106,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop",
@@ -1760,7 +2120,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -1773,7 +2133,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop",
@@ -1787,7 +2147,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -1800,7 +2160,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -1813,7 +2173,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop",
@@ -1827,7 +2187,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop",
@@ -1841,7 +2201,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -1854,7 +2214,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop",
@@ -1868,7 +2228,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -1881,7 +2241,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop",
@@ -1895,7 +2255,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -1908,7 +2268,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop",
@@ -1922,7 +2282,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -1935,7 +2295,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop",
@@ -1949,7 +2309,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -1962,7 +2322,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop",
@@ -1976,7 +2336,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop",
@@ -1990,7 +2350,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop",
@@ -2004,7 +2364,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -2017,7 +2377,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop",
@@ -2031,7 +2391,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -2044,7 +2404,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop",
@@ -2058,7 +2418,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -2071,7 +2431,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop",
@@ -2085,7 +2445,20 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
+    "updated_by": "polaris-map-index",
+    "tags": [
+      "loop"
+    ],
+    "instructionFile": "src/loop/POLARIS.md"
+  },
+  "src/loop/wait.ts": {
+    "domain": "loop",
+    "route": "src/loop",
+    "taskchain": "polaris-loop",
+    "confidence": 0.9,
+    "classification": "indexed",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -2098,7 +2471,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop",
@@ -2112,7 +2485,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -2125,7 +2498,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop",
@@ -2139,7 +2512,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -2152,7 +2525,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop",
@@ -2166,7 +2539,7 @@
     "taskchain": "polaris-loop",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "loop"
@@ -2179,7 +2552,7 @@
     "taskchain": "polaris-map",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "map"
@@ -2192,8 +2565,8 @@
     "taskchain": "polaris-map",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T17:26:17.385Z",
-    "updated_by": "polaris-map-update",
+    "last_updated": "2026-06-06T16:26:55.937Z",
+    "updated_by": "polaris-map-index",
     "tags": [
       "map"
     ],
@@ -2205,8 +2578,8 @@
     "taskchain": "polaris-map",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T17:26:17.385Z",
-    "updated_by": "polaris-map-update",
+    "last_updated": "2026-06-06T16:26:55.937Z",
+    "updated_by": "polaris-map-index",
     "tags": [
       "map"
     ],
@@ -2218,7 +2591,7 @@
     "taskchain": "polaris-map",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "map"
@@ -2231,7 +2604,7 @@
     "taskchain": "polaris-map",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "map",
@@ -2245,7 +2618,7 @@
     "taskchain": "polaris-map",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "map"
@@ -2258,7 +2631,7 @@
     "taskchain": "polaris-map",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "map",
@@ -2272,7 +2645,7 @@
     "taskchain": "polaris-map",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "map",
@@ -2286,7 +2659,7 @@
     "taskchain": "polaris-map",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "map"
@@ -2299,7 +2672,7 @@
     "taskchain": "polaris-map",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "map",
@@ -2313,7 +2686,7 @@
     "taskchain": "polaris-map",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "map"
@@ -2326,7 +2699,7 @@
     "taskchain": "polaris-map",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "map",
@@ -2340,7 +2713,7 @@
     "taskchain": "polaris-map",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "map"
@@ -2353,7 +2726,7 @@
     "taskchain": "polaris-map",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "map",
@@ -2367,7 +2740,7 @@
     "taskchain": "polaris-map",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "map"
@@ -2380,7 +2753,7 @@
     "taskchain": "polaris-mcp",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "mcp"
@@ -2393,7 +2766,7 @@
     "taskchain": "polaris-mcp",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "mcp"
@@ -2406,7 +2779,7 @@
     "taskchain": "polaris-mcp",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "mcp"
@@ -2419,7 +2792,7 @@
     "taskchain": "polaris-mcp",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "mcp"
@@ -2432,7 +2805,7 @@
     "taskchain": "polaris-mcp",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "mcp"
@@ -2445,7 +2818,7 @@
     "taskchain": "polaris-mcp",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "mcp",
@@ -2459,7 +2832,7 @@
     "taskchain": "polaris-mcp",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "mcp"
@@ -2472,7 +2845,7 @@
     "taskchain": "polaris-mcp",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "mcp",
@@ -2486,7 +2859,7 @@
     "taskchain": "polaris-mcp",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "mcp"
@@ -2499,7 +2872,7 @@
     "taskchain": "polaris-mcp",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "mcp"
@@ -2512,7 +2885,7 @@
     "taskchain": "polaris-mcp",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "mcp"
@@ -2525,7 +2898,7 @@
     "taskchain": "polaris-mcp",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "mcp"
@@ -2538,7 +2911,7 @@
     "taskchain": "polaris-mcp",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "mcp",
@@ -2552,7 +2925,7 @@
     "taskchain": "polaris-mcp",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "mcp"
@@ -2565,7 +2938,7 @@
     "taskchain": "polaris-mcp",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "mcp",
@@ -2579,7 +2952,7 @@
     "taskchain": "polaris-mcp",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "mcp"
@@ -2592,7 +2965,7 @@
     "taskchain": "polaris-mcp",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "mcp",
@@ -2606,7 +2979,7 @@
     "taskchain": "polaris-mcp",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "mcp"
@@ -2619,7 +2992,7 @@
     "taskchain": "polaris-mcp",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "mcp",
@@ -2633,7 +3006,7 @@
     "taskchain": "polaris-mcp",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "mcp",
@@ -2647,7 +3020,7 @@
     "taskchain": "polaris-mcp",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "mcp"
@@ -2660,7 +3033,7 @@
     "taskchain": "polaris-mcp",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "mcp",
@@ -2674,7 +3047,7 @@
     "taskchain": "polaris-mcp",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "mcp"
@@ -2687,7 +3060,7 @@
     "taskchain": "polaris-mcp",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "mcp"
@@ -2700,7 +3073,7 @@
     "taskchain": "polaris-mcp",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "mcp"
@@ -2713,7 +3086,7 @@
     "taskchain": "polaris-runs",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "runs"
@@ -2726,7 +3099,7 @@
     "taskchain": "polaris-runs",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "runs"
@@ -2739,7 +3112,7 @@
     "taskchain": "polaris-runs",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "runs",
@@ -2753,7 +3126,7 @@
     "taskchain": "polaris-runs",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "runs",
@@ -2767,7 +3140,7 @@
     "taskchain": "polaris-runs",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "runs"
@@ -2780,7 +3153,7 @@
     "taskchain": "polaris-runs",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "runs"
@@ -2793,7 +3166,7 @@
     "taskchain": "polaris-runs",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "runs"
@@ -2806,7 +3179,7 @@
     "taskchain": "polaris-runs",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "runs"
@@ -2819,7 +3192,7 @@
     "taskchain": "polaris-runtime",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "runtime"
@@ -2832,7 +3205,7 @@
     "taskchain": "polaris-runtime",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "runtime"
@@ -2845,7 +3218,7 @@
     "taskchain": "polaris-runtime",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "runtime"
@@ -2858,7 +3231,7 @@
     "taskchain": "polaris-runtime",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "runtime"
@@ -2871,7 +3244,7 @@
     "taskchain": "polaris-runtime",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "runtime"
@@ -2884,7 +3257,7 @@
     "taskchain": "polaris-runtime",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "runtime"
@@ -2897,7 +3270,7 @@
     "taskchain": "polaris-runtime",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "runtime"
@@ -2910,7 +3283,7 @@
     "taskchain": "polaris-runtime",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "runtime"
@@ -2923,7 +3296,7 @@
     "taskchain": "polaris-runtime",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "runtime"
@@ -2936,7 +3309,7 @@
     "taskchain": "polaris-runtime",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "runtime",
@@ -2950,7 +3323,7 @@
     "taskchain": "polaris-runtime",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "runtime"
@@ -2963,7 +3336,7 @@
     "taskchain": "polaris-runtime",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "runtime"
@@ -2976,7 +3349,7 @@
     "taskchain": "polaris-runtime",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "runtime"
@@ -2989,7 +3362,7 @@
     "taskchain": "polaris-runtime",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "runtime"
@@ -3002,7 +3375,7 @@
     "taskchain": "polaris-runtime",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "runtime"
@@ -3015,7 +3388,7 @@
     "taskchain": "polaris-runtime",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "runtime"
@@ -3028,7 +3401,7 @@
     "taskchain": "polaris-runtime",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "runtime"
@@ -3041,7 +3414,7 @@
     "taskchain": "polaris-runtime",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "runtime"
@@ -3054,7 +3427,7 @@
     "taskchain": "polaris-runtime",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "runtime"
@@ -3067,7 +3440,7 @@
     "taskchain": "polaris-runtime",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "runtime"
@@ -3080,7 +3453,7 @@
     "taskchain": "polaris-runtime",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "runtime"
@@ -3093,7 +3466,7 @@
     "taskchain": "polaris-runtime",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "runtime"
@@ -3106,7 +3479,7 @@
     "taskchain": "polaris-skill-packet",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "skill-packet",
@@ -3120,7 +3493,7 @@
     "taskchain": "polaris-skill-packet",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "skill-packet",
@@ -3134,7 +3507,7 @@
     "taskchain": "polaris-skill-packet",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "skill-packet"
@@ -3147,7 +3520,7 @@
     "taskchain": "polaris-skill-packet",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "skill-packet",
@@ -3161,7 +3534,7 @@
     "taskchain": "polaris-skill-packet",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "skill-packet"
@@ -3174,8 +3547,8 @@
     "taskchain": "polaris-smartdocs-engine",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T17:26:17.385Z",
-    "updated_by": "polaris-map-update",
+    "last_updated": "2026-06-06T16:26:55.937Z",
+    "updated_by": "polaris-map-index",
     "tags": [
       "smartdocs-engine"
     ],
@@ -3187,8 +3560,8 @@
     "taskchain": "polaris-smartdocs-engine",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T17:26:17.385Z",
-    "updated_by": "polaris-map-update",
+    "last_updated": "2026-06-06T16:26:55.937Z",
+    "updated_by": "polaris-map-index",
     "tags": [
       "smartdocs-engine"
     ],
@@ -3200,7 +3573,7 @@
     "taskchain": "polaris-smartdocs-engine",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "smartdocs-engine",
@@ -3214,7 +3587,7 @@
     "taskchain": "polaris-smartdocs-engine",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "smartdocs-engine"
@@ -3227,7 +3600,7 @@
     "taskchain": "polaris-smartdocs-engine",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "smartdocs-engine",
@@ -3241,7 +3614,7 @@
     "taskchain": "polaris-smartdocs-engine",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "smartdocs-engine"
@@ -3254,7 +3627,7 @@
     "taskchain": "polaris-smartdocs-engine",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "smartdocs-engine",
@@ -3268,7 +3641,7 @@
     "taskchain": "polaris-smartdocs-engine",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "smartdocs-engine"
@@ -3281,7 +3654,7 @@
     "taskchain": "polaris-smartdocs-engine",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "smartdocs-engine",
@@ -3295,7 +3668,7 @@
     "taskchain": "polaris-smartdocs-engine",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "smartdocs-engine",
@@ -3309,7 +3682,7 @@
     "taskchain": "polaris-smartdocs-engine",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "smartdocs-engine",
@@ -3323,7 +3696,7 @@
     "taskchain": "polaris-smartdocs-engine",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "smartdocs-engine"
@@ -3336,7 +3709,7 @@
     "taskchain": "polaris-smartdocs-engine",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "smartdocs-engine",
@@ -3350,7 +3723,7 @@
     "taskchain": "polaris-smartdocs-engine",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "smartdocs-engine"
@@ -3363,7 +3736,7 @@
     "taskchain": "polaris-smartdocs-engine",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "smartdocs-engine",
@@ -3377,7 +3750,7 @@
     "taskchain": "polaris-smartdocs-engine",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "smartdocs-engine"
@@ -3390,7 +3763,7 @@
     "taskchain": "polaris-smartdocs-engine",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "smartdocs-engine",
@@ -3404,7 +3777,7 @@
     "taskchain": "polaris-smartdocs-engine",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "smartdocs-engine"
@@ -3417,7 +3790,7 @@
     "taskchain": "polaris-smartdocs-engine",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "smartdocs-engine",
@@ -3431,7 +3804,7 @@
     "taskchain": "polaris-smartdocs-engine",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "smartdocs-engine"
@@ -3444,7 +3817,7 @@
     "taskchain": "polaris-tracker",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "tracker",
@@ -3458,7 +3831,7 @@
     "taskchain": "polaris-tracker",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "tracker",
@@ -3472,7 +3845,7 @@
     "taskchain": "polaris-tracker",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "tracker",
@@ -3486,7 +3859,7 @@
     "taskchain": "polaris-tracker",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "tracker",
@@ -3500,7 +3873,7 @@
     "taskchain": "polaris-tracker",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "tracker"
@@ -3513,7 +3886,7 @@
     "taskchain": "polaris-tracker",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "tracker",
@@ -3527,7 +3900,7 @@
     "taskchain": "polaris-tracker",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "tracker"
@@ -3540,7 +3913,7 @@
     "taskchain": "polaris-tracker",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "tracker"
@@ -3553,7 +3926,7 @@
     "taskchain": "polaris-tracker",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "tracker"
@@ -3566,7 +3939,7 @@
     "taskchain": "polaris-tracker",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "tracker",
@@ -3580,7 +3953,7 @@
     "taskchain": "polaris-tracker",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "tracker",
@@ -3594,7 +3967,7 @@
     "taskchain": "polaris-tracker",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "tracker",
@@ -3608,7 +3981,7 @@
     "taskchain": "polaris-tracker",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "tracker"
@@ -3621,7 +3994,7 @@
     "taskchain": "polaris-tracker",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "tracker"
@@ -3634,7 +4007,7 @@
     "taskchain": "polaris-types",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "types"
@@ -3647,7 +4020,7 @@
     "taskchain": "polaris-types",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "types"
@@ -3660,7 +4033,7 @@
     "taskchain": "polaris-types",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "types"
@@ -3673,7 +4046,7 @@
     "taskchain": "polaris-types",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "types"
@@ -3686,7 +4059,7 @@
     "taskchain": "polaris-types",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "types"
@@ -3699,7 +4072,7 @@
     "taskchain": "polaris-utils",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "utils"
@@ -3712,7 +4085,7 @@
     "taskchain": "polaris-utils",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "utils"
@@ -3725,7 +4098,7 @@
     "taskchain": "polaris-utils",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "utils",
@@ -3739,24 +4112,11 @@
     "taskchain": "polaris-utils",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-05T16:13:05.631Z",
+    "last_updated": "2026-06-06T16:26:55.937Z",
     "updated_by": "polaris-map-index",
     "tags": [
       "utils"
     ],
     "instructionFile": "src/utils/POLARIS.md"
-  },
-  "src/graph/POLARIS.md": {
-    "domain": "graph",
-    "route": "src/graph",
-    "taskchain": "polaris-graph",
-    "confidence": 0.85,
-    "classification": "indexed",
-    "last_updated": "2026-06-06T03:11:06.119Z",
-    "updated_by": "polaris-map-update",
-    "tags": [
-      "graph"
-    ],
-    "instructionFile": "src/graph/POLARIS.md"
   }
 }

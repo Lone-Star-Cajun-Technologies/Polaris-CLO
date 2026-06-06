@@ -1,0 +1,16 @@
+{
+  "child_id": "POL-360",
+  "cluster_id": "POL-357",
+  "status": "success",
+  "commit": "7205b443f49131bc1181cc5961c5e28348e474a1",
+  "validation": {
+    "passed": [
+      "npm run build",
+      "npm test",
+      "npx vitest run src/graph/",
+      "npm run polaris -- graph build --json"
+    ]
+  },
+  "next_recommended_action": "Run parent loop continue to record POL-360 completion and close POL-357.",
+  "run_id": "polaris-run-pol-357-2026-06-06-001"
+}

@@ -1,22 +1,13 @@
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
+import { GraphAdapterRegistry } from "../adapter/registry.js";
+import { createTypeScriptJavaScriptAdapter } from "../adapter/typescript-javascript/index.js";
 import { GraphStoreAdapter } from "../store/adapter.js";
 import { extractSymbolsFromTree } from "./extract.js";
 import type { ParseTreeLike, SyntaxNodeLike } from "./loader.js";
-import { loadTreeSitterRuntime } from "./loader.js";
 import { runExtractionPipeline } from "./pipeline.js";
-
-vi.mock("./loader.js", async () => {
-  const actual = await vi.importActual<typeof import("./loader.js")>("./loader.js");
-  return {
-    ...actual,
-    loadTreeSitterRuntime: vi.fn(),
-  };
-});
-
-const mockedLoadTreeSitterRuntime = vi.mocked(loadTreeSitterRuntime);
 
 describe("extractSymbolsFromTree", () => {
   it("extracts function, class, method, and import declarations deterministically", () => {
@@ -101,10 +92,6 @@ describe("extractSymbolsFromTree", () => {
 });
 
 describe("runExtractionPipeline", () => {
-  afterEach(() => {
-    vi.clearAllMocks();
-  });
-
   it("persists deterministic nodes and symbols through the graph store", async () => {
     const root = mkdtempSync(join(tmpdir(), "polaris-parser-pipeline-"));
     const sourcePath = join(root, "sample.ts");
@@ -124,12 +111,17 @@ describe("runExtractionPipeline", () => {
       rootNode: createNode("program", "", 0, 0, 1, 0, [createNode("export_statement", "", 0, 0, 0, 30, [functionNode])]),
     };
 
-    mockedLoadTreeSitterRuntime.mockResolvedValue({
-      parse: () => tree,
-    });
+    const adapterRegistry = new GraphAdapterRegistry();
+    adapterRegistry.register(
+      createTypeScriptJavaScriptAdapter({
+        loadRuntime: async () => ({
+          parse: () => tree,
+        }),
+      }),
+    );
 
-    const first = await runExtractionPipeline([sourcePath], { graphStore: adapter });
-    const second = await runExtractionPipeline([sourcePath], { graphStore: adapter });
+    const first = await runExtractionPipeline([sourcePath], { graphStore: adapter, adapterRegistry });
+    const second = await runExtractionPipeline([sourcePath], { graphStore: adapter, adapterRegistry });
 
     const db = adapter.getDatabase();
     const symbolRows = db
@@ -171,13 +163,19 @@ describe("runExtractionPipeline", () => {
       rootNode: createNode("program", "", 0, 0, 1, 0, [functionNode]),
     };
 
-    mockedLoadTreeSitterRuntime.mockResolvedValue({
-      parse: () => tree,
-    });
+    const adapterRegistry = new GraphAdapterRegistry();
+    adapterRegistry.register(
+      createTypeScriptJavaScriptAdapter({
+        loadRuntime: async () => ({
+          parse: () => tree,
+        }),
+      }),
+    );
 
     const warnings: string[] = [];
     const result = await runExtractionPipeline([badPath, goodPath], {
       graphStore: adapter,
+      adapterRegistry,
       logger: {
         warn(message) {
           warnings.push(message);
