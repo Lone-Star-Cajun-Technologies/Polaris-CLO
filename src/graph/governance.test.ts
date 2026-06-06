@@ -1,10 +1,10 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { describe, expect, it } from "vitest";
 import type { PolarisConfig } from "../config/schema.js";
-import { checkGraphInvalidation, writeGraphNotices } from "./governance.js";
+import { checkGraphInvalidation, hashConfig, recordGraphGovernanceState, resolveHeadCommit, writeGraphNotices } from "./governance.js";
 
 function git(repoRoot: string, args: string[]): string {
   return execFileSync("git", args, {
@@ -56,8 +56,17 @@ describe("checkGraphInvalidation", () => {
   it('returns stale config-change when config hash changes and trigger is enabled', () => {
     const repoRoot = createRepo();
     const config = baseConfig();
+    const graphOutputPath = join(repoRoot, ".polaris/graph");
 
-    expect(checkGraphInvalidation(config, repoRoot)).toEqual({ stale: false });
+    const firstCheck = checkGraphInvalidation(config, repoRoot);
+    expect(firstCheck).toEqual({ stale: false });
+    // Simulate successful graph rebuild by recording state
+    if (!firstCheck.stale) {
+      recordGraphGovernanceState(graphOutputPath, {
+        configHash: hashConfig(config),
+        headCommit: resolveHeadCommit(repoRoot),
+      });
+    }
 
     const changedConfig: PolarisConfig = {
       ...config,
@@ -72,8 +81,18 @@ describe("checkGraphInvalidation", () => {
   it('returns stale repo-change when HEAD changes and trigger is enabled', () => {
     const repoRoot = createRepo();
     const config = baseConfig();
+    const graphOutputPath = join(repoRoot, ".polaris/graph");
 
-    expect(checkGraphInvalidation(config, repoRoot)).toEqual({ stale: false });
+    const firstCheck = checkGraphInvalidation(config, repoRoot);
+    expect(firstCheck).toEqual({ stale: false });
+    // Simulate successful graph rebuild by recording state
+    if (!firstCheck.stale) {
+      recordGraphGovernanceState(graphOutputPath, {
+        configHash: hashConfig(config),
+        headCommit: resolveHeadCommit(repoRoot),
+      });
+    }
+
     writeFileSync(join(repoRoot, "README.md"), "updated\n", "utf-8");
     git(repoRoot, ["add", "README.md"]);
     git(repoRoot, ["commit", "-m", "update"]);
@@ -87,8 +106,41 @@ describe("checkGraphInvalidation", () => {
   it("returns stale false when tracked state is unchanged", () => {
     const repoRoot = createRepo();
     const config = baseConfig();
+    const graphOutputPath = join(repoRoot, ".polaris/graph");
+
+    const firstCheck = checkGraphInvalidation(config, repoRoot);
+    expect(firstCheck).toEqual({ stale: false });
+    // Simulate successful graph rebuild by recording state
+    if (!firstCheck.stale) {
+      recordGraphGovernanceState(graphOutputPath, {
+        configHash: hashConfig(config),
+        headCommit: resolveHeadCommit(repoRoot),
+      });
+    }
 
     expect(checkGraphInvalidation(config, repoRoot)).toEqual({ stale: false });
-    expect(checkGraphInvalidation(config, repoRoot)).toEqual({ stale: false });
+  });
+
+  it("treats malformed governance state as missing and returns stale false", () => {
+    const repoRoot = createRepo();
+    const config = baseConfig();
+    const graphOutputPath = join(repoRoot, ".polaris/graph");
+    const statePath = join(graphOutputPath, "governance-state.json");
+
+    mkdirSync(graphOutputPath, { recursive: true });
+    writeFileSync(statePath, "{invalid json", "utf-8");
+
+    const result = checkGraphInvalidation(config, repoRoot);
+    expect(result).toEqual({ stale: false });
+    // Caller would record state after successful rebuild
+    if (!result.stale) {
+      recordGraphGovernanceState(graphOutputPath, {
+        configHash: hashConfig(config),
+        headCommit: resolveHeadCommit(repoRoot),
+      });
+    }
+    // Verify state file is now valid
+    const stateContent = readFileSync(statePath, "utf-8");
+    expect(() => JSON.parse(stateContent)).not.toThrow();
   });
 });

@@ -13,9 +13,16 @@ The adapter boundary is the token boundary. Parent/orchestrator context must not
 
 | Mode | Use | Dispatch |
 |---|---|---|
-| `agent-subtask` | Interactive agent sessions | Use the host agent's subtask/agent dispatch capability. Do not invoke a nested shell agent. |
-| `terminal-cli` | Terminal, cron, CI wrapper | Use `scripts/polaris-run.sh` or equivalent shell subprocess with an explicitly configured CLI worker. |
-| `ci` | Remote CI workers | Dispatch a CI job and read the state artifact after completion. |
+| `agent-subtask` | Interactive agent sessions (requires `allowNativeSubagent: true`) | Use the host agent's subtask/agent dispatch capability. |
+| `terminal-cli` | Terminal, cron, CI wrapper; **required when the active polaris-run dispatch role sets `allowNativeSubagent: false`** | Use `scripts/polaris-run.sh` or equivalent shell subprocess with an explicitly configured CLI worker. |
+
+> **Prohibition (polaris-run worker and orchestrator dispatch only)**
+>
+> - When the active polaris-run dispatch role sets `execution.providerPolicy.worker.allowNativeSubagent: false` or `execution.providerPolicy.orchestrator.allowNativeSubagent: false`, the `agent-subtask` mode is forbidden for that role.
+> - This applies across host CLIs and providers: Claude, Codex, Copilot, and other agent runtimes all expose native subagent or parallel-task mechanisms that are disallowed under this flag for worker/orchestrator dispatch.
+> - Other roles (e.g., `analyst`) may independently permit native subagents via their own `allowNativeSubagent` setting.
+> - The Foreman must not search for, load, or invoke any native subagent mechanism when dispatching workers.
+> - The current runtime adapter registry supports only `terminal-cli` and `agent-subtask`, so when the active role disallows native subagents the legal dispatch path is `terminal-cli`.
 
 ## Contract
 
