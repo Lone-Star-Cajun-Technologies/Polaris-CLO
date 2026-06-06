@@ -2,6 +2,7 @@ import type { AdapterRegistry, LanguageAdapter } from "./types.js";
 import { createCAdapter } from "./c/index.js";
 import { createCppAdapter } from "./cpp/index.js";
 import { createCSharpAdapter } from "./csharp/index.js";
+import { createDartAdapter } from "./dart/index.js";
 import { createGoAdapter } from "./go/index.js";
 import { createJavaAdapter, createKotlinAdapter } from "./kotlin-java/index.js";
 import { createPythonAdapter } from "./python/index.js";
@@ -66,6 +67,7 @@ export function getDefaultAdapterRegistry(): AdapterRegistry {
   registry.register(createCAdapter());
   registry.register(createCppAdapter());
   registry.register(createCSharpAdapter());
+  registry.register(createDartAdapter());
   registry.register(createGoAdapter());
   registry.register(createJavaAdapter());
   registry.register(createKotlinAdapter());
