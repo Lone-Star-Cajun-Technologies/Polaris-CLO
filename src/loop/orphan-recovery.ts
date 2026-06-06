@@ -251,8 +251,8 @@ export interface OrphanCheckOptions {
 /**
  * Check the current state for orphaned children across all 5 scenarios.
  * Emits telemetry events for detected cases.
- * Auto-requeues for safe scenarios (A, B, E).
- * Emits recovery-approval-requested and halts for approval scenarios (C, D).
+ * Auto-requeues for safe scenarios (A, B, C, E).
+ * Emits recovery-approval-requested and halts for approval scenario (D).
  */
 export function checkOrphans(options: OrphanCheckOptions): OrphanCheckResult {
   const timeouts: OrphanTimeoutConfig = {

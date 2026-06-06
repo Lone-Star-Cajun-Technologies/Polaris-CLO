@@ -307,12 +307,22 @@ export function createLoopCommand(handlers: LoopCommandHandlers = {}): Command {
     .option("--timeout <ms>", "Timeout in milliseconds (default: 1800000 = 30 min)", "1800000")
     .option("--poll-interval <ms>", "Poll interval in milliseconds (default: 5000)", "5000")
     .action((options: { repoRoot: string; stateFile?: string; child?: string; timeout: string; pollInterval: string }) => {
+      const timeoutMs = parseInt(options.timeout, 10);
+      const pollIntervalMs = parseInt(options.pollInterval, 10);
+      if (!Number.isInteger(timeoutMs) || timeoutMs <= 0) {
+        process.stderr.write(`Error: --timeout must be a positive integer, got "${options.timeout}"\n`);
+        process.exit(1);
+      }
+      if (!Number.isInteger(pollIntervalMs) || pollIntervalMs <= 0) {
+        process.stderr.write(`Error: --poll-interval must be a positive integer, got "${options.pollInterval}"\n`);
+        process.exit(1);
+      }
       runLoopWait({
         stateFile: defaultStateFile(options.repoRoot, options.stateFile),
         repoRoot: options.repoRoot,
         childId: options.child,
-        timeoutMs: parseInt(options.timeout, 10),
-        pollIntervalMs: parseInt(options.pollInterval, 10),
+        timeoutMs,
+        pollIntervalMs,
       });
     });
 

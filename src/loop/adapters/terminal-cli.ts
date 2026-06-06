@@ -105,7 +105,8 @@ export class TerminalCliAdapter implements ExecutionAdapter {
   async probe(providerName: string): Promise<{ ok: boolean; error?: string }> {
     try {
       const providerCfg = this.getProvider(providerName);
-      if (!resolveCommand(providerCfg.command.split(' ')[0] ?? providerCfg.command)) {
+      const expandedCommand = expandEnvVars(providerCfg.command);
+      if (!resolveCommand(expandedCommand.split(' ')[0] ?? expandedCommand)) {
         return { ok: false, error: `Provider command "${providerCfg.command}" not found on PATH` };
       }
       return { ok: true };

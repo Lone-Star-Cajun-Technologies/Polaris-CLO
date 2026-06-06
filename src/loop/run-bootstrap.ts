@@ -284,6 +284,7 @@ export function runLoopBootstrapInit(options: BootstrapInitOptions): Promise<voi
         if (freshState && !freshState.delivery_branch) {
           await writeClusterState(clusterId, {
             ...freshState,
+            state_generation: (freshState.state_generation ?? 0) + 1,
             delivery_branch: deliveryBranch,
             base_branch: "main",
           }, repoRoot);
@@ -292,6 +293,7 @@ export function runLoopBootstrapInit(options: BootstrapInitOptions): Promise<voi
         // Existing cluster state without delivery branch — bind it now
         await writeClusterState(clusterId, {
           ...existingClusterState,
+          state_generation: (existingClusterState.state_generation ?? 0) + 1,
           delivery_branch: deliveryBranch,
           base_branch: existingClusterState.base_branch ?? "main",
         }, repoRoot);

@@ -226,7 +226,10 @@ function probeProviderSync(
     if (!providerCfg) {
       return { ok: false, error: `Unknown provider "${resolvedProvider}"` };
     }
-    const cmd = providerCfg.command.split(' ')[0] ?? providerCfg.command;
+    const expandedCommand = providerCfg.command
+      .replace(/\$\{([A-Z_][A-Z0-9_]*)\}/g, (_, name: string) => process.env[name] ?? '')
+      .replace(/\$([A-Z_][A-Z0-9_]*)/g, (_, name: string) => process.env[name] ?? '');
+    const cmd = expandedCommand.split(' ')[0] ?? expandedCommand;
     if (!cmd) {
       return { ok: false, error: `Provider "${resolvedProvider}" has no command configured` };
     }
