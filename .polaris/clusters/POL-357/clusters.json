@@ -1,0 +1,69 @@
+{
+  "schemaVersion": "v2",
+  "source": {
+    "id": "POL-357",
+    "type": "Linear",
+    "analysis": {
+      "id": "POL-356",
+      "doc": "docs/Polaris/spec/multi-language-graph-architecture.md"
+    }
+  },
+  "nodes": {
+    "POL-357": {
+      "id": "POL-357",
+      "title": "IMPLEMENT: Multi-language graph adapter architecture",
+      "status": "Todo",
+      "body": "## Objective\n\nRefactor the Polaris graph backend from a TypeScript/JavaScript-only extraction system into a language-adapter architecture with a graph capability registry and graceful degradation for unsupported languages.\n\n## Context\n\nAnalysis from POL-356 (Analyze multi-language graph extraction and resolver architecture). The phase-one graph backend implemented in POL-345 provides a solid language-neutral store, query API, and governance layer. However, the parser/extraction layer is hardcoded to TypeScript/JavaScript with no adapter abstraction, and unsupported language files are silently skipped with a warning.\n\nThis cluster introduces the architectural foundation for multi-language support without implementing individual language adapters yet. Full analysis and architecture spec: docs/Polaris/spec/multi-language-graph-architecture.md.\n\n## Goal\n\nDeliver a language-adapter-driven graph system where:\n1. Language support is governed by a registered adapter interface, not a hardcoded type union\n2. Unsupported language files create file-level graph nodes rather than disappearing silently\n3. A capability registry tracks and reports graph coverage by language in graph build output\n\n## Scope\n\n- src/graph/adapter/**\n- src/graph/parser/loader.ts\n- src/graph/parser/extract.ts\n- src/graph/parser/pipeline.ts\n- src/graph/parser/extract.test.ts\n- src/graph/resolver/resolve-imports.ts\n- src/cli/graph.ts\n\n## Acceptance Criteria\n\n- [ ] LanguageAdapter interface and AdapterRegistry defined in src/graph/adapter/\n- [ ] TypeScript/JavaScript extraction logic migrated into src/graph/adapter/typescript-javascript/\n- [ ] Adapter registry drives file extension detection\n- [ ] Unsupported language files produce file-level FILE nodes with partialCoverage: true metadata\n- [ ] GraphCapabilityRegistry implemented and attached to ExtractionPipelineResult\n- [ ] graph build output includes per-language coverage report\n- [ ] All existing TypeScript/JavaScript extraction behavior preserved exactly\n- [ ] npm run build and npm test pass\n- [ ] npx vitest run src/graph/ passes\n\n## Validation\n\n- npm run build\n- npm test\n- npx vitest run src/graph/\n- npm run polaris -- graph build --dry-run --json\n- npm run polaris -- graph build --json\n\n## Ordering\n\nDepends on POL-345 implementation being merged. Children execute in order: POL-358 → POL-359 → POL-360.\n\n## Non-goals\n\n- Do not implement language-specific adapters for Svelte, Dart, Swift, Kotlin, Python, or other languages\n- Do not implement cross-language edge resolution\n- Do not change the graph store schema, query API, or governance layer\n- Do not make graph data authoritative for dispatch or completion evidence\n- Do not implement incremental or watcher-based rebuilds"
+    },
+    "POL-345": {
+      "id": "POL-345",
+      "title": "IMPLEMENT: Add Polaris function-level repository graph backend",
+      "status": "Done"
+    },
+    "POL-356": {
+      "id": "POL-356",
+      "title": "Analyze multi-language graph extraction and resolver architecture",
+      "status": "In Review"
+    },
+    "POL-358": {
+      "id": "POL-358",
+      "title": "LanguageAdapter interface and TypeScript/JavaScript adapter migration",
+      "status": "Todo",
+      "body": "## Objective\n\nDefine the LanguageAdapter interface and AdapterRegistry, then migrate all existing TypeScript/JavaScript extraction logic into the first registered adapter.\n\n## Context\n\nFirst child of POL-357 (IMPLEMENT: Multi-language graph adapter architecture). Analysis in POL-356 identified that src/graph/parser/loader.ts hardcodes SupportedParserLanguage = 'typescript' | 'javascript', extract.ts uses TS/JS-specific Tree-sitter node names, and pipeline.ts uses a hardcoded extension list.\n\n## Goal\n\n1. New src/graph/adapter/types.ts — LanguageAdapter interface and AdapterRegistry interface\n2. New src/graph/adapter/registry.ts — concrete AdapterRegistry implementation\n3. New src/graph/adapter/typescript-javascript/ — existing TS/JS extraction logic migrated here\n4. src/graph/parser/loader.ts — refactored; Tree-sitter loading moves into the TS/JS adapter\n5. src/graph/parser/extract.ts — refactored; logic moves into the TS/JS adapter\n6. src/graph/parser/pipeline.ts — updated to dispatch via adapter registry\n7. src/cli/graph.ts — SUPPORTED_SOURCE_EXTENSIONS replaced with registry.getSupportedExtensions()\n\n## Scope\n\n- src/graph/adapter/types.ts\n- src/graph/adapter/registry.ts\n- src/graph/adapter/typescript-javascript/**\n- src/graph/parser/loader.ts\n- src/graph/parser/extract.ts\n- src/graph/parser/extract.test.ts\n- src/graph/parser/pipeline.ts\n- src/cli/graph.ts\n\n## Acceptance Criteria\n\n- [ ] LanguageAdapter interface defined with: languageId, fileExtensions, confidence, limitations, extractSymbols(), resolveImportSpecifier()\n- [ ] AdapterRegistry supports register(), getForExtension(), getSupportedExtensions(), getAll()\n- [ ] TypeScript/JavaScript adapter registered and handles .ts, .tsx, .js, .jsx, .mjs, .cjs\n- [ ] pipeline.ts dispatches extraction via adapter registry; no hardcoded language check remains\n- [ ] SUPPORTED_SOURCE_EXTENSIONS removed from src/cli/graph.ts\n- [ ] All existing extraction tests pass\n- [ ] npm run build and npm test pass\n\n## Validation\n\n- npm run build\n- npm test\n- npx vitest run src/graph/\n\n## Ordering\n\nNo dependencies — executes first in cluster.\n\n## Non-goals\n\n- Do not add any language adapter other than TypeScript/JavaScript\n- Do not implement file-level graceful degradation (Child 2)\n- Do not implement GraphCapabilityRegistry (Child 3)\n- Do not change the graph store schema or query API"
+    },
+    "POL-359": {
+      "id": "POL-359",
+      "title": "File-level graceful degradation for unsupported languages",
+      "status": "Todo",
+      "body": "## Objective\n\nUpdate the extraction pipeline so that files with no registered adapter produce file-level graph nodes rather than being silently skipped.\n\n## Context\n\nSecond child of POL-357. Depends on POL-358 (adapter registry) being Done.\n\n## Goal\n\nFor any file whose extension has no registered adapter:\n1. Create a FILE node with language = 'unsupported:<ext>'\n2. Attach node metadata { partialCoverage: true, reason: 'no-adapter' }\n3. Do not attempt symbol extraction for these files\n4. Accumulate fallback file data in pipeline result for Child 3\n\n## Scope\n\n- src/graph/parser/pipeline.ts\n\n## Acceptance Criteria\n\n- [ ] Files with no registered adapter create a FILE node with language = 'unsupported:<ext>'\n- [ ] FILE node metadata includes { partialCoverage: true, reason: 'no-adapter' }\n- [ ] No symbol nodes or edges created for unsupported-language files\n- [ ] ExtractionPipelineResult includes fallbackFiles: { path: string; ext: string }[]\n- [ ] Resolver does not attempt import resolution against file-level-only nodes\n- [ ] npm run build and npm test pass\n\n## Validation\n\n- npm run build\n- npm test\n- npx vitest run src/graph/\n\n## Ordering\n\nDepends on POL-358 being Done.\n\n## Non-goals\n\n- Do not implement GraphCapabilityRegistry (Child 3)\n- Do not attempt symbol-level extraction for unsupported files\n- Do not change the graph store schema\n- Do not add new language adapters"
+    },
+    "POL-360": {
+      "id": "POL-360",
+      "title": "GraphCapabilityRegistry and graph build coverage report",
+      "status": "Todo",
+      "body": "## Objective\n\nImplement GraphCapabilityRegistry that accumulates per-language extraction outcomes during a graph build, and surface a structured coverage report in graph build CLI output.\n\n## Context\n\nThird and final child of POL-357. Depends on POL-358 and POL-359 being Done.\n\n## Goal\n\n1. New src/graph/capability/index.ts — GraphCapabilityRegistry class and GraphCapabilityReport type\n2. src/graph/parser/pipeline.ts — integrate registry; attach report to ExtractionPipelineResult\n3. src/cli/graph.ts — extend graph build JSON with extraction.capability; extend text output with per-language table\n\n## Scope\n\n- src/graph/capability/index.ts\n- src/graph/parser/pipeline.ts\n- src/cli/graph.ts\n\n## Acceptance Criteria\n\n- [ ] GraphCapabilityReport type matches shape in docs/Polaris/spec/multi-language-graph-architecture.md Section 3\n- [ ] GraphCapabilityRegistry accumulates filesDiscovered, filesSymbolLevel, filesFileLevel, filesFailed, symbolsExtracted, warnings per language\n- [ ] ExtractionPipelineResult.capability field present and populated\n- [ ] graph build --json output includes extraction.capability object\n- [ ] graph build text output includes per-language coverage table\n- [ ] symbolLevelPercent and totalCoveragePercent computed correctly\n- [ ] npm run build and npm test pass\n\n## Validation\n\n- npm run build\n- npm test\n- npx vitest run src/graph/\n- npm run polaris -- graph build --json\n\n## Ordering\n\nDepends on POL-358 and POL-359 being Done.\n\n## Non-goals\n\n- Do not integrate capability report into Analyst or Medic context packets\n- Do not add new language adapters\n- Do not change the graph store schema or query API"
+    }
+  },
+  "dependencies": {
+    "POL-360": [
+      "POL-358",
+      "POL-359"
+    ],
+    "POL-359": [
+      "POL-358"
+    ]
+  },
+  "clusters": {
+    "POL-357": {
+      "id": "POL-357",
+      "title": "IMPLEMENT: Multi-language graph adapter architecture",
+      "children": [
+        "POL-358",
+        "POL-359",
+        "POL-360"
+      ],
+      "cluster_root": "POL-357"
+    }
+  },
+  "activeCluster": "POL-357"
+}

@@ -1,0 +1,7 @@
+{"event":"run-start","run_id":"polaris-analyze-multi-lang-graph-arch-2026-06-06-001","timestamp":"2026-06-06T12:19:00.000Z","issue_id":"POL-356","skill":"analyze"}
+{"event":"step-complete","run_id":"polaris-analyze-multi-lang-graph-arch-2026-06-06-001","timestamp":"2026-06-06T12:20:00.000Z","step":"01-fetch-and-orient","outcome":"done"}
+{"event":"step-complete","run_id":"polaris-analyze-multi-lang-graph-arch-2026-06-06-001","timestamp":"2026-06-06T12:25:00.000Z","step":"02-map-affected-code","outcome":"done"}
+{"event":"step-complete","run_id":"polaris-analyze-multi-lang-graph-arch-2026-06-06-001","timestamp":"2026-06-06T12:30:00.000Z","step":"03-assess-issue","outcome":"done","assessment":"needs-cluster-plan","confidence":92}
+{"event":"step-complete","run_id":"polaris-analyze-multi-lang-graph-arch-2026-06-06-001","timestamp":"2026-06-06T12:31:00.000Z","step":"04-blocker-check","outcome":"done","blocked":false}
+{"event":"step-complete","run_id":"polaris-analyze-multi-lang-graph-arch-2026-06-06-001","timestamp":"2026-06-06T13:19:00.000Z","step":"05-create-cluster-plan","outcome":"done","parent":"POL-357","children":["POL-358","POL-359","POL-360"]}
+{"event":"step-complete","run_id":"polaris-analyze-multi-lang-graph-arch-2026-06-06-001","timestamp":"2026-06-06T13:20:00.000Z","step":"06-final-report","outcome":"done"}
