@@ -82,7 +82,7 @@ export interface OrphanTimeoutConfig {
 const DEFAULT_ORPHAN_TIMEOUTS: OrphanTimeoutConfig = {
   launchTimeoutMs: 30_000,
   launchToFirstHeartbeatMs: 30_000,
-  orphanTimeoutMs: 600_000,       // 10 min
+  orphanTimeoutMs: 300_000,       // 5 min (was 10 min)
   staleDispatchTimeoutMs: 1_800_000, // 30 min
 };
 
@@ -251,8 +251,8 @@ export interface OrphanCheckOptions {
 /**
  * Check the current state for orphaned children across all 5 scenarios.
  * Emits telemetry events for detected cases.
- * Auto-requeues for safe scenarios (A, B, E).
- * Emits recovery-approval-requested and halts for approval scenarios (C, D).
+ * Auto-requeues for safe scenarios (A, B, C, E).
+ * Emits recovery-approval-requested and halts for approval scenario (D).
  */
 export function checkOrphans(options: OrphanCheckOptions): OrphanCheckResult {
   const timeouts: OrphanTimeoutConfig = {
@@ -314,7 +314,7 @@ export function checkOrphans(options: OrphanCheckOptions): OrphanCheckResult {
         return { detected, checked };
       }
 
-      // Scenario C: acknowledged, heartbeat lost, no result
+      // Scenario C: acknowledged, heartbeat lost, no result — auto-replace
       if (dr.first_heartbeat_at && !safeResultExists(dr.expected_result_path)) {
         const lastHb = dr.last_heartbeat_at ?? dr.first_heartbeat_at;
         const heartbeatAge = now - new Date(lastHb).getTime();
@@ -323,13 +323,13 @@ export function checkOrphans(options: OrphanCheckOptions): OrphanCheckResult {
             childId: state.active_child,
             dispatchId: dr.dispatch_id,
             reason: "no-heartbeat",
-            requiresApproval: true,
+            requiresApproval: false,
           };
           detected.push(detection);
           emitRecoveryInitiated(telemetryFile, state.active_child, dr.dispatch_id, "no-heartbeat");
           emitChildOrphaned(telemetryFile, state.active_child, dr.dispatch_id, lastHb);
-          emitRecoveryApprovalRequested(telemetryFile, state.active_child, dr.dispatch_id, "no-heartbeat");
-          transitionToOrphaned(options.stateFile, state, state.active_child);
+          const newId = resetForRedispatch(options.stateFile, state, state.active_child);
+          emitChildRequeued(telemetryFile, state.active_child, newId, dr.dispatch_id);
           return { detected, checked };
         }
       }

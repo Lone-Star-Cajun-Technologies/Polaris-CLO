@@ -151,7 +151,7 @@ describe("checkOrphans", () => {
     expect(events.some((e) => e["recovery_reason"] === "no-acknowledgment")).toBe(true);
   });
 
-  it("Scenario C: detects no-heartbeat and requires approval", () => {
+  it("Scenario C: detects no-heartbeat and auto-redispatches", () => {
     const pastTime = new Date(Date.now() - 500).toISOString();
     writeState(testDir, baseState({
       active_child: "POL-101",
@@ -179,10 +179,10 @@ describe("checkOrphans", () => {
 
     expect(result.detected).toHaveLength(1);
     expect(result.detected[0].reason).toBe("no-heartbeat");
-    expect(result.detected[0].requiresApproval).toBe(true);
+    expect(result.detected[0].requiresApproval).toBe(false);
 
     const events = telemetryEvents(testDir);
-    expect(events.some((e) => e["event"] === "recovery-approval-requested")).toBe(true);
+    expect(events.some((e) => e["event"] === "child-requeued")).toBe(true);
   });
 
   it("Scenario E: detects stale-dispatch and auto-requeues", () => {

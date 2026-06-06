@@ -6,6 +6,7 @@ import type { ExecutionConfig, ProviderConfig } from "../../config/schema.js";
 import type { BootstrapPacket, DispatchOptions, DispatchResult, ExecutionAdapter } from "./types.js";
 import { buildWorkerInstructions } from "./worker-instructions.js";
 import { isWorkerPacket } from "../worker-packet.js";
+import { validateCompactReturn } from "../compact-return.js";
 
 /** Expand $VAR and ${VAR} references from process.env. */
 function expandEnvVars(str: string): string {
@@ -99,6 +100,19 @@ export class TerminalCliAdapter implements ExecutionAdapter {
     );
 
     return { command, args };
+  }
+
+  async probe(providerName: string): Promise<{ ok: boolean; error?: string }> {
+    try {
+      const providerCfg = this.getProvider(providerName);
+      const expandedCommand = expandEnvVars(providerCfg.command);
+      if (!resolveCommand(expandedCommand.split(' ')[0] ?? expandedCommand)) {
+        return { ok: false, error: `Provider command "${providerCfg.command}" not found on PATH` };
+      }
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: err instanceof Error ? err.message : String(err) };
+    }
   }
 
   async dispatch(packet: BootstrapPacket, options: DispatchOptions): Promise<DispatchResult> {
@@ -283,11 +297,19 @@ export class TerminalCliAdapter implements ExecutionAdapter {
 
     try {
       const parsed = JSON.parse(summary) as Record<string, unknown>;
+      const compactReturnErrors = validateCompactReturn(parsed);
+      const isValidCompactReturn = compactReturnErrors.length === 0;
+
+      // If the parsed result isn't a valid CompactReturn, treat it as a failure
+      // regardless of exit code — this prevents phantom successes from workers
+      // that return minimal status objects instead of proper CompactReturn structs.
+      const effectiveStatus = (exitCode === 0 && isValidCompactReturn) ? "success" : "failure";
+
       const sealedResult = {
         ...parsed,
         run_id: packet.run_id,
         child_id: String(parsed["child_id"] ?? packet.active_child),
-        status: exitCode === 0 ? "success" : "failure",
+        status: effectiveStatus,
         commit:
           typeof parsed["commit"] === "string"
             ? parsed["commit"]
@@ -296,11 +318,14 @@ export class TerminalCliAdapter implements ExecutionAdapter {
               : undefined,
         validation: parsed["validation"] ?? parsed["validation_summary"],
         error_message:
-          exitCode === 0
-            ? undefined
-            : typeof parsed["error_message"] === "string"
-              ? parsed["error_message"]
-              : stdout || summary,
+          effectiveStatus === "failure"
+            ? (!isValidCompactReturn
+                ? `CompactReturn validation failed: ${compactReturnErrors.join("; ")}`
+                : typeof parsed["error_message"] === "string"
+                  ? parsed["error_message"]
+                  : stdout || summary)
+            : undefined,
+        ...(compactReturnErrors.length > 0 ? { compact_return_errors: compactReturnErrors } : {}),
       };
       fs.mkdirSync(path.dirname(resultFile), { recursive: true });
       fs.writeFileSync(resultFile, JSON.stringify(sealedResult, null, 2), "utf-8");

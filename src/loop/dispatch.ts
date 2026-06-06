@@ -1,4 +1,4 @@
-import { appendFileSync, mkdirSync, realpathSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, realpathSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import {
@@ -214,6 +214,41 @@ function fail(message: string): never {
   process.stderr.write(`Error: ${message}
 `);
   process.exit(1);
+}
+
+function probeProviderSync(
+  resolvedProvider: string,
+  loadedConfig: Required<PolarisConfig> | undefined,
+): { ok: boolean; error?: string } {
+  try {
+    const providers = loadedConfig?.execution?.providers ?? {};
+    const providerCfg = providers[resolvedProvider];
+    if (!providerCfg) {
+      return { ok: false, error: `Unknown provider "${resolvedProvider}"` };
+    }
+    const expandedCommand = providerCfg.command
+      .replace(/\$\{([A-Z_][A-Z0-9_]*)\}/g, (_, name: string) => process.env[name] ?? '')
+      .replace(/\$([A-Z_][A-Z0-9_]*)/g, (_, name: string) => process.env[name] ?? '');
+    const cmd = expandedCommand.split(' ')[0] ?? expandedCommand;
+    if (!cmd) {
+      return { ok: false, error: `Provider "${resolvedProvider}" has no command configured` };
+    }
+    // Check if command is on PATH
+    const isAbs = cmd.startsWith('/');
+    if (isAbs) {
+      return existsSync(cmd)
+        ? { ok: true }
+        : { ok: false, error: `Provider command "${providerCfg.command}" not found on PATH` };
+    }
+    try {
+      execFileSync('which', [cmd], { stdio: 'ignore' });
+      return { ok: true };
+    } catch {
+      return { ok: false, error: `Provider command "${providerCfg.command}" not found on PATH` };
+    }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
 }
 
 function hasValidationWaiver(value: unknown): boolean {
@@ -813,6 +848,15 @@ function selectChild(state: LoopState, requestedChild?: string): string {
     if (!state.open_children.includes(requestedChild)) {
       fail(`child ${requestedChild} is not open`);
     }
+    // Validate all open (non-completed) dependencies are satisfied
+    const childMeta = state.open_children_meta?.[requestedChild];
+    const deps: string[] = (childMeta as { dependencies?: string[] } | undefined)?.dependencies ?? [];
+    const unmetDeps = deps.filter(
+      (dep) => state.open_children.includes(dep) && !state.completed_children.includes(dep),
+    );
+    if (unmetDeps.length > 0) {
+      fail(`child ${requestedChild} has unmet dependencies that must complete first: ${unmetDeps.join(", ")}`);
+    }
     return requestedChild;
   }
   return state.open_children[0];
@@ -1186,6 +1230,53 @@ export function runLoopDispatch(options: DispatchOptions): void {
     );
   } catch (err) {
     fail(err instanceof Error ? err.message : String(err));
+  }
+
+  // ── Provider probe on first dispatch ──────────────────────────────────────
+  // Catches provider configuration failures before packet commit. Only runs on
+  // the first dispatch for this run (no completed children) in direct-worker
+  // mode. Best-effort — never blocks dispatch if probe infrastructure fails.
+  if (resolvedProvider && providerDecision.mode === "direct-worker" && state.completed_children.length === 0) {
+    try {
+      const probeResult = probeProviderSync(resolvedProvider, loadedConfig);
+      if (!probeResult.ok) {
+        appendTelemetry(telemetryFile, {
+          event: "provider-probe-failed",
+          run_id: state.run_id,
+          child_id: childId,
+          provider: resolvedProvider,
+          error: probeResult.error,
+          timestamp: new Date().toISOString(),
+        });
+        // Only hard-fail when the provider is explicitly unknown (not just missing from PATH)
+        if (probeResult.error?.startsWith(`Unknown provider`)) {
+          fail(`Provider probe failed for "${resolvedProvider}": ${probeResult.error}. Resolve the provider configuration before dispatching.`);
+        }
+        // Command not on PATH — emit warning to stderr but allow dispatch to proceed
+        process.stderr.write(
+          `Warning: provider command for "${resolvedProvider}" not found on PATH. ` +
+          `Dispatch will proceed but execution may fail.\n`
+        );
+      } else {
+        appendTelemetry(telemetryFile, {
+          event: "provider-probe-passed",
+          run_id: state.run_id,
+          child_id: childId,
+          provider: resolvedProvider,
+          timestamp: new Date().toISOString(),
+        });
+      }
+    } catch (err) {
+      // Probe infrastructure unavailable — log and continue
+      appendTelemetry(telemetryFile, {
+        event: "provider-probe-skipped",
+        run_id: state.run_id,
+        child_id: childId,
+        provider: resolvedProvider,
+        reason: err instanceof Error ? err.message : String(err),
+        timestamp: new Date().toISOString(),
+      });
+    }
   }
 
   // ── Write durable dispatch evidence ────────────────────────────────────────

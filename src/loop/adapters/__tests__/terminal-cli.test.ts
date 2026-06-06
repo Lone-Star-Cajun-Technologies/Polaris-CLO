@@ -107,7 +107,7 @@ describe("TerminalCliAdapter", () => {
               command: process.execPath,
               args: [
                 "-e",
-                "console.log(JSON.stringify({child_id:'POL-14',status:'done',commit_hash:'abc1234',validation_summary:'ok'}))",
+                "console.log(JSON.stringify({child_id:'POL-14',status:'done',commit:'abc1234',validation:'passed',tracker_updated:false,state_updated:false,telemetry_updated:false,next_recommended_action:'continue'}))",
               ],
             },
           },
@@ -133,7 +133,7 @@ describe("TerminalCliAdapter", () => {
           child_id: "POL-14",
           status: "success",
           commit: "abc1234",
-          validation: "ok",
+          validation: "passed",
         });
       } finally {
         fs.rmSync(tmpDir, { recursive: true, force: true });

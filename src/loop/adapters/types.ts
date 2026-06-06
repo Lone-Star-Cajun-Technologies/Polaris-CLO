@@ -69,4 +69,5 @@ export interface DispatchResult {
 export interface ExecutionAdapter {
   readonly name: string;
   dispatch(packet: BootstrapPacket, options: DispatchOptions): Promise<DispatchResult>;
+  probe?(providerName: string): Promise<{ ok: boolean; error?: string }>;
 }
