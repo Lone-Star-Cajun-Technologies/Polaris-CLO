@@ -3,6 +3,7 @@ import { resolve, join, extname } from "node:path";
 import { Command } from "commander";
 import { loadConfig } from "../config/loader.js";
 import { getDefaultAdapterRegistry } from "../graph/adapter/registry.js";
+import type { GraphCapabilityReport } from "../graph/capability/index.js";
 import { runExtractionPipeline } from "../graph/parser/pipeline.js";
 import { configureGraphQuery, getCallees, getCallers, getImpactedFiles, lookupSymbol } from "../graph/query/index.js";
 import type { GraphFile, GraphSymbol } from "../graph/query/types.js";
@@ -337,6 +338,57 @@ function printBuildSummary(output: {
   console.log(
     `resolver: imports=${output.resolver.importsEdges} calls=${output.resolver.callsEdges} defined-in=${output.resolver.definedInEdges} unresolved-imports=${output.resolver.unresolvedImports} unresolved-calls=${output.resolver.unresolvedCalls}`,
   );
+  printCapabilityReport(output.extraction.capability);
+}
+
+function printCapabilityReport(report: GraphCapabilityReport): void {
+  const rows = Object.entries(report.coverage).sort(([left], [right]) => left.localeCompare(right));
+  const languageWidth = Math.max("Language".length, ...rows.map(([language]) => language.length));
+  const filesWidth = Math.max(
+    "Files".length,
+    ...rows.map(([, entry]) => String(entry.filesDiscovered).length),
+    String(rows.reduce((total, [, entry]) => total + entry.filesDiscovered, 0)).length,
+  );
+  const symbolWidth = Math.max(
+    "Symbol-Level".length,
+    ...rows.map(([, entry]) => String(entry.filesSymbolLevel).length),
+    String(rows.reduce((total, [, entry]) => total + entry.filesSymbolLevel, 0)).length,
+  );
+  const fileWidth = Math.max(
+    "File-Level".length,
+    ...rows.map(([, entry]) => String(entry.filesFileLevel).length),
+    String(rows.reduce((total, [, entry]) => total + entry.filesFileLevel, 0)).length,
+  );
+  const failedWidth = Math.max(
+    "Failed".length,
+    ...rows.map(([, entry]) => String(entry.filesFailed).length),
+    String(rows.reduce((total, [, entry]) => total + entry.filesFailed, 0)).length,
+  );
+
+  const totalFiles = rows.reduce((total, [, entry]) => total + entry.filesDiscovered, 0);
+  const totalSymbolLevel = rows.reduce((total, [, entry]) => total + entry.filesSymbolLevel, 0);
+  const totalFileLevel = rows.reduce((total, [, entry]) => total + entry.filesFileLevel, 0);
+  const totalFailed = rows.reduce((total, [, entry]) => total + entry.filesFailed, 0);
+
+  console.log("");
+  console.log("Graph Build - Coverage Report");
+  console.log("-".repeat(languageWidth + filesWidth + symbolWidth + fileWidth + failedWidth + 16));
+  console.log(
+    `${"Language".padEnd(languageWidth)}  ${"Files".padStart(filesWidth)}  ${"Symbol-Level".padStart(symbolWidth)}  ${"File-Level".padStart(fileWidth)}  ${"Failed".padStart(failedWidth)}`,
+  );
+
+  for (const [language, entry] of rows) {
+    console.log(
+      `${language.padEnd(languageWidth)}  ${String(entry.filesDiscovered).padStart(filesWidth)}  ${String(entry.filesSymbolLevel).padStart(symbolWidth)}  ${String(entry.filesFileLevel).padStart(fileWidth)}  ${String(entry.filesFailed).padStart(failedWidth)}`,
+    );
+  }
+
+  console.log("-".repeat(languageWidth + filesWidth + symbolWidth + fileWidth + failedWidth + 16));
+  console.log(
+    `${"Total".padEnd(languageWidth)}  ${String(totalFiles).padStart(filesWidth)}  ${String(totalSymbolLevel).padStart(symbolWidth)}  ${String(totalFileLevel).padStart(fileWidth)}  ${String(totalFailed).padStart(failedWidth)}`,
+  );
+  console.log(`Symbol-level coverage: ${report.symbolLevelPercent.toFixed(1)}%`);
+  console.log(`Total file coverage: ${report.totalCoveragePercent.toFixed(1)}%`);
 }
 
 function printDryRunPlan(plan: {

@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { extname } from "node:path";
 import type { AdapterRegistry, ExtractedSymbol } from "../adapter/types.js";
 import { getDefaultAdapterRegistry } from "../adapter/registry.js";
+import { GraphCapabilityRegistry, type GraphCapabilityReport } from "../capability/index.js";
 import type { GraphStoreAdapter } from "../store/adapter.js";
 import { insertNode } from "../store/queries.js";
 import type { GraphNode, GraphSymbol } from "../store/types.js";
@@ -25,6 +26,7 @@ export interface ExtractionPipelineResult {
   persistedSymbols: number;
   fallbackFiles: FallbackFile[];
   warnings: string[];
+  capability: GraphCapabilityReport;
 }
 
 interface FallbackFile {
@@ -45,6 +47,7 @@ export async function runExtractionPipeline(
   const db = options.graphStore.getDatabase();
   const warningMessages: string[] = [];
   const sortedPaths = Array.from(new Set(filePaths)).sort((left, right) => left.localeCompare(right));
+  const capabilityRegistry = new GraphCapabilityRegistry(adapterRegistry.getAll().map((adapter) => adapter.languageId));
 
   let succeededFiles = 0;
   let failedFiles = 0;
@@ -53,18 +56,21 @@ export async function runExtractionPipeline(
   const fallbackFiles: FallbackFile[] = [];
 
   for (const filePath of sortedPaths) {
+    const ext = extname(filePath).toLowerCase();
+    const adapter = adapterRegistry.getForExtension(ext);
+    const languageId = adapter?.languageId ?? GraphCapabilityRegistry.unsupportedLanguageId(ext);
+
     try {
-      const ext = extname(filePath).toLowerCase();
-      const adapter = adapterRegistry.getForExtension(ext);
       if (!adapter) {
         const fileId = makeDeterministicId("file", filePath);
-        const language = `unsupported:${ext}`;
-        persistUnsupportedFile(db, filePath, language, fileId);
+        persistUnsupportedFile(db, filePath, languageId, fileId);
         fallbackFiles.push({ path: filePath, ext });
         succeededFiles += 1;
         persistedNodes += 1;
         const warning = `Falling back to file node for unsupported file type: ${filePath}`;
         warningMessages.push(warning);
+        capabilityRegistry.noteUnsupportedExtension(ext);
+        capabilityRegistry.recordFileLevel(languageId, [warning]);
         options.logger?.warn(warning);
         continue;
       }
@@ -79,11 +85,16 @@ export async function runExtractionPipeline(
       succeededFiles += 1;
       persistedNodes += symbols.length;
       persistedSymbols += symbols.length;
+      capabilityRegistry.recordSymbolLevel(adapter.languageId, symbols.length);
     } catch (error) {
       failedFiles += 1;
       const message = error instanceof Error ? error.message : String(error);
       const warning = `Extraction failed for ${filePath}: ${message}`;
       warningMessages.push(warning);
+      if (!adapter) {
+        capabilityRegistry.noteUnsupportedExtension(ext);
+      }
+      capabilityRegistry.recordFailure(languageId, warning);
       options.logger?.warn(warning);
     }
   }
@@ -96,6 +107,7 @@ export async function runExtractionPipeline(
     persistedSymbols,
     fallbackFiles,
     warnings: warningMessages,
+    capability: capabilityRegistry.buildReport(),
   };
 }
 
