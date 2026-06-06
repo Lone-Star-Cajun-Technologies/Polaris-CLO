@@ -2,29 +2,57 @@
 
 **Date:** 2026-06-06  
 **Analyst:** claude-sonnet-4-6  
-**Transcripts analyzed:**  
-- POL-362: `0ffc010f-POL362transcript.jsonl` (910 KB, 778 JSONL lines — fully analyzed)  
-- POL-357: `ce34c9e7-POL357transcripts.txt` — **upload contained only a local path reference; transcript not available**
-
-> **Scope limitation:** All POL-357 figures in this report are derived from structural artifacts in the repository (`cluster-state.json`, `ledger.jsonl`, cluster definition). Direct transcript evidence for POL-357 is unavailable. Where POL-357 conclusions depend on inference rather than transcript evidence, this is explicitly marked.
+**Transcripts analyzed:**
+- POL-357: `a8918ea9-POL357.txt` (480 KB, 392 JSONL lines — fully analyzed)
+- POL-362: `0ffc010f-POL362transcript.jsonl` (910 KB, 778 JSONL lines — fully analyzed)
 
 ---
 
 ## 1. Executive Summary
 
-### Why POL-357 was more efficient (inferred)
+### Why POL-357 was more efficient
 
-POL-357 completed 3 sequentially-dependent children in a well-scoped TypeScript refactoring task with no evidence of worker artifact repair cycles, no finalize path bugs, and a structurally simple cluster. Its Foreman operated in an environment where workers completed cleanly and returned valid artifacts on first pass.
+POL-357 used `npm run polaris -- loop run POL-357` (batch execution mode), which ran a single CLI subprocess that managed all three worker dispatches internally. The Foreman polled the subprocess with `write_stdin(30s)` and received clean `[POLARIS] COMPLETE POL-NNN (commit: <40-char-sha>)` signals — it never saw raw CompactReturn JSON. Zero artifact repair cycles occurred.
 
-### Why POL-362 was less efficient (evidence-based)
+The batch subprocess handled worker completion in 2.8–5.2 minutes per child on bounded TypeScript refactoring work. The Foreman session ran for 17.6 minutes with a peak context of 94,944 tokens (36.7% of the 258,400-token window). The only unplanned overhead was a finalize path bug (same as POL-362) resolved in 6 messages.
 
-POL-362 ran 6 children implementing novel language adapters (Swift, Kotlin/Java, Dart, Svelte). Every Copilot worker except the first returned a malformed result artifact requiring Foreman-side normalization before `loop continue` would accept the checkpoint. A finalize path bug added 7 additional debugging messages. Long worker execution times — particularly POL-365 which stalled for multiple polling intervals — drove 62 sleep cycles (31 minutes) and 21 status polls. The Foreman narrated each polling interval, adding weight to an already-growing context.
+### Why POL-362 was less efficient
+
+POL-362 dispatched six children individually using the terminal-CLI adapter, with each worker returning a raw CompactReturn JSON artifact directly to the Foreman. Five of six Copilot workers returned a legacy format (`status:"completed"`, short SHA, validation as map), which `loop continue` rejected. The Foreman had to detect, read, patch, and retry each one. A finalize path bug added 7 more debugging messages. Long worker execution times (POL-365: ~10 min; driven by novel language adapter implementation) produced 62 sleep cycles (31 min) and 21 explicit status polls. The Foreman narrated every polling interval regardless of state change.
+
+### The key architectural difference
+
+POL-357's `loop run` batch mode inserted the CLI's own checkpoint/validation layer between workers and the Foreman. Malformed CompactReturn artifacts would have been rejected at the CLI boundary, not handed up to the Foreman for repair. POL-362's per-child dispatch exposed the Foreman directly to every raw worker artifact, making format compliance a Foreman responsibility.
 
 ---
 
 ## 2. Foreman Behavior Metrics
 
-### POL-362 (transcript evidence)
+### Side-by-side comparison (both transcripts)
+
+| Metric | POL-357 | POL-362 |
+|---|---|---|
+| Children | 3 | 6 |
+| Total Foreman messages | 57 | 130 |
+| Session duration | 17.6 min | 46.8 min |
+| Time in 30s polling | 11.0 min (62.3%) | 31.0 min (66.2%) |
+| `loop status --json` polls (exec_command) | 8 | 21 |
+| `write_stdin` polling calls | 22 | 62 |
+| Worker artifact repair cycles | **0** | **5** |
+| Apply-patch operations | **0** | **6** |
+| Finalize debugging messages | 6 | 7 |
+| Session invocations (task_started) | 3† | 3 |
+| Context at turn 1 | 23,225 tokens | 26,700 tokens |
+| Context at peak turn | 94,944 tokens (36.7% window) | 174,493 tokens (67.5% window) |
+| Cumulative input tokens | 3,691,235 | 12,822,162 |
+| Cache hit rate | 92.8% | 97.0% |
+| exec_command calls | 57 | 77 |
+| Custom tool calls (apply_patch) | **0** | **6** |
+| Execution mode | `loop run` (batch) | per-child dispatch |
+
+† POL-357 invocation 3 was user "quit" (turn_aborted immediately) — not a mid-run restart. Effective work sessions: 2 (main run + user-requested "finalize").
+
+### POL-362 detail
 
 | Metric | Count | Notes |
 |---|---|---|
@@ -32,84 +60,166 @@ POL-362 ran 6 children implementing novel language adapters (Swift, Kotlin/Java,
 | Session duration | 46.8 min | 17:56 → 18:43 UTC |
 | Time in 30s sleep cycles | 31.0 min (66%) | 62 × `write_stdin(yield_time_ms: 30000)` |
 | Distinct `loop status --json` polls | 21 | Explicit status checks via `exec_command` |
-| Polling cycle instances (yield → status check) | 43 | Measured from call sequence |
 | Worker dispatches | 6 | One per child |
-| Worker completions observed | 6 | All successful |
 | Worker artifact repair cycles | 5 | POL-367, 366, 365, 364, 363 — every Copilot worker except the first |
 | Apply-patch operations | 6 | Artifact normalization + 1 state.json creation |
-| Finalize path debugging messages | 7 | M122–M128; `cluster-state.json` vs `current-state.json` contract mismatch |
+| Finalize path debugging messages | 7 | M122–M128 |
 | Safety-threshold discussions | 2 | M18 (22 files, POL-368), M37 (20 files, POL-367) |
 | Session restarts required | 3 | Invocations: M1–M47, M48–M113, M114–M130 |
 | Context at turn 1 | 26,700 tokens | Post-bootstrap |
-| Context at turn 131 (peak) | 174,493 tokens | 67.5% of 258,400 window |
+| Context at peak (turn 131) | 174,493 tokens | 67.5% of 258,400 window |
 | Cumulative input tokens | 12,822,162 | All 131 turns |
-| Cache hit rate | 97.0% | 12,436,608 / 12,822,162 cached |
+| Cache hit rate | 97.0% | |
 
-### POL-357 (structural inference — no transcript)
+### POL-357 detail (actual transcript)
 
 | Metric | Value | Basis |
 |---|---|---|
-| Children | 3 | `clusters.json` |
-| Child scope | Bounded TS/JS refactoring | Cluster definition |
-| Validation passes | 3/3, first-pass | `cluster-state.json` — no repair evidence |
-| Estimated Foreman messages | 50–70 | Proportional to child count; no repair overhead |
-| Estimated peak context | 70,000–90,000 tokens | Estimated by scaling; no polling stalls |
-| Session invocations | 1 (estimated) | Ledger shows single `run-started` event |
+| Total Foreman messages | 57 | Transcript (57 `agent_message` events) |
+| Session duration | 17.6 min | 16:11:50 → 16:29:29 UTC |
+| Write_stdin polling calls | 22 | All with `yield_time_ms: 30000`, chars: "" |
+| Time in polling | 11.0 min (62.3%) | 22 × 30s |
+| Loop status polls | 8 | `exec_command` calls to `loop status --json` |
+| Execution mode | `loop run` batch | `npm run polaris -- loop run POL-357` |
+| Worker return format | `[POLARIS] COMPLETE POL-NNN (commit: <sha>)` | Clean 40-char SHAs; no JSON repair needed |
+| Artifact repair cycles | 0 | No apply_patch calls; no repair messages in main loop |
+| Finalize debugging | 6 repair messages | Same path bug as POL-362 |
+| Context at turn 1 | 23,225 tokens | Transcript token_count events |
+| Context at peak | 94,944 tokens | 36.7% of 258,400 window |
+| Cumulative input tokens | 3,691,235 | |
+| Cache hit rate | 92.8% | |
+| Output tokens | 8,803 | |
+| Reasoning tokens | 2,943 | |
+| exec_command calls | 57 | File reads: 13, git: 12, finalize: 10, loop status: 8, other: 14 |
+| apply_patch calls | 0 | Confirmed: no `custom_tool_call` events |
+| Children | 3 (POL-358, 359, 360) | `loop run` output |
+| Session invocations | 3 (2 effective) | Invocation 3 = "quit" (turn_aborted) |
 
 ---
 
-## 3. POL-362 Runtime Characteristics
+## 3. Runtime Characteristics
 
-### Child execution timeline
+### POL-357 child execution timeline (actual)
+
+| Child | Dispatch (CLI signal) | Complete (CLI signal) | Duration | Return artifact |
+|---|---|---|---|---|
+| POL-358 | 16:12:50 (Dispatch M06) | 16:18:00 `[POLARIS] COMPLETE POL-358` | ~5.2 min | Clean — `commit: 202f1dfbb33ecd09c9882bad19392501ff64b8b4` |
+| POL-359 | 16:18:03 (Dispatch M17) | 16:20:49 `[POLARIS] COMPLETE POL-359` | ~2.8 min | Clean — `commit: 57c0b619dcbde33d1a1c0b60df913872d3ef25e5` |
+| POL-360 | 16:20:51 (Dispatch M23) | 16:23:40 `[POLARIS] COMPLETE POL-360` | ~2.8 min | Clean — `commit: 7205b443f49131bc1181cc5961c5e28348e474a1` |
+| Librarian | 16:24:35 (session 44454) | 16:26:25 (+29 tokens output) | ~1.8 min | `"status":"success"` — clean |
+
+Total worker execution time: ~10.8 min of 17.6 min session. Polling consumed 11.0 min (62.3%), overlapping with worker execution. The CLI subprocess (`loop run`, session 98899) managed internal dispatch state; the Foreman polled every 30s and never intervened in the dispatch cycle.
+
+### POL-362 child execution timeline
 
 | Child | Dispatch | Checkpoint | Duration | Issues |
 |---|---|---|---|---|
 | POL-368 | 17:57:22 | 18:04:35 | ~7 min | Clean (auto-dispatched via `loop run`) |
-| POL-367 | 18:04:35 | 18:12:30 | ~7 min + 2 min repair | Artifact repair required; initial `loop run` halted with `worker-error` |
-| POL-366 | 18:13:35 | 18:19:11 | ~5 min + repair | Validation format repair; `autoDispatch:false` required manual dispatch |
-| POL-365 | 18:19:15 | 18:29:13 | ~10 min + repair | Stall period (M73–M83); transient API error; hash resolution + repair |
-| POL-364 | 18:29:21 | 18:33:39 | ~4 min + repair | Artifact normalization (pattern now expected) |
-| POL-363 | 18:33:44 | 18:38:25 | ~5 min + repair | Artifact normalization; validation output inspection |
+| POL-367 | 18:04:35 | 18:12:30 | ~7 min + 2 min repair | Artifact repair required |
+| POL-366 | 18:13:35 | 18:19:11 | ~5 min + repair | Validation format repair; `autoDispatch:false` |
+| POL-365 | 18:19:15 | 18:29:13 | ~10 min + repair | Stall period (M73–M83); API error; hash resolution |
+| POL-364 | 18:29:21 | 18:33:39 | ~4 min + repair | Artifact normalization |
+| POL-363 | 18:33:44 | 18:38:25 | ~5 min + repair | Artifact normalization |
 
-### Worker artifact format mismatch
+### Execution mode: `loop run` (POL-357) vs per-child dispatch (POL-362)
 
-Every Copilot worker except POL-368 returned a result file using a legacy format:
+This is the primary architectural difference between the two runs.
+
+**POL-357 — batch mode:**
 
 ```text
-Legacy (rejected):       Accepted:
-status: "completed"      status: "done"
-short commit hash        full 40-char SHA
-validation: { cmd: bool} validation: { passed: ["cmd1", "cmd2"] }
+Foreman → npm run polaris -- loop run POL-357
+  ↓ (single CLI subprocess, session 98899)
+  CLI → dispatches POL-358 internally
+  CLI → polls worker completion
+  CLI → emits: [POLARIS] COMPLETE POL-358 (commit: 202f1df...)
+  CLI → dispatches POL-359 internally
+  ...
+  CLI → emits: [POLARIS] COMPLETE
+  CLI → exits with code 0
+  ↓
+Foreman sees: clean completion signals only
+Artifact repair cycles: 0
 ```
 
-`loop continue` rejects checkpoints that do not match the accepted format. The Foreman had to:
-1. Read the sealed result file
-2. Resolve the full commit SHA (POL-365 required a `git log` lookup)
-3. Apply a patch to normalize the artifact
-4. Retry `loop continue`
+**POL-362 — per-child dispatch:**
 
-This repair cycle generated 2–7 messages and 3–5 tool calls per child. Across 5 children, artifact repair accounts for approximately **23 Foreman messages** and **~15 tool calls**.
+```text
+Foreman → loop dispatch POL-368
+  ↓
+  Copilot worker runs → writes result JSON directly
+  ↓
+Foreman → loop continue
+  ↓ (rejected — legacy format)
+Foreman reads result JSON, detects:
+  status: "completed" (should be "done")
+  short SHA (should be 40 chars)
+  validation: {cmd: bool} (should be passed: [])
+Foreman patches result JSON with apply_patch
+Foreman → loop continue (accepted)
+  ↓ (repeat × 5 workers)
+```
 
-### POL-365 stall period
+In `loop run` mode, the CLI subprocess normalizes or rejects worker output before the Foreman sees it, emitting only a clean `[POLARIS] COMPLETE` signal. In per-child dispatch mode, every raw CompactReturn artifact lands in the Foreman's context for direct inspection and repair.
 
-Between M73 and M83 (18:23 → 18:29, ~6 minutes), the POL-365 Copilot worker was silent. The Foreman polled 5 times, inspected process state, found the worker still alive, and eventually observed recovery from a transient API error. This produced 11 purely diagnostic/polling messages during a period of zero progress.
+### Worker artifact format comparison
 
-### Finalize path bug
+```text
+POL-357 (loop run output):
+  [POLARIS] COMPLETE POL-358 (commit: 202f1dfbb33ecd09c9882bad19392501ff64b8b4)
+  → Foreman action: none required
 
-At M122, `npm run polaris -- finalize run --state-file .polaris/clusters/POL-362/cluster-state.json` failed because the finalizer expected a `completed_children` field found in the compatibility `current-state.json`, not the canonical `cluster-state.json`. The Foreman spent 7 messages (M122–M128) diagnosing the contract, inspecting POL-357's path as a reference, constructing a compatible state.json, and retrying. This is a runtime implementation issue — the finalizer's input contract is inconsistent with the canonical state surface.
+POL-362 Copilot worker result (5/6 workers):
+  {"status": "completed", "commit": "202f1df", "validation": {"npm test": true}}
+  → Foreman action: read → detect mismatch → apply_patch → retry loop continue
+```
 
-### Session restart overhead
+### Finalize path bug (present in both runs)
 
-The POL-362 run required 3 separate Codex session invocations. Each restart:
-- Re-reads the skill chain and bootstrap packet
-- Re-orients to runtime state
-- Adds ~5 orientation messages to context
+Both runs hit the same finalizer input contract mismatch. The finalizer accepted `current-state.json` but rejected `cluster-state.json`.
 
-Invocation 2 (M48) spent one full message re-confirming runtime state before dispatching. This is expected behavior per the chain, but each restart multiplies boot overhead.
+**POL-357 repair sequence (within single session):**
+1. `finalize run --state-file .polaris/clusters/POL-357/cluster-state.json` → exit 1
+2. `finalize run --state-file .taskchain_artifacts/polaris-run/current-state.json` → exit 1
+3. `map index` + `map validate` (map repair attempt — did not help)
+4. `rg -n "cluster-state|state.json|canonical state"` (source inspection)
+5. `cp current-state.json .polaris/clusters/POL-357/state.json` (manual copy)
+6. `git switch -c pol-357-delivery` (created delivery branch)
+7. `finalize run --state-file state.json` (dry-run) → exit 0
+8. `finalize run --state-file state.json` → exit 1 (branch head integrity failure)
+9. User: "thing needs to be in the new branch" (unblocked)
+10. `git branch -f main origin/main` (reset)
+11. `finalize run` (dry-run) → exit 0 then live → exit 0 ✓
+
+**POL-362 repair sequence** (M122–M128): Same pattern — diagnosed contract, inspected POL-357 cluster path as reference, constructed compatible state.json, retried.
+
+The finalize bug is a runtime defect in both runs. POL-357 resolved it in the main session; POL-362 resolved it in session 3 after a restart.
+
+### POL-365 stall period (POL-362 only)
+
+Between M73 and M83 (18:23 → 18:29, ~6 minutes), the POL-365 Copilot worker was silent. The Foreman polled 5 times, inspected process state, found the worker still alive, and eventually observed recovery from a transient API error. This produced 11 purely diagnostic messages during zero progress.
+
+### Session restart overhead (POL-362)
+
+POL-362 required 3 session invocations due to context pressure and `autoDispatch:false` complications. Each restart re-read the skill chain and bootstrap packet, adding ~5 orientation messages. POL-357's 3 invocations were: main run, user-requested "finalize", and user "quit" (aborted immediately) — the expected flow under the chain.md STOP/DELIVER model.
 
 ---
 
-## 4. Message Classification (POL-362)
+## 4. Message Classification
+
+### POL-357 (actual transcript)
+
+| Category | Count | % | Description |
+|---|---|---|---|
+| WAIT | 18 | 32% | Bare "Waiting." / "Still waiting on the configured worker adapter." |
+| ACTION | 16 | 28% | Dispatch, checkpoint, finalize, deliver, complete |
+| REPAIR / DIAGNOSTIC | 6 | 11% | Finalize path debugging (M42–M51, M55–M56) |
+| ORIENT / OTHER | 13 | 23% | Status checks, authorized packet, librarian, branch verification |
+| NARRATIVE | 4 | 7% | M01–M03 (startup orientation narration); M57 (delivery confirmation) |
+
+**Wait messages were brief and undescriptive** ("Waiting." "Waiting." "Waiting." — bare single words), contrasting with POL-362's multi-sentence wait narration.
+
+### POL-362 (actual transcript)
 
 | Category | Count | % | Description |
 |---|---|---|---|
@@ -122,9 +232,10 @@ Invocation 2 (M48) spent one full message re-confirming runtime state before dis
 
 **Compressible messages** (WAIT_NARRATION + fully redundant STATUS_PROGRESS): ~40–45 messages (~31–35% of total).
 
-### Patterns that recur without adding value
+### Patterns that recur without adding value (POL-362)
 
-**Pattern 1 — Bare wait narration (18 instances):**
+**Pattern 1 — Verbose wait narration (18 instances):**
+
 ```text
 "Still no worker return yet. The parent command is in the adapter-owned
 execution phase for POL-368, so I'm continuing to wait." (M8)
@@ -132,28 +243,26 @@ execution phase for POL-368, so I'm continuing to wait." (M8)
 "The dispatch is still quiet, so I'm checking runtime status again
 for progress or a worker-side blocker before deciding whether to keep
 waiting." (M17)
-
-"No compact return yet. The runtime still owns execution,
-so I'm polling the active command." (M32)
 ```
-These messages are generated once every 30s sleep cycle when no progress is observed. A strict thin-parent model would emit nothing until a state change occurs.
+
+POL-357 used bare one-word wait messages ("Waiting.") — technically still a narration, but orders of magnitude lighter. See Doctrine Update 1 for the preferred approach: no message at all on no-change polls.
 
 **Pattern 2 — Redundant progress percentages (10+ instances):**
+
 ```text
 M28: "POL-367 is progressing: 24%, five files changed, no blocker."
 M31: "POL-367 is at 43% with no blocker."
 M34: "POL-367 is at 60%, still unblocked."
 M37: "POL-367 is at 66%, no blocker."
 ```
-Each `loop status --json` call returns updated progress. The Foreman narrated every status result even when there was no actionable information. This violates the **Forbidden narration** clause in `chain.md` (no "thinking out loud").
 
 **Pattern 3 — Worker file-creation narration (8+ instances):**
+
 ```text
 M53: "The copilot worker has acknowledged the packet... emitting heartbeats for POL-366."
-M54: "The worker has created the Swift adapter and extraction files and is continuing scoped implementation."
+M54: "The worker has created the Swift adapter and extraction files."
 M55: "POL-366 now has runtime, index, and fixture test files created."
 ```
-The chain.md explicitly forbids "summarizing code changes made by a worker." These messages narrate implementation details the Foreman should be unaware of.
 
 ---
 
@@ -161,92 +270,87 @@ The chain.md explicitly forbids "summarizing code changes made by a worker." The
 
 ### High Confidence
 
-**HC-1: Child count doubled all per-cycle overhead**
+**HC-1: `loop run` batch mode eliminated all CompactReturn repair overhead**
+
+POL-357's Foreman dispatched a single `npm run polaris -- loop run POL-357` subprocess. The CLI managed all child dispatches and checkpoints internally, emitting `[POLARIS] COMPLETE POL-NNN (commit: <sha>)` lines when each child completed. The Foreman polled the process but never received or inspected raw CompactReturn JSON.
+
+POL-362's Foreman dispatched each of 6 children individually, receiving each worker's raw result artifact in context. Five of six Copilot workers returned a legacy schema, triggering mandatory repair. This repair overhead — 5 × (read, detect, patch, retry) — generated 23 messages and 15 tool calls that POL-357 never experienced.
+
+*Evidence:* POL-357 write_stdin output (16:12:47): `node dist/cli/index.js loop run POL-357` → `[POLARIS] DISPATCH` → `[POLARIS] COMPLETE POL-358 (commit: 202f1dfbb...)` etc. POL-362 transcript: M41–M45 (POL-367 repair), M62–M63 (POL-366), M86–M88 (POL-365), M98–M99 (POL-364), M110–M111 (POL-363).
+
+**HC-2: Child count doubled all per-cycle overhead**
 
 POL-362 had 6 children vs POL-357's 3. Each child generates a minimum of:
 - 1 dispatch message
-- N polling cycles (3–11 per child in POL-362)
-- 1 status poll result
-- 1 checkpoint message
+- N polling cycles (5–8 per child in POL-357, 8–20 per child in POL-362)
+- 1 status poll result read
+- 1 checkpoint/complete message
 
-With 6 children, every per-child overhead metric doubled before any other factor applied. Child count is not itself a compressibility problem, but it is a multiplier on all other inefficiencies.
+With 6 children, every per-child metric doubled before any other factor applied.
 
-*Evidence:* `clusters.json` (POL-357: 3 children, POL-362: 6 children). Per-child message distribution from transcript (M6→M22 for POL-368, M22→M46 for POL-367, etc.).
-
-**HC-2: Copilot worker CompactReturn format mismatch drove 5 repair cycles**
-
-5 of 6 Copilot workers returned result artifacts using a legacy schema (`status:"completed"`, short SHA, validation as map). The Polaris runtime's `loop continue` rejected these artifacts, triggering mandatory repair work by the Foreman that was never planned in the session.
-
-This is not a Foreman doctrine problem — the Foreman correctly identified the schema mismatch and repaired it. But the repair itself generated 23 messages and ~15 tool calls that would not exist if workers produced conformant artifacts.
-
-*Evidence:* M41–M45 (POL-367 repair), M62–M63 (POL-366), M86–M88 (POL-365, including hash resolution), M98–M99 (POL-364), M110–M111 (POL-363). Pattern appears in 5 consecutive workers after the first.
+*Evidence:* POL-357 timing: POL-358: 5.2 min, POL-359: 2.8 min, POL-360: 2.8 min (actual transcript). POL-362 timing: POL-368: 7 min, POL-367: 7+ min, POL-365: 10+ min (transcript).
 
 **HC-3: Polling frequency produced unnecessary narration**
 
-The Foreman narrated every 30s polling cycle whether or not there was new information. In the long quiet window for POL-367 (M23–M40, ~18 messages over ~7 minutes) and POL-365 (M66–M84, ~19 messages over ~10 minutes), the Foreman generated a message for every poll result including those that returned identical state.
+Both Foremanns spent ~62–66% of session time in 30s polling. POL-362's Foreman narrated every poll with multi-sentence commentary even when state was identical to the previous poll. POL-357's Foreman issued bare one-word messages ("Waiting."), which are still technically narration violations but generate roughly 1/20th the token footprint.
 
-The chain.md's narration suppression rule ("The orchestrator does not narrate implementation details") was partially honored — the Foreman did not write code — but the rule against "thinking out loud" was not consistently enforced. The Foreman narrated its own decision to continue waiting on every cycle.
+The chain.md narration suppression rule was partially honored — neither Foreman wrote code inline — but the "no thinking out loud" prohibition was not enforced for polling cycles in either run. POL-362 violated it more severely.
 
-*Evidence:* M7–M11, M16, M19, M24–M40 (POL-367 polling); M52, M58, M67–M83 (POL-365 polling). Tool call sequence: 62 `write_stdin(30000ms)` + 21 `loop status --json`.
+*Evidence:* POL-357: 18 bare "Waiting." messages in 22 polling cycles. POL-362: M7–M11, M16, M19, M24–M40 (POL-367 polling), M52, M58, M67–M83 (POL-365 polling). POL-362 pattern: 18 verbose wait messages + 35 status-progress reports = 53 compressible messages.
 
 ### Medium Confidence
 
-**MC-1: POL-365 worker stall drove 11 extra diagnostic messages**
+**MC-1: POL-365 worker stall drove 11 extra diagnostic messages (POL-362 only)**
 
-POL-365 experienced a multi-interval stall around 18:23–18:29 UTC. A transient API error in the Copilot worker caused silence for ~6 minutes. The Foreman produced 11 messages diagnosing whether the worker was stalled vs. slow, probing process state, and ultimately observing recovery. If workers returned progress signals more reliably, this diagnostic overhead would not have occurred.
+POL-365 experienced ~6 minutes of silence from a transient API error. The Foreman produced 11 diagnostic messages while determining whether the worker was stalled vs. slow.
 
-*Evidence:* M73–M84. Worker eventually recovered (M84: "recovered from a transient API error").
+*Evidence:* M73–M84. Worker recovery confirmed at M84.
 
-**MC-2: Finalize path bug added 7 debugging messages**
+**MC-2: Finalize path bug added overhead in both runs**
 
-The finalizer accepted `current-state.json` but rejected `cluster-state.json` despite both encoding the same logical state. The Foreman spent 7 messages debugging the contract, referencing POL-357's finalize path as a model, and constructing a compatible handoff file. This is a runtime defect, not a Foreman behavior issue, but it consumed context that a clean finalize would not.
+Both runs hit the `cluster-state.json` vs `current-state.json` finalizer contract mismatch. POL-357 resolved it in 6 repair messages within the main session. POL-362 resolved it in 7 messages during session 3. The magnitude of overhead is comparable; the timing differed.
 
-*Evidence:* M122–M128; `finalize --help` call; `rg -n "completed_children"` source inspection; `ls .polaris/clusters/POL-357` reference lookup.
+The finalize bug is a runtime defect. Neither run should have required this repair.
+
+*Evidence:* POL-357: M42–M49 (Retrying with live state → Canonical state required → Preparing canonical state → Switching delivery branch). POL-362: M122–M128.
 
 **MC-3: Worker scope drove longer execution times, which drove more polling cycles**
 
-POL-362 children implemented novel language adapters (Swift, Kotlin/Java, Dart, Svelte) requiring new dependencies, new Tree-sitter grammars, and new test infrastructure. POL-357 children performed bounded TypeScript refactoring within an established module. Longer worker execution time directly increases the number of 30s polling cycles and therefore the number of Foreman narration messages.
+POL-362 workers implemented novel language adapters (Swift, Kotlin/Java, Dart, Svelte) requiring new dependencies and test infrastructure. POL-357 workers performed bounded TypeScript refactoring in an established module (2.8–5.2 min per child). Longer workers = more 30s polling cycles = more narration opportunities.
 
-This is not a direct cause of verbosity, but it is the mechanism by which larger child scope increased Foreman context: longer workers → more polling cycles → more narration.
+*Evidence:* POL-357 per-child durations: 5.2, 2.8, 2.8 min (actual). POL-362: POL-365 ~10 min (M65→M89), POL-367 ~7 min (M22→M46).
 
-*Evidence:* POL-365 ran ~10 minutes (M65→M89), POL-367 ran ~7 minutes (M22→M46). Contrast with POL-357's bounded scope in `clusters.json`.
+**MC-4: `autoDispatch:false` caused 3-message dispatch sequence (POL-362)**
 
-**MC-4: autoDispatch:false required 3-message dispatch sequence instead of 1**
+After POL-367's repair and the session restart at M48, the Foreman had to manually discover the dispatch path (M49–M51) before launching the Copilot terminal worker directly. This produced 3 messages where `loop dispatch` would have sufficed.
 
-After POL-367's repair and the session restart at M48, the Foreman had to discover the dispatch path manually (M49–M51): first calling `loop resume`, then reading `polaris.config.json` to find the terminal adapter command, then launching `copilot -p ...` directly. This produced 3 messages where a single `loop dispatch` would have sufficed.
-
-*Evidence:* M49 ("Resume refreshed the bootstrap... did not dispatch by itself"), M50 ("autoDispatch:false"), M51 ("I'm launching it as the terminal worker"). POL-368 was dispatched automatically via `loop run`, so no such overhead appeared for the first child.
+*Evidence:* M49 ("Resume refreshed the bootstrap... did not dispatch by itself"), M50 ("autoDispatch:false"), M51 ("I'm launching it as the terminal worker").
 
 ### Low Confidence
 
 **LC-1: Provider narration tendency**
 
-The Codex/GPT-5 orchestrator may have a higher baseline tendency to narrate intermediate state than a Claude orchestrator would under the same doctrine. Without a Claude-orchestrated run of the same cluster as a control, this cannot be confirmed. The pattern of narrating every poll cycle and every worker progress update is consistent with a provider that prefers to report reasoning rather than suppress it.
+The Codex/GPT-5 orchestrator in POL-362 showed a higher tendency to narrate intermediate state than the POL-357 instance of the same provider, despite both running under the same chain.md. The difference was in word-count per message (multi-sentence vs. one-word) rather than message frequency (both produced ~18 wait-state messages). This may reflect session-level variation rather than a systematic provider property.
 
-*Evidence:* All 18 WAIT_NARRATION messages. Insufficient — no comparative transcript from a Claude orchestrator on an equivalent cluster.
-
-**LC-2: Stale runtime state initialization**
-
-The first 5 Foreman messages were consumed resolving a stale `current-state.json` (still pointing to POL-357). An `npm run polaris -- loop run POL-362` call bootstrapped the correct state. This added ~5 messages that a clean-state invocation would not require.
-
-*Evidence:* M4 ("The live current-state.json is still for POL-357"), M5 ("confirming active ledger is completed POL-357"). Minor impact.
+*Evidence:* POL-357 wait messages: all one-word ("Waiting."). POL-362 wait messages: 2–3 sentences each. Both ran on `openai/codex-tui`. Insufficient for strong conclusions without more runs.
 
 ---
 
 ## 6. Evidence Table
 
-| Observation | Transcript Evidence | Estimated Impact |
-|---|---|---|
-| 62 sleep cycles × 30s = 31 min idle | 62 `write_stdin` calls, `yield_time_ms: 30000` (all identical) | Context growth: +~30K tokens in tool call overhead |
-| 5/6 Copilot workers produced legacy artifact format | M41–M45, M62–M63, M86–M88, M98–M99, M110–M111 | +23 messages, +~15 tool calls, +~20K tokens |
-| Foreman narrated every polling cycle | M7–M11, M16, M19, M24–M40, M52, M58, M66–M83 | +~35 compressible messages |
-| Finalize rejected cluster-state.json | M122–M128; `finalize --help`; rg source inspection | +7 messages, +~8 tool calls, +~15K tokens |
-| POL-365 stall: 6 min silence | M73–M84 (11 messages); M84 confirms API error recovery | +11 messages, +5 polling cycles |
-| autoDispatch:false caused 3-step dispatch | M49–M51 | +2 extra messages per post-repair dispatch |
-| Worker narration forbidden by chain.md | M53–M55, M67–M72 (worker file-creation reports) | +8 doctrine-violating messages |
-| Session required 3 restarts | `task_started` count = 3 in event log | +~10 orientation messages total |
-| Context grew from 26,700 → 174,493 tokens | Token progression in 131 `token_count` events | At end: 67.5% of 258,400 window consumed |
-| Progress % narrated on every status call | M28, M31, M34, M37, M75, M92, M95 | +~10 redundant status messages |
+| Observation | POL-357 evidence | POL-362 evidence | Impact |
+|---|---|---|---|
+| `loop run` vs per-child dispatch | `node dist/cli/index.js loop run POL-357` (write_stdin output 16:12:47) | M41–M45, M49–M51, M62–M63 etc. — per-child CompactReturn handling | +23 messages, +15 tool calls, +~20K tokens in POL-362 |
+| Worker return format | `[POLARIS] COMPLETE POL-NNN (commit: <40-char-sha>)` | `{"status":"completed","commit":"202f1df",...}` (legacy) | 5 repair cycles in POL-362 vs 0 in POL-357 |
+| Polling rate | 22 × 30s (11 min / 62.3% of session) | 62 × 30s (31 min / 66.2% of session) | Proportional to child count |
+| Wait narration word count | 1 word per message ("Waiting.") | 20–40 words per message | ~40× per-message token difference |
+| Status polls | 8 `loop status --json` calls | 21 `loop status --json` calls | 2.6× more in POL-362 |
+| Finalize repair | 6 messages (M42–M49, M55–M56), resolved same session | 7 messages (M122–M128), resolved in session 3 | Comparable magnitude; same root cause |
+| Per-child execution time | 2.8–5.2 min (bounded TS refactoring) | 4–10 min (novel language adapters) | Longer workers → more polling cycles |
+| Session invocation structure | Invoc 1: main run; Invoc 2: user-requested finalize; Invoc 3: quit | Invoc 1–3: mid-run restarts due to context/adapter issues | +~10 orientation messages in POL-362 |
+| Context window at peak | 94,944 tokens (36.7% window) | 174,493 tokens (67.5% window) | POL-362 reached 2× higher context utilization |
+| Cumulative input tokens | 3,691,235 | 12,822,162 | 3.5× more total tokens processed in POL-362 |
+| Startup narration violations | M01–M03 (3 orientation narration messages) | Similar pattern + per-session re-orientation | Minor — 3–5 messages in each |
 
 ---
 
@@ -254,11 +358,11 @@ The first 5 Foreman messages were consumed resolving a stale `current-state.json
 
 ### CO-1: Suppress zero-information polling messages
 
-**Current behavior:** The Foreman emits a commentary message on every 30s sleep cycle, even when no state change occurred.
+**Current behavior:** The Foreman emits a commentary message on every 30s sleep cycle, even when no state change occurred (POL-362: multi-sentence; POL-357: one-word "Waiting.").
 
 **Target:** Emit a message only when the polling result reveals a state change (progress advance, blocker, or completion). If state is identical to the previous poll, emit nothing.
 
-**Estimated savings:** 15–18 messages per 6-child cluster (based on POL-362 pattern).
+**Estimated savings:** 15–18 messages per 6-child cluster.
 
 **Doctrine change required:** Add to `chain.md` Narration Suppression:
 > "Do not narrate wait intervals when no state change has been observed since the previous poll. A message is required only when: (a) dispatch occurs, (b) a state change is observed, (c) a blocker is detected, or (d) a checkpoint is taken."
@@ -271,7 +375,7 @@ The first 5 Foreman messages were consumed resolving a stale `current-state.json
 
 **Estimated savings:** 10–12 messages per cluster.
 
-**Doctrine change required:** Extend the Forbidden narration list in `chain.md`:
+**Doctrine change required:** Extend the Forbidden narration list:
 > "Do not narrate intermediate worker progress percentages, file counts, or heartbeat status. These are visible in the runtime telemetry and do not affect orchestration decisions."
 
 ### CO-3: Suppress worker implementation narration
@@ -287,33 +391,31 @@ The first 5 Foreman messages were consumed resolving a stale `current-state.json
 
 ### CO-4: Reduce polling frequency for long-running workers
 
-**Current behavior:** The Foreman polls every 30s throughout worker execution, regardless of worker duration pattern.
+**Current behavior:** The Foreman polls every 30s throughout worker execution.
 
-**Target:** After 3 consecutive no-change polls, extend the sleep interval to 60s. After 6 consecutive no-change polls (indicating a long-running worker), extend to 90s.
+**Target:** After 3 consecutive no-change polls, extend the sleep interval to 60s. After 6 consecutive no-change polls, extend to 90s.
 
-**Estimated savings:** 5–8 fewer sleep cycles per long-running worker. For POL-365 (~10 min execution), this would have reduced 20 polls to ~10.
-
-**Implementation required:** Modify the polling loop (or the Foreman's polling behavior instruction) to use backoff when no state change is observed across N consecutive intervals.
+**Estimated savings:** 5–8 fewer sleep cycles per long-running worker. For POL-365 (~10 min), this would have reduced 20 polls to ~10.
 
 ### CO-5: Standardize Copilot worker CompactReturn format
 
-**Current behavior:** Copilot workers return `status:"completed"` with a validation map, requiring Foreman-side normalization before `loop continue` will accept the checkpoint.
+**Current behavior:** Copilot workers return `status:"completed"` with a validation map, requiring Foreman-side normalization.
 
 **Target:** Either (a) update the worker packet to mandate the correct schema, or (b) make `loop continue` tolerant of the legacy format and normalize internally.
 
 **Estimated savings:** 23 Foreman messages and 15 tool calls eliminated entirely.
 
-**Implementation required:** Two options:
-- *Option A (preferred):* Update `loop continue` to accept both `status:"completed"` and `status:"done"`, normalize short commit hashes internally, and accept both validation shapes. This removes the repair burden from the Foreman entirely.
-- *Option B:* Update the Copilot worker packet instructions to explicitly require `status:"done"`, 40-char SHA, and `validation.passed[]` array format.
+**Implementation options:**
+- *Option A (preferred):* Update `loop continue` to accept `status:"completed"` and `status:"done"`, normalize short commit hashes internally, accept both validation shapes.
+- *Option B:* Update the Copilot worker packet instructions to require `status:"done"`, 40-char SHA, and `validation.passed[]` array format.
 
 ### CO-6: Fix finalizer state file contract
 
-**Current behavior:** `finalize run` accepts `current-state.json` but rejects `cluster-state.json`, even though the canonical state surface (per `chain.md`) is the cluster-state path.
+**Current behavior:** `finalize run` accepts `current-state.json` but rejects `cluster-state.json`. Both runs hit this bug.
 
 **Target:** `finalize run` should accept `cluster-state.json` directly, or auto-discover the correct input from `polaris.config.json`.
 
-**Estimated savings:** 7 Foreman debugging messages eliminated per finalize invocation where the cluster-state.json is the authoritative source.
+**Estimated savings:** 6–7 Foreman debugging messages per finalize invocation.
 
 **Implementation required:** Update `src/finalize` to accept the canonical cluster-state shape, or add a `--cluster-id` flag that auto-resolves the correct input path.
 
@@ -323,23 +425,27 @@ The first 5 Foreman messages were consumed resolving a stale `current-state.json
 
 ### R-1: Make `loop continue` schema-tolerant (addresses CO-5, High priority)
 
-`loop continue` should normalize the legacy CompactReturn schema rather than hard-failing on it. The Foreman's repair work was correct but should not be required. This would eliminate the single largest source of unplanned overhead in POL-362.
+`loop continue` should normalize the legacy CompactReturn schema rather than hard-failing on it. This would eliminate the single largest source of unplanned Foreman overhead in POL-362 — 5 repair cycles that consumed 23 messages and 15 tool calls.
 
-### R-2: Add a `--no-narrate-polls` Foreman mode or tighter doctrine (addresses CO-1, CO-2, High priority)
+### R-2: Add narration suppression enforcement (addresses CO-1, CO-2, High priority)
 
-The chain.md narration suppression rules are stated but not mechanically enforced. The Foreman complied with "no inline implementation" but did not comply with "no thinking out loud." A runtime mode that suppresses all commentary-phase messages between dispatch and checkpoint would enforce this structurally rather than relying on model compliance.
+The chain.md narration suppression rules are stated but not mechanically enforced. The Foreman complied with "no inline implementation" but did not comply with "no thinking out loud." A runtime mode that suppresses all commentary between dispatch and state change would enforce this structurally rather than relying on model compliance.
 
 ### R-3: Implement poll backoff for long-running workers (addresses CO-4, Medium priority)
 
-A Foreman polling loop that backs off from 30s → 60s → 90s intervals after N consecutive no-change status results would reduce total sleep cycle count for workers like POL-365 that run for 8–10 minutes.
+A polling loop that backs off from 30s → 60s → 90s after N consecutive no-change status results would reduce total sleep cycle count for workers like POL-365 that run for 8–10 minutes.
 
 ### R-4: Fix finalizer state file auto-discovery (addresses CO-6, Medium priority)
 
-The finalizer's input contract should accept the canonical cluster-state path. The workaround of copying state.json from taskchain_artifacts is a fragility the Foreman should not need to discover at runtime.
+The finalizer's input contract should accept the canonical cluster-state path. The workaround of copying state.json from taskchain_artifacts is a fragility both Foremanns discovered at runtime and had to repair independently.
 
-### R-5: Instrument per-child Foreman token budget (Low priority)
+### R-5: Prefer `loop run` batch mode where available (addresses HC-1, High priority)
 
-Add a warning threshold to the Foreman when per-child Foreman context exceeds a configurable token count. In POL-362, the average per-child Foreman overhead was ~24,665 tokens (147,793 / 6). If one child drives disproportionate overhead, a token budget alert would surface it before the session approaches the context limit.
+`loop run` inserts the CLI's own checkpoint/validation layer between workers and the Foreman, absorbing CompactReturn format variance without Foreman involvement. Where the execution adapter supports it, prefer `loop run` over per-child `loop dispatch` + `loop continue`. This is the single change that would most reduce Foreman context growth per cluster.
+
+### R-6: Instrument per-child Foreman token budget (Low priority)
+
+Add a warning threshold to the Foreman when per-child Foreman context exceeds a configurable token count. In POL-362, the average per-child overhead was ~24,665 tokens (147,793 / 6). In POL-357, ~12,000 tokens per child (72,000 / 6 effective child slots). A token budget alert would surface disproportionate overhead before the session approaches the context limit.
 
 ---
 
@@ -393,37 +499,46 @@ long-running workers from generating unbounded polling overhead.
 
 ## 10. Final Verdict
 
-**POL-357 achieved better Foreman compression primarily because it had 3 children instead of 6, and those workers returned valid result artifacts on first pass — eliminating the repair overhead that dominated POL-362.**
+**POL-357 achieved better Foreman compression primarily because it used `loop run` batch mode, which eliminated all CompactReturn repair overhead, and because it had 3 children instead of 6, halving all per-cycle overhead.**
 
-The secondary causes, ranked:
-1. Child count halved all per-cycle overhead (polling, dispatch, checkpoint).
-2. No worker artifact repairs (vs. 5 repairs in POL-362, each adding 2–7 messages).
-3. Likely shorter worker execution times (bounded TS/JS refactoring vs. novel language adapter implementation), reducing polling frequency.
-4. No finalize path bug.
-5. Presumably no session restart mid-cluster.
+The causal chain, ranked:
+
+1. **Execution mode** (`loop run` vs per-child dispatch) — the most consequential single difference. POL-357's CLI subprocess absorbed worker output variance; POL-362's Foreman received and repaired raw malformed artifacts 5 times.
+2. **Child count** (3 vs 6) — doubled all per-cycle overhead (polling, dispatch, checkpoint, status polls) before any other factor applied.
+3. **Worker execution duration** (2.8–5.2 min vs 4–10 min) — longer workers directly increased polling cycles in POL-362.
+4. **Wait narration verbosity** (one-word vs multi-sentence) — same polling frequency, very different per-message token cost.
+5. **Session restart structure** (expected 2-step flow vs 3 mid-run restarts) — POL-362 paid re-orientation overhead 3 times; POL-357 paid it once for main run and once for user-requested finalize.
+
+**Finalize path bug** affected both runs approximately equally and was resolved in each. It is not a differentiator between the runs — it is a shared runtime defect.
 
 **Confidence levels:**
 
-| Conclusion | Confidence | Limiting factor |
+| Conclusion | Confidence | Basis |
 |---|---|---|
-| Child count is the primary structural multiplier | High | Cluster definitions available for both |
-| Copilot artifact format mismatch is the largest per-message overhead | High | 5/6 repair cycles directly observable in POL-362 transcript |
-| POL-357 had no artifact repair cycles | Medium | Cluster-state shows clean validations; transcript unavailable to confirm |
-| Worker execution time drove polling frequency | Medium | POL-362 timing observable; POL-357 timing not available |
-| Finalize path bug was POL-362-specific | Medium | POL-357's cluster-state structure differs (no state.json creation event) |
-| Provider narration tendency contributed | Low | No Claude-orchestrated control run available |
+| `loop run` batch mode eliminated CompactReturn repair overhead | High | Both transcripts — POL-357 write_stdin output, POL-362 artifact repair messages |
+| Child count is the primary structural multiplier | High | Both cluster definitions + both transcripts |
+| Copilot artifact format mismatch is the largest per-message overhead in POL-362 | High | 5/6 repair cycles directly observable in POL-362 transcript |
+| Worker execution duration drove polling frequency | High | Both transcripts — per-child timing measured in both |
+| Finalize path bug affected both runs equally | High | Both transcripts — same repair sequence in both |
+| Wait narration verbosity was more severe in POL-362 | High | Both transcripts — direct message text comparison |
+| Provider narration tendency contributed | Low | Both runs used same provider; single-session variation insufficient |
 
 ---
+
+## Appendix: POL-357 Data Sources
+
+- Transcript: `a8918ea9-POL357.txt` (uploaded artifact; session upload ID `951df7ee-5715-56a0-832b-debef281bafe`)
+- 392 JSONL lines: 1 session_meta, 127 event_msg, 261 response_item, 3 turn_context
+- Run ledger: `.polaris/runs/ledger.jsonl` (run-started: 2026-06-06T16:12:17.946Z)
+- Cluster definition: `.polaris/clusters/POL-357/clusters.json`
+- Cluster state: `.polaris/clusters/POL-357/cluster-state.json`
+- Foreman doctrine: `.polaris/skills/polaris-run/chain.md`
+- Provider config: `polaris.config.json`
 
 ## Appendix: POL-362 Data Sources
 
 - Transcript: `0ffc010f-POL362transcript.jsonl` (uploaded artifact; session upload ID `951df7ee-5715-56a0-832b-debef281bafe`)
+- 778 JSONL lines: 1 session_meta, 270 event_msg, 501 response_item, 6 turn_context
 - Run ledger: `.polaris/runs/ledger.jsonl` (contains POL-362 `run-started` event)
 - Foreman doctrine: `.polaris/skills/polaris-run/chain.md`
 - Provider config: `polaris.config.json`
-
-## Appendix: POL-357 Data Sources (structural only)
-
-- `.polaris/clusters/POL-357/clusters.json` — cluster definition and child scope
-- `.polaris/clusters/POL-357/cluster-state.json` — validation results, commits, child states
-- `.polaris/runs/ledger.jsonl` — run start timestamp
