@@ -2,12 +2,13 @@
 
 ## Purpose
 
-The graph route owns extraction, resolution, query, and storage for the repository code graph, plus language adapter selection, build coverage reporting, and governance outputs (notices and invalidation checks).
+The graph route owns extraction, resolution, query, and storage for the repository code graph, plus multi-language adapter selection, build coverage reporting, and governance outputs (notices and invalidation checks).
 
 ## What belongs here
 
 - `parser/` — Tree-sitter runtime loading and symbol extraction pipeline
 - `adapter/` — language-specific extraction/runtime adapters and registry wiring
+- `adapter/*` — TypeScript/JavaScript, C, C++, C#, Dart, Go, Java, Kotlin, Python, Rust, Shell, Svelte, and Swift adapters registered in the default graph adapter registry
 - `capability/` — graph capability registry and build coverage reporting
 - `resolver/` — import/call/defined-in edge construction and unresolved edge tracking
 - `query/` — symbol lookup, callers/callees traversal, impact analysis, and graph stats
