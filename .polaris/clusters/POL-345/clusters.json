@@ -4,8 +4,8 @@
     "id": "POL-345",
     "type": "Linear",
     "analysis": {
-      "id": "POL-344",
-      "doc": "Produced by polaris-analyze run polaris-analyze-codegraph-cluster-restructure-2026-06-05-001"
+      "id": "initial-sync",
+      "doc": "Synchronized from Linear issue identifier: POL-345"
     }
   },
   "nodes": {
@@ -13,49 +13,79 @@
       "id": "POL-345",
       "title": "IMPLEMENT: Add Polaris function-level repository graph backend",
       "status": "Todo",
-      "body": "## Objective\n\nImplement a Polaris-native, function-level repository graph backend covering data model, parser, resolver, query API, and CLI surface.\n\n## Context\n\nAnalysis from POL-344 (Analyze and restructure CodeGraph implementation cluster). The governance baseline was established in POL-340. Prior orphaned issues POL-337 and POL-338 have been superseded by this cluster.\n\n## Goal\n\nDeliver a working function-level repository graph that can be built on demand and queried for symbol lookups, call relationships, and impact analysis. Outputs live under graph.outputPath (.polaris/graph/). Graph data is advisory in phase 1.\n\n## Scope\n\n- src/graph/store/**\n- src/graph/parser/**\n- src/graph/resolver/**\n- src/graph/query/**\n- src/cli/graph.ts\n\n## Acceptance Criteria\n\n- [ ] Graph store module implemented and tested\n- [ ] Tree-sitter extraction pipeline runs deterministically\n- [ ] Resolver builds import and call-graph relationships\n- [ ] Query API exposes symbol lookup, callers/callees, impacted files, and graph statistics\n- [ ] CLI surface provides graph build, query, and impact commands\n- [ ] npm run build and npm test pass\n\n## Validation\n\n- npm run build\n- npm test\n- npx vitest run src/graph/\n\n## Ordering\n\nDepends on POL-340 (graph artifact governance) — Done.\n\n## Non-goals\n\n- No worker packet / librarian integration in this cluster\n- No watcher or incremental rebuild in phase 1\n- No wholesale CodeGraph adoption"
+      "body": "## Objective\n\nImplement a Polaris-native, function-level repository graph backend covering data model, parser, resolver, query API, and CLI surface.\n\n## Context\n\nAnalysis from [POL-344](<https://linear.app/lsctech/issue/POL-344>) (Analyze and restructure CodeGraph implementation cluster). The governance baseline was established in [POL-340](<https://linear.app/lsctech/issue/POL-340>) (graph config, `.polaris/graph/` exclusion, `src/graph/governance.ts`). Prior orphaned issues [POL-337](<https://linear.app/lsctech/issue/POL-337>) and [POL-338](<https://linear.app/lsctech/issue/POL-338>) have been superseded by this cluster — they lacked a shared parent, canonical template compliance, correct module paths, and complete child coverage.\n\nThis cluster builds the minimum viable graph backend: SQLite store → tree-sitter extractor → resolver → query API → CLI.\n\n## Goal\n\nDeliver a working function-level repository graph that can be built on demand and queried for symbol lookups, call relationships, and impact analysis. Outputs live under `graph.outputPath` (`.polaris/graph/`). Graph data is advisory — not authoritative completion evidence — in phase 1.\n\n## Scope\n\n* src/graph/store/\\*\\*\n* src/graph/parser/\\*\\*\n* src/graph/resolver/\\*\\*\n* src/graph/query/\\*\\*\n* src/cli/graph.ts\n\n## Acceptance Criteria\n\n- [ ] Graph store module (SQLite schema, versioning, DB adapter, baseline queries) is implemented and tested\n- [ ] Tree-sitter extraction pipeline runs deterministically over TypeScript/JavaScript and persists nodes/edges to graph store\n- [ ] Resolver builds import and call-graph relationships in the graph store\n- [ ] Query API exposes symbol lookup, callers/callees, impacted files, and graph statistics\n- [ ] CLI surface provides `npm run polaris -- graph build`, `graph query`, and `graph impact`\n- [ ] All graph artifacts written to `graph.outputPath`; MIT attribution preserved in NOTICES\n- [ ] `npm run build` and `npm test` pass\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/graph/\n\n## Ordering\n\nDepends on [POL-340](<https://linear.app/lsctech/issue/POL-340>) (graph artifact governance) — Done.\n\n## Non-goals\n\n* No worker packet / librarian integration in this cluster (deferred to follow-on cluster)\n* No watcher or incremental rebuild in phase 1\n* No wholesale CodeGraph adoption — Polaris-native implementation inspired by CodeGraph only\n* Do not treat graph data as authoritative dispatch completion evidence in phase 1"
     },
-    "POL-346": {
-      "id": "POL-346",
-      "title": "Graph store — data model and SQLite baseline",
-      "status": "Todo",
-      "body": "## Objective\n\nImplement the graph store module: type system, SQLite schema, versioning, DB adapter boundary, and baseline query primitives.\n\n## Scope\n\n- src/graph/store/types.ts\n- src/graph/store/schema.sql\n- src/graph/store/adapter.ts\n- src/graph/store/queries.ts\n- src/graph/store/adapter.test.ts\n\n## Validation\n\n- npm run build\n- npm test\n- npx vitest run src/graph/\n\n## Ordering\n\nNo dependencies — executes first in cluster."
+    "POL-340": {
+      "id": "POL-340",
+      "title": "Implement graph artifact governance and lifecycle controls in Polaris runtime",
+      "status": "Done"
     },
-    "POL-347": {
-      "id": "POL-347",
-      "title": "Graph parser — tree-sitter extraction pipeline",
-      "status": "Todo",
-      "body": "## Objective\n\nImplement the tree-sitter extraction pipeline: load grammars, run deterministic AST symbol extraction over TypeScript/JavaScript source files, and persist extracted nodes/edges into the graph store.\n\n## Scope\n\n- src/graph/parser/loader.ts\n- src/graph/parser/extract.ts\n- src/graph/parser/pipeline.ts\n- src/graph/parser/extract.test.ts\n\n## Validation\n\n- npm run build\n- npm test\n- npx vitest run src/graph/\n\n## Ordering\n\nDepends on POL-346 (graph store) being Done."
+    "POL-344": {
+      "id": "POL-344",
+      "title": "Analyze and restructure CodeGraph implementation cluster",
+      "status": "In Review"
     },
-    "POL-348": {
-      "id": "POL-348",
-      "title": "Graph resolver — import resolution and relationship builder",
-      "status": "Todo",
-      "body": "## Objective\n\nImplement the graph resolver: resolve import paths, create caller/callee and file-ownership edges in the graph store.\n\n## Scope\n\n- src/graph/resolver/index.ts\n- src/graph/resolver/resolve-imports.ts\n- src/graph/resolver/build-edges.ts\n- src/graph/resolver/index.test.ts\n\n## Validation\n\n- npm run build\n- npm test\n- npx vitest run src/graph/\n\n## Ordering\n\nDepends on POL-346 (graph store) and POL-347 (parser) being Done."
+    "POL-337": {
+      "id": "POL-337",
+      "title": "Implement CodeGraph data model and SQLite baseline in Polaris",
+      "status": "Canceled"
     },
-    "POL-349": {
-      "id": "POL-349",
-      "title": "Graph query API — symbol lookup and impact queries",
-      "status": "Todo",
-      "body": "## Objective\n\nImplement the graph query API: stable query functions for symbol lookup, callers/callees, impacted files, and graph statistics.\n\n## Scope\n\n- src/graph/query/index.ts\n- src/graph/query/types.ts\n- src/graph/query/index.test.ts\n\n## Validation\n\n- npm run build\n- npm test\n- npx vitest run src/graph/\n\n## Ordering\n\nDepends on POL-346 (graph store) and POL-348 (resolver) being Done."
+    "POL-338": {
+      "id": "POL-338",
+      "title": "Implement tree-sitter extraction pipeline integration for Polaris code-intel",
+      "status": "Canceled"
     },
     "POL-350": {
       "id": "POL-350",
       "title": "Graph CLI surface — build / query / impact commands",
       "status": "Todo",
-      "body": "## Objective\n\nAdd CLI commands for building, querying, and computing impact from the repository graph.\n\n## Scope\n\n- src/cli/graph.ts\n- src/cli/index.ts (register graph subcommand)\n\n## Validation\n\n- npm run build\n- npm test\n- npm run polaris -- graph build --dry-run\n\n## Ordering\n\nDepends on POL-349 (query API) being Done."
+      "body": "## Objective\n\nAdd CLI commands for building, querying, and computing impact from the repository graph.\n\n## Context\n\nFifth and final child of [POL-345](<https://linear.app/lsctech/issue/POL-345>) (IMPLEMENT: Add Polaris function-level repository graph backend). Depends on [POL-349](<https://linear.app/lsctech/issue/POL-349>) (query API) being Done. Exposes the graph backend through the Polaris CLI so operators can manually build the graph and inspect its output.\n\n## Goal\n\nThree CLI commands under `npm run polaris -- graph`:\n\n1. `build` — runs parser pipeline + resolver over configured source roots; writes graph artifacts to `graph.outputPath`\n2. `query <symbol>` — looks up a symbol and prints callers/callees as JSON (`--json`) or table\n3. `impact <symbol>` — prints transitively impacted files for a symbol as JSON or table\n\n## Scope\n\n* src/cli/graph.ts\n* src/cli/index.ts (register graph subcommand)\n\n## Acceptance Criteria\n\n- [ ] `npm run polaris -- graph build` runs parser + resolver, writes graph artifacts to `graph.outputPath`\n- [ ] `npm run polaris -- graph query <symbol>` returns symbol lookup result as JSON (`--json`) or formatted table\n- [ ] `npm run polaris -- graph impact <symbol>` returns impacted files as JSON or formatted table\n- [ ] All three commands support `--dry-run` (print plan, do not write)\n- [ ] Errors from graph build are surfaced as non-zero exit with message\n- [ ] `npm run build` and `npm test` pass\n\n## Validation\n\n* npm run build\n* npm test\n* npm run polaris -- graph build --dry-run\n\n## Ordering\n\nDepends on [POL-349](<https://linear.app/lsctech/issue/POL-349>) (query API) being Done.\n\n## Non-goals\n\n* No watcher or incremental rebuild commands\n* No worker packet or dispatch integration (deferred to follow-on cluster)\n* No graph visualization"
+    },
+    "POL-349": {
+      "id": "POL-349",
+      "title": "Graph query API — symbol lookup and impact queries",
+      "status": "Todo",
+      "body": "## Objective\n\nImplement the graph query API: stable query functions for symbol lookup, callers/callees, impacted files, and graph statistics.\n\n## Context\n\nFourth child of [POL-345](<https://linear.app/lsctech/issue/POL-345>) (IMPLEMENT: Add Polaris function-level repository graph backend). Depends on [POL-346](<https://linear.app/lsctech/issue/POL-346>) (graph store) and [POL-348](<https://linear.app/lsctech/issue/POL-348>) (resolver) being Done. The query API is the stable interface through which CLI commands and future runtime callers access the graph. All response shapes must be stable and versioned.\n\n## Goal\n\nNew module `src/graph/query/` with query functions:\n\n1. `lookupSymbol(name, file?)` → `GraphSymbol | null`\n2. `getCallers(symbolId)` → `GraphSymbol[]`\n3. `getCallees(symbolId)` → `GraphSymbol[]`\n4. `getImpactedFiles(symbolId)` → `GraphFile[]`\n5. `getGraphStats()` → `{ nodeCount, edgeCount, fileCount, symbolCount }`\n\n## Scope\n\n* src/graph/query/index.ts\n* src/graph/query/types.ts\n* src/graph/query/index.test.ts\n\n## Acceptance Criteria\n\n- [ ] All five query functions implemented and exported from `src/graph/query/index.ts`\n- [ ] Response types defined in `src/graph/query/types.ts` (no internal implementation fields exposed)\n- [ ] `lookupSymbol` returns `null` for unknown symbols (never throws)\n- [ ] `getImpactedFiles` traverses `CALLS` and `IMPORTS` edges transitively (depth-bounded to prevent cycles)\n- [ ] `npm run build` and `npm test` pass\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/graph/\n\n## Ordering\n\nDepends on [POL-346](<https://linear.app/lsctech/issue/POL-346>) (graph store) and [POL-348](<https://linear.app/lsctech/issue/POL-348>) (resolver) being Done.\n\n## Non-goals\n\n* No CLI surface (Child 05)\n* No worker packet integration (deferred to follow-on cluster)\n* No streaming or subscription query patterns"
+    },
+    "POL-348": {
+      "id": "POL-348",
+      "title": "Graph resolver — import resolution and relationship builder",
+      "status": "Todo",
+      "body": "## Objective\n\nImplement the graph resolver: resolve import paths, create caller/callee and file-ownership edges in the graph store.\n\n## Context\n\nThird child of [POL-345](<https://linear.app/lsctech/issue/POL-345>) (IMPLEMENT: Add Polaris function-level repository graph backend). Depends on [POL-346](<https://linear.app/lsctech/issue/POL-346>) (graph store) and [POL-347](<https://linear.app/lsctech/issue/POL-347>) (parser/extraction) being Done. The extractor populates raw symbol nodes; the resolver builds the relationship edges that make the graph queryable for impact analysis.\n\n## Goal\n\nNew module `src/graph/resolver/` with:\n\n1. Import resolver: map import specifiers to graph file/symbol IDs using the extracted node table\n2. Edge builder: create `CALLS`, `IMPORTS`, `DEFINED_IN` edges between resolved symbols and files\n3. Unresolved symbol handling: record stubs with an `UNRESOLVED` flag rather than failing\n4. Deterministic rebuild: resolver is idempotent — re-running clears and rebuilds edges\n\n## Scope\n\n* src/graph/resolver/index.ts\n* src/graph/resolver/resolve-imports.ts\n* src/graph/resolver/build-edges.ts\n* src/graph/resolver/index.test.ts\n\n## Acceptance Criteria\n\n- [ ] Import specifiers resolved to graph symbol IDs where possible; marked `UNRESOLVED` otherwise\n- [ ] `CALLS` edges created between caller and callee `GraphSymbol` nodes\n- [ ] `IMPORTS` edges created between `GraphFile` nodes\n- [ ] `DEFINED_IN` edges link symbols to their file\n- [ ] Resolver is idempotent: re-running drops and rebuilds all edges without duplication\n- [ ] `npm run build` and `npm test` pass\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/graph/\n\n## Ordering\n\nDepends on [POL-346](<https://linear.app/lsctech/issue/POL-346>) (graph store) and [POL-347](<https://linear.app/lsctech/issue/POL-347>) (parser) being Done.\n\n## Non-goals\n\n* No query API (Child 04)\n* No cross-repo resolution\n* No type-level relationship resolution"
+    },
+    "POL-347": {
+      "id": "POL-347",
+      "title": "Graph parser — tree-sitter extraction pipeline",
+      "status": "Todo",
+      "body": "## Objective\n\nImplement the tree-sitter extraction pipeline: load grammars, run deterministic AST symbol extraction over TypeScript/JavaScript source files, and persist extracted nodes/edges into the graph store.\n\n## Context\n\nSecond child of [POL-345](<https://linear.app/lsctech/issue/POL-345>) (IMPLEMENT: Add Polaris function-level repository graph backend). Depends on [POL-346](<https://linear.app/lsctech/issue/POL-346>) (graph store) being Done. [POL-338](<https://linear.app/lsctech/issue/POL-338>) covered equivalent scope but targeted `src/cognition/code-intel/extraction/` (wrong module — extraction is a graph subsystem concern, not a cognition concern); this child supersedes it with correct placement under `src/graph/parser/`.\n\n## Goal\n\nNew module `src/graph/parser/` with:\n\n1. Grammar/runtime loader: load tree-sitter + language grammars with pinned versions\n2. Extractor: walk AST, extract function/class/method/import declarations as `GraphSymbol`/`GraphNode` entries\n3. Pipeline: accept a list of file paths, extract, persist into graph store via adapter\n4. Error handling via Polaris runtime conventions (non-fatal per-file errors, summary at end)\n\n## Scope\n\n* src/graph/parser/loader.ts\n* src/graph/parser/extract.ts\n* src/graph/parser/pipeline.ts\n* src/graph/parser/extract.test.ts\n\n## Acceptance Criteria\n\n- [ ] Tree-sitter and language grammar versions pinned in `package.json`\n- [ ] Extractor identifies function, class, method, and import declarations in TypeScript/JavaScript files\n- [ ] Extraction results persisted to graph store via `src/graph/store/adapter`\n- [ ] Extraction is deterministic — same input always produces same graph entries\n- [ ] Per-file errors caught and surfaced as warnings without aborting the pipeline\n- [ ] `npm run build` and `npm test` pass\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/graph/\n\n## Ordering\n\nDepends on [POL-346](<https://linear.app/lsctech/issue/POL-346>) (graph store) being Done.\n\n## Non-goals\n\n* No import resolution or edge creation (Child 03)\n* No watcher or incremental rebuild\n* No language support beyond TypeScript/JavaScript in phase 1"
+    },
+    "POL-346": {
+      "id": "POL-346",
+      "title": "Graph store — data model and SQLite baseline",
+      "status": "Todo",
+      "body": "## Objective\n\nImplement the graph store module: type system, SQLite schema, versioning, DB adapter boundary, and baseline query primitives.\n\n## Context\n\nFirst child of [POL-345](<https://linear.app/lsctech/issue/POL-345>) (IMPLEMENT: Add Polaris function-level repository graph backend). The graph governance framework (`src/graph/governance.ts`, `GraphConfig`) was established in [POL-340](<https://linear.app/lsctech/issue/POL-340>). [POL-337](<https://linear.app/lsctech/issue/POL-337>) covered equivalent scope but targeted `src/map/codegraph/` (wrong module) and lacked canonical template compliance; this child supersedes it with correct placement under `src/graph/store/`.\n\n## Goal\n\nNew module `src/graph/store/` with:\n\n1. Type system: node/edge/file/symbol taxonomy (`GraphNode`, `GraphEdge`, `GraphFile`, `GraphSymbol`, etc.)\n2. SQLite schema baseline with schema versioning table\n3. DB adapter: open/close, schema init, migration guard\n4. Baseline query primitives: insertNode, insertEdge, lookupSymbol, lookupFile\n\n## Scope\n\n* src/graph/store/types.ts\n* src/graph/store/schema.sql\n* src/graph/store/adapter.ts\n* src/graph/store/queries.ts\n* src/graph/store/adapter.test.ts\n\n## Acceptance Criteria\n\n- [ ] `GraphNode`, `GraphEdge`, `GraphFile`, `GraphSymbol` types defined and exported from `src/graph/store/types.ts`\n- [ ] SQLite schema includes `nodes`, `edges`, `files`, `symbols` tables with `schema_version` tracking\n- [ ] DB adapter opens and initializes the schema; is idempotent on repeat calls\n- [ ] `insertNode`, `insertEdge`, `lookupSymbol`, `lookupFile` implemented in `queries.ts`\n- [ ] MIT attribution recorded in governance NOTICES on adapter init (via `writeGraphNotices` from `src/graph/governance.ts`)\n- [ ] `npm run build` and `npm test` pass\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/graph/\n\n## Ordering\n\nNo dependencies — executes first in cluster.\n\n## Non-goals\n\n* No tree-sitter extraction (Child 02)\n* No relationship resolution (Child 03)\n* No query API (Child 04)\n* No CLI surface (Child 05)"
     }
   },
   "dependencies": {
-    "POL-347": ["POL-346"],
-    "POL-348": ["POL-346", "POL-347"],
-    "POL-349": ["POL-346", "POL-348"],
-    "POL-350": ["POL-349"]
+    "POL-350": [
+      "POL-349"
+    ],
+    "POL-349": [
+      "POL-346",
+      "POL-348"
+    ],
+    "POL-348": [
+      "POL-347",
+      "POL-346"
+    ],
+    "POL-347": [
+      "POL-346"
+    ]
   },
   "clusters": {
     "POL-345": {
       "id": "POL-345",
-      "title": "IMPLEMENT: Add Polaris function-level repository graph backend",
+      "title": "Linear Issue: POL-345",
       "children": [
         "POL-346",
         "POL-347",
