@@ -2,8 +2,9 @@ import type { AdapterExtractionResult, ExtractedSymbol } from "../types.js";
 import type { ParseTreeLike, SyntaxNodeLike } from "../../parser/loader.js";
 
 export function extractCppSymbolsFromTree(tree: ParseTreeLike): AdapterExtractionResult {
+  const classNames = collectClassNames(tree.rootNode);
   const symbols: ExtractedSymbol[] = [];
-  walkNode(tree.rootNode, symbols);
+  walkNode(tree.rootNode, symbols, classNames);
 
   const deduped = dedupeSymbols(symbols);
   deduped.sort(compareExtractedSymbols);
@@ -14,18 +15,33 @@ export function extractCppSymbolsFromTree(tree: ParseTreeLike): AdapterExtractio
   };
 }
 
-function walkNode(node: SyntaxNodeLike, output: ExtractedSymbol[]): void {
-  const current = toExtractedSymbol(node);
+function collectClassNames(root: SyntaxNodeLike): Set<string> {
+  const names = new Set<string>();
+  function walk(node: SyntaxNodeLike): void {
+    if (node.type === "class_specifier" || node.type === "struct_specifier") {
+      const name = extractTypeName(node);
+      if (name) names.add(name);
+    }
+    for (const child of node.namedChildren ?? []) {
+      walk(child);
+    }
+  }
+  walk(root);
+  return names;
+}
+
+function walkNode(node: SyntaxNodeLike, output: ExtractedSymbol[], classNames: Set<string>): void {
+  const current = toExtractedSymbol(node, classNames);
   if (current) {
     output.push(current);
   }
 
   for (const child of node.namedChildren ?? []) {
-    walkNode(child, output);
+    walkNode(child, output, classNames);
   }
 }
 
-function toExtractedSymbol(node: SyntaxNodeLike): ExtractedSymbol | null {
+function toExtractedSymbol(node: SyntaxNodeLike, classNames: Set<string>): ExtractedSymbol | null {
   if (node.type === "preproc_include") {
     const include = extractIncludeName(node.text);
     if (!include) {
@@ -54,7 +70,7 @@ function toExtractedSymbol(node: SyntaxNodeLike): ExtractedSymbol | null {
       return null;
     }
     const signature = sanitizeSignature(node.text);
-    const symbolKind = isMethod(node, extracted.rawName) ? "method" : "function";
+    const symbolKind = isMethod(node, extracted.rawName, classNames) ? "method" : "function";
     return buildSymbol(node, symbolKind, extracted.name, signature);
   }
 
@@ -110,9 +126,12 @@ function extractFunctionName(text: string): { name: string; rawName: string } | 
   return { name: simple, rawName };
 }
 
-function isMethod(node: SyntaxNodeLike, rawName: string): boolean {
+// Returns true only when the qualifier before the last '::' names a known class/struct,
+// or the node is lexically nested inside a class/struct specifier.
+function isMethod(node: SyntaxNodeLike, rawName: string, classNames: Set<string>): boolean {
   if (rawName.includes("::")) {
-    return true;
+    const qualifier = rawName.split("::")[0];
+    return classNames.has(qualifier);
   }
 
   let current = node.parent ?? null;
