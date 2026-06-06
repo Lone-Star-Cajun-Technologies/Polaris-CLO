@@ -25,7 +25,7 @@ This route is the external operator interface for Polaris. It exposes runtime ca
 - Shares version source with `package.json` through `src/cli/version.ts`.
 
 ## Current State
-Top-level command groups include status, loop, map, finalize, runs, init, docs/doctrine, config, tracker, worker, graph, skill, and librarian. Graph command UX now supports build/query/impact plans and JSON output.
+Top-level command groups include status, loop, map, finalize, runs, init, docs/doctrine, config, tracker, worker, graph, skill, and librarian. Graph command UX now supports build/query/impact plans, JSON output, and build coverage reporting.
 
 ## Known Drift
 Older references that describe only the legacy command subset are stale and should defer to `src/cli/index.ts` command registration.
