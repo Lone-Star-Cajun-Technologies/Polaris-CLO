@@ -75,7 +75,7 @@ POL-362 ran 6 children implementing novel language adapters (Swift, Kotlin/Java,
 
 Every Copilot worker except POL-368 returned a result file using a legacy format:
 
-```
+```text
 Legacy (rejected):       Accepted:
 status: "completed"      status: "done"
 short commit hash        full 40-char SHA
@@ -125,7 +125,7 @@ Invocation 2 (M48) spent one full message re-confirming runtime state before dis
 ### Patterns that recur without adding value
 
 **Pattern 1 — Bare wait narration (18 instances):**
-```
+```text
 "Still no worker return yet. The parent command is in the adapter-owned
 execution phase for POL-368, so I'm continuing to wait." (M8)
 
@@ -139,7 +139,7 @@ so I'm polling the active command." (M32)
 These messages are generated once every 30s sleep cycle when no progress is observed. A strict thin-parent model would emit nothing until a state change occurs.
 
 **Pattern 2 — Redundant progress percentages (10+ instances):**
-```
+```text
 M28: "POL-367 is progressing: 24%, five files changed, no blocker."
 M31: "POL-367 is at 43% with no blocker."
 M34: "POL-367 is at 60%, still unblocked."
@@ -148,7 +148,7 @@ M37: "POL-367 is at 66%, no blocker."
 Each `loop status --json` call returns updated progress. The Foreman narrated every status result even when there was no actionable information. This violates the **Forbidden narration** clause in `chain.md` (no "thinking out loud").
 
 **Pattern 3 — Worker file-creation narration (8+ instances):**
-```
+```text
 M53: "The copilot worker has acknowledged the packet... emitting heartbeats for POL-366."
 M54: "The worker has created the Swift adapter and extraction files and is continuing scoped implementation."
 M55: "POL-366 now has runtime, index, and fixture test files created."
@@ -351,7 +351,7 @@ The following changes to `.polaris/skills/polaris-run/chain.md` are recommended:
 
 Add to the Forbidden narration list:
 
-```
+```text
 - Narrating wait intervals when no state change has occurred since the previous poll.
   If a poll returns identical state to the previous poll, emit nothing.
 - Narrating intermediate worker progress (%, file counts, heartbeat status, validation
@@ -364,7 +364,7 @@ Add to the Forbidden narration list:
 
 Add after Narration Suppression:
 
-```
+```text
 ## Polling Narration Threshold
 
 A Foreman message after a status poll is permitted only when:
@@ -380,7 +380,7 @@ Narrating "I'm still waiting" is a doctrine violation.
 
 Add:
 
-```
+```text
 ## Polling Interval Backoff
 
 After 3 consecutive status polls with no observable state change, double the
@@ -417,10 +417,8 @@ The secondary causes, ranked:
 
 ## Appendix: POL-362 Data Sources
 
-- Transcript: `/root/.claude/uploads/951df7ee-5715-56a0-832b-debef281bafe/0ffc010f-POL362transcript.jsonl`
-- Cluster definition: `.polaris/clusters/POL-357/clusters.json`
-- Cluster state: `.polaris/clusters/POL-357/cluster-state.json`
-- Run ledger: `.polaris/runs/ledger.jsonl`
+- Transcript: `0ffc010f-POL362transcript.jsonl` (uploaded artifact; session upload ID `951df7ee-5715-56a0-832b-debef281bafe`)
+- Run ledger: `.polaris/runs/ledger.jsonl` (contains POL-362 `run-started` event)
 - Foreman doctrine: `.polaris/skills/polaris-run/chain.md`
 - Provider config: `polaris.config.json`
 
