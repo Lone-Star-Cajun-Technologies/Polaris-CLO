@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0",
+  "role": "closeout-librarian",
+  "run_id": "polaris-run-pol-362-2026-06-06-001",
+  "dispatch_id": "95fec64e-c3b6-4e7e-b1ea-78ee5502a3a5",
+  "cluster_id": "POL-362",
+  "status": "success",
+  "commit_sha": "ef909ff5c96ff4e16b6a68ed0813768e83d7cd29",
+  "commit_message": "docs(closeout): reconcile cognition for cluster POL-362\n\nRun: polaris-run-pol-362-2026-06-06-001\nCluster: POL-362\nChildren: POL-368, POL-367, POL-366, POL-365, POL-364, POL-363\nFiles updated:\n- POLARIS.md: 1 files\n- SUMMARY.md: 1 files\n- docs ingested: 0\n- links repaired: 0",
+  "files_committed": [
+    "src/SUMMARY.md",
+    "src/graph/POLARIS.md"
+  ],
+  "polaris_md_updates": [
+    {
+      "file": "src/graph/POLARIS.md",
+      "action": "update",
+      "change_summary": "Updated the graph route contract to reflect expanded default multi-language adapter coverage in the adapter registry."
+    }
+  ],
+  "summary_md_updates": [
+    {
+      "file": "src/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Refreshed current-state language to list the expanded default graph adapter coverage and preserve file-level degradation behavior."
+    }
+  ],
+  "docs_ingested": [],
+  "docs_archived": [],
+  "yaml_updates": [],
+  "cognition_archived": [],
+  "link_validation": {
+    "total_checked": 1,
+    "valid": 1,
+    "broken": 0,
+    "repaired": 0,
+    "unrepairable": []
+  },
+  "blockers": [],
+  "reconciled_at": "2026-06-06T18:41:02Z",
+  "evidence_summary": "Reconciled cluster POL-362 documentation by updating src/graph/POLARIS.md and src/SUMMARY.md to reflect the expanded default graph adapter registry and current graph-build behavior. Existing SmartDocs candidates did not require ingestion or archival for this closeout pass, and no cognition notes were supplied for archive processing. Link validation across touched markdown files found no broken references. A single closeout-librarian documentation commit was created and sealed in this result."
+}

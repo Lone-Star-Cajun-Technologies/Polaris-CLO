@@ -1,0 +1,15 @@
+{
+  "run_id": "polaris-run-pol-362-2026-06-06-001",
+  "cluster_id": "POL-362",
+  "child_id": "POL-365",
+  "status": "done",
+  "commit": "dc4a446d284c4dd007fbad9fe6412e2aeeb80225",
+  "validation": {
+    "passed": [
+      "npm run build",
+      "npm test",
+      "npx vitest run src/graph/adapter/kotlin-java"
+    ]
+  },
+  "next_recommended_action": "continue"
+}

@@ -1,4 +1,15 @@
 import type { AdapterRegistry, LanguageAdapter } from "./types.js";
+import { createCAdapter } from "./c/index.js";
+import { createCppAdapter } from "./cpp/index.js";
+import { createCSharpAdapter } from "./csharp/index.js";
+import { createDartAdapter } from "./dart/index.js";
+import { createGoAdapter } from "./go/index.js";
+import { createJavaAdapter, createKotlinAdapter } from "./kotlin-java/index.js";
+import { createPythonAdapter } from "./python/index.js";
+import { createRustAdapter } from "./rust/index.js";
+import { createShellAdapter } from "./shell/index.js";
+import { createSvelteAdapter } from "./svelte/index.js";
+import { createSwiftAdapter } from "./swift/index.js";
 import { createTypeScriptJavaScriptAdapter } from "./typescript-javascript/index.js";
 
 export class GraphAdapterRegistry implements AdapterRegistry {
@@ -54,6 +65,18 @@ export function getDefaultAdapterRegistry(): AdapterRegistry {
 
   const registry = new GraphAdapterRegistry();
   registry.register(createTypeScriptJavaScriptAdapter());
+  registry.register(createCAdapter());
+  registry.register(createCppAdapter());
+  registry.register(createCSharpAdapter());
+  registry.register(createDartAdapter());
+  registry.register(createGoAdapter());
+  registry.register(createJavaAdapter());
+  registry.register(createKotlinAdapter());
+  registry.register(createPythonAdapter());
+  registry.register(createRustAdapter());
+  registry.register(createShellAdapter());
+  registry.register(createSvelteAdapter());
+  registry.register(createSwiftAdapter());
   defaultRegistry = registry;
   return defaultRegistry;
 }

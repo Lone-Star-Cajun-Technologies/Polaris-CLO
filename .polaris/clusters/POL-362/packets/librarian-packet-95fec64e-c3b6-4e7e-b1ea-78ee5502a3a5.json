@@ -1,0 +1,251 @@
+{
+  "schema_version": "1.0",
+  "role": "closeout-librarian",
+  "run_id": "polaris-run-pol-362-2026-06-06-001",
+  "dispatch_id": "95fec64e-c3b6-4e7e-b1ea-78ee5502a3a5",
+  "cluster_id": "POL-362",
+  "completed_children": [
+    "POL-368",
+    "POL-367",
+    "POL-366",
+    "POL-365",
+    "POL-364",
+    "POL-363"
+  ],
+  "child_summaries": [
+    {
+      "child_id": "POL-368",
+      "title": "POL-368",
+      "commit_sha": "1c54055e2c8178403883651a6a5c59cee2af6d04",
+      "changed_files": [
+        "package.json",
+        "src/graph/adapter/c/adapter.ts",
+        "src/graph/adapter/c/extract.ts",
+        "src/graph/adapter/c/fixtures/adapter.test.ts",
+        "src/graph/adapter/c/index.ts",
+        "src/graph/adapter/c/runtime.ts",
+        "src/graph/adapter/cpp/adapter.ts",
+        "src/graph/adapter/cpp/extract.ts",
+        "src/graph/adapter/cpp/fixtures/adapter.test.ts",
+        "src/graph/adapter/cpp/index.ts",
+        "src/graph/adapter/cpp/runtime.ts",
+        "src/graph/adapter/csharp/adapter.ts",
+        "src/graph/adapter/csharp/extract.ts",
+        "src/graph/adapter/csharp/fixtures/adapter.test.ts",
+        "src/graph/adapter/csharp/index.ts",
+        "src/graph/adapter/csharp/runtime.ts",
+        "src/graph/adapter/fixtures/mixed-repo/sample.c",
+        "src/graph/adapter/fixtures/mixed-repo/sample.cpp",
+        "src/graph/adapter/fixtures/mixed-repo/sample.cs",
+        "src/graph/adapter/fixtures/mixed-repo/sample.sh",
+        "src/graph/adapter/registry.ts",
+        "src/graph/adapter/shell/adapter.ts",
+        "src/graph/adapter/shell/extract.ts",
+        "src/graph/adapter/shell/fixtures/adapter.test.ts",
+        "src/graph/adapter/shell/index.ts"
+      ],
+      "compact_return_path": ".polaris/clusters/POL-362/results/POL-368-7de662ae-0dc8-46d7-9610-a689d75d9c9d.json",
+      "cognition_note_path": null
+    },
+    {
+      "child_id": "POL-367",
+      "title": "POL-367",
+      "commit_sha": "e88a16f09041ac2c18c23d35780297d84c9f66cf",
+      "changed_files": [
+        "package.json",
+        "src/graph/adapter/fixtures/mixed-repo/sample.go",
+        "src/graph/adapter/fixtures/mixed-repo/sample.py",
+        "src/graph/adapter/fixtures/mixed-repo/sample.rs",
+        "src/graph/adapter/go/adapter.ts",
+        "src/graph/adapter/go/extract.ts",
+        "src/graph/adapter/go/fixtures/adapter.test.ts",
+        "src/graph/adapter/go/index.ts",
+        "src/graph/adapter/go/runtime.ts",
+        "src/graph/adapter/python/adapter.ts",
+        "src/graph/adapter/python/extract.ts",
+        "src/graph/adapter/python/fixtures/adapter.test.ts",
+        "src/graph/adapter/python/index.ts",
+        "src/graph/adapter/python/runtime.ts",
+        "src/graph/adapter/registry.ts",
+        "src/graph/adapter/rust/adapter.ts",
+        "src/graph/adapter/rust/extract.ts",
+        "src/graph/adapter/rust/fixtures/adapter.test.ts",
+        "src/graph/adapter/rust/index.ts",
+        "src/graph/adapter/rust/runtime.ts"
+      ],
+      "compact_return_path": ".polaris/clusters/POL-362/results/POL-367-86011a1f-0af7-4085-a291-22b97fcca91b.json",
+      "cognition_note_path": null
+    },
+    {
+      "child_id": "POL-366",
+      "title": "POL-366",
+      "commit_sha": "70b9af10ffcd5d9bb8f34c03fd9048867e388e3a",
+      "changed_files": [
+        "package.json",
+        "src/graph/adapter/fixtures/mixed-repo/sample.swift",
+        "src/graph/adapter/registry.ts",
+        "src/graph/adapter/swift/adapter.ts",
+        "src/graph/adapter/swift/extract.ts",
+        "src/graph/adapter/swift/fixtures/adapter.test.ts",
+        "src/graph/adapter/swift/index.ts",
+        "src/graph/adapter/swift/runtime.ts"
+      ],
+      "compact_return_path": ".polaris/clusters/POL-362/results/POL-366-6bead4c6-1957-4574-a6c7-42632c6cd97e.json",
+      "cognition_note_path": null
+    },
+    {
+      "child_id": "POL-365",
+      "title": "POL-365",
+      "commit_sha": "dc4a446d284c4dd007fbad9fe6412e2aeeb80225",
+      "changed_files": [
+        "package.json",
+        "src/graph/adapter/fixtures/mixed-repo/sample.java",
+        "src/graph/adapter/fixtures/mixed-repo/sample.kt",
+        "src/graph/adapter/kotlin-java/extract-common.ts",
+        "src/graph/adapter/kotlin-java/fixtures/adapter.test.ts",
+        "src/graph/adapter/kotlin-java/index.ts",
+        "src/graph/adapter/kotlin-java/java-adapter.ts",
+        "src/graph/adapter/kotlin-java/java-extract.ts",
+        "src/graph/adapter/kotlin-java/kotlin-adapter.ts",
+        "src/graph/adapter/kotlin-java/kotlin-extract.ts",
+        "src/graph/adapter/kotlin-java/runtime.ts",
+        "src/graph/adapter/registry.ts"
+      ],
+      "compact_return_path": ".polaris/clusters/POL-362/results/POL-365-57b06c95-8875-4b1e-bd45-f8de361357c4.json",
+      "cognition_note_path": null
+    },
+    {
+      "child_id": "POL-364",
+      "title": "POL-364",
+      "commit_sha": "9bce9cd32eaa9aaa49f4a0dcc2e23a7b1a4b3177",
+      "changed_files": [
+        "package.json",
+        "src/graph/adapter/dart/adapter.ts",
+        "src/graph/adapter/dart/extract.ts",
+        "src/graph/adapter/dart/fixtures/adapter.test.ts",
+        "src/graph/adapter/dart/index.ts",
+        "src/graph/adapter/dart/runtime.ts",
+        "src/graph/adapter/fixtures/mixed-repo/sample.dart",
+        "src/graph/adapter/registry.ts"
+      ],
+      "compact_return_path": ".polaris/clusters/POL-362/results/POL-364-8c2421bb-9757-4c46-b8a5-913f215e1b5b.json",
+      "cognition_note_path": null
+    },
+    {
+      "child_id": "POL-363",
+      "title": "POL-363",
+      "commit_sha": "e7878210aeb77bfff8f00aa05204ac2b7a7c7d0b",
+      "changed_files": [
+        "src/graph/adapter/fixtures/mixed-repo/sample.svelte",
+        "src/graph/adapter/registry.ts",
+        "src/graph/adapter/svelte/adapter.ts",
+        "src/graph/adapter/svelte/extract.ts",
+        "src/graph/adapter/svelte/fixtures/adapter.test.ts",
+        "src/graph/adapter/svelte/index.ts"
+      ],
+      "compact_return_path": ".polaris/clusters/POL-362/results/POL-363-405c2891-3118-4872-93d5-475a0fe0ea93.json",
+      "cognition_note_path": null
+    }
+  ],
+  "run_report_path": null,
+  "current_state_path": ".taskchain_artifacts/polaris-run/current-state.json",
+  "affected_folders": [
+    "src/",
+    "src/graph/"
+  ],
+  "polaris_md_paths": [
+    {
+      "folder": "src/",
+      "folder_slug": "src",
+      "polaris_md": "src/POLARIS.md",
+      "summary_md": "src/SUMMARY.md",
+      "cognition_index": null
+    },
+    {
+      "folder": "src/graph/",
+      "folder_slug": "src-graph",
+      "polaris_md": "src/graph/POLARIS.md",
+      "summary_md": null,
+      "cognition_index": null
+    }
+  ],
+  "cognition_notes": [],
+  "cognition_archive_paths": [],
+  "smartdocs_raw_paths": [
+    "smartdocs/raw/.gitkeep",
+    "smartdocs/raw/POLARIS.md"
+  ],
+  "existing_specs": [
+    "smartdocs/specs/active/Claude Plugin Runtime Integration Spec.md",
+    "smartdocs/specs/active/POLARIS.md",
+    "smartdocs/specs/active/SUMMARY.md",
+    "smartdocs/specs/active/canon-reconciliation-protocol.md",
+    "smartdocs/specs/active/closeout-librarian-spec.md",
+    "smartdocs/specs/active/connect-compatibility.md",
+    "smartdocs/specs/active/current-state-schema.md",
+    "smartdocs/specs/active/docs-authority-model.md",
+    "smartdocs/specs/active/ephemeral-validation-plan.md",
+    "smartdocs/specs/active/execution-adapters.md",
+    "smartdocs/specs/active/folder-cognition-staging-librarian.md",
+    "smartdocs/specs/active/foreman-quiet-mode-spec.md",
+    "smartdocs/specs/active/foreman-worker-architecture.md",
+    "smartdocs/specs/active/foreman-worker-migration-plan.md",
+    "smartdocs/specs/active/mcp-confirmed-dispatch-architecture.md",
+    "smartdocs/specs/active/mcp-mutation-safety-model.md",
+    "smartdocs/specs/active/pol-200-adaptive-folder-cognition-librarian-lifecycle.md",
+    "smartdocs/specs/active/pol-325-codegraph-integration-analysis.md",
+    "smartdocs/specs/active/pol-76-mcp-bridge-analysis.md",
+    "smartdocs/specs/active/pol-97-cli-operator-surface-analysis.md",
+    "smartdocs/specs/active/polaris-artifact-promotion-commit-hygiene-policy.md",
+    "smartdocs/specs/active/polaris-implementation-plan.md",
+    "smartdocs/specs/active/provider-capability-matrix.md",
+    "smartdocs/specs/active/provider-role-dispatch-governance.md",
+    "smartdocs/specs/active/runtime-enforcement-spec.md",
+    "smartdocs/specs/active/taskchain-authoring.md",
+    "smartdocs/specs/active/taskchain-format.md",
+    "smartdocs/specs/active/windsurf-orchestrator.md",
+    "smartdocs/specs/active/worker-heartbeat-spec.md",
+    "smartdocs/specs/active/worker-lifecycle-state-machine.md",
+    "smartdocs/specs/active/worker-session-contract.md",
+    "smartdocs/specs/active/worker-telemetry-spec.md"
+  ],
+  "existing_doctrine": [
+    "smartdocs/doctrine/active/2026-05-23-provider-capability-abstraction.md",
+    "smartdocs/doctrine/active/2026-06-04-adoption-plan-1-command-surface-agent-files.md",
+    "smartdocs/doctrine/active/2026-06-04-polaris-adoption-architecture-design.md",
+    "smartdocs/doctrine/active/2026-06-05-adoption-architecture-final-decisions.md",
+    "smartdocs/doctrine/active/POLARIS.md",
+    "smartdocs/doctrine/active/SUMMARY.md",
+    "smartdocs/doctrine/active/issue-hierarchy-doctrine.md",
+    "smartdocs/doctrine/active/pol-223-role-system-worker-assignment-child-recovery-analysis.md",
+    "smartdocs/doctrine/active/polaris-implementation-plan.md",
+    "smartdocs/doctrine/active/smartdocs-summary-architecture.md"
+  ],
+  "result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-362/results/librarian-95fec64e-c3b6-4e7e-b1ea-78ee5502a3a5.json",
+  "prohibited_write_paths": [
+    "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json",
+    "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-362/state.json",
+    "/Users/lsctech/Developer/Polaris/.taskchain_artifacts",
+    "/Users/lsctech/Developer/Polaris/.polaris/runs",
+    "/Users/lsctech/Developer/Polaris/.polaris/map",
+    "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-362/packets",
+    "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-362/results",
+    "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-362-2026-06-06-001/telemetry.jsonl",
+    "/Users/lsctech/Developer/Polaris/src",
+    "/Users/lsctech/Developer/Polaris/test",
+    "/Users/lsctech/Developer/Polaris/scripts"
+  ],
+  "allowed_write_paths": [
+    "/Users/lsctech/Developer/Polaris/src/POLARIS.md",
+    "/Users/lsctech/Developer/Polaris/src/graph/POLARIS.md",
+    "/Users/lsctech/Developer/Polaris/src/SUMMARY.md",
+    "/Users/lsctech/Developer/Polaris/smartdocs",
+    "/Users/lsctech/Developer/Polaris/.polaris/cognition/archive",
+    "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-362/results/librarian-95fec64e-c3b6-4e7e-b1ea-78ee5502a3a5.json"
+  ],
+  "constraints": {
+    "max_summary_addition_lines": 50,
+    "require_polaris_confidence_threshold": 0.8,
+    "librarian_timeout_seconds": 600
+  }
+}

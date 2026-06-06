@@ -1,0 +1,118 @@
+{
+  "schema_version": "1.0",
+  "cluster_id": "POL-362",
+  "state_generation": 14,
+  "child_states": [
+    {
+      "id": "POL-368",
+      "status": "done",
+      "commit": "1c54055e2c8178403883651a6a5c59cee2af6d04"
+    },
+    {
+      "id": "POL-367",
+      "status": "done",
+      "commit": "e88a16f09041ac2c18c23d35780297d84c9f66cf"
+    },
+    {
+      "id": "POL-366",
+      "status": "done",
+      "commit": "70b9af10ffcd5d9bb8f34c03fd9048867e388e3a"
+    },
+    {
+      "id": "POL-365",
+      "status": "done",
+      "commit": "dc4a446d284c4dd007fbad9fe6412e2aeeb80225"
+    },
+    {
+      "id": "POL-364",
+      "status": "done",
+      "commit": "9bce9cd32eaa9aaa49f4a0dcc2e23a7b1a4b3177"
+    },
+    {
+      "id": "POL-363",
+      "status": "done",
+      "commit": "e7878210aeb77bfff8f00aa05204ac2b7a7c7d0b"
+    }
+  ],
+  "claim_metadata": {
+    "POL-367": {
+      "worker_id": "polaris-run-pol-362-2026-06-06-001:POL-367:1780769056594",
+      "claimed_at": "2026-06-06T18:04:16.594Z",
+      "expires_at": "2026-06-06T18:34:16.594Z"
+    },
+    "POL-366": {
+      "worker_id": "731731a3-dd29-4697-ad86-fc2e3b6005d2",
+      "claimed_at": "2026-06-06T18:13:36.872Z",
+      "expires_at": "2026-06-06T18:43:36.872Z"
+    },
+    "POL-365": {
+      "worker_id": "c935293b-0c58-438a-986a-2661ac0f95b2",
+      "claimed_at": "2026-06-06T18:19:13.248Z",
+      "expires_at": "2026-06-06T18:49:13.248Z"
+    },
+    "POL-364": {
+      "worker_id": "736344d9-1a3c-48b6-b8b0-0325eb2b255b",
+      "claimed_at": "2026-06-06T18:29:15.271Z",
+      "expires_at": "2026-06-06T18:59:15.271Z"
+    },
+    "POL-363": {
+      "worker_id": "e3ec0378-6e3e-4a34-be90-f84915533231",
+      "claimed_at": "2026-06-06T18:33:40.352Z",
+      "expires_at": "2026-06-06T19:03:40.352Z"
+    }
+  },
+  "packet_pointers": {
+    "POL-368": ".polaris/clusters/POL-362/packets/POL-368-7de662ae-0dc8-46d7-9610-a689d75d9c9d.json",
+    "POL-367": ".polaris/clusters/POL-362/packets/POL-367-86011a1f-0af7-4085-a291-22b97fcca91b.json",
+    "POL-366": ".polaris/clusters/POL-362/packets/POL-366-6bead4c6-1957-4574-a6c7-42632c6cd97e.json",
+    "POL-365": ".polaris/clusters/POL-362/packets/POL-365-57b06c95-8875-4b1e-bd45-f8de361357c4.json",
+    "POL-364": ".polaris/clusters/POL-362/packets/POL-364-8c2421bb-9757-4c46-b8a5-913f215e1b5b.json",
+    "POL-363": ".polaris/clusters/POL-362/packets/POL-363-405c2891-3118-4872-93d5-475a0fe0ea93.json"
+  },
+  "result_pointers": {
+    "POL-368": ".polaris/clusters/POL-362/results/POL-368-7de662ae-0dc8-46d7-9610-a689d75d9c9d.json",
+    "POL-367": ".polaris/clusters/POL-362/results/POL-367-86011a1f-0af7-4085-a291-22b97fcca91b.json",
+    "POL-366": ".polaris/clusters/POL-362/results/POL-366-6bead4c6-1957-4574-a6c7-42632c6cd97e.json",
+    "POL-365": ".polaris/clusters/POL-362/results/POL-365-57b06c95-8875-4b1e-bd45-f8de361357c4.json",
+    "POL-364": ".polaris/clusters/POL-362/results/POL-364-8c2421bb-9757-4c46-b8a5-913f215e1b5b.json",
+    "POL-363": ".polaris/clusters/POL-362/results/POL-363-405c2891-3118-4872-93d5-475a0fe0ea93.json"
+  },
+  "validation_results": {
+    "POL-368": {
+      "passed": true,
+      "output": "{\"passed\":[\"npm run build\",\"npm test\",\"npx vitest run src/graph/adapter/c src/graph/adapter/cpp src/graph/adapter/csharp src/graph/adapter/shell\"]}"
+    },
+    "POL-367": {
+      "passed": true,
+      "output": "{\"passed\":[\"npm run build\",\"npm test\",\"npx vitest run src/graph/adapter/python src/graph/adapter/go src/graph/adapter/rust\"]}"
+    },
+    "POL-366": {
+      "passed": true,
+      "output": "{\"passed\":[\"npm run build\",\"npm test\",\"npx vitest run src/graph/adapter/swift\"]}"
+    },
+    "POL-365": {
+      "passed": true,
+      "output": "{\"passed\":[\"npm run build\",\"npm test\",\"npx vitest run src/graph/adapter/kotlin-java\"]}"
+    },
+    "POL-364": {
+      "passed": true,
+      "output": "{\"passed\":[\"npm run build\",\"npm test\",\"npx vitest run src/graph/adapter/dart\"]}"
+    },
+    "POL-363": {
+      "passed": true,
+      "output": "{\"passed\":[\"npm run build\",\"npm test\",\"npx vitest run src/graph/adapter/svelte\"]}"
+    }
+  },
+  "commits": {
+    "POL-368": "1c54055e2c8178403883651a6a5c59cee2af6d04",
+    "POL-367": "e88a16f09041ac2c18c23d35780297d84c9f66cf",
+    "POL-366": "70b9af10ffcd5d9bb8f34c03fd9048867e388e3a",
+    "POL-365": "dc4a446d284c4dd007fbad9fe6412e2aeeb80225",
+    "POL-364": "9bce9cd32eaa9aaa49f4a0dcc2e23a7b1a4b3177",
+    "POL-363": "e7878210aeb77bfff8f00aa05204ac2b7a7c7d0b"
+  },
+  "tracker_mutations": {},
+  "blockers": [],
+  "delivery_branch": "pol-362-delivery",
+  "base_branch": "main"
+}
