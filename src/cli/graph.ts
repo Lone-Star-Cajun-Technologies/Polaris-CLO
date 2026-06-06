@@ -257,16 +257,13 @@ function createBuildPlan(repoRoot: string): GraphBuildPlan {
 
 function collectSourceFiles(sourceRoots: readonly string[]): string[] {
   const files: string[] = [];
-  const supportedExtensions = new Set(getDefaultAdapterRegistry().getSupportedExtensions());
 
   for (const root of sourceRoots) {
     if (!existsSync(root)) {
       continue;
     }
     for (const filePath of walkDirectory(root)) {
-      if (supportedExtensions.has(extname(filePath).toLowerCase())) {
-        files.push(filePath);
-      }
+      files.push(filePath);
     }
   }
 

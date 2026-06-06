@@ -21,27 +21,27 @@
   ],
   "claim_metadata": {},
   "packet_pointers": {
-    "POL-358": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-357/packets/POL-358-5646431b-8949-4608-9e31-1acbb0c2a9f0.json",
-    "POL-359": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-357/packets/POL-359-f0f7c673-1970-491d-b841-ac76c0ba4c24.json",
-    "POL-360": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-357/packets/POL-360-dc598169-e65e-4426-8779-d8391cdbe316.json"
+    "POL-358": ".polaris/clusters/POL-357/packets/POL-358-5646431b-8949-4608-9e31-1acbb0c2a9f0.json",
+    "POL-359": ".polaris/clusters/POL-357/packets/POL-359-f0f7c673-1970-491d-b841-ac76c0ba4c24.json",
+    "POL-360": ".polaris/clusters/POL-357/packets/POL-360-dc598169-e65e-4426-8779-d8391cdbe316.json"
   },
   "result_pointers": {
-    "POL-358": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-357/results/POL-358-5646431b-8949-4608-9e31-1acbb0c2a9f0.json",
-    "POL-359": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-357/results/POL-359-f0f7c673-1970-491d-b841-ac76c0ba4c24.json",
-    "POL-360": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-357/results/POL-360-dc598169-e65e-4426-8779-d8391cdbe316.json"
+    "POL-358": ".polaris/clusters/POL-357/results/POL-358-5646431b-8949-4608-9e31-1acbb0c2a9f0.json",
+    "POL-359": ".polaris/clusters/POL-357/results/POL-359-f0f7c673-1970-491d-b841-ac76c0ba4c24.json",
+    "POL-360": ".polaris/clusters/POL-357/results/POL-360-dc598169-e65e-4426-8779-d8391cdbe316.json"
   },
   "validation_results": {
     "POL-358": {
       "passed": true,
-      "output": "[object Object]"
+      "output": "{\"passed\":[\"npm run build\",\"npm test\",\"npx vitest run src/graph/\"]}"
     },
     "POL-359": {
       "passed": true,
-      "output": "[object Object]"
+      "output": "{\"passed\":[\"npm run build\",\"npm test\",\"npx vitest run src/graph/\"]}"
     },
     "POL-360": {
       "passed": true,
-      "output": "[object Object]"
+      "output": "{\"passed\":[\"npm run build\",\"npm test\",\"npx vitest run src/graph/\",\"npm run polaris -- graph build --json\"]}"
     }
   },
   "commits": {

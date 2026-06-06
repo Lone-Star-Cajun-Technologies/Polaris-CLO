@@ -1,1 +1,1 @@
-{"run_id":"polaris-run-pol-357-2026-06-06-001","child_id":"POL-358","status":"success","commit":"202f1dfbb33ecd09c9882bad19392501ff64b8b4","validation":{"passed":["npm run build","npm test","npx vitest run src/graph/"]}}
+{"run_id":"polaris-run-pol-357-2026-06-06-001","cluster_id":"POL-357","child_id":"POL-358","status":"success","commit":"202f1dfbb33ecd09c9882bad19392501ff64b8b4","validation":{"passed":["npm run build","npm test","npx vitest run src/graph/"]}}

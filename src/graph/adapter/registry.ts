@@ -11,18 +11,28 @@ export class GraphAdapterRegistry implements AdapterRegistry {
       throw new Error(`Language adapter already registered: ${adapter.languageId}`);
     }
 
-    this.adaptersByLanguage.set(adapter.languageId, adapter);
+    // Validate all extensions first before mutating state
+    const normalizedExtensions: string[] = [];
     for (const extension of adapter.fileExtensions) {
       const normalized = normalizeExtension(extension);
       const existing = this.adaptersByExtension.get(normalized);
       if (existing) {
         throw new Error(`File extension ${normalized} is already handled by adapter ${existing.languageId}`);
       }
+      normalizedExtensions.push(normalized);
+    }
+
+    // Only mutate state after validation completes
+    this.adaptersByLanguage.set(adapter.languageId, adapter);
+    for (const normalized of normalizedExtensions) {
       this.adaptersByExtension.set(normalized, adapter);
     }
   }
 
   getForExtension(extension: string): LanguageAdapter | null {
+    if (!extension || extension.trim().length === 0) {
+      return null;
+    }
     return this.adaptersByExtension.get(normalizeExtension(extension)) ?? null;
   }
 
