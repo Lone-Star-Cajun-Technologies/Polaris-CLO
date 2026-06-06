@@ -62,6 +62,15 @@ Never assume a globally linked `polaris` command exists.
 09-final-delivery        ← reached only after closeout librarian succeeds
 ```
 
+## CHECKPOINT gate
+
+At each worker return boundary (step 07), apply the CHECKPOINT gate before proceeding:
+
+1. Accept and discard worker output except the CompactReturn JSON object — all other session content is discarded.
+2. Parse the CompactReturn JSON. If it is missing or malformed, treat as a blocker and stop.
+3. Pass the CompactReturn JSON to `npm run polaris -- loop continue` for state persistence.
+4. Preserve the existing step order — do not reorder, skip, or repeat steps based on worker output content.
+
 ## Continuation rules
 
 After step 07 evaluates the session:

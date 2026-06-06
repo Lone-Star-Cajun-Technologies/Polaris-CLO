@@ -18,6 +18,7 @@ function createRepo(): string {
   git(repoRoot, ["init"]);
   git(repoRoot, ["config", "user.email", "graph@example.com"]);
   git(repoRoot, ["config", "user.name", "Graph Governance"]);
+  git(repoRoot, ["config", "commit.gpgsign", "false"]);
   writeFileSync(join(repoRoot, "README.md"), "seed\n", "utf-8");
   git(repoRoot, ["add", "README.md"]);
   git(repoRoot, ["commit", "-m", "seed"]);
