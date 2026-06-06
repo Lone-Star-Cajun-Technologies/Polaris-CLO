@@ -18,12 +18,12 @@
     "POL-345": {
       "id": "POL-345",
       "title": "IMPLEMENT: Add Polaris function-level repository graph backend",
-      "status": "Todo"
+      "status": "Done"
     },
     "POL-356": {
       "id": "POL-356",
       "title": "Analyze multi-language graph extraction and resolver architecture",
-      "status": "Done"
+      "status": "In Review"
     },
     "POL-358": {
       "id": "POL-358",

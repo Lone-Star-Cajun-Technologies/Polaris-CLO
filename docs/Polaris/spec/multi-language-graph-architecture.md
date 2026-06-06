@@ -188,7 +188,7 @@ When no adapter is registered for a file's extension, the pipeline must not sile
 
 **Required behavior:**
 1. Create a `FILE` node in the graph store with `language = "unsupported:<ext>"` (e.g. `"unsupported:.swift"` before a Swift adapter is registered).
-2. Attach a `PARTIAL_COVERAGE` flag in node metadata: `{ "partialCoverage": true, "reason": "no-adapter" }`.
+2. Set `partialCoverage: true` in node metadata: `{ "partialCoverage": true, "reason": "no-adapter" }`.
 3. Register the file in `GraphCapabilityReport.fallbackFileCount` and `unsupportedExtensions`.
 4. Do not create symbol nodes or edges for the file.
 5. Emit a capability warning: `"File <path> has no adapter — registered at file level only"`.
