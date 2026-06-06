@@ -1,0 +1,144 @@
+{
+  "cluster_id": "pol-361-graph-adapter-rollout",
+  "source_issue": "POL-361",
+  "source_id": "POL-362",
+  "generated_at": "2026-06-06T17:44:55Z",
+  "generated_by": "polaris-analyze-pol-361-2026-06-06-001",
+  "analysis_artifact": "docs/Polaris/analysis/pol-361-graph-language-adapter-rollout.md",
+  "parent": {
+    "id": "POL-362",
+    "title": "IMPLEMENT: Multi-language graph adapter rollout",
+    "url": "https://linear.app/lsctech/issue/POL-362/implement-multi-language-graph-adapter-rollout"
+  },
+  "children": [
+    {
+      "id": "POL-363",
+      "cluster_label": "C-01",
+      "title": "IMPLEMENT: Svelte graph adapter",
+      "priority": 1,
+      "languages": ["svelte"],
+      "strategy": "delegation",
+      "confidence": "medium",
+      "complexity": "low",
+      "url": "https://linear.app/lsctech/issue/POL-363/implement-svelte-graph-adapter",
+      "scope": [
+        "src/graph/adapter/svelte/**",
+        "src/graph/adapter/registry.ts",
+        "src/graph/adapter/__fixtures__/mixed-repo/sample.svelte"
+      ]
+    },
+    {
+      "id": "POL-364",
+      "cluster_label": "C-02",
+      "title": "IMPLEMENT: Dart graph adapter",
+      "priority": 2,
+      "languages": ["dart"],
+      "strategy": "tree-sitter",
+      "grammar_package": "tree-sitter-dart@1.0.0",
+      "confidence": "medium",
+      "complexity": "medium",
+      "url": "https://linear.app/lsctech/issue/POL-364/implement-dart-graph-adapter",
+      "scope": [
+        "src/graph/adapter/dart/**",
+        "src/graph/adapter/registry.ts",
+        "src/graph/adapter/__fixtures__/mixed-repo/sample.dart"
+      ]
+    },
+    {
+      "id": "POL-365",
+      "cluster_label": "C-03",
+      "title": "IMPLEMENT: Kotlin and Java graph adapters",
+      "priority": 3,
+      "languages": ["kotlin", "java"],
+      "strategy": "tree-sitter",
+      "grammar_packages": ["tree-sitter-java@0.23.5", "tree-sitter-kotlin@0.3.8"],
+      "confidence": "medium",
+      "complexity": "medium",
+      "url": "https://linear.app/lsctech/issue/POL-365/implement-kotlin-and-java-graph-adapters",
+      "scope": [
+        "src/graph/adapter/kotlin-java/**",
+        "src/graph/adapter/registry.ts",
+        "src/graph/adapter/__fixtures__/mixed-repo/sample.java",
+        "src/graph/adapter/__fixtures__/mixed-repo/sample.kt"
+      ]
+    },
+    {
+      "id": "POL-366",
+      "cluster_label": "C-04",
+      "title": "IMPLEMENT: Swift graph adapter",
+      "priority": 4,
+      "languages": ["swift"],
+      "strategy": "tree-sitter",
+      "grammar_package": "tree-sitter-swift@0.7.1",
+      "confidence": "medium",
+      "complexity": "medium-high",
+      "url": "https://linear.app/lsctech/issue/POL-366/implement-swift-graph-adapter",
+      "scope": [
+        "src/graph/adapter/swift/**",
+        "src/graph/adapter/registry.ts",
+        "src/graph/adapter/__fixtures__/mixed-repo/sample.swift"
+      ]
+    },
+    {
+      "id": "POL-367",
+      "cluster_label": "C-05",
+      "title": "IMPLEMENT: Python, Go, and Rust graph adapters",
+      "priority": 5,
+      "languages": ["python", "go", "rust"],
+      "strategy": "tree-sitter",
+      "grammar_packages": ["tree-sitter-python@0.25.0", "tree-sitter-go@0.25.0", "tree-sitter-rust@0.24.0"],
+      "confidence": "high",
+      "complexity": "low",
+      "url": "https://linear.app/lsctech/issue/POL-367/implement-python-go-and-rust-graph-adapters",
+      "scope": [
+        "src/graph/adapter/python/**",
+        "src/graph/adapter/go/**",
+        "src/graph/adapter/rust/**",
+        "src/graph/adapter/registry.ts",
+        "src/graph/adapter/__fixtures__/mixed-repo/sample.py",
+        "src/graph/adapter/__fixtures__/mixed-repo/sample.go",
+        "src/graph/adapter/__fixtures__/mixed-repo/sample.rs"
+      ]
+    },
+    {
+      "id": "POL-368",
+      "cluster_label": "C-06",
+      "title": "IMPLEMENT: C, C++, C#, and shell graph adapters",
+      "priority": 6,
+      "languages": ["c", "cpp", "csharp", "shell"],
+      "strategy": "tree-sitter+regex",
+      "grammar_packages": ["tree-sitter-c@0.24.1", "tree-sitter-cpp@0.23.4", "tree-sitter-c-sharp@0.23.5"],
+      "confidence": "high",
+      "complexity": "low-medium",
+      "url": "https://linear.app/lsctech/issue/POL-368/implement-c-c-c-and-shell-graph-adapters",
+      "scope": [
+        "src/graph/adapter/c/**",
+        "src/graph/adapter/cpp/**",
+        "src/graph/adapter/csharp/**",
+        "src/graph/adapter/shell/**",
+        "src/graph/adapter/registry.ts",
+        "src/graph/adapter/__fixtures__/mixed-repo/sample.c",
+        "src/graph/adapter/__fixtures__/mixed-repo/sample.cpp",
+        "src/graph/adapter/__fixtures__/mixed-repo/sample.cs",
+        "src/graph/adapter/__fixtures__/mixed-repo/sample.sh"
+      ]
+    }
+  ],
+  "execution_order": "C-01 → C-02 → C-03 → C-04 → C-05 → C-06",
+  "parallelizable": true,
+  "budget": {
+    "max_children": 6,
+    "actual_children": 6
+  },
+  "risks": [
+    "tree-sitter-kotlin@0.3.8 grammar completeness (medium)",
+    "tree-sitter-swift@0.7.1 grammar completeness (medium)",
+    "tree-sitter 0.21.x compatibility with newer grammar packages — mitigated by existing tree-sitter-typescript@0.23.2 working"
+  ],
+  "follow_on": [
+    "Config dependency edges (DEPENDS_ON edge type, package.json/pubspec.yaml/Gradle)",
+    "Mixed-language call edges (Kotlin/Java interop, Swift/ObjC bridges)",
+    "Grammar upgrades for Kotlin and Swift when better versions ship",
+    "SmartDocs route graph (Markdown references as route graph edges)"
+  ]
+}
