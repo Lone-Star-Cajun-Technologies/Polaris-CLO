@@ -16,7 +16,7 @@ import type { FileRouteEntry } from "../map/atlas.js";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export type RouteHealthState = "healthy" | "monitoring" | "known-issues" | "recovering" | "stale";
+export type RouteHealthState = "healthy" | "known-issues" | "stale";
 
 export interface CognitionDeltaOptions {
   repoRoot: string;
@@ -37,14 +37,11 @@ export interface CognitionDeltaOptions {
  * Signals used:
  * - Staleness: entry older than threshold (default 90 days)
  * - Identity completeness: missing instructionFile or role_owner
- * - Missing cognition: no POLARIS.md at route
  *
  * Returns:
  * - "stale": entry is stale (older than threshold)
  * - "known-issues": identity incomplete (missing instructionFile or role_owner)
- * - "monitoring": route has no POLARIS.md cognition
- * - "recovering": route was stale but recently updated
- * - "healthy": route is fresh, identity complete, has cognition
+ * - "healthy": route is fresh, identity complete
  */
 export function assessRouteHealth(
   route: FileRouteEntry,
@@ -59,27 +56,14 @@ export function assessRouteHealth(
   }
 
   // Identity completeness check
-  const hasInstructionFile = route.instructionFile !== undefined && route.instructionFile !== null;
+  const hasInstructionFile = route.instructionFile !== undefined && route.instructionFile !== null && route.instructionFile.trim() !== "";
   const hasRoleOwner = route.role_owner !== undefined && route.role_owner !== null;
-  
+
   if (!hasInstructionFile || !hasRoleOwner) {
     return "known-issues";
   }
 
-  // Missing cognition check
-  if (route.instructionFile) {
-    const polarisPath = resolve(repoRoot, route.instructionFile);
-    if (!existsSync(polarisPath)) {
-      return "monitoring";
-    }
-  }
-
-  // Recovering: recently updated but was stale (heuristic: updated within last 30 days but older than 7 days)
-  if (daysSinceUpdate > 7 && daysSinceUpdate <= 30) {
-    return "recovering";
-  }
-
-  // Healthy: fresh, identity complete, has cognition
+  // Healthy: fresh, identity complete
   return "healthy";
 }
 
@@ -396,6 +380,7 @@ export function applyRouteCognitionDelta(
     updateWarranted,
     reasons,
     missingCognitionSurfaces,
+    healthState: undefined,
   };
 }
 

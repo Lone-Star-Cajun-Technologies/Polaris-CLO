@@ -40,15 +40,6 @@
         "command": "copilot",
         "args": ["-p", "{{worker_prompt}}", "--autopilot", "--allow-all-tools"]
       },
-      "devin": {
-        "command": "devin",
-        "args": [
-          "--permission-mode",
-          "bypass",
-          "-p",
-          "{{worker_prompt}}"
-        ]
-      },
       "custom": {
         "command": "$POLARIS_AGENT",
         "args": ["{{worker_prompt}}"]

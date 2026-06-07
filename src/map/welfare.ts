@@ -2,7 +2,7 @@ import { resolve } from "node:path";
 import { loadConfig } from "../config/loader.js";
 import { readFileRoutes, type FileRouteEntry } from "./atlas.js";
 
-export type RouteHealthState = "healthy" | "monitoring" | "known-issues" | "recovering" | "stale";
+export type RouteHealthState = "healthy" | "known-issues" | "stale";
 
 export type ActionRequired = "none" | "review-identity" | "review-health" | "review-both";
 
@@ -48,9 +48,8 @@ function determineActionRequired(identityComplete: boolean, healthState: RouteHe
   if (identityComplete && healthState === "healthy") {
     return "none";
   }
-  if (!identityComplete && healthState === "healthy") {
-    return "review-identity";
-  }
+  // Note: !identityComplete && healthState === "healthy" is unreachable because
+  // assessRouteHealth returns "known-issues" whenever identityComplete is false
   if (identityComplete && healthState !== "healthy") {
     return "review-health";
   }
