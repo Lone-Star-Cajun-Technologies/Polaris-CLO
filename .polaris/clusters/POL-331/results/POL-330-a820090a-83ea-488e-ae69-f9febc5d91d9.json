@@ -1,12 +1,13 @@
 {
   "child_id": "POL-330",
-  "status": "done",
+  "status": "success",
   "commit": "a838d3e028a6d50445ab59eb1af7883a33b9140b",
   "validation": "passed",
+  "next_recommended_action": "continue",
   "tracker_updated": false,
   "state_updated": false,
   "telemetry_updated": true,
-  "next_recommended_action": "continue",
+  "run_id": "polaris-run-pol-331-2026-06-07-001",
   "result_data": {
     "validation_passed": [
       "npm run build",

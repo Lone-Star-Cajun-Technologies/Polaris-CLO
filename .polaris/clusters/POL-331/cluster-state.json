@@ -42,18 +42,18 @@
     }
   },
   "packet_pointers": {
-    "POL-330": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-331/packets/POL-330-28048f90-faeb-44f6-a6ed-f367c105b7f0.json",
-    "POL-329": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-331/packets/POL-329-d0db5499-e9ad-4d1f-9206-4fdbb4df19d3.json",
-    "POL-328": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-331/packets/POL-328-7872fe17-21b9-409e-80b4-50012ed600de.json",
-    "POL-327": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-331/packets/POL-327-48164a93-a8bc-430f-afe8-be927ee20475.json",
-    "POL-326": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-331/packets/POL-326-938c6712-f884-45ae-839a-37e434aef79a.json"
+    "POL-330": ".polaris/clusters/POL-331/packets/POL-330-28048f90-faeb-44f6-a6ed-f367c105b7f0.json",
+    "POL-329": ".polaris/clusters/POL-331/packets/POL-329-d0db5499-e9ad-4d1f-9206-4fdbb4df19d3.json",
+    "POL-328": ".polaris/clusters/POL-331/packets/POL-328-7872fe17-21b9-409e-80b4-50012ed600de.json",
+    "POL-327": ".polaris/clusters/POL-331/packets/POL-327-48164a93-a8bc-430f-afe8-be927ee20475.json",
+    "POL-326": ".polaris/clusters/POL-331/packets/POL-326-938c6712-f884-45ae-839a-37e434aef79a.json"
   },
   "result_pointers": {
-    "POL-330": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-331/results/POL-330-a820090a-83ea-488e-ae69-f9febc5d91d9.json",
-    "POL-329": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-331/results/POL-329-d0db5499-e9ad-4d1f-9206-4fdbb4df19d3.json",
-    "POL-328": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-331/results/POL-328-7872fe17-21b9-409e-80b4-50012ed600de.json",
-    "POL-327": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-331/results/POL-327-48164a93-a8bc-430f-afe8-be927ee20475.json",
-    "POL-326": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-331/results/POL-326-938c6712-f884-45ae-839a-37e434aef79a.json"
+    "POL-330": ".polaris/clusters/POL-331/results/POL-330-a820090a-83ea-488e-ae69-f9febc5d91d9.json",
+    "POL-329": ".polaris/clusters/POL-331/results/POL-329-d0db5499-e9ad-4d1f-9206-4fdbb4df19d3.json",
+    "POL-328": ".polaris/clusters/POL-331/results/POL-328-7872fe17-21b9-409e-80b4-50012ed600de.json",
+    "POL-327": ".polaris/clusters/POL-331/results/POL-327-48164a93-a8bc-430f-afe8-be927ee20475.json",
+    "POL-326": ".polaris/clusters/POL-331/results/POL-326-938c6712-f884-45ae-839a-37e434aef79a.json"
   },
   "validation_results": {
     "POL-330": {

@@ -79,7 +79,7 @@
     "**/telemetry.jsonl"
   ],
   "result_file_contract": {
-    "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-331/results/POL-328-7872fe17-21b9-409e-80b4-50012ed600de.json",
+    "result_file": ".polaris/clusters/POL-331/results/POL-328-7872fe17-21b9-409e-80b4-50012ed600de.json",
     "result_required_fields": {
       "run_id": "polaris-run-pol-331-2026-06-07-001",
       "cluster_id": "POL-331",

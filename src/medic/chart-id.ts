@@ -79,6 +79,12 @@ export function generateNextChartId(chartsDir: string): ChartId {
   const maxSeq = getMaxSequenceForDate(chartsDir, today);
   const nextSeq = maxSeq + 1;
 
+  if (nextSeq > 999) {
+    throw new RangeError(
+      `Chart sequence overflow for ${today}: maximum sequence is 999, cannot generate sequence ${nextSeq}`,
+    );
+  }
+
   return {
     full: formatChartId(today, nextSeq),
     date: today,

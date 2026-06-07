@@ -37,7 +37,7 @@ stop_rules:
 ## Actions
 
 1. Confirm this is a worker execution context for the selected child. If this is a parent/orchestrator context with another open child to dispatch, return to step 07 and use the execution adapter instead of implementing inline.
-2. Re-fetch the current child issue from Linear to confirm latest state, requirements, and any new blocking relationships.
+2. Re-fetch the current child issue from the issue tracker to confirm latest state, requirements, and any new blocking relationships.
 3. Identify the files relevant to this child. Inspect only those files.
 4. If a repo-analysis provider is configured and available: use it for targeted file or symbol lookup only. Otherwise use `polaris map query` and direct file inspection. Do not perform broad repo analysis regardless of which path is used.
 5. Make the smallest scoped change that satisfies the child's acceptance criteria.

@@ -17,7 +17,7 @@ The Medic operates on implementation repair and chart creation only.
 
 **Allowed writes:** Implementation code (repair only), `smartdocs/medic/charts/` (chart creation), sealed result JSON, medic commit.
 
-**Prohibited writes:** Runtime state files, telemetry JSONL, cluster plan, Linear issue status, POLARIS.md, SUMMARY.md (Librarian responsibility).
+**Prohibited writes:** Runtime state files, telemetry JSONL, cluster plan, issue tracker status, POLARIS.md, SUMMARY.md (Librarian responsibility).
 
 ---
 

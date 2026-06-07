@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 import {
   parseChartId,
   formatChartId,
@@ -54,10 +55,10 @@ describe("chart-id", () => {
   });
 
   describe("getMaxSequenceForDate", () => {
-    const testDir = "/tmp/test-charts";
+    let testDir: string;
 
     beforeEach(() => {
-      mkdirSync(testDir, { recursive: true });
+      testDir = mkdtempSync(join(tmpdir(), "test-charts-"));
     });
 
     afterEach(() => {
@@ -93,10 +94,10 @@ describe("chart-id", () => {
   });
 
   describe("generateNextChartId", () => {
-    const testDir = "/tmp/test-charts";
+    let testDir: string;
 
     beforeEach(() => {
-      mkdirSync(testDir, { recursive: true });
+      testDir = mkdtempSync(join(tmpdir(), "test-charts-"));
     });
 
     afterEach(() => {
