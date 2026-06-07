@@ -743,7 +743,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     const deliveryBranch = state.branch;
     if (deliveryBranch && deliveryBranch.trim().length > 0) {
       const currentBranch = getCurrentBranch(repoRoot);
-      if (currentBranch !== deliveryBranch) {
+      if (currentBranch !== "unknown" && currentBranch !== deliveryBranch) {
         try {
           ensureDeliveryBranch(repoRoot, deliveryBranch);
         } catch (err) {

@@ -38,6 +38,23 @@ To enforce the thin-parent model, the orchestrator's narration is strictly suppr
 
 The `polaris loop run` command may provide terse, single-line status updates for headless/SSH execution. The agent should not add any extra narration around these.
 
+## CHECKPOINT gate
+
+**The Foreman must discard worker output except the CompactReturn JSON object.**
+
+When `loop run` exits, the only content the Foreman may retain from the worker subprocess is:
+- The final `[POLARIS] COMPLETE <child-id> (commit: <sha>)` signal
+- The CompactReturn JSON emitted as the last line of worker stdout
+
+The Foreman must NOT:
+- Read, store, or summarize raw worker output or transcripts
+- Inspect worker tool-call history
+- Ingest implementation details from worker stderr
+
+This gate enforces the thin-parent model: the Foreman is a scheduler, not a consumer of implementation content.
+
+**Preserve the existing step order.** Do not reorder, skip, or merge steps. Each step has a defined entry condition and exit artifact.
+
 ## CLI
 
 Always use the repo-local Polaris CLI:

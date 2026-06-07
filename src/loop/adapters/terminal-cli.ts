@@ -138,19 +138,28 @@ export class TerminalCliAdapter implements ExecutionAdapter {
       }
     }
 
-    // Build provider fallback chain. Start with the primary, then append
-    // policy providers that are configured and not already in the list.
+    // Validate primary provider eagerly — throws for unknown/misconfigured primary,
+    // preserving the pre-refactor contract for callers specifying invalid providers.
+    const primaryCfg = this.getProvider(primaryProvider);
+
+    // Build fallback chain from policy. Only append providers that are configured.
     // Fallback is suppressed when providerPolicy.worker.noFallback is true.
     const workerPolicy = this.config.providerPolicy?.['worker'];
     const canFallback = !(workerPolicy?.noFallback === true);
     const policyProviders: string[] = (canFallback && Array.isArray(workerPolicy?.providers))
       ? workerPolicy.providers
       : [];
-    const providersToTry: string[] = [primaryProvider];
+    const providersToTry: Array<{ name: string; cfg: ProviderConfig; isPrimary: boolean }> = [
+      { name: primaryProvider, cfg: primaryCfg, isPrimary: true },
+    ];
     if (canFallback) {
       for (const p of policyProviders) {
         if (p !== primaryProvider && p in (this.config.providers ?? {})) {
-          providersToTry.push(p);
+          try {
+            providersToTry.push({ name: p, cfg: this.getProvider(p), isPrimary: false });
+          } catch {
+            // fallback provider not found — skip silently
+          }
         }
       }
     }
@@ -163,19 +172,13 @@ export class TerminalCliAdapter implements ExecutionAdapter {
     let lastResult: DispatchResult | undefined;
 
     try {
-      for (const provider of providersToTry) {
-        let providerCfg: ProviderConfig;
-        try {
-          providerCfg = this.getProvider(provider);
-        } catch {
-          continue;
-        }
-
+      for (const { name: provider, cfg: providerCfg, isPrimary } of providersToTry) {
         let command: string;
         let args: string[];
         try {
           ({ command, args } = this.buildCommand(providerCfg, packet, workerPrompt, packetFile));
         } catch (err) {
+          if (isPrimary) throw err; // primary build failures must propagate
           lastResult = {
             exit_code: 1,
             provider_used: provider,
