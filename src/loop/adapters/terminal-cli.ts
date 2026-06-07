@@ -116,14 +116,14 @@ export class TerminalCliAdapter implements ExecutionAdapter {
   }
 
   async dispatch(packet: BootstrapPacket, options: DispatchOptions): Promise<DispatchResult> {
-    const provider = options.provider || "terminal-cli";
+    const primaryProvider = options.provider || "terminal-cli";
     if (isWorkerPacket(packet) && packet.worker_role === "impl") {
       const allowed = Array.isArray(packet.instructions?.allowed_scope) ? packet.instructions.allowed_scope : [];
       if (allowed.length === 0) {
         const blockedMsg = `Worker blocked: impl packet for ${packet.active_child} has empty allowed_scope. Foreman must provide scope or approve override.`;
         return {
           exit_code: 1,
-          provider_used: provider,
+          provider_used: primaryProvider,
           command_run: `terminal-cli:${packet.active_child || "worker"}`,
           summary: JSON.stringify({
             child_id: packet.active_child,
@@ -133,34 +133,99 @@ export class TerminalCliAdapter implements ExecutionAdapter {
             warnings: ["empty-allowed-scope"],
           }),
           stderr: blockedMsg,
+          pre_dispatch_failure: true,
         };
       }
     }
 
-    const providerCfg = this.getProvider(provider);
-    const workerPrompt = buildWorkerInstructions(packet);
+    // Build provider fallback chain. Start with the primary, then append
+    // policy providers that are configured and not already in the list.
+    // Fallback is suppressed when providerPolicy.worker.noFallback is true.
+    const workerPolicy = this.config.providerPolicy?.['worker'];
+    const canFallback = !(workerPolicy?.noFallback === true);
+    const policyProviders: string[] = (canFallback && Array.isArray(workerPolicy?.providers))
+      ? workerPolicy.providers
+      : [];
+    const providersToTry: string[] = [primaryProvider];
+    if (canFallback) {
+      for (const p of policyProviders) {
+        if (p !== primaryProvider && p in (this.config.providers ?? {})) {
+          providersToTry.push(p);
+        }
+      }
+    }
 
+    const workerPrompt = buildWorkerInstructions(packet);
     // Write packet to a named temp file so args can reference it via {{packet_file}}
     const packetFile = path.join(os.tmpdir(), `polaris-packet-${packet.run_id}.json`);
     fs.writeFileSync(packetFile, JSON.stringify(packet, null, 2), 'utf-8');
 
+    let lastResult: DispatchResult | undefined;
+
     try {
-      const { command, args } = this.buildCommand(providerCfg, packet, workerPrompt, packetFile);
-      const commandLine = formatCommandLine(command, args);
+      for (const provider of providersToTry) {
+        let providerCfg: ProviderConfig;
+        try {
+          providerCfg = this.getProvider(provider);
+        } catch {
+          continue;
+        }
 
-      if (options.dryRun) {
-        return this.dryRun(provider, command, args, commandLine, packet, packetFile, workerPrompt);
+        let command: string;
+        let args: string[];
+        try {
+          ({ command, args } = this.buildCommand(providerCfg, packet, workerPrompt, packetFile));
+        } catch (err) {
+          lastResult = {
+            exit_code: 1,
+            provider_used: provider,
+            command_run: provider,
+            stderr: err instanceof Error ? err.message : String(err),
+          };
+          continue;
+        }
+
+        const commandLine = formatCommandLine(command, args);
+
+        if (options.dryRun) {
+          return this.dryRun(provider, command, args, commandLine, packet, packetFile, workerPrompt);
+        }
+
+        if (!resolveCommand(command)) {
+          lastResult = {
+            exit_code: 1,
+            provider_used: provider,
+            command_run: commandLine,
+            stderr: `Provider command "${command}" not found on PATH. ` +
+              `Install it or update the "command" field for provider "${provider}" in polaris.config.json.`,
+          };
+          continue;
+        }
+
+        const result = await this.runProcess(command, args, commandLine, packet, packetFile, provider, workerPrompt);
+
+        // Worker succeeded — return immediately.
+        if (result.exit_code === 0) {
+          return result;
+        }
+
+        // If the worker wrote a result file it actually ran (and failed) — don't
+        // retry with another provider; that would double-dispatch the same child.
+        const resultFilePath = isWorkerPacket(packet) ? packet.result_file_contract?.result_file : undefined;
+        if (resultFilePath && fs.existsSync(resultFilePath)) {
+          return result;
+        }
+
+        // Worker did not start (wrong args, command not found, etc.) — try next.
+        lastResult = result;
       }
 
-      if (!resolveCommand(command)) {
-        throw new Error(
-          `Provider command "${command}" not found on PATH. ` +
-            `Install it or update the "command" field for provider "${provider}" ` +
-            `in polaris.config.json.`
-        );
-      }
-
-      return await this.runProcess(command, args, commandLine, packet, packetFile, provider, workerPrompt);
+      return lastResult ?? {
+        exit_code: 1,
+        provider_used: primaryProvider,
+        command_run: '',
+        stderr: 'All configured providers exhausted without starting a worker',
+      };
     } finally {
       try {
         fs.unlinkSync(packetFile);
@@ -297,7 +362,11 @@ export class TerminalCliAdapter implements ExecutionAdapter {
 
     try {
       const parsed = JSON.parse(summary) as Record<string, unknown>;
-      const compactReturnErrors = validateCompactReturn(parsed);
+      // Normalize legacy CompactReturn shapes before validation so that
+      // workers using pre-spec formats (status:"success", validation:{passed:[...]})
+      // are accepted rather than silently marked as failures.
+      const normalized = normalizeLegacyCompactReturn(parsed);
+      const compactReturnErrors = validateCompactReturn(normalized);
       const isValidCompactReturn = compactReturnErrors.length === 0;
 
       // If the parsed result isn't a valid CompactReturn, treat it as a failure
@@ -306,23 +375,23 @@ export class TerminalCliAdapter implements ExecutionAdapter {
       const effectiveStatus = (exitCode === 0 && isValidCompactReturn) ? "success" : "failure";
 
       const sealedResult = {
-        ...parsed,
+        ...normalized,
         run_id: packet.run_id,
-        child_id: String(parsed["child_id"] ?? packet.active_child),
+        child_id: String(normalized["child_id"] ?? packet.active_child),
         status: effectiveStatus,
         commit:
-          typeof parsed["commit"] === "string"
-            ? parsed["commit"]
-            : typeof parsed["commit_hash"] === "string"
-              ? parsed["commit_hash"]
+          typeof normalized["commit"] === "string"
+            ? normalized["commit"]
+            : typeof normalized["commit_hash"] === "string"
+              ? normalized["commit_hash"]
               : undefined,
-        validation: parsed["validation"] ?? parsed["validation_summary"],
+        validation: normalized["validation"] ?? normalized["validation_summary"],
         error_message:
           effectiveStatus === "failure"
             ? (!isValidCompactReturn
                 ? `CompactReturn validation failed: ${compactReturnErrors.join("; ")}`
-                : typeof parsed["error_message"] === "string"
-                  ? parsed["error_message"]
+                : typeof normalized["error_message"] === "string"
+                  ? normalized["error_message"]
                   : stdout || summary)
             : undefined,
         ...(compactReturnErrors.length > 0 ? { compact_return_errors: compactReturnErrors } : {}),
@@ -334,6 +403,40 @@ export class TerminalCliAdapter implements ExecutionAdapter {
       // file absent so the parent can surface the sealed-result read failure.
     }
   }
+}
+
+/**
+ * Normalize a legacy CompactReturn shape to the current spec before validation.
+ * Handles pre-spec formats produced by older workers:
+ *   - status:"success"|"completed" → status:"done"
+ *   - validation:{passed:[...],failed:[...]} → validation:"passed"|"failed"|"skipped"
+ *   - missing boolean flags → false
+ */
+function normalizeLegacyCompactReturn(raw: Record<string, unknown>): Record<string, unknown> {
+  const result = { ...raw };
+
+  if (result['status'] === 'success' || result['status'] === 'completed') {
+    result['status'] = 'done';
+  }
+
+  if (typeof result['validation'] === 'object' && result['validation'] !== null) {
+    const v = result['validation'] as Record<string, unknown>;
+    if (Array.isArray(v['failed']) && (v['failed'] as unknown[]).length > 0) {
+      result['validation'] = 'failed';
+    } else if (Array.isArray(v['passed']) && (v['passed'] as unknown[]).length > 0) {
+      result['validation'] = 'passed';
+    } else {
+      result['validation'] = 'skipped';
+    }
+  }
+
+  for (const flag of ['tracker_updated', 'state_updated', 'telemetry_updated'] as const) {
+    if (typeof result[flag] !== 'boolean') {
+      result[flag] = false;
+    }
+  }
+
+  return result;
 }
 
 /**

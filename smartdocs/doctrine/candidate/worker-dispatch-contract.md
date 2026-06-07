@@ -1,8 +1,13 @@
-<!-- polaris:doctrine-candidate -->
+<!-- polaris:doctrine-superseded -->
+<!-- SUPERSEDED: The dispatch model described here (loop dispatch --provider / loop continue)
+     has been replaced by the batch loop run command. Do not copy CLI examples from this file.
+     Current dispatch path: npm run polaris -- loop run <cluster-id>
+     See .polaris/skills/polaris-run/chain.md for authoritative dispatch instructions. -->
+
 # Worker Dispatch Contract Specification
 
 ## Version
-1.0.0-draft
+1.0.0-draft (SUPERSEDED)
 
 ## Problem Statement
 

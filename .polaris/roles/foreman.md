@@ -127,7 +127,7 @@ If a dispatched Worker times out, crashes, fails validation, or fails to acknowl
 **The Foreman must not repair runtime state directly.**
 
 If runtime state is corrupted or inconsistent:
-1. Halt with `polaris loop abort`.
+1. Halt with `npm run polaris -- loop abort`.
 2. Emit `state-corruption-detected` event.
 3. Escalate to operator with:
    - Description of the corruption
@@ -147,15 +147,19 @@ State repair must go through proper channels, not Foreman improvisation.
 
 This skill enforces a strict **Foreman/Worker** execution model. The agent running this `chain.md` operates as the **Foreman**. The Foreman's job is to orchestrate the run, not to perform implementation tasks.
 
-When the `polaris loop dispatch` command is executed, it returns a JSON object known as a "Worker Packet".
+**The only legal dispatch command is:**
 
-**This packet is a work order, not a set of instructions for the Foreman to execute directly.**
+```bash
+npm run polaris -- loop run <cluster-id>
+```
 
-The Foreman agent MUST delegate the execution of this Worker Packet to a subordinate **Worker Agent**. The standard procedure is:
+This single command owns the full dispatch→checkpoint loop for all eligible children. It selects the next child, builds the worker packet, dispatches to the configured provider (with automatic fallback through `providerPolicy.worker.providers` on failure), receives the CompactReturn, checkpoints state, and repeats until the cluster is complete or blocked.
 
-1.  Execute `npm run polaris -- loop dispatch --provider <name>`, where `<name>` is selected from `providerPolicy.worker.providers` in `polaris.config.json`. **If `allowNativeSubagent: false` is set, never use a native subagent tool** — this is a governance violation.
-2.  Capture the full JSON output (the Worker Packet).
-3.  Delegate the task to a new, subordinate Worker Agent. The *entire* Worker Packet must be passed as the complete and authoritative prompt for this new agent.
-4.  The Foreman will then wait for the Worker Agent to complete its task and report back with a `CompactReturn` JSON object, as specified in the packet's `return_contract`.
+The Foreman must NOT call `loop dispatch` or `loop continue` individually — doing so bypasses the runtime's dispatch boundary enforcement and will trigger `process.exit(1)` with an `illegal-state-transition` telemetry event.
 
-This protocol establishes a clear **Dispatch Boundary** between the orchestrating Foreman and the implementing Worker. The Foreman manages the overall cluster state and loop (`dispatch`, `continue`, `abort`), while the Worker focuses exclusively on executing the single child issue defined in its packet.
+**If `allowNativeSubagent: false` is set, never use a native subagent tool** — this is a governance violation. `loop run` via `terminal-cli` is the only supported dispatch path.
+
+Progress signals emitted by `loop run`:
+- `[POLARIS] RUNNING <child-id> (N/M)` — child dispatch started
+- `[POLARIS] COMPLETE <child-id> (commit: <sha>)` — child finished
+- `[POLARIS] COMPLETE (cluster-complete)` — all children done, subprocess exits 0
