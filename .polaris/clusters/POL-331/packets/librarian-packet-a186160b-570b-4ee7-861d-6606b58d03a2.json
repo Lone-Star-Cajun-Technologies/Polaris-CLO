@@ -220,7 +220,20 @@
     "/Users/lsctech/Developer/Polaris/src/types/SUMMARY.md",
     "/Users/lsctech/Developer/Polaris/smartdocs",
     "/Users/lsctech/Developer/Polaris/.polaris/cognition/archive",
-    "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-331/results/librarian-a186160b-570b-4ee7-861d-6606b58d03a2.json"
+    "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-331/results/librarian-a186160b-570b-4ee7-861d-6606b58d03a2.json",
+    "smartdocs/POLARIS.md",
+    "smartdocs/SUMMARY.md",
+    "src/POLARIS.md",
+    "src/SUMMARY.md",
+    "src/cli/POLARIS.md",
+    "src/cli/SUMMARY.md",
+    "src/smartdocs-engine/POLARIS.md",
+    "src/smartdocs-engine/SUMMARY.md",
+    "src/types/POLARIS.md",
+    "src/types/SUMMARY.md",
+    "smartdocs",
+    ".polaris/cognition/archive",
+    ".polaris/clusters/POL-331/results/librarian-a186160b-570b-4ee7-861d-6606b58d03a2.json"
   ],
   "constraints": {
     "max_summary_addition_lines": 50,
