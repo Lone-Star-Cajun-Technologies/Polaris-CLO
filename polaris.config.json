@@ -9,7 +9,7 @@
     "providers": {
       "devin": {
         "command": "devin",
-        "args": ["--", "{{worker_prompt}}"]
+        "args": ["-p", "{{worker_prompt}}"]
       },
       "claude": {
         "command": "claude",
