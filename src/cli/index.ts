@@ -23,6 +23,7 @@ import { createWorkerCommand } from "./worker.js";
 import { createGraphCommand } from "./graph.js";
 import { createSkillCommand } from "../skill-packet/index.js";
 import { createLibrarianCommand } from "./librarian.js";
+import { createMedicCommand } from "./medic.js";
 
 export interface PolarisCommandHandlers {
   runLoopStatus?: typeof runLoopStatus;
@@ -142,6 +143,12 @@ export function createPolarisCommand(options: PolarisCommandOptions = {}): Comma
 
   program.addCommand(
     createLibrarianCommand({
+      repoRoot,
+    }),
+  );
+
+  program.addCommand(
+    createMedicCommand({
       repoRoot,
     }),
   );
