@@ -31,8 +31,8 @@
     "taskchain": "polaris-cli",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-06T16:26:55.937Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-06-07T03:42:22.736Z",
+    "updated_by": "polaris-map-update",
     "tags": [
       "cli"
     ],
@@ -44,7 +44,7 @@
     "taskchain": "polaris-cli",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-06T16:28:37.377Z",
+    "last_updated": "2026-06-07T03:42:22.736Z",
     "updated_by": "polaris-map-update",
     "tags": [
       "cli"
@@ -4007,8 +4007,8 @@
     "taskchain": "polaris-types",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-06T16:26:55.937Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-06-07T03:42:22.736Z",
+    "updated_by": "polaris-map-update",
     "tags": [
       "types"
     ],
@@ -4020,8 +4020,8 @@
     "taskchain": "polaris-types",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-06T16:26:55.937Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-06-07T03:42:22.736Z",
+    "updated_by": "polaris-map-update",
     "tags": [
       "types"
     ],

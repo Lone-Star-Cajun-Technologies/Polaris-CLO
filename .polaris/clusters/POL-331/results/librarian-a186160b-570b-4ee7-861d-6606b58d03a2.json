@@ -1,0 +1,62 @@
+{
+  "schema_version": "1.0",
+  "role": "closeout-librarian",
+  "run_id": "polaris-run-pol-331-2026-06-07-001",
+  "dispatch_id": "a186160b-570b-4ee7-861d-6606b58d03a2",
+  "cluster_id": "POL-331",
+  "status": "success",
+  "commit_sha": "a68a1b6",
+  "commit_message": "docs(closeout): reconcile cognition for cluster POL-331\n\nRun: polaris-run-pol-331-2026-06-07-001\nCluster: POL-331\nChildren: POL-330, POL-329, POL-328, POL-327, POL-326\nFiles updated:\n- POLARIS.md: 4 files\n- SUMMARY.md: 4 files\n- docs ingested: 0\n- links repaired: 0",
+  "files_committed": [
+    "smartdocs/POLARIS.md",
+    "smartdocs/SUMMARY.md",
+    "src/POLARIS.md",
+    "src/SUMMARY.md",
+    "src/cli/POLARIS.md",
+    "src/cli/SUMMARY.md",
+    "src/types/POLARIS.md",
+    "src/types/SUMMARY.md"
+  ],
+  "drift_reconciliation": {
+    "medic_ran": false,
+    "charts_created": [],
+    "drift_observations": [
+      { "type": "canon_mismatch", "target": "smartdocs/POLARIS.md", "severity": "low", "note": "medic/charts/ directory not listed" },
+      { "type": "canon_mismatch", "target": "src/POLARIS.md", "severity": "medium", "note": "medic/ and lint/ route folders missing from What belongs here" },
+      { "type": "canon_mismatch", "target": "src/cli/POLARIS.md", "severity": "low", "note": "medic.ts command file not listed" },
+      { "type": "missing_documentation", "target": "src/types/POLARIS.md", "severity": "high", "note": "Draft placeholder; result-packet.ts types not documented" },
+      { "type": "summary_outdated", "target": "src/SUMMARY.md", "severity": "medium", "note": "medic/ and lint/ modules not reflected" },
+      { "type": "summary_outdated", "target": "src/cli/SUMMARY.md", "severity": "low", "note": "medic command group not listed" },
+      { "type": "missing_documentation", "target": "src/types/SUMMARY.md", "severity": "high", "note": "Draft placeholder; no content" }
+    ],
+    "chart_links_required": false,
+    "charts_linked": []
+  },
+  "polaris_md_updates": [
+    { "file": "smartdocs/POLARIS.md", "action": "update", "change_summary": "Added medic/ directory entry to What belongs here, documenting medic/charts/ as the Medic role chart store." },
+    { "file": "src/POLARIS.md", "action": "update", "change_summary": "Added medic/ and lint/ to What belongs here, reflecting new medic chart tooling and Navigation Before Retrieval lint enforcement." },
+    { "file": "src/cli/POLARIS.md", "action": "update", "change_summary": "Added medic.ts entry to What belongs here, documenting polaris medic chart create command." },
+    { "file": "src/types/POLARIS.md", "action": "update", "change_summary": "Replaced draft placeholder with full content: result-packet.ts types (ResultPacket, MedicPacket, MedicResult), editing rules, and related routes." }
+  ],
+  "summary_md_updates": [
+    { "file": "smartdocs/SUMMARY.md", "action": "update", "change_summary": "Added medic/ to Contains list and described medic/charts/ CHART-YYYY-MM-DD-NNN format." },
+    { "file": "src/SUMMARY.md", "action": "update", "change_summary": "Extended Current State to include medic/ chart tooling and lint/ Navigation Before Retrieval enforcement." },
+    { "file": "src/cli/SUMMARY.md", "action": "update", "change_summary": "Updated Current State to include medic command group and polaris medic chart create." },
+    { "file": "src/smartdocs-engine/SUMMARY.md", "action": "no_change" },
+    { "file": "src/types/SUMMARY.md", "action": "update", "change_summary": "Replaced draft placeholder with full content covering ResultPacket, MedicPacket, MedicResult, constraints, and relationships." }
+  ],
+  "docs_ingested": [],
+  "docs_archived": [],
+  "yaml_updates": [],
+  "cognition_archived": [],
+  "link_validation": {
+    "total_checked": 6,
+    "valid": 6,
+    "broken": 0,
+    "repaired": 0,
+    "unrepairable": []
+  },
+  "blockers": [],
+  "reconciled_at": "2026-06-06T22:35:45.000-05:00",
+  "evidence_summary": "Cluster POL-331 completed five children (POL-326 through POL-330) implementing the Medic role, Chart system, Navigation Before Retrieval doctrine lint, seed-instructions updates, and closeout-librarian skill refinements. Drift reconciliation found POLARIS.md and SUMMARY.md were stale across smartdocs/, src/, src/cli/, and src/types/ (the types folder had draft-only content). Updated four POLARIS.md files and four SUMMARY.md files to reflect: the medic/charts/ directory in smartdocs/, the new medic/ and lint/ route folders in src/, the medic command group in src/cli/, and the result-packet.ts types in src/types/. No documents required ingestion; no cognition notes were archived. All links in updated files validated successfully. Librarian commit sha: a68a1b6."
+}

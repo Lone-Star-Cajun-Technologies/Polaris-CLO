@@ -8,6 +8,7 @@ The SmartDocs vault root is the canonical cognition origin for repository docume
 
 - `.obsidian/` — vault configuration only
 - `architecture/`, `doctrine/`, `specs/`, `integrations/`, `audits/`, `decisions/` — canonical content domains
+- `medic/` — Medic role artifacts; `medic/charts/` stores Medic diagnostic charts (CHART-YYYY-MM-DD-NNN)
 - `raw/` — ingest staging area
 - `runtime/` — generated runtime output (excluded from cognition)
 

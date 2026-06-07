@@ -18,6 +18,42 @@ For each folder in `work_inventory.affected_folders` that has a SUMMARY.md:
 
 SUMMARY.md is NOT a changelog. It must read as a coherent current-state snapshot.
 
+## Required Structure (per June 5 doctrine)
+
+SUMMARY.md must contain the following sections:
+
+### Current State
+Brief description of what is implemented, what is not yet, and known gaps.
+
+### Route Health
+Current operational condition. Example subsections:
+- Healthy
+- Monitoring
+- Known Issues
+- Recent Treatments
+- Improvement Opportunities
+
+Goal: Workers understand route condition in under 10 seconds. Not history, not doctrine, not implementation detail.
+
+### Canonical References
+YAML block listing navigation paths (not reading assignments):
+
+```yaml
+canonical_docs:
+  - smartdocs/active/runtime/worker-packet-contract.md
+  - smartdocs/active/runtime/librarian-closeout.md
+  - POLARIS.md
+```
+
+These are retrieval paths, not preload instructions.
+
+## Reconciliation Behavior
+
+- Do NOT overwrite an existing Route Health section if it has content
+- Do NOT auto-populate Route Health status from runtime data — scaffold a skeleton only
+- Canonical References block must use the `canonical_docs:` key
+- Preserve any existing valid content; only update stale state sections
+
 ## Output
 
 ```yaml

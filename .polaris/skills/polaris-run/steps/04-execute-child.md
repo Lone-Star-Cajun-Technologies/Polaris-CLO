@@ -37,20 +37,28 @@ stop_rules:
 ## Actions
 
 1. Confirm this is a worker execution context for the selected child. If this is a parent/orchestrator context with another open child to dispatch, return to step 07 and use the execution adapter instead of implementing inline.
-2. Re-fetch the current child issue from Linear to confirm latest state, requirements, and any new blocking relationships.
+2. Re-fetch the current child issue from the issue tracker to confirm latest state, requirements, and any new blocking relationships.
 3. Identify the files relevant to this child. Inspect only those files.
-4. If a repo-analysis provider is configured and available: use it for targeted file or symbol lookup only. Otherwise use `npm run polaris -- map query` and direct file inspection. Do not perform broad repo analysis regardless of which path is used.
+4. If a repo-analysis provider is configured and available: use it for targeted file or symbol lookup only. Otherwise use `polaris map query` and direct file inspection. Do not perform broad repo analysis regardless of which path is used.
 5. Make the smallest scoped change that satisfies the child's acceptance criteria.
 6. Do not touch files outside the child's scope.
 7. Do not perform unrelated cleanup.
 8. If a discovery falls outside the child's scope: note it as a follow-up — do not silently expand scope.
+
+### Failed Result Packet Detection
+
+If the worker returns a failed result packet (status: "failure"):
+1. Mark `triage_required: true` in the cluster state
+2. Record the failed result packet for Medic dispatch
+3. The Foreman will dispatch Medic in step 08 before Librarian
+4. Runnable sibling work continues in parallel with Medic dispatch
 
 ## Blocker protocol
 
 If the child cannot proceed:
 
 ```
-npm run polaris -- loop abort "<reason>"
+polaris loop abort "<reason>"
 ```
 
 Halt. Report the unblock condition. Do not skip to later children.

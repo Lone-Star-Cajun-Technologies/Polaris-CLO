@@ -1,0 +1,114 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import * as fs from "node:fs";
+import { generatePolarisRules } from "./adopt-rules.js";
+import type { RepoScanInventory } from "./adoption-plan.js";
+
+vi.mock("node:fs", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("node:fs")>();
+  return {
+    ...actual,
+    mkdirSync: vi.fn(),
+    writeFileSync: vi.fn(),
+    existsSync: vi.fn().mockReturnValue(false),
+  };
+});
+
+const mockedWriteFileSync = vi.mocked(fs.writeFileSync);
+const mockedExistsSync = vi.mocked(fs.existsSync);
+
+const baseInventory: RepoScanInventory = {
+  scan_date: "2026-06-04T00:00:00.000Z",
+  repo_state: "existing",
+  package_manager: "npm",
+  source_roots: ["src/"],
+  docs_roots: ["docs/"],
+  test_commands: ["npx vitest run"],
+  build_commands: ["npm run build"],
+  package_scripts: { test: "vitest run" },
+  generated_roots: ["dist/"],
+  cache_roots: [],
+  fixture_roots: [],
+  agent_instruction_files: [],
+  existing_smartdocs_dirs: [],
+  architecture_notes: ["TypeScript monorepo with CLI tooling"],
+  likely_canonical_folders: ["src"],
+  smartdocs_candidates: [],
+};
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockedExistsSync.mockReturnValue(false);
+});
+
+describe("generatePolarisRules", () => {
+  it("writes POLARIS_RULES.md to repo root", async () => {
+    await generatePolarisRules("/repo", baseInventory);
+    expect(mockedWriteFileSync).toHaveBeenCalledWith(
+      "/repo/POLARIS_RULES.md",
+      expect.any(String),
+      "utf-8",
+    );
+  });
+
+  it("includes Temporary Worker Doctrine", async () => {
+    await generatePolarisRules("/repo", baseInventory);
+    const content = mockedWriteFileSync.mock.calls[0]?.[1] as string;
+    expect(content).toContain("Temporary Worker Doctrine");
+    expect(content).toContain("Roles persist");
+  });
+
+  it("includes Repository Memory Doctrine", async () => {
+    await generatePolarisRules("/repo", baseInventory);
+    const content = mockedWriteFileSync.mock.calls[0]?.[1] as string;
+    expect(content).toContain("Repository Memory Doctrine");
+    expect(content).toContain("repository artifacts");
+  });
+
+  it("includes Navigation Before Retrieval section", async () => {
+    await generatePolarisRules("/repo", baseInventory);
+    const content = mockedWriteFileSync.mock.calls[0]?.[1] as string;
+    expect(content).toContain("Navigation Before Retrieval");
+    expect(content).toContain("Links are retrieval paths");
+    expect(content).toContain("Never preload all linked documents");
+    expect(content).toContain("Never load all doctrine");
+    expect(content).toContain("Never load all charts");
+  });
+
+  it("includes map-query-only rule", async () => {
+    await generatePolarisRules("/repo", baseInventory);
+    const content = mockedWriteFileSync.mock.calls[0]?.[1] as string;
+    expect(content).toContain("polaris map query");
+    expect(content).toContain("file-routes.json");
+  });
+
+  it("includes CLUSTER-ID notation, not POL-###", async () => {
+    await generatePolarisRules("/repo", baseInventory);
+    const content = mockedWriteFileSync.mock.calls[0]?.[1] as string;
+    expect(content).toContain("CLUSTER-ID");
+    expect(content).not.toMatch(/POL-###/);
+  });
+
+  it("includes link to ROUTING.md", async () => {
+    await generatePolarisRules("/repo", baseInventory);
+    const content = mockedWriteFileSync.mock.calls[0]?.[1] as string;
+    expect(content).toContain(".polaris/skills/ROUTING.md");
+  });
+
+  it("skips write if POLARIS_RULES.md already exists and overwrite is false", async () => {
+    mockedExistsSync.mockReturnValue(true);
+    await generatePolarisRules("/repo", baseInventory, { overwrite: false });
+    expect(mockedWriteFileSync).not.toHaveBeenCalled();
+  });
+
+  it("overwrites if POLARIS_RULES.md exists and overwrite is true", async () => {
+    mockedExistsSync.mockReturnValue(true);
+    await generatePolarisRules("/repo", baseInventory, { overwrite: true });
+    expect(mockedWriteFileSync).toHaveBeenCalled();
+  });
+
+  it("includes architecture notes from inventory in repo overview", async () => {
+    await generatePolarisRules("/repo", baseInventory);
+    const content = mockedWriteFileSync.mock.calls[0]?.[1] as string;
+    expect(content).toContain("TypeScript monorepo with CLI tooling");
+  });
+});

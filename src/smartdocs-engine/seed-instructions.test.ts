@@ -244,8 +244,24 @@ describe("generateSummaryDraft", () => {
     expect(content).toContain("## Key Constraints");
     expect(content).toContain("## Important Relationships");
     expect(content).toContain("## Current State");
+    expect(content).toContain("## Route Health");
+    expect(content).toContain("## Canonical References");
     expect(content).toContain("## Known Drift");
-    expect(content).toContain("## Linked Canonical Sources");
+  });
+
+  it("includes Route Health subsections", () => {
+    const content = generateSummaryDraft("src/map", TMP, {});
+    expect(content).toContain("### Healthy");
+    expect(content).toContain("### Monitoring");
+    expect(content).toContain("### Known Issues");
+    expect(content).toContain("### Recent Treatments");
+    expect(content).toContain("### Improvement Opportunities");
+  });
+
+  it("includes canonical_docs YAML block with correct key", () => {
+    const content = generateSummaryDraft("src/map", TMP, {});
+    expect(content).toContain("canonical_docs:");
+    expect(content).toContain("- POLARIS.md");
   });
 });
 

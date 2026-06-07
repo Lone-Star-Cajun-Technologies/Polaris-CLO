@@ -1,29 +1,29 @@
-<!-- polaris:draft -->
 # Summary: types
 
-> Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
-
 ## Purpose
-<!-- One-line statement of what this folder does. -->
+Shared TypeScript type definitions for Polaris runtime contracts. Cross-route interfaces for worker result packets, Medic dispatch, tracker adapters, and runtime state.
 
 ## Core Concepts
-<!-- 3–7 key concepts a reader needs before diving into source. -->
+- `ResultPacket` is a discriminated union (`SuccessResultPacket | FailedResultPacket`) — the authoritative contract between workers, the Foreman, and the Medic.
+- `MedicPacket` carries a failed result packet to the Medic role for diagnosis.
+- `MedicResult` is the Medic's return contract after repair.
+- Type guards (`isFailedResultPacket`) live beside the types they guard.
 
 ## Architectural Role
-<!-- How this folder fits into the larger system. -->
+This folder is the shared type boundary for Polaris inter-role communication. Routes that cross the worker/Foreman/Medic boundary consume from here rather than defining local types.
 
 ## Key Constraints
-<!-- The most important non-obvious behavioral limits. -->
+- Types only — no runtime logic or file I/O.
+- `ResultPacket` discriminated union is stable; changes require updating all consumers.
+- Do not add domain-specific types with a clear owning route.
 
 ## Important Relationships
-<!-- Upstream/downstream dependencies on other folders. -->
+- `src/loop/` — consumes `ResultPacket` for child result handling and Medic dispatch
+- `src/medic/` — consumes `MedicPacket`/`MedicResult` for chart creation
+- `src/tracker/` — consumes tracker adapter types
 
 ## Current State
-<!-- What is implemented, what is not yet, known gaps. -->
-
-## Known Drift
-<!-- Places where the summary may be stale (honesty field). -->
+Contains `result-packet.ts` (ResultPacket, MedicPacket, MedicResult), `runtime-state.ts`, `linear.ts`, and `tool-server-linear.d.ts`. All types added by POL-326 Medic role implementation are in `result-packet.ts`.
 
 ## Linked Canonical Sources
 - [POLARIS.md](POLARIS.md)
-<!-- Links to spec files, doctrine, etc. -->

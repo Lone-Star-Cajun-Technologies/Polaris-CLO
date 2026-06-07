@@ -1,9 +1,9 @@
 ---
-name: closeout-librarian-step-08
+name: closeout-librarian-step-09
 description: Write the sealed CloseoutLibrarianResult JSON to result_path and terminate.
 ---
 
-# Step 08 — Sealed Result
+# Step 09 — Sealed Result
 
 ## Purpose
 
@@ -25,6 +25,7 @@ interface CloseoutLibrarianResult {
   commit_sha: string | null;
   commit_message: string;
   files_committed: string[];
+  drift_reconciliation: DriftReconciliationResult;
   polaris_md_updates: FileUpdate[];
   summary_md_updates: FileUpdate[];
   docs_ingested: DocAction[];
@@ -70,36 +71,37 @@ The Foreman validates the result before proceeding to `polaris finalize`:
 
 ## Actions
 
-### 8.1 Assemble Result
+### 9.1 Assemble Result
 
 Collect from all prior steps:
-- `polaris_md_updates` (step 02)
-- `summary_md_updates` (step 03)
-- `docs_ingested`, `docs_archived`, `cognition_archived` (step 04)
-- `link_validation` (step 05)
-- `yaml_updates` (step 06)
-- `commit_sha`, `files_committed` (step 07)
+- `drift_reconciliation` (step 02)
+- `polaris_md_updates` (step 03)
+- `summary_md_updates` (step 04)
+- `docs_ingested`, `docs_archived`, `cognition_archived` (step 05)
+- `link_validation` (step 06)
+- `yaml_updates` (step 07)
+- `commit_sha`, `files_committed` (step 08)
 - Blockers accumulated across all steps
 
-### 8.2 Determine Status
+### 9.2 Determine Status
 
 Apply the status determination matrix above.
 
-### 8.3 Write Evidence Summary
+### 9.3 Write Evidence Summary
 
 Write a ≤200-word plain-text summary of what the Librarian did and what remains.
 
-### 8.4 Write Result File
+### 9.4 Write Result File
 
 Write the assembled JSON to `packet.result_path`.
 
 Verify the write succeeded (file exists and is valid JSON after write).
 
-### 8.5 Emit Telemetry
+### 9.5 Emit Telemetry
 
 Emit `librarian-complete` event with `status` and `run_id`.
 
-### 8.6 Terminate
+### 9.6 Terminate
 
 The Closeout Librarian session ends here. No further output, no further writes.
 

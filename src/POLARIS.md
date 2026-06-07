@@ -8,6 +8,8 @@ The `src/` tree contains the Polaris application source: CLI entrypoints, runtim
 
 - Route folders such as `cli/`, `loop/`, `runtime/`, `config/`, `cognition/`, `map/`, `smartdocs-engine/`, `graph/`, `finalize/`, and `tracker/`
 - Shared support modules such as `mcp/`, `types/`, `utils/`, `ignore/`, `cluster-state/`, and `skill-packet/`
+- `medic/` — Medic chart ID generation and chart schema validation (chart creation tooling)
+- `lint/` — Repository lint rules; currently enforces Navigation Before Retrieval doctrine on skill chain files
 
 ## What does not belong here
 

@@ -75,8 +75,9 @@ Never assume a globally linked `polaris` command exists.
 05-validate-child             ← worker-owned validation phase
 06-commit-and-update-linear   ← worker-return validation and completion recording
 07-decide-continuation   → DISPATCH boundary | CHECKPOINT after worker return | STOP (blocked/all-done) | DELIVER: go to 08
-08-closeout-librarian    ← dispatched once per cluster; PR creation blocked until result validated
-09-final-delivery        ← reached only after closeout librarian succeeds
+08-medic-dispatch        ← dispatch Medic if triage required (before Librarian)
+09-closeout-librarian    ← dispatched once per cluster; PR creation blocked until result validated
+10-final-delivery        ← reached only after closeout librarian succeeds
 ```
 
 ## CHECKPOINT gate
@@ -126,6 +127,40 @@ The Foreman must NOT:
 - Repair the Librarian's output manually
 - Run the Librarian after individual workers (cluster-complete only)
 
+## Medic Dispatch Boundary
+
+**Medic is dispatched when a worker returns a failed result packet and triage is required.**
+
+Step 08 dispatches Medic as a bounded session (same model as worker dispatch) when:
+- A worker result packet has `status: "failure"`
+- The Foreman marks `triage_required: true` in the cluster state
+- Runnable sibling work continues in parallel with Medic dispatch
+
+**Medic dispatch message template:**
+
+When dispatching Medic, pass this full message — NOT just the packet path. Replace `<cluster-id>`, `<packet_path>`, `<run_id>`, and `<dispatch_id>` with values from the packet file:
+
+```
+You are the Medic for cluster <cluster-id>.
+
+Your sealed packet is at: <packet_path>
+
+Read the packet. Follow the polaris-medic skill chain. Write your sealed result to the path in the packet's `result_path` field. Return only compact JSON: {"role":"medic","status":"done","run_id":"<run_id>","cluster_id":"<cluster-id>","dispatch_id":"<dispatch_id>","commit":"<sha>","chart_id":"<chart_id>"}.
+```
+
+Never dispatch Medic with only the packet path as the message.
+
+The Foreman must NOT:
+- Read the Medic's session transcript
+- Inline the Medic's work
+- Skip Medic dispatch when triage is required
+- Repair the Medic's output manually
+- Dispatch Medic for successful worker results
+
+**Medic and Foreman parallelism:**
+
+When Medic is dispatched, the Foreman continues dispatching runnable sibling work in parallel. Medic does not block other children from executing. Medic runs independently and reports its result when complete. The Librarian waits for both all children and any Medic dispatches to complete before reconciliation.
+
 ## Dispatch boundary enforcement (runtime-owned)
 
 **The runtime enforces dispatch boundaries. Parent/orchestrator inline implementation is forbidden.**
@@ -168,9 +203,11 @@ polaris-run uses these Polaris CLI calls:
 | Step | Polaris call | Purpose |
 |---|---|---|
 | 07 | `npm run polaris -- loop run <cluster-id>` | Run all eligible children serially; emits `[POLARIS] RUNNING <child> (N/M)` per child and `[POLARIS] COMPLETE <child> (commit: <sha>)` on completion; exits when cluster-complete or blocked |
-| 08 | `npm run polaris -- librarian packet <cluster-id>` | Generate Closeout Librarian packet for the completed cluster |
-| 08 | Librarian subagent dispatch | Dispatch Closeout Librarian; wait for sealed result; validate result before proceeding |
-| 09 | `npm run polaris -- finalize` | Push branch (including librarian commit), open PR, append JSONL closeout events, archive run snapshot |
+| 08 | `npm run polaris -- medic packet <cluster-id>` | Generate Medic packet for failed worker result (if triage required) |
+| 08 | Medic subagent dispatch | Dispatch Medic; wait for sealed result; validate result before proceeding |
+| 09 | `npm run polaris -- librarian packet <cluster-id>` | Generate Closeout Librarian packet for the completed cluster |
+| 09 | Librarian subagent dispatch | Dispatch Closeout Librarian; wait for sealed result; validate result before proceeding |
+| 10 | `npm run polaris -- finalize` | Push branch (including librarian commit), open PR, append JSONL closeout events, archive run snapshot |
 
 `npm run polaris -- loop run <cluster-id>` is the standard execution command. It internally manages the dispatch→checkpoint loop for all children, emitting terse progress signals the Foreman can monitor. The Foreman does not call `loop dispatch` or `loop continue` — those boundaries are owned by `loop run`.
 
@@ -207,8 +244,10 @@ Telemetry file: `.taskchain_artifacts/polaris-run/runs/<run-id>/telemetry.jsonl`
 | `loop-checkpoint` | `npm run polaris -- loop continue` | 07 — after each child |
 | `analyze-impl-boundary-enforced` | `npm run polaris -- loop continue` | 07 — blocker/state-repair boundary event only |
 | `loop-aborted` | `npm run polaris -- loop abort` | any blocker halt |
-| `pr-opened` | `npm run polaris -- finalize` | 09 |
-| `run-complete` | `npm run polaris -- finalize` | 09 |
+| `medic-dispatched` | parent runtime | 08 — when Medic is dispatched for failed worker |
+| `medic-complete` | parent runtime | 08 — after Medic returns sealed result |
+| `pr-opened` | `npm run polaris -- finalize` | 10 |
+| `run-complete` | `npm run polaris -- finalize` | 10 |
 
 Required fields on every event: `event`, `run_id`, `timestamp`.
 
@@ -236,6 +275,7 @@ Do not report workflow completion until `.taskchain_artifacts/polaris-run/curren
 |---|---|---|
 | repo-analysis | 01, 02, 03, 04 | targeted lookup only; conditional on provider availability |
 | execution-adapter | 07 | required when a completed child has a next open child |
+| polaris-medic | 08 | required when a worker returns a failed result packet and triage is required |
 
 ## Execution reporting
 

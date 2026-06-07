@@ -27,7 +27,7 @@ Application source root for Polaris. The tree contains command entrypoints, loop
 - `src/graph/` builds graph artifacts, resolves edges, and serves query helpers for CLI consumers.
 
 ## Current State
-The tree includes graph extraction/resolution/query/store modules plus adapter selection, capability reporting, governance controls, and config support for `graph.outputPath` and `graph.invalidationTriggers`. The default graph adapter registry now covers TypeScript/JavaScript, C, C++, C#, Dart, Go, Java, Kotlin, Python, Rust, Shell, Svelte, and Swift, and graph builds degrade at file level for unsupported files while surfacing coverage reporting. Cognition and atlas validation treat `.polaris/graph/` as generated runtime output.
+The tree includes graph extraction/resolution/query/store modules plus adapter selection, capability reporting, governance controls, and config support for `graph.outputPath` and `graph.invalidationTriggers`. The default graph adapter registry now covers TypeScript/JavaScript, C, C++, C#, Dart, Go, Java, Kotlin, Python, Rust, Shell, Svelte, and Swift, and graph builds degrade at file level for unsupported files while surfacing coverage reporting. Cognition and atlas validation treat `.polaris/graph/` as generated runtime output. A new `medic/` route provides chart ID generation and chart schema validation (Zod-based) for the Medic diagnostic role. A new `lint/` route enforces the Navigation Before Retrieval doctrine by scanning skill chain files for broad context preload patterns.
 
 ## Known Drift
 Draft markers remain in some top-level folder docs when a subroute has not yet been fully reconciled.
