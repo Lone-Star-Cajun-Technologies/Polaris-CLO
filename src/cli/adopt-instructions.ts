@@ -14,17 +14,6 @@ interface InstructionActionRecord {
 
 const DELEGATION_MARKERS = ["<!-- polaris:delegate", "POLARIS.md", "Polaris runtime"];
 
-const GENERIC_PHRASES = [
-  "you are",
-  "follow instructions",
-  "assistant",
-  "agent",
-  "keep responses",
-  "be concise",
-  "safety",
-  "do not",
-];
-
 function isSupportedInstructionPath(path: string): boolean {
   return (
     path === "CLAUDE.md" ||
@@ -40,6 +29,7 @@ function isSupportedInstructionPath(path: string): boolean {
 
 function hasDoctrine(repoRoot: string): boolean {
   return (
+    existsSync(join(repoRoot, "POLARIS_RULES.md")) ||
     existsSync(join(repoRoot, "POLARIS.md")) ||
     existsSync(join(repoRoot, "smartdocs", "doctrine", "active"))
   );
@@ -49,39 +39,10 @@ function hasDelegationMarker(content: string): boolean {
   return DELEGATION_MARKERS.some((marker) => content.includes(marker));
 }
 
-function collectRepoHints(inventory: RepoScanInventory): string[] {
-  const hints = new Set<string>();
-  for (const value of [
-    ...inventory.source_roots,
-    ...inventory.docs_roots,
-    ...inventory.likely_canonical_folders,
-    ...inventory.architecture_notes,
-    ...inventory.smartdocs_candidates.map((candidate) => candidate.path),
-  ]) {
-    const normalized = value.trim().toLowerCase();
-    if (normalized.length >= 4) {
-      hints.add(normalized);
-    }
-  }
-  return [...hints];
-}
-
-function isShortAndGeneric(content: string, repoHints: string[]): boolean {
-  if (Buffer.byteLength(content, "utf-8") > 700) {
-    return false;
-  }
-
-  const lowered = content.toLowerCase();
-  const genericSignal = GENERIC_PHRASES.some((phrase) => lowered.includes(phrase));
-  const repoSpecificSignal = repoHints.some((hint) => lowered.includes(hint));
-
-  return genericSignal && !repoSpecificSignal;
-}
-
 function classifyInstruction(
   content: string,
   doctrineExists: boolean,
-  repoHints: string[],
+  _repoHints: string[],
 ): { decision: InstructionDecision; reason: string } {
   if (hasDelegationMarker(content)) {
     return { decision: "preserve", reason: "already contains Polaris delegation markers" };
@@ -91,11 +52,9 @@ function classifyInstruction(
     return { decision: "preserve", reason: "no Polaris doctrine exists yet" };
   }
 
-  if (isShortAndGeneric(content, repoHints)) {
-    return { decision: "thin-adapter", reason: "short generic instructions can thin-adapt" };
-  }
-
-  return { decision: "migrate", reason: "repository-specific instructions must be preserved" };
+  // When POLARIS_RULES.md exists, all agent files become pointer-only.
+  // Substantive content is migrated to smartdocs/raw/migrated-instructions.
+  return { decision: "thin-adapter", reason: "POLARIS_RULES.md exists — convert to pointer" };
 }
 
 function toBackupFileName(sourcePath: string): string {
@@ -142,13 +101,11 @@ function preserveOriginalContent(
   return backupPath;
 }
 
-function buildThinAdapter(sourcePath: string): string {
+function buildThinAdapter(_sourcePath: string): string {
   return [
-    "<!-- polaris:delegate -->",
-    "# Agent Instruction Adapter",
+    "# Polaris Managed Repository",
     "",
-    `This file delegates execution policy to Polaris doctrine for \`${sourcePath}\`.`,
-    "Follow `POLARIS.md` and route-local `SUMMARY.md` canon before acting.",
+    "Read [POLARIS_RULES.md](POLARIS_RULES.md) before doing any work in this repository.",
     "",
   ].join("\n");
 }
@@ -199,7 +156,6 @@ export function handleInstructionFiles(
 
   const repoRoot = resolve(process.cwd());
   const doctrineExists = hasDoctrine(repoRoot);
-  const repoHints = collectRepoHints(inventory);
   const now = new Date().toISOString();
 
   const candidates = Array.from(
@@ -219,7 +175,7 @@ export function handleInstructionFiles(
     }
 
     const originalContent = readFileSync(absolutePath, "utf-8");
-    const { decision, reason } = classifyInstruction(originalContent, doctrineExists, repoHints);
+    const { decision, reason } = classifyInstruction(originalContent, doctrineExists, []);
 
     if (decision === "preserve") {
       provenance.push({
