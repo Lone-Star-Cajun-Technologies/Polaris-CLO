@@ -21,6 +21,7 @@
 import { appendFileSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { dirname, isAbsolute, join, resolve } from "node:path";
+import { ensureDeliveryBranch } from "./git-custody.js";
 import {
   readState,
   validateState,
@@ -730,6 +731,30 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
         childrenDispatched: 0,
         message: msg,
       };
+    }
+  }
+
+  // ── Branch pre-flight ──────────────────────────────────────────────────────
+  // Ensure the working tree is on the cluster's delivery branch before any
+  // worker is dispatched. Without this, workers commit to whatever branch the
+  // operator left HEAD on (often main), bypassing delivery-branch custody and
+  // making PR creation impossible for those commits.
+  if (!dryRun && adapterName !== "agent-subtask") {
+    const deliveryBranch = state.branch;
+    if (deliveryBranch && deliveryBranch.trim().length > 0) {
+      const currentBranch = getCurrentBranch(repoRoot);
+      if (currentBranch !== deliveryBranch) {
+        try {
+          ensureDeliveryBranch(repoRoot, deliveryBranch);
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          return {
+            haltReason: 'worker-error',
+            childrenDispatched: 0,
+            message: `Branch pre-flight: cannot switch to delivery branch "${deliveryBranch}" (current: "${currentBranch}"): ${msg}`,
+          };
+        }
+      }
     }
   }
 
