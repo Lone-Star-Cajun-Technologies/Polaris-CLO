@@ -7,6 +7,10 @@
   "execution": {
     "adapter": "terminal-cli",
     "providers": {
+      "devin": {
+        "command": "devin",
+        "args": ["--", "{{worker_prompt}}"]
+      },
       "claude": {
         "command": "claude",
         "args": ["--print", "--dangerously-skip-permissions", "{{worker_prompt}}"]
@@ -31,7 +35,7 @@
     "allowCrossAgentFallback": false,
     "providerPolicy": {
       "worker": {
-        "providers": ["copilot", "codex"],
+        "providers": ["devin", "copilot", "codex"],
         "allowNativeSubagent": false
       },
       "orchestrator": {
