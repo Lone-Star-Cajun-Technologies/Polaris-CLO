@@ -1,0 +1,123 @@
+import { resolve } from "node:path";
+import { loadConfig } from "../config/loader.js";
+import { readFileRoutes, type FileRouteEntry } from "./atlas.js";
+
+export type RouteHealthState = "healthy" | "monitoring" | "known-issues" | "recovering" | "stale";
+
+export type ActionRequired = "none" | "review-identity" | "review-health" | "review-both";
+
+export interface WelfareCheckResult {
+  route: string;
+  identityComplete: boolean;
+  healthState: RouteHealthState;
+  actionRequired: ActionRequired;
+}
+
+export interface WelfareCheckReport {
+  routes: WelfareCheckResult[];
+  totalRoutes: number;
+  healthyRoutes: number;
+  needsReview: number;
+}
+
+function daysSince(iso: string): number {
+  const then = new Date(iso).getTime();
+  return (Date.now() - then) / (1000 * 60 * 60 * 24);
+}
+
+function isIdentityComplete(entry: FileRouteEntry): boolean {
+  return entry.instructionFile !== undefined && entry.role_owner !== undefined;
+}
+
+function assessRouteHealth(entry: FileRouteEntry, staleThresholdDays: number): RouteHealthState {
+  const daysSinceUpdate = daysSince(entry.last_updated);
+  const identityComplete = isIdentityComplete(entry);
+
+  if (daysSinceUpdate > staleThresholdDays) {
+    return "stale";
+  }
+
+  if (!identityComplete) {
+    return "known-issues";
+  }
+
+  return "healthy";
+}
+
+function determineActionRequired(identityComplete: boolean, healthState: RouteHealthState): ActionRequired {
+  if (identityComplete && healthState === "healthy") {
+    return "none";
+  }
+  if (!identityComplete && healthState === "healthy") {
+    return "review-identity";
+  }
+  if (identityComplete && healthState !== "healthy") {
+    return "review-health";
+  }
+  return "review-both";
+}
+
+export function runWelfareCheck(
+  repoRoot: string,
+  routePath?: string,
+): WelfareCheckReport {
+  const config = loadConfig(repoRoot);
+  const outputPath = resolve(repoRoot, config.repo.sidecarOutputPath ?? ".polaris/map");
+  const staleThresholdDays = 30;
+
+  const routes = readFileRoutes(outputPath);
+
+  const results: WelfareCheckResult[] = [];
+
+  for (const [filePath, entry] of Object.entries(routes)) {
+    if (routePath && !filePath.startsWith(routePath)) {
+      continue;
+    }
+
+    const identityComplete = isIdentityComplete(entry);
+    const healthState = assessRouteHealth(entry, staleThresholdDays);
+    const actionRequired = determineActionRequired(identityComplete, healthState);
+
+    results.push({
+      route: filePath,
+      identityComplete,
+      healthState,
+      actionRequired,
+    });
+  }
+
+  const healthyRoutes = results.filter((r) => r.actionRequired === "none").length;
+  const needsReview = results.filter((r) => r.actionRequired !== "none").length;
+
+  return {
+    routes: results,
+    totalRoutes: results.length,
+    healthyRoutes,
+    needsReview,
+  };
+}
+
+export function printWelfareCheckReport(report: WelfareCheckReport): void {
+  console.log(`Route Welfare Check Report`);
+  console.log(`========================`);
+  console.log(`Total routes: ${report.totalRoutes}`);
+  console.log(`Healthy: ${report.healthyRoutes}`);
+  console.log(`Needs review: ${report.needsReview}`);
+  console.log();
+
+  if (report.routes.length === 0) {
+    console.log("No routes found.");
+    return;
+  }
+
+  for (const result of report.routes) {
+    const identityStatus = result.identityComplete ? "✓" : "✗";
+    const actionSymbol = result.actionRequired === "none" ? "✓" : "⚠";
+    
+    console.log(`${actionSymbol} ${result.route}`);
+    console.log(`   Identity complete: ${identityStatus}`);
+    console.log(`   Health state: ${result.healthState}`);
+    console.log(`   Action required: ${result.actionRequired}`);
+    console.log();
+  }
+}

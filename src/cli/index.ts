@@ -24,6 +24,7 @@ import { createGraphCommand } from "./graph.js";
 import { createSkillCommand } from "../skill-packet/index.js";
 import { createLibrarianCommand } from "./librarian.js";
 import { createMedicCommand } from "./medic.js";
+import { runWelfareCheck, printWelfareCheckReport } from "../map/welfare.js";
 
 export interface PolarisCommandHandlers {
   runLoopStatus?: typeof runLoopStatus;
@@ -152,6 +153,19 @@ export function createPolarisCommand(options: PolarisCommandOptions = {}): Comma
       repoRoot,
     }),
   );
+
+  program
+    .command("welfare-check")
+    .description("safe/read-only: run route welfare checks and report per-route health")
+    .option("-r, --repo-root <path>", "Repository root", repoRoot)
+    .option("--route <path>", "Scope to a single route domain")
+    .action((options: { repoRoot: string; route?: string }) => {
+      const report = runWelfareCheck(options.repoRoot, options.route);
+      printWelfareCheckReport(report);
+      if (report.needsReview > 0) {
+        process.exit(1);
+      }
+    });
 
   return program;
 }
