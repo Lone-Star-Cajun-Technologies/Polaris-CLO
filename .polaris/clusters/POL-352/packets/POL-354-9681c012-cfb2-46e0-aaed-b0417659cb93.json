@@ -1,0 +1,98 @@
+{
+  "schema_version": "2.1",
+  "worker_role": "impl",
+  "run_id": "polaris-run-pol-352-2026-06-07-001",
+  "cluster_id": "POL-352",
+  "active_child": "POL-354",
+  "state_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json",
+  "telemetry_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-352-2026-06-07-001/telemetry.jsonl",
+  "instructions": {
+    "primary_goal": "Issue: POL-354 — Define RouteHealthState type and integrate into route cognition delta\nWorktree: .\nBranch: pol-352-delivery\n\n## Goal\n## Objective\n\nDefine a `RouteHealthState` TypeScript type with canonical health states and integrate health state detection into the route cognition delta system.\n\n## Context\n\nPart of [POL-352](<https://linear.app/lsctech/issue/POL-352>) cluster. Analysis [POL-351](<https://linear.app/lsctech/issue/POL-351>) found that the adoption architecture doctrine defines route health states (Healthy, Monitoring, Known Issues, Recovering, Stale) as prose only. No machine-readable schema or assessment logic exists. This child makes health state a first-class type, adds `assessRouteHealth()` to derive current state from observable signals (stale entries, missing cognition, identity completeness from [POL-353](<https://linear.app/lsctech/issue/POL-353>)), and integrates the result into the route cognition delta output.\n\n## Goal\n\n`RouteHealthState` is defined and exported from `src/cognition/`. `assessRouteHealth(route: FileRouteEntry): RouteHealthState` derives state from signals. The cognition delta includes `health_state` in its output so SUMMARY.md generation can use consistent, machine-readable state labels.\n\n## Scope\n\n* src/cognition/route-cognition-delta.ts\n* src/cognition/validate.ts\n* src/cognition/index.ts\n* src/map/atlas.ts\n\n## Acceptance Criteria\n\n- [ ] `RouteHealthState` type exported from `src/cognition/`: `'healthy' | 'monitoring' | 'known-issues' | 'recovering' | 'stale'`\n- [ ] `assessRouteHealth(route: FileRouteEntry): RouteHealthState` exists and is unit tested\n- [ ] Health assessment uses at minimum: staleness signal, identity completeness signal (from [POL-353](https://linear.app/lsctech/issue/POL-353/formalize-route-identity-contract-and-polarismd-completeness-check) logic), missing `instructionFile` signal\n- [ ] Route cognition delta output includes `health_state` field\n- [ ] `npm run build` and `npm test` pass\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/cognition\n\n## Ordering\n\nDepends on [POL-353](<https://linear.app/lsctech/issue/POL-353>) being Done first. \\[POL-354\\] (welfare-check CLI) depends on this being Done.\n\n## Non-goals\n\n* Do not persist `health_state` to `file-routes.json` or `SUMMARY.md` files directly — health state is derived at assessment time\n* Do not integrate with the Medic role\n* Do not add `health_state` to `FileRouteEntry` in `file-routes.json`\n\n## Scope\nTouch only:\n- src/cognition/route-cognition-delta.ts\n- src/cognition/validate.ts\n- src/cognition/index.ts\n- src/map/atlas.ts\n\n## Acceptance Criteria\n\n## Validation\n- npm run build\n- npm test\n- npx vitest run src/cognition\n\n## Commit\n[POL-354] Define RouteHealthState type and integrate into route cognition delta\n\n## Governance\n- Do NOT modify open_children or completed_children in /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json. The parent runtime (loop continue) owns state transitions.\n- Append a telemetry event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-352-2026-06-07-001/telemetry.jsonl.\n\n## Worker Progress Telemetry (MANDATORY)\nThe parent CANNOT see your work. You MUST emit heartbeat events so the parent knows you are alive and making progress.\n\nAfter EVERY step, append a JSONL event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-352-2026-06-07-001/telemetry.jsonl:\n```jsonl\n{\"event\":\"worker-heartbeat\",\"run_id\":\"<from packet>\",\"child_id\":\"POL-354\",\"step_cursor\":\"<current step>\",\"timestamp\":\"<ISO8601>\",\"progress_pct\":<0-100>,\"files_changed\":<count>,\"current_file\":\"<file being edited>\"}\n```\n\nRequired heartbeat points:\n  1. Immediately after reading this packet (step_cursor: \"start\")\n  2. After verifying state file (step_cursor: \"verify\")\n  3. After EACH file edit (step_cursor: \"implement\")\n  4. After running validation (step_cursor: \"validate\")\n  5. After creating commit (step_cursor: \"commit\")\n  6. Before terminating (step_cursor: \"complete\" or \"failed\")\n\nIf heartbeats stop, the parent will assume you crashed and may dispatch a replacement worker.\n\n## Approval Escalation (when uncertain)\nYou have a sealed packet defining your exact scope, allowed files, and validation commands. Use this to decide:\n\nRule 1 - Auto-approve WITHIN scope (normal work):\n  - If the operation touches files within `instructions.allowed_scope` → Just do it\n  - If the command is in `instructions.validation_commands` → Just run it\n  - Low risk, expected work → No need to ask, emit heartbeat with step_cursor: \"implement\"\n\nRule 2 - ESCALATE out-of-scope or high-risk:\n  - File outside allowed_scope → Emit worker-blocked with approval_type: \"out-of-scope\"\n  - Destructive operation (rm -rf, major refactor) → Emit worker-blocked with approval_type: \"destructive\"\n  - External API calls with cost → Emit worker-blocked with approval_type: \"cost\"\n  - Changing secrets/.env → Emit worker-blocked with approval_type: \"security\"\n  - Unclear requirements → Emit worker-blocked with approval_type: \"ambiguous\"\n\nTo escalate, emit IMMEDIATELY to telemetry:\n```jsonl\n{\"event\":\"worker-blocked\",\"run_id\":\"<from packet>\",\"child_id\":\"POL-354\",\"reason\":\"needs-approval\",\"approval_type\":\"<out-of-scope|destructive|cost|security|ambiguous>\",\"description\":\"<specifically what needs approval>\",\"blocker_id\":\"<unique-id>\",\"timestamp\":\"<ISO8601>\"}\n```\n\nThen: Continue heartbeats every 30s with step_cursor: \"blocked-awaiting-approval\"\nWait for parent response. If no response in 5 minutes → TERMINATE with approval-timeout.\n\nRemember: Your packet scope is your authority. Within scope = proceed. Outside scope = escalate.\n\n## Route Cognition Delta\nAfter implementation, apply route-local cognition delta — only if something materially changed.\n\n**POLARIS.md** — update only when ALL of the following are true:\n  - You touched a file in that folder (not a distant folder).\n  - The change materially affects: folder responsibilities, commands/workflows,\n    execution constraints, ownership/routing, or operational behavior.\n  - The current POLARIS.md content is actually wrong or incomplete as a result.\n  DO NOT update POLARIS.md for: formatting fixes, comment changes, tiny refactors,\n  internal implementation details, or any change that leaves the operational guidance\n  still accurate. When in doubt, do not update.\n\n**SUMMARY.md** — update only when: linked docs/specs changed, canon relationships\n  changed, architecture meaning changed, or doctrine/spec linkage changed.\n  SUMMARY.md is informational only. Do not create it if missing — that is a hint for\n  operators, not a task for workers. Keep it short. Never add operational doctrine.\n\n**Never** scan unrelated folders. **Never** regenerate all route docs.\nIf no material change occurred, skip this section entirely.\n\n## Report Back\n- files changed\n- validation results\n- commit hash\n- blockers\n\nTERMINATE SESSION IMMEDIATELY. Do not select or execute the next child.",
+    "steps": [
+      "Verify: read /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json and confirm active_child === \"POL-354\".",
+      "Implement POL-354: \"Define RouteHealthState type and integrate into route cognition delta\".",
+      "Issue description:\n## Objective\n\nDefine a `RouteHealthState` TypeScript type with canonical health states and integrate health state detection into the route cognition delta system.\n\n## Context\n\nPart of [POL-352](<https://linear.app/lsctech/issue/POL-352>) cluster. Analysis [POL-351](<https://linear.app/lsctech/issue/POL-351>) found that the adoption architecture doctrine defines route health states (Healthy, Monitoring, Known Issues, Recovering, Stale) as prose only. No machine-readable schema or assessment logic exists. This child makes health state a first-class type, adds `assessRouteHealth()` to derive current state from observable signals (stale entries, missing cognition, identity completeness from [POL-353](<https://linear.app/lsctech/issue/POL-353>)), and integrates the result into the route cognition delta output.\n\n## Goal\n\n`RouteHealthState` is defined and exported from `src/cognition/`. `assessRouteHealth(route: FileRouteEntry): RouteHealthState` derives state from signals. The cognition delta includes `health_state` in its output so SUMMARY.md generation can use consistent, machine-readable state labels.\n\n## Scope\n\n* src/cognition/route-cognition-delta.ts\n* src/cognition/validate.ts\n* src/cognition/index.ts\n* src/map/atlas.ts\n\n## Acceptance Criteria\n\n- [ ] `RouteHealthState` type exported from `src/cognition/`: `'healthy' | 'monitoring' | 'known-issues' | 'recovering' | 'stale'`\n- [ ] `assessRouteHealth(route: FileRouteEntry): RouteHealthState` exists and is unit tested\n- [ ] Health assessment uses at minimum: staleness signal, identity completeness signal (from [POL-353](https://linear.app/lsctech/issue/POL-353/formalize-route-identity-contract-and-polarismd-completeness-check) logic), missing `instructionFile` signal\n- [ ] Route cognition delta output includes `health_state` field\n- [ ] `npm run build` and `npm test` pass\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/cognition\n\n## Ordering\n\nDepends on [POL-353](<https://linear.app/lsctech/issue/POL-353>) being Done first. \\[POL-354\\] (welfare-check CLI) depends on this being Done.\n\n## Non-goals\n\n* Do not persist `health_state` to `file-routes.json` or `SUMMARY.md` files directly — health state is derived at assessment time\n* Do not integrate with the Medic role\n* Do not add `health_state` to `FileRouteEntry` in `file-routes.json`",
+      "Requirements:",
+      "   1. [ ] `RouteHealthState` type exported from `src/cognition/`: `'healthy' | 'monitoring' | 'known-issues' | 'recovering' | 'stale'`",
+      "   2. [ ] `assessRouteHealth(route: FileRouteEntry): RouteHealthState` exists and is unit tested",
+      "   3. [ ] Health assessment uses at minimum: staleness signal, identity completeness signal (from [POL-353](https://linear.app/lsctech/issue/POL-353/formalize-route-identity-contract-and-polarismd-completeness-check) logic), missing `instructionFile` signal",
+      "   4. [ ] Route cognition delta output includes `health_state` field",
+      "   5. [ ] `npm run build` and `npm test` pass",
+      "Run validation commands and confirm all pass.",
+      "Create exactly ONE git commit: [POL-354] Define RouteHealthState type and integrate into route cognition delta.",
+      "Do NOT modify open_children or completed_children in /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json. The parent runtime (loop continue) owns that state transition.",
+      "Append a telemetry event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-352-2026-06-07-001/telemetry.jsonl.",
+      "Write compact return JSON to stdout (fields: child_id, status, commit, validation, next_recommended_action).",
+      "TERMINATE SESSION IMMEDIATELY. Do not select or execute the next child."
+    ],
+    "allowed_scope": [
+      "src/cognition/route-cognition-delta.ts",
+      "src/cognition/validate.ts",
+      "src/cognition/index.ts",
+      "src/map/atlas.ts"
+    ],
+    "validation_commands": [
+      "npm run build",
+      "npm test",
+      "npx vitest run src/cognition"
+    ],
+    "issue_context": {
+      "id": "POL-354",
+      "title": "Define RouteHealthState type and integrate into route cognition delta",
+      "key_requirements": [],
+      "body": "## Objective\n\nDefine a `RouteHealthState` TypeScript type with canonical health states and integrate health state detection into the route cognition delta system.\n\n## Context\n\nPart of [POL-352](<https://linear.app/lsctech/issue/POL-352>) cluster. Analysis [POL-351](<https://linear.app/lsctech/issue/POL-351>) found that the adoption architecture doctrine defines route health states (Healthy, Monitoring, Known Issues, Recovering, Stale) as prose only. No machine-readable schema or assessment logic exists. This child makes health state a first-class type, adds `assessRouteHealth()` to derive current state from observable signals (stale entries, missing cognition, identity completeness from [POL-353](<https://linear.app/lsctech/issue/POL-353>)), and integrates the result into the route cognition delta output.\n\n## Goal\n\n`RouteHealthState` is defined and exported from `src/cognition/`. `assessRouteHealth(route: FileRouteEntry): RouteHealthState` derives state from signals. The cognition delta includes `health_state` in its output so SUMMARY.md generation can use consistent, machine-readable state labels.\n\n## Scope\n\n* src/cognition/route-cognition-delta.ts\n* src/cognition/validate.ts\n* src/cognition/index.ts\n* src/map/atlas.ts\n\n## Acceptance Criteria\n\n- [ ] `RouteHealthState` type exported from `src/cognition/`: `'healthy' | 'monitoring' | 'known-issues' | 'recovering' | 'stale'`\n- [ ] `assessRouteHealth(route: FileRouteEntry): RouteHealthState` exists and is unit tested\n- [ ] Health assessment uses at minimum: staleness signal, identity completeness signal (from [POL-353](https://linear.app/lsctech/issue/POL-353/formalize-route-identity-contract-and-polarismd-completeness-check) logic), missing `instructionFile` signal\n- [ ] Route cognition delta output includes `health_state` field\n- [ ] `npm run build` and `npm test` pass\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/cognition\n\n## Ordering\n\nDepends on [POL-353](<https://linear.app/lsctech/issue/POL-353>) being Done first. \\[POL-354\\] (welfare-check CLI) depends on this being Done.\n\n## Non-goals\n\n* Do not persist `health_state` to `file-routes.json` or `SUMMARY.md` files directly — health state is derived at assessment time\n* Do not integrate with the Medic role\n* Do not add `health_state` to `FileRouteEntry` in `file-routes.json`"
+    }
+  },
+  "lifecycle": {
+    "terminate_after_completion": true,
+    "max_concurrent": 1,
+    "cleanup_on_exit": "commit-and-exit"
+  },
+  "return_contract": [
+    "child_id",
+    "status",
+    "commit",
+    "validation",
+    "next_recommended_action"
+  ],
+  "prompt_mode": "compact",
+  "prompt_metrics": {
+    "mode": "compact",
+    "char_count": 7019,
+    "estimated_tokens": 1755
+  },
+  "role_context": {
+    "role": "worker",
+    "role_authority": "implementation",
+    "may_implement": true,
+    "may_assign_workers": false,
+    "prohibited_actions": [
+      "modify-cluster-plan",
+      "dispatch-children",
+      "polaris-loop-dispatch",
+      "polaris-loop-continue"
+    ]
+  },
+  "prohibited_write_paths": [
+    ".taskchain_artifacts/",
+    ".polaris/clusters/",
+    ".polaris/runs/",
+    "**/telemetry.jsonl"
+  ],
+  "result_file_contract": {
+    "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-352/results/POL-354-9681c012-cfb2-46e0-aaed-b0417659cb93.json",
+    "result_required_fields": {
+      "run_id": "polaris-run-pol-352-2026-06-07-001",
+      "cluster_id": "POL-352",
+      "child_id": "<child_id>",
+      "status": "<status>",
+      "commit": "<commit>",
+      "validation": "<validation>",
+      "next_recommended_action": "<next_recommended_action>"
+    }
+  },
+  "context": {
+    "branch": "pol-352-delivery",
+    "worker_role": "impl"
+  }
+}
