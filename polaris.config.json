@@ -12,8 +12,21 @@
         "args": ["--permission-mode", "bypass", "-p", "{{worker_prompt}}"]
       },
       "claude": {
-        "command": "claude",
-        "args": ["--print", "--dangerously-skip-permissions", "{{worker_prompt}}"]
+        "command": "env",
+        "args": [
+          "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=0",
+          "claude",
+          "--print",
+          "--permission-mode",
+          "bypassPermissions",
+          "--allowedTools",
+          "Read",
+          "Write",
+          "Edit",
+          "Bash(git *)",
+          "--",
+          "{{worker_prompt}}"
+        ]
       },
       "codex": {
         "command": "codex",
@@ -26,15 +39,6 @@
       "copilot": {
         "command": "copilot",
         "args": ["-p", "{{worker_prompt}}", "--autopilot", "--allow-all-tools"]
-      },
-      "devin": {
-        "command": "devin",
-        "args": [
-          "-p",
-          "{{worker_prompt}}",
-          "--permission-mode",
-          "dangerous"
-        ]
       },
       "custom": {
         "command": "$POLARIS_AGENT",
@@ -56,7 +60,7 @@
         "allowNativeSubagent": true
       },
       "librarian": {
-        "providers": ["claude","codex","gemini","copilot"]
+        "providers": ["claude","codex","devin","copilot"]
       },
       "finalizer": {
         "providers": ["copilot"]

@@ -7,6 +7,7 @@ import { runMapUpdate } from "./update.js";
 import { runMapValidate } from "./validate.js";
 import { runMapQuery } from "./query.js";
 import { runMapBackfill } from "./backfill.js";
+import { runWelfareCheck, printWelfareCheckReport } from "./welfare.js";
 import { parsePolarisIgnore } from "../ignore/parser.js";
 import { SECRET_PATTERNS } from "../ignore/defaults.js";
 import { inferRoute } from "./inference.js";
@@ -289,6 +290,19 @@ export function createMapCommand(handlers: MapCommandHandlers = {}): Command {
     .option("--include-instructions", "Include POLARIS.md instruction file path and content in output")
     .action((pathArg: string | undefined, options: { repoRoot: string; domain?: string; taskchain?: string; text?: boolean; includeInstructions?: boolean }) => {
       queryHandler(options.repoRoot, pathArg, options.domain, options.taskchain, options.text ?? false, options.includeInstructions ?? false);
+    });
+
+  map
+    .command("welfare-check")
+    .description("safe/read-only: run route welfare checks and report per-route health")
+    .option("-r, --repo-root <path>", "Repository root", repoRootDefault)
+    .option("--route <path>", "Scope to a single route domain")
+    .action((options: { repoRoot: string; route?: string }) => {
+      const report = runWelfareCheck(options.repoRoot, options.route);
+      printWelfareCheckReport(report);
+      if (report.needsReview > 0) {
+        process.exit(1);
+      }
     });
 
   return map;

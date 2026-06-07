@@ -36,6 +36,7 @@ export interface ValidationResult {
   needsReviewCount: number;
   coveragePct: number;
   invalidRoleOwner: string[];
+  identityIncomplete: string[];
 }
 
 export function runMapValidate(
@@ -78,7 +79,7 @@ export function runMapValidate(
     } else {
       console.log(`No entry found for: ${fixPath}`);
     }
-    return { hasError: false, indexed: 0, stale: [], missing: [], sensitive: [], conflicted: [], needsReviewCount: 0, coveragePct: 0, invalidRoleOwner: [] };
+    return { hasError: false, indexed: 0, stale: [], missing: [], sensitive: [], conflicted: [], needsReviewCount: 0, coveragePct: 0, invalidRoleOwner: [], identityIncomplete: [] };
   }
 
   const stale: string[] = [];
@@ -86,6 +87,7 @@ export function runMapValidate(
   const sensitive: string[] = [];
   const conflicted: string[] = [];
   const invalidRoleOwner: string[] = [];
+  const identityIncomplete: string[] = [];
 
   // Route conflict detection: route → set of domains seen
   const routeToDomains = new Map<string, Set<string>>();
@@ -119,6 +121,11 @@ export function runMapValidate(
     // 6. role_owner validation: present and a known value
     if (entry.role_owner !== undefined && !(VALID_ROLE_OWNERS as readonly string[]).includes(entry.role_owner)) {
       invalidRoleOwner.push(filePath);
+    }
+
+    // 7. identity completeness: instructionFile and role_owner are required
+    if (entry.instructionFile === undefined || entry.role_owner === undefined) {
+      identityIncomplete.push(filePath);
     }
 
     // 5. Conflicted routes: same route claimed by different domains
@@ -181,6 +188,10 @@ export function runMapValidate(
     console.log(`${errMark} ${invalidRoleOwner.length} entries with invalid role_owner value: ${invalidRoleOwner.slice(0, 3).join(", ")}${invalidRoleOwner.length > 3 ? "..." : ""}`);
   }
 
+  if (identityIncomplete.length > 0) {
+    console.log(`${warnMark} ${identityIncomplete.length} routes missing identity fields (instructionFile or role_owner): ${identityIncomplete.slice(0, 3).join(", ")}${identityIncomplete.length > 3 ? "..." : ""}`);
+  }
+
   // Low-confidence entries warning
   const lowConfidence = Object.entries(routes).filter(
     ([filePath, e]) => !isGraphArtifactPath(filePath) && e.confidence < confidenceThreshold,
@@ -193,5 +204,5 @@ export function runMapValidate(
 
   const hasError = missing.length > 0 || sensitive.length > 0 || invalidRoleOwner.length > 0;
 
-  return { hasError, indexed: indexedCount, stale, missing, sensitive, conflicted, needsReviewCount, coveragePct, invalidRoleOwner };
+  return { hasError, indexed: indexedCount, stale, missing, sensitive, conflicted, needsReviewCount, coveragePct, invalidRoleOwner, identityIncomplete };
 }

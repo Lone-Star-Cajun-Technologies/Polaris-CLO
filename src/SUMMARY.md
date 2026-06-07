@@ -8,6 +8,7 @@ Application source root for Polaris. The tree contains command entrypoints, loop
 - Cognition and map are read-only analysis layers; they report signals, not writes.
 - Smart Docs governs canonical documentation under `smartdocs/`.
 - Graph route manages extraction/resolution/query/store behavior and governance outputs under `.polaris/graph/`.
+- Route welfare checks combine atlas identity completeness with route health signals and are exposed through the CLI as read-only reporting.
 - Config changes must flow through `src/config/` and the JSON schema/validator.
 
 ## Architectural Role
@@ -27,7 +28,7 @@ Application source root for Polaris. The tree contains command entrypoints, loop
 - `src/graph/` builds graph artifacts, resolves edges, and serves query helpers for CLI consumers.
 
 ## Current State
-The tree includes graph extraction/resolution/query/store modules plus adapter selection, capability reporting, governance controls, and config support for `graph.outputPath` and `graph.invalidationTriggers`. The default graph adapter registry now covers TypeScript/JavaScript, C, C++, C#, Dart, Go, Java, Kotlin, Python, Rust, Shell, Svelte, and Swift, and graph builds degrade at file level for unsupported files while surfacing coverage reporting. Cognition and atlas validation treat `.polaris/graph/` as generated runtime output. A new `medic/` route provides chart ID generation and chart schema validation (Zod-based) for the Medic diagnostic role. A new `lint/` route enforces the Navigation Before Retrieval doctrine by scanning skill chain files for broad context preload patterns.
+The tree includes graph extraction/resolution/query/store modules plus adapter selection, capability reporting, governance controls, and config support for `graph.outputPath` and `graph.invalidationTriggers`. The default graph adapter registry covers TypeScript/JavaScript, C, C++, C#, Dart, Go, Java, Kotlin, Python, Rust, Shell, Svelte, and Swift, and graph builds degrade at file level for unsupported files while surfacing coverage reporting. Cognition and atlas validation treat `.polaris/graph/` as generated runtime output. Route welfare reporting now connects atlas identity completeness, route health state, and safe/read-only CLI reporting. The `medic/` route provides chart ID generation and chart schema validation (Zod-based) for the Medic diagnostic role. The `lint/` route enforces the Navigation Before Retrieval doctrine by scanning skill chain files for broad context preload patterns.
 
 ## Known Drift
 Draft markers remain in some top-level folder docs when a subroute has not yet been fully reconciled.

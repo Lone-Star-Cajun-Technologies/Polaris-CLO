@@ -12,8 +12,11 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { isDirectoryEligible, parseSmartDocIgnore } from "../smartdocs-engine/smartdoc-ignore.js";
+import type { FileRouteEntry } from "../map/atlas.js";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
+
+export type RouteHealthState = "healthy" | "known-issues" | "stale";
 
 export interface CognitionDeltaOptions {
   repoRoot: string;
@@ -24,6 +27,44 @@ export interface CognitionDeltaOptions {
    * Root cognition belongs in AGENTS.md / CLAUDE.md per doctrine.
    */
   skipRoot?: boolean;
+}
+
+// ── Route Health Assessment ───────────────────────────────────────────────────
+
+/**
+ * Assess the health state of a route based on observable signals.
+ *
+ * Signals used:
+ * - Staleness: entry older than threshold (default 90 days)
+ * - Identity completeness: missing instructionFile or role_owner
+ *
+ * Returns:
+ * - "stale": entry is stale (older than threshold)
+ * - "known-issues": identity incomplete (missing instructionFile or role_owner)
+ * - "healthy": route is fresh, identity complete
+ */
+export function assessRouteHealth(
+  route: FileRouteEntry,
+  repoRoot: string,
+  staleThresholdDays: number = 90,
+): RouteHealthState {
+  const daysSinceUpdate = (Date.now() - new Date(route.last_updated).getTime()) / (1000 * 60 * 60 * 24);
+
+  // Staleness check
+  if (daysSinceUpdate > staleThresholdDays) {
+    return "stale";
+  }
+
+  // Identity completeness check
+  const hasInstructionFile = route.instructionFile !== undefined && route.instructionFile !== null && route.instructionFile.trim() !== "";
+  const hasRoleOwner = route.role_owner !== undefined && route.role_owner !== null && route.role_owner.trim() !== "";
+
+  if (!hasInstructionFile || !hasRoleOwner) {
+    return "known-issues";
+  }
+
+  // Healthy: fresh, identity complete
+  return "healthy";
 }
 
 export type CognitionUpdateReason =
@@ -44,6 +85,8 @@ export interface CognitionDeltaResult {
   reasons: CognitionUpdateReason[];
   /** Folders whose POLARIS.md is missing (newly eligible). */
   missingCognitionSurfaces: string[];
+  /** Health state of the route (if applicable). */
+  healthState?: RouteHealthState;
 }
 
 // ── Skipped folder patterns ───────────────────────────────────────────────────
@@ -337,6 +380,7 @@ export function applyRouteCognitionDelta(
     updateWarranted,
     reasons,
     missingCognitionSurfaces,
+    healthState: undefined,
   };
 }
 

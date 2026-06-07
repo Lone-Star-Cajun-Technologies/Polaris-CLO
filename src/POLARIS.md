@@ -27,6 +27,7 @@ The `src/` tree contains the Polaris application source: CLI entrypoints, runtim
 
 - `src/` is the checked-in source root for the Polaris runtime.
 - Cognition, map, Smart Docs, and graph subsystems are separate and documented with folder-level contracts.
+- Route health and identity checks span `src/map/`, `src/cognition/`, and CLI command wiring; keep their public terms aligned.
 - New config or governance surfaces must be reflected in the relevant subfolder docs.
 
 ## Read before editing

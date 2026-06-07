@@ -9,6 +9,7 @@ export type {
   CognitionDeltaOptions,
   CognitionDeltaResult,
   CognitionUpdateReason,
+  RouteHealthState,
 } from "./route-cognition-delta.js";
 
 export {
@@ -20,6 +21,7 @@ export {
   isUserCreatedCognitionSurface,
   POLARIS_OWNED_COGNITION_FOLDERS,
   readRoutePolarismd,
+  assessRouteHealth,
 } from "./route-cognition-delta.js";
 
 export type {

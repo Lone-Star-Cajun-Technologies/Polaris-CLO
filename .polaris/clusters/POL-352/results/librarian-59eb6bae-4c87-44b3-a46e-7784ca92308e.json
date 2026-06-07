@@ -1,0 +1,121 @@
+{
+  "schema_version": "1.0",
+  "role": "closeout-librarian",
+  "run_id": "polaris-run-pol-352-2026-06-07-001",
+  "dispatch_id": "59eb6bae-4c87-44b3-a46e-7784ca92308e",
+  "cluster_id": "POL-352",
+  "status": "failure",
+  "commit_sha": null,
+  "commit_message": "docs(closeout): reconcile cognition for cluster POL-352\n\nRun: polaris-run-pol-352-2026-06-07-001\nCluster: POL-352\nChildren: POL-355, POL-354, POL-353\nFiles updated:\n- POLARIS.md: 4 files\n- SUMMARY.md: 4 files\n- docs ingested: 0\n- links repaired: 2",
+  "files_committed": [],
+  "drift_reconciliation": {
+    "medic_ran": false,
+    "charts_created": [],
+    "drift_observations": [
+      {
+        "type": "route_guidance_outdated",
+        "target": "src/cli/POLARIS.md",
+        "severity": "medium"
+      },
+      {
+        "type": "canon_mismatch",
+        "target": "src/map/POLARIS.md",
+        "severity": "medium"
+      },
+      {
+        "type": "route_guidance_outdated",
+        "target": "src/cognition/POLARIS.md",
+        "severity": "medium"
+      },
+      {
+        "type": "summary_outdated",
+        "target": "src/SUMMARY.md",
+        "severity": "medium"
+      },
+      {
+        "type": "invalid_reference",
+        "target": "src/map/POLARIS.md and src/map/SUMMARY.md",
+        "severity": "low"
+      }
+    ],
+    "chart_links_required": false,
+    "charts_linked": []
+  },
+  "polaris_md_updates": [
+    {
+      "file": "src/POLARIS.md",
+      "action": "update",
+      "change_summary": "Captured cross-route route health and identity alignment responsibility."
+    },
+    {
+      "file": "src/cli/POLARIS.md",
+      "action": "update",
+      "change_summary": "Documented the safe/read-only welfare-check top-level command."
+    },
+    {
+      "file": "src/cognition/POLARIS.md",
+      "action": "update",
+      "change_summary": "Documented route health assessment as an exported signal helper."
+    },
+    {
+      "file": "src/map/POLARIS.md",
+      "action": "update",
+      "change_summary": "Documented welfare.ts, identity completeness validation, and current SmartDocs references."
+    }
+  ],
+  "summary_md_updates": [
+    {
+      "file": "src/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Refreshed current state for route welfare reporting across atlas, cognition, and CLI."
+    },
+    {
+      "file": "src/cli/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Added welfare-check to current CLI command surface."
+    },
+    {
+      "file": "src/cognition/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Added route health classification to cognition signal snapshot."
+    },
+    {
+      "file": "src/map/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Added identity completeness and welfare-check behavior to map snapshot."
+    }
+  ],
+  "docs_ingested": [],
+  "docs_archived": [
+    {
+      "source_path": "smartdocs/raw/POLARIS.md",
+      "target_path": null,
+      "action": "archive",
+      "reason": "Raw folder guidance is already canonical for its route and unrelated to POL-352 implementation behavior."
+    },
+    {
+      "source_path": "smartdocs/raw/.gitkeep",
+      "target_path": null,
+      "action": "archive",
+      "reason": "Placeholder file; no ingestion action required."
+    }
+  ],
+  "yaml_updates": [],
+  "cognition_archived": [],
+  "link_validation": {
+    "total_checked": 11,
+    "valid": 11,
+    "broken": 2,
+    "repaired": 2,
+    "unrepairable": []
+  },
+  "blockers": [
+    {
+      "code": "librarian-commit-failed",
+      "message": "git add failed before staging: fatal: Unable to create '/Users/lsctech/Developer/Polaris/.git/index.lock': Operation not permitted",
+      "resolution_required": true
+    }
+  ],
+  "reconciled_at": "2026-06-07T15:43:41Z",
+  "evidence_summary": "POL-352 documentation reconciliation updated affected POLARIS.md and SUMMARY.md files for route welfare reporting, identity completeness validation, and route health signals. SmartDocs raw candidates were inspected and did not require promotion. Two stale map documentation references were repaired to current SmartDocs active paths. The librarian commit could not be created because this session cannot write to .git/index.lock, so the result is failure with uncommitted documentation edits left in the worktree."
+}

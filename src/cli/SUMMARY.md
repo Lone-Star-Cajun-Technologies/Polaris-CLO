@@ -9,6 +9,7 @@ Command-surface assembly for the `polaris` binary. This folder defines top-level
 - Bare subsystem invocations and unknown commands must fail with actionable guidance.
 - Graph commands (`build`, `query`, `impact`) are surfaced from `graph.ts` and operate on graph store/query services.
 - Worker and librarian command groups exist for runtime-governed execution paths.
+- `welfare-check` is a safe/read-only top-level command backed by map welfare logic and exits non-zero when route review is required.
 
 ## Architectural Role
 This route is the external operator interface for Polaris. It exposes runtime capabilities without owning business logic, preserving separation between command UX and subsystem implementation.
@@ -25,7 +26,7 @@ This route is the external operator interface for Polaris. It exposes runtime ca
 - Shares version source with `package.json` through `src/cli/version.ts`.
 
 ## Current State
-Top-level command groups include status, loop, map, finalize, runs, init, docs/doctrine, config, tracker, worker, graph, skill, librarian, and medic. Graph command UX now supports build/query/impact plans, JSON output, and build coverage reporting. The `medic chart create` command scaffolds new Medic diagnostic charts in `smartdocs/medic/charts/` with auto-generated CHART-YYYY-MM-DD-NNN IDs.
+Top-level command groups include status, loop, map, finalize, runs, init, docs/doctrine, config, tracker, worker, graph, skill, librarian, medic, and welfare-check. Graph command UX supports build/query/impact plans, JSON output, and build coverage reporting. The `medic chart create` command scaffolds new Medic diagnostic charts in `smartdocs/medic/charts/` with auto-generated CHART-YYYY-MM-DD-NNN IDs. The `welfare-check` command reports route identity and health review needs from the atlas.
 
 ## Known Drift
 Older references that describe only the legacy command subset are stale and should defer to `src/cli/index.ts` command registration.

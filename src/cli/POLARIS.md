@@ -24,6 +24,7 @@ The CLI entry point for Polaris. It wires the `polaris` binary, registers all to
 - Do not add inline `.action()` handlers in `index.ts` for anything beyond trivial cases (e.g., `config show`).
 - Public help must label safe/read-only commands separately from mutating commands. Deferred 1.0 commands must be marked unavailable instead of sounding implemented.
 - Unknown commands and bare subsystem commands must exit non-zero with actionable help.
+- `welfare-check` is a safe/read-only top-level command wired from `src/map/welfare.ts`; it exits non-zero when route health review is required.
 - Keep `index.ts` short — it should remain a thin wiring file.
 - Version string comes from `getVersion()` only — do not hardcode version strings elsewhere.
 

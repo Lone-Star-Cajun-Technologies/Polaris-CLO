@@ -1,41 +1,39 @@
 {
   "schema_version": "1.0",
-  "run_id": "polaris-run-pol-331-2026-06-07-001",
-  "cluster_id": "POL-331",
+  "run_id": "polaris-run-pol-352-2026-06-07-001",
+  "cluster_id": "POL-352",
   "skill": "polaris-run",
-  "branch": "pol-331-delivery",
+  "branch": "pol-352-delivery",
   "session_type": "implement",
-  "active_child": "POL-330",
-  "completed_children": [],
-  "open_children": [
-    "POL-330",
-    "POL-329",
-    "POL-328",
-    "POL-327",
-    "POL-326"
+  "active_child": "",
+  "completed_children": [
+    "POL-355",
+    "POL-354",
+    "POL-353"
   ],
+  "open_children": [],
   "open_children_meta": {
-    "POL-331": {
-      "title": "IMPLEMENT: June 5 doctrine gaps — Medic, Charts, Navigation Before Retrieval, Route Health, Librarian drift",
-      "body": "## Objective\n\nImplement all architectural gaps identified between the feature branch `feat/adoption-command-surface-agent-files` (built against June 4 spec) and the June 5 final decisions doctrine.\n\n## Context\n\nThe June 5 doctrine (`smartdocs/doctrine/active/2026-06-05-adoption-architecture-final-decisions.md`) supersedes the June 4 spec and introduces five new areas not covered by the feature branch:\n\n1. **Medic role** — first-class durable role with dispatch flow and failed result packet handling\n2. **Chart system** — `smartdocs/medic/charts/`, Chart ID format, schema, CLI command\n3. **Navigation Before Retrieval** — doctrine in POLARIS_RULES.md + lint enforcement\n4. **Route Health + Canonical References** — required SUMMARY.md sections\n5. **Librarian drift reconciliation checklist** — formal post-run checklist in closeout-librarian skill\n\nGap analysis source: review of `feat/adoption-command-surface-agent-files` diff against June 5 doctrine conducted 2026-06-05.\n\n## Goal\n\nAll five doctrine gaps are implemented and validated. The feature branch and this cluster together bring the codebase into full alignment with the June 5 adoption architecture.\n\n## Scope\n\n* .polaris/skills/polaris-medic/\n* .polaris/skills/polaris-run/chain.md\n* .polaris/skills/polaris-run/steps/04-execute-child.md\n* .polaris/skills/closeout-librarian/chain.md\n* .polaris/skills/closeout-librarian/steps/\n* .polaris/skills/polaris-catalog/steps/03-reconcile-summary-md.md\n* .polaris/skills/ROUTING.md\n* src/medic/chart-id.ts\n* src/medic/chart-schema.ts\n* src/cli/medic.ts\n* src/cli/adopt-rules.ts\n* src/lint/map-reference-validator.ts\n* src/smartdocs-engine/summary-generator.ts\n* src/types/result-packet.ts\n* smartdocs/medic/charts/.gitkeep\n\n## Acceptance Criteria\n\n- [ ] [POL-327](https://linear.app/lsctech/issue/POL-327/implement-chart-system-smartdocsmediccharts-chart-id-generator-schema) done: `polaris medic chart create` produces valid charts; schema validation passes\n- [ ] [POL-326](https://linear.app/lsctech/issue/POL-326/implement-medic-role-skill-dispatch-flow-and-failed-result-packet) done: Medic skill dispatachable; Foreman detects failed packets and routes to Medic\n- [ ] [POL-329](https://linear.app/lsctech/issue/POL-329/update-summarymd-template-route-health-sections-and-canonical) done: SUMMARY.md scaffold includes Route Health and Canonical References\n- [ ] [POL-328](https://linear.app/lsctech/issue/POL-328/add-navigation-before-retrieval-doctrine-to-polaris-rulesmd-and-lint) done: Generated POLARIS_RULES.md includes Navigation Before Retrieval section; lint flags broad preloads\n- [ ] [POL-330](https://linear.app/lsctech/issue/POL-330/update-closeout-librarian-skill-formal-drift-reconciliation-checklist) done: closeout-librarian runs formal drift reconciliation checklist every run\n- [ ] All tests pass: `npm run build && npm test`\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/medic src/cli/adopt-rules src/lint src/smartdocs-engine\n\n## Ordering\n\nRecommended execution order:\n\n1. [POL-327](https://linear.app/lsctech/issue/POL-327/implement-chart-system-smartdocsmediccharts-chart-id-generator-schema) (Chart system — foundational, no dependencies)\n2. [POL-329](https://linear.app/lsctech/issue/POL-329/update-summarymd-template-route-health-sections-and-canonical) (SUMMARY.md template — independent)\n3. [POL-326](https://linear.app/lsctech/issue/POL-326/implement-medic-role-skill-dispatch-flow-and-failed-result-packet) (Medic skill — depends on [POL-327](https://linear.app/lsctech/issue/POL-327/implement-chart-system-smartdocsmediccharts-chart-id-generator-schema))\n4. [POL-328](https://linear.app/lsctech/issue/POL-328/add-navigation-before-retrieval-doctrine-to-polaris-rulesmd-and-lint) (Navigation Before Retrieval — depends on branch merge)\n5. [POL-330](https://linear.app/lsctech/issue/POL-330/update-closeout-librarian-skill-formal-drift-reconciliation-checklist) (Librarian drift — depends on [POL-326](https://linear.app/lsctech/issue/POL-326/implement-medic-role-skill-dispatch-flow-and-failed-result-packet), [POL-327](https://linear.app/lsctech/issue/POL-327/implement-chart-system-smartdocsmediccharts-chart-id-generator-schema), [POL-329](https://linear.app/lsctech/issue/POL-329/update-summarymd-template-route-health-sections-and-canonical))\n\n## Non-goals\n\n* Do not merge `feat/adoption-command-surface-agent-files` as part of this cluster — branch merge is a prerequisite, not a child task\n* Do not implement Sub-plan 2 (doctrine enforcement) or Sub-plan 3 (adoption UX) in this cluster\n* Do not implement automated drift detection tooling — checklists are model-executed"
+    "POL-352": {
+      "title": "IMPLEMENT: Route identity model, route health schema, and welfare checks",
+      "body": "## Objective\n\nImplement the Polaris route health model, welfare check system, and route identity contract as formalized by analysis [POL-351](https://linear.app/lsctech/issue/POL-351/analyze-route-health-welfare-checks-and-route-identity-model).\n\n## Context\n\n[POL-351](<https://linear.app/lsctech/issue/POL-351>) (ANALYZE) identified three gaps: (1) no route identity completeness contract, (2) no machine-readable route health schema, (3) no welfare check system. This cluster implements all three.\n\n## Goal\n\n1. `polaris map validate` flags routes missing `instructionFile` or `role_owner`\n2. `RouteHealthState` type defined with detection logic in `src/cognition/`\n3. `polaris welfare-check` CLI command reports per-route health\n\n## Scope\n\n* src/map/atlas.ts\n* src/map/validate.ts\n* src/map/validate.test.ts\n* src/map/welfare.ts (new)\n* src/map/index.ts\n* src/cognition/route-cognition-delta.ts\n* src/cognition/validate.ts\n* src/cognition/index.ts\n* src/cli/index.ts\n\n## Acceptance Criteria\n\n- [ ] `polaris map validate` reports identity-incomplete routes\n- [ ] `RouteHealthState` exported from `src/cognition/`\n- [ ] `assessRouteHealth()` function exists and is tested\n- [ ] `polaris welfare-check` runs and reports per-route status\n- [ ] `npm run build` and `npm test` pass\n\n## Validation\n\n* npm run build\n* npm test\n\n## Ordering\n\nChildren execute in order:\n\n1. [POL-353](<https://linear.app/lsctech/issue/POL-353>) — route identity contract (no dependencies)\n2. [POL-354](<https://linear.app/lsctech/issue/POL-354>) — RouteHealthState schema + cognition (depends on [POL-353](https://linear.app/lsctech/issue/POL-353/formalize-route-identity-contract-and-polarismd-completeness-check))\n3. [POL-355](<https://linear.app/lsctech/issue/POL-355>) — welfare-check CLI (depends on [POL-353](https://linear.app/lsctech/issue/POL-353/formalize-route-identity-contract-and-polarismd-completeness-check) and [POL-354](https://linear.app/lsctech/issue/POL-354/define-routehealthstate-type-and-integrate-into-route-cognition-delta))\n\n## Non-goals\n\n* No scheduled welfare checks\n* No Medic role changes\n* No `health_state` in `file-routes.json`"
     },
-    "POL-330": {
-      "title": "Update closeout-librarian skill: formal drift reconciliation checklist",
-      "body": "## Objective\n\nUpdate the `closeout-librarian` skill with a formal post-run drift reconciliation checklist covering worker results, Medic results, charts, route cognition, and drift observations.\n\n## Context\n\nThe June 5 doctrine (`smartdocs/doctrine/active/2026-06-05-adoption-architecture-final-decisions.md`) makes Librarian drift reconciliation a required step before finalize. \"Implementation complete does not equal run complete.\" The current `closeout-librarian` skill does not have a structured checklist for this.\n\nDrift observation types: `summary_outdated`, `canon_mismatch`, `route_guidance_outdated`, `missing_documentation`, `invalid_reference`.\n\nAfter every completed run, Librarian must answer:\n\n* Does SUMMARY.md still describe reality?\n* Does POLARIS.md still describe the route?\n* Did behavior, dependencies, or guidance change?\n* Did a chart reveal reusable knowledge?\n\n## Goal\n\nThe `closeout-librarian` skill explicitly runs a drift reconciliation checklist on every run. Chart linking in SUMMARY.md Recent Treatments is required when Medic ran. Drift observations are recorded if detected.\n\n## Scope\n\n* .polaris/skills/closeout-librarian/chain.md\n* .polaris/skills/closeout-librarian/steps/\n\n## Acceptance Criteria\n\n- [ ] `closeout-librarian` chain includes a formal drift reconciliation step\n- [ ] Checklist covers: worker results, Medic results (if any), charts created, POLARIS.md, SUMMARY.md, canonical references, repo changes\n- [ ] Chart linking in SUMMARY.md `## Recent Treatments` is a required action when Medic ran this run\n- [ ] Drift observations are recorded when detected (in chart if Medic ran, otherwise noted in SUMMARY.md)\n- [ ] Drift observation type vocabulary is documented in the skill\n\n## Validation\n\n* npm run build\n* npm test\n\n## Ordering\n\n* Depends on [POL-326](https://linear.app/lsctech/issue/POL-326/implement-medic-role-skill-dispatch-flow-and-failed-result-packet) (Medic role) and [POL-327](https://linear.app/lsctech/issue/POL-327/implement-chart-system-smartdocsmediccharts-chart-id-generator-schema) (Chart system) being done first — drift checklist references chart artifacts\n* Depends on [POL-329](https://linear.app/lsctech/issue/POL-329/update-summarymd-template-route-health-sections-and-canonical) (SUMMARY.md Route Health template) — Recent Treatments section must exist\n\n## Non-goals\n\n* Do not implement automated drift detection tooling — this is a model-executed checklist\n* Do not resolve drift inline during Librarian — record observations; resolution is a separate task if needed",
-      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-331/results/POL-330-a820090a-83ea-488e-ae69-f9febc5d91d9.json",
+    "POL-355": {
+      "title": "Implement polaris welfare-check CLI command",
+      "body": "## Objective\n\nImplement `polaris welfare-check [--route <path>]` as a CLI command that runs all route welfare checks and reports per-route health.\n\n## Context\n\nPart of [POL-352](<https://linear.app/lsctech/issue/POL-352>) cluster. Analysis [POL-351](<https://linear.app/lsctech/issue/POL-351>) found no existing welfare check system. `validate.ts` does structural checks (stale, missing, sensitive, conflicted) but not route health diagnostics. Welfare checks are per-route: they combine identity completeness (from [POL-353](<https://linear.app/lsctech/issue/POL-353>)) and health state assessment (from [POL-354](<https://linear.app/lsctech/issue/POL-354>)) into an actionable operator-facing report.\n\n## Goal\n\n`polaris welfare-check` loads all indexed routes, runs welfare checks on each, and prints a report. With `--route <path>` it scopes to a single route domain. Each route entry in the report shows: route path, identity complete (yes/no), health state, and action required (none | review-identity | review-health | review-both).\n\n## Scope\n\n* src/cli/index.ts\n* src/map/welfare.ts (new file)\n* src/map/index.ts\n\n## Acceptance Criteria\n\n- [ ] `polaris welfare-check` runs without error and reports per-route welfare status\n- [ ] `polaris welfare-check --route <path>` scopes output to a single route domain\n- [ ] Each route entry reports: route, identity complete, health state, action required\n- [ ] Exit code 0 when all routes healthy; non-zero when any route needs review\n- [ ] `npm run build` and `npm test` pass\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/map\n\n## Ordering\n\nDepends on [POL-353](<https://linear.app/lsctech/issue/POL-353>) and [POL-354](<https://linear.app/lsctech/issue/POL-354>) being Done first. This is the terminal child.\n\n## Non-goals\n\n* Do not implement scheduled or cron-triggered welfare checks\n* Do not integrate welfare-check into the run loop automatically\n* Do not emit telemetry from welfare-check — diagnostic command only\n* Do not modify `validate.ts` — welfare-check is a separate command",
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-352/results/POL-355-e3becbe6-55cc-402e-af50-a3e5b7ac09ca.json",
       "dispatch_record": {
-        "dispatch_id": "63afc840-b29a-4009-bbff-a0d98b309b18",
-        "child_id": "POL-330",
-        "run_id": "polaris-run-pol-331-2026-06-07-001",
-        "cluster_id": "POL-331",
-        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-331/packets/POL-330-63afc840-b29a-4009-bbff-a0d98b309b18.json",
-        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-331/results/POL-330-a820090a-83ea-488e-ae69-f9febc5d91d9.json",
+        "dispatch_id": "e3becbe6-55cc-402e-af50-a3e5b7ac09ca",
+        "child_id": "POL-355",
+        "run_id": "polaris-run-pol-352-2026-06-07-001",
+        "cluster_id": "POL-352",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-352/packets/POL-355-e3becbe6-55cc-402e-af50-a3e5b7ac09ca.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-352/results/POL-355-e3becbe6-55cc-402e-af50-a3e5b7ac09ca.json",
         "provider": "devin",
-        "dispatched_at": "2026-06-07T01:01:52.316Z",
+        "dispatched_at": "2026-06-07T15:28:20.050Z",
         "status": "dispatched",
         "dispatch_mode": "direct-worker",
         "runtime_state": "packet-created",
-        "worker_id": "polaris-run-pol-331-2026-06-07-001:POL-330:1780794112316",
+        "worker_id": "polaris-run-pol-352-2026-06-07-001:POL-355:1780846100050",
         "session_id": null,
         "attachment_capable": false,
         "role": "worker",
@@ -44,47 +42,76 @@
         "session_type": "implementation"
       }
     },
-    "POL-329": {
-      "title": "Update SUMMARY.md template: Route Health sections and Canonical References block",
-      "body": "## Objective\n\nUpdate the SUMMARY.md template in `polaris-catalog` and any cognition scaffold generators to include Route Health sections and a Canonical References block, per the June 5 doctrine.\n\n## Context\n\nThe June 5 doctrine (`smartdocs/doctrine/active/2026-06-05-adoption-architecture-final-decisions.md`) specifies that SUMMARY.md is the route situation report (shift handoff) and must contain:\n\n* **Route Health** — Healthy / Monitoring / Known Issues / Recent Treatments / Improvement Opportunities\n* **Canonical References** — `canonical_docs:` YAML block listing navigation paths (not reading assignments)\n\nCurrent `polaris-catalog` step `03-reconcile-summary-md.md` does not reflect this structure, and any `src/` cognition scaffold generator does not template these sections.\n\n## Goal\n\nNew SUMMARY.md files generated by polaris-catalog include Route Health skeleton and Canonical References block. Existing files are not destructively overwritten — reconcile updates only stale state sections.\n\n## Scope\n\n* .polaris/skills/polaris-catalog/steps/03-reconcile-summary-md.md\n* src/smartdocs-engine/summary-generator.ts\n* src/smartdocs-engine/summary-generator.test.ts\n\n## Acceptance Criteria\n\n- [ ] `polaris-catalog` step `03-reconcile-summary-md.md` documents the full required SUMMARY.md structure including Route Health and Canonical References\n- [ ] Cognition scaffold generator (`summary-generator.ts` or equivalent) templates Route Health skeleton and `canonical_docs:` block on first creation\n- [ ] Reconcile does not overwrite an existing Route Health section if it has content\n- [ ] Canonical References block uses `canonical_docs:` key\n- [ ] Route Health status is human-readable in under 10 seconds\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/smartdocs-engine\n\n## Ordering\n\n* No hard dependencies; can proceed independently of [POL-326](https://linear.app/lsctech/issue/POL-326/implement-medic-role-skill-dispatch-flow-and-failed-result-packet)/327\n* Should be done before Sub-plan 3 adoption UX work begins\n\n## Non-goals\n\n* Do not auto-populate Route Health status from runtime data — scaffold a skeleton only\n* Do not change POLARIS.md templates (stable route map, separate from shift handoff)\n* Do not modify existing SUMMARY.md files in the repo"
+    "POL-354": {
+      "title": "Define RouteHealthState type and integrate into route cognition delta",
+      "body": "## Objective\n\nDefine a `RouteHealthState` TypeScript type with canonical health states and integrate health state detection into the route cognition delta system.\n\n## Context\n\nPart of [POL-352](<https://linear.app/lsctech/issue/POL-352>) cluster. Analysis [POL-351](<https://linear.app/lsctech/issue/POL-351>) found that the adoption architecture doctrine defines route health states (Healthy, Monitoring, Known Issues, Recovering, Stale) as prose only. No machine-readable schema or assessment logic exists. This child makes health state a first-class type, adds `assessRouteHealth()` to derive current state from observable signals (stale entries, missing cognition, identity completeness from [POL-353](<https://linear.app/lsctech/issue/POL-353>)), and integrates the result into the route cognition delta output.\n\n## Goal\n\n`RouteHealthState` is defined and exported from `src/cognition/`. `assessRouteHealth(route: FileRouteEntry): RouteHealthState` derives state from signals. The cognition delta includes `health_state` in its output so SUMMARY.md generation can use consistent, machine-readable state labels.\n\n## Scope\n\n* src/cognition/route-cognition-delta.ts\n* src/cognition/validate.ts\n* src/cognition/index.ts\n* src/map/atlas.ts\n\n## Acceptance Criteria\n\n- [ ] `RouteHealthState` type exported from `src/cognition/`: `'healthy' | 'monitoring' | 'known-issues' | 'recovering' | 'stale'`\n- [ ] `assessRouteHealth(route: FileRouteEntry): RouteHealthState` exists and is unit tested\n- [ ] Health assessment uses at minimum: staleness signal, identity completeness signal (from [POL-353](https://linear.app/lsctech/issue/POL-353/formalize-route-identity-contract-and-polarismd-completeness-check) logic), missing `instructionFile` signal\n- [ ] Route cognition delta output includes `health_state` field\n- [ ] `npm run build` and `npm test` pass\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/cognition\n\n## Ordering\n\nDepends on [POL-353](<https://linear.app/lsctech/issue/POL-353>) being Done first. \\[POL-354\\] (welfare-check CLI) depends on this being Done.\n\n## Non-goals\n\n* Do not persist `health_state` to `file-routes.json` or `SUMMARY.md` files directly — health state is derived at assessment time\n* Do not integrate with the Medic role\n* Do not add `health_state` to `FileRouteEntry` in `file-routes.json`",
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-352/results/POL-354-9681c012-cfb2-46e0-aaed-b0417659cb93.json",
+      "dispatch_record": {
+        "dispatch_id": "9681c012-cfb2-46e0-aaed-b0417659cb93",
+        "child_id": "POL-354",
+        "run_id": "polaris-run-pol-352-2026-06-07-001",
+        "cluster_id": "POL-352",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-352/packets/POL-354-9681c012-cfb2-46e0-aaed-b0417659cb93.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-352/results/POL-354-9681c012-cfb2-46e0-aaed-b0417659cb93.json",
+        "provider": "devin",
+        "dispatched_at": "2026-06-07T15:29:17.642Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-pol-352-2026-06-07-001:POL-354:1780846157642",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
     },
-    "POL-328": {
-      "title": "Add Navigation Before Retrieval Doctrine to POLARIS_RULES.md and lint enforcement",
-      "body": "## Objective\n\nAdd Navigation Before Retrieval Doctrine to the generated `POLARIS_RULES.md` template and extend the map-reference lint validator to flag broad-preload instructions in skill chains.\n\n## Context\n\nThe June 5 doctrine (`smartdocs/doctrine/active/2026-06-05-adoption-architecture-final-decisions.md`) establishes Navigation Before Retrieval as a core principle: links are retrieval paths, not reading assignments. Workers must not speculatively preload linked docs, all doctrine, or all charts.\n\nThe feature branch `feat/adoption-command-surface-agent-files` adds `POLARIS_RULES.md` generation (`src/cli/adopt-rules.ts`) and a map-reference lint validator, but neither captures this doctrine.\n\n## Goal\n\n`POLARIS_RULES.md` generated by `polaris init --adopt` includes a Navigation Before Retrieval section. The lint validator catches broad-preload instructions in skill chain files.\n\n## Scope\n\n* src/cli/adopt-rules.ts\n* src/cli/adopt-rules.test.ts\n* src/lint/map-reference-validator.ts\n* src/lint/map-reference-validator.test.ts\n\n## Acceptance Criteria\n\n- [ ] Generated `POLARIS_RULES.md` includes a `## Navigation Before Retrieval` section with the doctrine text and expected 5-step behavior\n- [ ] Lint validator flags skill chain files containing instructions to \"read all doctrine\", \"load all charts\", or \"preload\" linked docs\n- [ ] Lint violation message: `[navigation-before-retrieval] Skill chain instructs broad context preload — use targeted retrieval instead`\n- [ ] Existing map-reference lint tests continue to pass\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/cli/adopt-rules src/lint\n\n## Ordering\n\n* Depends on `feat/adoption-command-surface-agent-files` being merged first (adds adopt-rules.ts and lint validator)\n\n## Non-goals\n\n* Do not enforce Navigation Before Retrieval at runtime execution — this issue covers generation and static lint only\n* Do not modify existing POLARIS_RULES.md in the repo root (only the generator template)"
-    },
-    "POL-327": {
-      "title": "Implement Chart system: smartdocs/medic/charts/, chart ID generator, schema, and CLI command",
-      "body": "## Objective\n\nImplement the Chart system: folder structure, Chart ID generator, schema validation, and `polaris medic chart create` CLI command.\n\n## Context\n\nThe June 5 doctrine (`smartdocs/doctrine/active/2026-06-05-adoption-architecture-final-decisions.md`) defines Charts as the Medic's primary output artifact. The repository is treated as a patient; Charts are medical records. No implementation exists.\n\nChart ID format: `CHART-YYYY-MM-DD-NNN` (zero-padded sequence per day).\nChart folder: `smartdocs/medic/charts/` — nothing enters without a valid Chart ID.\n\nRequired front-matter: `chart_id`, `cluster_id`, `route`, `status`, `related_charts`, `created`, `updated`, `drift_observations` (optional).\nRequired sections: Problem, Symptoms, Root Cause, Affected Files, Treatment, Validation, Prevention, When To Read This Chart.\nSupported relationship types: `same_failure`, `edge_case_of`, `regression_of`, `caused_by`, `fixed_by`, `supersedes`, `duplicate_of`.\n\n## Goal\n\n`polaris medic chart create` scaffolds a valid chart. Schema validation rejects charts missing required metadata or sections. Chart relationships are parseable by the runtime.\n\n## Scope\n\n* src/medic/chart-id.ts\n* src/medic/chart-schema.ts\n* src/medic/chart-id.test.ts\n* src/medic/chart-schema.test.ts\n* src/cli/medic.ts\n* smartdocs/medic/charts/.gitkeep\n\n## Acceptance Criteria\n\n- [ ] `polaris medic chart create` produces a chart with a valid `CHART-YYYY-MM-DD-NNN` ID\n- [ ] Daily sequence resets per day and is zero-padded to 3 digits\n- [ ] Schema validation rejects charts missing required front-matter fields\n- [ ] Schema validation rejects charts missing any required section heading\n- [ ] Chart relationships can be declared and are parseable\n- [ ] `smartdocs/medic/charts/` folder exists in the repo\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/medic\n\n## Ordering\n\n* No dependencies — this is foundational for [POL-326](https://linear.app/lsctech/issue/POL-326/implement-medic-role-skill-dispatch-flow-and-failed-result-packet) (Medic skill) and [POL-330](https://linear.app/lsctech/issue/POL-330/update-closeout-librarian-skill-formal-drift-reconciliation-checklist) (Librarian drift)\n\n## Non-goals\n\n* Do not implement chart promotion/archival logic (that belongs to Librarian, [POL-330](https://linear.app/lsctech/issue/POL-330/update-closeout-librarian-skill-formal-drift-reconciliation-checklist))\n* Do not integrate charts into docs-ingest pipeline in this issue"
-    },
-    "POL-326": {
-      "title": "Implement Medic role: skill, dispatch flow, and failed result packet handling",
-      "body": "## Objective\n\nImplement the Medic role as a first-class durable role: create the `polaris-medic` skill, update Foreman dispatch logic to handle failed result packets, and define the failed result packet schema.\n\n## Context\n\nThe June 5 doctrine (`smartdocs/doctrine/active/2026-06-05-adoption-architecture-final-decisions.md`) establishes Medic as a durable role alongside Analyst, Foreman, Worker, and Librarian. The feature branch `feat/adoption-command-surface-agent-files` was built against the June 4 spec and does not include this role. Medic handles exceptions — it does not perform normal implementation.\n\nDispatch flow per doctrine:\n\n```\nWorker → failure → failed result packet\n  → Foreman marks triage required\n  → Foreman continues runnable work\n  → Medic dispatched → diagnosis → repair → validation → chart creation\n  → Librarian reconciliation → finalize\n```\n\n## Goal\n\nMedic is a fully dispatachable skill. Foreman can detect a failed result packet and dispatch Medic before Librarian runs. Runnable sibling work continues in parallel.\n\n## Scope\n\n* .polaris/skills/polaris-medic/\n* .polaris/skills/polaris-medic/SKILL.md\n* .polaris/skills/polaris-medic/chain.md\n* .polaris/skills/polaris-medic/steps/\n* .polaris/skills/ROUTING.md\n* .polaris/skills/polaris-run/chain.md\n* .polaris/skills/polaris-run/steps/04-execute-child.md\n* src/types/result-packet.ts\n\n## Acceptance Criteria\n\n- [ ] `.polaris/skills/polaris-medic/` skill exists with SKILL.md, chain.md, and steps: orient-medic, diagnose, repair, validate, create-chart, closeout\n- [ ] ROUTING.md includes `polaris-medic` route\n- [ ] `polaris-run` step `04-execute-child.md` detects failed result packets and marks triage required\n- [ ] Foreman dispatches Medic before Librarian when triage is required\n- [ ] Runnable sibling work continues while Medic is dispatched\n- [ ] Failed result packet schema is defined\n\n## Validation\n\n* npm run build\n* npm test\n\n## Ordering\n\n* Depends on [POL-327](https://linear.app/lsctech/issue/POL-327/implement-chart-system-smartdocsmediccharts-chart-id-generator-schema) (Chart system) — Medic's create-chart step requires chart schema and ID generator\n* [POL-330](https://linear.app/lsctech/issue/POL-330/update-closeout-librarian-skill-formal-drift-reconciliation-checklist) (Librarian drift checklist) should follow this\n\n## Non-goals\n\n* Do not implement actual diagnosis or repair AI logic — skill steps define the protocol, not the intelligence\n* Do not change worker execution logic beyond failed packet detection"
+    "POL-353": {
+      "title": "Formalize route identity contract and POLARIS.md completeness check",
+      "body": "## Objective\n\nDefine a formal route identity contract and add identity completeness validation to `polaris map validate`.\n\n## Context\n\nPart of [POL-352](<https://linear.app/lsctech/issue/POL-352>) cluster. Analysis [POL-351](<https://linear.app/lsctech/issue/POL-351>) found that while `POLARIS.md` serves as the route identity document, its completeness is never validated. Routes may have an `instructionFile` pointer but the field may be absent entirely. `role_owner` is validated for enum correctness when present but is never required. This child defines the identity completeness contract and enforces it in validate.\n\n## Goal\n\nAdd an identity completeness check to the map validate flow. Routes missing `instructionFile` or `role_owner` are listed in a new `identityIncomplete` field on `ValidationResult`. `polaris map validate` output reports these routes so operators know which routes lack full identity coverage.\n\n## Scope\n\n* src/map/atlas.ts\n* src/map/validate.ts\n* src/map/validate.test.ts\n\n## Acceptance Criteria\n\n- [ ] `ValidationResult` has an `identityIncomplete: string[]` field listing routes without `instructionFile` or `role_owner`\n- [ ] `polaris map validate` output includes an identity-incomplete section when routes are found\n- [ ] Tests cover: route with both fields (passes), route missing `instructionFile` (listed), route missing `role_owner` (listed), route missing both (listed)\n- [ ] `npm run build` and `npm test` pass\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/map\n\n## Ordering\n\nNone. This is the first child and has no dependencies.\n\n## Non-goals\n\n* Do not validate POLARIS.md section content — file pointer presence is sufficient\n* Do not modify `inference.ts` or the `file-routes.json` schema\n* Do not block map index/update operations on identity-incomplete routes — report only",
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-352/results/POL-353-b08a9f12-63d9-4b31-ac56-6ff40c780294.json",
+      "dispatch_record": {
+        "dispatch_id": "b08a9f12-63d9-4b31-ac56-6ff40c780294",
+        "child_id": "POL-353",
+        "run_id": "polaris-run-pol-352-2026-06-07-001",
+        "cluster_id": "POL-352",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-352/packets/POL-353-b08a9f12-63d9-4b31-ac56-6ff40c780294.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-352/results/POL-353-b08a9f12-63d9-4b31-ac56-6ff40c780294.json",
+        "provider": "devin",
+        "dispatched_at": "2026-06-07T15:30:18.082Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-pol-352-2026-06-07-001:POL-353:1780846218082",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
     }
   },
-  "step_cursor": "dispatch",
+  "step_cursor": "checkpoint",
   "context_budget": {
-    "children_completed": 0,
+    "children_completed": 3,
     "max_children_per_session": 1
   },
-  "status": "blocked",
-  "next_open_child": "POL-330",
+  "status": "cluster-complete",
+  "next_open_child": null,
   "artifact_dir": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run",
   "dispatch_boundary": {
-    "dispatch_epoch": 2,
-    "continue_epoch": 1,
-    "last_dispatched_child": "POL-330"
+    "dispatch_epoch": 3,
+    "continue_epoch": 3,
+    "last_dispatched_child": "POL-353"
   },
   "run_bootstrap_seal": {
     "sealer": "polaris-loop-bootstrap",
-    "run_id": "polaris-run-pol-331-2026-06-07-001",
-    "cluster_id": "POL-331",
-    "open_children_sha": "2e8972af7e1aabb9e9d1683b72e2743a1c726e62099fef624a9b785b2d99a519",
-    "sealed_at": "2026-06-07T00:48:57.218Z"
+    "run_id": "polaris-run-pol-352-2026-06-07-001",
+    "cluster_id": "POL-352",
+    "open_children_sha": "335e6b088b94a9866445b63bfee54131a0d3f78e645578f285670e3411e6b0e7",
+    "sealed_at": "2026-06-07T15:28:19.964Z"
   },
-  "blocker": {
-    "reason": "replacement worker stalled without heartbeat or result artifact",
-    "child_id": "POL-330",
-    "timestamp": "2026-06-07T00:57:39.295Z",
-    "resolved": false
-  }
+  "last_commit": "e8385925de7bc9c61a2ae7d992e4e40ecb298132"
 }
