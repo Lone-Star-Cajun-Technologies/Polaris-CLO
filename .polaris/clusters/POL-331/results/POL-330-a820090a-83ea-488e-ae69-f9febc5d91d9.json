@@ -1,0 +1,17 @@
+{
+  "child_id": "POL-330",
+  "status": "done",
+  "commit": "a838d3e028a6d50445ab59eb1af7883a33b9140b",
+  "validation": "passed",
+  "tracker_updated": false,
+  "state_updated": false,
+  "telemetry_updated": true,
+  "next_recommended_action": "continue",
+  "result_data": {
+    "validation_passed": [
+      "npm run build",
+      "npm test"
+    ],
+    "recovery_note": "Normalized adapter error wrapper into CompactReturn shape after worker completed with commit and validation evidence."
+  }
+}
