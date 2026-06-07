@@ -1,13 +1,14 @@
 ---
 name: polaris-run-step-07-decide-continuation
-description: Dispatch the next child through polaris loop dispatch when eligible, then run polaris loop continue only after the worker returns.
+description: Run all eligible children via loop run, then decide continuation (DISPATCH / STOP / DELIVER).
 ---
 
 # Step 07 — Decide continuation
 
 ## Purpose
 
-Preserve the parent/worker boundary via the Polaris runtime. The parent dispatches child work with `polaris loop dispatch`, waits for the worker's compact return, and only then checkpoints with `polaris loop continue`.
+Execute the cluster's remaining children via the runtime's batch dispatch loop, then determine
+whether to continue, halt, or proceed to delivery.
 
 ## Scope declarations
 
@@ -20,61 +21,51 @@ allowed_routes:
   - CLAUDE.md
   - .polaris/skills/polaris-run/chain.md
 expected_evidence:
-  - polaris loop dispatch executed when a next child exists
-  - worker compact return received before checkpoint
-  - polaris loop continue executed
-  - bootstrap packet emitted
-  - dispatch, STOP, or DELIVER decision recorded
+  - npm run polaris -- loop run executed
+  - RUNNING <child-id> (N/M) signal emitted per child
+  - COMPLETE <child-id> (commit: <sha>) signal emitted per child
+  - COMPLETE (cluster-complete) or blocked exit recorded
 stop_rules:
-  - polaris loop dispatch exits non-zero
-  - worker compact return is missing or invalid
-  - polaris loop continue exits non-zero (excluding expected boundary event)
-  - budget exhausted in fixed-cap mode only; children_completed >= budget.max_children from polaris.config.json; does not apply in run-until-done or stop-on-fail modes
+  - loop run exits non-zero (blocked or error)
+  - budget exhausted in fixed-cap mode (children_completed >= budget.max_children from polaris.config.json)
   - all children Done but delivery not yet requested
 ```
 
 ## Actions
 
-1. If another child is eligible, dispatch that child:
-   ```bash
-   npm run polaris -- loop dispatch
-   ```
-   This invokes the configured execution adapter with exactly one child worker prompt. The parent/orchestrator must not implement the child inline.
+Run the batch dispatch loop:
 
-2. Wait for the worker compact return. Require child ID, status, commit hash when applicable, validation summary, and next action. Do not ingest worker transcript content.
+```bash
+npm run polaris -- loop run <cluster-id>
+```
 
-3. Then run:
-   ```bash
-   npm run polaris -- loop continue
-   ```
-   This post-child checkpoint updates `.polaris/runs/current-state.json`, emits a `loop-checkpoint` JSONL event, checks the analyze→implement boundary, and writes a bootstrap packet to `.polaris/bootstrap/`.
+The runtime manages everything internally: child selection, packet compilation, provider dispatch
+(with automatic fallback through `providerPolicy.worker.providers`), CompactReturn validation,
+and state checkpointing. The Foreman must not call `loop dispatch` or `loop continue` individually.
 
-4. Evaluate the output to determine the decision:
+Monitor the subprocess output for progress signals:
+- `[POLARIS] RUNNING <child-id> (N/M)` — child dispatch started
+- `[POLARIS] COMPLETE <child-id> (commit: <sha>)` — child finished and checkpointed
+- `[POLARIS] COMPLETE (cluster-complete)` — all children done, subprocess exits 0
 
-### DISPATCH (next-child) — default when another child remains
+Evaluate the exit to determine the decision:
 
-When another child remains open:
-- Report only compact state: last completed child ID, commit hash, next open child ID and title.
-- Dispatch the next child with `npm run polaris -- loop dispatch` or the execution adapter directly.
-- The dispatch adapter is `execution.adapter` from `polaris.config.json`.
-- Native subagent dispatch is only allowed when both `execution.providerPolicy.worker.allowNativeSubagent` AND `execution.providerPolicy.orchestrator.allowNativeSubagent` are `true`. When either flag is `false`, verify that `execution.adapter` is `terminal-cli` before dispatching.
-- If either `execution.providerPolicy.worker.allowNativeSubagent` or `execution.providerPolicy.orchestrator.allowNativeSubagent` is `false` and `execution.adapter` is `agent-subtask`, or if `execution.adapter` is any other unsupported adapter, STOP immediately and report a config/governance/runtime violation — do not attempt native subagent tools. The current runtime adapter registry supports only `terminal-cli` and `agent-subtask`.
-- In terminal mode, `scripts/polaris-run.sh` is the `terminal-cli` adapter and may invoke the configured CLI command.
-- Wait for the worker compact return before calling `npm run polaris -- loop continue`.
+### DISPATCH (all remaining children) — default
+
+`loop run` dispatches all eligible children serially and exits when done. No per-child handling
+by the Foreman is needed. When `loop run` exits 0 with `cluster-complete`, proceed to STOP
+(all-done) or DELIVER.
+
+### STOP (blocked)
+
+If `loop run` exits non-zero:
+- Report the blocker and unblock condition from the output.
 - Do not push. Do not create a PR.
-
-This is the normal case. The dispatch boundary is the token boundary.
-
-### STOP (boundary_enforcement)
-
-Halt if `polaris loop continue` output contains a `boundary_enforcement` field:
-- Report: last completed child ID, commit hash, offending resource counts.
-- Provide resume instruction: start a new session and run `polaris-run on <PARENT-ID>`.
-- Do not push. Do not create a PR.
+- Resume instruction: resolve the blocker then run `npm run polaris -- loop run <cluster-id>`.
 
 ### STOP (all-done, awaiting delivery)
 
-If all children are Done but delivery was not explicitly requested:
+If `loop run` exits 0 and all children are Done but delivery was not explicitly requested:
 - Halt cleanly.
 - Report: all children Done, branch name, last commit.
 - Provide delivery command: `Use polaris-run on <PARENT-ID>. Finalize delivery.`
@@ -83,7 +74,7 @@ If all children are Done but delivery was not explicitly requested:
 ### DELIVER
 
 Proceed to step 08 only if:
-- All children are Done (confirmed via Linear).
+- All children are Done (confirmed via runtime state).
 - The user explicitly requested delivery in this session invocation.
 
 ## Artifact update
@@ -95,4 +86,4 @@ Update `.taskchain_artifacts/polaris-run/current-state.json`:
 
 ## Next step
 
-halted (STOP) or 08-final-delivery (DELIVER)
+halted (STOP) or 08-closeout-librarian (DELIVER)
