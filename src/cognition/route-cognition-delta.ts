@@ -57,7 +57,7 @@ export function assessRouteHealth(
 
   // Identity completeness check
   const hasInstructionFile = route.instructionFile !== undefined && route.instructionFile !== null && route.instructionFile.trim() !== "";
-  const hasRoleOwner = route.role_owner !== undefined && route.role_owner !== null;
+  const hasRoleOwner = route.role_owner !== undefined && route.role_owner !== null && route.role_owner.trim() !== "";
 
   if (!hasInstructionFile || !hasRoleOwner) {
     return "known-issues";
