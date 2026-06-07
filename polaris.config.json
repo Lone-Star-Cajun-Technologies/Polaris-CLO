@@ -23,6 +23,10 @@
         "command": "copilot",
         "args": ["-p", "{{worker_prompt}}", "--autopilot", "--allow-all-tools"]
       },
+      "devin": {
+        "command": "devin",
+        "args": ["--prompt", "{{worker_prompt}}"]
+      },
       "custom": {
         "command": "$POLARIS_AGENT",
         "args": ["{{worker_prompt}}"]
@@ -31,7 +35,7 @@
     "allowCrossAgentFallback": false,
     "providerPolicy": {
       "worker": {
-        "providers": ["copilot", "codex"],
+        "providers": ["devin", "copilot", "codex"],
         "allowNativeSubagent": false
       },
       "orchestrator": {
