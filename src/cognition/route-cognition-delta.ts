@@ -12,8 +12,11 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { isDirectoryEligible, parseSmartDocIgnore } from "../smartdocs-engine/smartdoc-ignore.js";
+import type { FileRouteEntry } from "../map/atlas.js";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
+
+export type RouteHealthState = "healthy" | "monitoring" | "known-issues" | "recovering" | "stale";
 
 export interface CognitionDeltaOptions {
   repoRoot: string;
@@ -24,6 +27,60 @@ export interface CognitionDeltaOptions {
    * Root cognition belongs in AGENTS.md / CLAUDE.md per doctrine.
    */
   skipRoot?: boolean;
+}
+
+// ── Route Health Assessment ───────────────────────────────────────────────────
+
+/**
+ * Assess the health state of a route based on observable signals.
+ *
+ * Signals used:
+ * - Staleness: entry older than threshold (default 90 days)
+ * - Identity completeness: missing instructionFile or role_owner
+ * - Missing cognition: no POLARIS.md at route
+ *
+ * Returns:
+ * - "stale": entry is stale (older than threshold)
+ * - "known-issues": identity incomplete (missing instructionFile or role_owner)
+ * - "monitoring": route has no POLARIS.md cognition
+ * - "recovering": route was stale but recently updated
+ * - "healthy": route is fresh, identity complete, has cognition
+ */
+export function assessRouteHealth(
+  route: FileRouteEntry,
+  repoRoot: string,
+  staleThresholdDays: number = 90,
+): RouteHealthState {
+  const daysSinceUpdate = (Date.now() - new Date(route.last_updated).getTime()) / (1000 * 60 * 60 * 24);
+
+  // Staleness check
+  if (daysSinceUpdate > staleThresholdDays) {
+    return "stale";
+  }
+
+  // Identity completeness check
+  const hasInstructionFile = route.instructionFile !== undefined && route.instructionFile !== null;
+  const hasRoleOwner = route.role_owner !== undefined && route.role_owner !== null;
+  
+  if (!hasInstructionFile || !hasRoleOwner) {
+    return "known-issues";
+  }
+
+  // Missing cognition check
+  if (route.instructionFile) {
+    const polarisPath = resolve(repoRoot, route.instructionFile);
+    if (!existsSync(polarisPath)) {
+      return "monitoring";
+    }
+  }
+
+  // Recovering: recently updated but was stale (heuristic: updated within last 30 days but older than 7 days)
+  if (daysSinceUpdate > 7 && daysSinceUpdate <= 30) {
+    return "recovering";
+  }
+
+  // Healthy: fresh, identity complete, has cognition
+  return "healthy";
 }
 
 export type CognitionUpdateReason =
@@ -44,6 +101,8 @@ export interface CognitionDeltaResult {
   reasons: CognitionUpdateReason[];
   /** Folders whose POLARIS.md is missing (newly eligible). */
   missingCognitionSurfaces: string[];
+  /** Health state of the route (if applicable). */
+  healthState?: RouteHealthState;
 }
 
 // ── Skipped folder patterns ───────────────────────────────────────────────────
