@@ -9,6 +9,7 @@ The CLI entry point for Polaris. It wires the `polaris` binary, registers all to
 - `index.ts` — binary entry point; registers subsystem commands via `addCommand()`
 - `graph.ts` — `polaris graph build|query|impact` command group and output formatting
 - `librarian.ts` — closeout librarian packet/result command surface
+- `medic.ts` — `polaris medic chart create` command; scaffolds Medic diagnostic charts
 - `worker.ts` — worker-owned commit enforcement command factory
 - `version.ts`, `version.test.ts` — version helper and test
 
