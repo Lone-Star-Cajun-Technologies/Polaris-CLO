@@ -6,6 +6,7 @@ Delta-only signal library for route-local cognition surfaces — determines when
 ## Key behaviors
 - Returns signals only; callers own all writes to disk.
 - Cognition is scoped per directory, walking upward from touched files; root excluded by default.
+- Route health is exposed as a signal helper over atlas entries, using staleness, identity completeness, and cognition presence to classify `healthy`, `monitoring`, `known-issues`, `recovering`, or `stale`.
 - SUMMARY.md size cap is a hard error; doctrine bleed detection is warn-only.
 - `isCognitionSkippedFolder` is the single authority on excluded folders, including the top-level `.polaris` runtime surfaces that now carry cognition while nested run, cluster, map, and graph artifacts stay excluded.
 
