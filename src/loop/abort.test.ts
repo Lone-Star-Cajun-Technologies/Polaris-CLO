@@ -166,7 +166,7 @@ describe("runLoopAbort", () => {
       pr_url: null,
       blocker: {
         summary: "test blocker",
-        unblock_condition: "Resolve blocker then run: polaris loop resume",
+        unblock_condition: `Resolve blocker then run: npm run polaris -- loop run POL-5`,
       },
     });
   });
@@ -188,10 +188,10 @@ describe("runLoopAbort", () => {
       expect(() =>
         runLoopAbort({ reason: "blocked by missing dep", repoRoot: testDir, stateFile }),
       ).toThrow("process.exit called");
-      expect(exitSpy).toHaveBeenCalledWith(1);
+      expect(exitSpy).toHaveBeenCalledWith(0);
       expect(stderrMessages.some((m) => m.includes("Loop aborted"))).toBe(true);
       expect(stderrMessages.some((m) => m.includes("blocked by missing dep"))).toBe(true);
-      expect(stderrMessages.some((m) => m.includes("polaris loop resume"))).toBe(true);
+      expect(stderrMessages.some((m) => m.includes("npm run polaris -- loop run"))).toBe(true);
     } finally {
       exitSpy.mockRestore();
       stderrSpy.mockRestore();
