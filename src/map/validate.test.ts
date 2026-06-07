@@ -105,3 +105,89 @@ describe("runMapValidate role_owner validation", () => {
     }
   });
 });
+
+describe("runMapValidate identity completeness", () => {
+  let testDir: string;
+
+  beforeEach(() => {
+    testDir = makeTestDir();
+  });
+
+  afterEach(() => {
+    rmSync(testDir, { recursive: true, force: true });
+  });
+
+  it("passes when route has both instructionFile and role_owner", () => {
+    const entryPath = join(testDir, "src/cli/index.ts");
+    mkdirSync(join(testDir, "src/cli"), { recursive: true });
+    writeFileSync(entryPath, "");
+
+    writeRoutes(testDir, {
+      "src/cli/index.ts": makeEntry({ instructionFile: "POLARIS.md", role_owner: "worker" }),
+    });
+
+    const result = runMapValidate(testDir, 9999);
+    expect(result.identityIncomplete).toHaveLength(0);
+  });
+
+  it("lists route missing instructionFile", () => {
+    const entryPath = join(testDir, "src/cli/index.ts");
+    mkdirSync(join(testDir, "src/cli"), { recursive: true });
+    writeFileSync(entryPath, "");
+
+    writeRoutes(testDir, {
+      "src/cli/index.ts": makeEntry({ role_owner: "worker" }), // missing instructionFile
+    });
+
+    const result = runMapValidate(testDir, 9999);
+    expect(result.identityIncomplete).toContain("src/cli/index.ts");
+    expect(result.identityIncomplete).toHaveLength(1);
+  });
+
+  it("lists route missing role_owner", () => {
+    const entryPath = join(testDir, "src/cli/index.ts");
+    mkdirSync(join(testDir, "src/cli"), { recursive: true });
+    writeFileSync(entryPath, "");
+
+    writeRoutes(testDir, {
+      "src/cli/index.ts": makeEntry({ instructionFile: "POLARIS.md" }), // missing role_owner
+    });
+
+    const result = runMapValidate(testDir, 9999);
+    expect(result.identityIncomplete).toContain("src/cli/index.ts");
+    expect(result.identityIncomplete).toHaveLength(1);
+  });
+
+  it("lists route missing both instructionFile and role_owner", () => {
+    const entryPath = join(testDir, "src/cli/index.ts");
+    mkdirSync(join(testDir, "src/cli"), { recursive: true });
+    writeFileSync(entryPath, "");
+
+    writeRoutes(testDir, {
+      "src/cli/index.ts": makeEntry(), // missing both fields
+    });
+
+    const result = runMapValidate(testDir, 9999);
+    expect(result.identityIncomplete).toContain("src/cli/index.ts");
+    expect(result.identityIncomplete).toHaveLength(1);
+  });
+
+  it("lists multiple routes with identity incompleteness", () => {
+    const entryPath1 = join(testDir, "src/cli/index.ts");
+    const entryPath2 = join(testDir, "src/map/atlas.ts");
+    mkdirSync(join(testDir, "src/cli"), { recursive: true });
+    mkdirSync(join(testDir, "src/map"), { recursive: true });
+    writeFileSync(entryPath1, "");
+    writeFileSync(entryPath2, "");
+
+    writeRoutes(testDir, {
+      "src/cli/index.ts": makeEntry({ role_owner: "worker" }), // missing instructionFile
+      "src/map/atlas.ts": makeEntry(), // missing both
+    });
+
+    const result = runMapValidate(testDir, 9999);
+    expect(result.identityIncomplete).toHaveLength(2);
+    expect(result.identityIncomplete).toContain("src/cli/index.ts");
+    expect(result.identityIncomplete).toContain("src/map/atlas.ts");
+  });
+});
