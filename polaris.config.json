@@ -25,7 +25,12 @@
       },
       "devin": {
         "command": "devin",
-        "args": ["--print", "{{worker_prompt}}"]
+        "args": [
+          "-p",
+          "{{worker_prompt}}",
+          "--permission-mode",
+          "dangerous"
+        ]
       },
       "custom": {
         "command": "$POLARIS_AGENT",

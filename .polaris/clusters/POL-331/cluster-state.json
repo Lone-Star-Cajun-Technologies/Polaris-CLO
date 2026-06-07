@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "cluster_id": "POL-331",
-  "state_generation": 3,
+  "state_generation": 4,
   "child_states": [
     {
       "id": "POL-330",
@@ -26,13 +26,13 @@
   ],
   "claim_metadata": {
     "POL-330": {
-      "worker_id": "polaris-run-pol-331-2026-06-07-001:POL-330:1780793337230",
-      "claimed_at": "2026-06-07T00:48:57.230Z",
-      "expires_at": "2026-06-07T01:18:57.230Z"
+      "worker_id": "polaris-run-pol-331-2026-06-07-001:POL-330:1780794112316",
+      "claimed_at": "2026-06-07T01:01:52.316Z",
+      "expires_at": "2026-06-07T01:31:52.316Z"
     }
   },
   "packet_pointers": {
-    "POL-330": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-331/packets/POL-330-a820090a-83ea-488e-ae69-f9febc5d91d9.json"
+    "POL-330": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-331/packets/POL-330-63afc840-b29a-4009-bbff-a0d98b309b18.json"
   },
   "result_pointers": {},
   "validation_results": {},
