@@ -1,9 +1,9 @@
 ---
-name: closeout-librarian-step-04
+name: closeout-librarian-step-05
 description: Inspect documentation associated with completed work. Ingest, promote, archive, or skip.
 ---
 
-# Step 04 — Documentation Ingestion
+# Step 05 — Documentation Ingestion
 
 ## Purpose
 
@@ -67,7 +67,7 @@ When creating a provenance file (`.provenance.json`):
 
 ## Cognition Note Archival
 
-After POLARIS.md and SUMMARY.md reconciliation is complete, move all resolved pending
+After POLARIS.md, drift reconciliation, and SUMMARY.md reconciliation is complete, move all resolved pending
 cognition notes from `packet.cognition_notes` to archive:
 - Source: `.polaris/cognition/pending/<folder-slug>/<file>`
 - Destination: `.polaris/cognition/archive/<folder-slug>/<file>`
@@ -75,16 +75,16 @@ cognition notes from `packet.cognition_notes` to archive:
 
 ## Actions
 
-### 4.1 Enumerate Candidates
+### 5.1 Enumerate Candidates
 
 Build a list of candidate documents from all sources (raw paths, child summaries, run report).
 Deduplicate. Exclude already-promoted documents.
 
-### 4.2 Classify Each Candidate
+### 5.2 Classify Each Candidate
 
 Apply the decision matrix above. Assign one of: `ingest`, `promote`, `archive`, `skip`.
 
-### 4.3 Execute Ingestion
+### 5.3 Execute Ingestion
 
 For each document classified as `ingest` or `promote`:
 1. Verify target path is in `packet.allowed_write_paths`.
@@ -97,18 +97,18 @@ For each document classified as `archive`:
 1. No file move required (raw docs stay in place).
 2. Record in `docs_archived` list with reason.
 
-### 4.4 Archive Cognition Notes
+### 5.4 Archive Cognition Notes
 
 Move all pending cognition notes in `packet.cognition_notes` to archive.
 Update `cognition-index.json` for each affected folder.
 
 ## Output
 
-Running lists for step 08:
+Running lists for step 09:
 ```yaml
 docs_ingested: [{ source_path, target_path, action: "ingest"|"promote", reason }]
 docs_archived: [{ source_path, target_path: null, action: "archive", reason }]
 cognition_archived: [{ note_path, archive_path }]
 ```
 
-Proceed to step 05.
+Proceed to step 06.

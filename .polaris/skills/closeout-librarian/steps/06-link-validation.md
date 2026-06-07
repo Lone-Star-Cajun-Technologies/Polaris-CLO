@@ -1,22 +1,22 @@
 ---
-name: closeout-librarian-step-05
+name: closeout-librarian-step-06
 description: Validate markdown links, YAML references, and cognition references. Repair where possible.
 ---
 
-# Step 05 — Link Validation
+# Step 06 — Link Validation
 
 ## Purpose
 
-Documentation changes and promotions in steps 02–04 may create or expose broken links.
+Documentation changes and promotions in steps 03–05 may create or expose broken links.
 This step validates references across affected documentation and repairs them where possible.
 
 ## Scope of Validation
 
 Validate links only in files that were written or affected during this session:
-- POLARIS.md files updated in step 02
-- SUMMARY.md files updated in step 03
-- Documents ingested in step 04
-- Provenance files created in step 04
+- POLARIS.md files updated in step 03
+- SUMMARY.md files updated in step 04
+- Documents ingested in step 05
+- Provenance files created in step 05
 
 Do NOT validate the entire repository. Scope is limited to files touched by this session.
 
@@ -61,7 +61,7 @@ to point to the new canonical location.
 ### Cognition References
 
 In SUMMARY.md files, references to cognition notes or archive entries should resolve
-correctly after archival in step 04.
+correctly after archival in step 05.
 
 ## Repair Heuristics
 
@@ -75,7 +75,7 @@ If a relative path is wrong but the target file exists at a different relative p
 ### Promoted Document Reference
 
 If a link points to `smartdocs/raw/<file>` and the file was promoted to
-`smartdocs/specs/active/<file>` in step 04:
+`smartdocs/specs/active/<file>` in step 05:
 1. Update the link to the new canonical path.
 2. Record as repaired.
 
@@ -91,25 +91,25 @@ unrepairable links.
 
 ## Actions
 
-### 5.1 Collect Links
+### 6.1 Collect Links
 
-For each file written in steps 02–04, extract all link references (markdown, YAML, wiki).
+For each file written in steps 03–05, extract all link references (markdown, YAML, wiki).
 
-### 5.2 Validate Each Link
+### 6.2 Validate Each Link
 
 Check whether the target exists. Classify as: valid, broken-repairable, broken-unrepairable,
 external (skip).
 
-### 5.3 Repair
+### 6.3 Repair
 
 For each broken-repairable link:
 1. Verify the source file is in `packet.allowed_write_paths`.
 2. Apply the repair (update the link in the file).
 3. Record in `links_repaired`.
 
-### 5.4 Record Results
+### 6.4 Record Results
 
-Build the link validation report for step 08.
+Build the link validation report for step 09.
 
 ## Output
 
@@ -125,4 +125,4 @@ link_validation_report:
 Unrepairable links are added to the session blockers list with `resolution_required: false`
 (informational only — they do not block the Librarian commit).
 
-Proceed to step 06.
+Proceed to step 07.

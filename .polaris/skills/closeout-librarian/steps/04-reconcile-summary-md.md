@@ -1,9 +1,9 @@
 ---
-name: closeout-librarian-step-03
+name: closeout-librarian-step-04
 description: Refresh SUMMARY.md to reflect current project state after the completed cluster.
 ---
 
-# Step 03 — Reconcile SUMMARY.md
+# Step 04 — Reconcile SUMMARY.md
 
 ## Purpose
 
@@ -64,14 +64,14 @@ Give it higher priority than folder-level SUMMARY.md files.
 
 For each folder in `work_inventory.affected_folders` that has a SUMMARY.md:
 
-### 3.1 Assess Staleness
+### 4.1 Assess Staleness
 
 1. Read the current SUMMARY.md (from `work_inventory.summary_md_files`).
 2. Cross-reference with completed work: changed specs, new capabilities, new constraints.
 3. Identify sections that are stale, contradicted, or superseded.
 4. Identify new information that should be captured (architecture snapshots, spec promotions).
 
-### 3.2 Refresh
+### 4.2 Refresh
 
 Produce the updated SUMMARY.md content:
 1. Remove sections that are no longer accurate.
@@ -82,7 +82,7 @@ Produce the updated SUMMARY.md content:
 **Constraint:** SUMMARY.md updates must not exceed `packet.constraints.max_summary_addition_lines`
 net new lines per folder (default: 50 lines). "Net new" means final line count minus original line count. Replacements (same or fewer lines) do not count toward this limit.
 
-### 3.3 Write
+### 4.3 Write
 
 1. Verify the SUMMARY.md path is in `packet.allowed_write_paths`.
    If not allowed, skip this file and record in `summary_md_updates` with `action: "path_not_allowed"`.
@@ -93,7 +93,7 @@ If no update is needed, record no-change for this folder using `action: "no_chan
 
 ## Output
 
-Running list for step 08:
+Running list for step 09:
 ```yaml
 summary_md_updates: [
   { file: "<path>", action: "update", change_summary: "<≤50 words>" },
@@ -103,4 +103,4 @@ summary_md_updates: [
 ]
 ```
 
-Proceed to step 04.
+Proceed to step 05.
