@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0",
+  "cluster_id": "POL-370",
+  "state_generation": 5,
+  "child_states": [
+    {
+      "id": "POL-372",
+      "status": "done",
+      "commit": "a405efcfc1a4d488031cadc0efdb025886f6b249"
+    },
+    {
+      "id": "POL-371",
+      "status": "dispatched"
+    }
+  ],
+  "claim_metadata": {
+    "POL-371": {
+      "worker_id": "polaris-run-pol-370-2026-06-08-001:POL-371:1780877555515",
+      "claimed_at": "2026-06-08T00:12:35.515Z",
+      "expires_at": "2026-06-08T00:42:35.515Z"
+    }
+  },
+  "packet_pointers": {
+    "POL-372": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-370/packets/POL-372-ff18f71d-c55e-43c4-9f27-79996d70f489.json",
+    "POL-371": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-370/packets/POL-371-04644795-35e2-4b25-b70b-9d4e2f467ff9.json"
+  },
+  "result_pointers": {
+    "POL-372": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-370/results/POL-372-ff18f71d-c55e-43c4-9f27-79996d70f489.json"
+  },
+  "validation_results": {
+    "POL-372": {
+      "passed": true,
+      "output": "passed"
+    }
+  },
+  "commits": {
+    "POL-372": "a405efcfc1a4d488031cadc0efdb025886f6b249"
+  },
+  "tracker_mutations": {},
+  "blockers": [],
+  "delivery_branch": "pol-370-delivery",
+  "base_branch": "main"
+}

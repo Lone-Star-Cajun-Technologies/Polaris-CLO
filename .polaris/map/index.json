@@ -1,5 +1,5 @@
 {
-  "scan_date": "2026-06-07T03:42:48.493Z",
+  "scan_date": "2026-06-08T00:29:09.327Z",
   "file_count": 901,
   "coverage_pct": 34,
   "instructionCoverage": {
@@ -1634,8 +1634,8 @@
       "taskchain": "polaris-loop",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-06-06T16:26:55.937Z",
-      "updated_by": "polaris-map-index",
+      "last_updated": "2026-06-08T00:29:09.327Z",
+      "updated_by": "polaris-map-update",
       "tags": [
         "loop"
       ],
@@ -1647,8 +1647,8 @@
       "taskchain": "polaris-loop",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-06-06T16:26:55.937Z",
-      "updated_by": "polaris-map-index",
+      "last_updated": "2026-06-08T00:29:09.327Z",
+      "updated_by": "polaris-map-update",
       "tags": [
         "loop"
       ],
