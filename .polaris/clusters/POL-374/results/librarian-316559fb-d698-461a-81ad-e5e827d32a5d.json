@@ -8,10 +8,10 @@
   "commit_sha": "08522d6fec29cd760579d9b9d6861bc9492c64c1",
   "commit_message": "docs: reconcile POL-374 closeout docs",
   "files_committed": [
-    "src/cli/POLARIS.md",
-    "src/config/POLARIS.md",
-    "src/finalize/POLARIS.md",
-    "src/loop/SUMMARY.md"
+    "/Users/lsctech/Developer/Polaris/src/cli/POLARIS.md",
+    "/Users/lsctech/Developer/Polaris/src/config/POLARIS.md",
+    "/Users/lsctech/Developer/Polaris/src/finalize/POLARIS.md",
+    "/Users/lsctech/Developer/Polaris/src/loop/SUMMARY.md"
   ],
   "polaris_md_updates": [
     {

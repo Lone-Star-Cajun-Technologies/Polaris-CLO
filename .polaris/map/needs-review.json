@@ -4028,8 +4028,8 @@
     "taskchain": "polaris-core",
     "confidence": 0,
     "classification": "needs-review",
-    "last_updated": "2026-06-08T16:23:13.207Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-06-08T16:25:48.119Z",
+    "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": ".polaris/clusters/POLARIS.md"
   },
@@ -4292,8 +4292,8 @@
     "taskchain": "polaris-core",
     "confidence": 0,
     "classification": "needs-review",
-    "last_updated": "2026-06-08T16:23:13.207Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-06-08T16:25:48.119Z",
+    "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": ".polaris/map/POLARIS.md"
   },
@@ -4303,8 +4303,8 @@
     "taskchain": "polaris-core",
     "confidence": 0,
     "classification": "needs-review",
-    "last_updated": "2026-06-08T16:23:13.207Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-06-08T16:25:48.119Z",
+    "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": ".polaris/map/POLARIS.md"
   },
