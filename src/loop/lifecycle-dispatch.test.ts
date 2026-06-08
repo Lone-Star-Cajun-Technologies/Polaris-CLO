@@ -98,6 +98,7 @@ function baseConfig(): Required<PolarisConfig> {
       stop_on_fail: false,
       allow_analyze_children: false,
     },
+    graph: {},
     compact: {
       orchestratorMode: "standard",
       workerMode: "standard",

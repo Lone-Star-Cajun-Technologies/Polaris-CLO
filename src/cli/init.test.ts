@@ -792,7 +792,7 @@ describe("runInit — adopt approval gate", () => {
       const value = String(path);
       return value === CONFIG_PATH || value === join(REPO_ROOT, ".polaris", "adoption-plan.json");
     });
-    mockedReadFileSync.mockImplementation((path: fs.PathLike) => {
+    mockedReadFileSync.mockImplementation((path: fs.PathOrFileDescriptor) => {
       const value = String(path);
       if (value === CONFIG_PATH) {
         return JSON.stringify(config);
@@ -972,7 +972,7 @@ describe("finalizeAdoption", () => {
       const value = String(path);
       return value.endsWith(".gitignore") || value.endsWith(".polaris/map/index.json");
     });
-    mockedReadFileSync.mockImplementation((path: fs.PathLike) => {
+    mockedReadFileSync.mockImplementation((path: fs.PathOrFileDescriptor) => {
       const value = String(path);
       if (value.endsWith(".gitignore")) {
         return "node_modules/\n";
