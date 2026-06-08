@@ -31,7 +31,7 @@
       "src/config/\\*\\*",
       "test/tracker/\\*\\*",
       "test/\\*\\*",
-      "smartdocs/raw/[POL-373](https://linear.app/lsctech/issue/POL-373/analyze-distribution-readiness-gaps-and-tracker-adapter-lifecycle)-distribution-readiness-tracker-lifecycle-analysis.md"
+      "smartdocs/raw/POL-373-distribution-readiness-tracker-lifecycle-analysis.md"
     ],
     "validation_commands": [
       "npm run build",

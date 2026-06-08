@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync, mkdirSync, readFileSync, existsSync
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execFileSync } from "node:child_process";
-import { runInit } from "../../src/cli/init.js";
+import { runInit, finalizeAdoption } from "../../src/cli/init.js";
 import { runDoctor } from "../../src/config/doctor.js";
 import { loadConfig } from "../../src/config/loader.js";
 import { resolveLifecycleTransition } from "../../src/tracker/lifecycle-policy.js";
@@ -140,30 +140,42 @@ describe("POL-380: Fresh external-repo adoption and lifecycle proof", () => {
             smartdocs_candidates: [],
             ignore_candidates: [],
           }),
-          generateAdoptionArtifacts: () => ({
-            plan: {
+          generateAdoptionArtifacts: () => {
+            const plan = {
               plan_id: "test-plan",
               generated_at: "2026-06-08T16:00:00.000Z",
               repo_state: "existing",
               approved: false,
               approved_at: null,
               dry_run: false,
-              steps: [],
+              steps: [
+                {
+                  id: "init-gitignore",
+                  category: "stage",
+                  status: "pending",
+                  source_path: ".gitignore",
+                  target_path: ".gitignore",
+                  action: "create",
+                } as const,
+              ],
               impact_summary: {
-                files_to_create: 0,
+                files_to_create: 1,
                 files_to_move: 0,
                 files_to_modify: 0,
                 instruction_files_affected: 0,
                 smartdocs_candidates_moved: 0,
                 cognition_files_to_generate: 0,
               },
-            },
-            json: "{}",
-            markdown: "# Adoption Plan\n",
-            jsonPath: join(fixtureRepo, ".polaris", "adoption-plan.json"),
-            markdownPath: join(fixtureRepo, ".polaris", "adoption-plan.md"),
-            wroteFiles: false,
-          }),
+            };
+            return {
+              plan,
+              json: JSON.stringify(plan, null, 2),
+              markdown: "# Adoption Plan\n",
+              jsonPath: join(fixtureRepo, ".polaris", "adoption-plan.json"),
+              markdownPath: join(fixtureRepo, ".polaris", "adoption-plan.md"),
+              wroteFiles: false,
+            };
+          },
           generateFolderCognition: async () => Promise.resolve(),
         });
 
@@ -383,30 +395,42 @@ describe("POL-380: Fresh external-repo adoption and lifecycle proof", () => {
             smartdocs_candidates: [],
             ignore_candidates: [],
           }),
-          generateAdoptionArtifacts: () => ({
-            plan: {
+          generateAdoptionArtifacts: () => {
+            const plan = {
               plan_id: "test-plan",
               generated_at: "2026-06-08T16:00:00.000Z",
               repo_state: "existing",
               approved: false,
               approved_at: null,
               dry_run: false,
-              steps: [],
+              steps: [
+                {
+                  id: "init-gitignore",
+                  category: "stage",
+                  status: "pending",
+                  source_path: ".gitignore",
+                  target_path: ".gitignore",
+                  action: "create",
+                } as const,
+              ],
               impact_summary: {
-                files_to_create: 0,
+                files_to_create: 1,
                 files_to_move: 0,
                 files_to_modify: 0,
                 instruction_files_affected: 0,
                 smartdocs_candidates_moved: 0,
                 cognition_files_to_generate: 0,
               },
-            },
-            json: "{}",
-            markdown: "# Adoption Plan\n",
-            jsonPath: join(fixtureRepo, ".polaris", "adoption-plan.json"),
-            markdownPath: join(fixtureRepo, ".polaris", "adoption-plan.md"),
-            wroteFiles: false,
-          }),
+            };
+            return {
+              plan,
+              json: JSON.stringify(plan, null, 2),
+              markdown: "# Adoption Plan\n",
+              jsonPath: join(fixtureRepo, ".polaris", "adoption-plan.json"),
+              markdownPath: join(fixtureRepo, ".polaris", "adoption-plan.md"),
+              wroteFiles: false,
+            };
+          },
           generateFolderCognition: async () => Promise.resolve(),
         });
 
@@ -490,41 +514,49 @@ describe("POL-380: Fresh external-repo adoption and lifecycle proof", () => {
             smartdocs_candidates: [],
             ignore_candidates: [],
           }),
-          generateAdoptionArtifacts: () => ({
-            plan: {
+          generateAdoptionArtifacts: () => {
+            const plan = {
               plan_id: "test-plan",
               generated_at: "2026-06-08T16:00:00.000Z",
               repo_state: "existing",
               approved: false,
               approved_at: null,
               dry_run: false,
-              steps: [],
+              steps: [
+                {
+                  id: "stage-gitignore",
+                  category: "stage",
+                  status: "pending",
+                  source_path: ".gitignore",
+                  target_path: ".gitignore",
+                  action: "create",
+                } as const,
+              ],
               impact_summary: {
-                files_to_create: 0,
+                files_to_create: 1,
                 files_to_move: 0,
                 files_to_modify: 0,
                 instruction_files_affected: 0,
                 smartdocs_candidates_moved: 0,
                 cognition_files_to_generate: 0,
               },
-            },
-            json: "{}",
-            markdown: "# Adoption Plan\n",
-            jsonPath: join(fixtureRepo, ".polaris", "adoption-plan.json"),
-            markdownPath: join(fixtureRepo, ".polaris", "adoption-plan.md"),
-            wroteFiles: false,
-          }),
+            };
+            return {
+              plan,
+              json: JSON.stringify(plan, null, 2),
+              markdown: "# Adoption Plan\n",
+              jsonPath: join(fixtureRepo, ".polaris", "adoption-plan.json"),
+              markdownPath: join(fixtureRepo, ".polaris", "adoption-plan.md"),
+              wroteFiles: false,
+            };
+          },
           generateFolderCognition: async () => Promise.resolve(),
         });
 
         process.stdout.write = originalWrite;
 
-        // Create a .gitignore file (normally done by finalizeAdoption)
-        // For this test, we'll create it manually to verify the artifact policy
-        const gitignorePath = join(fixtureRepo, ".gitignore");
-        writeFileSync(gitignorePath, "# Test .gitignore\n.polaris/runs/\n.taskchain_artifacts/\n", "utf-8");
-
         // Verify .gitignore has runtime exclusions
+        const gitignorePath = join(fixtureRepo, ".gitignore");
         expect(existsSync(gitignorePath)).toBe(true);
 
         const gitignore = readFileSync(gitignorePath, "utf-8");
@@ -600,30 +632,42 @@ describe("POL-380: Fresh external-repo adoption and lifecycle proof", () => {
             smartdocs_candidates: [],
             ignore_candidates: [],
           }),
-          generateAdoptionArtifacts: () => ({
-            plan: {
+          generateAdoptionArtifacts: () => {
+            const plan = {
               plan_id: "test-plan",
               generated_at: "2026-06-08T16:00:00.000Z",
               repo_state: "existing",
               approved: false,
               approved_at: null,
               dry_run: false,
-              steps: [],
+              steps: [
+                {
+                  id: "init-gitignore",
+                  category: "stage",
+                  status: "pending",
+                  source_path: ".gitignore",
+                  target_path: ".gitignore",
+                  action: "create",
+                } as const,
+              ],
               impact_summary: {
-                files_to_create: 0,
+                files_to_create: 1,
                 files_to_move: 0,
                 files_to_modify: 0,
                 instruction_files_affected: 0,
                 smartdocs_candidates_moved: 0,
                 cognition_files_to_generate: 0,
               },
-            },
-            json: "{}",
-            markdown: "# Adoption Plan\n",
-            jsonPath: join(fixtureRepo, ".polaris", "adoption-plan.json"),
-            markdownPath: join(fixtureRepo, ".polaris", "adoption-plan.md"),
-            wroteFiles: false,
-          }),
+            };
+            return {
+              plan,
+              json: JSON.stringify(plan, null, 2),
+              markdown: "# Adoption Plan\n",
+              jsonPath: join(fixtureRepo, ".polaris", "adoption-plan.json"),
+              markdownPath: join(fixtureRepo, ".polaris", "adoption-plan.md"),
+              wroteFiles: false,
+            };
+          },
           generateFolderCognition: async () => Promise.resolve(),
         });
 

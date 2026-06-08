@@ -192,6 +192,24 @@ function checkTrackerConfig(config: PolarisConfig): DoctorCheck {
     };
   }
 
+  if (tracker.adapter === "local") {
+    return {
+      id: "tracker-config",
+      category: "tracker",
+      status: "pass",
+      message: "Local file tracker adapter is configured",
+    };
+  }
+
+  if (tracker.adapter === "spec") {
+    return {
+      id: "tracker-config",
+      category: "tracker",
+      status: "pass",
+      message: "Spec tracker adapter is configured",
+    };
+  }
+
   return {
     id: "tracker-config",
     category: "tracker",

@@ -209,11 +209,39 @@ export async function updateLinearIssueAfterFinalize(options: PostCommentOptions
 
   // Resolve lifecycle transition from policy
   const lifecycleTransition = resolveLifecycleTransition("parent-all-children-complete", lifecyclePolicy);
-  
+
   // If policy says skip, skip the state transition entirely
   if (lifecycleTransition.skip) {
     console.log(`[Linear] Skipping lifecycle transition for ${issueId}: ${lifecycleTransition.skipReason}`);
-    
+
+    const body = buildCommentBody({
+      state,
+      branch,
+      prUrl,
+      validationPassed,
+      reviewStateMissing: false,
+    });
+
+    const commentData = await linearGraphQL<{ commentCreate?: { success?: boolean } }>(
+      `mutation CreateComment($issueId: String!, $body: String!) {
+        commentCreate(input: { issueId: $issueId, body: $body }) { success }
+      }`,
+      { issueId, body },
+      apiKey,
+    );
+    if (commentData.commentCreate?.success !== true) {
+      throw new Error(`Linear commentCreate failed: ${JSON.stringify(commentData.commentCreate)}`);
+    }
+    return;
+  }
+
+  // Check if targetState is a supported Linear state
+  const targetState = lifecycleTransition.targetState;
+  const supportedLinearStates = ["In Review", "Review"];
+
+  if (targetState && !supportedLinearStates.some(s => s.toLowerCase() === targetState.toLowerCase())) {
+    console.log(`[Linear] Skipping lifecycle transition for ${issueId}: target state "${targetState}" is not a supported Linear state`);
+
     const body = buildCommentBody({
       state,
       branch,

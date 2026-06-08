@@ -144,6 +144,14 @@ export function validateLifecyclePolicy(policy: unknown): { valid: boolean; erro
     return { valid: false, errors: ["Lifecycle policy must be an object"] };
   }
 
+  if (Array.isArray(policy)) {
+    return { valid: false, errors: ["Lifecycle policy must be a plain object"] };
+  }
+
+  if (Object.getPrototypeOf(policy) !== Object.prototype) {
+    return { valid: false, errors: ["Lifecycle policy must be a plain object"] };
+  }
+
   const validStates: NormalizedLifecycleState[] = [
     "backlog",
     "in_progress",

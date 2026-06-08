@@ -328,6 +328,12 @@ export class TrackerSyncService {
       if (!queuedMutation) {
         // Resolve the lifecycle state from policy for validation-passed children
         const lifecycleTransition = resolveLifecycleTransition("child-validation-passed", this.lifecyclePolicy);
+
+        // Skip creating a mutation if the policy says to skip or target is no_status_change
+        if (lifecycleTransition.skip || lifecycleTransition.targetState === "no_status_change") {
+          continue;
+        }
+
         const targetState = lifecycleTransition.targetState;
 
         const newMutation: MutationRecord = {
@@ -337,7 +343,7 @@ export class TrackerSyncService {
           entityType: "issue",
           entityId: childState.id,
           payload: {
-            state: targetState === "no_status_change" ? "Done" : targetState,
+            state: targetState,
           },
           status: "pending",
           timestamp: new Date().toISOString(),
