@@ -53,6 +53,8 @@ import { assertBootstrapSeal } from "./run-bootstrap.js";
 import {
   DEFAULT_LEDGER_PATH,
   LedgerWriter,
+  type ChildCompletedEvent,
+  type ClusterCompleteEvent,
   type LedgerRunType,
   type RunStartedEvent,
 } from "./ledger.js";
@@ -266,6 +268,70 @@ function appendRunStartedLedgerEvent(repoRoot: string, state: LoopState): void {
     pr_url: null,
     timestamp: new Date().toISOString(),
   } satisfies RunStartedEvent);
+}
+
+function appendChildCompletedLedgerEvent(
+  repoRoot: string,
+  state: LoopState,
+  completedChild: string,
+  lastCommit: string | null,
+  validation: unknown,
+): void {
+  const writer = new LedgerWriter(join(repoRoot, DEFAULT_LEDGER_PATH));
+  const base = {
+    schema_version: 1 as const,
+    event_id: randomUUID(),
+    run_id: state.run_id,
+    run_type: normalizeRunType(state.session_type),
+    cluster_id: state.cluster_id,
+    branch: state.branch ?? getCurrentBranch(repoRoot),
+    completed_children: state.completed_children,
+    open_children: state.open_children,
+    next_child: state.next_open_child,
+    last_commit: ledgerLastCommit(state),
+    pr_url: null,
+    timestamp: new Date().toISOString(),
+  };
+
+  writer.append({
+    ...base,
+    event: "child-completed",
+    issue_id: completedChild,
+    status: state.status === "cluster-complete" ? "cluster-complete" : "running",
+    last_commit: lastCommit,
+    validation: typeof validation === "object" && validation !== null
+      ? { status: "complete", ...(validation as Record<string, unknown>) }
+      : { status: "complete" },
+  } satisfies ChildCompletedEvent);
+}
+
+function appendClusterCompletedLedgerEvent(repoRoot: string, state: LoopState): void {
+  const writer = new LedgerWriter(join(repoRoot, DEFAULT_LEDGER_PATH));
+  const base = {
+    schema_version: 1 as const,
+    event_id: randomUUID(),
+    run_id: state.run_id,
+    run_type: normalizeRunType(state.session_type),
+    cluster_id: state.cluster_id,
+    branch: state.branch ?? getCurrentBranch(repoRoot),
+    completed_children: state.completed_children,
+    open_children: state.open_children,
+    next_child: state.next_open_child,
+    last_commit: ledgerLastCommit(state),
+    pr_url: null,
+    timestamp: new Date().toISOString(),
+  };
+
+  writer.append({
+    ...base,
+    event_id: randomUUID(),
+    event: "cluster-complete",
+    issue_id: null,
+    status: "cluster-complete",
+    open_children: [],
+    next_child: null,
+    recovery_count: 0,
+  } satisfies ClusterCompleteEvent);
 }
 
 /**
@@ -785,6 +851,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
           children_completed: state.completed_children.length,
           timestamp: new Date().toISOString(),
         });
+        appendClusterCompletedLedgerEvent(repoRoot, { ...state, status: "cluster-complete" });
         if (autoFinalizeRequested) {
           appendTelemetry(telemetryFile, {
             event: "auto-finalize-requested",
@@ -1604,6 +1671,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
         telemetryEvent.elapsed_seconds = elapsedSeconds;
       }
       appendTelemetry(telemetryFile, telemetryEvent);
+      appendChildCompletedLedgerEvent(repoRoot, state, nextChild, lastCommit ?? null, validationSummary);
     }
 
     if (orchestrationMode === 'supervised') {
