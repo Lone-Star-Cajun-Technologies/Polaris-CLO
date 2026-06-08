@@ -21,6 +21,7 @@ describe("POL-380: Fresh external-repo adoption and lifecycle proof", () => {
     execFileSync("git", ["init"], { cwd: fixtureRepo, stdio: "pipe" });
     execFileSync("git", ["config", "user.email", "test@example.com"], { cwd: fixtureRepo, stdio: "pipe" });
     execFileSync("git", ["config", "user.name", "Test User"], { cwd: fixtureRepo, stdio: "pipe" });
+    execFileSync("git", ["config", "commit.gpgsign", "false"], { cwd: fixtureRepo, stdio: "pipe" });
 
     // Add some basic content to simulate an existing repository
     writeFileSync(join(fixtureRepo, "README.md"), "# Test Repository\n", "utf-8");

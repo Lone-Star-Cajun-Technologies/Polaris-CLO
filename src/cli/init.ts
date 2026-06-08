@@ -410,7 +410,10 @@ function stageAdoptionOutputs(repoRoot: string, plan: AdoptionPlanArtifacts["pla
     }
   }
 
-  execFileSync("git", ["add", "-A", "--", ...stagePaths], { cwd: repoRoot, stdio: "pipe" });
+  const existingPaths = [...stagePaths].filter((p) => existsSync(resolve(repoRoot, p)));
+  if (existingPaths.length > 0) {
+    execFileSync("git", ["add", "-A", "--", ...existingPaths], { cwd: repoRoot, stdio: "pipe" });
+  }
 }
 
 function unstageRuntimeArtifacts(repoRoot: string): void {

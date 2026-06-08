@@ -710,8 +710,8 @@ export class LinearAdapter implements CapableTrackerAdapter {
 
     return {
       added: false,
-      unsupported: true,
-      reason: "Adding comments is not yet implemented for Linear adapter",
+      unsupported: false,
+      error: "Adding comments is not yet implemented for Linear adapter",
     };
   }
 
@@ -750,8 +750,8 @@ export class LinearAdapter implements CapableTrackerAdapter {
 
     return {
       added: false,
-      unsupported: true,
-      reason: "Adding dependencies is not yet implemented for Linear adapter",
+      unsupported: false,
+      error: "Adding dependencies is not yet implemented for Linear adapter",
     };
   }
 
@@ -771,8 +771,8 @@ export class LinearAdapter implements CapableTrackerAdapter {
 
     return {
       created: false,
-      unsupported: true,
-      reason: "Creating child issues is not yet implemented for Linear adapter",
+      unsupported: false,
+      error: "Creating child issues is not yet implemented for Linear adapter",
     };
   }
 }

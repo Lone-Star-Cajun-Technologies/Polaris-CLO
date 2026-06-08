@@ -235,12 +235,12 @@ export async function updateLinearIssueAfterFinalize(options: PostCommentOptions
     return;
   }
 
-  // Check if targetState is a supported Linear state
+  // Only attempt state transition when the policy maps to the "in_review" normalized state.
+  // Other normalized states (e.g. "done", "no_status_change") are not handled by this function.
   const targetState = lifecycleTransition.targetState;
-  const supportedLinearStates = ["In Review", "Review"];
 
-  if (targetState && !supportedLinearStates.some(s => s.toLowerCase() === targetState.toLowerCase())) {
-    console.log(`[Linear] Skipping lifecycle transition for ${issueId}: target state "${targetState}" is not a supported Linear state`);
+  if (targetState !== "in_review") {
+    console.log(`[Linear] Skipping lifecycle transition for ${issueId}: target state "${targetState}" is not handled by Linear finalize`);
 
     const body = buildCommentBody({
       state,
