@@ -53,6 +53,8 @@ import { assertBootstrapSeal } from "./run-bootstrap.js";
 import {
   DEFAULT_LEDGER_PATH,
   LedgerWriter,
+  type ChildCompletedEvent,
+  type ClusterCompleteEvent,
   type LedgerRunType,
   type RunStartedEvent,
 } from "./ledger.js";
@@ -266,6 +268,70 @@ function appendRunStartedLedgerEvent(repoRoot: string, state: LoopState): void {
     pr_url: null,
     timestamp: new Date().toISOString(),
   } satisfies RunStartedEvent);
+}
+
+function appendChildCompletedLedgerEvent(
+  repoRoot: string,
+  state: LoopState,
+  completedChild: string,
+  lastCommit: string | null,
+  validation: unknown,
+): void {
+  const writer = new LedgerWriter(join(repoRoot, DEFAULT_LEDGER_PATH));
+  const base = {
+    schema_version: 1 as const,
+    event_id: randomUUID(),
+    run_id: state.run_id,
+    run_type: normalizeRunType(state.session_type),
+    cluster_id: state.cluster_id,
+    branch: state.branch ?? getCurrentBranch(repoRoot),
+    completed_children: state.completed_children,
+    open_children: state.open_children,
+    next_child: state.next_open_child,
+    last_commit: ledgerLastCommit(state),
+    pr_url: null,
+    timestamp: new Date().toISOString(),
+  };
+
+  writer.append({
+    ...base,
+    event: "child-completed",
+    issue_id: completedChild,
+    status: state.status === "cluster-complete" ? "cluster-complete" : "running",
+    last_commit: lastCommit,
+    validation: typeof validation === "object" && validation !== null
+      ? { status: "complete", ...(validation as Record<string, unknown>) }
+      : { status: "complete" },
+  } satisfies ChildCompletedEvent);
+}
+
+function appendClusterCompletedLedgerEvent(repoRoot: string, state: LoopState): void {
+  const writer = new LedgerWriter(join(repoRoot, DEFAULT_LEDGER_PATH));
+  const base = {
+    schema_version: 1 as const,
+    event_id: randomUUID(),
+    run_id: state.run_id,
+    run_type: normalizeRunType(state.session_type),
+    cluster_id: state.cluster_id,
+    branch: state.branch ?? getCurrentBranch(repoRoot),
+    completed_children: state.completed_children,
+    open_children: state.open_children,
+    next_child: state.next_open_child,
+    last_commit: ledgerLastCommit(state),
+    pr_url: null,
+    timestamp: new Date().toISOString(),
+  };
+
+  writer.append({
+    ...base,
+    event_id: randomUUID(),
+    event: "cluster-complete",
+    issue_id: null,
+    status: "cluster-complete",
+    open_children: [],
+    next_child: null,
+    recovery_count: 0,
+  } satisfies ClusterCompleteEvent);
 }
 
 /**
@@ -778,13 +844,16 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
       // All children completed — write final state and halt
       if (!dryRun) {
         logStatus(notificationFormat, "COMPLETE");
-        writeStateAtomic(stateFile, { ...state, status: "cluster-complete" });
+        const clusterCompleteState = { ...state, status: "cluster-complete" as const };
+        writeStateAtomic(stateFile, clusterCompleteState);
+        writeStateAtomic(join(repoRoot, '.polaris', 'clusters', state.cluster_id, 'state.json'), clusterCompleteState);
         appendTelemetry(telemetryFile, {
           event: "cluster-complete",
           run_id: state.run_id,
           children_completed: state.completed_children.length,
           timestamp: new Date().toISOString(),
         });
+        appendClusterCompletedLedgerEvent(repoRoot, { ...state, status: "cluster-complete" });
         if (autoFinalizeRequested) {
           appendTelemetry(telemetryFile, {
             event: "auto-finalize-requested",
@@ -1428,10 +1497,11 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     // work was done — reject it to prevent phantom completions.
     // Uses getCommitFiles from options for testability; defaults to a git-backed
     // implementation that throws when the commit cannot be resolved (fail closed).
+    let commitFiles: string[] | null = null;
     if (!dryRun && workerStatus === 'done' && lastCommit && lastCommit.trim().length > 0) {
       const getFiles = options.getCommitFiles ?? defaultGetCommitFiles;
       try {
-        const commitFiles = getFiles(lastCommit, repoRoot);
+        commitFiles = getFiles(lastCommit, repoRoot);
         if (workerWroteCompletion && commitFiles === null) {
           const errMsg = `Cannot verify worker commit ${lastCommit} for ${nextChild}: commit does not resolve to a git object`;
           appendTelemetry(telemetryFile, {
@@ -1584,15 +1654,26 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
         };
       }
       logStatus(notificationFormat, `COMPLETE ${nextChild}${commitSuffix}`);
-      appendTelemetry(telemetryFile, {
+      // Compute elapsed_seconds from dispatch_record.dispatched_at if available
+      const dispatchedAt = state.open_children_meta?.[nextChild]?.dispatch_record?.dispatched_at;
+      const elapsedSeconds = dispatchedAt
+        ? Math.floor((Date.now() - new Date(dispatchedAt).getTime()) / 1000)
+        : undefined;
+      const telemetryEvent: Record<string, unknown> = {
         event: "child-complete",
         run_id: state.run_id,
         child_id: nextChild,
         children_completed: state.context_budget.children_completed,
         validation_summary: validationSummary,
         commit_hash: lastCommit,
+        commit_files: commitFiles,
         timestamp: new Date().toISOString(),
-      });
+      };
+      if (elapsedSeconds !== undefined) {
+        telemetryEvent.elapsed_seconds = elapsedSeconds;
+      }
+      appendTelemetry(telemetryFile, telemetryEvent);
+      appendChildCompletedLedgerEvent(repoRoot, state, nextChild, lastCommit ?? null, validationSummary);
     }
 
     if (orchestrationMode === 'supervised') {

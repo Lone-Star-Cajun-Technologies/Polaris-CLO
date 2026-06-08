@@ -1,0 +1,15 @@
+{
+  "child_id": "POL-371",
+  "status": "failure",
+  "commit": "9dfaa79b0b6a0d4d9198fe2a9f4115c0b094aa92",
+  "validation": "passed",
+  "next_recommended_action": "proceed_to_next_child",
+  "tracker_updated": false,
+  "state_updated": false,
+  "telemetry_updated": false,
+  "run_id": "polaris-run-pol-370-2026-06-08-001",
+  "error_message": "CompactReturn validation failed: next_recommended_action must be \"continue\", \"stop\", or \"investigate\"",
+  "compact_return_errors": [
+    "next_recommended_action must be \"continue\", \"stop\", or \"investigate\""
+  ]
+}

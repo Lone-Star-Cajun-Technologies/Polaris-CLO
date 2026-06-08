@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0",
+  "role": "closeout-librarian",
+  "run_id": "polaris-run-pol-370-2026-06-08-001",
+  "dispatch_id": "1c9b326a-aa49-4b7c-b53c-a30871eb32f3",
+  "cluster_id": "POL-370",
+  "status": "success",
+  "commit_sha": "2be1151fc47535b710c03aed5e79967ed49b1d06",
+  "commit_message": "docs(closeout): reconcile cognition for cluster POL-370",
+  "files_committed": [
+    "src/loop/POLARIS.md",
+    "src/loop/SUMMARY.md"
+  ],
+  "polaris_md_updates": [
+    {
+      "folder": "src/loop/",
+      "path": "src/loop/POLARIS.md",
+      "confidence": 0.95,
+      "applied": true,
+      "summary": "Added editing rules for ledger event emission from parent loop and enhanced child-complete telemetry fields (elapsed_seconds, commit_files)"
+    }
+  ],
+  "summary_md_updates": [
+    {
+      "folder": "src/loop/",
+      "path": "src/loop/SUMMARY.md",
+      "applied": true,
+      "summary": "Added key behaviors for child-completed and cluster-complete ledger events, and enhanced child-complete telemetry"
+    }
+  ],
+  "docs_ingested": [],
+  "docs_archived": [],
+  "yaml_updates": [],
+  "cognition_archived": [],
+  "link_validation": {
+    "total_checked": 0,
+    "valid": 0,
+    "broken": 0,
+    "repaired": 0,
+    "unrepairable": []
+  },
+  "blockers": [],
+  "reconciled_at": "2026-06-08T00:15:00.000Z",
+  "evidence_summary": "Closeout for POL-370: updated src/loop/POLARIS.md with editing rules for ledger event emission and enhanced telemetry fields; updated src/loop/SUMMARY.md with key behavior descriptions. No docs archived, no links broken, no cognition notes to archive."
+}

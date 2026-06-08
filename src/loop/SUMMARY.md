@@ -10,6 +10,8 @@ Session lifecycle manager for Polaris cluster runs — orchestrates child dispat
 - Bootstrap packets are self-contained: cold-start agents resume without replaying JSONL history.
 - `.polaris/bootstrap/` is a derived sealed handoff surface, and telemetry remains append-only audit/debug output.
 - JSONL telemetry ledger is append-only; truncation breaks the telemetry contract.
+- The parent loop emits `child-completed` and `cluster-complete` events to the run ledger (via `LedgerWriter`) after each successful child and when all children complete. These are durable, queryable records distinct from JSONL telemetry.
+- The `child-complete` JSONL telemetry event now includes `elapsed_seconds` (time from dispatch to completion) and `commit_files` (list of files in the worker's commit) when available.
 
 ## Relationships
 - **Upstream**: `src/cli`, `src/config`

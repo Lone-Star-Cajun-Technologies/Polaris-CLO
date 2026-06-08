@@ -31,6 +31,8 @@ The loop subsystem manages the session lifecycle for Polaris cluster runs. It ha
 - The JSONL telemetry file is append-only. Never truncate or overwrite it.
 - Bootstrap packets include enough context for a cold-start agent to resume without replaying JSONL history.
 - `polaris loop abort` must set `status: blocked` and emit a `loop-aborted` JSONL event before exiting.
+- The parent loop emits `child-completed` and `cluster-complete` ledger events via `LedgerWriter` after each successful child and at cluster completion. These are append-only durable records in the run ledger. Ledger event writes are gated by the `dryRun` flag: when `dryRun` is true, ledger events are not written; ledger writes occur only when `dryRun` is false.
+- The `child-complete` telemetry event includes `elapsed_seconds` (computed from `dispatch_record.dispatched_at`) and `commit_files` (files from the worker's last commit). `elapsed_seconds` is omitted when dispatch time is unavailable; `commit_files` may be null when the commit cannot be resolved.
 
 ## Route model
 

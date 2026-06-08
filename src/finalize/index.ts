@@ -198,9 +198,9 @@ function checkLibrarianGate(repoRoot: string, clusterId: string): string | null 
     }
 
     const allowedMatch = allowedWritePaths.find((pattern) => patternMatchesPath(pattern, file));
-    if (!allowedMatch) {
-      return `Librarian wrote to out-of-scope path: ${file} (not in allowed_write_paths)`;
-    }
+    if (allowedMatch) continue; // explicitly allowed
+
+    return `Librarian wrote to out-of-scope path: ${file} (not in allowed_write_paths)`;
   }
 
   try {
