@@ -1,4 +1,5 @@
 import type { LoopState } from "../../loop/checkpoint.js";
+import type { TrackerLifecyclePolicy } from "../../config/schema.js";
 import { updateLinearIssueAfterFinalize } from "../linear.js";
 
 export async function stepUpdateLinear(
@@ -8,6 +9,7 @@ export async function stepUpdateLinear(
   validationPassed: boolean,
   linearEnabled: boolean,
   parentIssueId?: string,
+  lifecyclePolicy?: TrackerLifecyclePolicy,
 ): Promise<void> {
   if (!linearEnabled) {
     console.log("[11/12] Linear integration disabled — skipping.");
@@ -26,6 +28,6 @@ export async function stepUpdateLinear(
     return;
   }
 
-  await updateLinearIssueAfterFinalize({ issueId, state, branch, prUrl, validationPassed, apiKey });
+  await updateLinearIssueAfterFinalize({ issueId, state, branch, prUrl, validationPassed, apiKey, lifecyclePolicy });
   console.log(`Linear parent ${issueId} updated.`);
 }

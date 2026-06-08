@@ -1,5 +1,8 @@
 import type { NormalizedLifecycleState, TrackerLifecyclePolicy } from "../config/schema.js";
 
+// Re-export TrackerLifecyclePolicy for use in other tracker modules
+export type { TrackerLifecyclePolicy };
+
 /**
  * Transition event types that can occur during Polaris execution.
  */

@@ -1,5 +1,7 @@
 import { request } from "node:https";
 import type { LoopState } from "../loop/checkpoint.js";
+import type { TrackerLifecyclePolicy } from "../config/schema.js";
+import { resolveLifecycleTransition } from "../tracker/lifecycle-policy.js";
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Review-gate policy
@@ -43,6 +45,7 @@ export interface PostCommentOptions {
   prUrl: string;
   validationPassed: boolean;
   apiKey: string;
+  lifecyclePolicy?: TrackerLifecyclePolicy;
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -191,16 +194,46 @@ export async function postLinearComment(options: PostCommentOptions): Promise<vo
 /**
  * Full post-finalize Linear update (review-gate policy):
  *
- * 1. Queries the issue's team for an "In Review" workflow state.
- * 2. If found — calls issueUpdate to transition (NEVER to Done/Closed).
- * 3. If not found — skips state transition; comment body notes the missing state.
- * 4. Always posts a finalize-complete comment.
+ * 1. Resolves the lifecycle policy for parent-all-children-complete event.
+ * 2. If policy says skip (e.g., no_status_change), skips state transition.
+ * 3. Otherwise, queries the issue's team for an "In Review" workflow state.
+ * 4. If found — calls issueUpdate to transition (NEVER to Done/Closed).
+ * 5. If not found — skips state transition; comment body notes the missing state.
+ * 6. Always posts a finalize-complete comment.
  *
  * POLICY: This function must NEVER call issueUpdate with a Done or Closed
  * state ID. The assertNotDoneState guard enforces this at runtime.
  */
 export async function updateLinearIssueAfterFinalize(options: PostCommentOptions): Promise<void> {
-  const { issueId, state, branch, prUrl, validationPassed, apiKey } = options;
+  const { issueId, state, branch, prUrl, validationPassed, apiKey, lifecyclePolicy } = options;
+
+  // Resolve lifecycle transition from policy
+  const lifecycleTransition = resolveLifecycleTransition("parent-all-children-complete", lifecyclePolicy);
+  
+  // If policy says skip, skip the state transition entirely
+  if (lifecycleTransition.skip) {
+    console.log(`[Linear] Skipping lifecycle transition for ${issueId}: ${lifecycleTransition.skipReason}`);
+    
+    const body = buildCommentBody({
+      state,
+      branch,
+      prUrl,
+      validationPassed,
+      reviewStateMissing: false,
+    });
+
+    const commentData = await linearGraphQL<{ commentCreate?: { success?: boolean } }>(
+      `mutation CreateComment($issueId: String!, $body: String!) {
+        commentCreate(input: { issueId: $issueId, body: $body }) { success }
+      }`,
+      { issueId, body },
+      apiKey,
+    );
+    if (commentData.commentCreate?.success !== true) {
+      throw new Error(`Linear commentCreate failed: ${JSON.stringify(commentData.commentCreate)}`);
+    }
+    return;
+  }
 
   let reviewState: WorkflowState | null = null;
   try {

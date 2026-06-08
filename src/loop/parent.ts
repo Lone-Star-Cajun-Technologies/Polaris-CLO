@@ -59,6 +59,8 @@ import {
   type RunStartedEvent,
 } from "./ledger.js";
 import { resolveProviderAndMode, assertProviderAllowedForRole } from "./dispatch.js";
+import { loadTrackerAdapter } from "../tracker/index.js";
+import { LifecycleTransitionService } from "../tracker/lifecycle-transition.js";
 
 const CLAIM_TTL_MS = 30 * 60 * 1000;
 
@@ -1343,6 +1345,52 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
             resolved: false,
           },
         });
+
+        // ── Apply lifecycle transition for child-triage-required event ─────────
+        // This is fire-and-forget: must not block on tracker mutations.
+        // Errors are logged to telemetry but do not fail the halt.
+        const adapter = loadTrackerAdapter(config);
+        const lifecyclePolicy = config.tracker?.lifecyclePolicy;
+        
+        if (adapter || lifecyclePolicy) {
+          const transitionService = new LifecycleTransitionService();
+          transitionService
+            .applyTransitionSafe({
+              adapter,
+              policy: lifecyclePolicy,
+              taskId: nextChild,
+              event: "child-triage-required",
+              evidence: {
+                error: blockerMsg,
+              },
+              timestamp: new Date().toISOString(),
+            })
+            .then((result) => {
+              appendTelemetry(telemetryFile, {
+                event: "lifecycle-transition-attempt",
+                run_id: state.run_id,
+                child_id: nextChild,
+                transition_event: result.event,
+                target_state: result.targetState,
+                applied: result.applied,
+                skipped: result.skipped,
+                skip_reason: result.skipReason,
+                error: result.error,
+                timestamp: result.timestamp,
+              });
+            })
+            .catch((err) => {
+              const errorMsg = err instanceof Error ? err.message : String(err);
+              appendTelemetry(telemetryFile, {
+                event: "lifecycle-transition-error",
+                run_id: state.run_id,
+                child_id: nextChild,
+                transition_event: "child-triage-required",
+                error: errorMsg,
+                timestamp: new Date().toISOString(),
+              });
+            });
+        }
       }
       return {
         haltReason: 'blocked',
