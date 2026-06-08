@@ -10,6 +10,7 @@ Application source root for Polaris. The tree contains command entrypoints, loop
 - Graph route manages extraction/resolution/query/store behavior and governance outputs under `.polaris/graph/`.
 - Route welfare checks combine atlas identity completeness with route health signals and are exposed through the CLI as read-only reporting.
 - Config changes must flow through `src/config/` and the JSON schema/validator.
+- Distribution-readiness surfaces now include `polaris config doctor`, tracker lifecycle policy resolution, and the closeout-librarian delivery gate.
 
 ## Architectural Role
 `src/` is the implementation boundary for the product. The subfolders are intentionally split by concern so workers can edit one subsystem without reinterpreting the rest of the runtime.
@@ -26,6 +27,7 @@ Application source root for Polaris. The tree contains command entrypoints, loop
 - `src/cognition/` and `src/map/` provide read-only detection signals for documentation and atlas maintenance.
 - `src/smartdocs-engine/` ingests/promotes docs and maintains canonical authority structure.
 - `src/graph/` builds graph artifacts, resolves edges, and serves query helpers for CLI consumers.
+- `src/finalize/` performs the canonical delivery sequence and owns the closeout/PR lifecycle once a cluster is complete.
 
 ## Current State
 The tree includes graph extraction/resolution/query/store modules plus adapter selection, capability reporting, governance controls, and config support for `graph.outputPath` and `graph.invalidationTriggers`. The default graph adapter registry covers TypeScript/JavaScript, C, C++, C#, Dart, Go, Java, Kotlin, Python, Rust, Shell, Svelte, and Swift, and graph builds degrade at file level for unsupported files while surfacing coverage reporting. Cognition and atlas validation treat `.polaris/graph/` as generated runtime output. Route welfare reporting now connects atlas identity completeness, route health state, and safe/read-only CLI reporting. The `medic/` route provides chart ID generation and chart schema validation (Zod-based) for the Medic diagnostic role. The `lint/` route enforces the Navigation Before Retrieval doctrine by scanning skill chain files for broad context preload patterns.

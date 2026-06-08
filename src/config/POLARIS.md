@@ -10,7 +10,9 @@ The config subsystem loads, validates, and provides the resolved `PolarisConfig`
 - `defaults.ts` — `DEFAULT_CONFIG` baseline (must always pass schema validation)
 - `schema.ts`, `schema.json` — TypeScript types and JSON Schema definition
 - `validator.ts` — schema validation logic
+- `doctor.ts` — `polaris config doctor` readiness checks for install, provider, tracker, and artifact hygiene
 - `graph` config fields — graph output path and invalidation triggers for graph governance
+- tracker lifecycle policy config — normalized lifecycle transitions and adapter capability mapping
 
 ## What does not belong here
 
@@ -26,6 +28,8 @@ The config subsystem loads, validates, and provides the resolved `PolarisConfig`
 - When adding a new config field: (1) update `schema.json`, (2) update `schema.ts`, (3) add a default to `DEFAULT_CONFIG`, (4) update `validator.ts` if needed.
 - All subsystems call `loadConfig(repoRoot)` — never read `polaris.config.json` directly with `fs` outside this module.
 - Graph governance uses `config.graph.outputPath` (default `.polaris/graph`) and `config.graph.invalidationTriggers` (`repo-change`, `config-change`) to manage graph rebuild state.
+- `polaris config doctor` must stay read-only and report actionable warnings for missing optional tracker/provider setup instead of crashing.
+- Tracker lifecycle policy defaults must preserve Linear review-gated behavior unless an explicit override says otherwise.
 
 ## Route model
 

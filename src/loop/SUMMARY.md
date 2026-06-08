@@ -11,7 +11,9 @@ Session lifecycle manager for Polaris cluster runs — orchestrates child dispat
 - `.polaris/bootstrap/` is a derived sealed handoff surface, and telemetry remains append-only audit/debug output.
 - JSONL telemetry ledger is append-only; truncation breaks the telemetry contract.
 - The parent loop emits `child-completed` and `cluster-complete` events to the run ledger (via `LedgerWriter`) after each successful child and when all children complete. These are durable, queryable records distinct from JSONL telemetry.
+- When the parent loop reaches `cluster-complete`, it writes the canonical terminal cluster state to `.polaris/clusters/<cluster-id>/state.json`.
 - The `child-complete` JSONL telemetry event now includes `elapsed_seconds` (time from dispatch to completion) and `commit_files` (list of files in the worker's commit) when available.
+- `budget-exhausted` is a terminal halt distinct from `cluster-complete`; it records that the session cap stopped the run before the remaining state machine could finish.
 
 ## Relationships
 - **Upstream**: `src/cli`, `src/config`
