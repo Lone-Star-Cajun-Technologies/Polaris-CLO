@@ -198,7 +198,7 @@
       "properties": {
         "adapter": {
           "type": "string",
-          "enum": ["linear", "mcp-bridge"],
+          "enum": ["linear", "mcp-bridge", "local", "spec"],
           "default": "linear"
         },
         "lifecyclePolicy": {

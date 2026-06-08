@@ -1402,7 +1402,7 @@ export function runLoopDispatch(options: DispatchOptions): void {
         error: `Failed to load tracker adapter: ${errorMsg}`,
         timestamp: new Date().toISOString(),
       });
-      adapter = undefined;
+      adapter = null;
     }
 
     const lifecyclePolicy = loadedConfig.tracker?.lifecyclePolicy;

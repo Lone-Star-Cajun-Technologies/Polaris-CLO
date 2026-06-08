@@ -1362,7 +1362,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
             error: `Failed to load tracker adapter: ${errorMsg}`,
             timestamp: new Date().toISOString(),
           });
-          adapter = undefined;
+          adapter = null;
         }
 
         const lifecyclePolicy = config.tracker?.lifecyclePolicy;
