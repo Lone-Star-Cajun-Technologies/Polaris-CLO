@@ -14,7 +14,7 @@ import { runFinalize } from "../finalize/index.js";
 import { createRunsCommand } from "../runs/index.js";
 import { createInitCommand, runInit } from "./init.js";
 import { createDocsCommand, createDoctrineCommand } from "../smartdocs-engine/index.js";
-import { createConfigCommand, runConfigShow } from "../config/show.js";
+import { createConfigCommand, runConfigShow, runConfigDoctor } from "../config/show.js";
 import { installCliSubtaskBridge } from "../loop/adapters/cli-subtask-bridge.js";
 import { assertFinalizeEvidenceOrThrow } from "../loop/finalize-evidence.js";
 
@@ -33,6 +33,7 @@ export interface PolarisCommandHandlers {
   runFinalize?: typeof runFinalize;
   runInit?: typeof runInit;
   runConfigShow?: typeof runConfigShow;
+  runConfigDoctor?: typeof runConfigDoctor;
 }
 
 export interface PolarisCommandOptions extends PolarisCommandHandlers {
@@ -115,6 +116,7 @@ export function createPolarisCommand(options: PolarisCommandOptions = {}): Comma
     createConfigCommand({
       repoRoot,
       runConfigShow: options.runConfigShow,
+      runConfigDoctor: options.runConfigDoctor,
     }),
   );
 
