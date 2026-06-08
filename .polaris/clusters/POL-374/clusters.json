@@ -1,0 +1,93 @@
+{
+  "schemaVersion": "v2",
+  "source": {
+    "id": "POL-374",
+    "type": "Linear",
+    "analysis": {
+      "id": "initial-sync",
+      "doc": "Synchronized from Linear issue identifier: POL-374"
+    }
+  },
+  "nodes": {
+    "POL-374": {
+      "id": "POL-374",
+      "title": "IMPLEMENT: Harden Polaris distribution readiness and tracker lifecycle semantics",
+      "status": "Todo",
+      "body": "## Objective\n\nMake Polaris safe and useful for clean new users and new projects by hardening distribution metadata, onboarding, artifact hygiene, tracker lifecycle policy, tracker adapter boundaries, and external-repo proof.\n\n## Context\n\nCreated from analysis issue [POL-373](https://linear.app/lsctech/issue/POL-373/analyze-distribution-readiness-gaps-and-tracker-adapter-lifecycle). The analysis artifact is `smartdocs/raw/pol-373-distribution-readiness-tracker-lifecycle-analysis.md` and should be ingested/promoted through SmartDocs rather than written directly to active specs.\n\nPolaris already has substantial adoption support in `polaris init` and `polaris init --adopt`, but distribution-readiness is not proven. The current repository still has sparse README/package metadata, no `polaris config doctor` command, fragmented artifact hygiene, and Linear-centric tracker lifecycle behavior.\n\n## Goal\n\nDeliver an implementation cluster that makes the clean new-user flow auditable: install or local package use, adopt an external repo, validate configuration, avoid runtime artifact bleed, and apply tracker lifecycle transitions through a tracker-agnostic policy surface.\n\n## Scope\n\n* package.json\n* README.md\n* src/cli/\\*\\*\n* src/config/\\*\\*\n* src/finalize/\\*\\*\n* src/tracker/\\*\\*\n* src/loop/\\*\\*\n* test/\\*\\*\n* smartdocs/raw/[POL-373](https://linear.app/lsctech/issue/POL-373/analyze-distribution-readiness-gaps-and-tracker-adapter-lifecycle)-distribution-readiness-tracker-lifecycle-analysis.md\n\n## Acceptance Criteria\n\n- [ ] Package metadata and README describe a credible local/global install and first-run path.\n- [ ] `polaris config doctor` or equivalent readiness check reports actionable bootstrap/provider/tracker/artifact status.\n- [ ] Runtime artifact hygiene is enforced consistently for adoption and finalize.\n- [ ] Tracker lifecycle policy is represented in config, validated, and mapped through adapter capabilities.\n- [ ] Dispatch, validation, triage, and finalize lifecycle transitions are policy-backed or skipped with explicit reasons.\n- [ ] A fresh external-repo fixture proves adoption/run artifact hygiene and lifecycle behavior.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/cli src/config src/tracker src/loop src/finalize test\n\n## Ordering\n\nRun children in order. Later children depend on the architecture/policy surfaces introduced by earlier children.\n\n## Non-goals\n\n* Do not publish the package to npm.\n* Do not implement full Jira or GitHub tracker adapters beyond interface/capability scaffolding unless explicitly scoped by a child.\n* Do not mark Linear issues Done/Closed automatically unless a child explicitly changes the review-gated policy with tests."
+    },
+    "POL-380": {
+      "id": "POL-380",
+      "title": "IMPLEMENT: Add fresh external-repo adoption and lifecycle proof",
+      "status": "Todo",
+      "body": "## Objective\n\nProve Polaris can be adopted and run in a clean external repository without relying on Polaris-repo-specific state or leaking runtime artifacts.\n\n## Context\n\n[POL-373](https://linear.app/lsctech/issue/POL-373/analyze-distribution-readiness-gaps-and-tracker-adapter-lifecycle) identified provider-independent first-run proof as the acceptance test for distribution readiness. Earlier children add package/onboarding, config doctor, artifact policy, lifecycle policy, adapter capabilities, and runtime integration. This child validates those pieces together in a small fixture or synthetic repo.\n\n## Goal\n\nAdd an automated fresh-repo fixture test or smoke test that exercises install/local package use, `polaris init --adopt`, `polaris config doctor`, a small local or tracker-backed run, lifecycle transition behavior, and git artifact hygiene.\n\n## Scope\n\n* test/\\*\\*\n* src/cli/\\*\\*\n* src/config/\\*\\*\n* src/tracker/\\*\\*\n* src/loop/\\*\\*\n* src/finalize/\\*\\*\n* package.json\n* README.md\n\n## Acceptance Criteria\n\n- [ ] Test creates or uses a clean fixture repo outside the Polaris repository tree.\n- [ ] Test runs the local built/packed Polaris CLI or equivalent local install path.\n- [ ] `polaris init --adopt` succeeds or dry-run plus approved path is covered deterministically.\n- [ ] `polaris config doctor` reports readiness without assuming the Polaris repository's local tracker/provider stack.\n- [ ] A local or tracker-backed parent task can produce/run at least one child or deterministic stub worker result.\n- [ ] Lifecycle transitions are applied or skipped with explicit reasons according to adapter capabilities.\n- [ ] `git status --short` in the fixture does not show runtime scratch, current-state, bootstrap packets, mutation queues, or foreign cluster artifacts staged for delivery.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run test src/cli src/config src/tracker src/loop src/finalize\n\n## Ordering\n\n* Depends on [POL-379](https://linear.app/lsctech/issue/POL-379/implement-apply-tracker-lifecycle-policy-in-loop-and-finalize-runtime).\n\n## Non-goals\n\n* Do not publish to npm.\n* Do not require real Linear/GitHub/Jira credentials for the fixture.\n* Do not depend on this repository's current `.polaris` runtime state."
+    },
+    "POL-379": {
+      "id": "POL-379",
+      "title": "IMPLEMENT: Apply tracker lifecycle policy in loop and finalize runtime boundaries",
+      "status": "Todo",
+      "body": "## Objective\n\nApply policy-backed tracker lifecycle transitions at dispatch, validation, triage, and finalize boundaries without falsely marking provider/runtime failures as implementation failures.\n\n## Context\n\n[POL-373](https://linear.app/lsctech/issue/POL-373/analyze-distribution-readiness-gaps-and-tracker-adapter-lifecycle) found that tracker status changes are currently incomplete and Linear-centric. `TrackerSyncService` queues validated done children as `state: Done`, finalize moves the parent toward review, and child dispatch/failure/triage transitions are not driven by a normalized lifecycle policy.\n\n## Goal\n\nIntegrate the lifecycle policy and tracker capability contract into the loop/finalize runtime so transitions are idempotent, evidence-backed, and skipped with explicit reasons when unsupported.\n\n## Scope\n\n* src/loop/\\*\\*\n* src/finalize/\\*\\*\n* src/tracker/\\*\\*\n* src/cluster-state/\\*\\*\n* test/loop/\\*\\*\n* test/tracker/\\*\\*\n* test/\\*\\*\n\n## Acceptance Criteria\n\n- [ ] Child dispatch can request the configured active/in-progress lifecycle transition when the tracker supports it.\n- [ ] Validation-passed child completion queues or applies the configured review/done lifecycle transition with completion evidence.\n- [ ] Failed validation or triage-required worker results map to the configured blocked/triage lifecycle transition.\n- [ ] Provider/runtime failure before repo work records no implementation failure status unless policy explicitly asks for one.\n- [ ] Parent all-children-complete and delivery-merged transitions are policy-backed and keep the existing Done/Closed review gate safe by default.\n- [ ] Telemetry or cluster-state records transition attempts, skips, conflicts, and failures.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/loop src/finalize src/tracker test/loop test/tracker\n\n## Ordering\n\n* Depends on [POL-378](https://linear.app/lsctech/issue/POL-378/implement-define-tracker-adapter-capability-contract-and-native).\n\n## Non-goals\n\n* Do not implement full GitHub/Jira adapters.\n* Do not bypass Linear review-gate protections.\n* Do not change worker implementation scope parsing."
+    },
+    "POL-378": {
+      "id": "POL-378",
+      "title": "IMPLEMENT: Define tracker adapter capability contract and native mappings",
+      "status": "Todo",
+      "body": "## Objective\n\nDefine the tracker adapter boundary Polaris needs for Linear, GitHub Issues, Jira, and local file-backed tasks without implementing full new remote adapters.\n\n## Context\n\n[POL-373](https://linear.app/lsctech/issue/POL-373/analyze-distribution-readiness-gaps-and-tracker-adapter-lifecycle) found that current tracker support is Linear-centric: Linear sync-in produces an execution graph, MCP bridge mutation support is placeholder-shaped and Linear-specific, and `LinearAdapter.syncOut()` is not implemented. Tracker lifecycle policy needs adapter capability metadata and native status mapping.\n\n## Goal\n\nIntroduce a common tracker task/capability contract and implement capability/status mapping for existing Linear and local-file surfaces, with stubs or documented capability descriptors for GitHub Issues and Jira.\n\n## Scope\n\n* src/tracker/\\*\\*\n* src/config/\\*\\*\n* test/tracker/\\*\\*\n* test/\\*\\*\n* smartdocs/raw/[POL-373](https://linear.app/lsctech/issue/POL-373/analyze-distribution-readiness-gaps-and-tracker-adapter-lifecycle)-distribution-readiness-tracker-lifecycle-analysis.md\n\n## Acceptance Criteria\n\n- [ ] Tracker adapters expose capabilities for child relationships, status updates, comments, links, dependencies, and lifecycle-state mapping.\n- [ ] Linear maps native workflow states to normalized lifecycle states without hardcoding a single team's state names.\n- [ ] Local-file tracker support has a stable file-backed task model or explicit capability descriptor.\n- [ ] GitHub Issues and Jira are represented by capability/interface documentation or non-runtime descriptors sufficient for future implementation planning.\n- [ ] Unsupported transitions return explicit skip/unsupported results with reasons.\n- [ ] Tests cover capability descriptors and status mapping behavior.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/tracker test/tracker\n\n## Ordering\n\n* Depends on [POL-377](https://linear.app/lsctech/issue/POL-377/implement-add-tracker-lifecycle-policy-schema-and-resolver).\n\n## Non-goals\n\n* Do not build complete GitHub Issues or Jira adapters.\n* Do not perform live tracker mutations.\n* Do not change worker dispatch behavior yet."
+    },
+    "POL-377": {
+      "id": "POL-377",
+      "title": "IMPLEMENT: Add tracker lifecycle policy schema and resolver",
+      "status": "Todo",
+      "body": "## Objective\n\nRepresent tracker lifecycle semantics in Polaris config as normalized policy rather than hardcoded Linear state names.\n\n## Context\n\n[POL-373](https://linear.app/lsctech/issue/POL-373/analyze-distribution-readiness-gaps-and-tracker-adapter-lifecycle) identified that child dispatch, validation-passed, merged, triage, parent completion, and provider-failure tracker behavior need tracker-agnostic lifecycle semantics. Current config has tracker adapter fields but no lifecycle policy schema or resolver.\n\n## Goal\n\nAdd a validated `tracker.lifecyclePolicy` config surface with safe defaults, normalized lifecycle states, and a resolver that downstream runtime/tracker code can call.\n\n## Scope\n\n* src/config/schema.ts\n* src/config/schema.json\n* src/config/defaults.ts\n* src/config/validator.ts\n* src/tracker/\\*\\*\n* test/\\*\\*\n\n## Acceptance Criteria\n\n- [ ] Config types and JSON schema include `tracker.lifecyclePolicy` with normalized transition keys.\n- [ ] Defaults preserve current review-gated behavior and avoid false implementation-failure status changes on provider/runtime failures before repo work.\n- [ ] Validation rejects malformed lifecycle policy values with actionable errors.\n- [ ] A resolver returns transition intent, skip behavior, and evidence requirements for child dispatch, validation passed, merged, triage required, parent all-children-complete, parent delivery merged, and provider failure before work.\n- [ ] Tests cover defaults, valid overrides, invalid values, and missing tracker configuration.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/config src/tracker\n\n## Ordering\n\n* Depends on [POL-376](https://linear.app/lsctech/issue/POL-376/implement-unify-artifact-hygiene-policy-across-adoption-and-finalize).\n\n## Non-goals\n\n* Do not apply tracker mutations in runtime yet.\n* Do not implement GitHub or Jira adapters.\n* Do not change Linear finalize review-gate behavior except to express it in policy defaults."
+    },
+    "POL-376": {
+      "id": "POL-376",
+      "title": "IMPLEMENT: Unify artifact hygiene policy across adoption and finalize",
+      "status": "Todo",
+      "body": "## Objective\n\nMake runtime/adoption/canonical artifact classification consistent across init/adoption, finalize, gitignore generation, and staging enforcement.\n\n## Context\n\n[POL-373](https://linear.app/lsctech/issue/POL-373/analyze-distribution-readiness-gaps-and-tracker-adapter-lifecycle) found two partial artifact policies: adoption appends broad runtime exclusions and unstages selected paths, while finalize has a richer classifier in `src/finalize/artifact-policy.ts`. Recent delivery history still shows run-specific state and runtime artifacts appearing around commits. This child depends on the distribution/config-doctor surface so doctor can report the unified policy.\n\n## Goal\n\nCreate one shared artifact hygiene policy used by adoption and finalize, with tests proving commit-eligible artifacts and runtime scratch are classified consistently.\n\n## Scope\n\n* src/finalize/artifact-policy.ts\n* src/finalize/\\*\\*\n* src/cli/init.ts\n* src/cli/\\*\\*\n* src/config/\\*\\*\n* test/\\*\\*\n* .gitignore\n\n## Acceptance Criteria\n\n- [ ] Adoption and finalize use the same classifier or a shared source of truth for Polaris-managed artifact paths.\n- [ ] Runtime scratch, current-state, run reports, bootstrap packets, mutation queues, and foreign cluster artifacts are never staged by default.\n- [ ] Commit-eligible adoption outputs and durable active-cluster evidence remain stageable when policy allows them.\n- [ ] `.gitignore` generation covers the policy's active runtime/crash-recovery classes.\n- [ ] Tests cover path classification and adoption/finalize staging behavior.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/finalize src/cli test\n\n## Ordering\n\n* Depends on [POL-375](https://linear.app/lsctech/issue/POL-375/implement-add-distribution-metadata-readme-quickstart-and-config).\n\n## Non-goals\n\n* Do not change tracker lifecycle semantics.\n* Do not remove existing durable cluster evidence from repository history.\n* Do not publish or package the CLI."
+    },
+    "POL-375": {
+      "id": "POL-375",
+      "title": "IMPLEMENT: Add distribution metadata, README quickstart, and config doctor",
+      "status": "Todo",
+      "body": "## Objective\n\nMake Polaris understandable and checkable for a clean new user before they attempt a governed run.\n\n## Context\n\n[POL-373](https://linear.app/lsctech/issue/POL-373/analyze-distribution-readiness-gaps-and-tracker-adapter-lifecycle) found that `package.json` is still private/internal-shaped, README onboarding is sparse, and `polaris config doctor` is not implemented. This is the first child because later fixture proof needs a documented command surface and readiness check.\n\n## Goal\n\nAdd publish-ready package metadata, a practical README quickstart, and a read-only `polaris config doctor` command that reports install/config/provider/tracker/artifact readiness.\n\n## Scope\n\n* package.json\n* README.md\n* src/cli/index.ts\n* src/config/\\*\\*\n* src/cli/\\*\\*\n* test/\\*\\*\n\n## Acceptance Criteria\n\n- [ ] `package.json` includes credible package metadata required for distribution readiness while preserving current repository constraints.\n- [ ] README documents local install/global install intent, `polaris init --adopt`, `polaris config doctor`, and first governed run expectations.\n- [ ] `polaris config doctor` exists as a safe/read-only command and reports actionable pass/warn/fail checks for config, provider, tracker, and artifact hygiene setup.\n- [ ] Config doctor handles missing optional tracker/provider configuration without crashing.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/config src/cli\n\n## Ordering\n\n* None.\n\n## Non-goals\n\n* Do not publish to npm.\n* Do not implement runtime lifecycle transitions.\n* Do not change tracker adapter behavior."
+    },
+    "POL-373": {
+      "id": "POL-373",
+      "title": "Analyze distribution readiness gaps and tracker adapter lifecycle semantics",
+      "status": "Done"
+    }
+  },
+  "dependencies": {
+    "POL-380": [
+      "POL-379"
+    ],
+    "POL-379": [
+      "POL-378"
+    ],
+    "POL-378": [
+      "POL-377"
+    ],
+    "POL-377": [
+      "POL-376"
+    ],
+    "POL-376": [
+      "POL-375"
+    ]
+  },
+  "clusters": {
+    "POL-374": {
+      "id": "POL-374",
+      "title": "Linear Issue: POL-374",
+      "children": [
+        "POL-380",
+        "POL-379",
+        "POL-378",
+        "POL-377",
+        "POL-376",
+        "POL-375"
+      ],
+      "cluster_root": "POL-374"
+    }
+  },
+  "activeCluster": "POL-374"
+}

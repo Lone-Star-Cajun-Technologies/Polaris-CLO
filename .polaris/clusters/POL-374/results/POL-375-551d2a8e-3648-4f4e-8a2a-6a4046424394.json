@@ -1,0 +1,11 @@
+{
+  "child_id": "POL-375",
+  "status": "done",
+  "commit": "73a5291808fc241385b8e19cc398a60ceef378a9",
+  "validation": "passed",
+  "next_recommended_action": "continue",
+  "tracker_updated": false,
+  "state_updated": false,
+  "telemetry_updated": false,
+  "run_id": "polaris-run-pol-374-2026-06-08-001"
+}

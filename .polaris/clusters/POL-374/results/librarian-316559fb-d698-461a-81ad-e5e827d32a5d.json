@@ -1,0 +1,60 @@
+{
+  "schema_version": "1.0",
+  "role": "closeout-librarian",
+  "run_id": "polaris-run-pol-374-2026-06-08-001",
+  "dispatch_id": "316559fb-d698-461a-81ad-e5e827d32a5d",
+  "cluster_id": "POL-374",
+  "status": "success",
+  "commit_sha": "08522d6fec29cd760579d9b9d6861bc9492c64c1",
+  "commit_message": "docs: reconcile POL-374 closeout docs",
+  "files_committed": [
+    "src/SUMMARY.md",
+    "src/cli/POLARIS.md",
+    "src/config/POLARIS.md",
+    "src/finalize/POLARIS.md",
+    "src/loop/SUMMARY.md"
+  ],
+  "polaris_md_updates": [
+    {
+      "file": "src/cli/POLARIS.md",
+      "action": "update",
+      "change_summary": "Clarified the CLI surface for config doctor and the closeout librarian packet generator."
+    },
+    {
+      "file": "src/config/POLARIS.md",
+      "action": "update",
+      "change_summary": "Documented config doctor and tracker lifecycle policy responsibilities in the config subsystem."
+    },
+    {
+      "file": "src/finalize/POLARIS.md",
+      "action": "update",
+      "change_summary": "Recorded the closeout-librarian gate and canonical cluster state used for final delivery."
+    }
+  ],
+  "summary_md_updates": [
+    {
+      "file": "src/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Added distribution-readiness and delivery-gate context to the source-root summary."
+    },
+    {
+      "file": "src/loop/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Noted canonical cluster state emission and distinguished budget-exhausted from cluster-complete."
+    }
+  ],
+  "docs_ingested": [],
+  "docs_archived": [],
+  "yaml_updates": [],
+  "cognition_archived": [],
+  "link_validation": {
+    "total_checked": 0,
+    "valid": 0,
+    "broken": 0,
+    "repaired": 0,
+    "unrepairable": []
+  },
+  "blockers": [],
+  "reconciled_at": "2026-06-08T16:30:00.000Z",
+  "evidence_summary": "Updated the folder docs to reflect the new distribution-readiness surface, including config doctor, tracker lifecycle policy, the closeout-librarian gate, and the canonical cluster-complete state file. No documentation ingestion or archival was required for this cluster, and no broken links were identified in the touched files."
+}
