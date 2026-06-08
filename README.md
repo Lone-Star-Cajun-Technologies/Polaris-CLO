@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="branding/assets/polaris-logo.png" alt="Polaris CLO" width="200" />
+  <img src="https://raw.githubusercontent.com/ItIsYeBananaduck/Polaris/main/branding/assets/polaris-logo.png" alt="Polaris CLO" width="200" />
 </p>
 
 <h1 align="center">Polaris CLO</h1>

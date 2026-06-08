@@ -26,7 +26,7 @@ export function getBanner(forceColor = false): string {
   const color = forceColor || (process.stdout.isTTY ?? false);
 
   const star   = color ? `${BRIGHT_BLUE}✦${RESET}` : "✦";
-  const title  = color ? `${BOLD}${CYAN}POLARIS CLO${RESET}` : "POLARIS CLO";
+  const title  = color ? `${BOLD}${CYAN}${BRAND.fullName}${RESET}` : BRAND.fullName;
   const sub    = color ? `${DIM}${BRAND.subtitle}${RESET}` : BRAND.subtitle;
   const tag    = color ? `${DIM}${BRAND.tagline}${RESET}` : BRAND.tagline;
   const rule   = color ? `${DIM}${"─".repeat(38)}${RESET}` : "─".repeat(38);
