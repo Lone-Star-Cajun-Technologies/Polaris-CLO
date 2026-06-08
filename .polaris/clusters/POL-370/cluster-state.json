@@ -25,6 +25,7 @@
     "POL-371": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-370/packets/POL-371-04644795-35e2-4b25-b70b-9d4e2f467ff9.json"
   },
   "result_pointers": {
+    "POL-371": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-370/results/POL-371-corrected.json",
     "POL-372": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-370/results/POL-372-ff18f71d-c55e-43c4-9f27-79996d70f489.json"
   },
   "validation_results": {
@@ -34,6 +35,7 @@
     }
   },
   "commits": {
+    "POL-371": "9dfaa79b0b6a0d4d9198fe2a9f4115c0b094aa92",
     "POL-372": "a405efcfc1a4d488031cadc0efdb025886f6b249"
   },
   "tracker_mutations": {},

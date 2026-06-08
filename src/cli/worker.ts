@@ -289,20 +289,26 @@ export function createWorkerCommand(options: WorkerCommandOptions): Command {
         writeStateAtomic(stateFile, updatedState);
 
         // Sync cluster-state.json so finalize and the parent loop see a consistent view.
-        const clusterState = readClusterStateSync(packet.cluster_id, options.repoRoot);
-        if (clusterState) {
-          const childExists = clusterState.child_states.some((c) => c.id === packet.active_child);
-          const childStates = childExists
-            ? clusterState.child_states.map((c) =>
-                c.id === packet.active_child ? { ...c, status: "done" as const, commit: validation.result.commit } : c,
-              )
-            : [...clusterState.child_states, { id: packet.active_child, status: "done" as const, commit: validation.result.commit }];
-          writeClusterStateSync(packet.cluster_id, {
-            ...clusterState,
-            state_generation: clusterState.state_generation + 1,
-            child_states: childStates,
-            commits: { ...clusterState.commits, [packet.active_child]: validation.result.commit },
-          }, options.repoRoot);
+        try {
+          const clusterState = readClusterStateSync(packet.cluster_id, options.repoRoot);
+          if (clusterState) {
+            const childExists = clusterState.child_states.some((c) => c.id === packet.active_child);
+            const childStates = childExists
+              ? clusterState.child_states.map((c) =>
+                  c.id === packet.active_child ? { ...c, status: "done" as const, commit: validation.result.commit } : c,
+                )
+              : [...clusterState.child_states, { id: packet.active_child, status: "done" as const, commit: validation.result.commit }];
+            writeClusterStateSync(packet.cluster_id, {
+              ...clusterState,
+              state_generation: clusterState.state_generation + 1,
+              child_states: childStates,
+              commits: { ...clusterState.commits, [packet.active_child]: validation.result.commit },
+            }, options.repoRoot);
+          }
+        } catch (error) {
+          process.stderr.write(
+            `[polaris-worker] cluster-state sync failed for ${packet.cluster_id} / ${packet.active_child}: ${error instanceof Error ? error.message : String(error)}\n`,
+          );
         }
 
         emitWorkerCompletionTelemetry(telemetryFile, {

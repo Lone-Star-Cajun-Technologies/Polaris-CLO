@@ -8,8 +8,8 @@
   "commit_sha": "2be1151fc47535b710c03aed5e79967ed49b1d06",
   "commit_message": "docs(closeout): reconcile cognition for cluster POL-370",
   "files_committed": [
-    "/Users/lsctech/Developer/Polaris/src/loop/POLARIS.md",
-    "/Users/lsctech/Developer/Polaris/src/loop/SUMMARY.md"
+    "src/loop/POLARIS.md",
+    "src/loop/SUMMARY.md"
   ],
   "polaris_md_updates": [
     {
