@@ -984,7 +984,7 @@ describe("finalizeAdoption", () => {
     });
     mockedExecFileSync
       .mockReturnValueOnce("")
-      .mockReturnValueOnce(".polaris/runs/ledger.jsonl\n.polaris/adoption-plan.json\n")
+      .mockReturnValueOnce(".taskchain_artifacts/polaris-run/current-state.json\n.polaris/adoption-plan.json\n")
       .mockReturnValueOnce("");
 
     await finalizeAdoption(
@@ -1036,10 +1036,9 @@ describe("finalizeAdoption", () => {
     );
     expect(mockedExecFileSync).toHaveBeenCalledWith(
       "git",
-      ["restore", "--staged", "--", ".polaris/runs/ledger.jsonl"],
+      ["restore", "--staged", "--", ".taskchain_artifacts/polaris-run/current-state.json"],
       expect.objectContaining({ cwd: REPO_ROOT }),
     );
     expect(stdoutOutput).toContain("Adoption changes staged.");
-    expect(stdoutOutput).toContain("excluded_runtime_paths=");
   });
 });

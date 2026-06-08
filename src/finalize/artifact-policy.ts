@@ -192,3 +192,78 @@ export function getArtifactPromotionStageTargets(activeClusterId: string): strin
     pattern.endsWith("/**") ? pattern.slice(0, -3) : pattern
   ));
 }
+
+/**
+ * Returns gitignore patterns for runtime and crash-recovery artifact classes.
+ * These patterns should be added to .gitignore to prevent accidental staging.
+ */
+export function getGitignorePatterns(): string[] {
+  return [
+    "# Polaris workspace scratch — never commit",
+    ".taskchain_artifacts/**",
+    "*.bak",
+    ".polaris/runs/mutation-queue.json",
+    ".polaris/runs/current-state.pre-pol-198.json",
+    ".polaris/runs/evo-run-archive/**",
+    ".polaris/bootstrap/**",
+    ".polaris/session-type",
+    "# Cognition staging — ephemeral, not committed",
+    ".polaris/cognition/pending/**",
+  ];
+}
+
+/**
+ * Formats gitignore patterns as a block suitable for appending to .gitignore.
+ */
+export function formatGitignoreBlock(): string {
+  return getGitignorePatterns().join("\n");
+}
+
+/**
+ * Returns true if the given path should be blocked from staging by adoption.
+ * This is a stricter check than promotion violations — it blocks all runtime/crash-recovery
+ * classes, not just violations during finalize.
+ */
+export function isPathBlockedFromStaging(filePath: string): boolean {
+  const relativePath = normalizeArtifactPath(filePath);
+
+  // Block workspace scratch
+  if (relativePath.startsWith(WORKSPACE_SCRATCH_PREFIX)) {
+    return true;
+  }
+
+  // Block backup files
+  if (relativePath.endsWith(".bak")) {
+    return true;
+  }
+
+  // Block legacy run artifacts
+  if (LEGACY_RUN_ARTIFACTS.has(relativePath) || relativePath.startsWith(".polaris/runs/evo-run-archive/")) {
+    return true;
+  }
+
+  // Block runtime crash-recovery artifacts
+  if (
+    relativePath === ".polaris/runs/mutation-queue.json" ||
+    relativePath === ".polaris/runs/current-state.pre-pol-198.json" ||
+    relativePath.startsWith(".polaris/bootstrap/") ||
+    relativePath === ".polaris/session-type"
+  ) {
+    return true;
+  }
+
+  // Block cognition pending staging
+  if (relativePath.startsWith(".polaris/cognition/pending/")) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Filters a list of paths to return only those that are safe to stage.
+ * This is used by adoption to ensure runtime artifacts are not staged.
+ */
+export function filterStageablePaths(paths: readonly string[]): string[] {
+  return paths.filter((path) => !isPathBlockedFromStaging(path));
+}
