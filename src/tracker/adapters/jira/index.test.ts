@@ -14,8 +14,10 @@ function mockResponse(statusCode: number, body: unknown) {
     const req = new EventEmitter() as EventEmitter & {
       write: ReturnType<typeof vi.fn>;
       end: ReturnType<typeof vi.fn>;
+      setTimeout: ReturnType<typeof vi.fn>;
     };
     req.write = vi.fn();
+    req.setTimeout = vi.fn();
     req.end = vi.fn(() => {
       const res = new EventEmitter() as EventEmitter & { statusCode: number };
       res.statusCode = statusCode;
@@ -184,6 +186,57 @@ describe("JiraCloudAdapter", () => {
       expect(result.skipped).toBe(true);
       expect(requestMock).not.toHaveBeenCalled();
     });
+
+    it("returns error when GET transitions call fails", async () => {
+      requestMock.mockImplementationOnce(mockResponse(404, { message: "Issue Not Found" }));
+
+      const { JiraCloudAdapter } = await import("./index.js");
+      const adapter = new JiraCloudAdapter(TEST_CONFIG);
+      const result = await adapter.transitionLifecycleState("POL-99", "in_progress");
+
+      expect(result.applied).toBe(false);
+      expect(result.skipped).toBe(false);
+      expect(result.error).toBeDefined();
+    });
+
+    it("returns error when POST transition call fails", async () => {
+      requestMock.mockImplementationOnce(
+        mockResponse(200, {
+          transitions: [{ id: "21", name: "In Progress" }],
+        }),
+      );
+      requestMock.mockImplementationOnce(mockResponse(500, { message: "Internal Server Error" }));
+
+      const { JiraCloudAdapter } = await import("./index.js");
+      const adapter = new JiraCloudAdapter(TEST_CONFIG);
+      const result = await adapter.transitionLifecycleState("POL-42", "in_progress");
+
+      expect(result.applied).toBe(false);
+      expect(result.skipped).toBe(false);
+      expect(result.error).toBeDefined();
+    });
+
+    it("uses statusMappings to find a transition by custom name", async () => {
+      requestMock.mockImplementationOnce(
+        mockResponse(200, {
+          transitions: [
+            { id: "99", name: "Awaiting Review" },
+            { id: "21", name: "In Progress" },
+          ],
+        }),
+      );
+      requestMock.mockImplementationOnce(mockResponse(204, undefined));
+
+      const { JiraCloudAdapter } = await import("./index.js");
+      const adapter = new JiraCloudAdapter({
+        ...TEST_CONFIG,
+        statusMappings: { "Awaiting Review": "in_review" },
+      });
+      const result = await adapter.transitionLifecycleState("POL-42", "in_review");
+
+      expect(result.applied).toBe(true);
+      expect(result.skipped).toBe(false);
+    });
   });
 
   // ── 6. addComment ─────────────────────────────────────────────────────────
@@ -229,10 +282,12 @@ describe("JiraCloudAdapter", () => {
         const req = new EventEmitter() as EventEmitter & {
           write: ReturnType<typeof vi.fn>;
           end: ReturnType<typeof vi.fn>;
+          setTimeout: ReturnType<typeof vi.fn>;
         };
         req.write = vi.fn((data: string) => {
           capturedPayload = data;
         });
+        req.setTimeout = vi.fn();
         req.end = vi.fn(() => {
           const res = new EventEmitter() as EventEmitter & { statusCode: number };
           res.statusCode = 201;
@@ -275,6 +330,34 @@ describe("JiraCloudAdapter", () => {
       expect(result.attached).toBe(false);
       expect(result.unsupported).toBe(true);
       expect(result.reason).toBeDefined();
+      expect(requestMock).not.toHaveBeenCalled();
+    });
+  });
+
+  // ── 8. addDependency ──────────────────────────────────────────────────────
+
+  describe("addDependency", () => {
+    it("returns added:false and unsupported:true without making any HTTP calls", async () => {
+      const { JiraCloudAdapter } = await import("./index.js");
+      const adapter = new JiraCloudAdapter(TEST_CONFIG);
+      const result = await adapter.addDependency("POL-42", "POL-1");
+
+      expect(result.added).toBe(false);
+      expect(result.unsupported).toBe(true);
+      expect(requestMock).not.toHaveBeenCalled();
+    });
+  });
+
+  // ── 9. createChild ────────────────────────────────────────────────────────
+
+  describe("createChild", () => {
+    it("returns created:false and unsupported:true without making any HTTP calls", async () => {
+      const { JiraCloudAdapter } = await import("./index.js");
+      const adapter = new JiraCloudAdapter(TEST_CONFIG);
+      const result = await adapter.createChild("POL-42", "child title");
+
+      expect(result.created).toBe(false);
+      expect(result.unsupported).toBe(true);
       expect(requestMock).not.toHaveBeenCalled();
     });
   });

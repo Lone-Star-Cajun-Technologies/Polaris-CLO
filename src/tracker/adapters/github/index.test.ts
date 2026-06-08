@@ -32,12 +32,13 @@ function fakeResponse(statusCode: number): IncomingMessage {
 }
 
 /**
- * Creates a fake ClientRequest that accepts `write`/`end` calls.
+ * Creates a fake ClientRequest that accepts `write`/`end`/`setTimeout` calls.
  */
 function fakeClientRequest(): ClientRequest {
   const req = new EventEmitter() as ClientRequest;
   (req as unknown as { write: (d: string) => void }).write = vi.fn();
   (req as unknown as { end: () => void }).end = vi.fn();
+  (req as unknown as { setTimeout: (ms: number, cb: () => void) => void }).setTimeout = vi.fn();
   return req;
 }
 
@@ -229,6 +230,11 @@ describe("GitHubIssuesAdapter", () => {
       // Second call (PATCH) should have closed state
       const patchOpts = mockRequest.mock.calls[1][0] as { method: string };
       expect(patchOpts.method).toBe("PATCH");
+
+      // Verify the PATCH body sets state to "closed"
+      const patchReq = mockRequest.mock.results[1]?.value as { write: ReturnType<typeof vi.fn> };
+      const [patchPayload] = patchReq.write.mock.calls[0] as [string];
+      expect(JSON.parse(patchPayload)).toEqual({ state: "closed" });
     });
 
     it("skips when lifecycleState is no_status_change", async () => {
@@ -315,12 +321,12 @@ describe("GitHubIssuesAdapter", () => {
   // ── createChild (bonus) ───────────────────────────────────────────────────
 
   describe("createChild", () => {
-    it("returns created: false, unsupported: false, error: 'not yet implemented'", async () => {
+    it("returns created: false, unsupported: true without making any HTTP call", async () => {
       const adapter = makeAdapter();
       const result = await adapter.createChild("1", "child title");
       expect(result.created).toBe(false);
-      expect(result.unsupported).toBe(false);
-      expect(result.error).toBe("not yet implemented");
+      expect(result.unsupported).toBe(true);
+      expect(result.reason).toBeDefined();
       expect(mockRequest).not.toHaveBeenCalled();
     });
   });

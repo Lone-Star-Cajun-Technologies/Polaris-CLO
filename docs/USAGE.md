@@ -200,7 +200,7 @@ Use `"no_status_change"` for any event you want Polaris to skip without touching
 
 All run artifacts are written under `.polaris/`:
 
-```
+```text
 .polaris/
   clusters/          # cluster state per issue
   runs/              # per-run telemetry and ledger

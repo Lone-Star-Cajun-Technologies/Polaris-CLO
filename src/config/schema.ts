@@ -272,7 +272,7 @@ export interface PolarisConfig {
       /** Jira project key, e.g. "POL". */
       projectKey?: string;
       /** Optional override for native status name → normalized lifecycle state mapping. */
-      statusMappings?: Record<string, string>;
+      statusMappings?: Record<string, NormalizedLifecycleState>;
     };
   };
   integrations?: {

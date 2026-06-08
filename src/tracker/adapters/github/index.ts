@@ -52,6 +52,7 @@ interface GitHubIssue {
 
 const GITHUB_API_HOSTNAME = "api.github.com";
 const GITHUB_API_VERSION = "2022-11-28";
+const GITHUB_REQUEST_TIMEOUT_MS = 15_000;
 
 /**
  * Makes a GitHub REST API request using Node.js built-in `https`.
@@ -122,6 +123,9 @@ async function githubRequest<T>(
       },
     );
 
+    req.setTimeout(GITHUB_REQUEST_TIMEOUT_MS, () => {
+      req.destroy(new Error(`GitHub API request timed out after ${GITHUB_REQUEST_TIMEOUT_MS}ms`));
+    });
     req.on("error", reject);
 
     if (payload !== undefined) {
@@ -165,6 +169,7 @@ export class GitHubIssuesAdapter implements CapableTrackerAdapter {
   private readonly repo: string;
   private readonly token: string;
   private readonly labelPrefix: string;
+  private readonly labelPrefixLower: string;
 
   /**
    * Creates a new `GitHubIssuesAdapter`.
@@ -176,6 +181,7 @@ export class GitHubIssuesAdapter implements CapableTrackerAdapter {
     this.repo = config.repo;
     this.token = config.token;
     this.labelPrefix = config.labelPrefix ?? "status:";
+    this.labelPrefixLower = this.labelPrefix.toLowerCase();
   }
 
   // ── CapableTrackerAdapter ──────────────────────────────────────────────────
@@ -220,8 +226,8 @@ export class GitHubIssuesAdapter implements CapableTrackerAdapter {
     }
 
     // Accept status label strings directly (e.g. from stored label names)
-    if (s.startsWith(this.labelPrefix)) {
-      const suffix = s.slice(this.labelPrefix.length); // e.g. "in-progress"
+    if (s.startsWith(this.labelPrefixLower)) {
+      const suffix = s.slice(this.labelPrefixLower.length); // e.g. "in-progress"
       const normalized = suffix.replace(/-/g, "_") as NormalizedLifecycleState;
 
       const valid: NormalizedLifecycleState[] = [
@@ -291,7 +297,7 @@ export class GitHubIssuesAdapter implements CapableTrackerAdapter {
 
       const existingStatusLabels = issue.labels
         .map((l) => l.name)
-        .filter((name) => name.startsWith(this.labelPrefix));
+        .filter((name) => name.toLowerCase().startsWith(this.labelPrefixLower));
 
       // 2. Update open/closed state
       const newState =
@@ -379,9 +385,9 @@ export class GitHubIssuesAdapter implements CapableTrackerAdapter {
   }
 
   /**
-   * Child issue creation is not yet implemented for the GitHub Issues adapter.
+   * Child issue creation is not supported by the GitHub Issues adapter.
    *
-   * Always returns `{ created: false, unsupported: false, error: "not yet implemented" }`.
+   * Always returns `{ created: false, unsupported: true }`.
    *
    * @param _parentId - Unused.
    * @param _title - Unused.
@@ -394,8 +400,8 @@ export class GitHubIssuesAdapter implements CapableTrackerAdapter {
   ): Promise<CreateChildResult> {
     return {
       created: false,
-      unsupported: false,
-      error: "not yet implemented",
+      unsupported: true,
+      reason: "GitHub Issues adapter does not support creating child issues.",
     };
   }
 }

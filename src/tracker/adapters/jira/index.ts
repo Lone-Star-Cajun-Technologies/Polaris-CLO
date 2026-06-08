@@ -41,6 +41,8 @@ interface JiraTransitionsResponse {
   transitions: JiraTransition[];
 }
 
+const JIRA_REQUEST_TIMEOUT_MS = 30_000;
+
 /**
  * Performs an HTTPS request against the Jira Cloud REST API v3.
  *
@@ -101,6 +103,9 @@ function jiraRequest(
       });
     });
 
+    req.setTimeout(JIRA_REQUEST_TIMEOUT_MS, () => {
+      req.destroy(new Error(`Jira API request timed out after ${JIRA_REQUEST_TIMEOUT_MS}ms`));
+    });
     req.on("error", reject);
 
     if (payload !== undefined) {
@@ -170,6 +175,28 @@ export class JiraCloudAdapter implements CapableTrackerAdapter {
   }
 
   /**
+   * Maps a Jira status name to a normalized lifecycle state, consulting
+   * user-configured `statusMappings` before falling back to the built-in
+   * heuristic.
+   *
+   * @param statusName - The native Jira status name (case-insensitive).
+   * @returns The matching normalized lifecycle state, or `undefined` if unknown.
+   */
+  private mapStatusToLifecycle(statusName: string): NormalizedLifecycleState | undefined {
+    const normalizedName = statusName.toLowerCase().trim();
+
+    if (this.config.statusMappings) {
+      for (const [key, value] of Object.entries(this.config.statusMappings)) {
+        if (key.toLowerCase().trim() === normalizedName) {
+          return value;
+        }
+      }
+    }
+
+    return heuristicMap(normalizedName);
+  }
+
+  /**
    * Maps a native Jira status name to a normalized lifecycle state.
    *
    * User-provided `statusMappings` in the adapter config override the built-in
@@ -179,18 +206,8 @@ export class JiraCloudAdapter implements CapableTrackerAdapter {
    * @returns A status mapping result with the normalized state and support status.
    */
   mapNativeStatus(nativeStatus: string): StatusMappingResult {
-    const normalizedName = nativeStatus.toLowerCase().trim();
+    const mapped = this.mapStatusToLifecycle(nativeStatus);
 
-    // User overrides take precedence.
-    if (this.config.statusMappings) {
-      for (const [key, value] of Object.entries(this.config.statusMappings)) {
-        if (key.toLowerCase().trim() === normalizedName) {
-          return { lifecycleState: value, supported: true };
-        }
-      }
-    }
-
-    const mapped = heuristicMap(normalizedName);
     if (mapped !== undefined) {
       return { lifecycleState: mapped, supported: true };
     }
@@ -243,8 +260,8 @@ export class JiraCloudAdapter implements CapableTrackerAdapter {
 
     const transitions = transitionsData?.transitions ?? [];
 
-    // Find a transition whose name heuristically maps to the target lifecycle state.
-    const match = transitions.find((t) => heuristicMap(t.name.toLowerCase().trim()) === lifecycleState);
+    // Find a transition whose name maps to the target lifecycle state (respects statusMappings).
+    const match = transitions.find((t) => this.mapStatusToLifecycle(t.name) === lifecycleState);
 
     if (!match) {
       return {
@@ -324,33 +341,33 @@ export class JiraCloudAdapter implements CapableTrackerAdapter {
   }
 
   /**
-   * Adding dependency relations is not yet implemented for this adapter.
+   * Dependency relations are not supported by this adapter.
    *
    * @param _taskId - Unused.
    * @param _dependsOnTaskId - Unused.
-   * @returns A dependency result indicating the operation is not yet implemented.
+   * @returns A dependency result indicating the operation is unsupported.
    */
   async addDependency(_taskId: string, _dependsOnTaskId: string): Promise<DependencyResult> {
     return {
       added: false,
-      unsupported: false,
-      error: "not yet implemented",
+      unsupported: true,
+      reason: "Jira Cloud adapter does not support dependency relations via this interface.",
     };
   }
 
   /**
-   * Creating child tasks is not yet implemented for this adapter.
+   * Creating child tasks is not supported by this adapter.
    *
    * @param _parentId - Unused.
    * @param _title - Unused.
    * @param _body - Unused.
-   * @returns A create child result indicating the operation is not yet implemented.
+   * @returns A create child result indicating the operation is unsupported.
    */
   async createChild(_parentId: string, _title: string, _body?: string): Promise<CreateChildResult> {
     return {
       created: false,
-      unsupported: false,
-      error: "not yet implemented",
+      unsupported: true,
+      reason: "Jira Cloud adapter does not support creating child issues via this interface.",
     };
   }
 }
