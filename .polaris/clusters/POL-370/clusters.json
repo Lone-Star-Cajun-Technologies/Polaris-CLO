@@ -1,0 +1,25 @@
+{
+  "source_id": "POL-370",
+  "analyze_source_id": "POL-369",
+  "source_type": "linear",
+  "created_at": "2026-06-08T00:05:40.000Z",
+  "clusters": [
+    {
+      "cluster_id": "cluster-01",
+      "children": [
+        {
+          "id": "POL-371",
+          "title": "Emit child-completed and cluster-complete ledger events from parent-loop auto flow",
+          "session_type": "implement",
+          "blockedBy": []
+        },
+        {
+          "id": "POL-372",
+          "title": "Add elapsed_seconds and commit_files to child-complete telemetry event",
+          "session_type": "implement",
+          "blockedBy": []
+        }
+      ]
+    }
+  ]
+}
