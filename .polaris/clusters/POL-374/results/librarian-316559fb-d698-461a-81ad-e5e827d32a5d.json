@@ -4,39 +4,12 @@
   "run_id": "polaris-run-pol-374-2026-06-08-001",
   "dispatch_id": "316559fb-d698-461a-81ad-e5e827d32a5d",
   "cluster_id": "POL-374",
-  "status": "partial",
-  "commit_sha": "08522d6fec29cd760579d9b9d6861bc9492c64c1",
-  "commit_message": "docs: reconcile POL-374 closeout docs",
-  "files_committed": [
-    "/Users/lsctech/Developer/Polaris/src/cli/POLARIS.md",
-    "/Users/lsctech/Developer/Polaris/src/config/POLARIS.md",
-    "/Users/lsctech/Developer/Polaris/src/finalize/POLARIS.md",
-    "/Users/lsctech/Developer/Polaris/src/loop/SUMMARY.md"
-  ],
-  "polaris_md_updates": [
-    {
-      "file": "src/cli/POLARIS.md",
-      "action": "update",
-      "change_summary": "Clarified the CLI surface for config doctor and the closeout librarian packet generator."
-    },
-    {
-      "file": "src/config/POLARIS.md",
-      "action": "update",
-      "change_summary": "Documented config doctor and tracker lifecycle policy responsibilities in the config subsystem."
-    },
-    {
-      "file": "src/finalize/POLARIS.md",
-      "action": "update",
-      "change_summary": "Recorded the closeout-librarian gate and canonical cluster state used for final delivery."
-    }
-  ],
-  "summary_md_updates": [
-    {
-      "file": "src/loop/SUMMARY.md",
-      "action": "update",
-      "change_summary": "Noted canonical cluster state emission and distinguished budget-exhausted from cluster-complete."
-    }
-  ],
+  "status": "success",
+  "commit_sha": null,
+  "commit_message": "docs: closeout no-op for POL-374",
+  "files_committed": [],
+  "polaris_md_updates": [],
+  "summary_md_updates": [],
   "docs_ingested": [],
   "docs_archived": [],
   "yaml_updates": [],
@@ -48,14 +21,7 @@
     "repaired": 0,
     "unrepairable": []
   },
-  "blockers": [
-    {
-      "type": "write-prohibited",
-      "description": "src/SUMMARY.md was outside the closeout packet's allowed write paths and was corrected in a follow-up commit.",
-      "affected_file": "src/SUMMARY.md",
-      "resolution_required": false
-    }
-  ],
+  "blockers": [],
   "reconciled_at": "2026-06-08T16:30:00.000Z",
-  "evidence_summary": "Updated the folder docs to reflect the new distribution-readiness surface, including config doctor, tracker lifecycle policy, the closeout-librarian gate, and the canonical cluster-complete state file. The initial source-root summary touch was out of scope for the packet and was corrected in a follow-up commit. No documentation ingestion or archival was required for this cluster, and no broken links were identified in the touched files."
+  "evidence_summary": "No allowed documentation or cognition changes were required for this cluster closeout after reconciling the packet's write scope. The earlier source-doc edits were reverted, and no docs ingestion, archival, or link repairs were needed."
 }
