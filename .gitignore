@@ -7,6 +7,9 @@ build/
 .env
 docs/Polaris/.obsidian/
 .claude/worktrees/
+
+# Internal Smart Docs — operational content, not user-facing
+smartdocs/
 .taskchain_artifacts/bootstrap-run/
 
 # Polaris workspace scratch — never commit
