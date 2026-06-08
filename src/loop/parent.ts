@@ -844,7 +844,9 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
       // All children completed — write final state and halt
       if (!dryRun) {
         logStatus(notificationFormat, "COMPLETE");
-        writeStateAtomic(stateFile, { ...state, status: "cluster-complete" });
+        const clusterCompleteState = { ...state, status: "cluster-complete" as const };
+        writeStateAtomic(stateFile, clusterCompleteState);
+        writeStateAtomic(join(repoRoot, '.polaris', 'clusters', state.cluster_id, 'state.json'), clusterCompleteState);
         appendTelemetry(telemetryFile, {
           event: "cluster-complete",
           run_id: state.run_id,
