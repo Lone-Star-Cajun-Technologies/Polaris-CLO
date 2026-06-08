@@ -234,7 +234,7 @@ export interface PolarisConfig {
   };
   tracker?: {
     /** Which remote tracker adapter to use. Omit to disable remote reconciliation. */
-    adapter?: "linear" | "mcp-bridge" | "local" | "spec";
+    adapter?: "linear" | "mcp-bridge" | "local";
     /** Tracker lifecycle policy with normalized transition states. */
     lifecyclePolicy?: TrackerLifecyclePolicy;
     'local-file'?: {

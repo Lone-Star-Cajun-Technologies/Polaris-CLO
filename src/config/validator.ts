@@ -401,9 +401,9 @@ export function validateConfig(config: unknown): ValidationResult {
       result.errors.push("tracker must be an object");
     } else {
       if ("adapter" in config.tracker && config.tracker.adapter !== undefined) {
-        if (!isString(config.tracker.adapter) || !["linear", "mcp-bridge", "local", "spec"].includes(config.tracker.adapter)) {
+        if (!isString(config.tracker.adapter) || !["linear", "mcp-bridge", "local"].includes(config.tracker.adapter)) {
           result.valid = false;
-          result.errors.push('tracker.adapter must be one of "linear", "mcp-bridge", "local", or "spec"');
+          result.errors.push('tracker.adapter must be one of "linear", "mcp-bridge", or "local"');
         }
       }
       if ("lifecyclePolicy" in config.tracker && config.tracker.lifecyclePolicy !== undefined) {

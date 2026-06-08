@@ -64,7 +64,7 @@ export function loadTrackerAdapter(config: PolarisConfig): CapableTrackerAdapter
     return new LocalFileAdapter();
   }
 
-  // For "mcp-bridge", "spec", or other adapters, return null for now
+  // For "mcp-bridge" or other adapters, return null for now
   // They can be added when their CapableTrackerAdapter implementations are ready
   return null;
 }

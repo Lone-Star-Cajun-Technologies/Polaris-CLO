@@ -201,15 +201,6 @@ function checkTrackerConfig(config: PolarisConfig): DoctorCheck {
     };
   }
 
-  if (tracker.adapter === "spec") {
-    return {
-      id: "tracker-config",
-      category: "tracker",
-      status: "pass",
-      message: "Spec tracker adapter is configured",
-    };
-  }
-
   return {
     id: "tracker-config",
     category: "tracker",
