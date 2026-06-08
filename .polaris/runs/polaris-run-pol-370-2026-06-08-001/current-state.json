@@ -1,0 +1,113 @@
+{
+  "schema_version": "1.0",
+  "run_id": "polaris-run-pol-370-2026-06-08-001",
+  "cluster_id": "POL-370",
+  "skill": "polaris-run",
+  "branch": "pol-370-delivery",
+  "session_type": "implement",
+  "active_child": "",
+  "completed_children": [
+    "POL-372",
+    "POL-371"
+  ],
+  "open_children": [],
+  "open_children_meta": {
+    "POL-370": {
+      "title": "IMPLEMENT: Audit-enrich auto-mode Polaris runs (ledger completeness + telemetry signals)",
+      "body": "## Objective\n\nAdd missing ledger events and telemetry signals so that auto-mode (parent-loop) Polaris runs are auditably trustworthy — a reviewer can verify from durable artifacts that real work was done, how long it took, and which files were changed.\n\n## Context\n\nTriggered by [POL-369](https://linear.app/lsctech/issue/POL-369/analyze-make-fast-polaris-runs-auditably-trustworthy) (ANALYZE: Make fast Polaris runs auditably trustworthy). PR 126 / [POL-352](https://linear.app/lsctech/issue/POL-352/implement-route-identity-model-route-health-schema-and-welfare-checks) completed in \\~2.7 minutes across 3 workers using the terminal-cli/devin adapter. Analysis revealed two critical gaps:\n\n1. **Ledger gap**: Auto-mode parent-loop runs write only `run-started` to the ledger. No `child-completed` or `cluster-complete` events are ever written. Manual-flow runs (via `polaris loop continue`) correctly write `child-completed` events in `continue.ts`. The auto flow has no equivalent.\n2. **Telemetry gap**: The `child-complete` telemetry event records `validation_summary` and `commit_hash`, but not elapsed time since dispatch or the list of files the commit touched. There is no way to tell from telemetry how long a worker ran, or which files it actually changed.\n\nEvidence: `.polaris/runs/ledger.jsonl` for [POL-352](https://linear.app/lsctech/issue/POL-352/implement-route-identity-model-route-health-schema-and-welfare-checks) has exactly one event (`run-started`); telemetry shows workers completing in 44–61 seconds with no timing field.\n\n## Goal\n\nAfter implementation: every auto-mode Polaris cluster run writes `child-completed` and `cluster-complete` ledger events; every `child-complete` telemetry event includes `elapsed_seconds` and `commit_files`.\n\n## Scope\n\n* src/loop/parent.ts\n* src/loop/ledger.ts\n\n## Acceptance Criteria\n\n- [ ] `child-completed` ledger event written after each child completes in auto mode\n- [ ] `cluster-complete` ledger event written when all children are done in auto mode\n- [ ] `child-complete` telemetry event includes `elapsed_seconds` (integer, seconds since dispatch)\n- [ ] `child-complete` telemetry event includes `commit_files` (string\\[\\] or null)\n- [ ] All existing tests pass; new tests cover the new events and fields\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/loop\n\n## Ordering\n\nNone — standalone cluster, no upstream dependencies.\n\n## Non-goals\n\n* Do not change the manual-flow (`continue.ts`) ledger path\n* Do not change worker result schema\n* Do not add scope alignment cross-checking (future work)\n* Do not add minimum elapsed time gating (future work)"
+    },
+    "POL-372": {
+      "title": "Add elapsed_seconds and commit_files to child-complete telemetry event",
+      "body": "## Objective\n\nEnrich the `child-complete` telemetry event with `elapsed_seconds` (time since dispatch) and `commit_files` (files touched by the worker's commit) so a reviewer can verify from telemetry alone that a fast run did real work.\n\n## Context\n\nThe `child-complete` telemetry event (`src/loop/parent.ts` lines \\~1587–1595) currently emits `validation_summary` and `commit_hash`, but nothing about how long the worker ran or which files it changed.\n\nFor PR 126 / [POL-352](https://linear.app/lsctech/issue/POL-352/implement-route-identity-model-route-health-schema-and-welfare-checks), workers completed in 44–61 seconds each. There is no field in telemetry to surface this; `elapsed_seconds` would immediately make the timing visible to reviewers.\n\nThe artifact-only gate (`parent.ts` lines \\~1424–1493) already computes `commitFiles` via `getCommitFiles(lastCommit, repoRoot)` inside a scoped block, but discards the list after the gate check. Lifting `commitFiles` out of the block scope and adding it to the `child-complete` event costs almost nothing and produces a durable file-level audit trail.\n\n`dispatch_record.dispatched_at` is already stored in `state.open_children_meta[nextChild].dispatch_record.dispatched_at` — no new fields are needed in the dispatch record.\n\nSource: [POL-369](https://linear.app/lsctech/issue/POL-369/analyze-make-fast-polaris-runs-auditably-trustworthy) → [POL-370](https://linear.app/lsctech/issue/POL-370/implement-audit-enrich-auto-mode-polaris-runs-ledger-completeness).\n\n## Goal\n\nAfter this child: the `child-complete` telemetry event in `telemetry.jsonl` includes:\n\n* `elapsed_seconds: number` — integer seconds from `dispatch_record.dispatched_at` to the moment the event is emitted. Omitted (not zero) if `dispatched_at` is unavailable.\n* `commit_files: string[] | null` — the resolved file list from `getCommitFiles`, or `null` if the commit was unresolvable or absent (matching existing fail-open behavior).\n\n## Scope\n\n* src/loop/parent.ts\n\n## Acceptance Criteria\n\n- [ ] `child-complete` telemetry event includes `elapsed_seconds` (integer) when `dispatch_record.dispatched_at` is available\n- [ ] `elapsed_seconds` is omitted (not set to 0) when `dispatch_record.dispatched_at` is unavailable\n- [ ] `child-complete` telemetry event includes `commit_files` (string\\[\\] or null)\n- [ ] `commit_files` is `null` when `getCommitFiles` returns null (fail-open, no gate behavior change)\n- [ ] The artifact-only gate logic is NOT changed — only the output telemetry is enriched\n- [ ] Tests verify `elapsed_seconds` and `commit_files` are present in the `child-complete` event\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/loop\n\n## Ordering\n\nNone — structurally independent of Child 1.\n\n## Non-goals\n\n* Do not modify the artifact-only gate logic\n* Do not add `elapsed_seconds` or `commit_files` to ledger events (ledger schema unchanged)\n* Do not add scope alignment cross-checking\n* Do not gate on minimum elapsed time (warn only via the new field, no halt)",
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-370/results/POL-372-ff18f71d-c55e-43c4-9f27-79996d70f489.json",
+      "dispatch_record": {
+        "dispatch_id": "ff18f71d-c55e-43c4-9f27-79996d70f489",
+        "child_id": "POL-372",
+        "run_id": "polaris-run-pol-370-2026-06-08-001",
+        "cluster_id": "POL-370",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-370/packets/POL-372-ff18f71d-c55e-43c4-9f27-79996d70f489.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-370/results/POL-372-ff18f71d-c55e-43c4-9f27-79996d70f489.json",
+        "provider": "devin",
+        "dispatched_at": "2026-06-08T00:11:42.855Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-pol-370-2026-06-08-001:POL-372:1780877502855",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    },
+    "POL-371": {
+      "title": "Emit child-completed and cluster-complete ledger events from parent-loop auto flow",
+      "body": "## Objective\n\nAdd missing `child-completed` and `cluster-complete` ledger events to the auto-mode parent-loop execution path so the run ledger reflects every child completion in auto runs.\n\n## Context\n\nAuto-mode Polaris runs (using terminal-cli or similar adapters via `parent.ts`) call `appendRunStartedLedgerEvent` at run start but never write `child-completed` or `cluster-complete` ledger events. The manual-flow (`polaris loop continue` via `continue.ts`) correctly calls `writeContinueLedgerEvents` after each child, writing `child-completed` to `.polaris/runs/ledger.jsonl`. The auto flow has no equivalent.\n\nEvidence: `.polaris/runs/ledger.jsonl` for [POL-352](https://linear.app/lsctech/issue/POL-352/implement-route-identity-model-route-health-schema-and-welfare-checks) (an auto-mode run with 3 children) contains exactly one event (`run-started`). [POL-331](https://linear.app/lsctech/issue/POL-331/implement-june-5-doctrine-gaps-medic-charts-navigation-before) (manual flow) contains `child-completed` events for each child. The ledger is the cross-agent resume authority; without these events, auto-mode run outcomes cannot be verified from the ledger alone.\n\nSource: [POL-369](https://linear.app/lsctech/issue/POL-369/analyze-make-fast-polaris-runs-auditably-trustworthy) → [POL-370](https://linear.app/lsctech/issue/POL-370/implement-audit-enrich-auto-mode-polaris-runs-ledger-completeness).\n\n## Goal\n\nAfter this child: when `runParentLoop` in `src/loop/parent.ts` completes each child (whether via `advanceState` or worker-wrote-completion path), it appends a `child-completed` ledger event. When the cluster finishes, it appends a `cluster-complete` ledger event. Reuse the existing `LedgerWriter`, `ChildCompletedEvent`, and `ClusterCompleteEvent` types from `src/loop/ledger.ts`.\n\n## Scope\n\n* src/loop/parent.ts\n* src/loop/ledger.ts\n\n## Acceptance Criteria\n\n- [ ] After each child completes in auto mode, a `child-completed` event appears in `.polaris/runs/ledger.jsonl` with correct `run_id`, `cluster_id`, `branch`, `issue_id`, `last_commit`, `completed_children`, `open_children`, `validation`\n- [ ] After all children complete (cluster done), a `cluster-complete` event appears in the ledger\n- [ ] Dry-run mode (`dryRun: true`) does not write ledger events\n- [ ] Tests in `src/loop/` verify ledger events are written on child completion in auto mode\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/loop\n\n## Ordering\n\nNone — can execute first in the cluster.\n\n## Non-goals\n\n* Do not modify `continue.ts` or its ledger path (leave the manual flow unchanged)\n* Do not add new `LedgerEvent` types (reuse existing `ChildCompletedEvent` and `ClusterCompleteEvent`)\n* Do not add `elapsed_seconds` to ledger events (that is Child 2 scope via telemetry)",
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-370/results/POL-371-04644795-35e2-4b25-b70b-9d4e2f467ff9.json",
+      "dispatch_record": {
+        "dispatch_id": "04644795-35e2-4b25-b70b-9d4e2f467ff9",
+        "child_id": "POL-371",
+        "run_id": "polaris-run-pol-370-2026-06-08-001",
+        "cluster_id": "POL-370",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-370/packets/POL-371-04644795-35e2-4b25-b70b-9d4e2f467ff9.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-370/results/POL-371-04644795-35e2-4b25-b70b-9d4e2f467ff9.json",
+        "provider": "devin",
+        "dispatched_at": "2026-06-08T00:12:35.515Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-pol-370-2026-06-08-001:POL-371:1780877555515",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    }
+  },
+  "step_cursor": "checkpoint",
+  "context_budget": {
+    "children_completed": 2,
+    "max_children_per_session": 1
+  },
+  "status": "complete",
+  "next_open_child": null,
+  "artifact_dir": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run",
+  "dispatch_boundary": {
+    "dispatch_epoch": 2,
+    "continue_epoch": 1,
+    "last_dispatched_child": "POL-371"
+  },
+  "run_bootstrap_seal": {
+    "sealer": "polaris-loop-bootstrap",
+    "run_id": "polaris-run-pol-370-2026-06-08-001",
+    "cluster_id": "POL-370",
+    "open_children_sha": "b88e1337649fcd1b73d8fe98df82184690bb1cf3b3ac18858eba6d22e1a8ad46",
+    "sealed_at": "2026-06-08T00:11:42.790Z"
+  },
+  "last_commit": "9dfaa79b0b6a0d4d9198fe2a9f4115c0b094aa92",
+  "blocker": {
+    "reason": "POL-371 sealed result failed CompactReturn validation: next_recommended_action must be continue, stop, or investigate; worker emitted proceed_to_next_child",
+    "child_id": "POL-371",
+    "timestamp": "2026-06-08T00:14:37.916Z",
+    "resolved": false
+  },
+  "completed_children_results": {
+    "POL-371": {
+      "status": "done",
+      "validation": "passed",
+      "commit": "9dfaa79b0b6a0d4d9198fe2a9f4115c0b094aa92",
+      "next_recommended_action": "continue"
+    },
+    "POL-372": {
+      "status": "done",
+      "validation": "passed",
+      "commit": "a405efcfc1a4d488031cadc0efdb025886f6b249",
+      "next_recommended_action": "continue"
+    }
+  },
+  "updated_at": "2026-06-08T00:20:17.884Z",
+  "pr_url": "https://github.com/ItIsYeBananaduck/Polaris/pull/127"
+}

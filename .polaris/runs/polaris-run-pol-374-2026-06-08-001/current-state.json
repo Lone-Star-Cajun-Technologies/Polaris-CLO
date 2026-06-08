@@ -151,7 +151,7 @@
     "children_completed": 6,
     "max_children_per_session": 7
   },
-  "status": "cluster-complete",
+  "status": "complete",
   "next_open_child": null,
   "artifact_dir": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run",
   "dispatch_boundary": {
@@ -174,5 +174,6 @@
       "next_recommended_action": "continue"
     }
   },
-  "last_commit": "c38a71def18da5c2629322ecc9a98d22657290e6"
+  "last_commit": "c38a71def18da5c2629322ecc9a98d22657290e6",
+  "pr_url": "https://github.com/ItIsYeBananaduck/Polaris/pull/129"
 }
