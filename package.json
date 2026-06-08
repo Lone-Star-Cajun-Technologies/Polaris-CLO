@@ -1,17 +1,32 @@
 {
-  "name": "polaris",
+  "name": "@lsctech/polaris",
   "version": "0.1.0",
   "description": "Polaris — standalone taskchain orchestration framework for governed AI agent workflows",
-  "private": true,
   "bin": {
     "polaris": "dist/cli/index.js"
+  },
+  "main": "dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./config": "./dist/config/index.js",
+    "./loop": "./dist/loop/index.js",
+    "./tracker": "./dist/tracker/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22.0.0"
   },
   "scripts": {
     "build": "tsc",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit --project tsconfig.typecheck.json",
     "test": "vitest run",
-    "polaris": "node dist/cli/index.js"
+    "polaris": "node dist/cli/index.js",
+    "prepublishOnly": "npm run build && npm test"
   },
   "keywords": [
     "ai",
@@ -20,10 +35,21 @@
     "taskchain",
     "workflow",
     "governance",
-    "cli"
+    "cli",
+    "linear",
+    "github",
+    "jira"
   ],
-  "author": "",
+  "author": "LSC Technologies <phil.meaux@lsctech.biz>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lsctech/polaris.git"
+  },
+  "homepage": "https://github.com/lsctech/polaris#readme",
+  "bugs": {
+    "url": "https://github.com/lsctech/polaris/issues"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
     "commander": "^12.0.0",
