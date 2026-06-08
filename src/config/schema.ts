@@ -234,7 +234,7 @@ export interface PolarisConfig {
   };
   tracker?: {
     /** Which remote tracker adapter to use. Omit to disable remote reconciliation. */
-    adapter?: "linear" | "mcp-bridge" | "local";
+    adapter?: "linear" | "mcp-bridge" | "local" | "github" | "jira";
     /** Tracker lifecycle policy with normalized transition states. */
     lifecyclePolicy?: TrackerLifecyclePolicy;
     'local-file'?: {
@@ -247,6 +247,32 @@ export interface PolarisConfig {
     };
     mcpBridge?: {
       enabled?: boolean;
+    };
+    /** Configuration for the GitHub Issues tracker adapter. */
+    github?: {
+      enabled?: boolean;
+      /** GitHub repository owner (user or org). */
+      owner?: string;
+      /** GitHub repository name. */
+      repo?: string;
+      /** GitHub personal access token with repo scope. */
+      token?: string;
+      /** Label prefix for lifecycle state labels. Default: "status:". */
+      labelPrefix?: string;
+    };
+    /** Configuration for the Jira Cloud tracker adapter. */
+    jira?: {
+      enabled?: boolean;
+      /** Jira Cloud base URL, e.g. "https://your-domain.atlassian.net". */
+      baseUrl?: string;
+      /** Atlassian account email address. */
+      email?: string;
+      /** Jira API token. */
+      apiToken?: string;
+      /** Jira project key, e.g. "POL". */
+      projectKey?: string;
+      /** Optional override for native status name → normalized lifecycle state mapping. */
+      statusMappings?: Record<string, NormalizedLifecycleState>;
     };
   };
   integrations?: {

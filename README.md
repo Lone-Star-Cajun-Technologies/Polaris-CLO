@@ -1,95 +1,87 @@
-# Polaris
+<p align="center">
+  <img src="https://raw.githubusercontent.com/ItIsYeBananaduck/Polaris/main/branding/assets/polaris-logo.png" alt="Polaris CLO" width="200" />
+</p>
 
-Polaris — standalone taskchain orchestration framework for governed AI agent workflows.
+<h1 align="center">Polaris CLO</h1>
+<p align="center"><strong>Command Line Orchestrator</strong></p>
+<p align="center"><em>Navigate. Align. Orchestrate.</em></p>
 
-## Quickstart
+---
 
-### Local Install
+Polaris is a taskchain orchestration framework for governed AI agent workflows. It dispatches, tracks, and finalizes implementation work across AI providers — keeping every run bounded, auditable, and connected to your issue tracker.
 
-For development and local use:
+## Install
 
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd polaris
-
-# Install dependencies
-npm install
-
-# Build the project
-npm run build
-
-# Run Polaris commands
-npx polaris --help
+npm install -g @lsctech/polaris
 ```
 
-### Global Install
+Requires **Node.js 22+**.
 
-For system-wide availability:
-
-```bash
-# From the repository root
-npm install -g .
-
-# Then run from anywhere
-polaris --help
-```
-
-## First Run
-
-### Initialize a New Repository
+## Quick Start
 
 ```bash
-# Initialize Polaris in your current repository
-polaris init
-
-# Or adopt an existing repository with Polaris governance
+# Initialize Polaris in your repository
 polaris init --adopt
+
+# Check configuration
+polaris doctor
+
+# Start a governed run
+polaris run POL-123
+
+# Check status
+polaris status
+
+# Finalize completed work
+polaris finalize
 ```
-
-### Check Configuration Readiness
-
-```bash
-# Verify your Polaris configuration and environment
-polaris config doctor
-```
-
-The config doctor command checks:
-- Config file validity (`polaris.config.json`)
-- Provider configuration (if using external agents)
-- Tracker adapter setup (if using Linear or other trackers)
-- Artifact hygiene and directory structure
-
-### First Governed Run
-
-After initialization and passing the config doctor check:
-
-```bash
-# Start a governed run (supervised mode by default)
-polaris loop start
-
-# Or run in auto mode for full automation
-polaris loop start --mode auto
-```
-
-## Core Commands
-
-- `polaris init` — Initialize Polaris in a repository
-- `polaris init --adopt` — Adopt an existing repository
-- `polaris config doctor` — Check configuration readiness
-- `polaris config show` — Display resolved configuration
-- `polaris loop start` — Start a governed run
-- `polaris status` — Show current run state
-- `polaris finalize` — Finalize a completed run
 
 ## Configuration
 
-Polaris is configured via `polaris.config.json` in your repository root. Run `polaris config show` to see the resolved configuration after defaults are applied.
+Polaris is configured via `polaris.config.json` at the repository root.
+
+```json
+{
+  "version": "1.0",
+  "repo": {
+    "name": "my-project",
+    "sourceRoots": ["src"]
+  },
+  "tracker": {
+    "adapter": "github",
+    "github": {
+      "enabled": true,
+      "owner": "my-org",
+      "repo": "my-project",
+      "labelPrefix": "status:"
+    }
+  }
+}
+```
+
+## Tracker Adapters
+
+| Adapter | Description |
+|---|---|
+| `github` | GitHub Issues — label-based lifecycle states, PAT auth |
+| `linear` | Linear — team/project scoped, API key auth |
+| `jira` | Jira Cloud — REST API v3, Basic auth |
+| `local` | Local file graph only, no external sync |
+
+Set credentials via environment variables:
+
+```bash
+export GITHUB_TOKEN=ghp_...
+export LINEAR_API_KEY=lin_api_...
+export JIRA_API_TOKEN=your_token
+```
 
 ## Documentation
 
-See `POLARIS.md` for operational guidance and `AGENTS.md` for agent role definitions.
+- **[Setup Guide](docs/SETUP.md)** — Installation, tracker configuration, environment variables
+- **[Usage Guide](docs/USAGE.md)** — Daily workflow, commands, configuration reference, troubleshooting
 
 ## License
 
-MIT
+MIT — © LSC Technologies

@@ -4,6 +4,7 @@ import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { Command } from "commander";
 import { getVersion } from "./version.js";
+import { getBanner } from "./branding.js";
 import { createLoopCommand } from "../loop/index.js";
 import { runLoopContinue } from "../loop/continue.js";
 import { runLoopStatus } from "../loop/status.js";
@@ -64,6 +65,8 @@ export function createPolarisCommand(options: PolarisCommandOptions = {}): Comma
     .version(getVersion())
     .showHelpAfterError()
     .showSuggestionAfterError();
+
+  program.addHelpText("before", getBanner());
 
   program
     .command("status")
