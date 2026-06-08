@@ -1,6 +1,15 @@
 import { LocalGraph } from "./local-graph.js";
 import { LinearAdapter } from "./adapters/linear/index.js";
 import type { PolarisConfig } from "../config/schema.js";
+export {
+  resolveLifecycleTransition,
+  getDefaultLifecyclePolicy,
+  validateLifecyclePolicy,
+} from "./lifecycle-policy.js";
+export type {
+  LifecycleTransitionEvent,
+  LifecycleTransitionResult,
+} from "./lifecycle-policy.js";
 
 /**
  * Loads the execution graph from the configured tracker.

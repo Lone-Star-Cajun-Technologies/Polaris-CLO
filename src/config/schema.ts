@@ -132,6 +132,53 @@ export interface GraphConfig {
   invalidationTriggers?: GraphInvalidationTrigger[];
 }
 
+export type NormalizedLifecycleState =
+  | "backlog"
+  | "in_progress"
+  | "in_review"
+  | "done"
+  | "blocked"
+  | "cancelled"
+  | "no_status_change";
+
+export interface TrackerLifecyclePolicy {
+  /**
+   * Lifecycle state to apply when a child is dispatched to a worker.
+   * Default: "in_progress"
+   */
+  childOnDispatch?: NormalizedLifecycleState;
+  /**
+   * Lifecycle state to apply when a child passes validation.
+   * Default: "in_review" (review-gated)
+   */
+  childOnValidationPassed?: NormalizedLifecycleState;
+  /**
+   * Lifecycle state to apply when a child's work is merged.
+   * Default: "done"
+   */
+  childOnMerged?: NormalizedLifecycleState;
+  /**
+   * Lifecycle state to apply when a parent has all children complete.
+   * Default: "in_review" (review-gated)
+   */
+  parentOnAllChildrenComplete?: NormalizedLifecycleState;
+  /**
+   * Lifecycle state to apply when a parent's delivery is merged.
+   * Default: "done"
+   */
+  parentOnDeliveryMerged?: NormalizedLifecycleState;
+  /**
+   * Lifecycle state to apply when a child requires triage.
+   * Default: "blocked"
+   */
+  childOnTriageRequired?: NormalizedLifecycleState;
+  /**
+   * Lifecycle state to apply when provider fails before repo work.
+   * Default: "no_status_change" (avoid false implementation failures)
+   */
+  providerFailureBeforeWork?: NormalizedLifecycleState;
+}
+
 export interface PolarisConfig {
   version?: string;
   repo?: {
@@ -188,6 +235,8 @@ export interface PolarisConfig {
   tracker?: {
     /** Which remote tracker adapter to use. Omit to disable remote reconciliation. */
     adapter?: "linear" | "mcp-bridge";
+    /** Tracker lifecycle policy with normalized transition states. */
+    lifecyclePolicy?: TrackerLifecyclePolicy;
     'local-file'?: {
       enabled?: boolean;
     };
