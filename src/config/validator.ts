@@ -52,6 +52,15 @@ const SUPPORTED_EXECUTION_ADAPTERS = [
   "remote-worker",
   "cross-agent",
 ] as const;
+const SUPPORTED_LIFECYCLE_STATES = [
+  "backlog",
+  "in_progress",
+  "in_review",
+  "done",
+  "blocked",
+  "cancelled",
+  "no_status_change",
+] as const;
 
 export function validateConfig(config: unknown): ValidationResult {
   const result: ValidationResult = { valid: true, errors: [], warnings: [] };
@@ -392,9 +401,59 @@ export function validateConfig(config: unknown): ValidationResult {
       result.errors.push("tracker must be an object");
     } else {
       if ("adapter" in config.tracker && config.tracker.adapter !== undefined) {
-        if (!isString(config.tracker.adapter) || !["linear", "mcp-bridge"].includes(config.tracker.adapter)) {
+        if (!isString(config.tracker.adapter) || !["linear", "mcp-bridge", "local"].includes(config.tracker.adapter)) {
           result.valid = false;
-          result.errors.push('tracker.adapter must be either "linear" or "mcp-bridge"');
+          result.errors.push('tracker.adapter must be one of "linear", "mcp-bridge", or "local"');
+        }
+      }
+      if ("lifecyclePolicy" in config.tracker && config.tracker.lifecyclePolicy !== undefined) {
+        if (!isPlainObject(config.tracker.lifecyclePolicy)) {
+          result.valid = false;
+          result.errors.push("tracker.lifecyclePolicy must be an object");
+        } else {
+          const lifecyclePolicy = config.tracker.lifecyclePolicy;
+          if ("childOnDispatch" in lifecyclePolicy && lifecyclePolicy.childOnDispatch !== undefined) {
+            if (!isString(lifecyclePolicy.childOnDispatch) || !SUPPORTED_LIFECYCLE_STATES.includes(lifecyclePolicy.childOnDispatch as typeof SUPPORTED_LIFECYCLE_STATES[number])) {
+              result.valid = false;
+              result.errors.push('tracker.lifecyclePolicy.childOnDispatch must be one of: backlog, in_progress, in_review, done, blocked, cancelled, no_status_change');
+            }
+          }
+          if ("childOnValidationPassed" in lifecyclePolicy && lifecyclePolicy.childOnValidationPassed !== undefined) {
+            if (!isString(lifecyclePolicy.childOnValidationPassed) || !SUPPORTED_LIFECYCLE_STATES.includes(lifecyclePolicy.childOnValidationPassed as typeof SUPPORTED_LIFECYCLE_STATES[number])) {
+              result.valid = false;
+              result.errors.push('tracker.lifecyclePolicy.childOnValidationPassed must be one of: backlog, in_progress, in_review, done, blocked, cancelled, no_status_change');
+            }
+          }
+          if ("childOnMerged" in lifecyclePolicy && lifecyclePolicy.childOnMerged !== undefined) {
+            if (!isString(lifecyclePolicy.childOnMerged) || !SUPPORTED_LIFECYCLE_STATES.includes(lifecyclePolicy.childOnMerged as typeof SUPPORTED_LIFECYCLE_STATES[number])) {
+              result.valid = false;
+              result.errors.push('tracker.lifecyclePolicy.childOnMerged must be one of: backlog, in_progress, in_review, done, blocked, cancelled, no_status_change');
+            }
+          }
+          if ("parentOnAllChildrenComplete" in lifecyclePolicy && lifecyclePolicy.parentOnAllChildrenComplete !== undefined) {
+            if (!isString(lifecyclePolicy.parentOnAllChildrenComplete) || !SUPPORTED_LIFECYCLE_STATES.includes(lifecyclePolicy.parentOnAllChildrenComplete as typeof SUPPORTED_LIFECYCLE_STATES[number])) {
+              result.valid = false;
+              result.errors.push('tracker.lifecyclePolicy.parentOnAllChildrenComplete must be one of: backlog, in_progress, in_review, done, blocked, cancelled, no_status_change');
+            }
+          }
+          if ("parentOnDeliveryMerged" in lifecyclePolicy && lifecyclePolicy.parentOnDeliveryMerged !== undefined) {
+            if (!isString(lifecyclePolicy.parentOnDeliveryMerged) || !SUPPORTED_LIFECYCLE_STATES.includes(lifecyclePolicy.parentOnDeliveryMerged as typeof SUPPORTED_LIFECYCLE_STATES[number])) {
+              result.valid = false;
+              result.errors.push('tracker.lifecyclePolicy.parentOnDeliveryMerged must be one of: backlog, in_progress, in_review, done, blocked, cancelled, no_status_change');
+            }
+          }
+          if ("childOnTriageRequired" in lifecyclePolicy && lifecyclePolicy.childOnTriageRequired !== undefined) {
+            if (!isString(lifecyclePolicy.childOnTriageRequired) || !SUPPORTED_LIFECYCLE_STATES.includes(lifecyclePolicy.childOnTriageRequired as typeof SUPPORTED_LIFECYCLE_STATES[number])) {
+              result.valid = false;
+              result.errors.push('tracker.lifecyclePolicy.childOnTriageRequired must be one of: backlog, in_progress, in_review, done, blocked, cancelled, no_status_change');
+            }
+          }
+          if ("providerFailureBeforeWork" in lifecyclePolicy && lifecyclePolicy.providerFailureBeforeWork !== undefined) {
+            if (!isString(lifecyclePolicy.providerFailureBeforeWork) || !SUPPORTED_LIFECYCLE_STATES.includes(lifecyclePolicy.providerFailureBeforeWork as typeof SUPPORTED_LIFECYCLE_STATES[number])) {
+              result.valid = false;
+              result.errors.push('tracker.lifecyclePolicy.providerFailureBeforeWork must be one of: backlog, in_progress, in_review, done, blocked, cancelled, no_status_change');
+            }
+          }
         }
       }
       if ("linear" in config.tracker && config.tracker.linear !== undefined) {

@@ -198,8 +198,48 @@
       "properties": {
         "adapter": {
           "type": "string",
-          "enum": ["linear", "mcp-bridge"],
+          "enum": ["linear", "mcp-bridge", "local"],
           "default": "linear"
+        },
+        "lifecyclePolicy": {
+          "type": "object",
+          "properties": {
+            "childOnDispatch": {
+              "type": "string",
+              "enum": ["backlog", "in_progress", "in_review", "done", "blocked", "cancelled", "no_status_change"],
+              "default": "in_progress"
+            },
+            "childOnValidationPassed": {
+              "type": "string",
+              "enum": ["backlog", "in_progress", "in_review", "done", "blocked", "cancelled", "no_status_change"],
+              "default": "in_review"
+            },
+            "childOnMerged": {
+              "type": "string",
+              "enum": ["backlog", "in_progress", "in_review", "done", "blocked", "cancelled", "no_status_change"],
+              "default": "done"
+            },
+            "parentOnAllChildrenComplete": {
+              "type": "string",
+              "enum": ["backlog", "in_progress", "in_review", "done", "blocked", "cancelled", "no_status_change"],
+              "default": "in_review"
+            },
+            "parentOnDeliveryMerged": {
+              "type": "string",
+              "enum": ["backlog", "in_progress", "in_review", "done", "blocked", "cancelled", "no_status_change"],
+              "default": "done"
+            },
+            "childOnTriageRequired": {
+              "type": "string",
+              "enum": ["backlog", "in_progress", "in_review", "done", "blocked", "cancelled", "no_status_change"],
+              "default": "blocked"
+            },
+            "providerFailureBeforeWork": {
+              "type": "string",
+              "enum": ["backlog", "in_progress", "in_review", "done", "blocked", "cancelled", "no_status_change"],
+              "default": "no_status_change"
+            }
+          }
         },
         "linear": {
           "type": "object",

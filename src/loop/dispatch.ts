@@ -39,6 +39,8 @@ import type {
   ProviderForbiddenEvent,
   EscalationInitiatedEvent,
 } from "./dispatch-state.js";
+import { loadTrackerAdapter } from "../tracker/index.js";
+import { LifecycleTransitionService } from "../tracker/lifecycle-transition.js";
 
 export interface DispatchOptions {
   stateFile: string;
@@ -1382,6 +1384,81 @@ export function runLoopDispatch(options: DispatchOptions): void {
     provider: dispatchRecord.provider ?? null,
     timestamp: new Date().toISOString(),
   });
+
+  // ── Apply lifecycle transition for child-dispatch event ────────────────────
+  // This is fire-and-forget: dispatch must not block on tracker mutations.
+  // Errors are logged to telemetry but do not fail the dispatch.
+  if (loadedConfig) {
+    let adapter;
+    try {
+      adapter = loadTrackerAdapter(loadedConfig);
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      appendTelemetry(telemetryFile, {
+        event: "lifecycle-transition-error",
+        run_id: updatedState.run_id,
+        child_id: childId,
+        transition_event: "child-dispatch",
+        error: `Failed to load tracker adapter: ${errorMsg}`,
+        timestamp: new Date().toISOString(),
+      });
+      adapter = null;
+    }
+
+    const lifecyclePolicy = loadedConfig.tracker?.lifecyclePolicy;
+
+    if (adapter || lifecyclePolicy) {
+      try {
+        const transitionService = new LifecycleTransitionService();
+        transitionService
+          .applyTransitionSafe({
+            adapter,
+            policy: lifecyclePolicy,
+            taskId: childId,
+            event: "child-dispatch",
+            evidence: {
+              packetFile: packetPath,
+            },
+            timestamp: new Date().toISOString(),
+          })
+          .then((result) => {
+            appendTelemetry(telemetryFile, {
+              event: "lifecycle-transition-attempt",
+              run_id: updatedState.run_id,
+              child_id: childId,
+              transition_event: result.event,
+              target_state: result.targetState,
+              applied: result.applied,
+              skipped: result.skipped,
+              skip_reason: result.skipReason,
+              error: result.error,
+              timestamp: result.timestamp,
+            });
+          })
+          .catch((err) => {
+            const errorMsg = err instanceof Error ? err.message : String(err);
+            appendTelemetry(telemetryFile, {
+              event: "lifecycle-transition-error",
+              run_id: updatedState.run_id,
+              child_id: childId,
+              transition_event: "child-dispatch",
+              error: errorMsg,
+              timestamp: new Date().toISOString(),
+            });
+          });
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        appendTelemetry(telemetryFile, {
+          event: "lifecycle-transition-error",
+          run_id: updatedState.run_id,
+          child_id: childId,
+          transition_event: "child-dispatch",
+          error: `Failed to create lifecycle transition service: ${errorMsg}`,
+          timestamp: new Date().toISOString(),
+        });
+      }
+    }
+  }
 
   process.stdout.write(`${JSON.stringify(packet, null, 2)}\n`);
 }

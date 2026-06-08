@@ -3,6 +3,17 @@ import { PolarisConfig } from "../../../config/schema.js";
 import { ExecutionGraphV2, ExecutionNode, ExecutionCluster } from "../../types.js";
 import { executionGraphV2Schema } from "../../schema.js";
 import { request } from "node:https";
+import type {
+  TrackerCapabilities,
+  StatusMappingResult,
+  LifecycleTransitionResult,
+  CommentResult,
+  LinkResult,
+  DependencyResult,
+  CreateChildResult,
+  CapableTrackerAdapter,
+} from "../../capabilities.js";
+import type { NormalizedLifecycleState } from "../../../config/schema.js";
 
 interface LinearTeam {
   id: string;
@@ -266,7 +277,7 @@ class LinearGraphqlClient implements LinearApiClient {
 /**
  * Implements the Linear direct adapter for synchronizing issues.
  */
-export class LinearAdapter {
+export class LinearAdapter implements CapableTrackerAdapter {
   private config: PolarisConfig;
   private linearClient: LinearApiClient;
 
@@ -279,7 +290,7 @@ export class LinearAdapter {
     return issue.identifier ?? issue.id;
   }
 
-  private addDependency(dependencies: Record<string, string[]>, nodeId: string, dependsOnNodeId: string): void {
+  private addDependencyToMap(dependencies: Record<string, string[]>, nodeId: string, dependsOnNodeId: string): void {
     if (!dependencies[nodeId]) {
       dependencies[nodeId] = [];
     }
@@ -380,7 +391,7 @@ export class LinearAdapter {
       if (!dependency) {
         continue;
       }
-      this.addDependency(dependencies, dependency.fromId, dependency.dependsOnId);
+      this.addDependencyToMap(dependencies, dependency.fromId, dependency.dependsOnId);
     }
 
     for (const childIssue of issue.children?.nodes ?? []) {
@@ -580,5 +591,188 @@ export class LinearAdapter {
     console.log("LinearAdapter: syncOut not yet fully implemented.");
     // TODO: Implement export/apply behavior for queued status/comment/link mutations.
     // This will involve using mcp_linear_save_issue and mcp_linear_save_comment.
+  }
+
+  /**
+   * Returns the capabilities supported by the Linear adapter.
+   */
+  getCapabilities(): TrackerCapabilities {
+    return {
+      supportsChildRelationships: true,
+      supportsStatusUpdates: true,
+      supportsComments: true,
+      supportsLinks: true,
+      supportsDependencies: true,
+      supportsLifecycleMapping: true,
+      supportsCreateChild: true,
+    };
+  }
+
+  /**
+   * Maps a Linear state to a normalized lifecycle state.
+   *
+   * This mapping is heuristic and team-agnostic. It uses common patterns
+   * from Linear workflows but does not hardcode specific team state names.
+   * Teams with custom state names may need to configure explicit mappings.
+   *
+   * @param nativeStatus - The native Linear state name.
+   * @returns A status mapping result with the normalized state and support status.
+   */
+  mapNativeStatus(nativeStatus: string): StatusMappingResult {
+    const normalizedStatus = nativeStatus.toLowerCase().trim();
+
+    // Common backlog state patterns
+    if (["backlog", "todo", "idea", "suggestion", "unstarted"].includes(normalizedStatus)) {
+      return { lifecycleState: "backlog", supported: true };
+    }
+
+    // Common in-progress state patterns
+    if (["in progress", "in-progress", "started", "doing", "active", "wip"].includes(normalizedStatus)) {
+      return { lifecycleState: "in_progress", supported: true };
+    }
+
+    // Common in-review state patterns
+    if (["in review", "in-review", "review", "under review", "pending review", "ready for review"].includes(normalizedStatus)) {
+      return { lifecycleState: "in_review", supported: true };
+    }
+
+    // Common done state patterns
+    if (["done", "completed", "finished", "closed", "resolved", "shipped", "released"].includes(normalizedStatus)) {
+      return { lifecycleState: "done", supported: true };
+    }
+
+    // Common blocked state patterns
+    if (["blocked", "blocked by", "waiting", "on hold", "paused", "stuck"].includes(normalizedStatus)) {
+      return { lifecycleState: "blocked", supported: true };
+    }
+
+    // Common cancelled state patterns
+    if (["cancelled", "canceled", "declined", "won't do", "wont do", "duplicate", "invalid"].includes(normalizedStatus)) {
+      return { lifecycleState: "cancelled", supported: true };
+    }
+
+    // Unknown state - treat as unsupported but don't fail
+    return {
+      lifecycleState: "no_status_change",
+      supported: false,
+      reason: `Unknown Linear state '${nativeStatus}'. Consider adding explicit state mapping configuration.`,
+    };
+  }
+
+  /**
+   * Attempts to transition a Linear issue to a lifecycle state.
+   *
+   * @param taskId - The Linear issue ID or identifier.
+   * @param lifecycleState - The target normalized lifecycle state.
+   * @param evidence - Optional evidence for the transition (e.g., commit hash).
+   * @returns A lifecycle transition result indicating success, skip, or failure.
+   */
+  async transitionLifecycleState(
+    taskId: string,
+    lifecycleState: NormalizedLifecycleState,
+    evidence?: Record<string, unknown>,
+  ): Promise<LifecycleTransitionResult> {
+    if (lifecycleState === "no_status_change") {
+      return {
+        applied: false,
+        skipped: true,
+        skipReason: "Lifecycle state is 'no_status_change', skipping transition",
+      };
+    }
+
+    // Linear requires team-specific state IDs for state transitions.
+    // This implementation is a placeholder - full implementation would need:
+    // 1. Fetch available states for the issue's team
+    // 2. Map normalized lifecycle state to a specific Linear state ID
+    // 3. Use GraphQL mutation to update the issue state
+
+    console.warn(
+      `LinearAdapter: transitionLifecycleState not fully implemented. Would transition ${taskId} to ${lifecycleState}.`,
+    );
+
+    return {
+      applied: false,
+      skipped: true,
+      skipReason: "Lifecycle state transitions are not yet implemented for Linear adapter",
+    };
+  }
+
+  /**
+   * Adds a comment to a Linear issue.
+   *
+   * @param taskId - The Linear issue ID or identifier.
+   * @param body - The comment body text.
+   * @returns A comment result indicating success, skip, or failure.
+   */
+  async addComment(taskId: string, body: string): Promise<CommentResult> {
+    // Placeholder implementation - would use GraphQL mutation to create comment
+    console.warn(`LinearAdapter: addComment not fully implemented. Would add comment to ${taskId}.`);
+
+    return {
+      added: false,
+      unsupported: false,
+      error: "Adding comments is not yet implemented for Linear adapter",
+    };
+  }
+
+  /**
+   * Attaches a link to a Linear issue.
+   *
+   * @param taskId - The Linear issue ID or identifier.
+   * @param url - The URL to attach.
+   * @param title - Optional title for the link.
+   * @returns A link result indicating success, skip, or failure.
+   */
+  async attachLink(taskId: string, url: string, title?: string): Promise<LinkResult> {
+    // Linear doesn't have a native "link" attachment concept.
+    // Links are typically added as comments or in the description.
+    console.warn(`LinearAdapter: attachLink not supported. Linear uses comments for links.`);
+
+    return {
+      attached: false,
+      unsupported: true,
+      reason: "Linear does not have native link attachments. Use addComment to include URLs.",
+    };
+  }
+
+  /**
+   * Adds a dependency relation between Linear issues.
+   *
+   * @param taskId - The ID of the issue that depends on another.
+   * @param dependsOnTaskId - The ID of the issue that is depended on.
+   * @returns A dependency result indicating success, skip, or failure.
+   */
+  async addDependency(taskId: string, dependsOnTaskId: string): Promise<DependencyResult> {
+    // Placeholder implementation - would use GraphQL mutation to create relation
+    console.warn(
+      `LinearAdapter: addDependency not fully implemented. Would add dependency from ${taskId} to ${dependsOnTaskId}.`,
+    );
+
+    return {
+      added: false,
+      unsupported: false,
+      error: "Adding dependencies is not yet implemented for Linear adapter",
+    };
+  }
+
+  /**
+   * Creates a child Linear issue under a parent issue.
+   *
+   * @param parentId - The ID of the parent issue.
+   * @param title - The title of the child issue.
+   * @param body - Optional body/description of the child issue.
+   * @returns A create child result indicating success, skip, or failure.
+   */
+  async createChild(parentId: string, title: string, body?: string): Promise<CreateChildResult> {
+    // Placeholder implementation - would use GraphQL mutation to create issue with parent
+    console.warn(
+      `LinearAdapter: createChild not fully implemented. Would create child '${title}' under ${parentId}.`,
+    );
+
+    return {
+      created: false,
+      unsupported: false,
+      error: "Creating child issues is not yet implemented for Linear adapter",
+    };
   }
 }

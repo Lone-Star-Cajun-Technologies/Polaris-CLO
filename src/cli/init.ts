@@ -30,6 +30,10 @@ import { generateFolderCognition as generateRepoFolderCognition } from "./adopt-
 import { migrateSmartDocs } from "./adopt-smartdocs.js";
 import { runMapIndex } from "../map/index.js";
 import { handleInstructionFiles } from "./adopt-instructions.js";
+import {
+  formatGitignoreBlock,
+  isPathBlockedFromStaging,
+} from "../finalize/artifact-policy.js";
 
 export { detectRepoState } from "./init-detect.js";
 export type { RepoState } from "./init-detect.js";
@@ -77,17 +81,6 @@ export interface InitOptions {
   /** Injected timestamp for deterministic testing. */
   now?: Date;
 }
-const RUNTIME_ARTIFACT_EXCLUSIONS = [
-  ".polaris/runs/",
-  ".polaris/bootstrap/",
-  ".polaris/clusters/",
-  ".polaris/session-type",
-] as const;
-
-const RUNTIME_ARTIFACT_IGNORE_BLOCK = [
-  "# Polaris runtime artifacts — do not commit",
-  ...RUNTIME_ARTIFACT_EXCLUSIONS,
-].join("\n");
 
 const PLAN_COMPLETE_STATUSES = new Set(["completed", "skipped"]);
 const ADOPTION_LOCKED_EXECUTION = {
@@ -266,18 +259,17 @@ function ensureRuntimeArtifactExclusions(repoRoot: string): void {
   const gitignorePath = join(repoRoot, ".gitignore");
   const existing = existsSync(gitignorePath) ? readFileSync(gitignorePath, "utf-8") : "";
   const lines = existing.split(/\r?\n/);
-  const missing = [RUNTIME_ARTIFACT_IGNORE_BLOCK].filter((block) => {
-    const required = block.split("\n");
-    return !required.every((line) => lines.includes(line));
-  });
+  const ignoreBlock = formatGitignoreBlock();
+  const required = ignoreBlock.split("\n");
+  const missing = !required.every((line) => lines.includes(line));
 
-  if (missing.length === 0) {
+  if (!missing) {
     return;
   }
 
   const trimmed = existing.trimEnd();
   const separator = trimmed.length > 0 ? "\n\n" : "";
-  const next = `${trimmed}${separator}${missing.join("\n")}\n`;
+  const next = `${trimmed}${separator}${ignoreBlock}\n`;
   writeFileSync(gitignorePath, next, "utf-8");
 }
 
@@ -418,7 +410,10 @@ function stageAdoptionOutputs(repoRoot: string, plan: AdoptionPlanArtifacts["pla
     }
   }
 
-  execFileSync("git", ["add", "-A", "--", ...stagePaths], { cwd: repoRoot, stdio: "pipe" });
+  const existingPaths = [...stagePaths].filter((p) => existsSync(resolve(repoRoot, p)));
+  if (existingPaths.length > 0) {
+    execFileSync("git", ["add", "-A", "--", ...existingPaths], { cwd: repoRoot, stdio: "pipe" });
+  }
 }
 
 function unstageRuntimeArtifacts(repoRoot: string): void {
@@ -430,11 +425,7 @@ function unstageRuntimeArtifacts(repoRoot: string): void {
     .map((line) => line.trim())
     .filter(Boolean);
 
-  const blocked = stagedPaths.filter((path) =>
-    RUNTIME_ARTIFACT_EXCLUSIONS.some(
-      (excluded) => path === excluded.replace(/\/$/, "") || path.startsWith(excluded),
-    ),
-  );
+  const blocked = stagedPaths.filter((path) => isPathBlockedFromStaging(path));
 
   if (blocked.length === 0) {
     return;
@@ -452,7 +443,7 @@ function createAdoptionCommitMessage(plan: AdoptionPlanArtifacts["plan"]): strin
 function printAdoptionSummary(repoRoot: string, plan: AdoptionPlanArtifacts["plan"]): void {
   const baselineCoverage = readBaselineCoverage(repoRoot);
   process.stdout.write(
-    `Adoption summary: moved=${plan.impact_summary.smartdocs_candidates_moved}, cognition=${plan.impact_summary.cognition_files_to_generate}, instruction_files=${plan.impact_summary.instruction_files_affected}, baseline_coverage=${baselineCoverage}, excluded_runtime_paths=${RUNTIME_ARTIFACT_EXCLUSIONS.join(", ")}\n`,
+    `Adoption summary: moved=${plan.impact_summary.smartdocs_candidates_moved}, cognition=${plan.impact_summary.cognition_files_to_generate}, instruction_files=${plan.impact_summary.instruction_files_affected}, baseline_coverage=${baselineCoverage}\n`,
   );
 }
 

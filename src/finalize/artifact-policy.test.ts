@@ -6,6 +6,10 @@ import {
   getArtifactPromotionPolicy,
   getArtifactPromotionStageTargets,
   isPromotedArtifactPath,
+  getGitignorePatterns,
+  formatGitignoreBlock,
+  isPathBlockedFromStaging,
+  filterStageablePaths,
 } from "./artifact-policy.js";
 
 describe("artifact promotion policy", () => {
@@ -89,6 +93,89 @@ describe("artifact promotion policy", () => {
       ".polaris/runs/ledger.jsonl",
       ".polaris/cognition/archive",
       ".polaris/map",
+    ]);
+  });
+});
+
+describe("gitignore pattern generation", () => {
+  it("returns comprehensive patterns for runtime and crash-recovery artifacts", () => {
+    const patterns = getGitignorePatterns();
+    expect(patterns).toContain("# Polaris workspace scratch — never commit");
+    expect(patterns).toContain(".taskchain_artifacts/**");
+    expect(patterns).toContain("*.bak");
+    expect(patterns).toContain(".polaris/runs/mutation-queue.json");
+    expect(patterns).toContain(".polaris/runs/current-state.pre-pol-198.json");
+    expect(patterns).toContain(".polaris/runs/evo-run-archive/**");
+    expect(patterns).toContain(".polaris/bootstrap/**");
+    expect(patterns).toContain(".polaris/session-type");
+    expect(patterns).toContain("# Cognition staging — ephemeral, not committed");
+    expect(patterns).toContain(".polaris/cognition/pending/**");
+  });
+
+  it("formats patterns as a gitignore block", () => {
+    const block = formatGitignoreBlock();
+    expect(block).toContain("# Polaris workspace scratch — never commit");
+    expect(block).toContain(".taskchain_artifacts/**");
+    expect(block.split("\n")).toHaveLength(getGitignorePatterns().length);
+  });
+});
+
+describe("adoption staging policy", () => {
+  it("blocks workspace scratch from staging", () => {
+    expect(isPathBlockedFromStaging(".taskchain_artifacts/polaris-run/current-state.json")).toBe(true);
+    expect(isPathBlockedFromStaging(".taskchain_artifacts/polaris-run/runs/run-1/telemetry.jsonl")).toBe(true);
+    expect(isPathBlockedFromStaging(".taskchain_artifacts/polaris-run/mutation-queue.json")).toBe(true);
+  });
+
+  it("blocks backup files from staging", () => {
+    expect(isPathBlockedFromStaging("src/file.ts.bak")).toBe(true);
+    expect(isPathBlockedFromStaging(".polaris/config.json.bak")).toBe(true);
+  });
+
+  it("blocks legacy run artifacts from staging", () => {
+    expect(isPathBlockedFromStaging(".polaris/runs/mutation-queue.json")).toBe(true);
+    expect(isPathBlockedFromStaging(".polaris/runs/current-state.pre-pol-198.json")).toBe(true);
+    expect(isPathBlockedFromStaging(".polaris/runs/evo-run-archive/run-1/telemetry.jsonl")).toBe(true);
+  });
+
+  it("blocks runtime crash-recovery artifacts from staging", () => {
+    expect(isPathBlockedFromStaging(".polaris/bootstrap/packet.json")).toBe(true);
+    expect(isPathBlockedFromStaging(".polaris/session-type")).toBe(true);
+  });
+
+  it("blocks cognition pending staging", () => {
+    expect(isPathBlockedFromStaging(".polaris/cognition/pending/index.json")).toBe(true);
+    expect(isPathBlockedFromStaging(".polaris/cognition/pending/batch-1/")).toBe(true);
+  });
+
+  it("allows commit-eligible artifacts for staging", () => {
+    expect(isPathBlockedFromStaging(".polaris/adoption-plan.json")).toBe(false);
+    expect(isPathBlockedFromStaging(".polaris/clusters/POL-242/clusters.json")).toBe(false);
+    expect(isPathBlockedFromStaging(".polaris/clusters/POL-242/cluster-state.json")).toBe(false);
+    expect(isPathBlockedFromStaging(".polaris/clusters/POL-242/packets/worker.json")).toBe(false);
+    expect(isPathBlockedFromStaging(".polaris/clusters/POL-242/results/worker.json")).toBe(false);
+    expect(isPathBlockedFromStaging(".polaris/runs/ledger.jsonl")).toBe(false);
+    expect(isPathBlockedFromStaging(".polaris/cognition/archive/src/loop/cognition-index.json")).toBe(false);
+    expect(isPathBlockedFromStaging(".polaris/map/file-routes.json")).toBe(false);
+    expect(isPathBlockedFromStaging("src/finalize/steps/06-commit.ts")).toBe(false);
+    expect(isPathBlockedFromStaging("polaris.config.json")).toBe(false);
+  });
+
+  it("filters stageable paths correctly", () => {
+    const paths = [
+      "src/finalize/index.ts",
+      ".taskchain_artifacts/polaris-run/current-state.json",
+      ".polaris/adoption-plan.json",
+      ".polaris/runs/mutation-queue.json",
+      ".polaris/clusters/POL-242/clusters.json",
+      "src/file.ts.bak",
+      ".polaris/cognition/pending/index.json",
+    ];
+    const stageable = filterStageablePaths(paths);
+    expect(stageable).toEqual([
+      "src/finalize/index.ts",
+      ".polaris/adoption-plan.json",
+      ".polaris/clusters/POL-242/clusters.json",
     ]);
   });
 });

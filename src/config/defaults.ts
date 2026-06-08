@@ -48,6 +48,15 @@ export const DEFAULT_CONFIG: Omit<Required<PolarisConfig>, "canon" | "providers"
     archiveRunSnapshot: true,
   },
   tracker: {
+    lifecyclePolicy: {
+      childOnDispatch: "in_progress",
+      childOnValidationPassed: "in_review",
+      childOnMerged: "done",
+      parentOnAllChildrenComplete: "in_review",
+      parentOnDeliveryMerged: "done",
+      childOnTriageRequired: "blocked",
+      providerFailureBeforeWork: "no_status_change",
+    },
     linear: {
       enabled: false,
       teamId: "",

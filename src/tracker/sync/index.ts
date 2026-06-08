@@ -1,17 +1,18 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
-import path from 'node:path';
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import {
   readClusterState,
   writeClusterState,
-} from '../../cluster-state/store.js';
+} from "../../cluster-state/store.js";
 import type {
   ClusterState,
   TrackerMutationReference,
   TrackerMutationStatus,
-} from '../../cluster-state/types.js';
-import { LocalGraph } from '../local-graph.js';
-import { loadMutationQueue, saveMutationQueue } from './queue-store.js';
+} from "../../cluster-state/types.js";
+import { LocalGraph } from "../local-graph.js";
+import { loadMutationQueue, saveMutationQueue } from "./queue-store.js";
+import { resolveLifecycleTransition, type TrackerLifecyclePolicy } from "../lifecycle-policy.js";
 
 export interface MutationEvidence {
   runId: string;
@@ -69,6 +70,7 @@ interface TrackerSyncServiceOptions {
   repoRoot?: string;
   clusterId?: string;
   queueFilePath?: string;
+  lifecyclePolicy?: TrackerLifecyclePolicy;
 }
 
 interface PreparedQueueResult {
@@ -107,6 +109,7 @@ export class TrackerSyncService {
   private readonly repoRoot: string;
   private readonly clusterId?: string;
   private readonly queueFilePath: string;
+  private readonly lifecyclePolicy?: TrackerLifecyclePolicy;
   readonly ready: Promise<void>;
 
   constructor(adapter: TrackerAdapter, localGraph: LocalGraph, options: TrackerSyncServiceOptions = {}) {
@@ -114,7 +117,8 @@ export class TrackerSyncService {
     this.localGraphRef = localGraph;
     this.repoRoot = options.repoRoot ?? process.cwd();
     this.clusterId = options.clusterId;
-    this.queueFilePath = options.queueFilePath ?? path.join(this.repoRoot, '.taskchain_artifacts', 'polaris-run', 'mutation-queue.json');
+    this.queueFilePath = options.queueFilePath ?? path.join(this.repoRoot, ".taskchain_artifacts", "polaris-run", "mutation-queue.json");
+    this.lifecyclePolicy = options.lifecyclePolicy;
     this.ready = this.loadQueue();
   }
 
@@ -322,16 +326,26 @@ export class TrackerSyncService {
 
       let queuedMutation: MutationRecord | undefined = existingQueueMutation;
       if (!queuedMutation) {
+        // Resolve the lifecycle state from policy for validation-passed children
+        const lifecycleTransition = resolveLifecycleTransition("child-validation-passed", this.lifecyclePolicy);
+
+        // Skip creating a mutation if the policy says to skip or target is no_status_change
+        if (lifecycleTransition.skip || lifecycleTransition.targetState === "no_status_change") {
+          continue;
+        }
+
+        const targetState = lifecycleTransition.targetState;
+
         const newMutation: MutationRecord = {
           id: randomUUID(),
           operationId: idempotencyKey,
-          type: 'update',
-          entityType: 'issue',
+          type: "update",
+          entityType: "issue",
           entityId: childState.id,
           payload: {
-            state: 'Done',
+            state: targetState,
           },
-          status: 'pending',
+          status: "pending",
           timestamp: new Date().toISOString(),
           retries: 0,
           evidence: {
@@ -344,7 +358,9 @@ export class TrackerSyncService {
         queuedMutation = newMutation;
         preparedCount += 1;
         changed = true;
-        preparedDetails.push(`Queued validated tracker mutation for ${childState.id}.`);
+        preparedDetails.push(
+          `Queued validated tracker mutation for ${childState.id} (target state: ${targetState}).`
+        );
       }
 
       if (!queuedMutation) {

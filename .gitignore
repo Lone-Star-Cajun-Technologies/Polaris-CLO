@@ -10,12 +10,13 @@ docs/Polaris/.obsidian/
 .taskchain_artifacts/bootstrap-run/
 
 # Polaris workspace scratch — never commit
-.taskchain_artifacts/*/current-state.json
-.taskchain_artifacts/*/remaining-state.json
-.taskchain_artifacts/*/run-report.md
-.taskchain_artifacts/**/*.bak
+.taskchain_artifacts/**
+*.bak
 .polaris/runs/mutation-queue.json
-.taskchain_artifacts/*/mutation-queue.json
+.polaris/runs/current-state.pre-pol-198.json
+.polaris/runs/evo-run-archive/**
+.polaris/bootstrap/**
+.polaris/session-type
 
 # Cognition staging — ephemeral, not committed
-.polaris/cognition/pending/
+.polaris/cognition/pending/**

@@ -517,7 +517,8 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
   // Step 13: Update Linear parent issue
   console.log("[13/14] Updating Linear...");
   const linearEnabled = config.tracker?.linear?.enabled ?? false;
-  await stepUpdateLinear(state, branch, prUrl, true, linearEnabled, state.cluster_id);
+  const lifecyclePolicy = config.tracker?.lifecyclePolicy;
+  await stepUpdateLinear(state, branch, prUrl, true, linearEnabled, state.cluster_id, lifecyclePolicy);
 
   // Step 14: Archive run snapshot
   console.log("[14/14] Archiving run snapshot...");

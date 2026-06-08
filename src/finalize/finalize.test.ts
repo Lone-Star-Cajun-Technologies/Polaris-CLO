@@ -320,7 +320,7 @@ describe("stepUpdateLinear", () => {
     const state = readState(stateFile);
     // Should resolve without error when disabled
     await expect(
-      stepUpdateLinear(state, "test-branch", "https://example.com/pr/1", true, false),
+      stepUpdateLinear(state, "test-branch", "https://example.com/pr/1", true, false, undefined, undefined),
     ).resolves.toBeUndefined();
     rmSync(dir, { recursive: true, force: true });
   });
