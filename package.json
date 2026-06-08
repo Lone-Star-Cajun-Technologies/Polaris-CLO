@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Polaris — standalone taskchain orchestration framework for governed AI agent workflows",
   "bin": {
-    "polaris": "dist/cli/index.js"
+    "polaris-cli": "dist/cli/index.js"
   },
   "main": "dist/index.js",
   "exports": {
@@ -25,7 +25,7 @@
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit --project tsconfig.typecheck.json",
     "test": "vitest run",
-    "polaris": "node dist/cli/index.js",
+    "polaris-cli": "node dist/cli/index.js",
     "prepublishOnly": "npm run build && npm test"
   },
   "keywords": [
