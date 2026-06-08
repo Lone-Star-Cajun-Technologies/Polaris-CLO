@@ -33,6 +33,7 @@ const baseInventory: RepoScanInventory = {
   architecture_notes: ["TypeScript monorepo with CLI tooling"],
   likely_canonical_folders: ["src"],
   smartdocs_candidates: [],
+  ignore_candidates: [],
 };
 
 beforeEach(() => {

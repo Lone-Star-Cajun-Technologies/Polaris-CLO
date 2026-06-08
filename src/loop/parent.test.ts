@@ -183,7 +183,7 @@ function makeClusterStateFile(
 function makeStateFileWithMeta(
   dir: string,
   openChildren: string[],
-  meta: Record<string, { type?: string; title?: string; labels?: string[] }>,
+  meta: Record<string, { type?: string; title?: string; body?: string; labels?: string[] }>,
   maxChildren: number = 10,
 ): string {
   const stateFile = join(dir, "current-state.json");

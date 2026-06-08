@@ -5,6 +5,7 @@ import { readClusterState, writeClusterState } from '../../cluster-state/store.j
 import { LocalGraph } from '../local-graph.js';
 import { TrackerSyncService, type TrackerAdapter, type MutationRecord } from './index.js';
 import { loadMutationQueue } from './queue-store.js';
+import type { TrackerMutationStatus } from '../../cluster-state/types.js';
 
 const scratchRoots: string[] = [];
 
@@ -97,7 +98,7 @@ describe('TrackerSyncService', () => {
       fetchData: vi.fn().mockResolvedValue(null),
       applyMutation: vi.fn(async (mutation: MutationRecord) => ({
         ...mutation,
-        status: 'succeeded',
+        status: 'succeeded' as TrackerMutationStatus,
         remoteId: `remote-${mutation.entityId}`,
       })),
       detectConflict: vi.fn().mockReturnValue(false),

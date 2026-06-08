@@ -16,7 +16,7 @@ import type { FileRouteEntry } from "../map/atlas.js";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export type RouteHealthState = "healthy" | "known-issues" | "stale";
+export type RouteHealthState = "healthy" | "recovering" | "monitoring" | "known-issues" | "stale";
 
 export interface CognitionDeltaOptions {
   repoRoot: string;
@@ -50,7 +50,7 @@ export function assessRouteHealth(
 ): RouteHealthState {
   const daysSinceUpdate = (Date.now() - new Date(route.last_updated).getTime()) / (1000 * 60 * 60 * 24);
 
-  // Staleness check
+  // Staleness check (highest priority)
   if (daysSinceUpdate > staleThresholdDays) {
     return "stale";
   }
@@ -63,7 +63,17 @@ export function assessRouteHealth(
     return "known-issues";
   }
 
-  // Healthy: fresh, identity complete
+  // Cognition surface check: instructionFile configured but file missing on disk
+  const instructionFileAbs = join(repoRoot, route.instructionFile!);
+  if (!existsSync(instructionFileAbs)) {
+    return "monitoring";
+  }
+
+  // Recovery window: recently updated (7–threshold days ago)
+  if (daysSinceUpdate > 7) {
+    return "recovering";
+  }
+
   return "healthy";
 }
 

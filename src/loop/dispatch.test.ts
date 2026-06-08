@@ -1232,7 +1232,7 @@ describe("result_file_contract — dispatch contract consistency", () => {
     const rfc = packet.result_file_contract as Record<string, unknown>;
     const resultFilePath = rfc.result_file as string;
 
-    const prompt = buildWorkerInstructions(packet as Parameters<typeof buildWorkerInstructions>[0]);
+    const prompt = buildWorkerInstructions(packet as unknown as Parameters<typeof buildWorkerInstructions>[0]);
     expect(prompt).toContain(`SEALED RESULT FILE: ${resultFilePath}`);
   });
 

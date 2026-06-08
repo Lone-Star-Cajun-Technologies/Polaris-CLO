@@ -57,7 +57,7 @@ describe("installCliSubtaskBridge", () => {
           },
         },
       },
-    } as ReturnType<typeof loadConfig>);
+    } as unknown as ReturnType<typeof loadConfig>);
   });
 
   it("installs a dispatcher bridge that uses the copilot provider by default", async () => {
@@ -121,7 +121,7 @@ describe("installCliSubtaskBridge", () => {
           claude: { command: "claude", args: ["{{worker_prompt}}"] },
         },
       },
-    } as ReturnType<typeof loadConfig>);
+    } as unknown as ReturnType<typeof loadConfig>);
 
     installCliSubtaskBridge("/repo");
 
