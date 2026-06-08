@@ -26,7 +26,6 @@ The finalize subsystem implements the atomic 13-step final delivery sequence for
 - Treat `artifact-policy.ts` as the single source of truth for Polaris-owned artifact promotion and commit-hygiene rules; do not duplicate `.polaris/`/`.taskchain_artifacts/` path checks in individual step files.
 - `stepCommit` must only promote durable Polaris evidence plus intentional source/doc changes; live workspace scratch stays out of delivery commits.
 - Remote delivery steps after the commit are skipped when `--skip-delivery` is passed or `--dry-run` is active. Enforce this in `runFinalize`, not in individual step files.
-- The closeout-librarian gate must pass before `polaris finalize run` may create or publish delivery artifacts. The canonical terminal cluster state lives at `.polaris/clusters/<cluster-id>/state.json`.
 - `polaris finalize run` is manual/operator-triggered and performs delivery unless `--dry-run` or `--skip-delivery` is supplied.
 - JSONL telemetry events (`pr-opened`, `run-complete`) are emitted by `polaris finalize` via step 10. Do not emit them elsewhere.
 - `polaris finalize` is the only command that pushes to remote. No other subsystem may call `git push`.
@@ -36,7 +35,7 @@ The finalize subsystem implements the atomic 13-step final delivery sequence for
 - Delivery is atomic: if any step fails, the session does not report completion.
 - Tracker sync-out is atomic with finalize: unresolved reconciliation failures block delivery before the final commit.
 - The PR is created as a draft (`prDraft: true` by default in config).
-- `polaris finalize` reads the canonical cluster state for cluster_id, branch, run_id, and completed_children — it does not re-read Linear for this information.
+- `polaris finalize` reads `current-state.json` for cluster_id, branch, run_id, and completed_children — it does not re-read Linear for this information.
 - Linear parent issue (cluster_id) is updated in step 11 after the PR URL is known.
 
 ## Read before editing

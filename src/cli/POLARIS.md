@@ -8,8 +8,7 @@ The CLI entry point for Polaris. It wires the `polaris` binary, registers all to
 
 - `index.ts` — binary entry point; registers subsystem commands via `addCommand()`
 - `graph.ts` — `polaris graph build|query|impact` command group and output formatting
-- `librarian.ts` — closeout librarian packet command surface
-- config command wiring — `polaris config show|doctor` and related read-only reporting
+- `librarian.ts` — closeout librarian packet/result command surface
 - `medic.ts` — `polaris medic chart create` command; scaffolds Medic diagnostic charts
 - `worker.ts` — worker-owned commit enforcement command factory
 - `version.ts`, `version.test.ts` — version helper and test
@@ -26,8 +25,6 @@ The CLI entry point for Polaris. It wires the `polaris` binary, registers all to
 - Public help must label safe/read-only commands separately from mutating commands. Deferred 1.0 commands must be marked unavailable instead of sounding implemented.
 - Unknown commands and bare subsystem commands must exit non-zero with actionable help.
 - `welfare-check` is a safe/read-only top-level command wired from `src/map/welfare.ts`; it exits non-zero when route health review is required.
-- `config doctor` is read-only and should describe install, provider, tracker, and artifact readiness without mutating state.
-- `librarian packet` is a packet generator only; the dispatch/execution of closeout work lives outside the CLI surface.
 - Keep `index.ts` short — it should remain a thin wiring file.
 - Version string comes from `getVersion()` only — do not hardcode version strings elsewhere.
 
