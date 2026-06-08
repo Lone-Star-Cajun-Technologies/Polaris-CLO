@@ -1,5 +1,6 @@
 import { LocalGraph } from "./local-graph.js";
 import { LinearAdapter } from "./adapters/linear/index.js";
+import { LocalFileAdapter } from "./adapters/local-file/index.js";
 import type { PolarisConfig } from "../config/schema.js";
 export {
   resolveLifecycleTransition,
@@ -10,6 +11,17 @@ export type {
   LifecycleTransitionEvent,
   LifecycleTransitionResult,
 } from "./lifecycle-policy.js";
+export type {
+  TrackerCapabilities,
+  StatusMappingResult,
+  LifecycleTransitionResult as CapabilityLifecycleTransitionResult,
+  CommentResult,
+  LinkResult,
+  DependencyResult,
+  CreateChildResult,
+  CapableTrackerAdapter,
+} from "./capabilities.js";
+export { LinearAdapter, LocalFileAdapter };
 
 /**
  * Loads the execution graph from the configured tracker.
