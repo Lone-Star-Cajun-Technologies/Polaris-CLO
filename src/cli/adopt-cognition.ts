@@ -1,5 +1,5 @@
 import { Dirent, existsSync, mkdirSync, readdirSync, statSync, writeFileSync } from "node:fs";
-import { basename, join, resolve } from "node:path";
+import { basename, join } from "node:path";
 import type { AdoptionPlan, RepoScanInventory } from "./adoption-plan.js";
 
 const EXCLUDED_SEGMENTS = new Set(["node_modules", "dist", ".git"]);
@@ -169,12 +169,12 @@ function buildSummaryDraft(folder: string): string {
 export function generateFolderCognition(
   plan: AdoptionPlan,
   inventory: RepoScanInventory,
+  repoRoot: string,
 ): Promise<void> {
   if (plan.dry_run) {
     return Promise.resolve();
   }
 
-  const repoRoot = resolve(process.cwd());
   const folders = Array.from(new Set(inventory.likely_canonical_folders.map(normalizeFolder)));
 
   for (const folder of folders) {
