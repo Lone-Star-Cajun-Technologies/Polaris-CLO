@@ -17,7 +17,6 @@ function isAncestorSymlink(repoRoot: string, relPath: string): boolean {
     const ancestor = resolve(repoRoot, ...parts.slice(0, i + 1));
     try {
       const stat = lstatSync(ancestor);
-      if (!stat) return false;
       if (stat.isSymbolicLink()) return true;
     } catch (err: unknown) {
       if ((err as NodeJS.ErrnoException).code === "ENOENT") return false;
