@@ -584,6 +584,7 @@ describe("runInit — repo state detection", () => {
         markdownPath: "/fake-repo/.polaris/adoption-plan.md",
         wroteFiles: false,
       }),
+      scaffoldRootSurfaces: vi.fn().mockReturnValue({ created: [], skipped: [] }),
     });
 
     expect(mockedWriteFileSync).toHaveBeenCalledTimes(1);
@@ -922,6 +923,7 @@ describe("runInit — adopt approval gate", () => {
         markdownPath: "/fake-repo/.polaris/adoption-plan.md",
         wroteFiles: false,
       }),
+      scaffoldRootSurfaces: vi.fn().mockReturnValue({ created: [], skipped: [] }),
     });
 
     expect(mockedMkdirSync).toHaveBeenCalledWith(join(REPO_ROOT, "smartdocs/raw"), {
