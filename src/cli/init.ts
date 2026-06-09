@@ -31,6 +31,7 @@ import { generateFolderCognition as generateRepoFolderCognition } from "./adopt-
 import { migrateSmartDocs } from "./adopt-smartdocs.js";
 import { runMapIndex } from "../map/index.js";
 import { handleInstructionFiles } from "./adopt-instructions.js";
+import { scaffoldRootSurfaces as defaultScaffoldRootSurfaces } from "./adopt-workspace.js";
 import {
   formatGitignoreBlock,
   isPathBlockedFromStaging,
@@ -78,7 +79,11 @@ export interface InitOptions {
     inventory: RepoScanInventory,
   ) => { moved: number; skipped: number };
   /** Injected folder cognition generation step — for unit testing. */
-  generateFolderCognition?: (plan: AdoptionPlan, inventory: RepoScanInventory) => Promise<void>;
+  generateFolderCognition?: (plan: AdoptionPlan, inventory: RepoScanInventory, repoRoot: string) => Promise<void>;
+  /** Injected root workspace surface scaffolding — for unit testing. */
+  scaffoldRootSurfaces?: (repoRoot: string) => { created: string[]; skipped: string[] };
+  /** Injected finalizeAdoption — for unit testing. */
+  finalizeAdoption?: (plan: AdoptionPlanArtifacts["plan"], options: { repoRoot: string; commit?: boolean; now?: Date }) => Promise<void>;
   /** Injected timestamp for deterministic testing. */
   now?: Date;
 }
@@ -572,6 +577,13 @@ export async function runInit(options: InitOptions = {}): Promise<void> {
   if (options.adopt) {
     if (!options.dryRun) {
       writeAdoptionConfigLock(repoRoot, configPath, existing, detected, detectedRepoAnalysis);
+      // Phase A: scaffold root surfaces before inventory scan so doctrineExists check in
+      // instruction reconciliation sees POLARIS.md at runtime.
+      const scaffoldFn = options.scaffoldRootSurfaces ?? defaultScaffoldRootSurfaces;
+      const scaffoldResult = scaffoldFn(repoRoot);
+      if (scaffoldResult.created.length > 0) {
+        process.stdout.write(`Root surfaces created: ${scaffoldResult.created.join(", ")}\n`);
+      }
     }
   } else {
     writeFileSync(configPath, `${JSON.stringify(updated, null, 2)}\n`, "utf-8");
@@ -687,12 +699,14 @@ export async function runInit(options: InitOptions = {}): Promise<void> {
   void (options.generateFolderCognition ?? generateRepoFolderCognition)(
     adoptionArtifacts.plan,
     inventory,
+    repoRoot,
   );
   process.stdout.write("Folder cognition generation step completed.\n");
-  handleInstructionFiles(adoptionArtifacts.plan, inventory);
+  handleInstructionFiles(adoptionArtifacts.plan, inventory, repoRoot);
   process.stdout.write("Instruction file handling step completed.\n");
+  const finalizeAdoptionFn = options.finalizeAdoption ?? finalizeAdoption;
   if (adoptionArtifacts.plan.steps.some((step) => step.category === "stage")) {
-    finalizeAdoption(adoptionArtifacts.plan, {
+    await finalizeAdoptionFn(adoptionArtifacts.plan, {
       repoRoot,
       commit: options.commit,
       now,
@@ -700,7 +714,17 @@ export async function runInit(options: InitOptions = {}): Promise<void> {
     return;
   }
 
-  process.stdout.write("Adoption approved. Proceeding with mutation phases.\n");
+  // No stage step — stage inline so adoption is always committed/staged
+  stageAdoptionOutputs(repoRoot, adoptionArtifacts.plan);
+  unstageRuntimeArtifacts(repoRoot);
+  printAdoptionSummary(repoRoot, adoptionArtifacts.plan);
+  if (options.commit) {
+    const message = createAdoptionCommitMessage(adoptionArtifacts.plan);
+    execFileSync("git", ["commit", "-m", message], { cwd: repoRoot, stdio: "pipe" });
+    process.stdout.write(`Adoption commit created: ${message}\n`);
+  } else {
+    process.stdout.write("Adoption changes staged. Review with `git diff --cached` and commit when ready.\n");
+  }
 }
 
 /**
