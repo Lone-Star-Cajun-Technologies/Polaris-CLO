@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { basename, join, resolve } from "node:path";
+import { basename, join } from "node:path";
 import type { AdoptionPlan, RepoScanInventory } from "./adoption-plan.js";
 
 type InstructionDecision = "preserve" | "thin-adapter" | "migrate";
@@ -149,12 +149,11 @@ function appendInstructionProvenance(
 export function handleInstructionFiles(
   plan: AdoptionPlan,
   inventory: RepoScanInventory,
+  repoRoot: string,
 ): Promise<void> {
   if (plan.dry_run) {
     return Promise.resolve();
   }
-
-  const repoRoot = resolve(process.cwd());
   const doctrineExists = hasDoctrine(repoRoot);
   const now = new Date().toISOString();
 
