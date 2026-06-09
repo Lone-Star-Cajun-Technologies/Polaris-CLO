@@ -155,7 +155,7 @@ function buildSteps(inventory: RepoScanInventory): AdoptionStep[] {
       phase: "A",
       category: "scaffold",
       action: "create",
-      dest_path: "POLARIS.md, SUMMARY.md, CLAUDE.md, AGENTS.md, .github/copilot-instructions.md",
+      dest_path: "CLAUDE.md, AGENTS.md, .github/copilot-instructions.md",
       description: "Create root POLARIS.md, SUMMARY.md, and thin-pointer agent instruction files if missing.",
       destructive: false,
       requires_approval: false,

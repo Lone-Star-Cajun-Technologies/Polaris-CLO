@@ -171,6 +171,9 @@ describe("generateAdoptionPlan — workspace-root-surfaces step", () => {
     expect(step!.estimated_risk).toBe("low");
     expect(step!.destructive).toBe(false);
     expect(step!.requires_approval).toBe(false);
+    expect(step!.dest_path).toContain("CLAUDE.md");
+    expect(step!.dest_path).toContain("AGENTS.md");
+    expect(step!.dest_path).toContain(".github/copilot-instructions.md");
   });
 
   it("workspace-root-surfaces step appears before all Phase C steps", () => {
