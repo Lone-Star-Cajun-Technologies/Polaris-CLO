@@ -149,6 +149,20 @@ function buildSteps(inventory: RepoScanInventory): AdoptionStep[] {
     }),
   );
 
+  steps.push(
+    createStep(order++, {
+      step_id: "workspace-root-surfaces",
+      phase: "A",
+      category: "scaffold",
+      action: "create",
+      dest_path: "POLARIS.md, SUMMARY.md, CLAUDE.md, AGENTS.md, .github/copilot-instructions.md",
+      description: "Create root POLARIS.md, SUMMARY.md, and thin-pointer agent instruction files if missing.",
+      destructive: false,
+      requires_approval: false,
+      estimated_risk: "low",
+    }),
+  );
+
   for (const candidate of inventory.smartdocs_candidates) {
     steps.push(
       createStep(order++, {

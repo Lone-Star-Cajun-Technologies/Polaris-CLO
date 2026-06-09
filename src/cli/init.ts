@@ -1,6 +1,7 @@
 import {
   writeFileSync,
   existsSync,
+  lstatSync,
   readFileSync,
   mkdirSync,
   renameSync,
@@ -389,6 +390,26 @@ function updatePlanForFinalization(
   return updatedPlan;
 }
 
+/**
+ * Returns true if any ancestor of relPath (from repoRoot) is a symlink.
+ * Prevents git from rejecting pathspecs that are "beyond a symbolic link".
+ */
+export function isBeyondSymlink(repoRoot: string, relPath: string): boolean {
+  const parts = relPath.split("/").filter(Boolean);
+  for (let i = 0; i < parts.length - 1; i++) {
+    const ancestor = resolve(repoRoot, ...parts.slice(0, i + 1));
+    try {
+      if (lstatSync(ancestor).isSymbolicLink()) {
+        return true;
+      }
+    } catch {
+      // ancestor doesn't exist — can't be a symlink
+      return false;
+    }
+  }
+  return false;
+}
+
 function stageAdoptionOutputs(repoRoot: string, plan: AdoptionPlanArtifacts["plan"]): void {
   const stagePaths = new Set<string>([
     ".polaris/adoption-plan.json",
@@ -398,6 +419,9 @@ function stageAdoptionOutputs(repoRoot: string, plan: AdoptionPlanArtifacts["pla
     ".polaris/map",
     "POLARIS.md",
     "SUMMARY.md",
+    "CLAUDE.md",
+    "AGENTS.md",
+    ".github/copilot-instructions.md",
     ".gitignore",
   ]);
 
@@ -410,9 +434,20 @@ function stageAdoptionOutputs(repoRoot: string, plan: AdoptionPlanArtifacts["pla
     }
   }
 
-  const existingPaths = [...stagePaths].filter((p) => existsSync(resolve(repoRoot, p)));
-  if (existingPaths.length > 0) {
-    execFileSync("git", ["add", "-A", "--", ...existingPaths], { cwd: repoRoot, stdio: "pipe" });
+  const validPaths: string[] = [];
+  for (const p of stagePaths) {
+    if (!existsSync(resolve(repoRoot, p))) {
+      continue;
+    }
+    if (isBeyondSymlink(repoRoot, p)) {
+      process.stderr.write(`Skipping adoption output inside symlinked path: ${p}\n`);
+      continue;
+    }
+    validPaths.push(p);
+  }
+
+  if (validPaths.length > 0) {
+    execFileSync("git", ["add", "-A", "--", ...validPaths], { cwd: repoRoot, stdio: "pipe" });
   }
 }
 

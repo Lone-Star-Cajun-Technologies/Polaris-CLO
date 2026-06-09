@@ -139,3 +139,65 @@ describe("adoption-plan", () => {
     );
   });
 });
+
+describe("generateAdoptionPlan — workspace-root-surfaces step", () => {
+  const BASE_INVENTORY: RepoScanInventory = {
+    scan_date: "2026-06-09T00:00:00.000Z",
+    repo_state: "existing",
+    package_manager: null,
+    source_roots: [],
+    docs_roots: [],
+    test_commands: [],
+    build_commands: [],
+    package_scripts: {},
+    generated_roots: [],
+    cache_roots: [],
+    fixture_roots: [],
+    existing_smartdocs_dirs: [],
+    architecture_notes: [],
+    likely_canonical_folders: [],
+    smartdocs_candidates: [],
+    ignore_candidates: [],
+    agent_instruction_files: [],
+  };
+
+  it("always includes a workspace-root-surfaces step in Phase A", () => {
+    const plan = generateAdoptionPlan(BASE_INVENTORY);
+
+    const step = plan.steps.find((s) => s.step_id === "workspace-root-surfaces");
+    expect(step).toBeDefined();
+    expect(step!.phase).toBe("A");
+    expect(step!.category).toBe("scaffold");
+    expect(step!.estimated_risk).toBe("low");
+    expect(step!.destructive).toBe(false);
+    expect(step!.requires_approval).toBe(false);
+  });
+
+  it("workspace-root-surfaces step appears before all Phase C steps", () => {
+    const inventory: RepoScanInventory = {
+      ...BASE_INVENTORY,
+      smartdocs_candidates: [
+        {
+          path: "docs/design.md",
+          kind: "architecture",
+          suggested_destination: "smartdocs/raw/design.md",
+          confidence: 0.9,
+          has_frontmatter: false,
+          estimated_risk: "medium",
+        },
+      ],
+    };
+
+    const plan = generateAdoptionPlan(inventory);
+
+    const surfaceStep = plan.steps.find((s) => s.step_id === "workspace-root-surfaces");
+    expect(surfaceStep).toBeDefined();
+    const surfaceOrder = surfaceStep!.order;
+    const phaseCOrders = plan.steps
+      .filter((s) => s.phase === "C")
+      .map((s) => s.order);
+
+    expect(phaseCOrders.length).toBeGreaterThan(0);
+    expect(phaseCOrders.every((o) => o > surfaceOrder)).toBe(true);
+  });
+});
