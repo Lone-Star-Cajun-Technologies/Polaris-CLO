@@ -50,6 +50,7 @@ const BASE_INVENTORY = {
   likely_canonical_folders: [],
   smartdocs_candidates: [],
   ignore_candidates: [],
+  agent_instruction_files: [],
 };
 
 beforeEach(() => { vi.resetAllMocks(); });
@@ -78,17 +79,26 @@ describe("handleInstructionFiles — repoRoot injection", () => {
     expect(provenanceCall).toBeDefined();
     expect(String(provenanceCall![0])).toContain(REPO_ROOT);
     expect(String(provenanceCall![0])).not.toContain(process.cwd());
+    // existsSync should have been called with the injected repoRoot path
+    expect(mockedExistsSync).toHaveBeenCalledWith(`${REPO_ROOT}/CLAUDE.md`);
   });
 
-  it("skips files not in inventory even if they exist", async () => {
+  it("skips inventory entries with unsupported paths", async () => {
     mockedExistsSync.mockReturnValue(true);
+    mockedReadFileSync.mockReturnValue("# Some content");
 
     await handleInstructionFiles(
       { ...BASE_PLAN },
-      { ...BASE_INVENTORY, agent_instruction_files: [] },
+      {
+        ...BASE_INVENTORY,
+        agent_instruction_files: [
+          { path: "README.md", provider: "claude" as const, recommendation: "preserve" as const, reason: "test" },
+        ],
+      },
       REPO_ROOT,
     );
 
+    // README.md is not a supported instruction path — no writes should happen
     expect(vi.mocked(fs.writeFileSync)).not.toHaveBeenCalled();
   });
 
