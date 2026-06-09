@@ -1,0 +1,25 @@
+{
+  "name": "docs-promote-chain",
+  "steps": [
+    "01-orient-promote",
+    "02-review-candidates",
+    "03-read-linked-code",
+    "04-conflict-surface",
+    "05-await-approval",
+    "06-execute-promote-deprecate",
+    "07-finalize-promote"
+  ],
+  "terminal_steps": ["07-finalize-promote"],
+  "scope": "docs-promote-only",
+  "forbidden_actions": [
+    "src file mutations",
+    "polaris loop continue",
+    "polaris finalize",
+    "git push",
+    "pr creation",
+    "spec-promote --approve without user confirmation in session",
+    "doctrine promote without governance field check",
+    "architecture/ writes",
+    "decisions/ writes"
+  ]
+}

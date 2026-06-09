@@ -1,0 +1,23 @@
+{
+  "name": "docs-ingest-chain",
+  "steps": [
+    "01-orient-ingest",
+    "02-classify-batch",
+    "03-conflict-check",
+    "04-place-and-link",
+    "05-finalize-ingest"
+  ],
+  "terminal_steps": ["05-finalize-ingest"],
+  "scope": "docs-ingest-only",
+  "forbidden_actions": [
+    "src file mutations",
+    "polaris loop continue",
+    "polaris finalize",
+    "git push",
+    "pr creation",
+    "doctrine/active/ writes without user approval",
+    "architecture/ writes without user approval",
+    "decisions/ writes without user approval",
+    "root docs/ writes for new Smart Docs"
+  ]
+}

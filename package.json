@@ -21,7 +21,7 @@
     "node": ">=22.0.0"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && cp -r src/workspace dist/workspace",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit --project tsconfig.typecheck.json",
     "test": "vitest run",
