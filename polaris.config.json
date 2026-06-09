@@ -9,7 +9,12 @@
     "providers": {
       "devin": {
         "command": "devin",
-        "args": ["--permission-mode", "bypass", "-p", "{{worker_prompt}}"]
+        "args": [
+          "--permission-mode",
+          "bypass",
+          "-p",
+          "{{worker_prompt}}"
+        ]
       },
       "claude": {
         "command": "env",
@@ -30,40 +35,69 @@
       },
       "codex": {
         "command": "codex",
-        "args": ["{{worker_prompt}}"]
+        "args": [
+          "{{worker_prompt}}"
+        ]
       },
       "gemini": {
         "command": "gemini",
-        "args": ["--prompt", "{{worker_prompt}}"]
+        "args": [
+          "--prompt",
+          "{{worker_prompt}}"
+        ]
       },
       "copilot": {
         "command": "copilot",
-        "args": ["-p", "{{worker_prompt}}", "--autopilot", "--allow-all-tools"]
+        "args": [
+          "-p",
+          "{{worker_prompt}}",
+          "--autopilot",
+          "--allow-all-tools"
+        ]
       },
       "custom": {
         "command": "$POLARIS_AGENT",
-        "args": ["{{worker_prompt}}"]
+        "args": [
+          "{{worker_prompt}}"
+        ]
       }
     },
     "allowCrossAgentFallback": false,
     "providerPolicy": {
       "worker": {
-        "providers": ["devin", "copilot", "codex"],
+        "providers": [
+          "devin",
+          "copilot",
+          "codex"
+        ],
         "allowNativeSubagent": false
       },
       "orchestrator": {
-        "providers": ["codex", "copilot"],
+        "providers": [
+          "codex",
+          "copilot"
+        ],
         "allowNativeSubagent": false
       },
       "analyst": {
-        "providers": ["claude", "codex"],
+        "providers": [
+          "claude",
+          "codex"
+        ],
         "allowNativeSubagent": true
       },
       "librarian": {
-        "providers": ["claude","codex","devin","copilot"]
+        "providers": [
+          "claude",
+          "codex",
+          "devin",
+          "copilot"
+        ]
       },
       "finalizer": {
-        "providers": ["copilot"]
+        "providers": [
+          "copilot"
+        ]
       }
     }
   },
@@ -76,11 +110,21 @@
     "ingestBatchSize": 10
   },
   "tracker": {
-   "adapter": "linear",
-   "linear": {
+    "adapter": "linear",
+    "linear": {
       "enabled": true,
       "teamId": "Polaris",
       "projectId": "Polaris Core Runtime"
+    }
+  },
+  "version": "1.0",
+  "providers": {
+    "compactionProviders": [
+      "caveman",
+      "gitnexus"
+    ],
+    "repoAnalysis": {
+      "preferred": "gitnexus"
+    }
   }
-}
 }

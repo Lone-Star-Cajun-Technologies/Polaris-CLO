@@ -6,6 +6,7 @@ build/
 !.codex/plugins/**/*.js
 .env
 docs/Polaris/.obsidian/
+docs/superpowers/
 .claude/worktrees/
 
 # Internal Smart Docs — operational content, not user-facing
