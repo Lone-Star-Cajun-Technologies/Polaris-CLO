@@ -418,6 +418,7 @@ describe("runInit — repo state detection", () => {
         ignore_candidates: [],
       }),
       generateAdoptionArtifacts,
+      scaffoldRootSurfaces: vi.fn().mockReturnValue({ created: [], skipped: [] }),
     });
 
     expect(generateAdoptionArtifacts).toHaveBeenCalledWith(
@@ -499,6 +500,7 @@ describe("runInit — repo state detection", () => {
         markdownPath: "/fake-repo/.polaris/adoption-plan.md",
         wroteFiles: false,
       }),
+      scaffoldRootSurfaces: vi.fn().mockReturnValue({ created: [], skipped: [] }),
     });
 
     const [, content] = mockedWriteFileSync.mock.calls[0] as [string, string, string];
