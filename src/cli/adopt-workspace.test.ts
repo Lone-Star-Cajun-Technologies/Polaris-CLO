@@ -16,6 +16,7 @@ vi.mock("node:fs", async (importOriginal) => {
 const mockedExistsSync = vi.mocked(fs.existsSync);
 const mockedLstatSync = vi.mocked(fs.lstatSync);
 const mockedWriteFileSync = vi.mocked(fs.writeFileSync);
+const mockedMkdirSync = vi.mocked(fs.mkdirSync);
 
 const REPO_ROOT = "/test-repo";
 
@@ -39,6 +40,10 @@ describe("scaffoldRootSurfaces", () => {
     );
     expect(result.skipped).toHaveLength(0);
     expect(mockedWriteFileSync).toHaveBeenCalledTimes(5);
+    expect(mockedMkdirSync).toHaveBeenCalledWith(
+      expect.stringContaining(".github"),
+      { recursive: true },
+    );
   });
 
   it("skips surfaces that already exist", () => {
