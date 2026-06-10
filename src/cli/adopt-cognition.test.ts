@@ -67,10 +67,11 @@ describe("generateFolderCognition — repoRoot injection", () => {
     });
     mockedStatSync.mockReturnValue({ isDirectory: () => true } as fs.Stats);
     // return 3+ source files so eligibility check passes
-    mockedReaddirSync.mockReturnValue([
-      { name: "a.ts", isDirectory: () => false, isFile: () => true } as unknown as fs.Dirent,
-      { name: "b.ts", isDirectory: () => false, isFile: () => true } as unknown as fs.Dirent,
-      { name: "c.ts", isDirectory: () => false, isFile: () => true } as unknown as fs.Dirent,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (mockedReaddirSync as any).mockReturnValue([
+      { name: "a.ts", isDirectory: () => false, isFile: () => true },
+      { name: "b.ts", isDirectory: () => false, isFile: () => true },
+      { name: "c.ts", isDirectory: () => false, isFile: () => true },
     ]);
 
     await generateFolderCognition(BASE_PLAN, BASE_INVENTORY, REPO_ROOT);
@@ -96,10 +97,11 @@ describe("generateFolderCognition — repoRoot injection", () => {
       return s === `${REPO_ROOT}/src` || s === `${REPO_ROOT}/src/POLARIS.md`;
     });
     mockedStatSync.mockReturnValue({ isDirectory: () => true } as fs.Stats);
-    mockedReaddirSync.mockReturnValue([
-      { name: "a.ts", isDirectory: () => false, isFile: () => true } as unknown as fs.Dirent,
-      { name: "b.ts", isDirectory: () => false, isFile: () => true } as unknown as fs.Dirent,
-      { name: "c.ts", isDirectory: () => false, isFile: () => true } as unknown as fs.Dirent,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (mockedReaddirSync as any).mockReturnValue([
+      { name: "a.ts", isDirectory: () => false, isFile: () => true },
+      { name: "b.ts", isDirectory: () => false, isFile: () => true },
+      { name: "c.ts", isDirectory: () => false, isFile: () => true },
     ]);
 
     await generateFolderCognition(BASE_PLAN, BASE_INVENTORY, REPO_ROOT);
