@@ -281,14 +281,17 @@ describe("runInit — repo state detection", () => {
     expect(mockedWriteFileSync).not.toHaveBeenCalled();
   });
 
-  it("allows config generation for existing repos when --adopt is set", () => {
+  it("allows config generation for existing repos when --adopt is set", async () => {
     mockedExistsSync.mockReturnValue(false);
 
-    runInit({
+    await runInit({
       repoRoot: REPO_ROOT,
       adopt: true,
       yes: true,
       scaffoldRootSurfaces: vi.fn().mockReturnValue({ created: [], skipped: [] }),
+      installWorkspaceAssets: vi.fn().mockReturnValue({ installed: [], alreadyPresent: [], skipped: [], conflicted: [] }),
+      runGraphBuild: vi.fn().mockReturnValue({ status: "graph-success" as const }),
+      reconcileAgentFiles: vi.fn().mockResolvedValue([]),
       detectRepoState: vi.fn().mockReturnValue("existing"),
       detectProviders: vi.fn().mockReturnValue(["caveman"]),
       detectRepoAnalysisProviders: vi.fn().mockReturnValue([]),
@@ -501,6 +504,9 @@ describe("runInit — repo state detection", () => {
         wroteFiles: false,
       }),
       scaffoldRootSurfaces: vi.fn().mockReturnValue({ created: [], skipped: [] }),
+      installWorkspaceAssets: vi.fn().mockReturnValue({ installed: [], alreadyPresent: [], skipped: [], conflicted: [] }),
+      runGraphBuild: vi.fn().mockReturnValue({ status: "graph-success" as const }),
+      reconcileAgentFiles: vi.fn().mockResolvedValue([]),
     });
 
     const [, content] = mockedWriteFileSync.mock.calls[0] as [string, string, string];
@@ -587,6 +593,9 @@ describe("runInit — repo state detection", () => {
         wroteFiles: false,
       }),
       scaffoldRootSurfaces: vi.fn().mockReturnValue({ created: [], skipped: [] }),
+      installWorkspaceAssets: vi.fn().mockReturnValue({ installed: [], alreadyPresent: [], skipped: [], conflicted: [] }),
+      runGraphBuild: vi.fn().mockReturnValue({ status: "graph-success" as const }),
+      reconcileAgentFiles: vi.fn().mockResolvedValue([]),
     });
 
     expect(mockedWriteFileSync).toHaveBeenCalledTimes(1);
@@ -693,11 +702,11 @@ describe("runInit — adopt approval gate", () => {
     expect(mockedWriteFileSync).toHaveBeenCalledOnce();
   });
 
-  it("bypasses prompt and proceeds when --yes is set", () => {
+  it("bypasses prompt and proceeds when --yes is set", async () => {
     mockedExistsSync.mockReturnValue(false);
     const readAdoptionApproval = vi.fn();
 
-    runInit({
+    await runInit({
       repoRoot: REPO_ROOT,
       adopt: true,
       yes: true,
@@ -748,6 +757,9 @@ describe("runInit — adopt approval gate", () => {
       }),
       readAdoptionApproval,
       scaffoldRootSurfaces: vi.fn().mockReturnValue({ created: [], skipped: [] }),
+      installWorkspaceAssets: vi.fn().mockReturnValue({ installed: [], alreadyPresent: [], skipped: [], conflicted: [] }),
+      runGraphBuild: vi.fn().mockReturnValue({ status: "graph-success" as const }),
+      reconcileAgentFiles: vi.fn().mockResolvedValue([]),
     });
 
     expect(readAdoptionApproval).not.toHaveBeenCalled();
@@ -775,7 +787,7 @@ describe("runInit — adopt approval gate", () => {
     expect(stdoutOutput).toContain("Adoption changes staged.");
   });
 
-  it("resumes an already approved adoption plan without prompting", () => {
+  it("resumes an already approved adoption plan without prompting", async () => {
     const config = {
       version: "1.0",
     };
@@ -817,7 +829,7 @@ describe("runInit — adopt approval gate", () => {
     const generateAdoptionArtifacts = vi.fn();
     const readAdoptionApproval = vi.fn();
 
-    runInit({
+    await runInit({
       repoRoot: REPO_ROOT,
       adopt: true,
       resume: true,
@@ -845,6 +857,9 @@ describe("runInit — adopt approval gate", () => {
       generateAdoptionArtifacts,
       readAdoptionApproval,
       scaffoldRootSurfaces: vi.fn().mockReturnValue({ created: [], skipped: [] }),
+      installWorkspaceAssets: vi.fn().mockReturnValue({ installed: [], alreadyPresent: [], skipped: [], conflicted: [] }),
+      runGraphBuild: vi.fn().mockReturnValue({ status: "graph-success" as const }),
+      reconcileAgentFiles: vi.fn().mockResolvedValue([]),
     });
 
     expect(generateAdoptionArtifacts).not.toHaveBeenCalled();
@@ -926,6 +941,9 @@ describe("runInit — adopt approval gate", () => {
         wroteFiles: false,
       }),
       scaffoldRootSurfaces: vi.fn().mockReturnValue({ created: [], skipped: [] }),
+      installWorkspaceAssets: vi.fn().mockReturnValue({ installed: [], alreadyPresent: [], skipped: [], conflicted: [] }),
+      runGraphBuild: vi.fn().mockReturnValue({ status: "graph-success" as const }),
+      reconcileAgentFiles: vi.fn().mockResolvedValue([]),
     });
 
     expect(mockedMkdirSync).toHaveBeenCalledWith(join(REPO_ROOT, "smartdocs/raw"), {
@@ -1267,6 +1285,9 @@ describe("runInit --adopt — orchestration fixes", () => {
       applySmartDocsMigration: vi.fn().mockReturnValue({ moved: 0, skipped: 0 }),
       generateFolderCognition: vi.fn().mockResolvedValue(undefined),
       scaffoldRootSurfaces: vi.fn().mockReturnValue({ created: [], skipped: [] }),
+      installWorkspaceAssets: vi.fn().mockReturnValue({ installed: [], alreadyPresent: [], skipped: [], conflicted: [] }),
+      runGraphBuild: vi.fn().mockReturnValue({ status: "graph-success" as const }),
+      reconcileAgentFiles: vi.fn().mockResolvedValue([]),
       finalizeAdoption: vi.fn().mockResolvedValue(undefined),
       ...overrides,
     };
@@ -1384,5 +1405,41 @@ describe("runInit --adopt — orchestration fixes", () => {
     await runInit(makeBaseAdoptOptions({ dryRun: true, scaffoldRootSurfaces: mockScaffold }));
 
     expect(mockScaffold).not.toHaveBeenCalled();
+  });
+
+  it("calls installWorkspaceAssets (Phase B) then runGraphBuild + reconcileAgentFiles (C2/D) in the inline path", async () => {
+    const callOrder: string[] = [];
+
+    const mockInstall = vi.fn(() => {
+      callOrder.push("installWorkspaceAssets");
+      return { installed: [], alreadyPresent: [], skipped: [], conflicted: [] };
+    });
+    const mockGraph = vi.fn(() => {
+      callOrder.push("runGraphBuild");
+      return { status: "graph-success" as const };
+    });
+    const mockReconcile = vi.fn(async () => {
+      callOrder.push("reconcileAgentFiles");
+      return [];
+    });
+
+    // No finalizeAdoption override — plan has no "stage" step, so inline path runs C2/D/E/F
+    await runInit(makeBaseAdoptOptions({
+      installWorkspaceAssets: mockInstall,
+      runGraphBuild: mockGraph,
+      reconcileAgentFiles: mockReconcile,
+      finalizeAdoption: undefined,
+    }));
+
+    const installIdx = callOrder.indexOf("installWorkspaceAssets");
+    const graphIdx = callOrder.indexOf("runGraphBuild");
+    const reconcileIdx = callOrder.indexOf("reconcileAgentFiles");
+
+    expect(installIdx).toBeGreaterThan(-1);
+    expect(graphIdx).toBeGreaterThan(-1);
+    expect(reconcileIdx).toBeGreaterThan(-1);
+
+    expect(installIdx).toBeLessThan(graphIdx);    // Phase B before C2
+    expect(graphIdx).toBeLessThan(reconcileIdx);  // C2 before D
   });
 });
