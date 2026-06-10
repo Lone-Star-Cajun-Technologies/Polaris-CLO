@@ -717,7 +717,7 @@ export async function runInit(options: InitOptions = {}): Promise<void> {
   process.stdout.write("Instruction file handling step completed.\n");
   // Phase B — install bundled workspace assets
   const installFn = options.installWorkspaceAssets ?? defaultInstallWorkspaceAssets;
-  const workspaceDir = resolve(__dirname, "../../workspace");
+  const workspaceDir = resolve(__dirname, "../workspace");
   const installResult = installFn(repoRoot, workspaceDir);
   process.stdout.write(`Workspace assets installed: ${installResult.installed.length} installed, ${installResult.alreadyPresent.length} already present.\n`);
   const finalizeAdoptionFn = options.finalizeAdoption ?? finalizeAdoption;
