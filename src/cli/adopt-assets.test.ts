@@ -9,8 +9,14 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { installWorkspaceAssets, isThinPointer } from "./adopt-assets.js";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { installWorkspaceAssets, isThinPointer, runGraphBuild } from "./adopt-assets.js";
+
+vi.mock("node:child_process", () => ({
+  spawnSync: vi.fn(),
+}));
+
+import { spawnSync } from "node:child_process";
 
 function makeFakeWorkspace(dir: string): void {
   // Skills
@@ -126,5 +132,56 @@ describe("isThinPointer", () => {
   it("Test 5: returns false with more than 3 meaningful lines even with POLARIS.md present", () => {
     const content = "Read POLARIS.md before beginning any work.\nAlways use TypeScript strict mode.\nRun tests before committing.\nUse pnpm not npm.\n";
     expect(isThinPointer(content)).toBe(false);
+  });
+});
+
+describe("runGraphBuild", () => {
+  it("Test 1: returns graph-success when spawnSync returns status 0 with stdout", () => {
+    vi.mocked(spawnSync).mockReturnValue({
+      status: 0,
+      stdout: "Symbols: 142",
+      stderr: "",
+      pid: 1234,
+      output: ["Symbols: 142"],
+      signal: null,
+    });
+
+    const result = runGraphBuild("/repo");
+
+    expect(result.status).toBe("graph-success");
+    expect(result.stdout).toBe("Symbols: 142");
+    expect(result.reason).toBeUndefined();
+    expect(result.followUpCommand).toBeUndefined();
+  });
+
+  it("Test 2: returns graph-failed with reason when spawnSync returns status 1 with stderr", () => {
+    vi.mocked(spawnSync).mockReturnValue({
+      status: 1,
+      stdout: "",
+      stderr: "Tree-sitter bindings not found",
+      pid: 1234,
+      output: ["", "Tree-sitter bindings not found"],
+      signal: null,
+    });
+
+    const result = runGraphBuild("/repo");
+
+    expect(result.status).toBe("graph-failed");
+    expect(result.reason).toBe("Tree-sitter bindings not found");
+    expect(result.followUpCommand).toBe("polaris-cli graph build");
+    expect(result.stdout).toBeUndefined();
+  });
+
+  it("Test 3: returns graph-failed when spawnSync throws ENOENT error", () => {
+    const error = new Error("ENOENT");
+    vi.mocked(spawnSync).mockImplementation(() => {
+      throw error;
+    });
+
+    const result = runGraphBuild("/repo");
+
+    expect(result.status).toBe("graph-failed");
+    expect(result.reason).toBe("ENOENT");
+    expect(result.followUpCommand).toBe("polaris-cli graph build");
   });
 });

@@ -5,6 +5,7 @@ import {
   mkdirSync,
   readdirSync,
 } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { join, resolve } from "node:path";
 
 export interface WorkspaceInstallResult {
@@ -12,6 +13,15 @@ export interface WorkspaceInstallResult {
   alreadyPresent: string[];
   skipped: string[];
   conflicted: string[];
+}
+
+export type GraphBuildStatus = "graph-success" | "graph-failed" | "graph-skipped";
+
+export interface GraphBuildResult {
+  status: GraphBuildStatus;
+  stdout?: string;
+  reason?: string;
+  followUpCommand?: string;
 }
 
 function isAncestorSymlink(repoRoot: string, relPath: string): boolean {
@@ -173,4 +183,34 @@ export function installWorkspaceAssets(
   }
 
   return { installed, alreadyPresent, skipped, conflicted };
+}
+
+export function runGraphBuild(repoRoot: string): GraphBuildResult {
+  try {
+    const proc = spawnSync(process.execPath, [process.argv[1], "graph", "build"], {
+      cwd: repoRoot,
+      encoding: "utf-8",
+      timeout: 5 * 60 * 1000,
+    });
+
+    if (proc.status === 0) {
+      return {
+        status: "graph-success",
+        stdout: proc.stdout || undefined,
+      };
+    }
+
+    return {
+      status: "graph-failed",
+      reason: proc.stderr || "Unknown error",
+      followUpCommand: "polaris-cli graph build",
+    };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return {
+      status: "graph-failed",
+      reason: errorMsg,
+      followUpCommand: "polaris-cli graph build",
+    };
+  }
 }
