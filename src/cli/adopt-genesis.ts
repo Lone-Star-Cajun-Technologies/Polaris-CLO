@@ -76,6 +76,7 @@ export async function reconcileAgentFiles(
 
     let Anthropic: { new (opts: { apiKey: string }): unknown };
     try {
+      // @ts-ignore: @anthropic-ai/sdk may not be installed as a dependency
       const mod = await import("@anthropic-ai/sdk");
       Anthropic = (mod as { default: typeof Anthropic }).default;
     } catch {

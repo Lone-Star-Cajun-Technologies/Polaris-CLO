@@ -8,7 +8,6 @@ import {
 } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { resolve, join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
 import { Command } from "commander";
 import { detectRepoState, type RepoState } from "./init-detect.js";
 import {
@@ -718,7 +717,7 @@ export async function runInit(options: InitOptions = {}): Promise<void> {
   process.stdout.write("Instruction file handling step completed.\n");
   // Phase B — install bundled workspace assets
   const installFn = options.installWorkspaceAssets ?? defaultInstallWorkspaceAssets;
-  const workspaceDir = fileURLToPath(new URL("../../workspace", import.meta.url));
+  const workspaceDir = resolve(__dirname, "../../workspace");
   const installResult = installFn(repoRoot, workspaceDir);
   process.stdout.write(`Workspace assets installed: ${installResult.installed.length} installed, ${installResult.alreadyPresent.length} already present.\n`);
   const finalizeAdoptionFn = options.finalizeAdoption ?? finalizeAdoption;
