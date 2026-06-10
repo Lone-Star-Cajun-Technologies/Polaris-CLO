@@ -10,7 +10,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { installWorkspaceAssets } from "./adopt-assets.js";
+import { installWorkspaceAssets, isThinPointer } from "./adopt-assets.js";
 
 function makeFakeWorkspace(dir: string): void {
   // Skills
@@ -99,5 +99,32 @@ expect(result.installed.length).toBeGreaterThan(0);
     expect(roleSkipped.length).toBeGreaterThan(0);
 
     rmSync(realRolesDir, { recursive: true, force: true });
+  });
+});
+
+describe("isThinPointer", () => {
+  it("Test 1: returns true for a classic thin pointer with POLARIS.md reference", () => {
+    const content = "# Agent Instructions\n\nRead [POLARIS.md](POLARIS.md) before beginning any work.\n";
+    expect(isThinPointer(content)).toBe(true);
+  });
+
+  it("Test 2: returns false when no POLARIS.md reference", () => {
+    const content = "# My rules\n\nAlways use TypeScript.\n";
+    expect(isThinPointer(content)).toBe(false);
+  });
+
+  it("Test 3: returns false when more than 3 meaningful lines (even with POLARIS.md)", () => {
+    const content = "# Agent Instructions\nRead POLARIS.md before beginning any work.\nAlso: always lint before committing.\nUse conventional commits.\nNever push to main directly.\n";
+    expect(isThinPointer(content)).toBe(false);
+  });
+
+  it("Test 4: returns true when blank lines and HTML comment lines are ignored", () => {
+    const content = "\n<!-- genesis doctrine archived: smartdocs/doctrine/active/2026-06-09-genesis-agent-doctrine.md -->\n\nRead [POLARIS.md](POLARIS.md) before beginning any work.\n";
+    expect(isThinPointer(content)).toBe(true);
+  });
+
+  it("Test 5: returns false with more than 3 meaningful lines even with POLARIS.md present", () => {
+    const content = "Read POLARIS.md before beginning any work.\nAlways use TypeScript strict mode.\nRun tests before committing.\nUse pnpm not npm.\n";
+    expect(isThinPointer(content)).toBe(false);
   });
 });

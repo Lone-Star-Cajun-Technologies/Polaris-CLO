@@ -67,6 +67,30 @@ function installSmartdocsDir(
   }
 }
 
+export function isThinPointer(content: string): boolean {
+  // Split into lines
+  const lines = content.split("\n");
+
+  // Filter to meaningful lines (non-empty, non-whitespace, non-HTML-comment)
+  const meaningfulLines = lines.filter((line) => {
+    const trimmed = line.trim();
+    // Empty or whitespace-only
+    if (!trimmed) return false;
+    // HTML comment line (entire line is a comment)
+    if (/^<!--.*-->$/.test(trimmed)) return false;
+    return true;
+  });
+
+  // Rule 1: meaningful lines must be <= 3
+  if (meaningfulLines.length > 3) return false;
+
+  // Rule 2: at least one line must contain "POLARIS.md"
+  const hasPolarisRef = meaningfulLines.some((line) => line.includes("POLARIS.md"));
+  if (!hasPolarisRef) return false;
+
+  return true;
+}
+
 export function installWorkspaceAssets(
   repoRoot: string,
   workspaceDir: string,
