@@ -49,6 +49,10 @@ function buildRootPolarisDraft(): string {
     "",
     "<!-- Describe content that should be routed elsewhere. -->",
     "",
+    "## Polaris Rules",
+    "",
+    "See [POLARIS_RULES.md](POLARIS_RULES.md) for canonical Polaris navigation and routing rules.",
+    "",
   ].join("\n");
 }
 

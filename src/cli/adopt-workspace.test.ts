@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import * as fs from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { scaffoldRootSurfaces } from "./adopt-workspace.js";
 
 vi.mock("node:fs", async (importOriginal) => {
@@ -109,5 +112,19 @@ describe("scaffoldRootSurfaces", () => {
       const call = mockedWriteFileSync.mock.calls.find(([p]) => String(p).endsWith(name));
       expect(String(call![1])).toContain("POLARIS.md");
     }
+  });
+
+  it("POLARIS.md draft includes ## Polaris Rules section referencing POLARIS_RULES.md", () => {
+    mockedExistsSync.mockReturnValue(false);
+    mockedLstatSync.mockReturnValue({ isSymbolicLink: () => false } as fs.Stats);
+
+    scaffoldRootSurfaces(REPO_ROOT);
+
+    const polarisWrite = mockedWriteFileSync.mock.calls.find(([p]) =>
+      String(p).endsWith("POLARIS.md"),
+    );
+    const content = String(polarisWrite![1]);
+    expect(content).toContain("## Polaris Rules");
+    expect(content).toContain("POLARIS_RULES.md");
   });
 });

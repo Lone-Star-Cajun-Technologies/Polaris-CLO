@@ -32,6 +32,11 @@ import { migrateSmartDocs } from "./adopt-smartdocs.js";
 import { runMapIndex } from "../map/index.js";
 import { handleInstructionFiles } from "./adopt-instructions.js";
 import { scaffoldRootSurfaces as defaultScaffoldRootSurfaces } from "./adopt-workspace.js";
+import { installWorkspaceAssets as defaultInstallWorkspaceAssets, runGraphBuild as defaultRunGraphBuild } from "./adopt-assets.js";
+import type { WorkspaceInstallResult, GraphBuildResult } from "./adopt-assets.js";
+import { reconcileAgentFiles as defaultReconcileAgentFiles } from "./adopt-genesis.js";
+import type { AgentReconcileRecord, ReconcileOptions } from "./adopt-genesis.js";
+import { buildAdoptionReport, writeAdoptionReport, printAdoptionReport } from "./adopt-report.js";
 import {
   formatGitignoreBlock,
   isPathBlockedFromStaging,
@@ -84,6 +89,12 @@ export interface InitOptions {
   scaffoldRootSurfaces?: (repoRoot: string) => { created: string[]; skipped: string[] };
   /** Injected finalizeAdoption — for unit testing. */
   finalizeAdoption?: (plan: AdoptionPlanArtifacts["plan"], options: { repoRoot: string; commit?: boolean; now?: Date }) => Promise<void>;
+  /** Injected installWorkspaceAssets — for unit testing. */
+  installWorkspaceAssets?: (repoRoot: string, workspaceDir: string) => WorkspaceInstallResult;
+  /** Injected runGraphBuild — for unit testing. */
+  runGraphBuild?: (repoRoot: string) => GraphBuildResult;
+  /** Injected reconcileAgentFiles — for unit testing. */
+  reconcileAgentFiles?: (repoRoot: string, opts?: ReconcileOptions) => Promise<AgentReconcileRecord[]>;
   /** Injected timestamp for deterministic testing. */
   now?: Date;
 }
@@ -704,6 +715,11 @@ export async function runInit(options: InitOptions = {}): Promise<void> {
   process.stdout.write("Folder cognition generation step completed.\n");
   handleInstructionFiles(adoptionArtifacts.plan, inventory, repoRoot);
   process.stdout.write("Instruction file handling step completed.\n");
+  // Phase B — install bundled workspace assets
+  const installFn = options.installWorkspaceAssets ?? defaultInstallWorkspaceAssets;
+  const workspaceDir = resolve(__dirname, "../workspace");
+  const installResult = installFn(repoRoot, workspaceDir);
+  process.stdout.write(`Workspace assets installed: ${installResult.installed.length} installed, ${installResult.alreadyPresent.length} already present.\n`);
   const finalizeAdoptionFn = options.finalizeAdoption ?? finalizeAdoption;
   if (adoptionArtifacts.plan.steps.some((step) => step.category === "stage")) {
     await finalizeAdoptionFn(adoptionArtifacts.plan, {
@@ -714,7 +730,20 @@ export async function runInit(options: InitOptions = {}): Promise<void> {
     return;
   }
 
-  // No stage step — stage inline so adoption is always committed/staged
+  // Phase C2 — graph build (automatic, non-blocking)
+  const graphBuildFn = options.runGraphBuild ?? defaultRunGraphBuild;
+  const graphResult = graphBuildFn(repoRoot);
+
+  // Phase D — agent file reconciliation
+  const reconcileFn = options.reconcileAgentFiles ?? defaultReconcileAgentFiles;
+  const agentResults = await reconcileFn(repoRoot);
+
+  // Phase E — adoption report
+  const adoptReport = buildAdoptionReport({ install: installResult, graph: graphResult, agents: agentResults });
+  printAdoptionReport(adoptReport);
+  writeAdoptionReport(repoRoot, adoptReport);
+
+  // Phase F — safe stage + optional commit
   stageAdoptionOutputs(repoRoot, adoptionArtifacts.plan);
   unstageRuntimeArtifacts(repoRoot);
   printAdoptionSummary(repoRoot, adoptionArtifacts.plan);

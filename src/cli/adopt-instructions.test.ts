@@ -68,7 +68,7 @@ describe("handleInstructionFiles — repoRoot injection", () => {
 
     await handleInstructionFiles(
       { ...BASE_PLAN },
-      { ...BASE_INVENTORY, agent_instruction_files: [{ path: "CLAUDE.md", provider: "claude", recommendation: "preserve", reason: "test" }] },
+      { ...BASE_INVENTORY, agent_instruction_files: [{ path: "CLAUDE.md", provider: "claude", recommendation: "preserve", reason: "test", size_bytes: 100, has_polaris_delegation: false }] },
       REPO_ROOT,
     );
 
@@ -92,7 +92,7 @@ describe("handleInstructionFiles — repoRoot injection", () => {
       {
         ...BASE_INVENTORY,
         agent_instruction_files: [
-          { path: "README.md", provider: "claude" as const, recommendation: "preserve" as const, reason: "test" },
+          { path: "README.md", provider: "claude" as const, recommendation: "preserve" as const, reason: "test", size_bytes: 50, has_polaris_delegation: false },
         ],
       },
       REPO_ROOT,
@@ -105,7 +105,7 @@ describe("handleInstructionFiles — repoRoot injection", () => {
   it("returns immediately on dry_run without any writes", async () => {
     await handleInstructionFiles(
       { ...BASE_PLAN, dry_run: true },
-      { ...BASE_INVENTORY, agent_instruction_files: [{ path: "CLAUDE.md", provider: "claude", recommendation: "preserve", reason: "test" }] },
+      { ...BASE_INVENTORY, agent_instruction_files: [{ path: "CLAUDE.md", provider: "claude", recommendation: "preserve", reason: "test", size_bytes: 100, has_polaris_delegation: false }] },
       REPO_ROOT,
     );
 
