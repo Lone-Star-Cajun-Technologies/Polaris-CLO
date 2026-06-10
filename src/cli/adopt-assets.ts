@@ -189,20 +189,20 @@ export function runGraphBuild(repoRoot: string): GraphBuildResult {
   try {
     const proc = spawnSync(process.execPath, [process.argv[1], "graph", "build"], {
       cwd: repoRoot,
-      encoding: "utf-8",
+      encoding: "buffer",
       timeout: 5 * 60 * 1000,
     });
 
     if (proc.status === 0) {
       return {
         status: "graph-success",
-        stdout: proc.stdout || undefined,
+        stdout: proc.stdout ? proc.stdout.toString("utf-8") : undefined,
       };
     }
 
     return {
       status: "graph-failed",
-      reason: proc.stderr || "Unknown error",
+      reason: proc.stderr ? proc.stderr.toString("utf-8") : "Unknown error",
       followUpCommand: "polaris-cli graph build",
     };
   } catch (err: unknown) {
