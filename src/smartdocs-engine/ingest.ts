@@ -23,7 +23,7 @@ import { stampIngestFrontMatter } from "./doctrine.js";
 import { applySummaryDelta, findNearestSummarymd, detectPrecedenceLevel } from "../cognition/summary-delta.js";
 import { computeAuthorityRisk } from "../governance/authority-risk.js";
 import type { ClassificationResult } from "../governance/types.js";
-import { route } from "../governance/routing.js";
+import { route, writeReviewQueue, readReviewQueue, applyReviewDecisions } from "../governance/index.js";
 import type { RoutingDecision } from "../governance/types.js";
 
 export type DocsClassification =
@@ -519,6 +519,10 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
   const priorState = readCurrentState(repoRoot);
   const clusterId = options.clusterId ?? null;
   const runId = generateRunId(repoRoot);
+  const rawDir = resolve(repoRoot, CANONICAL_TARGET, "raw");
+
+  // Read existing review queue to apply prior human decisions
+  const priorQueue = readReviewQueue(rawDir);
 
   // Emit run-start telemetry (STOP CONDITION if this write fails)
   emitRunStartTelemetry(repoRoot, runId, priorState.run_id ?? null);
@@ -736,6 +740,17 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
     count: results.length,
     cluster_id: clusterId,
   });
+
+  // Write review queue if any review-required results exist
+  const reviewPackets = results
+    .filter(r => r.routingDecision === "review-required" && r.reviewPacket)
+    .map(r => r.reviewPacket!);
+
+  if (reviewPackets.length > 0) {
+    // Apply any prior human decisions before writing
+    const mergedPackets = applyReviewDecisions(reviewPackets, priorQueue);
+    writeReviewQueue(mergedPackets, runId, rawDir);
+  }
 
   if (!options.dryRun) {
     writeDocsIngestState(repoRoot, {
