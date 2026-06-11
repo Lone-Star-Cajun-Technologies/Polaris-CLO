@@ -42,4 +42,16 @@ describe("computeAuthorityRisk", () => {
   it("path wins over classification for medium vs high", () => {
     expect(computeAuthorityRisk("doctrine-candidate", "smartdocs/architecture/foo.md")).toBe("high");
   });
+
+  it("does not match architecture as substring of another segment", () => {
+    expect(computeAuthorityRisk("spec-raw", "src/architecture-patterns/guide.md")).toBe("low");
+  });
+
+  it("does not match specs/active as substring", () => {
+    expect(computeAuthorityRisk("spec-raw", "smartdocs/specs/active-backups/old.md")).toBe("low");
+  });
+
+  it("does not match doctrine/active as substring of leading segment", () => {
+    expect(computeAuthorityRisk("spec-raw", "my-doctrine/active/outline.md")).toBe("low");
+  });
 });

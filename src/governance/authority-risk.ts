@@ -21,13 +21,22 @@ const MEDIUM_AUTHORITY_CLASSIFICATIONS = new Set([
   "doctrine-candidate",
 ]);
 
+function containsPathSegment(normalized: string, segment: string): boolean {
+  return (
+    normalized === segment ||
+    normalized.startsWith(segment + "/") ||
+    normalized.endsWith("/" + segment) ||
+    normalized.includes("/" + segment + "/")
+  );
+}
+
 function riskFromPath(destinationPath: string): AuthorityRisk | null {
   const normalized = destinationPath.replace(/\\/g, "/");
   for (const seg of HIGH_AUTHORITY_PATH_SEGMENTS) {
-    if (normalized.includes(seg)) return "high";
+    if (containsPathSegment(normalized, seg)) return "high";
   }
   for (const seg of MEDIUM_AUTHORITY_PATH_SEGMENTS) {
-    if (normalized.includes(seg)) return "medium";
+    if (containsPathSegment(normalized, seg)) return "medium";
   }
   return null;
 }
