@@ -351,13 +351,18 @@ docs-ingest runs
 **Resumable review cycle:**
 
 ```
-user edits _review-queue.md (sets reviewDecision fields)
+user edits _review-queue.json directly (sets reviewDecision fields)
+OR uses a future review command/UI to set reviewDecision fields
   → reruns docs-ingest
   → ingest reads _review-queue.json, applies decisions before classifying new files
   → approved items route to proposed destination
-  → rejected items return to raw/ with rejection stamp in frontmatter
+  → rejected items return to raw/ with rejection metadata in frontmatter
   → deferred items remain in queue for next run
 ```
+
+**Markdown review queues are display-only.** Polaris must never parse `_review-queue.md`
+to recover decisions. The markdown file is regenerated from `_review-queue.json` after
+decisions change. Ingest reads JSON only.
 
 ---
 
