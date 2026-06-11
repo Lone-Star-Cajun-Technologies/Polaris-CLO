@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { describe, expect, it } from "vitest";
-import { classifyDoc, ingestDocs, CANONICAL_TARGET } from "./ingest.js";
+import { classifyDoc, classifyDocWithConfidence, ingestDocs, CANONICAL_TARGET } from "./ingest.js";
 
 function makeRepo(): string {
   const repoRoot = mkdtempSync(join(tmpdir(), "polaris-docs-ingest-"));
@@ -343,5 +343,54 @@ describe("ingestDocs", () => {
     expect(() => ingestDocs(["scratch/draft.md"], { repoRoot })).toThrow(
       "ignored by .smartdocignore/defaults: scratch/draft.md",
     );
+  });
+});
+
+describe("classifyDocWithConfidence", () => {
+  it("returns ClassificationResult with clamped scores", () => {
+    const result = classifyDocWithConfidence(
+      "---\ndoc-type: doctrine\nauthority: doctrine\n---\n# Doctrine\nAgents must always preserve state.",
+    );
+    expect(result.classificationConfidence).toBeGreaterThan(0);
+    expect(result.classificationConfidence).toBeLessThanOrEqual(1.0);
+    expect(result.destinationCertainty).toBeGreaterThan(0);
+    expect(result.destinationCertainty).toBeLessThanOrEqual(1.0);
+    expect(result.authorityRisk).toBe("medium"); // doctrine-candidate → doctrine/candidate → medium
+    expect(result.reasoning.length).toBeGreaterThan(0);
+  });
+
+  it("returns low confidence when no signals present", () => {
+    const result = classifyDocWithConfidence("# Some Title\n\nSome content.");
+    expect(result.classificationConfidence).toBeLessThan(0.6);
+  });
+
+  it("scores higher confidence with frontmatter doc-type", () => {
+    const withFm = classifyDocWithConfidence("---\ndoc-type: spec\n---\n# Spec");
+    const withoutFm = classifyDocWithConfidence("# Spec\n\nAcceptance criteria");
+    expect(withFm.classificationConfidence).toBeGreaterThan(withoutFm.classificationConfidence);
+  });
+
+  it("scores higher destination certainty with explicit map area in frontmatter", () => {
+    const withArea = classifyDocWithConfidence(
+      "---\nlinked-map-area: src/smartdocs-engine\n---\n# Spec\n",
+    );
+    const withoutArea = classifyDocWithConfidence("# Spec\n\nAcceptance criteria");
+    expect(withArea.destinationCertainty).toBeGreaterThan(withoutArea.destinationCertainty);
+  });
+
+  it("clamps scores at 1.0 even with many signals", () => {
+    const content = [
+      "---",
+      "doc-type: doctrine",
+      "authority: doctrine",
+      "status: active",
+      "linked-map-area: src/smartdocs-engine",
+      "---",
+      "# Doctrine",
+      "Agents must always preserve state. Workers must never bypass finalize.",
+    ].join("\n");
+    const result = classifyDocWithConfidence(content);
+    expect(result.classificationConfidence).toBeLessThanOrEqual(1.0);
+    expect(result.destinationCertainty).toBeLessThanOrEqual(1.0);
   });
 });

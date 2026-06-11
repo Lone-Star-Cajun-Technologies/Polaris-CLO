@@ -21,6 +21,8 @@ import { getMonotonicTimestamp } from "../utils/monotonic-timestamp.js";
 import { isIngestIneligible } from "./smartdoc-ignore.js";
 import { stampIngestFrontMatter } from "./doctrine.js";
 import { applySummaryDelta, findNearestSummarymd, detectPrecedenceLevel } from "../cognition/summary-delta.js";
+import { computeAuthorityRisk } from "../governance/authority-risk.js";
+import type { ClassificationResult } from "../governance/types.js";
 
 export type DocsClassification =
   | "runtime-summary"
@@ -169,6 +171,97 @@ export function classifyDoc(content: string, filePath = ""): DocsClassification 
     return "spec-raw";
   }
   return "spec-raw";
+}
+
+const DOMAIN_KEYWORDS_RE = /\b(loop|map|finalize|config|cli|docs|doctrine|spec|audit)\b/i;
+
+export function classifyDocWithConfidence(
+  content: string,
+  filePath?: string,
+): ClassificationResult {
+  const classification = classifyDoc(content, filePath ?? "");
+  const reasoning: string[] = [];
+
+  // --- classificationConfidence ---
+  let classConf = 0.3;
+
+  const docType = frontMatterValue(content, "doc-type");
+  if (docType) {
+    classConf += 0.4;
+    reasoning.push(`Explicit frontmatter doc-type: ${docType}`);
+  }
+
+  const authority = frontMatterValue(content, "authority")?.toLowerCase();
+  const status = frontMatterValue(content, "status")?.toLowerCase();
+  const hasSupportingFm = authority || status;
+  if (hasSupportingFm) {
+    // check alignment: authority or status loosely matches classification
+    const classLower = classification.toLowerCase();
+    if (
+      (authority && classLower.includes(authority)) ||
+      (status && classLower.includes(status))
+    ) {
+      classConf += 0.2;
+      reasoning.push(`Frontmatter authority/status aligns with classification`);
+    }
+  }
+
+  // Count independent keyword signals from classifyDoc logic
+  const lower = `${filePath ?? ""}\n${content}`.toLowerCase();
+  let keywordSignals = 0;
+  if (lower.includes("run report") || lower.includes("run-report")) keywordSignals++;
+  if (lower.includes("runtime summary") || lower.includes("session summary")) keywordSignals++;
+  if (lower.includes("audit finding") || lower.includes("vulnerability") || lower.includes("security audit")) keywordSignals++;
+  if (lower.includes("doctrine") || lower.includes("must always") || lower.includes("never silently")) keywordSignals++;
+  if (lower.includes("architecture decision record") || /^#\s*adr[:\s-]/im.test(content)) keywordSignals++;
+  if (lower.includes("architecture") || lower.includes("structural design")) keywordSignals++;
+  if (lower.includes("active spec")) keywordSignals++;
+  if (lower.includes("acceptance criteria") || lower.includes("implementation plan")) keywordSignals++;
+
+  if (keywordSignals >= 2) {
+    classConf += 0.3;
+    reasoning.push(`Multiple (${keywordSignals}) independent keyword signals matched`);
+  } else if (keywordSignals === 1) {
+    classConf += 0.1;
+    reasoning.push(`Single keyword signal matched`);
+  } else {
+    reasoning.push(`Default spec-raw fallback with no signals`);
+  }
+
+  classConf = Math.min(classConf, 1.0);
+
+  // --- destinationCertainty ---
+  let destCert = 0.2;
+
+  const linkedMapArea = frontMatterValue(content, "linked-map-area");
+  if (linkedMapArea) {
+    destCert += 0.4;
+    reasoning.push(`Frontmatter linked-map-area: ${linkedMapArea}`);
+  }
+
+  if (filePath && DOMAIN_KEYWORDS_RE.test(filePath)) {
+    destCert += 0.2;
+    reasoning.push(`Domain keyword found in filename`);
+  }
+
+  const isDefaultFallback = classification === "spec-raw" && keywordSignals === 0 && !docType;
+  if (!isDefaultFallback) {
+    destCert += 0.2;
+    reasoning.push(`Classification is not default fallback`);
+  }
+
+  destCert = Math.min(destCert, 1.0);
+
+  const proposedDest = TARGET_DIRS[classification as DocsClassification] ?? "";
+  const authorityRisk = computeAuthorityRisk(classification, proposedDest);
+
+  return {
+    classification,
+    classificationConfidence: classConf,
+    destinationCertainty: destCert,
+    authorityRisk,
+    reasoning,
+  };
 }
 
 function readCurrentState(repoRoot: string): DocsIngestState {
