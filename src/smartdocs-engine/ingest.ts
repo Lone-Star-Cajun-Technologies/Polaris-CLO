@@ -726,7 +726,7 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
       summaryDeltaWarranted: summaryDelta.updateWarranted,
       routingDecision: routingDecision.outcome,
       reviewPacket: routingDecision.reviewPacket
-        ? { ...routingDecision.reviewPacket, sourcePath: relSource, proposedDestination: relDestination }
+        ? { ...routingDecision.reviewPacket, sourcePath: relSource, proposedDestination: relDestination, conflicts: [] }
         : undefined,
     });
   }

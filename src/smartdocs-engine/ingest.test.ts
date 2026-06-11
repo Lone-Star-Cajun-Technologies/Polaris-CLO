@@ -201,7 +201,10 @@ describe("ingestDocs", () => {
     const results = ingestDocs([`${CANONICAL_TARGET}/raw/simple-spec.md`], {
       repoRoot,
       maxFiles: 1,
+      confidenceThreshold: 0,
+      destinationCertaintyThreshold: 0,
     });
+    expect(results[0].routingDecision).toBeDefined();
     expect(["auto-route", "candidate", "review-required"]).toContain(results[0].routingDecision);
   });
 
@@ -241,7 +244,7 @@ describe("ingestDocs", () => {
       "utf-8",
     );
 
-    const [result] = ingestDocs(["smartdocs/raw/spec-dry.md"], { repoRoot, dryRun: true });
+    const [result] = ingestDocs(["smartdocs/raw/spec-dry.md"], { repoRoot, dryRun: true, confidenceThreshold: 0, destinationCertaintyThreshold: 0 });
 
     expect(result.dryRun).toBe(true);
     expect(result.classification).toBe("spec-raw");
