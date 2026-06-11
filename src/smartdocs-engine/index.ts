@@ -48,25 +48,44 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
   docs
     .command("ingest [path]")
     .description("Classify and place docs into the smartdocs/ canonical authority structure")
-    .option("--file <path>", "Single file to ingest")
     .option("--batch <cluster-id>", "Cluster ID for bounded batch ingest (reads .polaris/docs-ingest/<cluster-id>.json)")
     .option("--cluster <id>", "Alias for --batch")
     .option("--files <paths...>", "Bounded batch file list")
     .option("--dry-run", "Classify and report without moving files")
     .option("--approve-authority", "Allow placement in high-authority docs areas")
+    .option("--file <path>", "Single file to ingest; also scopes --approve-authority to a single file path")
+    .option("--from-review-queue", "scope --approve-authority to items in the review queue")
+    .option("--decision-id <id>", "scope --approve-authority to a specific decision ID")
+    .option("--interactive", "pause and prompt for review decisions on each review-required document")
+    .option("--confidence-threshold <n>", "classification confidence threshold (0–1, default 0.75)", parseFloat)
+    .option("--destination-certainty-threshold <n>", "destination certainty threshold (0–1, default 0.70)", parseFloat)
     .option("-r, --repo-root <path>", "Repository root", defaultRepoRoot)
-    .action((
+    .action(async (
       pathArg: string | undefined,
-      options: {
+      opts: {
         file?: string;
         batch?: string;
         cluster?: string;
         files?: string[];
         dryRun?: boolean;
         approveAuthority?: boolean;
+        fromReviewQueue?: boolean;
+        decisionId?: string;
+        interactive?: boolean;
+        confidenceThreshold?: number;
+        destinationCertaintyThreshold?: number;
         repoRoot: string;
       },
     ) => {
+      if (opts.approveAuthority && !opts.file && !opts.fromReviewQueue && !opts.decisionId) {
+        console.error(
+          "error: --approve-authority requires an explicit scope: --file <path>, --from-review-queue, or --decision-id <id>"
+        );
+        process.exit(1);
+      }
+
+      // Alias opts to options for compatibility with existing code below
+      const options = opts;
       const clusterId = options.batch ?? options.cluster;
 
       // Validate clusterId
@@ -134,6 +153,9 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
           dryRun: options.dryRun,
           clusterId,
           approveAuthority: options.approveAuthority,
+          interactive: opts.interactive,
+          confidenceThreshold: opts.confidenceThreshold,
+          destinationCertaintyThreshold: opts.destinationCertaintyThreshold,
         });
         printIngestResults(results);
       } catch (err) {
