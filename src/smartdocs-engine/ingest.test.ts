@@ -93,7 +93,7 @@ describe("ingestDocs", () => {
       "utf-8",
     );
 
-    const [result] = ingestDocs(["smartdocs/raw/ingest-plan.md"], { repoRoot });
+    const [result] = ingestDocs(["smartdocs/raw/ingest-plan.md"], { repoRoot, confidenceThreshold: 0, destinationCertaintyThreshold: 0 });
 
     expect(result.classification).toBe("spec-raw");
     expect(result.destinationPath).toBe(`${CANONICAL_TARGET}/raw/ingest-plan.md`);
@@ -127,7 +127,7 @@ describe("ingestDocs", () => {
       "utf-8",
     );
 
-    const [result] = ingestDocs(["smartdocs/raw/state-doctrine.md"], { repoRoot, clusterId: "POL-313" });
+    const [result] = ingestDocs(["smartdocs/raw/state-doctrine.md"], { repoRoot, clusterId: "POL-313", confidenceThreshold: 0, destinationCertaintyThreshold: 0 });
 
     expect(result.classification).toBe("doctrine-candidate");
     expect(result.destinationPath).toBe(`${CANONICAL_TARGET}/doctrine/candidate/state-doctrine.md`);
@@ -157,6 +157,8 @@ describe("ingestDocs", () => {
     const results = ingestDocs([`${CANONICAL_TARGET}/raw/my-doctrine.md`], {
       repoRoot,
       maxFiles: 1,
+      confidenceThreshold: 0,
+      destinationCertaintyThreshold: 0,
     });
     expect(results[0].destinationPath).toContain("doctrine/candidate");
     expect(results[0].destinationPath).not.toContain("doctrine/active");
@@ -182,11 +184,45 @@ describe("ingestDocs", () => {
     ).toThrow("batch limit is 4 files");
   });
 
-  it("does not promote high-authority architecture docs without approval", () => {
+  it("routes high-authority architecture docs to review-required without approval", () => {
     const repoRoot = makeRepo();
+    mkdirSync(join(repoRoot, "smartdocs", "architecture"), { recursive: true });
     writeFileSync(join(repoRoot, "smartdocs", "raw", "architecture.md"), "# Architecture\n\nStructural design", "utf-8");
 
-    expect(() => ingestDocs(["smartdocs/raw/architecture.md"], { repoRoot })).toThrow("requires explicit approval");
+    const results = ingestDocs(["smartdocs/raw/architecture.md"], { repoRoot });
+    expect(results[0].routingDecision).toBe("review-required");
+    expect(results[0].destinationPath).toBe("smartdocs/raw/architecture.md");
+  });
+
+  it("returns routingDecision on each result", () => {
+    const repoRoot = makeRepo();
+    const docPath = join(repoRoot, CANONICAL_TARGET, "raw", "simple-spec.md");
+    writeFileSync(docPath, "# Feature Spec\n\nAcceptance Criteria\n", "utf-8");
+    const results = ingestDocs([`${CANONICAL_TARGET}/raw/simple-spec.md`], {
+      repoRoot,
+      maxFiles: 1,
+    });
+    expect(["auto-route", "candidate", "review-required"]).toContain(results[0].routingDecision);
+  });
+
+  it("leaves review-required files in raw/ and adds reviewPacket to result", () => {
+    const repoRoot = makeRepo();
+    mkdirSync(join(repoRoot, CANONICAL_TARGET, "architecture"), { recursive: true });
+    const docPath = join(repoRoot, CANONICAL_TARGET, "raw", "high-risk.md");
+    writeFileSync(
+      docPath,
+      "---\nauthority: architecture\n---\n# Architecture\nStructural design for the system.\n",
+      "utf-8",
+    );
+    const results = ingestDocs([`${CANONICAL_TARGET}/raw/high-risk.md`], {
+      repoRoot,
+      maxFiles: 1,
+      confidenceThreshold: 0.1,
+      destinationCertaintyThreshold: 0.1,
+    });
+    expect(results[0].routingDecision).toBe("review-required");
+    expect(results[0].reviewPacket).toBeDefined();
+    expect(results[0].reviewPacket?.authorityRisk).toBe("high");
   });
 
   it("halts when smartdocs/ canonical target is missing", () => {
@@ -232,7 +268,7 @@ describe("ingestDocs", () => {
       "utf-8",
     );
 
-    const [result] = ingestDocs(["smartdocs/raw/dry-doctrine.md"], { repoRoot, dryRun: true, clusterId: "POL-313" });
+    const [result] = ingestDocs(["smartdocs/raw/dry-doctrine.md"], { repoRoot, dryRun: true, clusterId: "POL-313", confidenceThreshold: 0, destinationCertaintyThreshold: 0 });
 
     expect(result.dryRun).toBe(true);
     expect(result.classification).toBe("doctrine-candidate");

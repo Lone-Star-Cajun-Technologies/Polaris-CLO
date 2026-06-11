@@ -23,6 +23,8 @@ import { stampIngestFrontMatter } from "./doctrine.js";
 import { applySummaryDelta, findNearestSummarymd, detectPrecedenceLevel } from "../cognition/summary-delta.js";
 import { computeAuthorityRisk } from "../governance/authority-risk.js";
 import type { ClassificationResult } from "../governance/types.js";
+import { route } from "../governance/routing.js";
+import type { RoutingDecision } from "../governance/types.js";
 
 export type DocsClassification =
   | "runtime-summary"
@@ -40,7 +42,11 @@ export interface IngestOptions {
   dryRun?: boolean;
   clusterId?: string;
   maxFiles?: number;
+  /** @deprecated Use scoped --approve-authority with --file or --from-review-queue */
   approveAuthority?: boolean;
+  interactive?: boolean;
+  confidenceThreshold?: number;
+  destinationCertaintyThreshold?: number;
 }
 
 export interface IngestResult {
@@ -54,6 +60,8 @@ export interface IngestResult {
   nearestSummary: string | null;
   /** Whether the ingest triggered a SUMMARY.md delta (informational only). */
   summaryDeltaWarranted: boolean;
+  routingDecision: "auto-route" | "candidate" | "review-required";
+  reviewPacket?: import("../governance/types.js").ReviewPacket;
 }
 
 export interface DocsScaffoldResult {
@@ -99,7 +107,6 @@ export const SMART_DOCS_SCAFFOLD_DIRS = [
   `${CANONICAL_TARGET}/doctrine/deprecated`,
 ];
 
-const APPROVAL_REQUIRED = new Set<DocsClassification>(["spec-active", "architecture", "decision"]);
 
 /**
  * Conflict detection uses subject-verb-keyword triples rather than bare
@@ -552,11 +559,6 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
     }
     if (!existsSync(absSource)) throw new Error(`polaris docs ingest: file not found: ${source}`);
     const content = readFileSync(absSource, "utf-8");
-    const classification = classifyDoc(content, relSource);
-
-    if (APPROVAL_REQUIRED.has(classification) && !options.approveAuthority) {
-      throw new Error(`polaris docs ingest: ${classification} requires explicit approval; rerun with --approve-authority`);
-    }
 
     // Conflict detection against active doctrine (STOP CONDITION)
     const conflict = detectDoctrineConflict(content, repoRoot);
@@ -571,8 +573,51 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
       throw new Error(`polaris docs ingest: conflict detected — ${conflict.detail}`);
     }
 
+    // ── Governance routing ────────────────────────────────────────────────
+    const classificationResult = classifyDocWithConfidence(content, relSource);
+    const docClassification = classificationResult.classification as DocsClassification;
+    const thresholds = {
+      confidence: options.confidenceThreshold ?? 0.75,
+      destinationCertainty: options.destinationCertaintyThreshold ?? 0.70,
+    };
+    const routingDecision = route(classificationResult, thresholds);
+    const proposedDest = relative(
+      repoRoot,
+      join(resolve(repoRoot, TARGET_DIRS[docClassification]), basename(absSource)),
+    ).replace(/\\/g, "/");
+
+    // review-required: leave in raw/, emit packet, skip move
+    if (routingDecision.outcome === "review-required") {
+      const packet = {
+        ...routingDecision.reviewPacket!,
+        sourcePath: relSource,
+        proposedDestination: proposedDest,
+        conflicts: conflict ? [conflict.detail] : [],
+      };
+      emitTelemetry(telPath, runId, {
+        event: "docs-ingest-review-required",
+        file: relSource,
+        classification: docClassification,
+        outcome_reason: packet.outcomeReason,
+        cluster_id: clusterId,
+      });
+      results.push({
+        sourcePath: relSource,
+        destinationPath: relSource,
+        classification: docClassification,
+        linkedMapArea: null,
+        runId,
+        dryRun: Boolean(options.dryRun),
+        nearestSummary: null,
+        summaryDeltaWarranted: false,
+        routingDecision: "review-required",
+        reviewPacket: packet,
+      });
+      continue;
+    }
+
     const { label: linkedMapArea, entry: linkedEntry } = deriveLinkedArea(content, routes);
-    const targetDir = resolve(repoRoot, TARGET_DIRS[classification]);
+    const targetDir = resolve(repoRoot, TARGET_DIRS[docClassification]);
     mkdirSync(targetDir, { recursive: true });
     const rawDestination = join(targetDir, basename(absSource));
     const destination = resolve(rawDestination) === resolve(absSource)
@@ -586,7 +631,7 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
     emitTelemetry(telPath, runId, {
       event: "docs-ingest-classified",
       file: relSource,
-      classification,
+      classification: docClassification,
       destination: relDestination,
       linked_map_area: linkedMapArea,
       cluster_id: clusterId,
@@ -600,7 +645,7 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
         readFileSync(destination, "utf-8"),
         {
           originalPath: relSource,
-          classifiedAs: classification,
+          classifiedAs: docClassification,
           ingestRunId: runId,
           ingestClusterId: clusterId,
           linkedMapArea,
@@ -611,11 +656,11 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
       updateMapEntry(repoRoot, destination, linkedEntry);
     }
 
-    if (classification === "doctrine-candidate" && !options.dryRun) {
+    if (docClassification === "doctrine-candidate" && !options.dryRun) {
       emitTelemetry(telPath, runId, {
         event: "doc-auto-promoted",
         file: relDestination,
-        classification,
+        classification: docClassification,
         linked_map_area: linkedMapArea,
         cluster_id: clusterId,
       });
@@ -624,7 +669,7 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
     emitTelemetry(telPath, runId, {
       event: "docs-ingest",
       file: relSource,
-      classification,
+      classification: docClassification,
       destination: relDestination,
       linked_map_area: linkedMapArea,
       cluster_id: clusterId,
@@ -673,12 +718,16 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
     results.push({
       sourcePath: relSource,
       destinationPath: relDestination,
-      classification,
+      classification: docClassification,
       linkedMapArea,
       runId,
       dryRun: Boolean(options.dryRun),
       nearestSummary,
       summaryDeltaWarranted: summaryDelta.updateWarranted,
+      routingDecision: routingDecision.outcome,
+      reviewPacket: routingDecision.reviewPacket
+        ? { ...routingDecision.reviewPacket, sourcePath: relSource, proposedDestination: relDestination }
+        : undefined,
     });
   }
 
