@@ -8,6 +8,7 @@ import { classifyDoc, ingestDocs, CANONICAL_TARGET } from "./ingest.js";
 function makeRepo(): string {
   const repoRoot = mkdtempSync(join(tmpdir(), "polaris-docs-ingest-"));
   mkdirSync(join(repoRoot, "smartdocs", "raw"), { recursive: true });
+  mkdirSync(join(repoRoot, CANONICAL_TARGET, "doctrine", "candidate"), { recursive: true });
   mkdirSync(join(repoRoot, CANONICAL_TARGET, "doctrine", "active"), { recursive: true });
   mkdirSync(join(repoRoot, ".polaris", "map"), { recursive: true });
   writeFileSync(
@@ -129,19 +130,36 @@ describe("ingestDocs", () => {
     const [result] = ingestDocs(["smartdocs/raw/state-doctrine.md"], { repoRoot, clusterId: "POL-313" });
 
     expect(result.classification).toBe("doctrine-candidate");
-    expect(result.destinationPath).toBe(`${CANONICAL_TARGET}/doctrine/active/state-doctrine.md`);
-    expect(existsSync(join(repoRoot, CANONICAL_TARGET, "doctrine", "active", "state-doctrine.md"))).toBe(true);
-    expect(existsSync(join(repoRoot, CANONICAL_TARGET, "doctrine", "candidate"))).toBe(false);
+    expect(result.destinationPath).toBe(`${CANONICAL_TARGET}/doctrine/candidate/state-doctrine.md`);
+    expect(existsSync(join(repoRoot, CANONICAL_TARGET, "doctrine", "candidate", "state-doctrine.md"))).toBe(true);
+    expect(existsSync(join(repoRoot, CANONICAL_TARGET, "doctrine", "active", "state-doctrine.md"))).toBe(false);
 
     const telemetry = readDocsIngestTelemetry(repoRoot);
     expect(telemetry).toContainEqual(
       expect.objectContaining({
         event: "doc-auto-promoted",
-        file: `${CANONICAL_TARGET}/doctrine/active/state-doctrine.md`,
+        file: `${CANONICAL_TARGET}/doctrine/candidate/state-doctrine.md`,
         classification: "doctrine-candidate",
         cluster_id: "POL-313",
       }),
     );
+  });
+
+  it("routes doctrine-candidate to doctrine/candidate, not doctrine/active", () => {
+    const repoRoot = makeRepo();
+    mkdirSync(join(repoRoot, CANONICAL_TARGET, "doctrine", "candidate"), { recursive: true });
+    const docPath = join(repoRoot, CANONICAL_TARGET, "raw", "my-doctrine.md");
+    writeFileSync(
+      docPath,
+      "---\nauthority: doctrine\n---\n# Doctrine\n\nAgents must always preserve state.\n",
+      "utf-8",
+    );
+    const results = ingestDocs([`${CANONICAL_TARGET}/raw/my-doctrine.md`], {
+      repoRoot,
+      maxFiles: 1,
+    });
+    expect(results[0].destinationPath).toContain("doctrine/candidate");
+    expect(results[0].destinationPath).not.toContain("doctrine/active");
   });
 
   it("rejects batches above the bounded file limit", () => {
@@ -218,10 +236,10 @@ describe("ingestDocs", () => {
 
     expect(result.dryRun).toBe(true);
     expect(result.classification).toBe("doctrine-candidate");
-    expect(result.destinationPath).toBe(`${CANONICAL_TARGET}/doctrine/active/dry-doctrine.md`);
+    expect(result.destinationPath).toBe(`${CANONICAL_TARGET}/doctrine/candidate/dry-doctrine.md`);
     expect(existsSync(join(repoRoot, "smartdocs", "raw", "dry-doctrine.md"))).toBe(true);
+    expect(existsSync(join(repoRoot, CANONICAL_TARGET, "doctrine", "candidate", "dry-doctrine.md"))).toBe(false);
     expect(existsSync(join(repoRoot, CANONICAL_TARGET, "doctrine", "active", "dry-doctrine.md"))).toBe(false);
-    expect(existsSync(join(repoRoot, CANONICAL_TARGET, "doctrine", "candidate"))).toBe(false);
 
     const telemetry = readDocsIngestTelemetry(repoRoot);
     expect(telemetry).not.toContainEqual(expect.objectContaining({ event: "doc-auto-promoted" }));

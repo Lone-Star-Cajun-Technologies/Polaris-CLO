@@ -80,7 +80,7 @@ const TARGET_DIRS: Record<DocsClassification, string> = {
   "spec-raw": `${CANONICAL_TARGET}/raw`,
   "spec-active": `${CANONICAL_TARGET}/specs/active`,
   "audit-finding": `${CANONICAL_TARGET}/audits/findings`,
-  "doctrine-candidate": `${CANONICAL_TARGET}/doctrine/active`,
+  "doctrine-candidate": `${CANONICAL_TARGET}/doctrine/candidate`,
   architecture: `${CANONICAL_TARGET}/architecture`,
   decision: `${CANONICAL_TARGET}/decisions`,
   "deprecated-noise": `${CANONICAL_TARGET}/runtime/generated`,
