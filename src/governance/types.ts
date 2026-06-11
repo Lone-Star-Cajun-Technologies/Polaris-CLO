@@ -1,3 +1,10 @@
+/**
+ * Shared types for document governance decisions: authority risk assessment, routing,
+ * and review packets. Intentionally decoupled from Smart Docs vocabulary so this module
+ * can be reused by any Polaris workflow that requires authority-boundary enforcement.
+ * The `classification` field is opaque (string) — callers define their own vocabulary.
+ */
+
 export type AuthorityRisk = "low" | "medium" | "high";
 export type ReviewRecommendation = "approve" | "reject" | "defer";
 export type RoutingOutcome = "auto-route" | "candidate" | "review-required";
