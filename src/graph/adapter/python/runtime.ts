@@ -33,7 +33,7 @@ export async function loadTreeSitterRuntime(): Promise<TreeSitterRuntime> {
   }
 
   runtimeInitPromise = (async () => {
-    const loaded = await loadTreeSitterModules();
+    const loaded = loadTreeSitterModules();
     const parser = new loaded.parserConstructor();
     parser.setLanguage(loaded.language);
 
@@ -51,12 +51,13 @@ export async function loadTreeSitterRuntime(): Promise<TreeSitterRuntime> {
   return await runtimeInitPromise;
 }
 
-async function loadTreeSitterModules(): Promise<LoadedTreeSitter> {
-  const dynamicImport = createDynamicImporter();
-  const [treeSitterModule, pythonModule] = await Promise.all([
-    dynamicImport("tree-sitter"),
-    dynamicImport("tree-sitter-python"),
-  ]);
+function loadTreeSitterModules(): LoadedTreeSitter {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const nodeRequire = require as (id: string) => unknown;
+  const [treeSitterModule, pythonModule] = [
+    nodeRequire("tree-sitter"),
+    nodeRequire("tree-sitter-python"),
+  ];
 
   return {
     parserConstructor: resolveParserConstructor(treeSitterModule),
@@ -64,10 +65,6 @@ async function loadTreeSitterModules(): Promise<LoadedTreeSitter> {
   };
 }
 
-function createDynamicImporter(): (specifier: string) => Promise<unknown> {
-  const importer = new Function("specifier", "return import(specifier);");
-  return (specifier: string) => importer(specifier) as Promise<unknown>;
-}
 
 function resolveParserConstructor(moduleValue: unknown): ParserConstructorLike {
   if (typeof moduleValue === "function") {

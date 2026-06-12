@@ -1,7 +1,7 @@
 {
   "name": "@lsctech/polaris",
   "version": "0.2.1",
-  "description": "Polaris — standalone taskchain orchestration framework for governed AI agent workflows",
+  "description": "Polaris \u2014 standalone taskchain orchestration framework for governed AI agent workflows",
   "bin": {
     "polaris-cli": "dist/cli/index.js"
   },
@@ -54,6 +54,17 @@
     "@modelcontextprotocol/sdk": "^1.29.0",
     "commander": "^12.0.0",
     "ignore": "^6.0.2",
+    "tree-sitter": "^0.22.0",
+    "tree-sitter-c": "^0.24.1",
+    "tree-sitter-c-sharp": "^0.23.5",
+    "tree-sitter-cpp": "^0.23.4",
+    "tree-sitter-dart": "^1.0.0",
+    "tree-sitter-go": "^0.25.0",
+    "tree-sitter-javascript": "^0.23.1",
+    "tree-sitter-python": "^0.23.6",
+    "tree-sitter-rust": "^0.24.0",
+    "tree-sitter-swift": "^0.7.1",
+    "tree-sitter-typescript": "^0.23.2",
     "zod": "^3.23.8"
   },
   "devDependencies": {
