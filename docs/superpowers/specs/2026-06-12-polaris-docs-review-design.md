@@ -35,9 +35,9 @@ Options:
 No review queue found. Run polaris docs ingest first.
 ```
 
-**Queue fully decided:**
+**Queue fully decided** (all packets approved or rejected — none pending or deferred):
 ```
-Nothing to review. Queue is fully decided — run polaris docs ingest to apply.
+Nothing to review. All decisions are final — run polaris docs ingest to apply.
 ```
 
 ---
@@ -79,7 +79,9 @@ Each decision (`a`, `r`, `d`) is written to `_review-queue.json` immediately —
 
 ### Resume
 
-Undecided packets = packets with no `reviewDecision` field. A session works through only undecided packets. Running `polaris docs review` again after quitting mid-session resumes from the first remaining undecided packet.
+**Undecided packets** = packets with no `reviewDecision` OR `reviewDecision: "defer"`. `approve` and `reject` are terminal decisions — those packets are excluded from future sessions. `defer` means "not now, keep in queue" — deferred packets appear again in the next session.
+
+Running `polaris docs review` again after quitting mid-session resumes from the first undecided (or deferred) packet.
 
 ### Completion
 
@@ -94,7 +96,7 @@ Running docs ingest to apply decisions...
 
 **Approved packets** move to their `proposedDestination`.
 **Rejected packets** stay in `raw/` — their `reviewDecision: "reject"` is preserved in the queue.
-**Deferred packets** have `reviewDecision: "defer"` set and remain in the queue. On re-ingest, deferred packets are left in `raw/` and remain in the queue for the next review session.
+**Deferred packets** stay in `raw/` — ingest skips them. They reappear in the next `polaris docs review` session.
 
 ### Quit mid-session
 
@@ -127,8 +129,8 @@ Unit tests using mocked readline and mocked `ingestDocs`:
 - `a`/`r`/`d` writes correct `reviewDecision` + `reviewedAt` + `reviewedBy`
 - `s` skips without writing
 - `q` exits without triggering ingest
-- Completing all packets triggers ingest
-- Empty queue / fully-decided queue prints correct message and exits without prompting
+- Completing all packets in the session triggers ingest (approved + rejected are terminal; deferred reappear next session)
+- Empty queue / all terminal decisions already made prints correct message and exits without prompting
 
 ### Modified files
 
