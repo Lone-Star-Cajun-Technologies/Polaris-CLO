@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { Command } from "commander";
 import { ensureDocsScaffold, ingestDocs, printIngestResults } from "./ingest.js";
+import { runReviewSession } from "./review.js";
 import { migrateDocs, printMigrateResults } from "./migrate.js";
 import { seedInstructions, seedInstructionsAll, seedSummary, seedSummaryAll, type IneligibleEntry } from "./seed-instructions.js";
 import { validateInstructions, printReport } from "./validate-instructions.js";
@@ -160,6 +161,24 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
         printIngestResults(results);
       } catch (err) {
         console.error(err instanceof Error ? err.message : String(err));
+        process.exit(1);
+      }
+    });
+
+  docs
+    .command("review")
+    .description("Interactively review pending governance decisions in the review queue")
+    .option("--queue <path>", "path to _review-queue.json (default: smartdocs/raw/_review-queue.json)")
+    .option("-r, --repo-root <path>", "Repository root", defaultRepoRoot)
+    .action(async (opts: { queue?: string; repoRoot: string }) => {
+      try {
+        const queueDir = opts.queue
+          ? resolve(opts.repoRoot, opts.queue).replace(/_review-queue\.json$/, "").replace(/\/$/, "")
+          : resolve(opts.repoRoot, "smartdocs", "raw");
+
+        await runReviewSession({ repoRoot: opts.repoRoot, queueDir });
+      } catch (err) {
+        console.error(`polaris docs review: ${err instanceof Error ? err.message : String(err)}`);
         process.exit(1);
       }
     });
