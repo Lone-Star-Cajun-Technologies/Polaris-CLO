@@ -53,7 +53,7 @@ export function clusterCandidates(candidates: DocMeta[], canonicals: DocMeta[]):
       if (clusters[name]) {
         clusters[name].candidates.push(candidate);
         assigned = true;
-        break;
+        break; // assign to first matching cluster only — multi-cluster candidates would inflate batch sizes
       }
     }
 
@@ -133,6 +133,7 @@ export function extractSymbols(text: string): string[] {
 export interface TriageOptions {
   repoRoot: string;
   batchSize?: number;
+  model?: string;
   resume?: boolean;
   dryRun?: boolean;
   output?: (msg: string) => void;
