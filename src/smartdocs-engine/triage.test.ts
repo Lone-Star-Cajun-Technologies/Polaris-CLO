@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { clusterCandidates, extractSymbols, loadDocMeta } from "./triage.js";
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { clusterCandidates, extractSymbols, loadDocMeta, readTriageCheckpoint, writeTriageCheckpoint, writeTriageQueue } from "./triage.js";
+import { mkdtempSync, mkdirSync, writeFileSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -125,5 +125,48 @@ describe("loadDocMeta", () => {
     expect(meta.tags).toEqual([]);
     expect(meta.type).toBe("");
     expect(meta.clusterMembership).toEqual([]);
+  });
+});
+
+describe("checkpoint I/O", () => {
+  it("returns null when no checkpoint exists", () => {
+    const dir = mkdtempSync(join(tmpdir(), "triage-ckpt-"));
+    expect(readTriageCheckpoint(dir)).toBeNull();
+  });
+
+  it("round-trips a checkpoint", () => {
+    const dir = mkdtempSync(join(tmpdir(), "triage-ckpt-"));
+    const ckpt = { completedClusters: ["governance", "decision"], flags: [] };
+    writeTriageCheckpoint(ckpt, dir);
+    const loaded = readTriageCheckpoint(dir);
+    expect(loaded?.completedClusters).toEqual(["governance", "decision"]);
+  });
+});
+
+describe("writeTriageQueue", () => {
+  it("writes _triage-queue.json and _triage-report.md", () => {
+    const dir = mkdtempSync(join(tmpdir(), "triage-queue-"));
+    const packet: import("../governance/types.js").TriageReviewPacket = {
+      sourcePath: "smartdocs/doctrine/candidate/foo.md",
+      proposedDestination: "smartdocs/doctrine/candidate/foo.md",
+      classificationConfidence: 0,
+      destinationCertainty: 0,
+      authorityRisk: "low",
+      reasoning: [],
+      conflicts: [],
+      recommendation: "defer",
+      outcomeReason: "flagged by triage",
+      triageFlag: "contradiction",
+      relatedCanonical: "smartdocs/doctrine/active/bar.md",
+    };
+
+    writeTriageQueue([packet], dir);
+
+    expect(existsSync(join(dir, "_triage-queue.json"))).toBe(true);
+    expect(existsSync(join(dir, "_triage-report.md"))).toBe(true);
+
+    const raw = JSON.parse(readFileSync(join(dir, "_triage-queue.json"), "utf-8"));
+    expect(raw.packets).toHaveLength(1);
+    expect(raw.packets[0].triageFlag).toBe("contradiction");
   });
 });

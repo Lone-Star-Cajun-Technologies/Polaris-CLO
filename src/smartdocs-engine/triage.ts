@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from "node:fs";
 import { basename, extname, join } from "node:path";
 import type { TriageReviewPacket } from "../governance/types.js";
 
@@ -262,6 +262,106 @@ function extractFilenamePrefixes(stem: string): string[] {
   // "EVOlearn_Governance" → ["EVOlearn"]
   const parts = stem.split(/[-_ ]/);
   return parts.slice(0, 2).filter((p) => p.length >= 3 && /[A-Za-z]/.test(p));
+}
+
+// ---------------------------------------------------------------------------
+// Checkpoint
+// ---------------------------------------------------------------------------
+
+export interface TriageCheckpoint {
+  completedClusters: string[];
+  flags: TriageLlmFlag[];
+}
+
+const CHECKPOINT_FILENAME = "_triage-checkpoint.json";
+
+export function readTriageCheckpoint(outputDir: string): TriageCheckpoint | null {
+  const p = join(outputDir, CHECKPOINT_FILENAME);
+  if (!existsSync(p)) return null;
+  try {
+    return JSON.parse(readFileSync(p, "utf-8")) as TriageCheckpoint;
+  } catch {
+    return null;
+  }
+}
+
+export function writeTriageCheckpoint(checkpoint: TriageCheckpoint, outputDir: string): void {
+  mkdirSync(outputDir, { recursive: true });
+  writeFileSync(join(outputDir, CHECKPOINT_FILENAME), JSON.stringify(checkpoint, null, 2), "utf-8");
+}
+
+export function deleteTriageCheckpoint(outputDir: string): void {
+  const p = join(outputDir, CHECKPOINT_FILENAME);
+  if (existsSync(p)) unlinkSync(p);
+}
+
+// ---------------------------------------------------------------------------
+// Triage queue writer
+// ---------------------------------------------------------------------------
+
+export function writeTriageQueue(packets: TriageReviewPacket[], outputDir: string): void {
+  mkdirSync(outputDir, { recursive: true });
+
+  const queueFile = {
+    generated_at: new Date().toISOString(),
+    run_id: `triage-${Date.now()}`,
+    packets,
+  };
+
+  writeFileSync(
+    join(outputDir, "_triage-queue.json"),
+    JSON.stringify(queueFile, null, 2),
+    "utf-8",
+  );
+
+  writeFileSync(
+    join(outputDir, "_triage-report.md"),
+    renderTriageReport(packets),
+    "utf-8",
+  );
+}
+
+function renderTriageReport(packets: TriageReviewPacket[]): string {
+  const contradictions = packets.filter((p) => p.triageFlag === "contradiction");
+  const duplicates = packets.filter((p) => p.triageFlag === "duplicate");
+  const stale = packets.filter((p) => p.triageFlag === "stale-reference");
+
+  const lines: string[] = [
+    "# Polaris Docs Triage Report",
+    "",
+    `Generated: ${new Date().toISOString()}`,
+    "",
+    "## Summary",
+    "",
+    `| Flag | Count |`,
+    `|------|-------|`,
+    `| contradiction | ${contradictions.length} |`,
+    `| duplicate | ${duplicates.length} |`,
+    `| stale-reference | ${stale.length} |`,
+    `| **total** | **${packets.length}** |`,
+    "",
+    "## Flagged Documents",
+    "",
+    "This file is display-only. Edit `_triage-queue.json` to record decisions,",
+    "or run `polaris docs review` to walk through them interactively.",
+    "",
+  ];
+
+  for (const p of packets) {
+    lines.push(`### ${p.triageFlag.toUpperCase()} · ${p.sourcePath}`);
+    lines.push("");
+    lines.push(`**Reason:** ${p.outcomeReason}`);
+    if (p.relatedCanonical) {
+      lines.push(`**Conflicts with:** ${p.relatedCanonical}`);
+    }
+    if (p.staleSymbols && p.staleSymbols.length > 0) {
+      lines.push(`**Stale symbols:** ${p.staleSymbols.join(", ")}`);
+    }
+    lines.push(`**Review decision:** ${p.reviewDecision ?? "← pending"}`);
+    lines.push("");
+  }
+
+  return lines.join("\n");
 }
 
 // ---------------------------------------------------------------------------
