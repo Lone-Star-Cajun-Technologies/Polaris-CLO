@@ -1,3 +1,5 @@
+import { readFileSync, readdirSync } from "node:fs";
+import { basename, extname, join } from "node:path";
 import type { TriageReviewPacket } from "../governance/types.js";
 
 // ---------------------------------------------------------------------------
@@ -124,6 +126,142 @@ export function extractSymbols(text: string): string[] {
   }
 
   return Array.from(found);
+}
+
+// ---------------------------------------------------------------------------
+// DocMeta loader
+// ---------------------------------------------------------------------------
+
+/**
+ * Parses YAML frontmatter from a markdown file and returns DocMeta.
+ * Does not throw — returns empty arrays on any parse failure.
+ */
+export function loadDocMeta(filePath: string): DocMeta {
+  let content = "";
+  try {
+    content = readFileSync(filePath, "utf-8");
+  } catch {
+    return emptyMeta(filePath);
+  }
+
+  const frontmatter = parseFrontmatter(content);
+  const filenamePrefixes = extractFilenamePrefixes(basename(filePath, extname(filePath)));
+
+  return {
+    path: filePath,
+    tags: toStringArray(frontmatter["Tags"] ?? frontmatter["tags"]),
+    type: String(frontmatter["Type"] ?? frontmatter["type"] ?? "").trim(),
+    clusterMembership: toStringArray(frontmatter["Member Of Concept Cluster"]),
+    relatedNotes: toStringArray(frontmatter["Related Notes"]),
+    filenamePrefixes,
+  };
+}
+
+/**
+ * Reads all .md files from a directory and returns their DocMeta.
+ */
+export function loadAllDocMeta(dir: string): DocMeta[] {
+  let entries: string[] = [];
+  try {
+    entries = readdirSync(dir).filter((f) => f.endsWith(".md"));
+  } catch {
+    return [];
+  }
+  return entries.map((f) => loadDocMeta(join(dir, f)));
+}
+
+function emptyMeta(filePath: string): DocMeta {
+  return {
+    path: filePath,
+    tags: [],
+    type: "",
+    clusterMembership: [],
+    relatedNotes: [],
+    filenamePrefixes: extractFilenamePrefixes(basename(filePath, extname(filePath))),
+  };
+}
+
+function parseFrontmatter(content: string): Record<string, unknown> {
+  const match = content.match(/^---\n([\s\S]*?)\n---/);
+  if (!match) return {};
+
+  const result: Record<string, unknown> = {};
+  const lines = match[1].split("\n");
+  let currentKey: string | null = null;
+  const listBuffer: string[] = [];
+
+  const flushList = () => {
+    if (currentKey && listBuffer.length > 0) {
+      result[currentKey] = [...listBuffer];
+      listBuffer.length = 0;
+    }
+  };
+
+  for (const line of lines) {
+    // Inline array: Tags: [a, b]
+    const inlineMatch = line.match(/^([^:]+):\s*\[(.*)\]$/);
+    if (inlineMatch) {
+      flushList();
+      currentKey = null;
+      const key = inlineMatch[1].trim();
+      result[key] = inlineMatch[2]
+        .split(",")
+        .map((s) => s.trim().replace(/^["']|["']$/g, ""))
+        .filter(Boolean);
+      continue;
+    }
+
+    // Key with value: Type: Decision
+    const kvMatch = line.match(/^([^:]+):\s*(.+)$/);
+    if (kvMatch && !line.startsWith("  ")) {
+      flushList();
+      currentKey = kvMatch[1].trim();
+      const val = kvMatch[2].trim();
+      if (val !== "") {
+        result[currentKey] = val.replace(/^["']|["']$/g, "");
+        currentKey = null;
+      }
+      continue;
+    }
+
+    // Key with no inline value (list follows)
+    const keyOnlyMatch = line.match(/^([^:]+):\s*$/);
+    if (keyOnlyMatch && !line.startsWith("  ")) {
+      flushList();
+      currentKey = keyOnlyMatch[1].trim();
+      continue;
+    }
+
+    // List item — wikilink style: - "[[ADR-002|ADR-002]]"
+    const listItemMatch = line.match(/^\s+-\s+"?\[\[([^\]|]+)(?:\|[^\]]+)?\]\]"?$/);
+    if (listItemMatch && currentKey) {
+      listBuffer.push(listItemMatch[1].trim());
+      continue;
+    }
+
+    // List item — plain
+    const simpleItemMatch = line.match(/^\s+-\s+(.+)$/);
+    if (simpleItemMatch && currentKey) {
+      listBuffer.push(simpleItemMatch[1].trim().replace(/^["']|["']$/g, ""));
+    }
+  }
+
+  flushList();
+  return result;
+}
+
+function toStringArray(value: unknown): string[] {
+  if (!value) return [];
+  if (Array.isArray(value)) return value.map(String).filter(Boolean);
+  if (typeof value === "string" && value.trim()) return [value.trim()];
+  return [];
+}
+
+function extractFilenamePrefixes(stem: string): string[] {
+  // "ADR-001 - Some Title" → ["ADR"]
+  // "EVOlearn_Governance" → ["EVOlearn"]
+  const parts = stem.split(/[-_ ]/);
+  return parts.slice(0, 2).filter((p) => p.length >= 3);
 }
 
 // ---------------------------------------------------------------------------

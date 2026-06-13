@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { clusterCandidates, extractSymbols } from "./triage.js";
+import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { loadDocMeta } from "./triage.js";
 
 describe("clusterCandidates", () => {
   it("groups candidates by shared tag with canonicals", () => {
@@ -86,5 +90,40 @@ describe("extractSymbols", () => {
   it("deduplicates symbols", () => {
     const syms = extractSymbols("`runTriage` and `runTriage` again.");
     expect(syms.filter((s) => s === "runTriage")).toHaveLength(1);
+  });
+});
+
+describe("loadDocMeta", () => {
+  it("parses tags, type, and cluster from YAML frontmatter", () => {
+    const dir = mkdtempSync(join(tmpdir(), "triage-test-"));
+    const docPath = join(dir, "test.md");
+    writeFileSync(docPath, [
+      "---",
+      "Tags: [governance, learning]",
+      "Type: Decision",
+      "Member Of Concept Cluster: [EVOlearn]",
+      "Related Notes:",
+      '  - "[[ADR-002|ADR-002]]"',
+      "---",
+      "# Body text",
+    ].join("\n"), "utf-8");
+
+    const meta = loadDocMeta(docPath);
+    expect(meta.tags).toContain("governance");
+    expect(meta.tags).toContain("learning");
+    expect(meta.type).toBe("Decision");
+    expect(meta.clusterMembership).toContain("EVOlearn");
+    expect(meta.filenamePrefixes).toContain("test");
+  });
+
+  it("returns empty arrays for docs with no frontmatter", () => {
+    const dir = mkdtempSync(join(tmpdir(), "triage-test-"));
+    const docPath = join(dir, "plain.md");
+    writeFileSync(docPath, "# Just a heading\n\nSome text.", "utf-8");
+
+    const meta = loadDocMeta(docPath);
+    expect(meta.tags).toEqual([]);
+    expect(meta.type).toBe("");
+    expect(meta.clusterMembership).toEqual([]);
   });
 });
