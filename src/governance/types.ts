@@ -43,6 +43,14 @@ export interface ReviewPacket {
   reviewedBy?: string;
 }
 
+export interface TriageReviewPacket extends ReviewPacket {
+  triageFlag: "contradiction" | "duplicate" | "stale-reference";
+  /** Path to the canonical doc involved (for contradiction/duplicate flags). */
+  relatedCanonical?: string;
+  /** Symbol names not found in the graph (for stale-reference flags). */
+  staleSymbols?: string[];
+}
+
 export interface RoutingDecision {
   outcome: RoutingOutcome;
   reviewPacket?: ReviewPacket;
