@@ -596,7 +596,7 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
         ...routingDecision.reviewPacket!,
         sourcePath: relSource,
         proposedDestination: proposedDest,
-        conflicts: conflict ? [conflict.detail] : [],
+        conflicts: [],
       };
       emitTelemetry(telPath, runId, {
         event: "docs-ingest-review-required",
