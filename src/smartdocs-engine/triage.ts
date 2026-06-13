@@ -436,7 +436,8 @@ export async function runBatchComparison(
 async function buildDefaultLlmClient(): Promise<LlmClient> {
   const apiKey = process.env["ANTHROPIC_API_KEY"] ?? "";
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const mod = await (Function('return import("@anthropic-ai/sdk")')()) as any;
+  // @ts-ignore: @anthropic-ai/sdk may not be installed as a dependency
+  const mod = await import("@anthropic-ai/sdk");
   const Anthropic = mod.default ?? mod.Anthropic;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sdkClient = new Anthropic({ apiKey }) as any;
