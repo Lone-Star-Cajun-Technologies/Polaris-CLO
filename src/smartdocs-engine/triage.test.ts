@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { clusterCandidates, extractSymbols, loadDocMeta, readTriageCheckpoint, writeTriageCheckpoint, writeTriageQueue, runBatchComparison, runGraphCheck } from "./triage.js";
-import type { LlmClient } from "./triage.js";
+import { clusterCandidates, extractSymbols, loadDocMeta, readTriageCheckpoint, writeTriageCheckpoint, writeTriageQueue, runBatchComparison, runGraphCheck, runTriage } from "./triage.js";
+import type { LlmClient, TriageOptions } from "./triage.js";
 import { mkdtempSync, mkdirSync, writeFileSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -301,5 +301,93 @@ describe("runGraphCheck", () => {
     });
 
     expect(flags).toHaveLength(0);
+  });
+});
+
+describe("runTriage", () => {
+  function makeTriageRepo(): string {
+    const dir = mkdtempSync(join(tmpdir(), "triage-orch-"));
+    mkdirSync(join(dir, "smartdocs", "doctrine", "active"), { recursive: true });
+    mkdirSync(join(dir, "smartdocs", "doctrine", "candidate"), { recursive: true });
+    mkdirSync(join(dir, "smartdocs", "raw"), { recursive: true });
+
+    writeFileSync(
+      join(dir, "smartdocs", "doctrine", "active", "ADR-001.md"),
+      "---\nTags: [governance]\nType: Decision\n---\n# ADR-001\nGoverns dual metric system.",
+      "utf-8",
+    );
+
+    writeFileSync(
+      join(dir, "smartdocs", "doctrine", "candidate", "ADR-101.md"),
+      "---\nTags: [governance]\nType: Decision\n---\n# ADR-101\nContradicts ADR-001.",
+      "utf-8",
+    );
+
+    return dir;
+  }
+
+  it("writes _triage-queue.json when flags are found", async () => {
+    const repoRoot = makeTriageRepo();
+
+    const mockClient: LlmClient = {
+      async compare(candidates) {
+        return candidates.map((c) => ({
+          candidatePath: c.path,
+          flagType: "contradiction" as const,
+          canonicalPath: "smartdocs/doctrine/active/ADR-001.md",
+          reason: "Contradicts the canonical.",
+        }));
+      },
+    };
+
+    const result = await runTriage({
+      repoRoot,
+      batchSize: 10,
+      llmClient: mockClient,
+      symbolLookup: () => true,
+      graphStats: () => ({ symbolCount: 5000 }),
+    });
+
+    expect(result.flagCount).toBeGreaterThan(0);
+    expect(existsSync(join(repoRoot, "smartdocs", "raw", "_triage-queue.json"))).toBe(true);
+    expect(existsSync(join(repoRoot, "smartdocs", "raw", "_triage-report.md"))).toBe(true);
+  });
+
+  it("dry-run prints estimate and writes no files", async () => {
+    const repoRoot = makeTriageRepo();
+    const messages: string[] = [];
+
+    await runTriage({
+      repoRoot,
+      dryRun: true,
+      llmClient: { async compare() { return []; } },
+      symbolLookup: () => true,
+      graphStats: () => ({ symbolCount: 5000 }),
+      output: (m) => messages.push(m),
+    });
+
+    expect(messages.some((m) => m.includes("Estimated"))).toBe(true);
+    expect(existsSync(join(repoRoot, "smartdocs", "raw", "_triage-queue.json"))).toBe(false);
+  });
+
+  it("resumes from checkpoint, skipping completed clusters", async () => {
+    const repoRoot = makeTriageRepo();
+    const outputDir = join(repoRoot, "smartdocs", "raw");
+
+    writeTriageCheckpoint({ completedClusters: ["governance", "decision", "general"], flags: [] }, outputDir);
+
+    let compareCalls = 0;
+    const mockClient: LlmClient = {
+      async compare() { compareCalls++; return []; },
+    };
+
+    await runTriage({
+      repoRoot,
+      llmClient: mockClient,
+      symbolLookup: () => true,
+      graphStats: () => ({ symbolCount: 5000 }),
+    });
+
+    expect(compareCalls).toBe(0);
   });
 });

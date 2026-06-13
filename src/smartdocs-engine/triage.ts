@@ -538,7 +538,132 @@ export function runGraphCheck(
   return flags;
 }
 
-// Stubs — implemented in later tasks
-export async function runTriage(_options: TriageOptions): Promise<TriageResult> {
-  throw new Error("not implemented");
+export async function runTriage(options: TriageOptions): Promise<TriageResult> {
+  const {
+    repoRoot,
+    batchSize = 10,
+    dryRun = false,
+    output = (m: string) => process.stdout.write(m + "\n"),
+    llmClient,
+    symbolLookup,
+    graphStats,
+  } = options;
+
+  const activeDir = join(repoRoot, "smartdocs", "doctrine", "active");
+  const candidateDir = join(repoRoot, "smartdocs", "doctrine", "candidate");
+  const outputDir = join(repoRoot, "smartdocs", "raw");
+
+  output(`Loading canonical docs from ${activeDir}...`);
+  const canonicals = loadAllDocMeta(activeDir);
+
+  output(`Loading candidate docs from ${candidateDir}...`);
+  const candidates = loadAllDocMeta(candidateDir);
+
+  output(`Clustering ${candidates.length} candidates against ${canonicals.length} canonicals...`);
+  const clusterMap = clusterCandidates(candidates, canonicals);
+
+  const clusterNames = Object.keys(clusterMap).filter((k) => k !== "general");
+  if (clusterMap["general"]) clusterNames.push("general");
+
+  if (dryRun) {
+    const batchCount = clusterNames.reduce((sum, name) => {
+      return sum + Math.ceil((clusterMap[name].candidates.length || 0) / batchSize);
+    }, 0);
+    output(`  ${clusterNames.length} clusters identified`);
+    output(`  Estimated batches: ${batchCount}`);
+    output(`  Estimated tokens: ~${batchCount * 3000} input / ~${batchCount * 200} output`);
+    output(`  Model: ${resolveTriageModel(options.model)} (configured)`);
+    output(`\nRun without --dry-run to execute.`);
+    return { flagCount: 0, outputDir };
+  }
+
+  let checkpoint = readTriageCheckpoint(outputDir);
+  const completedClusters = new Set(checkpoint?.completedClusters ?? []);
+  const accumulatedFlags: TriageLlmFlag[] = [...(checkpoint?.flags ?? [])];
+
+  if (completedClusters.size > 0) {
+    output(`Resuming triage from checkpoint (${completedClusters.size}/${clusterNames.length} clusters complete)...`);
+  }
+
+  const model = resolveTriageModel(options.model);
+
+  // Phase 1: doc-vs-doc
+  for (const clusterName of clusterNames) {
+    if (completedClusters.has(clusterName)) continue;
+
+    const cluster = clusterMap[clusterName];
+    if (cluster.candidates.length === 0) {
+      completedClusters.add(clusterName);
+      continue;
+    }
+
+    output(`  Comparing cluster "${clusterName}" (${cluster.candidates.length} candidates, ${cluster.canonicals.length} canonicals)...`);
+
+    for (let i = 0; i < cluster.candidates.length; i += batchSize) {
+      const batch = cluster.candidates.slice(i, i + batchSize);
+      const flags = await runBatchComparison(batch, cluster.canonicals, { model, llmClient });
+      accumulatedFlags.push(...flags);
+    }
+
+    completedClusters.add(clusterName);
+    writeTriageCheckpoint(
+      { completedClusters: Array.from(completedClusters), flags: accumulatedFlags },
+      outputDir,
+    );
+  }
+
+  // Phase 2: doc-vs-code
+  output(`Running doc-vs-code graph check...`);
+  const graphCheckOptions: GraphCheckOptions = {
+    getContent: (p) => readFileSync(p, "utf-8"),
+    symbolLookup: symbolLookup ?? ((name: string) => {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { lookupSymbol } = require("../graph/query/index.js") as { lookupSymbol: (n: string) => unknown };
+      return lookupSymbol(name) !== null;
+    }),
+    graphStats: graphStats ?? (() => {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { getGraphStats } = require("../graph/query/index.js") as { getGraphStats: () => { symbolCount: number } };
+      return getGraphStats();
+    }),
+  };
+
+  const graphFlags = runGraphCheck(candidates, graphCheckOptions);
+
+  const allPackets: TriageReviewPacket[] = [
+    ...accumulatedFlags.map((f): TriageReviewPacket => ({
+      sourcePath: f.candidatePath,
+      proposedDestination: f.candidatePath,
+      classificationConfidence: 0,
+      destinationCertainty: 0,
+      authorityRisk: "medium",
+      reasoning: [f.reason],
+      conflicts: f.canonicalPath ? [f.canonicalPath] : [],
+      recommendation: "defer",
+      outcomeReason: f.reason,
+      triageFlag: f.flagType,
+      relatedCanonical: f.canonicalPath,
+    })),
+    ...graphFlags.map((f): TriageReviewPacket => ({
+      sourcePath: f.candidatePath,
+      proposedDestination: f.candidatePath,
+      classificationConfidence: 0,
+      destinationCertainty: 0,
+      authorityRisk: "low",
+      reasoning: [`Stale symbol references: ${f.staleSymbols.join(", ")}`],
+      conflicts: [],
+      recommendation: "defer",
+      outcomeReason: `${f.staleSymbols.length} code symbols not found in graph: ${f.staleSymbols.join(", ")}`,
+      triageFlag: "stale-reference",
+      staleSymbols: f.staleSymbols,
+    })),
+  ];
+
+  writeTriageQueue(allPackets, outputDir);
+  deleteTriageCheckpoint(outputDir);
+
+  output(`\nTriage complete: ${allPackets.length} flags written to ${outputDir}/_triage-queue.json`);
+  output(`Run \`polaris docs review\` to walk through decisions.`);
+
+  return { flagCount: allPackets.length, outputDir };
 }
