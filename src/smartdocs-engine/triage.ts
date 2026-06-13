@@ -400,6 +400,143 @@ export interface TriageLlmFlag {
   reason: string;
 }
 
+export interface BatchComparisonOptions {
+  model: string;
+  llmClient?: LlmClient;
+}
+
+export function resolveTriageModel(configured?: string): string {
+  return (
+    process.env["POLARIS_TRIAGE_MODEL"] ??
+    configured ??
+    "claude-haiku-4-5-20251001"
+  );
+}
+
+export async function runBatchComparison(
+  candidates: DocMeta[],
+  canonicals: DocMeta[],
+  options: BatchComparisonOptions,
+): Promise<TriageLlmFlag[]> {
+  const client = options.llmClient ?? (await buildDefaultLlmClient());
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      return await client.compare(candidates, canonicals, options.model);
+    } catch (err) {
+      process.stderr.write(
+        `[triage] LLM batch failed (attempt ${attempt + 1})${attempt === 0 ? ", retrying" : ", skipping batch"}: ${err instanceof Error ? err.message : String(err)}\n`,
+      );
+    }
+  }
+
+  return [];
+}
+
+async function buildDefaultLlmClient(): Promise<LlmClient> {
+  const apiKey = process.env["ANTHROPIC_API_KEY"] ?? "";
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mod = await (Function('return import("@anthropic-ai/sdk")')()) as any;
+  const Anthropic = mod.default ?? mod.Anthropic;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sdkClient = new Anthropic({ apiKey }) as any;
+
+  return {
+    async compare(candidates, canonicals, model) {
+      const candidateSummaries = candidates
+        .map((c, i) => `[${i}] ${basename(c.path)} (${c.type || "unknown type"}) tags: ${c.tags.join(", ") || "none"}`)
+        .join("\n");
+
+      const canonicalSummaries = canonicals
+        .map((c) => `- ${basename(c.path)} (${c.type || "unknown type"}) tags: ${c.tags.join(", ") || "none"}`)
+        .join("\n");
+
+      const prompt = [
+        "You are comparing candidate documentation files against canonical documentation.",
+        "Identify any candidates that CONTRADICT or DUPLICATE a canonical.",
+        'Return ONLY a JSON array. If no issues found, return [].',
+        'Each item must be: { "candidatePath": string, "flagType": "contradiction" | "duplicate", "canonicalPath"?: string, "reason": string }',
+        "",
+        "CANDIDATES:",
+        candidateSummaries,
+        "",
+        "CANONICALS:",
+        canonicalSummaries,
+        "",
+        "Respond with JSON only. No prose.",
+      ].join("\n");
+
+      const response = await sdkClient.messages.create({
+        model,
+        max_tokens: 1024,
+        messages: [{ role: "user", content: prompt }],
+      });
+
+      const text = (response.content as { type: string; text: string }[])
+        .filter((b) => b.type === "text")
+        .map((b) => b.text)
+        .join("");
+
+      const cleaned = text.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
+      return JSON.parse(cleaned) as TriageLlmFlag[];
+    },
+  };
+}
+
+export interface GraphCheckOptions {
+  getContent: (path: string) => string;
+  symbolLookup: (name: string) => boolean;
+  graphStats: () => { symbolCount: number };
+}
+
+export interface GraphFlag {
+  candidatePath: string;
+  flagType: "stale-reference";
+  staleSymbols: string[];
+}
+
+const STALE_SYMBOL_THRESHOLD = 2;
+const GRAPH_SYMBOL_MINIMUM = 1000;
+
+export function runGraphCheck(
+  candidates: DocMeta[],
+  options: GraphCheckOptions,
+): GraphFlag[] {
+  const stats = options.graphStats();
+
+  if (stats.symbolCount < GRAPH_SYMBOL_MINIMUM) {
+    process.stderr.write(
+      `[triage] Graph coverage too low for doc-vs-code check (${stats.symbolCount} symbols indexed).\n` +
+      `         Run: polaris-cli graph build\n`,
+    );
+    return [];
+  }
+
+  const flags: GraphFlag[] = [];
+
+  for (const candidate of candidates) {
+    let content = "";
+    try {
+      content = options.getContent(candidate.path);
+    } catch {
+      continue;
+    }
+
+    const symbols = extractSymbols(content);
+    const missing = symbols.filter((s) => !options.symbolLookup(s));
+
+    if (missing.length >= STALE_SYMBOL_THRESHOLD) {
+      flags.push({
+        candidatePath: candidate.path,
+        flagType: "stale-reference",
+        staleSymbols: missing,
+      });
+    }
+  }
+
+  return flags;
+}
+
 // Stubs — implemented in later tasks
 export async function runTriage(_options: TriageOptions): Promise<TriageResult> {
   throw new Error("not implemented");

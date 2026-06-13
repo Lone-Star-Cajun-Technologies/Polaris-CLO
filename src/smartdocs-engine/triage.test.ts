@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { clusterCandidates, extractSymbols, loadDocMeta, readTriageCheckpoint, writeTriageCheckpoint, writeTriageQueue } from "./triage.js";
+import { clusterCandidates, extractSymbols, loadDocMeta, readTriageCheckpoint, writeTriageCheckpoint, writeTriageQueue, runBatchComparison, runGraphCheck } from "./triage.js";
+import type { LlmClient } from "./triage.js";
 import { mkdtempSync, mkdirSync, writeFileSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -168,5 +169,137 @@ describe("writeTriageQueue", () => {
     const raw = JSON.parse(readFileSync(join(dir, "_triage-queue.json"), "utf-8"));
     expect(raw.packets).toHaveLength(1);
     expect(raw.packets[0].triageFlag).toBe("contradiction");
+  });
+});
+
+describe("runBatchComparison", () => {
+  const candidates: import("./triage.js").DocMeta[] = [
+    {
+      path: "smartdocs/doctrine/candidate/ADR-101.md",
+      tags: ["governance"],
+      type: "Decision",
+      clusterMembership: [],
+      relatedNotes: [],
+      filenamePrefixes: ["ADR"],
+    },
+  ];
+
+  const canonicals: import("./triage.js").DocMeta[] = [
+    {
+      path: "smartdocs/doctrine/active/ADR-001.md",
+      tags: ["governance"],
+      type: "Decision",
+      clusterMembership: [],
+      relatedNotes: [],
+      filenamePrefixes: ["ADR"],
+    },
+  ];
+
+  it("returns flags from a valid LLM response", async () => {
+    const mockClient: LlmClient = {
+      async compare(_c, _can, _model) {
+        return [
+          {
+            candidatePath: "smartdocs/doctrine/candidate/ADR-101.md",
+            flagType: "contradiction",
+            canonicalPath: "smartdocs/doctrine/active/ADR-001.md",
+            reason: "Claims opposite authority model.",
+          },
+        ];
+      },
+    };
+
+    const flags = await runBatchComparison(candidates, canonicals, {
+      model: "claude-haiku-4-5-20251001",
+      llmClient: mockClient,
+    });
+
+    expect(flags).toHaveLength(1);
+    expect(flags[0].flagType).toBe("contradiction");
+  });
+
+  it("returns empty array when LLM finds no issues", async () => {
+    const mockClient: LlmClient = {
+      async compare() { return []; },
+    };
+
+    const flags = await runBatchComparison(candidates, canonicals, {
+      model: "claude-haiku-4-5-20251001",
+      llmClient: mockClient,
+    });
+
+    expect(flags).toHaveLength(0);
+  });
+
+  it("retries once on invalid JSON, then returns empty array with no throw", async () => {
+    let calls = 0;
+    const mockClient: LlmClient = {
+      async compare() {
+        calls++;
+        throw new Error("bad json");
+      },
+    };
+
+    const flags = await runBatchComparison(candidates, canonicals, {
+      model: "claude-haiku-4-5-20251001",
+      llmClient: mockClient,
+    });
+
+    expect(flags).toEqual([]);
+    expect(calls).toBe(2); // tried twice
+  });
+});
+
+describe("runGraphCheck", () => {
+  it("skips check when symbolCount < 1000", () => {
+    const candidates: import("./triage.js").DocMeta[] = [
+      { path: "smartdocs/doctrine/candidate/foo.md", tags: [], type: "", clusterMembership: [], relatedNotes: [], filenamePrefixes: [] },
+    ];
+
+    const flags = runGraphCheck(candidates, {
+      getContent: () => "References `runTriage` and `TriageRunner` symbols.",
+      symbolLookup: () => false,
+      graphStats: () => ({ symbolCount: 50 }),
+    });
+
+    expect(flags).toHaveLength(0);
+  });
+
+  it("flags candidate with 2+ missing symbols", () => {
+    const dir = mkdtempSync(join(tmpdir(), "triage-graph-"));
+    const docPath = join(dir, "stale.md");
+    writeFileSync(docPath, "Call `runTriage` then `TriageRunner` and `clusterCandidates`.", "utf-8");
+
+    const candidates: import("./triage.js").DocMeta[] = [
+      { path: docPath, tags: [], type: "", clusterMembership: [], relatedNotes: [], filenamePrefixes: [] },
+    ];
+
+    const flags = runGraphCheck(candidates, {
+      getContent: (p) => readFileSync(p, "utf-8"),
+      symbolLookup: () => false,
+      graphStats: () => ({ symbolCount: 5000 }),
+    });
+
+    expect(flags).toHaveLength(1);
+    expect(flags[0].flagType).toBe("stale-reference");
+    expect(flags[0].staleSymbols!.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("does not flag candidate with only 1 missing symbol", () => {
+    const dir = mkdtempSync(join(tmpdir(), "triage-graph-"));
+    const docPath = join(dir, "ok.md");
+    writeFileSync(docPath, "Call `onlyMissing` and some text without symbols.", "utf-8");
+
+    const candidates: import("./triage.js").DocMeta[] = [
+      { path: docPath, tags: [], type: "", clusterMembership: [], relatedNotes: [], filenamePrefixes: [] },
+    ];
+
+    const flags = runGraphCheck(candidates, {
+      getContent: (p) => readFileSync(p, "utf-8"),
+      symbolLookup: () => false,
+      graphStats: () => ({ symbolCount: 5000 }),
+    });
+
+    expect(flags).toHaveLength(0);
   });
 });
