@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { clusterCandidates, extractSymbols } from "./triage.js";
+import { clusterCandidates, extractSymbols, loadDocMeta } from "./triage.js";
 import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { loadDocMeta } from "./triage.js";
 
 describe("clusterCandidates", () => {
   it("groups candidates by shared tag with canonicals", () => {
@@ -114,6 +113,7 @@ describe("loadDocMeta", () => {
     expect(meta.type).toBe("Decision");
     expect(meta.clusterMembership).toContain("EVOlearn");
     expect(meta.filenamePrefixes).toContain("test");
+    expect(meta.relatedNotes).toContain("ADR-002");
   });
 
   it("returns empty arrays for docs with no frontmatter", () => {

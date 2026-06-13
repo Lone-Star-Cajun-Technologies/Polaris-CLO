@@ -261,7 +261,7 @@ function extractFilenamePrefixes(stem: string): string[] {
   // "ADR-001 - Some Title" → ["ADR"]
   // "EVOlearn_Governance" → ["EVOlearn"]
   const parts = stem.split(/[-_ ]/);
-  return parts.slice(0, 2).filter((p) => p.length >= 3);
+  return parts.slice(0, 2).filter((p) => p.length >= 3 && /[A-Za-z]/.test(p));
 }
 
 // ---------------------------------------------------------------------------
