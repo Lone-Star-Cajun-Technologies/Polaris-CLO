@@ -47,7 +47,7 @@ Clustering 590 candidates...
   12 clusters identified, 1 general bucket (38 docs)
   Estimated batches: 59
   Estimated tokens: ~180,000 input / ~12,000 output
-  Estimated cost: ~$0.04 (claude-haiku-4-5-20251001)
+  Estimated cost: ~$0.04 (claude-haiku-4-5 — configured model)
 
 Run without --dry-run to execute.
 ```
@@ -59,12 +59,17 @@ Run without --dry-run to execute.
 All written to `smartdocs/raw/`:
 
 ### `_triage-queue.json`
-Machine-readable. One entry per flagged candidate. Reuses the `ReviewPacket` shape from `src/governance/types.ts` exactly — so `polaris docs review` works on triage decisions identically to ingest decisions.
+Machine-readable. One entry per flagged candidate. Each entry is a `TriageReviewPacket` — a typed extension of `ReviewPacket` from `src/governance/types.ts`:
 
-Additional fields on each entry:
-- `triageFlag: "contradiction" | "duplicate" | "stale-reference"`
-- `relatedCanonical?: string` — path to the canonical involved (for contradiction/duplicate)
-- `staleSymbols?: string[]` — symbol names not found in graph (for stale-reference)
+```typescript
+interface TriageReviewPacket extends ReviewPacket {
+  triageFlag: "contradiction" | "duplicate" | "stale-reference";
+  relatedCanonical?: string;  // path to the canonical involved (for contradiction/duplicate)
+  staleSymbols?: string[];    // symbol names not found in graph (for stale-reference)
+}
+```
+
+`polaris docs review` reads `reviewDecision` / `reviewedAt` / `reviewedBy` from the base `ReviewPacket` fields and works on triage entries without modification. Triage-specific fields are additive and ignored by the review command.
 
 ### `_triage-report.md`
 Display-only summary. Never parsed to recover decisions. Contains:
@@ -107,7 +112,7 @@ No LLM needed. Pure string/metadata matching. Each candidate is assigned to the 
 For each cluster:
 1. Collect candidate docs in that cluster (up to `--batch-size` per call)
 2. Collect titles + one-line summaries of the relevant canonicals
-3. Send to `claude-haiku-4-5-20251001` with a structured prompt asking only for contradictions and duplicates
+3. Send to the configured triage model (resolved from `POLARIS_TRIAGE_MODEL` env var, falling back to `config.docs.triageModel`, falling back to a Haiku-class default) with a structured prompt asking only for contradictions and duplicates
 4. Parse structured JSON response: array of `{ candidatePath, flagType, canonicalPath?, reason }` objects
 5. Write checkpoint after each cluster batch
 
@@ -186,7 +191,7 @@ Add `.command("triage")` to the `docs` command group, wired to a thin action han
 No new packages. Uses:
 - `@anthropic-ai/sdk` — already in Polaris
 - `src/graph/query/index.ts` — `lookupSymbol`, `getGraphStats`
-- `src/governance/types.ts` — `ReviewPacket` reused for triage queue entries
+- `src/governance/types.ts` — `ReviewPacket` extended by `TriageReviewPacket`
 
 ---
 
