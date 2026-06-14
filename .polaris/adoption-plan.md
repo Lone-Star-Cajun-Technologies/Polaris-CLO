@@ -1,0 +1,653 @@
+# Adoption Plan
+
+- Plan ID: `adoption-2026-06-10T00-54-47.535Z`
+- Generated at: 2026-06-10T00:54:47.535Z
+- Repo state: polaris-enabled
+- Approved: no
+- Approved at: n/a
+- Dry run: yes
+
+## Impact Summary
+
+| Metric | Value |
+| --- | ---: |
+| Files to create | 4 |
+| Files to move | 300 |
+| Files to modify | 6 |
+| Instruction files affected | 0 |
+| SmartDocs candidates moved | 300 |
+| Cognition files to generate | 4 |
+
+## Phase A
+
+- **1. provider-config-lock** — provider-config / modify / approval not required / risk low / status pending destination: `polaris.config.json`
+  - Write minimal provider config lock before adoption scan/mutations.
+- **2. adoption-scaffold** — scaffold / create / approval not required / risk low / status pending destination: `.polaris/`
+  - Ensure Polaris scaffold files/folders required for adoption workflow exist.
+- **3. workspace-root-surfaces** — scaffold / create / approval not required / risk low / status pending destination: `CLAUDE.md, AGENTS.md, .github/copilot-instructions.md`
+  - Create root POLARIS.md, SUMMARY.md, and thin-pointer agent instruction files if missing.
+
+## Phase B
+
+_No steps._
+
+## Phase C
+
+- **4. smartdocs-migrate-005** — smartdocs-migrate / move / approval required / risk low / status pending source: `.agents/skills/diagnose/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .agents/skills/diagnose/SKILL.md to smartdocs/raw/SKILL.md.
+- **5. smartdocs-migrate-006** — smartdocs-migrate / move / approval required / risk low / status pending source: `.agents/skills/grill-me/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .agents/skills/grill-me/SKILL.md to smartdocs/raw/SKILL.md.
+- **6. smartdocs-migrate-007** — smartdocs-migrate / move / approval required / risk medium / status pending source: `.agents/skills/grill-with-docs/ADR-FORMAT.md` destination: `smartdocs/raw/ADR-FORMAT.md`
+  - Move .agents/skills/grill-with-docs/ADR-FORMAT.md to smartdocs/raw/ADR-FORMAT.md.
+- **7. smartdocs-migrate-008** — smartdocs-migrate / move / approval required / risk low / status pending source: `.agents/skills/grill-with-docs/CONTEXT-FORMAT.md` destination: `smartdocs/raw/CONTEXT-FORMAT.md`
+  - Move .agents/skills/grill-with-docs/CONTEXT-FORMAT.md to smartdocs/raw/CONTEXT-FORMAT.md.
+- **8. smartdocs-migrate-009** — smartdocs-migrate / move / approval required / risk low / status pending source: `.agents/skills/grill-with-docs/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .agents/skills/grill-with-docs/SKILL.md to smartdocs/raw/SKILL.md.
+- **9. smartdocs-migrate-010** — smartdocs-migrate / move / approval required / risk low / status pending source: `.agents/skills/request-refactor-plan/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .agents/skills/request-refactor-plan/SKILL.md to smartdocs/raw/SKILL.md.
+- **10. smartdocs-migrate-011** — smartdocs-migrate / move / approval required / risk low / status pending source: `.claude/README.md` destination: `smartdocs/raw/README.md`
+  - Move .claude/README.md to smartdocs/raw/README.md.
+- **11. smartdocs-migrate-012** — smartdocs-migrate / move / approval required / risk low / status pending source: `.claude/skills/diagnose/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .claude/skills/diagnose/SKILL.md to smartdocs/raw/SKILL.md.
+- **12. smartdocs-migrate-013** — smartdocs-migrate / move / approval required / risk low / status pending source: `.claude/skills/docs-ingest.md` destination: `smartdocs/raw/docs-ingest.md`
+  - Move .claude/skills/docs-ingest.md to smartdocs/raw/docs-ingest.md.
+- **13. smartdocs-migrate-014** — smartdocs-migrate / move / approval required / risk low / status pending source: `.claude/skills/docs-promote.md` destination: `smartdocs/raw/docs-promote.md`
+  - Move .claude/skills/docs-promote.md to smartdocs/raw/docs-promote.md.
+- **14. smartdocs-migrate-015** — smartdocs-migrate / move / approval required / risk low / status pending source: `.claude/skills/grill-me/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .claude/skills/grill-me/SKILL.md to smartdocs/raw/SKILL.md.
+- **15. smartdocs-migrate-016** — smartdocs-migrate / move / approval required / risk medium / status pending source: `.claude/skills/grill-with-docs/ADR-FORMAT.md` destination: `smartdocs/raw/ADR-FORMAT.md`
+  - Move .claude/skills/grill-with-docs/ADR-FORMAT.md to smartdocs/raw/ADR-FORMAT.md.
+- **16. smartdocs-migrate-017** — smartdocs-migrate / move / approval required / risk low / status pending source: `.claude/skills/grill-with-docs/CONTEXT-FORMAT.md` destination: `smartdocs/raw/CONTEXT-FORMAT.md`
+  - Move .claude/skills/grill-with-docs/CONTEXT-FORMAT.md to smartdocs/raw/CONTEXT-FORMAT.md.
+- **17. smartdocs-migrate-018** — smartdocs-migrate / move / approval required / risk low / status pending source: `.claude/skills/grill-with-docs/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .claude/skills/grill-with-docs/SKILL.md to smartdocs/raw/SKILL.md.
+- **18. smartdocs-migrate-019** — smartdocs-migrate / move / approval required / risk low / status pending source: `.claude/skills/polaris-analyze.md` destination: `smartdocs/raw/polaris-analyze.md`
+  - Move .claude/skills/polaris-analyze.md to smartdocs/raw/polaris-analyze.md.
+- **19. smartdocs-migrate-020** — smartdocs-migrate / move / approval required / risk low / status pending source: `.claude/skills/polaris-loop.md` destination: `smartdocs/raw/polaris-loop.md`
+  - Move .claude/skills/polaris-loop.md to smartdocs/raw/polaris-loop.md.
+- **20. smartdocs-migrate-021** — smartdocs-migrate / move / approval required / risk low / status pending source: `.claude/skills/polaris-run.md` destination: `smartdocs/raw/polaris-run.md`
+  - Move .claude/skills/polaris-run.md to smartdocs/raw/polaris-run.md.
+- **21. smartdocs-migrate-022** — smartdocs-migrate / move / approval required / risk low / status pending source: `.claude/skills/polaris-status.md` destination: `smartdocs/raw/polaris-status.md`
+  - Move .claude/skills/polaris-status.md to smartdocs/raw/polaris-status.md.
+- **22. smartdocs-migrate-023** — smartdocs-migrate / move / approval required / risk low / status pending source: `.claude/skills/polaris-tools.md` destination: `smartdocs/raw/polaris-tools.md`
+  - Move .claude/skills/polaris-tools.md to smartdocs/raw/polaris-tools.md.
+- **23. smartdocs-migrate-024** — smartdocs-migrate / move / approval required / risk low / status pending source: `.claude/skills/request-refactor-plan/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .claude/skills/request-refactor-plan/SKILL.md to smartdocs/raw/SKILL.md.
+- **24. smartdocs-migrate-025** — smartdocs-migrate / move / approval required / risk low / status pending source: `.codex/plugins/polaris/README.md` destination: `smartdocs/raw/README.md`
+  - Move .codex/plugins/polaris/README.md to smartdocs/raw/README.md.
+- **25. smartdocs-migrate-026** — smartdocs-migrate / move / approval required / risk low / status pending source: `.codex/plugins/polaris/skills/polaris-tools/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .codex/plugins/polaris/skills/polaris-tools/SKILL.md to smartdocs/raw/SKILL.md.
+- **26. smartdocs-migrate-027** — smartdocs-migrate / move / approval required / risk low / status pending source: `.codex/skills/caveman-compress/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .codex/skills/caveman-compress/SKILL.md to smartdocs/raw/SKILL.md.
+- **27. smartdocs-migrate-028** — smartdocs-migrate / move / approval required / risk low / status pending source: `.codex/skills/caveman/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .codex/skills/caveman/SKILL.md to smartdocs/raw/SKILL.md.
+- **28. smartdocs-migrate-029** — smartdocs-migrate / move / approval required / risk low / status pending source: `.codex/skills/docs-ingest/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .codex/skills/docs-ingest/SKILL.md to smartdocs/raw/SKILL.md.
+- **29. smartdocs-migrate-030** — smartdocs-migrate / move / approval required / risk low / status pending source: `.codex/skills/docs-promote/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .codex/skills/docs-promote/SKILL.md to smartdocs/raw/SKILL.md.
+- **30. smartdocs-migrate-031** — smartdocs-migrate / move / approval required / risk low / status pending source: `.codex/skills/polaris-analyze/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .codex/skills/polaris-analyze/SKILL.md to smartdocs/raw/SKILL.md.
+- **31. smartdocs-migrate-032** — smartdocs-migrate / move / approval required / risk low / status pending source: `.codex/skills/polaris-run/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .codex/skills/polaris-run/SKILL.md to smartdocs/raw/SKILL.md.
+- **32. smartdocs-migrate-033** — smartdocs-migrate / move / approval required / risk low / status pending source: `.codex/skills/polaris-tools/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .codex/skills/polaris-tools/SKILL.md to smartdocs/raw/SKILL.md.
+- **33. smartdocs-migrate-034** — smartdocs-migrate / move / approval required / risk low / status pending source: `.gemini/skills/caveman/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .gemini/skills/caveman/SKILL.md to smartdocs/raw/SKILL.md.
+- **34. smartdocs-migrate-035** — smartdocs-migrate / move / approval required / risk low / status pending source: `.gemini/skills/docs-ingest/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .gemini/skills/docs-ingest/SKILL.md to smartdocs/raw/SKILL.md.
+- **35. smartdocs-migrate-036** — smartdocs-migrate / move / approval required / risk low / status pending source: `.gemini/skills/docs-promote/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .gemini/skills/docs-promote/SKILL.md to smartdocs/raw/SKILL.md.
+- **36. smartdocs-migrate-037** — smartdocs-migrate / move / approval required / risk low / status pending source: `.gemini/skills/polaris-analyze/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .gemini/skills/polaris-analyze/SKILL.md to smartdocs/raw/SKILL.md.
+- **37. smartdocs-migrate-038** — smartdocs-migrate / move / approval required / risk low / status pending source: `.gemini/skills/polaris-run/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .gemini/skills/polaris-run/SKILL.md to smartdocs/raw/SKILL.md.
+- **38. smartdocs-migrate-039** — smartdocs-migrate / move / approval required / risk low / status pending source: `.gemini/skills/polaris-tools/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .gemini/skills/polaris-tools/SKILL.md to smartdocs/raw/SKILL.md.
+- **39. smartdocs-migrate-040** — smartdocs-migrate / move / approval required / risk low / status pending source: `.github/skills/caveman/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .github/skills/caveman/SKILL.md to smartdocs/raw/SKILL.md.
+- **40. smartdocs-migrate-041** — smartdocs-migrate / move / approval required / risk low / status pending source: `.github/skills/docs-ingest/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .github/skills/docs-ingest/SKILL.md to smartdocs/raw/SKILL.md.
+- **41. smartdocs-migrate-042** — smartdocs-migrate / move / approval required / risk low / status pending source: `.github/skills/docs-promote/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .github/skills/docs-promote/SKILL.md to smartdocs/raw/SKILL.md.
+- **42. smartdocs-migrate-043** — smartdocs-migrate / move / approval required / risk low / status pending source: `.github/skills/polaris-analyze/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .github/skills/polaris-analyze/SKILL.md to smartdocs/raw/SKILL.md.
+- **43. smartdocs-migrate-044** — smartdocs-migrate / move / approval required / risk low / status pending source: `.github/skills/polaris-run/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .github/skills/polaris-run/SKILL.md to smartdocs/raw/SKILL.md.
+- **44. smartdocs-migrate-045** — smartdocs-migrate / move / approval required / risk low / status pending source: `.github/skills/polaris-tools/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .github/skills/polaris-tools/SKILL.md to smartdocs/raw/SKILL.md.
+- **45. smartdocs-migrate-046** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/bootstrap/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move .polaris/bootstrap/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **46. smartdocs-migrate-047** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/bootstrap/SUMMARY.md` destination: `smartdocs/raw/SUMMARY.md`
+  - Move .polaris/bootstrap/SUMMARY.md to smartdocs/raw/SUMMARY.md.
+- **47. smartdocs-migrate-048** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/clusters/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move .polaris/clusters/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **48. smartdocs-migrate-049** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/clusters/SUMMARY.md` destination: `smartdocs/raw/SUMMARY.md`
+  - Move .polaris/clusters/SUMMARY.md to smartdocs/raw/SUMMARY.md.
+- **49. smartdocs-migrate-050** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/cognition/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move .polaris/cognition/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **50. smartdocs-migrate-051** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/map/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move .polaris/map/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **51. smartdocs-migrate-052** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/map/SUMMARY.md` destination: `smartdocs/raw/SUMMARY.md`
+  - Move .polaris/map/SUMMARY.md to smartdocs/raw/SUMMARY.md.
+- **52. smartdocs-migrate-053** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move .polaris/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **53. smartdocs-migrate-054** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/roles/analyst.md` destination: `smartdocs/raw/analyst.md`
+  - Move .polaris/roles/analyst.md to smartdocs/raw/analyst.md.
+- **54. smartdocs-migrate-055** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/roles/closeout-librarian.md` destination: `smartdocs/raw/closeout-librarian.md`
+  - Move .polaris/roles/closeout-librarian.md to smartdocs/raw/closeout-librarian.md.
+- **55. smartdocs-migrate-056** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/roles/cognition-librarian.md` destination: `smartdocs/raw/cognition-librarian.md`
+  - Move .polaris/roles/cognition-librarian.md to smartdocs/raw/cognition-librarian.md.
+- **56. smartdocs-migrate-057** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/roles/finalizer.md` destination: `smartdocs/raw/finalizer.md`
+  - Move .polaris/roles/finalizer.md to smartdocs/raw/finalizer.md.
+- **57. smartdocs-migrate-058** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/roles/foreman.md` destination: `smartdocs/raw/foreman.md`
+  - Move .polaris/roles/foreman.md to smartdocs/raw/foreman.md.
+- **58. smartdocs-migrate-059** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/roles/librarian.md` destination: `smartdocs/raw/librarian.md`
+  - Move .polaris/roles/librarian.md to smartdocs/raw/librarian.md.
+- **59. smartdocs-migrate-060** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/roles/worker.md` destination: `smartdocs/raw/worker.md`
+  - Move .polaris/roles/worker.md to smartdocs/raw/worker.md.
+- **60. smartdocs-migrate-061** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/runs/pol-5-session-1/run-report.md` destination: `smartdocs/raw/run-report.md`
+  - Move .polaris/runs/pol-5-session-1/run-report.md to smartdocs/raw/run-report.md.
+- **61. smartdocs-migrate-062** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/runs/polaris-run-cli-parity-workflow-migration-2026-05-26-001/run-report.md` destination: `smartdocs/raw/run-report.md`
+  - Move .polaris/runs/polaris-run-cli-parity-workflow-migration-2026-05-26-001/run-report.md to smartdocs/raw/run-report.md.
+- **62. smartdocs-migrate-063** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/runs/polaris-run-global-run-ledger-2026-05-28-001/run-report.md` destination: `smartdocs/raw/run-report.md`
+  - Move .polaris/runs/polaris-run-global-run-ledger-2026-05-28-001/run-report.md to smartdocs/raw/run-report.md.
+- **63. smartdocs-migrate-064** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/runs/polaris-run-pol-156-2026-05-28-001/run-report.md` destination: `smartdocs/raw/run-report.md`
+  - Move .polaris/runs/polaris-run-pol-156-2026-05-28-001/run-report.md to smartdocs/raw/run-report.md.
+- **64. smartdocs-migrate-065** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/runs/polaris-run-pol-187-2026-05-28-001/run-report.md` destination: `smartdocs/raw/run-report.md`
+  - Move .polaris/runs/polaris-run-pol-187-2026-05-28-001/run-report.md to smartdocs/raw/run-report.md.
+- **65. smartdocs-migrate-066** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/runs/polaris-run-pol-283-2026-06-02-002/run-report.md` destination: `smartdocs/raw/run-report.md`
+  - Move .polaris/runs/polaris-run-pol-283-2026-06-02-002/run-report.md to smartdocs/raw/run-report.md.
+- **66. smartdocs-migrate-067** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/runs/polaris-run-pol-313-2026-06-04-001/run-report.md` destination: `smartdocs/raw/run-report.md`
+  - Move .polaris/runs/polaris-run-pol-313-2026-06-04-001/run-report.md to smartdocs/raw/run-report.md.
+- **67. smartdocs-migrate-068** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/runs/polaris-run-pol-370-2026-06-08-001/run-report.md` destination: `smartdocs/raw/run-report.md`
+  - Move .polaris/runs/polaris-run-pol-370-2026-06-08-001/run-report.md to smartdocs/raw/run-report.md.
+- **68. smartdocs-migrate-069** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/runs/polaris-run-pol-374-2026-06-08-001/run-report.md` destination: `smartdocs/raw/run-report.md`
+  - Move .polaris/runs/polaris-run-pol-374-2026-06-08-001/run-report.md to smartdocs/raw/run-report.md.
+- **69. smartdocs-migrate-070** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/runs/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move .polaris/runs/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **70. smartdocs-migrate-071** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/runs/run-report.md` destination: `smartdocs/raw/run-report.md`
+  - Move .polaris/runs/run-report.md to smartdocs/raw/run-report.md.
+- **71. smartdocs-migrate-072** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/runs/SUMMARY.md` destination: `smartdocs/raw/SUMMARY.md`
+  - Move .polaris/runs/SUMMARY.md to smartdocs/raw/SUMMARY.md.
+- **72. smartdocs-migrate-073** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/caveman/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .polaris/skills/caveman/SKILL.md to smartdocs/raw/SKILL.md.
+- **73. smartdocs-migrate-074** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/closeout-librarian/chain.md` destination: `smartdocs/raw/chain.md`
+  - Move .polaris/skills/closeout-librarian/chain.md to smartdocs/raw/chain.md.
+- **74. smartdocs-migrate-075** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/closeout-librarian/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move .polaris/skills/closeout-librarian/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **75. smartdocs-migrate-076** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/closeout-librarian/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .polaris/skills/closeout-librarian/SKILL.md to smartdocs/raw/SKILL.md.
+- **76. smartdocs-migrate-077** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/closeout-librarian/steps/01-load-cluster-context.md` destination: `smartdocs/raw/01-load-cluster-context.md`
+  - Move .polaris/skills/closeout-librarian/steps/01-load-cluster-context.md to smartdocs/raw/01-load-cluster-context.md.
+- **77. smartdocs-migrate-078** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/closeout-librarian/steps/02-drift-reconciliation.md` destination: `smartdocs/raw/02-drift-reconciliation.md`
+  - Move .polaris/skills/closeout-librarian/steps/02-drift-reconciliation.md to smartdocs/raw/02-drift-reconciliation.md.
+- **78. smartdocs-migrate-079** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/closeout-librarian/steps/03-reconcile-polaris-md.md` destination: `smartdocs/raw/03-reconcile-polaris-md.md`
+  - Move .polaris/skills/closeout-librarian/steps/03-reconcile-polaris-md.md to smartdocs/raw/03-reconcile-polaris-md.md.
+- **79. smartdocs-migrate-080** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/closeout-librarian/steps/04-reconcile-summary-md.md` destination: `smartdocs/raw/04-reconcile-summary-md.md`
+  - Move .polaris/skills/closeout-librarian/steps/04-reconcile-summary-md.md to smartdocs/raw/04-reconcile-summary-md.md.
+- **80. smartdocs-migrate-081** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/closeout-librarian/steps/05-doc-ingestion.md` destination: `smartdocs/raw/05-doc-ingestion.md`
+  - Move .polaris/skills/closeout-librarian/steps/05-doc-ingestion.md to smartdocs/raw/05-doc-ingestion.md.
+- **81. smartdocs-migrate-082** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/closeout-librarian/steps/06-link-validation.md` destination: `smartdocs/raw/06-link-validation.md`
+  - Move .polaris/skills/closeout-librarian/steps/06-link-validation.md to smartdocs/raw/06-link-validation.md.
+- **82. smartdocs-migrate-083** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/closeout-librarian/steps/07-yaml-linking.md` destination: `smartdocs/raw/07-yaml-linking.md`
+  - Move .polaris/skills/closeout-librarian/steps/07-yaml-linking.md to smartdocs/raw/07-yaml-linking.md.
+- **83. smartdocs-migrate-084** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/closeout-librarian/steps/08-librarian-commit.md` destination: `smartdocs/raw/08-librarian-commit.md`
+  - Move .polaris/skills/closeout-librarian/steps/08-librarian-commit.md to smartdocs/raw/08-librarian-commit.md.
+- **84. smartdocs-migrate-085** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/closeout-librarian/steps/09-sealed-result.md` destination: `smartdocs/raw/09-sealed-result.md`
+  - Move .polaris/skills/closeout-librarian/steps/09-sealed-result.md to smartdocs/raw/09-sealed-result.md.
+- **85. smartdocs-migrate-086** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/docs-ingest/chain.md` destination: `smartdocs/raw/chain.md`
+  - Move .polaris/skills/docs-ingest/chain.md to smartdocs/raw/chain.md.
+- **86. smartdocs-migrate-087** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/docs-ingest/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .polaris/skills/docs-ingest/SKILL.md to smartdocs/raw/SKILL.md.
+- **87. smartdocs-migrate-088** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/docs-ingest/steps/01-orient-ingest.md` destination: `smartdocs/raw/01-orient-ingest.md`
+  - Move .polaris/skills/docs-ingest/steps/01-orient-ingest.md to smartdocs/raw/01-orient-ingest.md.
+- **88. smartdocs-migrate-089** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/docs-ingest/steps/02-classify-batch.md` destination: `smartdocs/raw/02-classify-batch.md`
+  - Move .polaris/skills/docs-ingest/steps/02-classify-batch.md to smartdocs/raw/02-classify-batch.md.
+- **89. smartdocs-migrate-090** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/docs-ingest/steps/03-conflict-check.md` destination: `smartdocs/raw/03-conflict-check.md`
+  - Move .polaris/skills/docs-ingest/steps/03-conflict-check.md to smartdocs/raw/03-conflict-check.md.
+- **90. smartdocs-migrate-091** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/docs-ingest/steps/04-place-and-link.md` destination: `smartdocs/raw/04-place-and-link.md`
+  - Move .polaris/skills/docs-ingest/steps/04-place-and-link.md to smartdocs/raw/04-place-and-link.md.
+- **91. smartdocs-migrate-092** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/docs-ingest/steps/05-finalize-ingest.md` destination: `smartdocs/raw/05-finalize-ingest.md`
+  - Move .polaris/skills/docs-ingest/steps/05-finalize-ingest.md to smartdocs/raw/05-finalize-ingest.md.
+- **92. smartdocs-migrate-093** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/docs-promote/chain.md` destination: `smartdocs/raw/chain.md`
+  - Move .polaris/skills/docs-promote/chain.md to smartdocs/raw/chain.md.
+- **93. smartdocs-migrate-094** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/docs-promote/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .polaris/skills/docs-promote/SKILL.md to smartdocs/raw/SKILL.md.
+- **94. smartdocs-migrate-095** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/docs-promote/steps/01-orient-promote.md` destination: `smartdocs/raw/01-orient-promote.md`
+  - Move .polaris/skills/docs-promote/steps/01-orient-promote.md to smartdocs/raw/01-orient-promote.md.
+- **95. smartdocs-migrate-096** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/docs-promote/steps/02-review-candidates.md` destination: `smartdocs/raw/02-review-candidates.md`
+  - Move .polaris/skills/docs-promote/steps/02-review-candidates.md to smartdocs/raw/02-review-candidates.md.
+- **96. smartdocs-migrate-097** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/docs-promote/steps/03-read-linked-code.md` destination: `smartdocs/raw/03-read-linked-code.md`
+  - Move .polaris/skills/docs-promote/steps/03-read-linked-code.md to smartdocs/raw/03-read-linked-code.md.
+- **97. smartdocs-migrate-098** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/docs-promote/steps/04-conflict-surface.md` destination: `smartdocs/raw/04-conflict-surface.md`
+  - Move .polaris/skills/docs-promote/steps/04-conflict-surface.md to smartdocs/raw/04-conflict-surface.md.
+- **98. smartdocs-migrate-099** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/docs-promote/steps/05-await-approval.md` destination: `smartdocs/raw/05-await-approval.md`
+  - Move .polaris/skills/docs-promote/steps/05-await-approval.md to smartdocs/raw/05-await-approval.md.
+- **99. smartdocs-migrate-100** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/docs-promote/steps/06-execute-promote-deprecate.md` destination: `smartdocs/raw/06-execute-promote-deprecate.md`
+  - Move .polaris/skills/docs-promote/steps/06-execute-promote-deprecate.md to smartdocs/raw/06-execute-promote-deprecate.md.
+- **100. smartdocs-migrate-101** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/docs-promote/steps/07-finalize-promote.md` destination: `smartdocs/raw/07-finalize-promote.md`
+  - Move .polaris/skills/docs-promote/steps/07-finalize-promote.md to smartdocs/raw/07-finalize-promote.md.
+- **101. smartdocs-migrate-102** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-analyze/chain.md` destination: `smartdocs/raw/chain.md`
+  - Move .polaris/skills/polaris-analyze/chain.md to smartdocs/raw/chain.md.
+- **102. smartdocs-migrate-103** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-analyze/issue-reconciliation.md` destination: `smartdocs/raw/issue-reconciliation.md`
+  - Move .polaris/skills/polaris-analyze/issue-reconciliation.md to smartdocs/raw/issue-reconciliation.md.
+- **103. smartdocs-migrate-104** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-analyze/issue-template.md` destination: `smartdocs/raw/issue-template.md`
+  - Move .polaris/skills/polaris-analyze/issue-template.md to smartdocs/raw/issue-template.md.
+- **104. smartdocs-migrate-105** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-analyze/linked-skills/repo-analysis.md` destination: `smartdocs/raw/repo-analysis.md`
+  - Move .polaris/skills/polaris-analyze/linked-skills/repo-analysis.md to smartdocs/raw/repo-analysis.md.
+- **105. smartdocs-migrate-106** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-analyze/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .polaris/skills/polaris-analyze/SKILL.md to smartdocs/raw/SKILL.md.
+- **106. smartdocs-migrate-107** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-analyze/steps/01-fetch-and-orient.md` destination: `smartdocs/raw/01-fetch-and-orient.md`
+  - Move .polaris/skills/polaris-analyze/steps/01-fetch-and-orient.md to smartdocs/raw/01-fetch-and-orient.md.
+- **107. smartdocs-migrate-108** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-analyze/steps/02-map-affected-code.md` destination: `smartdocs/raw/02-map-affected-code.md`
+  - Move .polaris/skills/polaris-analyze/steps/02-map-affected-code.md to smartdocs/raw/02-map-affected-code.md.
+- **108. smartdocs-migrate-109** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-analyze/steps/03-assess-issue.md` destination: `smartdocs/raw/03-assess-issue.md`
+  - Move .polaris/skills/polaris-analyze/steps/03-assess-issue.md to smartdocs/raw/03-assess-issue.md.
+- **109. smartdocs-migrate-110** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-analyze/steps/04-blocker-check.md` destination: `smartdocs/raw/04-blocker-check.md`
+  - Move .polaris/skills/polaris-analyze/steps/04-blocker-check.md to smartdocs/raw/04-blocker-check.md.
+- **110. smartdocs-migrate-111** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-analyze/steps/05-create-cluster-plan.md` destination: `smartdocs/raw/05-create-cluster-plan.md`
+  - Move .polaris/skills/polaris-analyze/steps/05-create-cluster-plan.md to smartdocs/raw/05-create-cluster-plan.md.
+- **111. smartdocs-migrate-112** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-analyze/steps/06-final-report.md` destination: `smartdocs/raw/06-final-report.md`
+  - Move .polaris/skills/polaris-analyze/steps/06-final-report.md to smartdocs/raw/06-final-report.md.
+- **112. smartdocs-migrate-113** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-catalog/chain.md` destination: `smartdocs/raw/chain.md`
+  - Move .polaris/skills/polaris-catalog/chain.md to smartdocs/raw/chain.md.
+- **113. smartdocs-migrate-114** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-catalog/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .polaris/skills/polaris-catalog/SKILL.md to smartdocs/raw/SKILL.md.
+- **114. smartdocs-migrate-115** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-catalog/steps/01-orient-catalog.md` destination: `smartdocs/raw/01-orient-catalog.md`
+  - Move .polaris/skills/polaris-catalog/steps/01-orient-catalog.md to smartdocs/raw/01-orient-catalog.md.
+- **115. smartdocs-migrate-116** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-catalog/steps/02-reconcile-polaris-md.md` destination: `smartdocs/raw/02-reconcile-polaris-md.md`
+  - Move .polaris/skills/polaris-catalog/steps/02-reconcile-polaris-md.md to smartdocs/raw/02-reconcile-polaris-md.md.
+- **116. smartdocs-migrate-117** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-catalog/steps/03-reconcile-summary-md.md` destination: `smartdocs/raw/03-reconcile-summary-md.md`
+  - Move .polaris/skills/polaris-catalog/steps/03-reconcile-summary-md.md to smartdocs/raw/03-reconcile-summary-md.md.
+- **117. smartdocs-migrate-118** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-catalog/steps/04-classify-and-place.md` destination: `smartdocs/raw/04-classify-and-place.md`
+  - Move .polaris/skills/polaris-catalog/steps/04-classify-and-place.md to smartdocs/raw/04-classify-and-place.md.
+- **118. smartdocs-migrate-119** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-catalog/steps/05-catalog-commit.md` destination: `smartdocs/raw/05-catalog-commit.md`
+  - Move .polaris/skills/polaris-catalog/steps/05-catalog-commit.md to smartdocs/raw/05-catalog-commit.md.
+- **119. smartdocs-migrate-120** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-medic/chain.md` destination: `smartdocs/raw/chain.md`
+  - Move .polaris/skills/polaris-medic/chain.md to smartdocs/raw/chain.md.
+- **120. smartdocs-migrate-121** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-medic/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .polaris/skills/polaris-medic/SKILL.md to smartdocs/raw/SKILL.md.
+- **121. smartdocs-migrate-122** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-medic/steps/01-orient-medic.md` destination: `smartdocs/raw/01-orient-medic.md`
+  - Move .polaris/skills/polaris-medic/steps/01-orient-medic.md to smartdocs/raw/01-orient-medic.md.
+- **122. smartdocs-migrate-123** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-medic/steps/02-diagnose.md` destination: `smartdocs/raw/02-diagnose.md`
+  - Move .polaris/skills/polaris-medic/steps/02-diagnose.md to smartdocs/raw/02-diagnose.md.
+- **123. smartdocs-migrate-124** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-medic/steps/03-repair.md` destination: `smartdocs/raw/03-repair.md`
+  - Move .polaris/skills/polaris-medic/steps/03-repair.md to smartdocs/raw/03-repair.md.
+- **124. smartdocs-migrate-125** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-medic/steps/04-validate.md` destination: `smartdocs/raw/04-validate.md`
+  - Move .polaris/skills/polaris-medic/steps/04-validate.md to smartdocs/raw/04-validate.md.
+- **125. smartdocs-migrate-126** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-medic/steps/05-create-chart.md` destination: `smartdocs/raw/05-create-chart.md`
+  - Move .polaris/skills/polaris-medic/steps/05-create-chart.md to smartdocs/raw/05-create-chart.md.
+- **126. smartdocs-migrate-127** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-medic/steps/06-closeout.md` destination: `smartdocs/raw/06-closeout.md`
+  - Move .polaris/skills/polaris-medic/steps/06-closeout.md to smartdocs/raw/06-closeout.md.
+- **127. smartdocs-migrate-128** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-reconcile/chain.md` destination: `smartdocs/raw/chain.md`
+  - Move .polaris/skills/polaris-reconcile/chain.md to smartdocs/raw/chain.md.
+- **128. smartdocs-migrate-129** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-reconcile/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .polaris/skills/polaris-reconcile/SKILL.md to smartdocs/raw/SKILL.md.
+- **129. smartdocs-migrate-130** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-reconcile/steps/01-orient-reconcile.md` destination: `smartdocs/raw/01-orient-reconcile.md`
+  - Move .polaris/skills/polaris-reconcile/steps/01-orient-reconcile.md to smartdocs/raw/01-orient-reconcile.md.
+- **130. smartdocs-migrate-131** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-reconcile/steps/02-reconcile-polaris-md.md` destination: `smartdocs/raw/02-reconcile-polaris-md.md`
+  - Move .polaris/skills/polaris-reconcile/steps/02-reconcile-polaris-md.md to smartdocs/raw/02-reconcile-polaris-md.md.
+- **131. smartdocs-migrate-132** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-reconcile/steps/03-reconcile-summary-md.md` destination: `smartdocs/raw/03-reconcile-summary-md.md`
+  - Move .polaris/skills/polaris-reconcile/steps/03-reconcile-summary-md.md to smartdocs/raw/03-reconcile-summary-md.md.
+- **132. smartdocs-migrate-133** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-reconcile/steps/04-reconcile-commit.md` destination: `smartdocs/raw/04-reconcile-commit.md`
+  - Move .polaris/skills/polaris-reconcile/steps/04-reconcile-commit.md to smartdocs/raw/04-reconcile-commit.md.
+- **133. smartdocs-migrate-134** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-run/chain.md` destination: `smartdocs/raw/chain.md`
+  - Move .polaris/skills/polaris-run/chain.md to smartdocs/raw/chain.md.
+- **134. smartdocs-migrate-135** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-run/execution-adapter.md` destination: `smartdocs/raw/execution-adapter.md`
+  - Move .polaris/skills/polaris-run/execution-adapter.md to smartdocs/raw/execution-adapter.md.
+- **135. smartdocs-migrate-136** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-run/linked-skills/repo-analysis.md` destination: `smartdocs/raw/repo-analysis.md`
+  - Move .polaris/skills/polaris-run/linked-skills/repo-analysis.md to smartdocs/raw/repo-analysis.md.
+- **136. smartdocs-migrate-137** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-run/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .polaris/skills/polaris-run/SKILL.md to smartdocs/raw/SKILL.md.
+- **137. smartdocs-migrate-138** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-run/steps/01-orient-cluster.md` destination: `smartdocs/raw/01-orient-cluster.md`
+  - Move .polaris/skills/polaris-run/steps/01-orient-cluster.md to smartdocs/raw/01-orient-cluster.md.
+- **138. smartdocs-migrate-139** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-run/steps/02-prepare-branch.md` destination: `smartdocs/raw/02-prepare-branch.md`
+  - Move .polaris/skills/polaris-run/steps/02-prepare-branch.md to smartdocs/raw/02-prepare-branch.md.
+- **139. smartdocs-migrate-140** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-run/steps/03-select-child.md` destination: `smartdocs/raw/03-select-child.md`
+  - Move .polaris/skills/polaris-run/steps/03-select-child.md to smartdocs/raw/03-select-child.md.
+- **140. smartdocs-migrate-141** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-run/steps/04-execute-child.md` destination: `smartdocs/raw/04-execute-child.md`
+  - Move .polaris/skills/polaris-run/steps/04-execute-child.md to smartdocs/raw/04-execute-child.md.
+- **141. smartdocs-migrate-142** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-run/steps/05-validate-child.md` destination: `smartdocs/raw/05-validate-child.md`
+  - Move .polaris/skills/polaris-run/steps/05-validate-child.md to smartdocs/raw/05-validate-child.md.
+- **142. smartdocs-migrate-143** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-run/steps/06-commit-and-update-linear.md` destination: `smartdocs/raw/06-commit-and-update-linear.md`
+  - Move .polaris/skills/polaris-run/steps/06-commit-and-update-linear.md to smartdocs/raw/06-commit-and-update-linear.md.
+- **143. smartdocs-migrate-144** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-run/steps/07-decide-continuation.md` destination: `smartdocs/raw/07-decide-continuation.md`
+  - Move .polaris/skills/polaris-run/steps/07-decide-continuation.md to smartdocs/raw/07-decide-continuation.md.
+- **144. smartdocs-migrate-145** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-run/steps/08-closeout-librarian.md` destination: `smartdocs/raw/08-closeout-librarian.md`
+  - Move .polaris/skills/polaris-run/steps/08-closeout-librarian.md to smartdocs/raw/08-closeout-librarian.md.
+- **145. smartdocs-migrate-146** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-run/steps/08-final-delivery.md` destination: `smartdocs/raw/08-final-delivery.md`
+  - Move .polaris/skills/polaris-run/steps/08-final-delivery.md to smartdocs/raw/08-final-delivery.md.
+- **146. smartdocs-migrate-147** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-run/steps/09-final-delivery.md` destination: `smartdocs/raw/09-final-delivery.md`
+  - Move .polaris/skills/polaris-run/steps/09-final-delivery.md to smartdocs/raw/09-final-delivery.md.
+- **147. smartdocs-migrate-148** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-tools/README.md` destination: `smartdocs/raw/README.md`
+  - Move .polaris/skills/polaris-tools/README.md to smartdocs/raw/README.md.
+- **148. smartdocs-migrate-149** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/polaris-tools/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move .polaris/skills/polaris-tools/SKILL.md to smartdocs/raw/SKILL.md.
+- **149. smartdocs-migrate-150** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/skills/ROUTING.md` destination: `smartdocs/raw/ROUTING.md`
+  - Move .polaris/skills/ROUTING.md to smartdocs/raw/ROUTING.md.
+- **150. smartdocs-migrate-151** — smartdocs-migrate / move / approval required / risk low / status pending source: `.polaris/SUMMARY.md` destination: `smartdocs/raw/SUMMARY.md`
+  - Move .polaris/SUMMARY.md to smartdocs/raw/SUMMARY.md.
+- **151. smartdocs-migrate-152** — smartdocs-migrate / move / approval required / risk low / status pending source: `docs/SETUP.md` destination: `smartdocs/raw/SETUP.md`
+  - Move docs/SETUP.md to smartdocs/raw/SETUP.md.
+- **152. smartdocs-migrate-153** — smartdocs-migrate / move / approval required / risk low / status pending source: `docs/superpowers/plans/2026-06-09-adopt-orchestration-and-workspace-surfaces.md` destination: `smartdocs/raw/2026-06-09-adopt-orchestration-and-workspace-surfaces.md`
+  - Move docs/superpowers/plans/2026-06-09-adopt-orchestration-and-workspace-surfaces.md to smartdocs/raw/2026-06-09-adopt-orchestration-and-workspace-surfaces.md.
+- **153. smartdocs-migrate-154** — smartdocs-migrate / move / approval required / risk low / status pending source: `docs/superpowers/plans/2026-06-09-workspace-asset-bundling.md` destination: `smartdocs/raw/2026-06-09-workspace-asset-bundling.md`
+  - Move docs/superpowers/plans/2026-06-09-workspace-asset-bundling.md to smartdocs/raw/2026-06-09-workspace-asset-bundling.md.
+- **154. smartdocs-migrate-155** — smartdocs-migrate / move / approval required / risk low / status pending source: `docs/superpowers/specs/2026-06-09-workspace-asset-bundling-design.md` destination: `smartdocs/raw/2026-06-09-workspace-asset-bundling-design.md`
+  - Move docs/superpowers/specs/2026-06-09-workspace-asset-bundling-design.md to smartdocs/raw/2026-06-09-workspace-asset-bundling-design.md.
+- **155. smartdocs-migrate-156** — smartdocs-migrate / move / approval required / risk low / status pending source: `docs/USAGE.md` destination: `smartdocs/raw/USAGE.md`
+  - Move docs/USAGE.md to smartdocs/raw/USAGE.md.
+- **156. smartdocs-migrate-157** — smartdocs-migrate / move / approval required / risk medium / status pending source: `foreman-worker-architecture.md` destination: `smartdocs/raw/foreman-worker-architecture.md`
+  - Move foreman-worker-architecture.md to smartdocs/raw/foreman-worker-architecture.md.
+- **157. smartdocs-migrate-158** — smartdocs-migrate / move / approval required / risk low / status pending source: `POLARIS_RULES.md` destination: `smartdocs/raw/POLARIS_RULES.md`
+  - Move POLARIS_RULES.md to smartdocs/raw/POLARIS_RULES.md.
+- **158. smartdocs-migrate-159** — smartdocs-migrate / move / approval required / risk low / status pending source: `scripts/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move scripts/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **159. smartdocs-migrate-160** — smartdocs-migrate / move / approval required / risk low / status pending source: `scripts/SUMMARY.md` destination: `smartdocs/raw/SUMMARY.md`
+  - Move scripts/SUMMARY.md to smartdocs/raw/SUMMARY.md.
+- **160. smartdocs-migrate-161** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/cli/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move src/cli/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **161. smartdocs-migrate-162** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/cli/SUMMARY.md` destination: `smartdocs/raw/SUMMARY.md`
+  - Move src/cli/SUMMARY.md to smartdocs/raw/SUMMARY.md.
+- **162. smartdocs-migrate-163** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/cognition/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move src/cognition/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **163. smartdocs-migrate-164** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/cognition/SUMMARY.md` destination: `smartdocs/raw/SUMMARY.md`
+  - Move src/cognition/SUMMARY.md to smartdocs/raw/SUMMARY.md.
+- **164. smartdocs-migrate-165** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/config/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move src/config/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **165. smartdocs-migrate-166** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/config/SUMMARY.md` destination: `smartdocs/raw/SUMMARY.md`
+  - Move src/config/SUMMARY.md to smartdocs/raw/SUMMARY.md.
+- **166. smartdocs-migrate-167** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/finalize/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move src/finalize/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **167. smartdocs-migrate-168** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/finalize/steps/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move src/finalize/steps/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **168. smartdocs-migrate-169** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/finalize/steps/SUMMARY.md` destination: `smartdocs/raw/SUMMARY.md`
+  - Move src/finalize/steps/SUMMARY.md to smartdocs/raw/SUMMARY.md.
+- **169. smartdocs-migrate-170** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/finalize/SUMMARY.md` destination: `smartdocs/raw/SUMMARY.md`
+  - Move src/finalize/SUMMARY.md to smartdocs/raw/SUMMARY.md.
+- **170. smartdocs-migrate-171** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/graph/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move src/graph/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **171. smartdocs-migrate-172** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/ignore/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move src/ignore/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **172. smartdocs-migrate-173** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/ignore/SUMMARY.md` destination: `smartdocs/raw/SUMMARY.md`
+  - Move src/ignore/SUMMARY.md to smartdocs/raw/SUMMARY.md.
+- **173. smartdocs-migrate-174** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/loop/adapters/__tests__/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move src/loop/adapters/__tests__/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **174. smartdocs-migrate-175** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/loop/adapters/__tests__/SUMMARY.md` destination: `smartdocs/raw/SUMMARY.md`
+  - Move src/loop/adapters/__tests__/SUMMARY.md to smartdocs/raw/SUMMARY.md.
+- **175. smartdocs-migrate-176** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/loop/adapters/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move src/loop/adapters/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **176. smartdocs-migrate-177** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/loop/adapters/SUMMARY.md` destination: `smartdocs/raw/SUMMARY.md`
+  - Move src/loop/adapters/SUMMARY.md to smartdocs/raw/SUMMARY.md.
+- **177. smartdocs-migrate-178** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/loop/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move src/loop/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **178. smartdocs-migrate-179** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/loop/SUMMARY.md` destination: `smartdocs/raw/SUMMARY.md`
+  - Move src/loop/SUMMARY.md to smartdocs/raw/SUMMARY.md.
+- **179. smartdocs-migrate-180** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/map/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move src/map/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **180. smartdocs-migrate-181** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/map/SUMMARY.md` destination: `smartdocs/raw/SUMMARY.md`
+  - Move src/map/SUMMARY.md to smartdocs/raw/SUMMARY.md.
+- **181. smartdocs-migrate-182** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/mcp/lib/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move src/mcp/lib/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **182. smartdocs-migrate-183** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/mcp/lib/SUMMARY.md` destination: `smartdocs/raw/SUMMARY.md`
+  - Move src/mcp/lib/SUMMARY.md to smartdocs/raw/SUMMARY.md.
+- **183. smartdocs-migrate-184** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/mcp/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move src/mcp/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **184. smartdocs-migrate-185** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/mcp/SUMMARY.md` destination: `smartdocs/raw/SUMMARY.md`
+  - Move src/mcp/SUMMARY.md to smartdocs/raw/SUMMARY.md.
+- **185. smartdocs-migrate-186** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/mcp/tools/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move src/mcp/tools/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **186. smartdocs-migrate-187** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/mcp/tools/SUMMARY.md` destination: `smartdocs/raw/SUMMARY.md`
+  - Move src/mcp/tools/SUMMARY.md to smartdocs/raw/SUMMARY.md.
+- **187. smartdocs-migrate-188** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move src/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **188. smartdocs-migrate-189** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/runs/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move src/runs/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **189. smartdocs-migrate-190** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/runs/SUMMARY.md` destination: `smartdocs/raw/SUMMARY.md`
+  - Move src/runs/SUMMARY.md to smartdocs/raw/SUMMARY.md.
+- **190. smartdocs-migrate-191** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/runtime/audit/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move src/runtime/audit/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **191. smartdocs-migrate-192** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/runtime/audit/SUMMARY.md` destination: `smartdocs/raw/SUMMARY.md`
+  - Move src/runtime/audit/SUMMARY.md to smartdocs/raw/SUMMARY.md.
+- **192. smartdocs-migrate-193** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/runtime/continuation/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move src/runtime/continuation/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **193. smartdocs-migrate-194** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/runtime/continuation/SUMMARY.md` destination: `smartdocs/raw/SUMMARY.md`
+  - Move src/runtime/continuation/SUMMARY.md to smartdocs/raw/SUMMARY.md.
+- **194. smartdocs-migrate-195** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/runtime/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move src/runtime/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **195. smartdocs-migrate-196** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/runtime/scheduling/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move src/runtime/scheduling/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **196. smartdocs-migrate-197** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/runtime/scheduling/SUMMARY.md` destination: `smartdocs/raw/SUMMARY.md`
+  - Move src/runtime/scheduling/SUMMARY.md to smartdocs/raw/SUMMARY.md.
+- **197. smartdocs-migrate-198** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/runtime/SUMMARY.md` destination: `smartdocs/raw/SUMMARY.md`
+  - Move src/runtime/SUMMARY.md to smartdocs/raw/SUMMARY.md.
+- **198. smartdocs-migrate-199** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/runtime/verification/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move src/runtime/verification/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **199. smartdocs-migrate-200** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/runtime/verification/SUMMARY.md` destination: `smartdocs/raw/SUMMARY.md`
+  - Move src/runtime/verification/SUMMARY.md to smartdocs/raw/SUMMARY.md.
+- **200. smartdocs-migrate-201** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/smartdocs-engine/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move src/smartdocs-engine/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **201. smartdocs-migrate-202** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/smartdocs-engine/SUMMARY.md` destination: `smartdocs/raw/SUMMARY.md`
+  - Move src/smartdocs-engine/SUMMARY.md to smartdocs/raw/SUMMARY.md.
+- **202. smartdocs-migrate-203** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/SUMMARY.md` destination: `smartdocs/raw/SUMMARY.md`
+  - Move src/SUMMARY.md to smartdocs/raw/SUMMARY.md.
+- **203. smartdocs-migrate-204** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/tracker/adapters/github/README.md` destination: `smartdocs/raw/README.md`
+  - Move src/tracker/adapters/github/README.md to smartdocs/raw/README.md.
+- **204. smartdocs-migrate-205** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/tracker/adapters/jira/README.md` destination: `smartdocs/raw/README.md`
+  - Move src/tracker/adapters/jira/README.md to smartdocs/raw/README.md.
+- **205. smartdocs-migrate-206** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/types/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move src/types/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **206. smartdocs-migrate-207** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/types/SUMMARY.md` destination: `smartdocs/raw/SUMMARY.md`
+  - Move src/types/SUMMARY.md to smartdocs/raw/SUMMARY.md.
+- **207. smartdocs-migrate-208** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/utils/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move src/utils/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **208. smartdocs-migrate-209** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/utils/SUMMARY.md` destination: `smartdocs/raw/SUMMARY.md`
+  - Move src/utils/SUMMARY.md to smartdocs/raw/SUMMARY.md.
+- **209. smartdocs-migrate-210** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/roles/analyst.md` destination: `smartdocs/raw/analyst.md`
+  - Move src/workspace/.polaris/roles/analyst.md to smartdocs/raw/analyst.md.
+- **210. smartdocs-migrate-211** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/roles/closeout-librarian.md` destination: `smartdocs/raw/closeout-librarian.md`
+  - Move src/workspace/.polaris/roles/closeout-librarian.md to smartdocs/raw/closeout-librarian.md.
+- **211. smartdocs-migrate-212** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/roles/cognition-librarian.md` destination: `smartdocs/raw/cognition-librarian.md`
+  - Move src/workspace/.polaris/roles/cognition-librarian.md to smartdocs/raw/cognition-librarian.md.
+- **212. smartdocs-migrate-213** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/roles/finalizer.md` destination: `smartdocs/raw/finalizer.md`
+  - Move src/workspace/.polaris/roles/finalizer.md to smartdocs/raw/finalizer.md.
+- **213. smartdocs-migrate-214** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/roles/foreman.md` destination: `smartdocs/raw/foreman.md`
+  - Move src/workspace/.polaris/roles/foreman.md to smartdocs/raw/foreman.md.
+- **214. smartdocs-migrate-215** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/roles/librarian.md` destination: `smartdocs/raw/librarian.md`
+  - Move src/workspace/.polaris/roles/librarian.md to smartdocs/raw/librarian.md.
+- **215. smartdocs-migrate-216** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/roles/worker.md` destination: `smartdocs/raw/worker.md`
+  - Move src/workspace/.polaris/roles/worker.md to smartdocs/raw/worker.md.
+- **216. smartdocs-migrate-217** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/caveman/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move src/workspace/.polaris/skills/caveman/SKILL.md to smartdocs/raw/SKILL.md.
+- **217. smartdocs-migrate-218** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/closeout-librarian/chain.md` destination: `smartdocs/raw/chain.md`
+  - Move src/workspace/.polaris/skills/closeout-librarian/chain.md to smartdocs/raw/chain.md.
+- **218. smartdocs-migrate-219** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/closeout-librarian/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move src/workspace/.polaris/skills/closeout-librarian/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **219. smartdocs-migrate-220** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/closeout-librarian/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move src/workspace/.polaris/skills/closeout-librarian/SKILL.md to smartdocs/raw/SKILL.md.
+- **220. smartdocs-migrate-221** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/closeout-librarian/steps/01-load-cluster-context.md` destination: `smartdocs/raw/01-load-cluster-context.md`
+  - Move src/workspace/.polaris/skills/closeout-librarian/steps/01-load-cluster-context.md to smartdocs/raw/01-load-cluster-context.md.
+- **221. smartdocs-migrate-222** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/closeout-librarian/steps/02-drift-reconciliation.md` destination: `smartdocs/raw/02-drift-reconciliation.md`
+  - Move src/workspace/.polaris/skills/closeout-librarian/steps/02-drift-reconciliation.md to smartdocs/raw/02-drift-reconciliation.md.
+- **222. smartdocs-migrate-223** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/closeout-librarian/steps/03-reconcile-polaris-md.md` destination: `smartdocs/raw/03-reconcile-polaris-md.md`
+  - Move src/workspace/.polaris/skills/closeout-librarian/steps/03-reconcile-polaris-md.md to smartdocs/raw/03-reconcile-polaris-md.md.
+- **223. smartdocs-migrate-224** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/closeout-librarian/steps/04-reconcile-summary-md.md` destination: `smartdocs/raw/04-reconcile-summary-md.md`
+  - Move src/workspace/.polaris/skills/closeout-librarian/steps/04-reconcile-summary-md.md to smartdocs/raw/04-reconcile-summary-md.md.
+- **224. smartdocs-migrate-225** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/closeout-librarian/steps/05-doc-ingestion.md` destination: `smartdocs/raw/05-doc-ingestion.md`
+  - Move src/workspace/.polaris/skills/closeout-librarian/steps/05-doc-ingestion.md to smartdocs/raw/05-doc-ingestion.md.
+- **225. smartdocs-migrate-226** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/closeout-librarian/steps/06-link-validation.md` destination: `smartdocs/raw/06-link-validation.md`
+  - Move src/workspace/.polaris/skills/closeout-librarian/steps/06-link-validation.md to smartdocs/raw/06-link-validation.md.
+- **226. smartdocs-migrate-227** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/closeout-librarian/steps/07-yaml-linking.md` destination: `smartdocs/raw/07-yaml-linking.md`
+  - Move src/workspace/.polaris/skills/closeout-librarian/steps/07-yaml-linking.md to smartdocs/raw/07-yaml-linking.md.
+- **227. smartdocs-migrate-228** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/closeout-librarian/steps/08-librarian-commit.md` destination: `smartdocs/raw/08-librarian-commit.md`
+  - Move src/workspace/.polaris/skills/closeout-librarian/steps/08-librarian-commit.md to smartdocs/raw/08-librarian-commit.md.
+- **228. smartdocs-migrate-229** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/closeout-librarian/steps/09-sealed-result.md` destination: `smartdocs/raw/09-sealed-result.md`
+  - Move src/workspace/.polaris/skills/closeout-librarian/steps/09-sealed-result.md to smartdocs/raw/09-sealed-result.md.
+- **229. smartdocs-migrate-230** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/docs-ingest/chain.md` destination: `smartdocs/raw/chain.md`
+  - Move src/workspace/.polaris/skills/docs-ingest/chain.md to smartdocs/raw/chain.md.
+- **230. smartdocs-migrate-231** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/docs-ingest/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move src/workspace/.polaris/skills/docs-ingest/SKILL.md to smartdocs/raw/SKILL.md.
+- **231. smartdocs-migrate-232** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/docs-ingest/steps/01-orient-ingest.md` destination: `smartdocs/raw/01-orient-ingest.md`
+  - Move src/workspace/.polaris/skills/docs-ingest/steps/01-orient-ingest.md to smartdocs/raw/01-orient-ingest.md.
+- **232. smartdocs-migrate-233** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/docs-ingest/steps/02-classify-batch.md` destination: `smartdocs/raw/02-classify-batch.md`
+  - Move src/workspace/.polaris/skills/docs-ingest/steps/02-classify-batch.md to smartdocs/raw/02-classify-batch.md.
+- **233. smartdocs-migrate-234** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/docs-ingest/steps/03-conflict-check.md` destination: `smartdocs/raw/03-conflict-check.md`
+  - Move src/workspace/.polaris/skills/docs-ingest/steps/03-conflict-check.md to smartdocs/raw/03-conflict-check.md.
+- **234. smartdocs-migrate-235** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/docs-ingest/steps/04-place-and-link.md` destination: `smartdocs/raw/04-place-and-link.md`
+  - Move src/workspace/.polaris/skills/docs-ingest/steps/04-place-and-link.md to smartdocs/raw/04-place-and-link.md.
+- **235. smartdocs-migrate-236** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/docs-ingest/steps/05-finalize-ingest.md` destination: `smartdocs/raw/05-finalize-ingest.md`
+  - Move src/workspace/.polaris/skills/docs-ingest/steps/05-finalize-ingest.md to smartdocs/raw/05-finalize-ingest.md.
+- **236. smartdocs-migrate-237** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/docs-promote/chain.md` destination: `smartdocs/raw/chain.md`
+  - Move src/workspace/.polaris/skills/docs-promote/chain.md to smartdocs/raw/chain.md.
+- **237. smartdocs-migrate-238** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/docs-promote/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move src/workspace/.polaris/skills/docs-promote/SKILL.md to smartdocs/raw/SKILL.md.
+- **238. smartdocs-migrate-239** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/docs-promote/steps/01-orient-promote.md` destination: `smartdocs/raw/01-orient-promote.md`
+  - Move src/workspace/.polaris/skills/docs-promote/steps/01-orient-promote.md to smartdocs/raw/01-orient-promote.md.
+- **239. smartdocs-migrate-240** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/docs-promote/steps/02-review-candidates.md` destination: `smartdocs/raw/02-review-candidates.md`
+  - Move src/workspace/.polaris/skills/docs-promote/steps/02-review-candidates.md to smartdocs/raw/02-review-candidates.md.
+- **240. smartdocs-migrate-241** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/docs-promote/steps/03-read-linked-code.md` destination: `smartdocs/raw/03-read-linked-code.md`
+  - Move src/workspace/.polaris/skills/docs-promote/steps/03-read-linked-code.md to smartdocs/raw/03-read-linked-code.md.
+- **241. smartdocs-migrate-242** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/docs-promote/steps/04-conflict-surface.md` destination: `smartdocs/raw/04-conflict-surface.md`
+  - Move src/workspace/.polaris/skills/docs-promote/steps/04-conflict-surface.md to smartdocs/raw/04-conflict-surface.md.
+- **242. smartdocs-migrate-243** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/docs-promote/steps/05-await-approval.md` destination: `smartdocs/raw/05-await-approval.md`
+  - Move src/workspace/.polaris/skills/docs-promote/steps/05-await-approval.md to smartdocs/raw/05-await-approval.md.
+- **243. smartdocs-migrate-244** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/docs-promote/steps/06-execute-promote-deprecate.md` destination: `smartdocs/raw/06-execute-promote-deprecate.md`
+  - Move src/workspace/.polaris/skills/docs-promote/steps/06-execute-promote-deprecate.md to smartdocs/raw/06-execute-promote-deprecate.md.
+- **244. smartdocs-migrate-245** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/docs-promote/steps/07-finalize-promote.md` destination: `smartdocs/raw/07-finalize-promote.md`
+  - Move src/workspace/.polaris/skills/docs-promote/steps/07-finalize-promote.md to smartdocs/raw/07-finalize-promote.md.
+- **245. smartdocs-migrate-246** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-analyze/chain.md` destination: `smartdocs/raw/chain.md`
+  - Move src/workspace/.polaris/skills/polaris-analyze/chain.md to smartdocs/raw/chain.md.
+- **246. smartdocs-migrate-247** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-analyze/issue-reconciliation.md` destination: `smartdocs/raw/issue-reconciliation.md`
+  - Move src/workspace/.polaris/skills/polaris-analyze/issue-reconciliation.md to smartdocs/raw/issue-reconciliation.md.
+- **247. smartdocs-migrate-248** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-analyze/issue-template.md` destination: `smartdocs/raw/issue-template.md`
+  - Move src/workspace/.polaris/skills/polaris-analyze/issue-template.md to smartdocs/raw/issue-template.md.
+- **248. smartdocs-migrate-249** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-analyze/linked-skills/repo-analysis.md` destination: `smartdocs/raw/repo-analysis.md`
+  - Move src/workspace/.polaris/skills/polaris-analyze/linked-skills/repo-analysis.md to smartdocs/raw/repo-analysis.md.
+- **249. smartdocs-migrate-250** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-analyze/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move src/workspace/.polaris/skills/polaris-analyze/SKILL.md to smartdocs/raw/SKILL.md.
+- **250. smartdocs-migrate-251** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-analyze/steps/01-fetch-and-orient.md` destination: `smartdocs/raw/01-fetch-and-orient.md`
+  - Move src/workspace/.polaris/skills/polaris-analyze/steps/01-fetch-and-orient.md to smartdocs/raw/01-fetch-and-orient.md.
+- **251. smartdocs-migrate-252** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-analyze/steps/02-map-affected-code.md` destination: `smartdocs/raw/02-map-affected-code.md`
+  - Move src/workspace/.polaris/skills/polaris-analyze/steps/02-map-affected-code.md to smartdocs/raw/02-map-affected-code.md.
+- **252. smartdocs-migrate-253** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-analyze/steps/03-assess-issue.md` destination: `smartdocs/raw/03-assess-issue.md`
+  - Move src/workspace/.polaris/skills/polaris-analyze/steps/03-assess-issue.md to smartdocs/raw/03-assess-issue.md.
+- **253. smartdocs-migrate-254** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-analyze/steps/04-blocker-check.md` destination: `smartdocs/raw/04-blocker-check.md`
+  - Move src/workspace/.polaris/skills/polaris-analyze/steps/04-blocker-check.md to smartdocs/raw/04-blocker-check.md.
+- **254. smartdocs-migrate-255** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-analyze/steps/05-create-cluster-plan.md` destination: `smartdocs/raw/05-create-cluster-plan.md`
+  - Move src/workspace/.polaris/skills/polaris-analyze/steps/05-create-cluster-plan.md to smartdocs/raw/05-create-cluster-plan.md.
+- **255. smartdocs-migrate-256** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-analyze/steps/06-final-report.md` destination: `smartdocs/raw/06-final-report.md`
+  - Move src/workspace/.polaris/skills/polaris-analyze/steps/06-final-report.md to smartdocs/raw/06-final-report.md.
+- **256. smartdocs-migrate-257** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-catalog/chain.md` destination: `smartdocs/raw/chain.md`
+  - Move src/workspace/.polaris/skills/polaris-catalog/chain.md to smartdocs/raw/chain.md.
+- **257. smartdocs-migrate-258** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-catalog/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move src/workspace/.polaris/skills/polaris-catalog/SKILL.md to smartdocs/raw/SKILL.md.
+- **258. smartdocs-migrate-259** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-catalog/steps/01-orient-catalog.md` destination: `smartdocs/raw/01-orient-catalog.md`
+  - Move src/workspace/.polaris/skills/polaris-catalog/steps/01-orient-catalog.md to smartdocs/raw/01-orient-catalog.md.
+- **259. smartdocs-migrate-260** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-catalog/steps/02-reconcile-polaris-md.md` destination: `smartdocs/raw/02-reconcile-polaris-md.md`
+  - Move src/workspace/.polaris/skills/polaris-catalog/steps/02-reconcile-polaris-md.md to smartdocs/raw/02-reconcile-polaris-md.md.
+- **260. smartdocs-migrate-261** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-catalog/steps/03-reconcile-summary-md.md` destination: `smartdocs/raw/03-reconcile-summary-md.md`
+  - Move src/workspace/.polaris/skills/polaris-catalog/steps/03-reconcile-summary-md.md to smartdocs/raw/03-reconcile-summary-md.md.
+- **261. smartdocs-migrate-262** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-catalog/steps/04-classify-and-place.md` destination: `smartdocs/raw/04-classify-and-place.md`
+  - Move src/workspace/.polaris/skills/polaris-catalog/steps/04-classify-and-place.md to smartdocs/raw/04-classify-and-place.md.
+- **262. smartdocs-migrate-263** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-catalog/steps/05-catalog-commit.md` destination: `smartdocs/raw/05-catalog-commit.md`
+  - Move src/workspace/.polaris/skills/polaris-catalog/steps/05-catalog-commit.md to smartdocs/raw/05-catalog-commit.md.
+- **263. smartdocs-migrate-264** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-medic/chain.md` destination: `smartdocs/raw/chain.md`
+  - Move src/workspace/.polaris/skills/polaris-medic/chain.md to smartdocs/raw/chain.md.
+- **264. smartdocs-migrate-265** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-medic/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move src/workspace/.polaris/skills/polaris-medic/SKILL.md to smartdocs/raw/SKILL.md.
+- **265. smartdocs-migrate-266** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-medic/steps/01-orient-medic.md` destination: `smartdocs/raw/01-orient-medic.md`
+  - Move src/workspace/.polaris/skills/polaris-medic/steps/01-orient-medic.md to smartdocs/raw/01-orient-medic.md.
+- **266. smartdocs-migrate-267** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-medic/steps/02-diagnose.md` destination: `smartdocs/raw/02-diagnose.md`
+  - Move src/workspace/.polaris/skills/polaris-medic/steps/02-diagnose.md to smartdocs/raw/02-diagnose.md.
+- **267. smartdocs-migrate-268** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-medic/steps/03-repair.md` destination: `smartdocs/raw/03-repair.md`
+  - Move src/workspace/.polaris/skills/polaris-medic/steps/03-repair.md to smartdocs/raw/03-repair.md.
+- **268. smartdocs-migrate-269** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-medic/steps/04-validate.md` destination: `smartdocs/raw/04-validate.md`
+  - Move src/workspace/.polaris/skills/polaris-medic/steps/04-validate.md to smartdocs/raw/04-validate.md.
+- **269. smartdocs-migrate-270** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-medic/steps/05-create-chart.md` destination: `smartdocs/raw/05-create-chart.md`
+  - Move src/workspace/.polaris/skills/polaris-medic/steps/05-create-chart.md to smartdocs/raw/05-create-chart.md.
+- **270. smartdocs-migrate-271** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-medic/steps/06-closeout.md` destination: `smartdocs/raw/06-closeout.md`
+  - Move src/workspace/.polaris/skills/polaris-medic/steps/06-closeout.md to smartdocs/raw/06-closeout.md.
+- **271. smartdocs-migrate-272** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-reconcile/chain.md` destination: `smartdocs/raw/chain.md`
+  - Move src/workspace/.polaris/skills/polaris-reconcile/chain.md to smartdocs/raw/chain.md.
+- **272. smartdocs-migrate-273** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-reconcile/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move src/workspace/.polaris/skills/polaris-reconcile/SKILL.md to smartdocs/raw/SKILL.md.
+- **273. smartdocs-migrate-274** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-reconcile/steps/01-orient-reconcile.md` destination: `smartdocs/raw/01-orient-reconcile.md`
+  - Move src/workspace/.polaris/skills/polaris-reconcile/steps/01-orient-reconcile.md to smartdocs/raw/01-orient-reconcile.md.
+- **274. smartdocs-migrate-275** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-reconcile/steps/02-reconcile-polaris-md.md` destination: `smartdocs/raw/02-reconcile-polaris-md.md`
+  - Move src/workspace/.polaris/skills/polaris-reconcile/steps/02-reconcile-polaris-md.md to smartdocs/raw/02-reconcile-polaris-md.md.
+- **275. smartdocs-migrate-276** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-reconcile/steps/03-reconcile-summary-md.md` destination: `smartdocs/raw/03-reconcile-summary-md.md`
+  - Move src/workspace/.polaris/skills/polaris-reconcile/steps/03-reconcile-summary-md.md to smartdocs/raw/03-reconcile-summary-md.md.
+- **276. smartdocs-migrate-277** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-reconcile/steps/04-reconcile-commit.md` destination: `smartdocs/raw/04-reconcile-commit.md`
+  - Move src/workspace/.polaris/skills/polaris-reconcile/steps/04-reconcile-commit.md to smartdocs/raw/04-reconcile-commit.md.
+- **277. smartdocs-migrate-278** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-run/chain.md` destination: `smartdocs/raw/chain.md`
+  - Move src/workspace/.polaris/skills/polaris-run/chain.md to smartdocs/raw/chain.md.
+- **278. smartdocs-migrate-279** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-run/execution-adapter.md` destination: `smartdocs/raw/execution-adapter.md`
+  - Move src/workspace/.polaris/skills/polaris-run/execution-adapter.md to smartdocs/raw/execution-adapter.md.
+- **279. smartdocs-migrate-280** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-run/linked-skills/repo-analysis.md` destination: `smartdocs/raw/repo-analysis.md`
+  - Move src/workspace/.polaris/skills/polaris-run/linked-skills/repo-analysis.md to smartdocs/raw/repo-analysis.md.
+- **280. smartdocs-migrate-281** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-run/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move src/workspace/.polaris/skills/polaris-run/SKILL.md to smartdocs/raw/SKILL.md.
+- **281. smartdocs-migrate-282** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-run/steps/01-orient-cluster.md` destination: `smartdocs/raw/01-orient-cluster.md`
+  - Move src/workspace/.polaris/skills/polaris-run/steps/01-orient-cluster.md to smartdocs/raw/01-orient-cluster.md.
+- **282. smartdocs-migrate-283** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-run/steps/02-prepare-branch.md` destination: `smartdocs/raw/02-prepare-branch.md`
+  - Move src/workspace/.polaris/skills/polaris-run/steps/02-prepare-branch.md to smartdocs/raw/02-prepare-branch.md.
+- **283. smartdocs-migrate-284** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-run/steps/03-select-child.md` destination: `smartdocs/raw/03-select-child.md`
+  - Move src/workspace/.polaris/skills/polaris-run/steps/03-select-child.md to smartdocs/raw/03-select-child.md.
+- **284. smartdocs-migrate-285** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-run/steps/04-execute-child.md` destination: `smartdocs/raw/04-execute-child.md`
+  - Move src/workspace/.polaris/skills/polaris-run/steps/04-execute-child.md to smartdocs/raw/04-execute-child.md.
+- **285. smartdocs-migrate-286** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-run/steps/05-validate-child.md` destination: `smartdocs/raw/05-validate-child.md`
+  - Move src/workspace/.polaris/skills/polaris-run/steps/05-validate-child.md to smartdocs/raw/05-validate-child.md.
+- **286. smartdocs-migrate-287** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-run/steps/06-commit-and-update-linear.md` destination: `smartdocs/raw/06-commit-and-update-linear.md`
+  - Move src/workspace/.polaris/skills/polaris-run/steps/06-commit-and-update-linear.md to smartdocs/raw/06-commit-and-update-linear.md.
+- **287. smartdocs-migrate-288** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-run/steps/07-decide-continuation.md` destination: `smartdocs/raw/07-decide-continuation.md`
+  - Move src/workspace/.polaris/skills/polaris-run/steps/07-decide-continuation.md to smartdocs/raw/07-decide-continuation.md.
+- **288. smartdocs-migrate-289** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-run/steps/08-closeout-librarian.md` destination: `smartdocs/raw/08-closeout-librarian.md`
+  - Move src/workspace/.polaris/skills/polaris-run/steps/08-closeout-librarian.md to smartdocs/raw/08-closeout-librarian.md.
+- **289. smartdocs-migrate-290** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-run/steps/08-final-delivery.md` destination: `smartdocs/raw/08-final-delivery.md`
+  - Move src/workspace/.polaris/skills/polaris-run/steps/08-final-delivery.md to smartdocs/raw/08-final-delivery.md.
+- **290. smartdocs-migrate-291** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-run/steps/09-final-delivery.md` destination: `smartdocs/raw/09-final-delivery.md`
+  - Move src/workspace/.polaris/skills/polaris-run/steps/09-final-delivery.md to smartdocs/raw/09-final-delivery.md.
+- **291. smartdocs-migrate-292** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-tools/README.md` destination: `smartdocs/raw/README.md`
+  - Move src/workspace/.polaris/skills/polaris-tools/README.md to smartdocs/raw/README.md.
+- **292. smartdocs-migrate-293** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/polaris-tools/SKILL.md` destination: `smartdocs/raw/SKILL.md`
+  - Move src/workspace/.polaris/skills/polaris-tools/SKILL.md to smartdocs/raw/SKILL.md.
+- **293. smartdocs-migrate-294** — smartdocs-migrate / move / approval required / risk low / status pending source: `src/workspace/.polaris/skills/ROUTING.md` destination: `smartdocs/raw/ROUTING.md`
+  - Move src/workspace/.polaris/skills/ROUTING.md to smartdocs/raw/ROUTING.md.
+- **294. smartdocs-migrate-295** — smartdocs-migrate / move / approval required / risk low / status pending source: `test/loop/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move test/loop/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **295. smartdocs-migrate-296** — smartdocs-migrate / move / approval required / risk low / status pending source: `test/loop/SUMMARY.md` destination: `smartdocs/raw/SUMMARY.md`
+  - Move test/loop/SUMMARY.md to smartdocs/raw/SUMMARY.md.
+- **296. smartdocs-migrate-297** — smartdocs-migrate / move / approval required / risk low / status pending source: `test/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move test/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **297. smartdocs-migrate-298** — smartdocs-migrate / move / approval required / risk low / status pending source: `test/runtime/continuation/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move test/runtime/continuation/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **298. smartdocs-migrate-299** — smartdocs-migrate / move / approval required / risk low / status pending source: `test/runtime/continuation/SUMMARY.md` destination: `smartdocs/raw/SUMMARY.md`
+  - Move test/runtime/continuation/SUMMARY.md to smartdocs/raw/SUMMARY.md.
+- **299. smartdocs-migrate-300** — smartdocs-migrate / move / approval required / risk low / status pending source: `test/runtime/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move test/runtime/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **300. smartdocs-migrate-301** — smartdocs-migrate / move / approval required / risk low / status pending source: `test/runtime/SUMMARY.md` destination: `smartdocs/raw/SUMMARY.md`
+  - Move test/runtime/SUMMARY.md to smartdocs/raw/SUMMARY.md.
+- **301. smartdocs-migrate-302** — smartdocs-migrate / move / approval required / risk low / status pending source: `test/runtime/verification/POLARIS.md` destination: `smartdocs/raw/POLARIS.md`
+  - Move test/runtime/verification/POLARIS.md to smartdocs/raw/POLARIS.md.
+- **302. smartdocs-migrate-303** — smartdocs-migrate / move / approval required / risk low / status pending source: `test/runtime/verification/SUMMARY.md` destination: `smartdocs/raw/SUMMARY.md`
+  - Move test/runtime/verification/SUMMARY.md to smartdocs/raw/SUMMARY.md.
+- **303. smartdocs-migrate-304** — smartdocs-migrate / move / approval required / risk low / status pending source: `test/SUMMARY.md` destination: `smartdocs/raw/SUMMARY.md`
+  - Move test/SUMMARY.md to smartdocs/raw/SUMMARY.md.
+- **304. cognition-generate-305** — cognition-generate / create / approval required / risk medium / status pending destination: `docs`
+  - Generate docs/POLARIS.md and docs/SUMMARY.md templates if missing.
+- **305. cognition-generate-306** — cognition-generate / create / approval required / risk medium / status pending destination: `src`
+  - Generate src/POLARIS.md and src/SUMMARY.md templates if missing.
+- **306. instruction-refactor-307** — instruction-refactor / skip / approval not required / risk low / status pending source: `AGENTS.md` destination: `AGENTS.md`
+  - Preserve instruction file AGENTS.md (Already delegates to Polaris doctrine.).
+- **307. instruction-refactor-308** — instruction-refactor / skip / approval not required / risk low / status pending source: `CLAUDE.md` destination: `CLAUDE.md`
+  - Preserve instruction file CLAUDE.md (Already delegates to Polaris doctrine.).
+- **308. ignore-rules-309** — ignore-rules / append / approval required / risk low / status pending destination: `.polarisignore`
+  - Append .taskchain_artifacts/ to .polarisignore.
+- **309. ignore-rules-310** — ignore-rules / append / approval required / risk low / status pending destination: `.polarisignore`
+  - Append dist/ to .polarisignore.
+- **310. ignore-rules-311** — ignore-rules / append / approval required / risk low / status pending destination: `.polarisignore`
+  - Append smartdocs/runtime/generated/ to .polarisignore.
+- **311. atlas-generate** — atlas-generate / modify / approval required / risk medium / status pending destination: `.polaris/map/index.json`
+  - Run polaris map index and record adoption baseline coverage.
+- **312. stage-adoption** — stage / modify / approval required / risk medium / status pending destination: `.git/index`
+  - Stage coherent adoption changes and prepare optional commit.
