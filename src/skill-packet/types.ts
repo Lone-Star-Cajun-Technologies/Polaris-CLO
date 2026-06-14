@@ -1,4 +1,4 @@
-export type SkillName = "analyze" | "run" | "ingest" | "promote";
+export type SkillName = "analyze" | "run" | "ingest" | "promote" | "triage";
 
 export type AgentRole = "Analyst" | "Foreman" | "Librarian" | "Worker";
 

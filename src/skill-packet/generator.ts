@@ -7,6 +7,7 @@ export const SKILL_ROLE_MAP: Record<SkillName, AgentRole> = {
   run: "Foreman",
   ingest: "Librarian",
   promote: "Librarian",
+  triage: "Librarian",
 };
 
 const ROLE_SUMMARIES: Record<AgentRole, string> = {
@@ -197,6 +198,40 @@ function buildPromotePacket(): Omit<SkillPacket, "packet_id" | "skill_name" | "a
   };
 }
 
+function buildTriagePacket(): Omit<SkillPacket, "packet_id" | "skill_name" | "active_role" | "role_summary" | "source_config_snapshot" | "generated_at"> {
+  return {
+    authority_boundaries: [
+      "Read smartdocs/doctrine/active/ to load canonicals for comparison",
+      "Read smartdocs/doctrine/candidate/ to load candidates for triage",
+      "Call polaris docs triage [--dry-run] [--batch-size N] [--resume] to run the triage pipeline",
+      "Read smartdocs/raw/_triage-queue.json and _triage-report.md produced by triage",
+      "Emit telemetry events",
+    ],
+    prohibited_actions: [
+      "Move, promote, or delete any document — triage flags only, never decides",
+      "Mutate source files (src/, tests, config)",
+      "Call polaris loop continue or polaris finalize",
+      "Suppress or ignore detected flags",
+      "Auto-approve or auto-reject any triage flag without user review",
+    ],
+    allowed_outputs: [
+      "smartdocs/raw/_triage-queue.json — machine-readable flag list for polaris docs review",
+      "smartdocs/raw/_triage-report.md — human-readable summary",
+      "Telemetry events",
+    ],
+    deliverables: [
+      "_triage-queue.json written with all flags from Phase 1 (doc-vs-doc) and Phase 2 (doc-vs-code)",
+      "_triage-report.md written summarising flag counts by type",
+      "Checkpoint deleted on successful completion",
+    ],
+    stop_conditions: [
+      "Triage pipeline completes and outputs written",
+      "API key not available — report and wait for instruction",
+      "Graph coverage below threshold — Phase 2 skipped with warning",
+    ],
+  };
+}
+
 export function generateSkillPacket(
   skillName: SkillName,
   config: Required<SkillPacketConfig>,
@@ -227,6 +262,9 @@ export function generateSkillPacket(
     case "promote":
       body = buildPromotePacket();
       break;
+    case "triage":
+      body = buildTriagePacket();
+      break;
   }
 
   return {
@@ -240,4 +278,4 @@ export function generateSkillPacket(
   };
 }
 
-export const SUPPORTED_SKILLS: SkillName[] = ["analyze", "run", "ingest", "promote"];
+export const SUPPORTED_SKILLS: SkillName[] = ["analyze", "run", "ingest", "promote", "triage"];
