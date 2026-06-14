@@ -9,6 +9,8 @@ import { validateInstructions, printReport } from "./validate-instructions.js";
 import { doctrineDraft, doctrinePromote, doctrineDeprecate, specPromote, migrateProvenance } from "./doctrine.js";
 import { auditIngestRiskSurface, formatAuditMarkdown, formatAuditSummaryTable } from "./audit.js";
 import { runTriage } from "./triage.js";
+import { GraphStoreAdapter } from "../graph/store/adapter.js";
+import { configureGraphQuery, getGraphStats, lookupSymbol } from "../graph/query/index.js";
 
 export interface DocsCommandOptions {
   repoRoot?: string;
@@ -192,16 +194,33 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
     .option("--resume", "Resume from last checkpoint (auto-detected by default)")
     .option("--dry-run", "Plan batches and print cost estimate without calling the LLM")
     .action(async (options: { repoRoot: string; batchSize: string; resume?: boolean; dryRun?: boolean }) => {
+      const repoRoot = options.repoRoot;
+      const dbPath = join(repoRoot, ".polaris", "graph", "graph.sqlite");
+      const graphOutputPath = join(".polaris", "graph");
+
+      let store: GraphStoreAdapter | null = null;
+      try {
+        store = new GraphStoreAdapter({ repoRoot, graphOutputPath, dbPath });
+        store.open();
+        configureGraphQuery({ graphStore: store });
+      } catch {
+        configureGraphQuery({ graphStore: null });
+      }
+
       try {
         await runTriage({
-          repoRoot: options.repoRoot,
+          repoRoot,
           batchSize: parseInt(options.batchSize, 10) || 10,
           resume: options.resume,
           dryRun: options.dryRun,
+          symbolLookup: (name) => lookupSymbol(name) !== null,
+          graphStats: () => getGraphStats(),
         });
       } catch (err) {
         console.error(`polaris docs triage: ${err instanceof Error ? err.message : String(err)}`);
         process.exit(1);
+      } finally {
+        store?.close();
       }
     });
 
