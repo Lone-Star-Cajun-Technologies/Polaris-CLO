@@ -112,4 +112,11 @@ describe("generatePolarisRules", () => {
     const content = mockedWriteFileSync.mock.calls[0]?.[1] as string;
     expect(content).toContain("TypeScript monorepo with CLI tooling");
   });
+
+  it("includes docs-review and docs-triage in skill command routing", async () => {
+    await generatePolarisRules("/repo", baseInventory);
+    const content = mockedWriteFileSync.mock.calls[0]?.[1] as string;
+    expect(content).toContain("docs-review");
+    expect(content).toContain("docs-triage");
+  });
 });

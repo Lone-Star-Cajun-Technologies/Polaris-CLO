@@ -109,6 +109,8 @@ export async function generatePolarisRules(
     "- `polaris-finalize` / `run polaris-finalize`",
     "- `polaris-status` / `run polaris-status`",
     "- `docs-ingest` / `run docs-ingest`",
+    "- `docs-review` / `run docs-review`",
+    "- `docs-triage` / `run docs-triage`",
     "- `polaris-reconcile <CLUSTER-ID>` / `run polaris-reconcile on [issue] <CLUSTER-ID>`",
     "- `polaris-catalog <CLUSTER-ID>` / `run polaris-catalog on [issue] <CLUSTER-ID>`",
     "",
