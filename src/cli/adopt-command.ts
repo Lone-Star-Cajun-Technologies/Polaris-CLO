@@ -80,13 +80,15 @@ export async function runAdoptPhase(
     case "map": {
       const result = runGraphBuild(repoRoot);
       if (result.status === "graph-failed") {
-        process.stderr.write(
-          `Map build failed: ${result.reason ?? "unknown error"}\n`,
-        );
-      } else {
-        console.log("Map built successfully.");
+        const msg = `Map build failed: ${result.reason ?? "unknown error"}`;
+        process.stderr.write(`${msg}\n`);
+        if (result.followUpCommand) {
+          process.stderr.write(`Run: ${result.followUpCommand}\n`);
+        }
+        throw new Error(msg);
       }
-      break;
+      process.stdout.write("Map built successfully.\n");
+      return;
     }
 
     case "skills": {
@@ -124,7 +126,7 @@ export async function runAdoptPhase(
 
 export async function runFullAdoption(
   repoRoot: string,
-  options: { dryRun?: boolean; skipAgents?: boolean } = {},
+  options: { skipAgents?: boolean } = {},
 ): Promise<void> {
   console.log("[1/7] scan");
   await runAdoptPhase("scan", repoRoot);
