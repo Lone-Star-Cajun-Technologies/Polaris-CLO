@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { spawnSync } from "node:child_process";
 import { loadConfig } from "../config/loader.js";
@@ -15,6 +15,34 @@ interface CanonResponse {
   relevant_docs: { path: string; title: string }[];
   summary_lines: string[];
   polaris_lines: string[];
+}
+
+function loadInventoryCanonicalFolders(repoRoot: string): string[] {
+  const inventoryPath = join(repoRoot, ".polaris", "adoption-inventory.json");
+  if (!existsSync(inventoryPath)) return [];
+  try {
+    const raw = JSON.parse(readFileSync(inventoryPath, "utf-8")) as Record<string, unknown>;
+    const folders = raw["likely_canonical_folders"];
+    return Array.isArray(folders) ? (folders as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function scaffoldDraftSummaryFiles(repoRoot: string, canonicalFolders: string[]): void {
+  for (const folder of canonicalFolders) {
+    const dir = join(repoRoot, folder);
+    if (!existsSync(dir)) continue;
+    const summaryPath = join(dir, "SUMMARY.md");
+    if (existsSync(summaryPath)) continue;
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      summaryPath,
+      `# ${folder}\n\n<!-- polaris:draft -->\n`,
+      "utf-8",
+    );
+    console.log(`  Scaffolded draft SUMMARY.md: ${folder}`);
+  }
 }
 
 function walkForSummaryDirs(dir: string, repoRoot: string, results: string[]): void {
@@ -175,6 +203,11 @@ export async function enrichCanonFiles(repoRoot: string): Promise<void> {
   }
 
   const doctrineDocs = listActiveDoctrineDocs(repoRoot);
+
+  const canonicalFolders = loadInventoryCanonicalFolders(repoRoot);
+  if (canonicalFolders.length > 0) {
+    scaffoldDraftSummaryFiles(repoRoot, canonicalFolders);
+  }
 
   const summaryDirs: string[] = [];
   walkForSummaryDirs(repoRoot, repoRoot, summaryDirs);
