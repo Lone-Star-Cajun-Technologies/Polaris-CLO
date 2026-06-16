@@ -27,6 +27,7 @@ import { createSkillCommand } from "../skill-packet/index.js";
 import { createLibrarianCommand } from "./librarian.js";
 import { createMedicCommand } from "./medic.js";
 import { runWelfareCheck, printWelfareCheckReport } from "../map/welfare.js";
+import { createAdoptCommand } from "./adopt-command.js";
 
 export interface PolarisCommandHandlers {
   runLoopStatus?: typeof runLoopStatus;
@@ -159,6 +160,8 @@ export function createPolarisCommand(options: PolarisCommandOptions = {}): Comma
       repoRoot,
     }),
   );
+
+  program.addCommand(createAdoptCommand({ repoRoot }));
 
   const agentCmd = new Command("agent").description(
     "Manage Polaris agent provider configuration",

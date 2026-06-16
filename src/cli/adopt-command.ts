@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import { Command } from "commander";
 import { scanRepo } from "./adopt-scan.js";
 import {
@@ -48,7 +49,7 @@ export async function runAdoptPhase(
     case "scan": {
       const inventory = await scanRepo(repoRoot, { rescan: true });
       const plan = generateAdoptionPlan(inventory);
-      generateAdoptionPlanArtifacts(plan, repoRoot);
+      generateAdoptionPlanArtifacts(repoRoot, inventory);
       console.log(
         `Scan complete: ${inventory.smartdocs_candidates.length} doc(s), ${inventory.likely_canonical_folders.length} folder(s).`,
       );
@@ -92,7 +93,8 @@ export async function runAdoptPhase(
     }
 
     case "skills": {
-      const result = installWorkspaceAssets(repoRoot);
+      const workspaceDir = join(repoRoot, ".polaris", "workspace");
+      const result = installWorkspaceAssets(repoRoot, workspaceDir);
       console.log(
         `Skills: ${result.installed.length} installed, ${result.alreadyPresent.length} already present.`,
       );
