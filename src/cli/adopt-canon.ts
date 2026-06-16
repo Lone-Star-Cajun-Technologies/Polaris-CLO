@@ -60,7 +60,16 @@ export async function enrichCanonFiles(repoRoot: string): Promise<void> {
   const indexPath = join(repoRoot, ".polaris", "map", "index.json");
   if (!existsSync(indexPath)) return;
 
-  const { entries }: { entries: MapEntry[] } = JSON.parse(readFileSync(indexPath, "utf-8"));
+  const raw = JSON.parse(readFileSync(indexPath, "utf-8")) as Record<string, unknown>;
+  // entries may be an array of {doc_path,route,title} OR an object keyed by file path
+  const rawEntries = raw["entries"] ?? [];
+  const entries: MapEntry[] = Array.isArray(rawEntries)
+    ? (rawEntries as MapEntry[])
+    : Object.entries(rawEntries as Record<string, Record<string, unknown>>).map(([filePath, meta]) => ({
+        doc_path: filePath,
+        route: String(meta["route"] ?? ""),
+        title: meta["title"] ? String(meta["title"]) : undefined,
+      }));
 
   const summaryDirs: string[] = [];
   walkForSummaryDirs(repoRoot, repoRoot, summaryDirs);
