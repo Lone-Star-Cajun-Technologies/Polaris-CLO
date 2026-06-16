@@ -157,18 +157,32 @@ If no doctrine docs are relevant, return an empty array for relevant_docs.`;
   });
 
   const stdout = (result.stdout ?? "").trim();
+
+  // Try single-line JSON first (ideal case)
   const jsonLine = stdout
     .split("\n")
     .reverse()
     .find((l) => l.trim().startsWith("{") && l.includes("relevant_docs"));
 
-  if (!jsonLine) return null;
-
-  try {
-    return JSON.parse(jsonLine) as CanonResponse;
-  } catch {
-    return null;
+  if (jsonLine) {
+    try {
+      return JSON.parse(jsonLine) as CanonResponse;
+    } catch {
+      // fall through to block extraction
+    }
   }
+
+  // Try extracting JSON block (handles multi-line or code-fenced output)
+  const blockMatch = stdout.match(/\{[\s\S]*"relevant_docs"[\s\S]*\}/);
+  if (blockMatch) {
+    try {
+      return JSON.parse(blockMatch[0]) as CanonResponse;
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
 }
 
 export async function enrichCanonFiles(repoRoot: string): Promise<void> {
