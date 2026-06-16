@@ -175,9 +175,17 @@ If no doctrine docs are relevant, return an empty array for relevant_docs.`;
   const args = stripWorkerFlags(rawArgs);
   const result = spawnSync(cfg.command, args, {
     encoding: "utf-8",
-    timeout: 60000,
+    timeout: 120000,
     cwd: repoRoot,
   });
+
+  if (result.error) {
+    console.log(`  agent error: ${result.error.message}`);
+    return null;
+  }
+  if (result.stderr?.trim()) {
+    console.log(`  agent stderr: ${result.stderr.trim().slice(0, 200)}`);
+  }
 
   const stdout = (result.stdout ?? "").trim();
 
