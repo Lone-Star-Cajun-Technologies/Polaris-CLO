@@ -188,6 +188,7 @@ If no doctrine docs are relevant, return an empty array for relevant_docs.`;
   }
 
   const stdout = (result.stdout ?? "").trim();
+  console.log(`  agent stdout (${stdout.length} chars): ${stdout.slice(0, 300)}`);
 
   // Try single-line JSON first (ideal case)
   const jsonLine = stdout
