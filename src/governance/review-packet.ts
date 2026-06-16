@@ -73,6 +73,7 @@ export function writeReviewQueue(
   packets: ReviewPacket[],
   runId: string,
   outputDir: string,
+  filename = "_review-queue.json",
 ): void {
   mkdirSync(outputDir, { recursive: true });
 
@@ -83,11 +84,12 @@ export function writeReviewQueue(
   };
 
   writeFileSync(
-    join(outputDir, "_review-queue.json"),
+    join(outputDir, filename),
     JSON.stringify(queueFile, null, 2) + "\n",
     "utf-8",
   );
 
+  const mdFilename = filename.replace(/\.json$/, ".md");
   const sorted = groupAndSort(packets);
   const sections = sorted.map(renderPacketMarkdown).join("\n\n---\n\n");
   const md = [
@@ -97,7 +99,7 @@ export function writeReviewQueue(
     `**Generated:** ${queueFile.generated_at}`,
     `**Pending review:** ${packets.length} document(s)`,
     ``,
-    `> Markdown is display-only. Edit \`_review-queue.json\` to set \`reviewDecision\` fields.`,
+    `> Markdown is display-only. Edit \`${filename}\` to set \`reviewDecision\` fields.`,
     `> Rerun \`polaris docs ingest\` to apply decisions.`,
     ``,
     `---`,
@@ -105,15 +107,15 @@ export function writeReviewQueue(
     sections,
   ].join("\n");
 
-  writeFileSync(join(outputDir, "_review-queue.md"), md, "utf-8");
+  writeFileSync(join(outputDir, mdFilename), md, "utf-8");
 }
 
 /**
  * Read review queue from JSON. Returns empty array if no queue file exists.
  * Never reads markdown.
  */
-export function readReviewQueue(outputDir: string): ReviewPacket[] {
-  const jsonPath = join(outputDir, "_review-queue.json");
+export function readReviewQueue(outputDir: string, filename = "_review-queue.json"): ReviewPacket[] {
+  const jsonPath = join(outputDir, filename);
   if (!existsSync(jsonPath)) return [];
   try {
     const parsed = JSON.parse(readFileSync(jsonPath, "utf-8")) as ReviewQueueFile;

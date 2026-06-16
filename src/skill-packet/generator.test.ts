@@ -28,7 +28,7 @@ describe("SKILL_ROLE_MAP", () => {
 
 describe("SUPPORTED_SKILLS", () => {
   it("includes all supported skills", () => {
-    expect(SUPPORTED_SKILLS).toEqual(["analyze", "run", "ingest", "promote", "triage"]);
+    expect(SUPPORTED_SKILLS).toEqual(["analyze", "run", "ingest", "promote", "triage", "review"]);
   });
 });
 

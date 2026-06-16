@@ -35,6 +35,8 @@ message whose primary instruction is to invoke a named Polaris skill.
 | `run docs-ingest` | docs-ingest | `.polaris/skills/docs-ingest/` |
 | `docs-triage` | docs-triage | `.polaris/skills/docs-triage/` |
 | `run docs-triage` | docs-triage | `.polaris/skills/docs-triage/` |
+| `docs-review` | docs-review | `.polaris/skills/docs-review/` |
+| `run docs-review` | docs-review | `.polaris/skills/docs-review/` |
 | `polaris-reconcile <CLUSTER-ID>` | polaris-reconcile | `.polaris/skills/polaris-reconcile/` |
 | `run polaris-reconcile on [issue] <CLUSTER-ID>` | polaris-reconcile | `.polaris/skills/polaris-reconcile/` |
 | `polaris-catalog <CLUSTER-ID>` | polaris-catalog | `.polaris/skills/polaris-catalog/` |

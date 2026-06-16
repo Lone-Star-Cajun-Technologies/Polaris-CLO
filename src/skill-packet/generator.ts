@@ -8,6 +8,7 @@ export const SKILL_ROLE_MAP: Record<SkillName, AgentRole> = {
   ingest: "Librarian",
   promote: "Librarian",
   triage: "Librarian",
+  review: "Librarian",
 };
 
 const ROLE_SUMMARIES: Record<AgentRole, string> = {
@@ -232,6 +233,43 @@ function buildTriagePacket(): Omit<SkillPacket, "packet_id" | "skill_name" | "ac
   };
 }
 
+function buildReviewPacket(): Omit<SkillPacket, "packet_id" | "skill_name" | "active_role" | "role_summary" | "source_config_snapshot" | "generated_at"> {
+  return {
+    authority_boundaries: [
+      "Read smartdocs/raw/_triage-queue.json to load pending review decisions",
+      "Read candidate documents from smartdocs/doctrine/candidate/ to inform decisions",
+      "Evaluate each flagged packet: read the doc, consider the flag type and stale symbols, decide approve/reject/defer",
+      "Write decisions back to the triage queue by calling polaris docs review --write-decision <sourcePath> <decision>",
+      "Call polaris docs promote <path> for each approved packet (candidate → active)",
+      "Call polaris doctrine deprecate <path> for each rejected packet",
+      "Emit telemetry events",
+    ],
+    prohibited_actions: [
+      "Move, promote, or delete documents directly — decisions must go through polaris docs ingest",
+      "Auto-approve every packet without reading the document content",
+      "Mutate source files (src/, tests, config)",
+      "Call polaris loop continue or polaris finalize",
+      "Suppress or skip flagged packets without recording a decision",
+    ],
+    allowed_outputs: [
+      "Review decisions written to smartdocs/raw/_triage-queue.json",
+      "Promoted documents (via polaris docs ingest for approved packets)",
+      "Deprecated documents (via polaris docs ingest for rejected packets)",
+      "Telemetry events",
+    ],
+    deliverables: [
+      "All pending packets in _triage-queue.json reviewed with approve/reject/defer decision",
+      "Approved and rejected packets processed by polaris docs ingest",
+      "Summary of decisions reported to user",
+    ],
+    stop_conditions: [
+      "All packets reviewed",
+      "Ambiguous packet that requires explicit user input",
+      "Ingest error on apply — report and wait for instruction",
+    ],
+  };
+}
+
 export function generateSkillPacket(
   skillName: SkillName,
   config: Required<SkillPacketConfig>,
@@ -265,6 +303,9 @@ export function generateSkillPacket(
     case "triage":
       body = buildTriagePacket();
       break;
+    case "review":
+      body = buildReviewPacket();
+      break;
   }
 
   return {
@@ -278,4 +319,4 @@ export function generateSkillPacket(
   };
 }
 
-export const SUPPORTED_SKILLS: SkillName[] = ["analyze", "run", "ingest", "promote", "triage"];
+export const SUPPORTED_SKILLS: SkillName[] = ["analyze", "run", "ingest", "promote", "triage", "review"];

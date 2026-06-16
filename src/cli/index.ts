@@ -3,6 +3,7 @@
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { Command } from "commander";
+import { runAgentSetup } from "./agent-setup.js";
 import { getVersion } from "./version.js";
 import { getBanner } from "./branding.js";
 import { createLoopCommand } from "../loop/index.js";
@@ -158,6 +159,21 @@ export function createPolarisCommand(options: PolarisCommandOptions = {}): Comma
       repoRoot,
     }),
   );
+
+  const agentCmd = new Command("agent").description(
+    "Manage Polaris agent provider configuration",
+  );
+  agentCmd.addCommand(
+    new Command("setup")
+      .description(
+        "Configure agent providers per role (librarian, foreman, worker, analyst)",
+      )
+      .option("-r, --repo-root <path>", "Repository root", repoRoot)
+      .action(async (opts: { repoRoot: string }) => {
+        await runAgentSetup(opts.repoRoot);
+      }),
+  );
+  program.addCommand(agentCmd);
 
   program
     .command("welfare-check")

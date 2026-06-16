@@ -29,11 +29,12 @@ export function formatPacketCard(
   ].join("\n");
 }
 
-export type ReadKeyFn = () => Promise<string>;
+export type ReadKeyFn = (packet: ReviewPacket) => Promise<string>;
 
 export interface ReviewSessionOptions {
   repoRoot: string;
   queueDir?: string;
+  queueFilename?: string;
   readKey?: ReadKeyFn;
   getReviewedBy?: () => string;
   output?: (msg: string) => void;
@@ -72,7 +73,8 @@ export async function runReviewSession(options: ReviewSessionOptions): Promise<v
   } = options;
 
   const queueDir = options.queueDir ?? resolve(repoRoot, "smartdocs", "raw");
-  const packets = readReviewQueue(queueDir);
+  const queueFilename = options.queueFilename;
+  const packets = readReviewQueue(queueDir, queueFilename);
 
   if (packets.length === 0) {
     output("No review queue found. Run polaris docs ingest first.");
@@ -91,7 +93,7 @@ export async function runReviewSession(options: ReviewSessionOptions): Promise<v
     const packet = undecided[i];
     output(formatPacketCard(packet, i + 1, undecided.length));
 
-    const key = readKey ? await readKey() : await readSingleKey();
+    const key = readKey ? await readKey(packet) : await readSingleKey();
 
     if (key === "q") {
       const remaining = undecided.length - decided;
@@ -126,7 +128,7 @@ export async function runReviewSession(options: ReviewSessionOptions): Promise<v
       };
     }
 
-    writeReviewQueue(packets, "review-session", queueDir);
+    writeReviewQueue(packets, "review-session", queueDir, queueFilename);
     decided++;
   }
 

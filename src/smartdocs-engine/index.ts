@@ -173,13 +173,26 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
     .description("Interactively review pending governance decisions in the review queue")
     .option("--queue <path>", "path to _review-queue.json (default: smartdocs/raw/_review-queue.json)")
     .option("-r, --repo-root <path>", "Repository root", defaultRepoRoot)
-    .action(async (opts: { queue?: string; repoRoot: string }) => {
-      try {
-        const queueDir = opts.queue
-          ? resolve(opts.repoRoot, opts.queue).replace(/_review-queue\.json$/, "").replace(/\/$/, "")
-          : resolve(opts.repoRoot, "smartdocs", "raw");
+    .option("--agentic", "use LLM agent to make review decisions automatically")
+    .option("--triage", "review the triage queue (_triage-queue.json) instead of the review queue")
+    .action(async (opts: { queue?: string; repoRoot: string; agentic?: boolean; triage?: boolean }) => {
+      const repoRoot = opts.repoRoot;
+      const queueFilename = opts.triage ? "_triage-queue.json" : "_review-queue.json";
+      const queueDir = opts.queue
+        ? resolve(opts.repoRoot, opts.queue)
+            .replace(/_review-queue\.json$/, "")
+            .replace(/_triage-queue\.json$/, "")
+            .replace(/\/$/, "")
+        : resolve(repoRoot, "smartdocs", "raw");
 
-        await runReviewSession({ repoRoot: opts.repoRoot, queueDir });
+      let readKey: ((p: import("../governance/types.js").ReviewPacket) => Promise<string>) | undefined;
+      if (opts.agentic) {
+        const { agenticDecideKey } = await import("./agentic-review.js");
+        readKey = agenticDecideKey;
+      }
+
+      try {
+        await runReviewSession({ repoRoot, queueDir, queueFilename, readKey });
       } catch (err) {
         console.error(`polaris docs review: ${err instanceof Error ? err.message : String(err)}`);
         process.exit(1);
