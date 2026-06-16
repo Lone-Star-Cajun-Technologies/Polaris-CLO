@@ -1,16 +1,19 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
+import { spawnSync } from "node:child_process";
+import { loadConfig } from "../config/loader.js";
+import { resolveLibrarianProvider } from "../smartdocs-engine/librarian-dispatch.js";
 
 const SKIP_DIRS = new Set(["node_modules", ".git", "dist", "build", ".polaris", "smartdocs"]);
 
-interface MapEntry {
-  doc_path: string;
-  route: string;
-  title?: string;
+interface DocEntry {
+  path: string;
+  title: string;
 }
 
-function normalizeRoute(route: string): string {
-  return route.replace(/^\.\//, "").replace(/\/$/, "");
+interface CanonResponse {
+  relevant_docs: { path: string; title: string }[];
+  summary_lines: string[];
 }
 
 function walkForSummaryDirs(dir: string, repoRoot: string, results: string[]): void {
@@ -33,56 +36,176 @@ function walkForSummaryDirs(dir: string, repoRoot: string, results: string[]): v
   }
 }
 
-function buildLinkedDocsBlock(entries: MapEntry[]): string[] {
+function listActiveDoctrineDocs(repoRoot: string): DocEntry[] {
+  const activeDir = join(repoRoot, "smartdocs", "doctrine", "active");
+  if (!existsSync(activeDir)) return [];
+
+  const docs: DocEntry[] = [];
+  try {
+    const files = readdirSync(activeDir, { withFileTypes: true });
+    for (const f of files) {
+      if (!f.isFile() || !f.name.endsWith(".md")) continue;
+      const filePath = join(activeDir, f.name);
+      const content = readFileSync(filePath, "utf-8");
+      const titleMatch = content.match(/^#\s+(.+)/m);
+      const title = titleMatch ? titleMatch[1].trim() : f.name.replace(/\.md$/, "");
+      docs.push({ path: relative(repoRoot, filePath), title });
+    }
+  } catch {
+    // ignore
+  }
+  return docs;
+}
+
+function buildLinkedDocsBlock(docs: { path: string; title: string }[]): string[] {
   const lines: string[] = ["linked_docs:"];
-  for (const entry of entries) {
-    const path = entry.doc_path.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-    const title = (entry.title ?? "").replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  for (const doc of docs) {
+    const path = doc.path.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+    const title = doc.title.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
     lines.push(`  - path: "${path}"`);
     lines.push(`    title: "${title}"`);
   }
   return lines;
 }
 
-function injectLinkedDocs(content: string, entries: MapEntry[]): string {
+function injectLinkedDocs(content: string, docs: { path: string; title: string }[], summaryLines: string[]): string {
   const lines = content.split("\n");
   const headingIdx = lines.findIndex((l) => l.startsWith("#"));
   if (headingIdx === -1) return content;
 
-  const yamlLines = ["", "---", ...buildLinkedDocsBlock(entries), "---"];
+  const yamlLines = ["", "---", ...buildLinkedDocsBlock(docs), "---"];
 
   const before = lines.slice(0, headingIdx + 1);
-  const after = lines.slice(headingIdx + 1);
+
+  // If agent provided summary content, append after YAML block
+  const after = summaryLines.length > 0
+    ? ["", ...summaryLines]
+    : lines.slice(headingIdx + 1);
+
   return [...before, ...yamlLines, ...after].join("\n");
 }
 
-export async function enrichCanonFiles(repoRoot: string): Promise<void> {
-  const indexPath = join(repoRoot, ".polaris", "map", "index.json");
-  if (!existsSync(indexPath)) return;
+function dispatchCanonAgent(options: {
+  repoRoot: string;
+  routeFolder: string;
+  doctrineDocs: DocEntry[];
+  providers: Record<string, { command: string; args: string[] }>;
+  providerOrder: string[];
+}): CanonResponse | null {
+  const { repoRoot, routeFolder, doctrineDocs, providers, providerOrder } = options;
+  const providerName = resolveLibrarianProvider(providers, providerOrder);
+  if (!providerName) return null;
 
-  const raw = JSON.parse(readFileSync(indexPath, "utf-8")) as Record<string, unknown>;
-  // entries may be an array of {doc_path,route,title} OR an object keyed by file path
-  const rawEntries = raw["entries"] ?? [];
-  const entries: MapEntry[] = Array.isArray(rawEntries)
-    ? (rawEntries as MapEntry[])
-    : Object.entries(rawEntries as Record<string, Record<string, unknown>>).map(([filePath, meta]) => ({
-        doc_path: filePath,
-        route: String(meta["route"] ?? ""),
-        title: meta["title"] ? String(meta["title"]) : undefined,
-      }));
+  const cfg = providers[providerName];
+  const docList = doctrineDocs
+    .map((d, i) => `${i + 1}. [${d.title}] path: ${d.path}`)
+    .join("\n");
+
+  const prompt = `You are a Polaris librarian building a SUMMARY.md navigation index for a route folder.
+
+Route folder: ${routeFolder}
+Repo root: ${repoRoot}
+
+Available doctrine documents:
+${docList}
+
+Task:
+1. Select which doctrine documents are relevant to this route folder based on topic/content alignment.
+2. Write 2-4 lines of plain-text summary content describing what this route area covers.
+
+Respond with ONLY valid JSON on a single line:
+{"relevant_docs":[{"path":"<doc path>","title":"<doc title>"}],"summary_lines":["line1","line2"]}
+
+If no doctrine docs are relevant, return an empty array for relevant_docs.`;
+
+  const args = (cfg.args ?? []).map((a) => (a === "{{worker_prompt}}" ? prompt : a));
+  const result = spawnSync(cfg.command, args, {
+    encoding: "utf-8",
+    timeout: 60000,
+    cwd: repoRoot,
+  });
+
+  const stdout = (result.stdout ?? "").trim();
+  const jsonLine = stdout
+    .split("\n")
+    .reverse()
+    .find((l) => l.trim().startsWith("{") && l.includes("relevant_docs"));
+
+  if (!jsonLine) return null;
+
+  try {
+    return JSON.parse(jsonLine) as CanonResponse;
+  } catch {
+    return null;
+  }
+}
+
+export async function enrichCanonFiles(repoRoot: string): Promise<void> {
+  let config: ReturnType<typeof loadConfig> | null = null;
+  try {
+    config = loadConfig(repoRoot);
+  } catch {
+    throw new Error(
+      "polaris agent setup required: could not load polaris.config.json.\n" +
+      "Run `polaris agent setup` or configure at least a foreman agent.",
+    );
+  }
+
+  const providers = (config.execution?.providers ?? {}) as Record<string, { command: string; args: string[] }>;
+  const librarianOrder: string[] = config.execution?.providerPolicy?.librarian?.providers ?? [];
+  const foremanOrder: string[] = (config.execution?.providerPolicy as Record<string, { providers?: string[] }>)?.foreman?.providers ?? [];
+
+  // Prefer librarian, fall back to foreman
+  const providerOrder = resolveLibrarianProvider(providers, librarianOrder) != null
+    ? librarianOrder
+    : foremanOrder;
+
+  if (resolveLibrarianProvider(providers, providerOrder) == null) {
+    const configured = [...new Set([...librarianOrder, ...foremanOrder])];
+    const msg = configured.length > 0
+      ? `Configured agents (${configured.join(", ")}) are not installed on this machine.`
+      : "No librarian or foreman agents are configured.";
+    throw new Error(
+      `polaris agent setup required: ${msg}\n` +
+      "Run `polaris agent setup` to configure an available agent.",
+    );
+  }
+
+  const doctrineDocs = listActiveDoctrineDocs(repoRoot);
 
   const summaryDirs: string[] = [];
   walkForSummaryDirs(repoRoot, repoRoot, summaryDirs);
 
+  let enrichedCount = 0;
   for (const dir of summaryDirs) {
-    const route = normalizeRoute(relative(repoRoot, dir));
-    const matched = entries.filter((e) => normalizeRoute(e.route) === route);
-    if (matched.length === 0) continue;
-
     const summaryPath = join(dir, "SUMMARY.md");
     const content = readFileSync(summaryPath, "utf-8");
     if (!content.includes("<!-- polaris:draft -->")) continue;
 
-    writeFileSync(summaryPath, injectLinkedDocs(content, matched), "utf-8");
+    const routeFolder = relative(repoRoot, dir);
+    console.log(`  Dispatching librarian for: ${routeFolder}`);
+
+    const response = dispatchCanonAgent({
+      repoRoot,
+      routeFolder,
+      doctrineDocs,
+      providers,
+      providerOrder,
+    });
+
+    if (!response) {
+      console.log(`  ⚠ No response for ${routeFolder}, skipping`);
+      continue;
+    }
+
+    writeFileSync(
+      summaryPath,
+      injectLinkedDocs(content, response.relevant_docs, response.summary_lines),
+      "utf-8",
+    );
+    enrichedCount++;
+    console.log(`  ✓ Enriched ${routeFolder} with ${response.relevant_docs.length} linked docs`);
   }
+
+  console.log(`\nEnriched ${enrichedCount} SUMMARY.md files.`);
 }
