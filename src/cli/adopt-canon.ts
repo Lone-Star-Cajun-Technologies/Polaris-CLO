@@ -114,6 +114,26 @@ function injectLinkedDocs(content: string, docs: { path: string; title: string }
   return [...before, ...yamlLines, ...after].join("\n");
 }
 
+// Strip flags that require worker permissions and aren't needed for reasoning-only calls.
+function stripWorkerFlags(args: string[]): string[] {
+  const stripped: string[] = [];
+  let i = 0;
+  while (i < args.length) {
+    const a = args[i];
+    if (a === "--permission-mode") {
+      i += 2; // skip flag + value
+    } else if (a === "--allowedTools") {
+      i++;
+      // skip all following values until next flag or "--"
+      while (i < args.length && !args[i].startsWith("-") && args[i] !== "--") i++;
+    } else {
+      stripped.push(a);
+      i++;
+    }
+  }
+  return stripped;
+}
+
 function dispatchCanonAgent(options: {
   repoRoot: string;
   routeFolder: string;
@@ -149,7 +169,10 @@ Respond with ONLY valid JSON on a single line:
 
 If no doctrine docs are relevant, return an empty array for relevant_docs.`;
 
-  const args = (cfg.args ?? []).map((a) => (a === "{{worker_prompt}}" ? prompt : a));
+  // Canon dispatch is pure reasoning — strip worker-only flags (--permission-mode, --allowedTools)
+  // to avoid failures when the provider config is tuned for code-editing agents.
+  const rawArgs = (cfg.args ?? []).map((a) => (a === "{{worker_prompt}}" ? prompt : a));
+  const args = stripWorkerFlags(rawArgs);
   const result = spawnSync(cfg.command, args, {
     encoding: "utf-8",
     timeout: 60000,
