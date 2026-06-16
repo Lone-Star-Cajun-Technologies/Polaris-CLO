@@ -33,18 +33,23 @@ function walkForSummaryDirs(dir: string, repoRoot: string, results: string[]): v
   }
 }
 
+function buildLinkedDocsBlock(entries: MapEntry[]): string[] {
+  const lines: string[] = ["linked_docs:"];
+  for (const entry of entries) {
+    const path = entry.doc_path.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+    const title = (entry.title ?? "").replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+    lines.push(`  - path: "${path}"`);
+    lines.push(`    title: "${title}"`);
+  }
+  return lines;
+}
+
 function injectLinkedDocs(content: string, entries: MapEntry[]): string {
   const lines = content.split("\n");
   const headingIdx = lines.findIndex((l) => l.startsWith("#"));
   if (headingIdx === -1) return content;
 
-  const yamlLines = [
-    "",
-    "---",
-    "linked_docs:",
-    ...entries.map((e) => `  - path: "${e.doc_path}"\n    title: "${e.title ?? ""}"`),
-    "---",
-  ];
+  const yamlLines = ["", "---", ...buildLinkedDocsBlock(entries), "---"];
 
   const before = lines.slice(0, headingIdx + 1);
   const after = lines.slice(headingIdx + 1);
