@@ -40,12 +40,13 @@ vi.mock("node:child_process", () => ({
           stdout: JSON.stringify({
             relevant_docs: [{ path: "smartdocs/doctrine/active/AUTH.md", title: "Auth" }],
             summary_lines: ["Source area covering auth and core logic."],
+            polaris_lines: ["This area owns the core auth pipeline.", "Follow the Auth doctrine for token handling."],
           }),
           status: 0,
         };
       }
       return {
-        stdout: JSON.stringify({ relevant_docs: [], summary_lines: [] }),
+        stdout: JSON.stringify({ relevant_docs: [], summary_lines: [], polaris_lines: [] }),
         status: 0,
       };
     }
@@ -119,6 +120,14 @@ describe("enrichCanonFiles", () => {
     const result = readFileSync(join(root, "src", "SUMMARY.md"), "utf-8");
     expect(result).toContain('title: "The \\"Auth\\" Module"');
     expect(result).not.toMatch(/title: "The "Auth"/);
+  });
+
+  it("writes POLARIS.md with operational instructions", async () => {
+    setupRepo();
+    await enrichCanonFiles(root);
+    const polaris = readFileSync(join(root, "src", "POLARIS.md"), "utf-8");
+    expect(polaris).toContain("# POLARIS — src");
+    expect(polaris).toContain("This area owns the core auth pipeline.");
   });
 
   it("throws when no agent is configured", async () => {

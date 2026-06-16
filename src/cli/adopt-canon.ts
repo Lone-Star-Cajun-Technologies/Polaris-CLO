@@ -14,6 +14,7 @@ interface DocEntry {
 interface CanonResponse {
   relevant_docs: { path: string; title: string }[];
   summary_lines: string[];
+  polaris_lines: string[];
 }
 
 function walkForSummaryDirs(dir: string, repoRoot: string, results: string[]): void {
@@ -101,7 +102,7 @@ function dispatchCanonAgent(options: {
     .map((d, i) => `${i + 1}. [${d.title}] path: ${d.path}`)
     .join("\n");
 
-  const prompt = `You are a Polaris librarian building a SUMMARY.md navigation index for a route folder.
+  const prompt = `You are a Polaris librarian generating context files for an agent work area.
 
 Route folder: ${routeFolder}
 Repo root: ${repoRoot}
@@ -109,12 +110,14 @@ Repo root: ${repoRoot}
 Available doctrine documents:
 ${docList}
 
-Task:
-1. Select which doctrine documents are relevant to this route folder based on topic/content alignment.
-2. Write 2-4 lines of plain-text summary content describing what this route area covers.
+Generate two outputs for this route area:
+
+1. SUMMARY.md content — a navigation index. Select relevant doctrine docs and write 2-4 lines describing what this area covers.
+
+2. POLARIS.md content — operational instructions for agents entering this work area. Write 4-8 lines covering: what this area is responsible for, key patterns/conventions agents should follow, what to avoid, and which doctrine docs to consult for specific concerns. Be concise and directive — agents read this cold before starting work.
 
 Respond with ONLY valid JSON on a single line:
-{"relevant_docs":[{"path":"<doc path>","title":"<doc title>"}],"summary_lines":["line1","line2"]}
+{"relevant_docs":[{"path":"<doc path>","title":"<doc title>"}],"summary_lines":["line1","line2"],"polaris_lines":["line1","line2"]}
 
 If no doctrine docs are relevant, return an empty array for relevant_docs.`;
 
@@ -203,6 +206,18 @@ export async function enrichCanonFiles(repoRoot: string): Promise<void> {
       injectLinkedDocs(content, response.relevant_docs, response.summary_lines),
       "utf-8",
     );
+
+    if ((response.polaris_lines ?? []).length > 0) {
+      const polarisPath = join(dir, "POLARIS.md");
+      const polarisContent = [
+        `# POLARIS — ${routeFolder}`,
+        "",
+        ...response.polaris_lines,
+        "",
+      ].join("\n");
+      writeFileSync(polarisPath, polarisContent, "utf-8");
+    }
+
     enrichedCount++;
     console.log(`  ✓ Enriched ${routeFolder} with ${response.relevant_docs.length} linked docs`);
   }
