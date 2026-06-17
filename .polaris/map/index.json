@@ -1,5 +1,5 @@
 {
-  "scan_date": "2026-06-17T19:13:27.190Z",
+  "scan_date": "2026-06-17T19:13:53.633Z",
   "file_count": 1277,
   "coverage_pct": 42,
   "instructionCoverage": {
@@ -11468,7 +11468,7 @@
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
-      "last_updated": "2026-06-17T19:13:27.190Z",
+      "last_updated": "2026-06-17T19:13:53.633Z",
       "updated_by": "polaris-map-update",
       "tags": [],
       "instructionFile": ".polaris/clusters/POLARIS.md"
@@ -11743,7 +11743,7 @@
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
-      "last_updated": "2026-06-17T19:13:27.190Z",
+      "last_updated": "2026-06-17T19:13:53.633Z",
       "updated_by": "polaris-map-update",
       "tags": [],
       "instructionFile": ".polaris/map/POLARIS.md"
@@ -11754,7 +11754,7 @@
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
-      "last_updated": "2026-06-17T19:13:27.190Z",
+      "last_updated": "2026-06-17T19:13:53.633Z",
       "updated_by": "polaris-map-update",
       "tags": [],
       "instructionFile": ".polaris/map/POLARIS.md"
