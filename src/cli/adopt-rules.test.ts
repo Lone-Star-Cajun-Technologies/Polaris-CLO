@@ -119,4 +119,14 @@ describe("generatePolarisRules", () => {
     expect(content).toContain("docs-review");
     expect(content).toContain("docs-triage");
   });
+
+  it("includes graph navigation guidance with Polaris graph as primary", async () => {
+    await generatePolarisRules("/repo", baseInventory);
+    const content = mockedWriteFileSync.mock.calls[0]?.[1] as string;
+    expect(content).toContain("Graph Navigation");
+    expect(content).toContain("polaris graph build");
+    expect(content).toContain("polaris graph query");
+    expect(content).toContain("polaris graph impact");
+    expect(content).toContain("Never prefer an external repo-analysis tool");
+  });
 });
