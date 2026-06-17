@@ -2,11 +2,15 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { Command } from "commander";
 import { ensureDocsScaffold, ingestDocs, printIngestResults } from "./ingest.js";
+import { runReviewSession } from "./review.js";
 import { migrateDocs, printMigrateResults } from "./migrate.js";
 import { seedInstructions, seedInstructionsAll, seedSummary, seedSummaryAll, type IneligibleEntry } from "./seed-instructions.js";
 import { validateInstructions, printReport } from "./validate-instructions.js";
 import { doctrineDraft, doctrinePromote, doctrineDeprecate, specPromote, migrateProvenance } from "./doctrine.js";
 import { auditIngestRiskSurface, formatAuditMarkdown, formatAuditSummaryTable } from "./audit.js";
+import { runTriage } from "./triage.js";
+import { GraphStoreAdapter } from "../graph/store/adapter.js";
+import { configureGraphQuery, getGraphStats, lookupSymbol } from "../graph/query/index.js";
 
 export interface DocsCommandOptions {
   repoRoot?: string;
@@ -48,25 +52,44 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
   docs
     .command("ingest [path]")
     .description("Classify and place docs into the smartdocs/ canonical authority structure")
-    .option("--file <path>", "Single file to ingest")
     .option("--batch <cluster-id>", "Cluster ID for bounded batch ingest (reads .polaris/docs-ingest/<cluster-id>.json)")
     .option("--cluster <id>", "Alias for --batch")
     .option("--files <paths...>", "Bounded batch file list")
     .option("--dry-run", "Classify and report without moving files")
     .option("--approve-authority", "Allow placement in high-authority docs areas")
+    .option("--file <path>", "Single file to ingest; also scopes --approve-authority to a single file path")
+    .option("--from-review-queue", "scope --approve-authority to items in the review queue")
+    .option("--decision-id <id>", "scope --approve-authority to a specific decision ID")
+    .option("--interactive", "pause and prompt for review decisions on each review-required document")
+    .option("--confidence-threshold <n>", "classification confidence threshold (0–1, default 0.75)", parseFloat)
+    .option("--destination-certainty-threshold <n>", "destination certainty threshold (0–1, default 0.70)", parseFloat)
     .option("-r, --repo-root <path>", "Repository root", defaultRepoRoot)
-    .action((
+    .action(async (
       pathArg: string | undefined,
-      options: {
+      opts: {
         file?: string;
         batch?: string;
         cluster?: string;
         files?: string[];
         dryRun?: boolean;
         approveAuthority?: boolean;
+        fromReviewQueue?: boolean;
+        decisionId?: string;
+        interactive?: boolean;
+        confidenceThreshold?: number;
+        destinationCertaintyThreshold?: number;
         repoRoot: string;
       },
     ) => {
+      if (opts.approveAuthority && !opts.file && !opts.fromReviewQueue && !opts.decisionId) {
+        console.error(
+          "error: --approve-authority requires an explicit scope: --file <path>, --from-review-queue, or --decision-id <id>"
+        );
+        process.exit(1);
+      }
+
+      // Alias opts to options for compatibility with existing code below
+      const options = opts;
       const clusterId = options.batch ?? options.cluster;
 
       // Validate clusterId
@@ -134,11 +157,83 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
           dryRun: options.dryRun,
           clusterId,
           approveAuthority: options.approveAuthority,
+          interactive: opts.interactive,
+          confidenceThreshold: opts.confidenceThreshold,
+          destinationCertaintyThreshold: opts.destinationCertaintyThreshold,
         });
         printIngestResults(results);
       } catch (err) {
         console.error(err instanceof Error ? err.message : String(err));
         process.exit(1);
+      }
+    });
+
+  docs
+    .command("review")
+    .description("Interactively review pending governance decisions in the review queue")
+    .option("--queue <path>", "path to _review-queue.json (default: smartdocs/raw/_review-queue.json)")
+    .option("-r, --repo-root <path>", "Repository root", defaultRepoRoot)
+    .option("--agentic", "use LLM agent to make review decisions automatically")
+    .option("--triage", "review the triage queue (_triage-queue.json) instead of the review queue")
+    .action(async (opts: { queue?: string; repoRoot: string; agentic?: boolean; triage?: boolean }) => {
+      const repoRoot = opts.repoRoot;
+      const queueFilename = opts.triage ? "_triage-queue.json" : "_review-queue.json";
+      const queueDir = opts.queue
+        ? resolve(opts.repoRoot, opts.queue)
+            .replace(/_review-queue\.json$/, "")
+            .replace(/_triage-queue\.json$/, "")
+            .replace(/\/$/, "")
+        : resolve(repoRoot, "smartdocs", "raw");
+
+      let readKey: ((p: import("../governance/types.js").ReviewPacket) => Promise<string>) | undefined;
+      if (opts.agentic) {
+        const { agenticDecideKey } = await import("./agentic-review.js");
+        readKey = agenticDecideKey;
+      }
+
+      try {
+        await runReviewSession({ repoRoot, queueDir, queueFilename, readKey });
+      } catch (err) {
+        console.error(`polaris docs review: ${err instanceof Error ? err.message : String(err)}`);
+        process.exit(1);
+      }
+    });
+
+  docs
+    .command("triage")
+    .description("Detect contradictions, duplicates, and stale code references among candidate docs")
+    .option("-r, --repo-root <path>", "Repository root", process.cwd())
+    .option("--batch-size <n>", "Docs per LLM call", "10")
+    .option("--resume", "Resume from last checkpoint (auto-detected by default)")
+    .option("--dry-run", "Plan batches and print cost estimate without calling the LLM")
+    .action(async (options: { repoRoot: string; batchSize: string; resume?: boolean; dryRun?: boolean }) => {
+      const repoRoot = options.repoRoot;
+      const dbPath = join(repoRoot, ".polaris", "graph", "graph.sqlite");
+      const graphOutputPath = join(".polaris", "graph");
+
+      let store: GraphStoreAdapter | null = null;
+      try {
+        store = new GraphStoreAdapter({ repoRoot, graphOutputPath, dbPath });
+        store.open();
+        configureGraphQuery({ graphStore: store });
+      } catch {
+        configureGraphQuery({ graphStore: null });
+      }
+
+      try {
+        await runTriage({
+          repoRoot,
+          batchSize: parseInt(options.batchSize, 10) || 10,
+          resume: options.resume,
+          dryRun: options.dryRun,
+          symbolLookup: (name) => lookupSymbol(name) !== null,
+          graphStats: () => getGraphStats(),
+        });
+      } catch (err) {
+        console.error(`polaris docs triage: ${err instanceof Error ? err.message : String(err)}`);
+        process.exit(1);
+      } finally {
+        store?.close();
       }
     });
 

@@ -60,7 +60,7 @@ This gate enforces the thin-parent model: the Foreman is a scheduler, not a cons
 Always use the repo-local Polaris CLI:
 
 ```
-npm run polaris -- <command>
+polaris <command>
 ```
 
 Never assume a globally linked `polaris` command exists.
@@ -86,14 +86,14 @@ At each worker return boundary (step 07), apply the CHECKPOINT gate before proce
 
 1. Accept and discard worker output except the CompactReturn JSON object — all other session content is discarded.
 2. Parse the CompactReturn JSON. If it is missing or malformed, treat as a blocker and stop.
-3. Pass the CompactReturn JSON to `npm run polaris -- loop continue` for state persistence.
+3. Pass the CompactReturn JSON to `polaris loop continue` for state persistence.
 4. Preserve the existing step order — do not reorder, skip, or repeat steps based on worker output content.
 
 ## Continuation rules
 
 After step 07 evaluates the session:
 
-- **DISPATCH (all remaining children)**: run `npm run polaris -- loop run <cluster-id>`. The runtime dispatches all eligible children serially, enforcing dispatch boundaries internally. The Foreman waits for the subprocess to exit. Progress signals are emitted as `[POLARIS] RUNNING <child-id> (N/M)` and `[POLARIS] COMPLETE <child-id> (commit: <sha>)`. No per-child CompactReturn handling or state repair is needed — the runtime owns that boundary.
+- **DISPATCH (all remaining children)**: run `polaris loop run <cluster-id>`. The runtime dispatches all eligible children serially, enforcing dispatch boundaries internally. The Foreman waits for the subprocess to exit. Progress signals are emitted as `[POLARIS] RUNNING <child-id> (N/M)` and `[POLARIS] COMPLETE <child-id> (commit: <sha>)`. No per-child CompactReturn handling or state repair is needed — the runtime owns that boundary.
 - **STOP (blocked)**: halt immediately on blocker. Report unblock condition.
 - **STOP (all-done, awaiting delivery)**: `loop run` exits when all children are done. Report branch and last commit. Provide delivery command: `Use polaris-run on <PARENT-ID>. Finalize delivery.`
 - **DELIVER**: proceed to step 08 (Closeout Librarian) only when all children are Done and the user explicitly requests delivery in this session invocation.
@@ -172,7 +172,7 @@ This is not advisory. The runtime will hard-fail with `process.exit(1)` on viola
 ### Allowed transition (only legal path)
 
 ```
-Foreman → npm run polaris -- loop run <cluster-id>
+Foreman → polaris loop run <cluster-id>
   ↓ (subprocess)
   runtime selects child
   runtime dispatches worker externally
@@ -202,14 +202,14 @@ polaris-run uses these Polaris CLI calls:
 
 | Step | Polaris call | Purpose |
 |---|---|---|
-| 07 | `npm run polaris -- loop run <cluster-id>` | Run all eligible children serially; emits `[POLARIS] RUNNING <child> (N/M)` per child and `[POLARIS] COMPLETE <child> (commit: <sha>)` on completion; exits when cluster-complete or blocked |
-| 08 | `npm run polaris -- medic packet <cluster-id>` | Generate Medic packet for failed worker result (if triage required) |
+| 07 | `polaris loop run <cluster-id>` | Run all eligible children serially; emits `[POLARIS] RUNNING <child> (N/M)` per child and `[POLARIS] COMPLETE <child> (commit: <sha>)` on completion; exits when cluster-complete or blocked |
+| 08 | `polaris medic packet <cluster-id>` | Generate Medic packet for failed worker result (if triage required) |
 | 08 | Medic subagent dispatch | Dispatch Medic; wait for sealed result; validate result before proceeding |
-| 09 | `npm run polaris -- librarian packet <cluster-id>` | Generate Closeout Librarian packet for the completed cluster |
+| 09 | `polaris librarian packet <cluster-id>` | Generate Closeout Librarian packet for the completed cluster |
 | 09 | Librarian subagent dispatch | Dispatch Closeout Librarian; wait for sealed result; validate result before proceeding |
-| 10 | `npm run polaris -- finalize` | Push branch (including librarian commit), open PR, append JSONL closeout events, archive run snapshot |
+| 10 | `polaris finalize` | Push branch (including librarian commit), open PR, append JSONL closeout events, archive run snapshot |
 
-`npm run polaris -- loop run <cluster-id>` is the standard execution command. It internally manages the dispatch→checkpoint loop for all children, emitting terse progress signals the Foreman can monitor. The Foreman does not call `loop dispatch` or `loop continue` — those boundaries are owned by `loop run`.
+`polaris loop run <cluster-id>` is the standard execution command. It internally manages the dispatch→checkpoint loop for all children, emitting terse progress signals the Foreman can monitor. The Foreman does not call `loop dispatch` or `loop continue` — those boundaries are owned by `loop run`.
 
 ## Context budget
 
@@ -239,15 +239,15 @@ Telemetry file: `.taskchain_artifacts/polaris-run/runs/<run-id>/telemetry.jsonl`
 | Event | Emitted by | Step |
 |---|---|---|
 | `run-start` | agent | 01 — before any Linear access |
-| `child-dispatched` | `npm run polaris -- loop dispatch` | 07 — when one child is accepted by the execution adapter |
+| `child-dispatched` | `polaris loop dispatch` | 07 — when one child is accepted by the execution adapter |
 | `child-complete` | parent runtime | 07 — after worker return validation and completion recording |
-| `loop-checkpoint` | `npm run polaris -- loop continue` | 07 — after each child |
-| `analyze-impl-boundary-enforced` | `npm run polaris -- loop continue` | 07 — blocker/state-repair boundary event only |
-| `loop-aborted` | `npm run polaris -- loop abort` | any blocker halt |
+| `loop-checkpoint` | `polaris loop continue` | 07 — after each child |
+| `analyze-impl-boundary-enforced` | `polaris loop continue` | 07 — blocker/state-repair boundary event only |
+| `loop-aborted` | `polaris loop abort` | any blocker halt |
 | `medic-dispatched` | parent runtime | 08 — when Medic is dispatched for failed worker |
 | `medic-complete` | parent runtime | 08 — after Medic returns sealed result |
-| `pr-opened` | `npm run polaris -- finalize` | 10 |
-| `run-complete` | `npm run polaris -- finalize` | 10 |
+| `pr-opened` | `polaris finalize` | 10 |
+| `run-complete` | `polaris finalize` | 10 |
 
 Required fields on every event: `event`, `run_id`, `timestamp`.
 
@@ -255,14 +255,14 @@ Required fields on every event: `event`, `run_id`, `timestamp`.
 
 `.taskchain_artifacts/polaris-run/current-state.json` is the sole authoritative live state surface.
 
-- Update only at explicit checkpoint boundaries via `npm run polaris -- loop continue` after worker returns, or when DISPATCH boundaries mandate bootstrapping.
+- Update only at explicit checkpoint boundaries via `polaris loop continue` after worker returns, or when DISPATCH boundaries mandate bootstrapping.
 - Parent agents must not update state inline between steps.
 - If the checkpoint fails: stop and report the persistence failure.
 
 ## Machine snapshot
 
 - **Path**: `.taskchain_artifacts/polaris-run/current-state.json`
-- **Update requirement**: only at checkpoint boundaries (via `npm run polaris -- loop continue`)
+- **Update requirement**: only at checkpoint boundaries (via `polaris loop continue`)
 - **Purpose**: fast agent resume without replaying JSONL or markdown history
 
 ## Completion rule

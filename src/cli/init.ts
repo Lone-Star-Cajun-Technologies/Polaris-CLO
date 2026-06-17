@@ -713,13 +713,14 @@ export async function runInit(options: InitOptions = {}): Promise<void> {
     repoRoot,
   );
   process.stdout.write("Folder cognition generation step completed.\n");
-  handleInstructionFiles(adoptionArtifacts.plan, inventory, repoRoot);
-  process.stdout.write("Instruction file handling step completed.\n");
-  // Phase B — install bundled workspace assets
+  // Phase B — install bundled workspace assets (including POLARIS_RULES.md) before instruction
+  // file handling so that hasDoctrine() sees POLARIS_RULES.md during instruction classification.
   const installFn = options.installWorkspaceAssets ?? defaultInstallWorkspaceAssets;
   const workspaceDir = resolve(__dirname, "../workspace");
   const installResult = installFn(repoRoot, workspaceDir);
   process.stdout.write(`Workspace assets installed: ${installResult.installed.length} installed, ${installResult.alreadyPresent.length} already present.\n`);
+  const instructionResults = await handleInstructionFiles(adoptionArtifacts.plan, inventory, repoRoot);
+  process.stdout.write("Instruction file handling step completed.\n");
   const finalizeAdoptionFn = options.finalizeAdoption ?? finalizeAdoption;
   if (adoptionArtifacts.plan.steps.some((step) => step.category === "stage")) {
     await finalizeAdoptionFn(adoptionArtifacts.plan, {
@@ -739,7 +740,7 @@ export async function runInit(options: InitOptions = {}): Promise<void> {
   const agentResults = await reconcileFn(repoRoot);
 
   // Phase E — adoption report
-  const adoptReport = buildAdoptionReport({ install: installResult, graph: graphResult, agents: agentResults });
+  const adoptReport = buildAdoptionReport({ install: installResult, graph: graphResult, agents: agentResults, instructionMigration: instructionResults });
   printAdoptionReport(adoptReport);
   writeAdoptionReport(repoRoot, adoptReport);
 

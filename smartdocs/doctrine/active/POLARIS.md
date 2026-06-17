@@ -1,4 +1,4 @@
-# smartdocs/docs/doctrine/active
+# smartdocs/doctrine/active
 
 ## Purpose
 
@@ -19,3 +19,4 @@ Active doctrine lives here. This is the highest-priority doctrine surface in Sma
 
 - Keep this folder tight and current.
 - Prefer concise, canonical guidance.
+- Do not promote new doctrine here without explicit operator approval.

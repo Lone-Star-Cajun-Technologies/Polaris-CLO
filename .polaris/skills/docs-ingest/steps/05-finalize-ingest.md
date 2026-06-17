@@ -37,7 +37,7 @@ Close out the ingest session cleanly. Emit telemetry. Write final state. Report.
 
 5. **Bootstrap packet** — if more clusters remain pending in `.polaris/docs-ingest/`, emit guidance for the next session:
    ```text
-   Next: npm run polaris -- docs ingest --batch <next-cluster-id>
+   Next: polaris docs ingest --batch <next-cluster-id>
    ```
 
 ## Completion rule

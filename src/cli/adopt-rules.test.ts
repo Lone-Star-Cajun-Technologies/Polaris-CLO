@@ -9,12 +9,14 @@ vi.mock("node:fs", async (importOriginal) => {
     ...actual,
     mkdirSync: vi.fn(),
     writeFileSync: vi.fn(),
+    readFileSync: vi.fn(),
     existsSync: vi.fn().mockReturnValue(false),
   };
 });
 
 const mockedWriteFileSync = vi.mocked(fs.writeFileSync);
 const mockedExistsSync = vi.mocked(fs.existsSync);
+const mockedReadFileSync = vi.mocked(fs.readFileSync);
 
 const baseInventory: RepoScanInventory = {
   scan_date: "2026-06-04T00:00:00.000Z",
@@ -39,6 +41,7 @@ const baseInventory: RepoScanInventory = {
 beforeEach(() => {
   vi.clearAllMocks();
   mockedExistsSync.mockReturnValue(false);
+  mockedReadFileSync.mockReturnValue("" as unknown as Buffer<ArrayBuffer>);
 });
 
 describe("generatePolarisRules", () => {
@@ -110,6 +113,71 @@ describe("generatePolarisRules", () => {
   it("includes architecture notes from inventory in repo overview", async () => {
     await generatePolarisRules("/repo", baseInventory);
     const content = mockedWriteFileSync.mock.calls[0]?.[1] as string;
+    expect(content).toContain("TypeScript monorepo with CLI tooling");
+  });
+
+  it("includes docs-review and docs-triage in skill command routing", async () => {
+    await generatePolarisRules("/repo", baseInventory);
+    const content = mockedWriteFileSync.mock.calls[0]?.[1] as string;
+    expect(content).toContain("docs-review");
+    expect(content).toContain("docs-triage");
+  });
+
+  it("includes graph navigation guidance with Polaris graph as primary", async () => {
+    await generatePolarisRules("/repo", baseInventory);
+    const content = mockedWriteFileSync.mock.calls[0]?.[1] as string;
+    expect(content).toContain("Graph Navigation");
+    expect(content).toContain("polaris graph build");
+    expect(content).toContain("polaris graph query");
+    expect(content).toContain("polaris graph impact");
+    expect(content).toContain("Never prefer an external repo-analysis tool");
+  });
+});
+
+describe("generatePolarisRules (template path)", () => {
+  const FAKE_TEMPLATE =
+    "# Polaris Rules\n\n## Repository Overview\n\n{{REPO_OVERVIEW}}\n\n## Skill Command Routing\n\nSee ROUTING.md\n\n## Graph Navigation\n\npolaris graph build\n\n## Runtime Boundaries\n\n- Execute only assigned child\n";
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockedReadFileSync.mockReturnValue("" as unknown as Buffer<ArrayBuffer>);
+  });
+
+  it("uses template when workspaceDir is provided and template exists", async () => {
+    // existsSync: output path missing, template present
+    mockedExistsSync.mockImplementation((p) => {
+      return String(p).endsWith("POLARIS_RULES.md") && String(p).includes("/workspace/");
+    });
+    mockedReadFileSync.mockReturnValue(FAKE_TEMPLATE as unknown as Buffer<ArrayBuffer>);
+
+    await generatePolarisRules("/repo", baseInventory, { workspaceDir: "/workspace" });
+
+    expect(mockedReadFileSync).toHaveBeenCalledWith("/workspace/POLARIS_RULES.md", "utf-8");
+    const content = mockedWriteFileSync.mock.calls[0]?.[1] as string;
+    expect(content).toContain("TypeScript monorepo with CLI tooling");
+    expect(content).not.toContain("{{REPO_OVERVIEW}}");
+  });
+
+  it("falls back to inline when workspaceDir template is missing", async () => {
+    mockedExistsSync.mockReturnValue(false);
+
+    await generatePolarisRules("/repo", baseInventory, { workspaceDir: "/workspace" });
+
+    expect(mockedReadFileSync).not.toHaveBeenCalled();
+    const content = mockedWriteFileSync.mock.calls[0]?.[1] as string;
+    expect(content).toContain("Temporary Worker Doctrine");
+  });
+
+  it("template substitution replaces {{REPO_OVERVIEW}} with computed overview", async () => {
+    mockedExistsSync.mockImplementation((p) => {
+      return String(p).endsWith("POLARIS_RULES.md") && String(p).includes("/workspace/");
+    });
+    mockedReadFileSync.mockReturnValue(FAKE_TEMPLATE as unknown as Buffer<ArrayBuffer>);
+
+    await generatePolarisRules("/repo", baseInventory, { workspaceDir: "/workspace" });
+
+    const content = mockedWriteFileSync.mock.calls[0]?.[1] as string;
+    expect(content).not.toContain("{{REPO_OVERVIEW}}");
     expect(content).toContain("TypeScript monorepo with CLI tooling");
   });
 });

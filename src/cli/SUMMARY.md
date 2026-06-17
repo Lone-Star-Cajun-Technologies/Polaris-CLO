@@ -10,6 +10,7 @@ Command-surface assembly for the `polaris` binary. This folder defines top-level
 - Graph commands (`build`, `query`, `impact`) are surfaced from `graph.ts` and operate on graph store/query services.
 - Worker and librarian command groups exist for runtime-governed execution paths.
 - `welfare-check` is a safe/read-only top-level command backed by map welfare logic and exits non-zero when route review is required.
+- `init --adopt` scaffolds root surfaces, installs bundled workspace assets, migrates instruction files with provenance, runs atlas/graph setup, writes an adoption report, and stages only commit-eligible outputs.
 
 ## Architectural Role
 This route is the external operator interface for Polaris. It exposes runtime capabilities without owning business logic, preserving separation between command UX and subsystem implementation.
@@ -26,7 +27,7 @@ This route is the external operator interface for Polaris. It exposes runtime ca
 - Shares version source with `package.json` through `src/cli/version.ts`.
 
 ## Current State
-Top-level command groups include status, loop, map, finalize, runs, init, docs/doctrine, config, tracker, worker, graph, skill, librarian, medic, and welfare-check. Graph command UX supports build/query/impact plans, JSON output, and build coverage reporting. The `medic chart create` command scaffolds new Medic diagnostic charts in `smartdocs/medic/charts/` with auto-generated CHART-YYYY-MM-DD-NNN IDs. The `welfare-check` command reports route identity and health review needs from the atlas.
+Top-level command groups include status, loop, map, finalize, runs, init, docs/doctrine, config, tracker, worker, graph, skill, librarian, medic, and welfare-check. Graph command UX supports build/query/impact plans, JSON output, and build coverage reporting. Adoption now uses bundled `src/workspace/` assets, `POLARIS_RULES.md` as the global agent-governance pointer, lossless instruction migration/provenance, and a fresh-repo integration proof. The `medic chart create` command scaffolds new Medic diagnostic charts in `smartdocs/medic/charts/` with auto-generated CHART-YYYY-MM-DD-NNN IDs. The `welfare-check` command reports route identity and health review needs from the atlas.
 
 ## Known Drift
 Older references that describe only the legacy command subset are stale and should defer to `src/cli/index.ts` command registration.

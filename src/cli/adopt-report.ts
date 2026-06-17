@@ -7,6 +7,9 @@ import type {
   GraphBuildStatus,
 } from "./adopt-assets.js";
 import type { AgentReconcileRecord } from "./adopt-genesis.js";
+import type { InstructionActionRecord } from "./adopt-instructions.js";
+
+export type { InstructionActionRecord };
 
 export interface AdoptionReport {
   timestamp: string; // ISO string
@@ -18,17 +21,19 @@ export interface AdoptionReport {
   graphDetail?: string; // stdout on success, reason on failure
   graphFollowUp?: string; // follow-up command on failure/skip
   agents: AgentReconcileRecord[];
+  instructionMigration: InstructionActionRecord[]; // instruction file migration outcomes
 }
 
 export interface BuildAdoptionReportOptions {
   install: WorkspaceInstallResult;
   graph: GraphBuildResult;
   agents: AgentReconcileRecord[];
+  instructionMigration?: InstructionActionRecord[];
   now?: Date;
 }
 
 export function buildAdoptionReport(options: BuildAdoptionReportOptions): AdoptionReport {
-  const { install, graph, agents, now } = options;
+  const { install, graph, agents, instructionMigration, now } = options;
   const timestamp = (now ?? new Date()).toISOString();
 
   return {
@@ -41,6 +46,7 @@ export function buildAdoptionReport(options: BuildAdoptionReportOptions): Adopti
     graphDetail: graph.stdout ?? graph.reason,
     graphFollowUp: graph.followUpCommand,
     agents,
+    instructionMigration: instructionMigration ?? [],
   };
 }
 
@@ -80,6 +86,19 @@ export function printAdoptionReport(report: AdoptionReport): void {
       console.log(`  ${agent.file}: ${agent.outcome}`);
       if (agent.genesisPath) {
         console.log(`    -> archived to ${agent.genesisPath}`);
+      }
+    }
+  }
+  console.log("");
+
+  console.log("Instruction Migration:");
+  if (report.instructionMigration.length === 0) {
+    console.log("  (none)");
+  } else {
+    for (const record of report.instructionMigration) {
+      console.log(`  ${record.source_path}: ${record.decision}`);
+      if (record.backup_path) {
+        console.log(`    -> archived to ${record.backup_path}`);
       }
     }
   }

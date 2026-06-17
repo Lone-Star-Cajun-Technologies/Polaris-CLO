@@ -50,10 +50,26 @@ export function detectCompactionProviders(repoRoot: string): string[] {
 }
 
 /**
+ * Detects whether the Polaris graph provider is available.
+ *
+ * Polaris graph is considered present when the `polaris` executable is
+ * found on PATH (cross-platform: uses `where` on Windows, `which` on Unix).
+ */
+export function detectPolarisGraph(): boolean {
+  try {
+    const command = process.platform === "win32" ? "where" : "which";
+    execFileSync(command, ["polaris"], { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Runs repo-analysis provider detection and returns detected provider IDs.
  *
- * Recognised repo-analysis provider names: "gitnexus".
+ * Recognised repo-analysis provider names: "polaris-graph".
  */
 export function detectRepoAnalysisProviders(): string[] {
-  return detectGitNexus() ? ["gitnexus"] : [];
+  return detectPolarisGraph() ? ["polaris-graph"] : [];
 }

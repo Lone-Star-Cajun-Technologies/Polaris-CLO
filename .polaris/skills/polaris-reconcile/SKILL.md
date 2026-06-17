@@ -11,7 +11,7 @@ role: librarian
 Run the following command:
 
 ```bash
-npm run polaris -- skill packet reconcile
+polaris skill packet reconcile
 ```
 
 - Do not begin work until a packet is returned.
@@ -52,7 +52,7 @@ at cluster closeout.
 - Modify implementation source code (`src/`, tests, config)
 - Modify runtime state files outside this skill's owned artifacts (cluster-state, other skills' `.taskchain_artifacts/` state, or non-reconcile telemetry)
 - Move, ingest, classify, or promote documents
-- Call `npm run polaris -- loop continue` or `npm run polaris -- finalize`
+- Call `polaris loop continue` or `polaris finalize`
 - Write to `packet.prohibited_write_paths`
 - Git push or create PRs
 

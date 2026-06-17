@@ -37,6 +37,9 @@ function makeFakeWorkspace(dir: string): void {
   const architecture = join(dir, "smartdocs", "architecture");
   mkdirSync(architecture, { recursive: true });
   writeFileSync(join(architecture, ".gitkeep"), "", "utf-8");
+
+  // POLARIS_RULES.md template
+  writeFileSync(join(dir, "POLARIS_RULES.md"), "# Polaris Rules\n\n## Graph Navigation\n\npolaris graph build\n", "utf-8");
 }
 
 describe("installWorkspaceAssets", () => {
@@ -82,6 +85,25 @@ expect(result.installed.length).toBeGreaterThan(0);
     expect(result.alreadyPresent).toContain(".polaris/skills/polaris-run");
     // Sentinel must not be overwritten
     expect(readFileSync(skillFile, "utf-8")).toBe("SENTINEL");
+  });
+
+  it("Test 3a: installs POLARIS_RULES.md from workspace template into empty repo", () => {
+    const result = installWorkspaceAssets(repoRoot, workspaceDir);
+
+    expect(result.installed).toContain("POLARIS_RULES.md");
+    expect(existsSync(join(repoRoot, "POLARIS_RULES.md"))).toBe(true);
+    const content = readFileSync(join(repoRoot, "POLARIS_RULES.md"), "utf-8");
+    expect(content).toContain("Graph Navigation");
+  });
+
+  it("Test 3b: marks POLARIS_RULES.md as alreadyPresent when it already exists in repo", () => {
+    writeFileSync(join(repoRoot, "POLARIS_RULES.md"), "EXISTING", "utf-8");
+
+    const result = installWorkspaceAssets(repoRoot, workspaceDir);
+
+    expect(result.alreadyPresent).toContain("POLARIS_RULES.md");
+    // Existing content must not be overwritten
+    expect(readFileSync(join(repoRoot, "POLARIS_RULES.md"), "utf-8")).toBe("EXISTING");
   });
 
   it("Test 3: symlink at .polaris/roles causes roles to be skipped", () => {

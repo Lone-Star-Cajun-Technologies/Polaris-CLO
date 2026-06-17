@@ -142,7 +142,7 @@ After updating issue bodies, verify the reconciled issues are packet-actionable:
 
 ```bash
 # Dry-run a polaris-run to check all preflight gates pass
-npm run polaris -- loop dispatch --dry-run <cluster-id>
+polaris loop dispatch --dry-run <cluster-id>
 ```
 
 All children should pass body and scope preflight gates. If any fail,

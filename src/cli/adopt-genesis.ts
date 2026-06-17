@@ -20,10 +20,66 @@ export interface ReconcileOptions {
   now?: Date;
 }
 
+interface GenesisProvenanceRecord {
+  source_path: string;
+  backup_path: string | null;
+  decision: string;
+  timestamp: string;
+  migration_outcome: AgentReconcileOutcome;
+}
+
 const AGENT_FILES = ["CLAUDE.md", "AGENTS.md", ".github/copilot-instructions.md"];
 
 function formatDate(d: Date): string {
   return d.toISOString().slice(0, 10);
+}
+
+function isAlreadyPointer(content: string): boolean {
+  // isThinPointer checks for POLARIS.md; also accept POLARIS_RULES.md references
+  if (isThinPointer(content)) return true;
+  // Check for POLARIS_RULES.md thin pointer (≤3 meaningful lines + POLARIS_RULES.md reference)
+  const lines = content.split("\n");
+  const meaningfulLines = lines.filter((line) => {
+    const trimmed = line.trim();
+    if (!trimmed) return false;
+    if (/^<!--.*-->$/.test(trimmed)) return false;
+    return true;
+  });
+  return meaningfulLines.length <= 3 && meaningfulLines.some((line) => line.includes("POLARIS_RULES.md"));
+}
+
+function appendGenesisProvenance(
+  repoRoot: string,
+  records: GenesisProvenanceRecord[],
+): void {
+  if (records.length === 0) return;
+
+  const provenancePath = join(repoRoot, ".polaris", "adoption-provenance.json");
+  mkdirSync(join(repoRoot, ".polaris"), { recursive: true });
+
+  let existing: Record<string, unknown> = {};
+  if (existsSync(provenancePath)) {
+    try {
+      const parsed = JSON.parse(readFileSync(provenancePath, "utf-8")) as unknown;
+      if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
+        existing = parsed as Record<string, unknown>;
+      }
+    } catch {
+      existing = {};
+    }
+  }
+
+  const prior = Array.isArray(existing.genesis_reconcile_actions)
+    ? (existing.genesis_reconcile_actions as unknown[])
+    : [];
+
+  const updated = {
+    ...existing,
+    updated_at: new Date().toISOString(),
+    genesis_reconcile_actions: [...prior, ...records],
+  };
+
+  writeFileSync(provenancePath, `${JSON.stringify(updated, null, 2)}\n`, "utf-8");
 }
 
 export async function reconcileAgentFiles(
@@ -31,6 +87,9 @@ export async function reconcileAgentFiles(
   options?: ReconcileOptions,
 ): Promise<AgentReconcileRecord[]> {
   const results: AgentReconcileRecord[] = [];
+  const provenanceRecords: GenesisProvenanceRecord[] = [];
+  const now = options?.now ?? new Date();
+  const timestamp = now.toISOString();
 
   for (const file of AGENT_FILES) {
     const filePath = join(repoRoot, file);
@@ -41,8 +100,15 @@ export async function reconcileAgentFiles(
 
     const content = readFileSync(filePath, "utf8");
 
-    if (isThinPointer(content)) {
+    if (isAlreadyPointer(content)) {
       results.push({ file, outcome: "already-present" });
+      provenanceRecords.push({
+        source_path: file,
+        backup_path: null,
+        decision: "already-pointer",
+        timestamp,
+        migration_outcome: "already-present",
+      });
       continue;
     }
 
@@ -58,9 +124,16 @@ export async function reconcileAgentFiles(
 
     const trimmed = answer.trim().toLowerCase();
     if (trimmed === "n" || trimmed === "no") {
-      const pointer = `<!-- See [POLARIS.md](POLARIS.md) for repo instructions -->\n`;
+      const pointer = `<!-- See [POLARIS_RULES.md](POLARIS_RULES.md) for repo instructions -->\n`;
       writeFileSync(filePath, pointer + content, "utf8");
       results.push({ file, outcome: "refused" });
+      provenanceRecords.push({
+        source_path: file,
+        backup_path: null,
+        decision: "refused-compression",
+        timestamp,
+        migration_outcome: "refused",
+      });
       continue;
     }
 
@@ -71,6 +144,13 @@ export async function reconcileAgentFiles(
         `Warning: ANTHROPIC_API_KEY not found. Skipping compression of ${file}.\n`,
       );
       results.push({ file, outcome: "skipped" });
+      provenanceRecords.push({
+        source_path: file,
+        backup_path: null,
+        decision: "skipped-no-api-key",
+        timestamp,
+        migration_outcome: "skipped",
+      });
       continue;
     }
 
@@ -84,6 +164,13 @@ export async function reconcileAgentFiles(
         `Warning: @anthropic-ai/sdk not installed. Skipping compression of ${file}.\n`,
       );
       results.push({ file, outcome: "skipped" });
+      provenanceRecords.push({
+        source_path: file,
+        backup_path: null,
+        decision: "skipped-no-sdk",
+        timestamp,
+        migration_outcome: "skipped",
+      });
       continue;
     }
 
@@ -113,7 +200,6 @@ export async function reconcileAgentFiles(
       .map((b) => b.text)
       .join("\n");
 
-    const now = options?.now ?? new Date();
     const dateStr = formatDate(now);
     const genesisPath = `smartdocs/doctrine/active/${dateStr}-genesis-agent-doctrine.md`;
     const genesisFullPath = join(repoRoot, genesisPath);
@@ -122,12 +208,20 @@ export async function reconcileAgentFiles(
     writeFileSync(genesisFullPath, distilled, "utf8");
 
     const thinPointer =
-      `# Agent Instructions\n\nRead [POLARIS.md](POLARIS.md) before beginning any work.\n\n` +
+      `# Agent Instructions\n\nRead [POLARIS_RULES.md](POLARIS_RULES.md) before beginning any work.\n\n` +
       `<!-- genesis doctrine archived: ${genesisPath} -->\n`;
     writeFileSync(filePath, thinPointer, "utf8");
 
     results.push({ file, outcome: "compressed", genesisPath });
+    provenanceRecords.push({
+      source_path: file,
+      backup_path: genesisPath,
+      decision: "accepted-compression",
+      timestamp,
+      migration_outcome: "compressed",
+    });
   }
 
+  appendGenesisProvenance(repoRoot, provenanceRecords);
   return results;
 }

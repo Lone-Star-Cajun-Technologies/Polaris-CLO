@@ -21,7 +21,7 @@ allowed_routes:
   - CLAUDE.md
   - .polaris/skills/polaris-run/chain.md
 expected_evidence:
-  - npm run polaris -- loop run executed
+  - polaris loop run executed
   - RUNNING <child-id> (N/M) signal emitted per child
   - COMPLETE <child-id> (commit: <sha>) signal emitted per child
   - COMPLETE (cluster-complete) or blocked exit recorded
@@ -36,7 +36,7 @@ stop_rules:
 Run the batch dispatch loop:
 
 ```bash
-npm run polaris -- loop run <cluster-id>
+polaris loop run <cluster-id>
 ```
 
 The runtime manages everything internally: child selection, packet compilation, provider dispatch
@@ -61,7 +61,7 @@ by the Foreman is needed. When `loop run` exits 0 with `cluster-complete`, proce
 If `loop run` exits non-zero:
 - Report the blocker and unblock condition from the output.
 - Do not push. Do not create a PR.
-- Resume instruction: resolve the blocker then run `npm run polaris -- loop run <cluster-id>`.
+- Resume instruction: resolve the blocker then run `polaris loop run <cluster-id>`.
 
 ### STOP (all-done, awaiting delivery)
 

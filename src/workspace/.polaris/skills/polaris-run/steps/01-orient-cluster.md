@@ -24,7 +24,7 @@ allowed_routes:
 allowed_skills:
   - repo-analysis
 expected_evidence:
-  - runtime state queried via npm run polaris -- loop status
+  - runtime state queried via polaris loop status
   - run_id generated or read from prior state
   - run-start telemetry emitted
   - Linear parent and children fetched
@@ -40,7 +40,7 @@ stop_rules:
 ## Actions
 
 0. **Query runtime state**:
-   Run `npm run polaris -- loop status` to check for existing session state.
+   Run `polaris loop status` to check for existing session state.
    - **Follow-up run** (state exists and is active for this cluster): read `cluster_id` and step context from runtime output. Mint a new `run_id` in `polaris-run-<slug>-<date>-<seq>` format (see `chain.md` for format rules) — do not reuse the prior `run_id`. Set `related_run_id` to the prior `run_id` read from runtime output. Runtime state is authoritative — do not infer session context from chat history.
    - **Fresh run** (no state file, or state belongs to a different cluster): generate new `run_id` in format `polaris-run-<slug>-<date>-<seq>` (see `chain.md` for format rules). `related_run_id` is `null`.
 
@@ -74,7 +74,7 @@ stop_rules:
    - Any blockers visible at this stage
    - Execution boundary (one parent cluster, this session)
 
-6. Invoke `npm run polaris -- loop status` to confirm runtime state is consistent before advancing to the next step.
+6. Invoke `polaris loop status` to confirm runtime state is consistent before advancing to the next step.
 
 ## Artifact update
 

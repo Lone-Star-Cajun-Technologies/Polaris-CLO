@@ -120,11 +120,10 @@
   "version": "1.0",
   "providers": {
     "compactionProviders": [
-      "caveman",
-      "gitnexus"
+      "caveman"
     ],
     "repoAnalysis": {
-      "preferred": "gitnexus"
+      "preferred": "polaris-graph"
     }
   }
 }

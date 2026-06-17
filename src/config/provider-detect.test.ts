@@ -4,6 +4,7 @@ import * as child_process from "node:child_process";
 import {
   detectCaveman,
   detectGitNexus,
+  detectPolarisGraph,
   detectCompactionProviders,
   detectRepoAnalysisProviders,
 } from "./provider-detect.js";
@@ -97,16 +98,30 @@ describe("detectCompactionProviders", () => {
   });
 });
 
+describe("detectPolarisGraph", () => {
+  it("returns true when `which polaris` succeeds", () => {
+    mockedExecFileSync.mockReturnValue(Buffer.from("/usr/local/bin/polaris\n"));
+    expect(detectPolarisGraph()).toBe(true);
+  });
+
+  it("returns false when `which polaris` throws", () => {
+    mockedExecFileSync.mockImplementation(() => {
+      throw new Error("not found");
+    });
+    expect(detectPolarisGraph()).toBe(false);
+  });
+});
+
 describe("detectRepoAnalysisProviders", () => {
-  it("returns empty array when no repo-analysis providers are detected", () => {
+  it("returns empty array when Polaris graph is not detected", () => {
     mockedExecFileSync.mockImplementation(() => {
       throw new Error("not found");
     });
     expect(detectRepoAnalysisProviders()).toEqual([]);
   });
 
-  it("returns ['gitnexus'] when GitNexus is detected", () => {
-    mockedExecFileSync.mockReturnValue(Buffer.from("/usr/bin/gitnexus\n"));
-    expect(detectRepoAnalysisProviders()).toEqual(["gitnexus"]);
+  it("returns ['polaris-graph'] when Polaris graph is detected", () => {
+    mockedExecFileSync.mockReturnValue(Buffer.from("/usr/local/bin/polaris\n"));
+    expect(detectRepoAnalysisProviders()).toEqual(["polaris-graph"]);
   });
 });

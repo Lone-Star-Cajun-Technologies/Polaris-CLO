@@ -30,11 +30,11 @@ Read the current step's file in `steps/` before acting. Do not read ahead.
 Always use the repo-local Polaris CLI:
 
 ```
-npm run polaris -- doctrine draft <path>
-npm run polaris -- doctrine promote <path>
-npm run polaris -- doctrine deprecate <path>
-npm run polaris -- doctrine spec-promote <path>
-npm run polaris -- doctrine spec-promote <path> --approve
+polaris doctrine draft <path>
+polaris doctrine promote <path>
+polaris doctrine deprecate <path>
+polaris doctrine spec-promote <path>
+polaris doctrine spec-promote <path> --approve
 ```
 
 Never assume a globally linked `polaris` command exists.

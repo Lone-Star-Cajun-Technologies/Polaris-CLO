@@ -26,7 +26,7 @@ protocol.
 Run the following command:
 
 ```
-npm run polaris -- skill packet analyze
+polaris skill packet analyze
 ```
 
 - Do not begin work until a packet is returned.

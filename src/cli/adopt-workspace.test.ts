@@ -102,7 +102,7 @@ describe("scaffoldRootSurfaces", () => {
     expect(String(polarisWrite![1])).toContain("<!-- polaris:draft -->");
   });
 
-  it("written CLAUDE.md and AGENTS.md contain Polaris delegation pointer", () => {
+  it("written CLAUDE.md and AGENTS.md point to POLARIS_RULES.md", () => {
     mockedExistsSync.mockReturnValue(false);
     mockedLstatSync.mockReturnValue({ isSymbolicLink: () => false } as fs.Stats);
 
@@ -110,8 +110,20 @@ describe("scaffoldRootSurfaces", () => {
 
     for (const name of ["CLAUDE.md", "AGENTS.md"]) {
       const call = mockedWriteFileSync.mock.calls.find(([p]) => String(p).endsWith(name));
-      expect(String(call![1])).toContain("POLARIS.md");
+      expect(String(call![1])).toContain("POLARIS_RULES.md");
     }
+  });
+
+  it("written copilot-instructions.md points to POLARIS_RULES.md", () => {
+    mockedExistsSync.mockReturnValue(false);
+    mockedLstatSync.mockReturnValue({ isSymbolicLink: () => false } as fs.Stats);
+
+    scaffoldRootSurfaces(REPO_ROOT);
+
+    const call = mockedWriteFileSync.mock.calls.find(([p]) =>
+      String(p).endsWith("copilot-instructions.md"),
+    );
+    expect(String(call![1])).toContain("POLARIS_RULES.md");
   });
 
   it("POLARIS.md draft includes ## Polaris Rules section referencing POLARIS_RULES.md", () => {

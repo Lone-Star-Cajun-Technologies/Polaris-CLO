@@ -15,17 +15,17 @@ For each candidate with `decision: approved`:
 
 ### Spec promotion
 ```bash
-npm run polaris -- doctrine spec-promote <path> --approve
+polaris doctrine spec-promote <path> --approve
 ```
 
 ### Doctrine candidate promotion
 ```bash
-npm run polaris -- doctrine promote <path>
+polaris doctrine promote <path>
 ```
 
 ### Active doctrine deprecation
 ```bash
-npm run polaris -- doctrine deprecate <path>
+polaris doctrine deprecate <path>
 ```
 
 After each command:

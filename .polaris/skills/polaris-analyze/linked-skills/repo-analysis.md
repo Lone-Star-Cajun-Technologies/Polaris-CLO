@@ -19,7 +19,7 @@ version: "1.0"
 
 Provide targeted code intelligence when polaris-analyze needs to understand the affected code surface.
 
-This linked-skill governs use of the configured repo-analysis provider (e.g., GitNexus). If no provider is available, the fallback path (polaris map query + ripgrep + direct file inspection) is authoritative. See `docs/Polaris/spec/provider-capabilities.md` for the full provider model.
+This linked-skill governs repository code-intelligence for polaris-analyze. The primary path is Polaris-native: `polaris graph query`, `polaris graph impact`, and `polaris map query`. If the Polaris graph is unavailable or stale, fall back to `rg` (ripgrep) plus direct file inspection. See `docs/Polaris/spec/provider-capabilities.md` for the full provider model.
 
 ---
 
@@ -44,9 +44,8 @@ This linked-skill governs use of the configured repo-analysis provider (e.g., Gi
 
 ## Provider detection
 
-At step 01, check `polaris.config.json` for `providers.repoAnalysis.preferred`.
-If a provider is configured and available in the session environment: use it.
-If unavailable or not configured: note `repo_analysis_status: not-configured` in artifact and proceed with fallback.
+At step 01, attempt `polaris graph query` to orient to the code surface. If the graph index is current, use it as primary.
+If the graph is unavailable or returns stale results: note `repo_analysis_status: graph-unavailable` in artifact and proceed with `rg` + direct inspection fallback.
 
 ---
 

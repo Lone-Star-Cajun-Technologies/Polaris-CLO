@@ -27,7 +27,7 @@ export async function loadTreeSitterRuntime(): Promise<TreeSitterRuntime> {
     return cachedRuntime;
   }
 
-  const loaded = await loadTreeSitterModules();
+  const loaded = loadTreeSitterModules();
   const parserByLanguage = new Map<TypeScriptJavaScriptParserLanguage, ParserInstanceLike>();
 
   cachedRuntime = {
@@ -57,13 +57,12 @@ function getOrCreateParser(
   return parser;
 }
 
-async function loadTreeSitterModules(): Promise<LoadedTreeSitter> {
-  const dynamicImport = createDynamicImporter();
-  const [treeSitterModule, typeScriptModule, javaScriptModule] = await Promise.all([
-    dynamicImport("tree-sitter"),
-    dynamicImport("@tree-sitter/typescript"),
-    dynamicImport("@tree-sitter/javascript"),
-  ]);
+function loadTreeSitterModules(): LoadedTreeSitter {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const nodeRequire = require as (id: string) => unknown;
+  const treeSitterModule = nodeRequire("tree-sitter");
+  const typeScriptModule = nodeRequire("tree-sitter-typescript");
+  const javaScriptModule = nodeRequire("tree-sitter-javascript");
 
   const parserConstructor = resolveParserConstructor(treeSitterModule);
   const typeScriptGrammar = resolveTypeScriptGrammar(typeScriptModule);
@@ -76,11 +75,6 @@ async function loadTreeSitterModules(): Promise<LoadedTreeSitter> {
       javascript: javaScriptGrammar,
     },
   };
-}
-
-function createDynamicImporter(): (specifier: string) => Promise<unknown> {
-  const importer = new Function("specifier", "return import(specifier);");
-  return (specifier: string) => importer(specifier) as Promise<unknown>;
 }
 
 function resolveParserConstructor(moduleValue: unknown): ParserConstructorLike {
@@ -121,9 +115,13 @@ function resolveTypeScriptGrammar(moduleValue: unknown): unknown {
 
 function resolveJavaScriptGrammar(moduleValue: unknown): unknown {
   if (moduleValue && typeof moduleValue === "object") {
-    const direct = moduleValue as { javascript?: unknown; default?: { javascript?: unknown } | unknown };
+    const direct = moduleValue as { javascript?: unknown; name?: unknown; default?: { javascript?: unknown } | unknown };
     if (direct.javascript) {
       return direct.javascript;
+    }
+    // tree-sitter-javascript exports { name, language, nodeTypeInfo } — pass the whole module
+    if (direct.name) {
+      return moduleValue;
     }
     if (direct.default && typeof direct.default === "object" && "javascript" in direct.default) {
       return (direct.default as { javascript?: unknown }).javascript;
@@ -133,5 +131,5 @@ function resolveJavaScriptGrammar(moduleValue: unknown): unknown {
     }
   }
 
-  throw new Error("Unable to resolve @tree-sitter/javascript grammar.");
+  throw new Error("Unable to resolve tree-sitter-javascript grammar.");
 }

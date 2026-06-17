@@ -1,0 +1,109 @@
+{
+  "schema_version": "2.1",
+  "worker_role": "impl",
+  "run_id": "polaris-run-pol-382-2026-06-17-001",
+  "cluster_id": "POL-382",
+  "active_child": "POL-388",
+  "state_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json",
+  "telemetry_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-382-2026-06-17-001/telemetry.jsonl",
+  "instructions": {
+    "primary_goal": "Issue: POL-388 — IMPLEMENT: Wire adoption flow and fresh-repo proof for canonical rules\nWorktree: .\nBranch: pol-382-delivery\n\n## Goal\n## Objective\n\nWire the corrected command, graph, rules, root surface, and genesis migration behavior into `polaris init --adopt` and prove it on a fresh repo path.\n\n## Context\n\n[POL-381](https://linear.app/lsctech/issue/POL-381/analyze-canonical-doctrine-generation-and-genesis-migration-in-polaris) requires the final adoption flow to generate canonical POLARIS_RULES.md, preserve genesis instruction content, install workspace assets, use Polaris graph/map guidance, and leave adopted repos immediately operable. Earlier children establish the underlying command, graph, template, root surface, and migration behavior.\n\n## Goal\n\nMake the end-to-end adoption flow execute phases in the correct order and verify the resulting repository surfaces.\n\n## Scope\n\n* src/cli/init.ts\n* src/cli/init.test.ts\n* src/cli/adopt-command.ts\n* src/cli/adopt-command.test.ts\n* src/cli/adopt-assets.ts\n* src/cli/adopt-report.ts\n* src/cli/adopt-report.test.ts\n* test/integration/fresh-repo-adoption.test.ts\n* package.json\n* src/workspace/**\n* docs/superpowers/specs/2026-06-09-workspace-asset-bundling-design.md\n* smartdocs/raw/[POL-381](https://linear.app/lsctech/issue/POL-381/analyze-canonical-doctrine-generation-and-genesis-migration-in-polaris)-canonical-doctrine-genesis-analysis.md\n\n## Acceptance Criteria\n\n* `polaris init --adopt` writes or installs `POLARIS_RULES.md` before agent pointer reconciliation depends on it.\n* Adoption phase order is deterministic and documented in tests.\n* Fresh-repo adoption proof verifies `POLARIS_RULES.md`, root `POLARIS.md`, root `SUMMARY.md`, agent adapters, workspace skills/roles, SmartDocs scaffold, graph result reporting, and genesis provenance.\n* Adoption reports include graph status and instruction migration outcomes.\n* Runtime/staging hygiene still excludes transient artifacts.\n* All targeted and full tests pass.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/cli/init.test.ts src/cli/adopt-command.test.ts src/cli/adopt-assets.test.ts src/cli/adopt-report.test.ts test/integration/fresh-repo-adoption.test.ts\n* npm pack --dry-run\n* polaris-cli init --adopt --dry-run\n\n## Ordering\n\n* Depends on [POL-387](https://linear.app/lsctech/issue/POL-387/implement-consolidate-genesis-instruction-migration-and-provenance) being Done first.\n\n## Non-goals\n\n* Do not execute a governed implementation run from this analysis session.\n* Do not change finalizer delivery semantics beyond adoption output staging hygiene.\n* Do not require external repo-analysis providers for the fresh-repo proof.\n\n## Scope\nTouch only:\n- src/cli/init.ts\n- src/cli/init.test.ts\n- src/cli/adopt-command.ts\n- src/cli/adopt-command.test.ts\n- src/cli/adopt-assets.ts\n- src/cli/adopt-report.ts\n- src/cli/adopt-report.test.ts\n- test/integration/fresh-repo-adoption.test.ts\n- package.json\n- src/workspace/**\n- docs/superpowers/specs/2026-06-09-workspace-asset-bundling-design.md\n- smartdocs/raw/[POL-381](https://linear.app/lsctech/issue/POL-381/analyze-canonical-doctrine-generation-and-genesis-migration-in-polaris)-canonical-doctrine-genesis-analysis.md\n\n## Acceptance Criteria\n\n## Validation\n- npm run build\n- npm test\n- npx vitest run src/cli/init.test.ts src/cli/adopt-command.test.ts src/cli/adopt-assets.test.ts src/cli/adopt-report.test.ts test/integration/fresh-repo-adoption.test.ts\n- npm pack --dry-run\n- polaris-cli init --adopt --dry-run\n\n## Commit\n[POL-388] IMPLEMENT: Wire adoption flow and fresh-repo proof for canonical rules\n\n## Governance\n- Do NOT modify open_children or completed_children in /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json. The parent runtime (loop continue) owns state transitions.\n- Append a telemetry event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-382-2026-06-17-001/telemetry.jsonl.\n\n## Worker Progress Telemetry (MANDATORY)\nThe parent CANNOT see your work. You MUST emit heartbeat events so the parent knows you are alive and making progress.\n\nAfter EVERY step, append a JSONL event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-382-2026-06-17-001/telemetry.jsonl:\n```jsonl\n{\"event\":\"worker-heartbeat\",\"run_id\":\"<from packet>\",\"child_id\":\"POL-388\",\"step_cursor\":\"<current step>\",\"timestamp\":\"<ISO8601>\",\"progress_pct\":<0-100>,\"files_changed\":<count>,\"current_file\":\"<file being edited>\"}\n```\n\nRequired heartbeat points:\n  1. Immediately after reading this packet (step_cursor: \"start\")\n  2. After verifying state file (step_cursor: \"verify\")\n  3. After EACH file edit (step_cursor: \"implement\")\n  4. After running validation (step_cursor: \"validate\")\n  5. After creating commit (step_cursor: \"commit\")\n  6. Before terminating (step_cursor: \"complete\" or \"failed\")\n\nIf heartbeats stop, the parent will assume you crashed and may dispatch a replacement worker.\n\n## Approval Escalation (when uncertain)\nYou have a sealed packet defining your exact scope, allowed files, and validation commands. Use this to decide:\n\nRule 1 - Auto-approve WITHIN scope (normal work):\n  - If the operation touches files within `instructions.allowed_scope` → Just do it\n  - If the command is in `instructions.validation_commands` → Just run it\n  - Low risk, expected work → No need to ask, emit heartbeat with step_cursor: \"implement\"\n\nRule 2 - ESCALATE out-of-scope or high-risk:\n  - File outside allowed_scope → Emit worker-blocked with approval_type: \"out-of-scope\"\n  - Destructive operation (rm -rf, major refactor) → Emit worker-blocked with approval_type: \"destructive\"\n  - External API calls with cost → Emit worker-blocked with approval_type: \"cost\"\n  - Changing secrets/.env → Emit worker-blocked with approval_type: \"security\"\n  - Unclear requirements → Emit worker-blocked with approval_type: \"ambiguous\"\n\nTo escalate, emit IMMEDIATELY to telemetry:\n```jsonl\n{\"event\":\"worker-blocked\",\"run_id\":\"<from packet>\",\"child_id\":\"POL-388\",\"reason\":\"needs-approval\",\"approval_type\":\"<out-of-scope|destructive|cost|security|ambiguous>\",\"description\":\"<specifically what needs approval>\",\"blocker_id\":\"<unique-id>\",\"timestamp\":\"<ISO8601>\"}\n```\n\nThen: Continue heartbeats every 30s with step_cursor: \"blocked-awaiting-approval\"\nWait for parent response. If no response in 5 minutes → TERMINATE with approval-timeout.\n\nRemember: Your packet scope is your authority. Within scope = proceed. Outside scope = escalate.\n\n## Route Cognition Delta\nAfter implementation, apply route-local cognition delta — only if something materially changed.\n\n**POLARIS.md** — update only when ALL of the following are true:\n  - You touched a file in that folder (not a distant folder).\n  - The change materially affects: folder responsibilities, commands/workflows,\n    execution constraints, ownership/routing, or operational behavior.\n  - The current POLARIS.md content is actually wrong or incomplete as a result.\n  DO NOT update POLARIS.md for: formatting fixes, comment changes, tiny refactors,\n  internal implementation details, or any change that leaves the operational guidance\n  still accurate. When in doubt, do not update.\n\n**SUMMARY.md** — update only when: linked docs/specs changed, canon relationships\n  changed, architecture meaning changed, or doctrine/spec linkage changed.\n  SUMMARY.md is informational only. Do not create it if missing — that is a hint for\n  operators, not a task for workers. Keep it short. Never add operational doctrine.\n\n**Never** scan unrelated folders. **Never** regenerate all route docs.\nIf no material change occurred, skip this section entirely.\n\n## Report Back\n- files changed\n- validation results\n- commit hash\n- blockers\n\nTERMINATE SESSION IMMEDIATELY. Do not select or execute the next child.",
+    "steps": [
+      "Verify: read /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json and confirm active_child === \"POL-388\".",
+      "Implement POL-388: \"IMPLEMENT: Wire adoption flow and fresh-repo proof for canonical rules\".",
+      "Issue description:\n## Objective\n\nWire the corrected command, graph, rules, root surface, and genesis migration behavior into `polaris init --adopt` and prove it on a fresh repo path.\n\n## Context\n\n[POL-381](https://linear.app/lsctech/issue/POL-381/analyze-canonical-doctrine-generation-and-genesis-migration-in-polaris) requires the final adoption flow to generate canonical POLARIS_RULES.md, preserve genesis instruction content, install workspace assets, use Polaris graph/map guidance, and leave adopted repos immediately operable. Earlier children establish the underlying command, graph, template, root surface, and migration behavior.\n\n## Goal\n\nMake the end-to-end adoption flow execute phases in the correct order and verify the resulting repository surfaces.\n\n## Scope\n\n* src/cli/init.ts\n* src/cli/init.test.ts\n* src/cli/adopt-command.ts\n* src/cli/adopt-command.test.ts\n* src/cli/adopt-assets.ts\n* src/cli/adopt-report.ts\n* src/cli/adopt-report.test.ts\n* test/integration/fresh-repo-adoption.test.ts\n* package.json\n* src/workspace/**\n* docs/superpowers/specs/2026-06-09-workspace-asset-bundling-design.md\n* smartdocs/raw/[POL-381](https://linear.app/lsctech/issue/POL-381/analyze-canonical-doctrine-generation-and-genesis-migration-in-polaris)-canonical-doctrine-genesis-analysis.md\n\n## Acceptance Criteria\n\n* `polaris init --adopt` writes or installs `POLARIS_RULES.md` before agent pointer reconciliation depends on it.\n* Adoption phase order is deterministic and documented in tests.\n* Fresh-repo adoption proof verifies `POLARIS_RULES.md`, root `POLARIS.md`, root `SUMMARY.md`, agent adapters, workspace skills/roles, SmartDocs scaffold, graph result reporting, and genesis provenance.\n* Adoption reports include graph status and instruction migration outcomes.\n* Runtime/staging hygiene still excludes transient artifacts.\n* All targeted and full tests pass.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/cli/init.test.ts src/cli/adopt-command.test.ts src/cli/adopt-assets.test.ts src/cli/adopt-report.test.ts test/integration/fresh-repo-adoption.test.ts\n* npm pack --dry-run\n* polaris-cli init --adopt --dry-run\n\n## Ordering\n\n* Depends on [POL-387](https://linear.app/lsctech/issue/POL-387/implement-consolidate-genesis-instruction-migration-and-provenance) being Done first.\n\n## Non-goals\n\n* Do not execute a governed implementation run from this analysis session.\n* Do not change finalizer delivery semantics beyond adoption output staging hygiene.\n* Do not require external repo-analysis providers for the fresh-repo proof.",
+      "Requirements:",
+      "   1. `polaris init --adopt` writes or installs `POLARIS_RULES.md` before agent pointer reconciliation depends on it.",
+      "   2. Adoption phase order is deterministic and documented in tests.",
+      "   3. Fresh-repo adoption proof verifies `POLARIS_RULES.md`, root `POLARIS.md`, root `SUMMARY.md`, agent adapters, workspace skills/roles, SmartDocs scaffold, graph result reporting, and genesis provenance.",
+      "   4. Adoption reports include graph status and instruction migration outcomes.",
+      "   5. Runtime/staging hygiene still excludes transient artifacts.",
+      "   6. All targeted and full tests pass.",
+      "Run validation commands and confirm all pass.",
+      "Create exactly ONE git commit: [POL-388] IMPLEMENT: Wire adoption flow and fresh-repo proof for canonical rules.",
+      "Do NOT modify open_children or completed_children in /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json. The parent runtime (loop continue) owns that state transition.",
+      "Append a telemetry event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-382-2026-06-17-001/telemetry.jsonl.",
+      "Write compact return JSON to stdout (fields: child_id, status, commit, validation, next_recommended_action).",
+      "TERMINATE SESSION IMMEDIATELY. Do not select or execute the next child."
+    ],
+    "allowed_scope": [
+      "src/cli/init.ts",
+      "src/cli/init.test.ts",
+      "src/cli/adopt-command.ts",
+      "src/cli/adopt-command.test.ts",
+      "src/cli/adopt-assets.ts",
+      "src/cli/adopt-report.ts",
+      "src/cli/adopt-report.test.ts",
+      "test/integration/fresh-repo-adoption.test.ts",
+      "package.json",
+      "src/workspace/**",
+      "docs/superpowers/specs/2026-06-09-workspace-asset-bundling-design.md",
+      "smartdocs/raw/[POL-381](https://linear.app/lsctech/issue/POL-381/analyze-canonical-doctrine-generation-and-genesis-migration-in-polaris)-canonical-doctrine-genesis-analysis.md"
+    ],
+    "validation_commands": [
+      "npm run build",
+      "npm test",
+      "npx vitest run src/cli/init.test.ts src/cli/adopt-command.test.ts src/cli/adopt-assets.test.ts src/cli/adopt-report.test.ts test/integration/fresh-repo-adoption.test.ts",
+      "npm pack --dry-run",
+      "polaris-cli init --adopt --dry-run"
+    ],
+    "issue_context": {
+      "id": "POL-388",
+      "title": "IMPLEMENT: Wire adoption flow and fresh-repo proof for canonical rules",
+      "key_requirements": [],
+      "body": "## Objective\n\nWire the corrected command, graph, rules, root surface, and genesis migration behavior into `polaris init --adopt` and prove it on a fresh repo path.\n\n## Context\n\n[POL-381](https://linear.app/lsctech/issue/POL-381/analyze-canonical-doctrine-generation-and-genesis-migration-in-polaris) requires the final adoption flow to generate canonical POLARIS_RULES.md, preserve genesis instruction content, install workspace assets, use Polaris graph/map guidance, and leave adopted repos immediately operable. Earlier children establish the underlying command, graph, template, root surface, and migration behavior.\n\n## Goal\n\nMake the end-to-end adoption flow execute phases in the correct order and verify the resulting repository surfaces.\n\n## Scope\n\n* src/cli/init.ts\n* src/cli/init.test.ts\n* src/cli/adopt-command.ts\n* src/cli/adopt-command.test.ts\n* src/cli/adopt-assets.ts\n* src/cli/adopt-report.ts\n* src/cli/adopt-report.test.ts\n* test/integration/fresh-repo-adoption.test.ts\n* package.json\n* src/workspace/**\n* docs/superpowers/specs/2026-06-09-workspace-asset-bundling-design.md\n* smartdocs/raw/[POL-381](https://linear.app/lsctech/issue/POL-381/analyze-canonical-doctrine-generation-and-genesis-migration-in-polaris)-canonical-doctrine-genesis-analysis.md\n\n## Acceptance Criteria\n\n* `polaris init --adopt` writes or installs `POLARIS_RULES.md` before agent pointer reconciliation depends on it.\n* Adoption phase order is deterministic and documented in tests.\n* Fresh-repo adoption proof verifies `POLARIS_RULES.md`, root `POLARIS.md`, root `SUMMARY.md`, agent adapters, workspace skills/roles, SmartDocs scaffold, graph result reporting, and genesis provenance.\n* Adoption reports include graph status and instruction migration outcomes.\n* Runtime/staging hygiene still excludes transient artifacts.\n* All targeted and full tests pass.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/cli/init.test.ts src/cli/adopt-command.test.ts src/cli/adopt-assets.test.ts src/cli/adopt-report.test.ts test/integration/fresh-repo-adoption.test.ts\n* npm pack --dry-run\n* polaris-cli init --adopt --dry-run\n\n## Ordering\n\n* Depends on [POL-387](https://linear.app/lsctech/issue/POL-387/implement-consolidate-genesis-instruction-migration-and-provenance) being Done first.\n\n## Non-goals\n\n* Do not execute a governed implementation run from this analysis session.\n* Do not change finalizer delivery semantics beyond adoption output staging hygiene.\n* Do not require external repo-analysis providers for the fresh-repo proof."
+    }
+  },
+  "lifecycle": {
+    "terminate_after_completion": true,
+    "max_concurrent": 1,
+    "cleanup_on_exit": "commit-and-exit"
+  },
+  "return_contract": [
+    "child_id",
+    "status",
+    "commit",
+    "validation",
+    "next_recommended_action"
+  ],
+  "prompt_mode": "compact",
+  "prompt_metrics": {
+    "mode": "compact",
+    "char_count": 7823,
+    "estimated_tokens": 1956
+  },
+  "role_context": {
+    "role": "worker",
+    "role_authority": "implementation",
+    "may_implement": true,
+    "may_assign_workers": false,
+    "prohibited_actions": [
+      "modify-cluster-plan",
+      "dispatch-children",
+      "polaris-loop-dispatch",
+      "polaris-loop-continue"
+    ]
+  },
+  "prohibited_write_paths": [
+    ".taskchain_artifacts/",
+    ".polaris/clusters/",
+    ".polaris/runs/",
+    "**/telemetry.jsonl"
+  ],
+  "result_file_contract": {
+    "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-382/results/POL-388-d8f7f650-2a42-4460-bc63-bff7ae5b6042.json",
+    "result_required_fields": {
+      "run_id": "polaris-run-pol-382-2026-06-17-001",
+      "cluster_id": "POL-382",
+      "child_id": "<child_id>",
+      "status": "<status>",
+      "commit": "<commit>",
+      "validation": "<validation>",
+      "next_recommended_action": "<next_recommended_action>"
+    }
+  },
+  "context": {
+    "branch": "pol-382-delivery",
+    "worker_role": "impl"
+  }
+}

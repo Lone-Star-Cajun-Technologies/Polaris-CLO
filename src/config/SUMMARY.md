@@ -8,6 +8,7 @@ Config loading and validation root. This folder merges `polaris.config.json` wit
 - Validation is strict for user-supplied partial config.
 - Deep merge semantics apply for nested objects; arrays replace.
 - New config fields must be reflected in schema, types, defaults, and validator together.
+- Repo-analysis provider detection is Polaris-native: graph/map are preferred and external providers are not selected as the default analysis path.
 
 ## Architectural Role
 This folder owns the config contract consumed by the rest of the runtime.
@@ -21,7 +22,7 @@ This folder owns the config contract consumed by the rest of the runtime.
 - Consumed by loop, map, cognition, smartdocs-engine, graph governance, finalize, and tracker code.
 
 ## Current State
-Config now includes a `graph` section with `outputPath` and `invalidationTriggers` for graph governance. Defaults point to `.polaris/graph` with repo/config invalidation enabled.
+Config now includes a `graph` section with `outputPath` and `invalidationTriggers` for graph governance. Defaults point to `.polaris/graph` with repo/config invalidation enabled. Provider detection separates compaction providers from repo-analysis providers; repo analysis reports `polaris-graph` when the Polaris command is available.
 
 ## Known Drift
 `polaris.config.json` remains optional; missing file still uses defaults.

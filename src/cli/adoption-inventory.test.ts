@@ -139,4 +139,43 @@ describe("scanAdoptionInventory", () => {
     const inventory = scanAdoptionInventory(fixtureRoot, { writeArtifact: false });
     expect(inventory.repo_state).toBe("polaris-enabled");
   });
+
+  it("POLARIS_RULES.md (without POLARIS.md) triggers migrate recommendation for large instruction files", () => {
+    const fixtureRoot = makeFixtureRoot("adoption-inventory-rules");
+
+    writeFixture(fixtureRoot, "package.json", JSON.stringify({ name: "fixture", scripts: {} }));
+    writeFixture(fixtureRoot, "src/index.ts", "export const ok = true;\n");
+    // POLARIS_RULES.md present (no POLARIS.md) — doctrineExists should be true
+    writeFixture(fixtureRoot, "POLARIS_RULES.md", "# Polaris Rules\n");
+    // Large substantive instruction file — should get migrate recommendation
+    writeFixture(fixtureRoot, "AGENTS.md", "# AGENTS\n\n" + "Long instructions. ".repeat(40));
+
+    const inventory = scanAdoptionInventory(fixtureRoot, { writeArtifact: false });
+
+    const agents = inventory.agent_instruction_files.find((f) => f.path === "AGENTS.md");
+    expect(agents).toBeDefined();
+    expect(agents?.recommendation).toBe("migrate");
+    expect(agents?.has_polaris_delegation).toBe(false);
+  });
+
+  it("POLARIS_RULES.md reference in instruction file marks has_polaris_delegation true", () => {
+    const fixtureRoot = makeFixtureRoot("adoption-inventory-delegation");
+
+    writeFixture(fixtureRoot, "package.json", JSON.stringify({ name: "fixture", scripts: {} }));
+    writeFixture(fixtureRoot, "src/index.ts", "export const ok = true;\n");
+    writeFixture(fixtureRoot, "POLARIS_RULES.md", "# Polaris Rules\n");
+    // File references POLARIS_RULES.md — should detect delegation
+    writeFixture(
+      fixtureRoot,
+      "CLAUDE.md",
+      "# Agent Instructions\n\nRead [POLARIS_RULES.md](POLARIS_RULES.md) before beginning any work.\n",
+    );
+
+    const inventory = scanAdoptionInventory(fixtureRoot, { writeArtifact: false });
+
+    const claude = inventory.agent_instruction_files.find((f) => f.path === "CLAUDE.md");
+    expect(claude).toBeDefined();
+    expect(claude?.has_polaris_delegation).toBe(true);
+    expect(claude?.recommendation).toBe("preserve");
+  });
 });

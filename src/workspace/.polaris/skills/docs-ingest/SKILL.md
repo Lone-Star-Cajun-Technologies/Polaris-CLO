@@ -12,7 +12,7 @@ role_file: .polaris/roles/librarian.md
 Run the following command:
 
 ```
-npm run polaris -- skill packet ingest
+polaris skill packet ingest
 ```
 
 - Do not begin work until a packet is returned.
@@ -62,7 +62,7 @@ No document may be written directly to `specs/active/`, `doctrine/active/`, `arc
 - Write new Smart Docs to root `docs/` — `smartdocs/` is the canonical target
 - Silently promote documents to `doctrine/active/`, `specs/active/`, `architecture/`, or `decisions/`
 - Mutate source files (`src/`, tests, config)
-- Call `npm run polaris -- loop continue` or `npm run polaris -- finalize`
+- Call `polaris loop continue` or `polaris finalize`
 - Suppress detected conflicts
 
 **Docs-ingest routes and classifies. It does not implement or promote without explicit approval.**

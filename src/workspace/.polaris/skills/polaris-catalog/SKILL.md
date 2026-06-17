@@ -11,7 +11,7 @@ role: librarian
 Run the following command:
 
 ```bash
-npm run polaris -- skill packet catalog
+polaris skill packet catalog
 ```
 
 - Do not begin work until a packet is returned.
@@ -56,16 +56,16 @@ The `packet.unattended` flag controls which low-confidence behavior applies.
 - Read packet-specified folders and their POLARIS.md and SUMMARY.md files
 - Write POLARIS.md and SUMMARY.md files within `packet.allowed_write_paths`
 - Read `smartdocs/raw/` to enumerate documents for classification
-- Call `npm run polaris -- docs ingest --file <path>` to place classified documents
-- Call `npm run polaris -- doctrine draft <path>` for doctrine candidates
-- Call `npm run polaris -- map update --changed` after batch placement
+- Call `polaris docs ingest --file <path>` to place classified documents
+- Call `polaris doctrine draft <path>` for doctrine candidates
+- Call `polaris map update --changed` after batch placement
 - Create a single sealed git commit of all cognition and doc changes
 
 ## Hard rules — what polaris-catalog must NOT do
 
 - Modify implementation source code (`src/`, tests, config)
 - Modify runtime state files outside this skill's owned artifacts (cluster-state, other skills' `.taskchain_artifacts/` state, or non-catalog telemetry)
-- Call `npm run polaris -- loop continue` or `npm run polaris -- finalize`
+- Call `polaris loop continue` or `polaris finalize`
 - Write to `packet.prohibited_write_paths`
 - Git push or create PRs
 - Auto-place low-confidence files (always leave in raw or ask)

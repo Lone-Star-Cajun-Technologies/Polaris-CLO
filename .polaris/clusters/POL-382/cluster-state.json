@@ -1,0 +1,118 @@
+{
+  "schema_version": "1.0",
+  "cluster_id": "POL-382",
+  "state_generation": 14,
+  "child_states": [
+    {
+      "id": "POL-388",
+      "status": "done",
+      "commit": "bdce211aa26c1819595938673dcb40ff4db401f5"
+    },
+    {
+      "id": "POL-387",
+      "status": "done",
+      "commit": "77fe1a0fa6101e0a07532675027224c92550ccf0"
+    },
+    {
+      "id": "POL-386",
+      "status": "done",
+      "commit": "938ebbe9d0f4227f63af834ffa27660b21198b5d"
+    },
+    {
+      "id": "POL-385",
+      "status": "done",
+      "commit": "d7c7341fb7fd9ec3f65bdd03e60655f826dc02a5"
+    },
+    {
+      "id": "POL-384",
+      "status": "done",
+      "commit": "7ada22a7fa3b11cb4b258207d7d48aed7be9c858"
+    },
+    {
+      "id": "POL-383",
+      "status": "done",
+      "commit": "88ec28a3b8ba269dcafb223cceff826ad70170cf"
+    }
+  ],
+  "claim_metadata": {
+    "POL-383": {
+      "worker_id": "polaris-run-pol-382-2026-06-17-001:POL-383:1781720430322",
+      "claimed_at": "2026-06-17T18:20:30.322Z",
+      "expires_at": "2026-06-17T18:50:30.322Z"
+    },
+    "POL-384": {
+      "worker_id": "polaris-run-pol-382-2026-06-17-001:POL-384:1781720589435",
+      "claimed_at": "2026-06-17T18:23:09.435Z",
+      "expires_at": "2026-06-17T18:53:09.435Z"
+    },
+    "POL-386": {
+      "worker_id": "polaris-run-pol-382-2026-06-17-001:POL-386:1781721391661",
+      "claimed_at": "2026-06-17T18:36:31.661Z",
+      "expires_at": "2026-06-17T19:06:31.661Z"
+    },
+    "POL-387": {
+      "worker_id": "polaris-run-pol-382-2026-06-17-001:POL-387:1781721635814",
+      "claimed_at": "2026-06-17T18:40:35.814Z",
+      "expires_at": "2026-06-17T19:10:35.814Z"
+    },
+    "POL-388": {
+      "worker_id": "polaris-run-pol-382-2026-06-17-001:POL-388:1781722032807",
+      "claimed_at": "2026-06-17T18:47:12.807Z",
+      "expires_at": "2026-06-17T19:17:12.807Z"
+    }
+  },
+  "packet_pointers": {
+    "POL-383": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-382/packets/POL-383-d1950c6f-392a-4b5c-8652-ce3af62551ed.json",
+    "POL-384": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-382/packets/POL-384-520613f3-291c-4a51-b873-3bb6075b5074.json",
+    "POL-385": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-382/packets/POL-385-26518fed-64f8-425f-9381-5eb3aea5ec12.json",
+    "POL-386": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-382/packets/POL-386-8df47988-78a0-45dc-8e0b-8642336b14d0.json",
+    "POL-387": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-382/packets/POL-387-75bd424a-1492-475e-a568-118b60cdb46e.json",
+    "POL-388": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-382/packets/POL-388-d8f7f650-2a42-4460-bc63-bff7ae5b6042.json"
+  },
+  "result_pointers": {
+    "POL-383": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-382/results/POL-383-d1950c6f-392a-4b5c-8652-ce3af62551ed.json",
+    "POL-384": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-382/results/POL-384-520613f3-291c-4a51-b873-3bb6075b5074.json",
+    "POL-385": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-382/results/POL-385-26518fed-64f8-425f-9381-5eb3aea5ec12.json",
+    "POL-386": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-382/results/POL-386-8df47988-78a0-45dc-8e0b-8642336b14d0.json",
+    "POL-387": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-382/results/POL-387-75bd424a-1492-475e-a568-118b60cdb46e.json",
+    "POL-388": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-382/results/POL-388-d8f7f650-2a42-4460-bc63-bff7ae5b6042.json"
+  },
+  "validation_results": {
+    "POL-383": {
+      "passed": true,
+      "output": "{\"passed\":[\"npm run build\",\"npm test\",\"npx vitest run src/cli/adopt-rules.test.ts\",\"rg -n \\\"npm run polaris --\\\" .polaris/skills src/workspace/.polaris/skills POLARIS_RULES.md src/cli/adopt-rules.ts\",\"polaris-cli --help\"]}"
+    },
+    "POL-384": {
+      "passed": true,
+      "output": "{\"passed\":[\"npm run build\",\"npm test\",\"npx vitest run src/cli/adopt-rules.test.ts\",\"polaris-cli graph build\",\"polaris-cli graph query runInit\",\"polaris-cli graph impact runInit\",\"rg -n GitNexus|gitnexus .polaris/skills src/workspace/.polaris/skills POLARIS_RULES.md src/cli/adopt-rules.ts polaris.config.json (0 matches)\"]}"
+    },
+    "POL-385": {
+      "passed": true,
+      "output": "passed"
+    },
+    "POL-386": {
+      "passed": true,
+      "output": "{\"passed\":[\"npm run build\",\"npm test\",\"npx vitest run src/cli/adopt-workspace.test.ts src/cli/adopt-instructions.test.ts src/cli/adopt-rules.test.ts\"]}"
+    },
+    "POL-387": {
+      "passed": true,
+      "output": "{\"passed\":[\"npm run build\",\"npm test\",\"npx vitest run src/cli/adopt-instructions.test.ts src/cli/adopt-genesis.test.ts src/cli/adoption-inventory.test.ts src/cli/adopt-report.test.ts\"]}"
+    },
+    "POL-388": {
+      "passed": true,
+      "output": "{\"passed\":[\"npm run build\",\"npm test\",\"npx vitest run src/cli/init.test.ts src/cli/adopt-command.test.ts src/cli/adopt-assets.test.ts src/cli/adopt-report.test.ts test/integration/fresh-repo-adoption.test.ts\",\"npm pack --dry-run\",\"polaris-cli init --adopt --dry-run\"]}"
+    }
+  },
+  "commits": {
+    "POL-383": "88ec28a3b8ba269dcafb223cceff826ad70170cf",
+    "POL-384": "7ada22a7fa3b11cb4b258207d7d48aed7be9c858",
+    "POL-385": "d7c7341fb7fd9ec3f65bdd03e60655f826dc02a5",
+    "POL-386": "938ebbe9d0f4227f63af834ffa27660b21198b5d",
+    "POL-387": "77fe1a0fa6101e0a07532675027224c92550ccf0",
+    "POL-388": "bdce211aa26c1819595938673dcb40ff4db401f5"
+  },
+  "tracker_mutations": {},
+  "blockers": [],
+  "delivery_branch": "pol-382-delivery",
+  "base_branch": "main"
+}

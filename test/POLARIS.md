@@ -1,32 +1,36 @@
-<!-- polaris:draft -->
 # test
-
-> Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
 
 ## Purpose
 
-<!-- One paragraph describing what this folder does. -->
+Repository-level integration tests live here. These tests exercise Polaris behavior across command flows, generated workspaces, runtime hygiene, and fixture repositories.
 
 ## What belongs here
 
-<!-- Bulleted file list of contents. -->
+- Integration and acceptance tests that need broader repo setup than route-local unit tests.
+- Fixture-driven proofs for adoption, packaging, runtime artifact filtering, and command workflows.
 
 ## What does not belong here
 
-<!-- Explicit exclusions of files or responsibilities. -->
+- Source implementation code.
+- Route-local unit tests that belong beside the owning `src/` module.
+- Generated runtime artifacts from test execution.
 
 ## Editing rules
 
-<!-- Behavioral constraints for agents and humans. -->
+- Keep tests deterministic and isolated from the developer's live runtime state.
+- Use temporary fixture repositories for fresh-repo adoption and packaging proofs.
+- Do not commit runtime scratch produced by test runs.
 
 ## Architecture assumptions
 
-<!-- What the code assumes about the world. -->
+Integration tests may invoke the built CLI, npm packaging paths, and adoption flow to verify that an external repository can be initialized without leaking runtime scratch into staged output.
 
 ## Read before editing
 
-<!-- Links to canonical sources (doctrine, specs). -->
+- `src/cli/POLARIS.md`
+- `src/finalize/POLARIS.md`
 
 ## Related routes
 
-<!-- Atlas route pointer to sibling or parent folders. -->
+- `src/cli/`
+- `src/finalize/`

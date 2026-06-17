@@ -57,10 +57,10 @@ Run the appropriate CLI command immediately. Do not pause for user input.
 
 ```bash
 # All classes except doctrine-candidate:
-npm run polaris -- docs ingest --file <path>
+polaris docs ingest --file <path>
 
 # doctrine-candidate:
-npm run polaris -- doctrine draft <path>
+polaris doctrine draft <path>
 ```
 
 Record in `docs_placed`.
@@ -92,7 +92,7 @@ Do not fail the run.
 Run map update:
 
 ```bash
-npm run polaris -- map update --changed
+polaris map update --changed
 ```
 
 ## Hard rules

@@ -75,6 +75,8 @@ Recognized command forms use `<CLUSTER-ID>` as the work identifier:
 - `polaris-finalize` / `run polaris-finalize`
 - `polaris-status` / `run polaris-status`
 - `docs-ingest` / `run docs-ingest`
+- `docs-review` / `run docs-review`
+- `docs-triage` / `run docs-triage`
 - `polaris-reconcile <CLUSTER-ID>` / `run polaris-reconcile on [issue] <CLUSTER-ID>`
 - `polaris-catalog <CLUSTER-ID>` / `run polaris-catalog on [issue] <CLUSTER-ID>`
 
@@ -106,6 +108,29 @@ Never read these files directly:
 - `.polaris/map/needs-review.json`
 
 These paths appear only in prohibition lists.
+
+---
+
+## Graph Navigation
+
+Polaris maintains a code-intelligence graph for this repository.
+Use Polaris graph commands as the primary code-intelligence path.
+Fall back to `rg` (ripgrep) and direct file inspection when the graph is unavailable.
+
+Primary commands:
+
+```sh
+polaris graph build
+polaris graph query <symbol-or-file>
+polaris graph impact <symbol-or-file>
+polaris map query <path>
+```
+
+Fallback (graph unavailable):
+- `rg <pattern>` for symbol and pattern search
+- Direct file inspection for structure and content
+
+Never prefer an external repo-analysis tool over Polaris graph for Polaris-managed repos.
 
 ---
 

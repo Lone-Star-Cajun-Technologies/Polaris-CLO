@@ -16,7 +16,7 @@ Query runtime state before acting. Do not infer ingest scope or prior progress f
 Always use the repo-local Polaris CLI:
 
 ```
-npm run polaris -- docs ingest [--file <path>] [--batch <cluster-id>] [--dry-run]
+polaris docs ingest [--file <path>] [--batch <cluster-id>] [--dry-run]
 ```
 
 Drop zone: `smartdocs/raw/` — this is the single ingest entry point.

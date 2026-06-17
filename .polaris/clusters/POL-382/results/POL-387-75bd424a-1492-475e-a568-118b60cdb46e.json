@@ -1,0 +1,19 @@
+{
+  "child_id": "POL-387",
+  "status": "done",
+  "commit": "77fe1a0fa6101e0a07532675027224c92550ccf0",
+  "validation": {
+    "passed": [
+      "npm run build",
+      "npm test",
+      "npx vitest run src/cli/adopt-instructions.test.ts src/cli/adopt-genesis.test.ts src/cli/adoption-inventory.test.ts src/cli/adopt-report.test.ts"
+    ]
+  },
+  "next_recommended_action": "continue",
+  "tracker_updated": false,
+  "state_updated": false,
+  "telemetry_updated": false,
+  "run_id": "polaris-run-pol-382-2026-06-17-001",
+  "error_message": null,
+  "compact_return_errors": []
+}
