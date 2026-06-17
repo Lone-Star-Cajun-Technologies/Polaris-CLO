@@ -126,6 +126,8 @@ function callAnthropicAPI(prompt: string): Promise<string> {
       messages: [{ role: "user", content: prompt }],
     });
 
+    const timer = setTimeout(() => { req.destroy(new Error("API request timed out")); }, 30000);
+
     const req = https.request({
       hostname: "api.anthropic.com",
       path: "/v1/messages",
@@ -140,13 +142,14 @@ function callAnthropicAPI(prompt: string): Promise<string> {
       let data = "";
       res.on("data", (chunk) => { data += chunk; });
       res.on("end", () => {
+        clearTimeout(timer);
         try {
           const parsed = JSON.parse(data) as { content?: { type: string; text: string }[] };
           resolve(parsed.content?.[0]?.text ?? "");
         } catch { reject(new Error("Failed to parse API response")); }
       });
     });
-    req.on("error", reject);
+    req.on("error", (e) => { clearTimeout(timer); reject(e); });
     req.write(body);
     req.end();
   });
