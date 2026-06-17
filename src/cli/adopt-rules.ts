@@ -1,9 +1,11 @@
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import type { RepoScanInventory } from "./adoption-plan.js";
 
 export interface GeneratePolarisRulesOptions {
   overwrite?: boolean;
+  /** Path to the workspace template directory (contains POLARIS_RULES.md). */
+  workspaceDir?: string;
 }
 
 function buildRepoOverview(inventory: RepoScanInventory): string {
@@ -20,21 +22,13 @@ function buildRepoOverview(inventory: RepoScanInventory): string {
   return lines.join(" ").trim() || "Repository managed by Polaris.";
 }
 
-export async function generatePolarisRules(
-  repoRoot: string,
-  inventory: RepoScanInventory,
-  options: GeneratePolarisRulesOptions = {},
-): Promise<void> {
-  const { overwrite = true } = options;
-  const outputPath = join(repoRoot, "POLARIS_RULES.md");
+function buildContentFromTemplate(templatePath: string, overview: string): string {
+  const template = readFileSync(templatePath, "utf-8");
+  return template.replace("{{REPO_OVERVIEW}}", overview);
+}
 
-  if (existsSync(outputPath) && !overwrite) {
-    return;
-  }
-
-  const overview = buildRepoOverview(inventory);
-
-  const content = [
+function buildContentInline(overview: string): string {
+  return [
     "# Polaris Rules",
     "",
     "> This file is the single shared governance source for this Polaris-managed repository.",
@@ -199,6 +193,29 @@ export async function generatePolarisRules(
     "Do not assume global repository context unless explicitly provided by the runtime.",
     "",
   ].join("\n");
+}
+
+export async function generatePolarisRules(
+  repoRoot: string,
+  inventory: RepoScanInventory,
+  options: GeneratePolarisRulesOptions = {},
+): Promise<void> {
+  const { overwrite = true, workspaceDir } = options;
+  const outputPath = join(repoRoot, "POLARIS_RULES.md");
+
+  if (existsSync(outputPath) && !overwrite) {
+    return;
+  }
+
+  const overview = buildRepoOverview(inventory);
+
+  let content: string;
+  const templatePath = workspaceDir ? join(workspaceDir, "POLARIS_RULES.md") : undefined;
+  if (templatePath && existsSync(templatePath)) {
+    content = buildContentFromTemplate(templatePath, overview);
+  } else {
+    content = buildContentInline(overview);
+  }
 
   const dir = dirname(outputPath);
   mkdirSync(dir, { recursive: true });

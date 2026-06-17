@@ -182,6 +182,19 @@ export function installWorkspaceAssets(
     installSmartdocsDir(srcSmartdocs, dstSmartdocs, "smartdocs", installed, alreadyPresent, smartdocsPreExisted);
   }
 
+  // 5. POLARIS_RULES.md template
+  const rulesRel = "POLARIS_RULES.md";
+  const srcRules = join(workspaceDir, rulesRel);
+  const dstRules = join(repoRoot, rulesRel);
+  if (existsSync(srcRules)) {
+    if (existsSync(dstRules)) {
+      alreadyPresent.push(rulesRel);
+    } else {
+      copyFileSync(srcRules, dstRules);
+      installed.push(rulesRel);
+    }
+  }
+
   return { installed, alreadyPresent, skipped, conflicted };
 }
 
