@@ -14,13 +14,14 @@ per completed cluster, after all children are done and before PR creation.
 | `SKILL.md` | Skill entry point — read first, contains bootloader instructions and packet schema reference |
 | `chain.md` | Step-order execution map — the Librarian executes this in strict step order |
 | `steps/01-load-cluster-context.md` | Build work inventory from packet and cluster evidence |
-| `steps/02-reconcile-polaris-md.md` | Update affected POLARIS.md files |
-| `steps/03-reconcile-summary-md.md` | Refresh SUMMARY.md as continuation artifact |
-| `steps/04-doc-ingestion.md` | Ingest/promote/archive documentation |
-| `steps/05-link-validation.md` | Validate and repair broken links |
-| `steps/06-yaml-linking.md` | Update YAML references for promoted documents |
-| `steps/07-librarian-commit.md` | Commit documentation changes |
-| `steps/08-sealed-result.md` | Write sealed result JSON and terminate |
+| `steps/02-drift-reconciliation.md` | Run formal drift reconciliation |
+| `steps/03-reconcile-polaris-md.md` | Update affected POLARIS.md files |
+| `steps/04-reconcile-summary-md.md` | Refresh SUMMARY.md as continuation artifact |
+| `steps/05-doc-ingestion.md` | Ingest/promote/archive documentation |
+| `steps/06-link-validation.md` | Validate and repair broken links |
+| `steps/07-yaml-linking.md` | Update YAML references for promoted documents |
+| `steps/08-librarian-commit.md` | Commit documentation changes |
+| `steps/09-sealed-result.md` | Write sealed result JSON and terminate |
 
 ## Invocation
 

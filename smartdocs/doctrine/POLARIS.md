@@ -1,4 +1,4 @@
-# smartdocs/docs/doctrine
+# smartdocs/doctrine
 
 ## Purpose
 
@@ -18,3 +18,4 @@ Canonical doctrine for SmartDocs lives here, with active, candidate, and depreca
 
 - Keep doctrine authoritative and route-local.
 - Prefer the `active/` tier for current guidance.
+- Doctrine candidates must stay in `candidate/` until explicitly promoted by an operator.

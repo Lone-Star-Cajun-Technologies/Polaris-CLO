@@ -8,6 +8,7 @@ The CLI entry point for Polaris. It wires the `polaris` binary, registers all to
 
 - `index.ts` — binary entry point; registers subsystem commands via `addCommand()`
 - `graph.ts` — `polaris graph build|query|impact` command group and output formatting
+- `adopt-*.ts` — adoption scanning, workspace asset installation, instruction migration, report generation, and safe staging helpers for `polaris init --adopt`
 - `librarian.ts` — closeout librarian packet/result command surface
 - `medic.ts` — `polaris medic chart create` command; scaffolds Medic diagnostic charts
 - `worker.ts` — worker-owned commit enforcement command factory
@@ -25,6 +26,7 @@ The CLI entry point for Polaris. It wires the `polaris` binary, registers all to
 - Public help must label safe/read-only commands separately from mutating commands. Deferred 1.0 commands must be marked unavailable instead of sounding implemented.
 - Unknown commands and bare subsystem commands must exit non-zero with actionable help.
 - `welfare-check` is a safe/read-only top-level command wired from `src/map/welfare.ts`; it exits non-zero when route health review is required.
+- Adoption must install bundled workspace assets, preserve instruction-file provenance, point agent files at `POLARIS_RULES.md`, and filter runtime scratch before staging.
 - Keep `index.ts` short — it should remain a thin wiring file.
 - Version string comes from `getVersion()` only — do not hardcode version strings elsewhere.
 
