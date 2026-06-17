@@ -272,7 +272,9 @@ function detectAgentInstructionFiles(
 
       const content = safeRead(join(repoRoot, entry.path));
       const hasPolarisDelegation =
-        content.includes("<!-- polaris:delegate") || content.toLowerCase().includes("polaris.md");
+        content.includes("<!-- polaris:delegate") ||
+        content.toLowerCase().includes("polaris.md") ||
+        content.includes("POLARIS_RULES.md");
       const recommendation = recommendationForInstruction(
         hasPolarisDelegation,
         doctrineExists,
@@ -419,7 +421,9 @@ export function scanAdoptionInventory(
   const generatedRoots = detectRoots(allEntries, GENERATED_ROOT_HINTS);
   const cacheRoots = detectRoots(allEntries, CACHE_ROOT_HINTS);
   const fixtureRoots = detectRoots(allEntries, FIXTURE_ROOT_HINTS);
-  const doctrineExists = existsSync(join(repoRoot, "POLARIS.md"));
+  const doctrineExists =
+    existsSync(join(repoRoot, "POLARIS.md")) ||
+    existsSync(join(repoRoot, "POLARIS_RULES.md"));
 
   const inventory: RepoScanInventory = {
     scan_date: now.toISOString(),

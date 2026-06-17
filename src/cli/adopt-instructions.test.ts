@@ -161,4 +161,41 @@ describe("handleInstructionFiles — repoRoot injection", () => {
     );
     expect(claudeWrite).toBeUndefined();
   });
+
+  it("provenance records source path, backup path, decision, timestamp, and migration outcome", async () => {
+    mockedExistsSync.mockImplementation((p) => {
+      const s = String(p);
+      return s === `${REPO_ROOT}/CLAUDE.md` || s === `${REPO_ROOT}/POLARIS_RULES.md`;
+    });
+    mockedReadFileSync.mockImplementation((p) => {
+      if (String(p).endsWith("CLAUDE.md")) return "# Old instructions with real content";
+      return "";
+    });
+
+    await handleInstructionFiles(
+      { ...BASE_PLAN },
+      { ...BASE_INVENTORY, agent_instruction_files: [{ path: "CLAUDE.md", provider: "claude", recommendation: "preserve", reason: "test", size_bytes: 100, has_polaris_delegation: false }] },
+      REPO_ROOT,
+    );
+
+    // Provenance should be written with the required fields
+    const provenanceCall = vi.mocked(fs.writeFileSync).mock.calls.find(
+      ([p]) => String(p).includes("adoption-provenance"),
+    );
+    expect(provenanceCall).toBeDefined();
+    const written = JSON.parse(String(provenanceCall![1])) as {
+      instruction_file_actions: Array<{
+        source_path: string;
+        backup_path: string | null;
+        decision: string;
+        timestamp: string;
+      }>;
+    };
+    expect(written.instruction_file_actions).toHaveLength(1);
+    const record = written.instruction_file_actions[0];
+    expect(record.source_path).toBe("CLAUDE.md");
+    expect(record.decision).toBe("thin-adapter");
+    expect(record.backup_path).toContain("migrated-instructions");
+    expect(record.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+  });
 });

@@ -137,7 +137,7 @@ Output: prints a progress indicator during the build.
 
 **Thin pointer detection:** A file is considered a thin pointer if all of the following are true:
 - Non-empty, non-comment, non-whitespace lines number ≤ 3
-- At least one line contains the string `POLARIS.md`
+- At least one line contains the string `POLARIS_RULES.md` or `POLARIS.md`
 - No line contains independent behavioral doctrine (i.e., imperative rules, tool configuration, or environment setup that is not a reference to another file)
 
 For each agent instruction file (CLAUDE.md, AGENTS.md, `.github/copilot-instructions.md`):
@@ -147,24 +147,25 @@ For each agent instruction file (CLAUDE.md, AGENTS.md, `.github/copilot-instruct
 3. **If present and has meaningful content** — prompt user:
    ```
    CLAUDE.md has existing content. Compress and archive it as a genesis doctrine document?
-   This preserves your rules in smartdocs/doctrine/active/ and replaces CLAUDE.md with a pointer to POLARIS.md.
+   This preserves your rules in smartdocs/doctrine/active/ and replaces CLAUDE.md with a pointer to POLARIS_RULES.md.
    Requires ANTHROPIC_API_KEY. [Y/n]:
    ```
    - **Accepted:** Polaris calls the Anthropic API (requires `ANTHROPIC_API_KEY` env var; aborts with a clear error if missing) to distill the existing file into a concise bullet-point rule set. The distilled content is written to `smartdocs/doctrine/active/<YYYY-MM-DD>-genesis-agent-doctrine.md`. CLAUDE.md is replaced with a thin pointer + a comment:
      ```
      <!-- genesis doctrine archived: smartdocs/doctrine/active/<date>-genesis-agent-doctrine.md -->
      ```
-     POLARIS.md has the following section appended (deterministically, only if not already present):
-     ```markdown
-     ## Polaris Rules
-     See POLARIS_RULES.md for canonical Polaris navigation and routing rules.
-     ```
      *(Note: this section is also written during Phase A scaffold — Phase D appends it only if POLARIS.md existed before adoption and the section is absent.)*
    - **Refused:** A single-line HTML comment is prepended to the existing file:
      ```
-     <!-- See [POLARIS.md](POLARIS.md) for repo instructions -->
+     <!-- See [POLARIS_RULES.md](POLARIS_RULES.md) for repo instructions -->
      ```
-     Existing content is preserved below unchanged. POLARIS.md is not modified.
+     Existing content is preserved below unchanged.
+
+**Provenance:** Every agent file processed in Phase D appends a record to `.polaris/adoption-provenance.json` under the `genesis_reconcile_actions` key. Each record includes: `source_path`, `backup_path` (genesis doc path for compressed, null otherwise), `decision`, `timestamp`, and `migration_outcome`.
+
+The `adopt-instructions` path (for all supported instruction surfaces beyond the three Phase D agent files) similarly appends records to `adoption-provenance.json` under `instruction_file_actions`, with fields: `source_path`, `backup_path` (archived raw path), `decision`, `timestamp`.
+
+**Baseline adoption does not require Anthropic or any external provider.** Genesis doctrine compression (Anthropic distillation) is an optional enhancement. If declined or unavailable, original instruction content is either preserved in-place (refused path) or archived losslessly to `smartdocs/raw/migrated-instructions/` (adopt-instructions path), and adoption succeeds either way.
 
 All agent files end up pointing to `POLARIS_RULES.md` as the global governance authority. `POLARIS.md` remains the route-local operational guide and references `POLARIS_RULES.md` for canonical Polaris navigation rules.
 
