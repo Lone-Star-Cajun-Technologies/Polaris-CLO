@@ -8,17 +8,17 @@
   "commit_sha": "dc012e616400a445f24501b42cc8f12fb70dd0fa",
   "commit_message": "docs(closeout): reconcile cognition for cluster POL-382\n\nRun: polaris-run-pol-382-2026-06-17-001\nCluster: POL-382\nChildren: POL-383, POL-384, POL-385, POL-386, POL-387, POL-388\nFiles updated:\n- POLARIS.md: 6 files\n- SUMMARY.md: 5 files\n- docs ingested: 0\n- links repaired: 0",
   "files_committed": [
-    "smartdocs/doctrine/POLARIS.md",
-    "smartdocs/doctrine/SUMMARY.md",
-    "smartdocs/doctrine/active/POLARIS.md",
-    "smartdocs/doctrine/active/SUMMARY.md",
-    "src/cli/POLARIS.md",
-    "src/cli/SUMMARY.md",
-    "src/config/POLARIS.md",
-    "src/config/SUMMARY.md",
-    "src/workspace/.polaris/skills/closeout-librarian/POLARIS.md",
-    "test/POLARIS.md",
-    "test/SUMMARY.md"
+    "/Users/lsctech/Developer/Polaris/smartdocs/doctrine/POLARIS.md",
+    "/Users/lsctech/Developer/Polaris/smartdocs/doctrine/SUMMARY.md",
+    "/Users/lsctech/Developer/Polaris/smartdocs/doctrine/active/POLARIS.md",
+    "/Users/lsctech/Developer/Polaris/smartdocs/doctrine/active/SUMMARY.md",
+    "/Users/lsctech/Developer/Polaris/src/cli/POLARIS.md",
+    "/Users/lsctech/Developer/Polaris/src/cli/SUMMARY.md",
+    "/Users/lsctech/Developer/Polaris/src/config/POLARIS.md",
+    "/Users/lsctech/Developer/Polaris/src/config/SUMMARY.md",
+    "/Users/lsctech/Developer/Polaris/src/workspace/.polaris/skills/closeout-librarian/POLARIS.md",
+    "/Users/lsctech/Developer/Polaris/test/POLARIS.md",
+    "/Users/lsctech/Developer/Polaris/test/SUMMARY.md"
   ],
   "drift_reconciliation": {
     "medic_ran": false,
