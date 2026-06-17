@@ -1,7 +1,6 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { spawnSync } from "node:child_process";
-import https from "node:https";
 import { loadConfig } from "../config/loader.js";
 import { resolveLibrarianProvider } from "../smartdocs-engine/librarian-dispatch.js";
 
@@ -115,45 +114,6 @@ function injectLinkedDocs(content: string, docs: { path: string; title: string }
   return [...before, ...yamlLines, ...after].join("\n");
 }
 
-function callAnthropicAPI(prompt: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const apiKey = process.env["ANTHROPIC_API_KEY"];
-    if (!apiKey) { reject(new Error("ANTHROPIC_API_KEY not set")); return; }
-
-    const body = JSON.stringify({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 1024,
-      messages: [{ role: "user", content: prompt }],
-    });
-
-    const timer = setTimeout(() => { req.destroy(new Error("API request timed out")); }, 30000);
-
-    const req = https.request({
-      hostname: "api.anthropic.com",
-      path: "/v1/messages",
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-        "content-length": Buffer.byteLength(body),
-      },
-    }, (res) => {
-      let data = "";
-      res.on("data", (chunk) => { data += chunk; });
-      res.on("end", () => {
-        clearTimeout(timer);
-        try {
-          const parsed = JSON.parse(data) as { content?: { type: string; text: string }[] };
-          resolve(parsed.content?.[0]?.text ?? "");
-        } catch { reject(new Error("Failed to parse API response")); }
-      });
-    });
-    req.on("error", (e) => { clearTimeout(timer); reject(e); });
-    req.write(body);
-    req.end();
-  });
-}
 
 function parseCanonResponse(text: string): CanonResponse | null {
   const trimmed = text.trim();
@@ -188,13 +148,13 @@ function stripWorkerFlags(args: string[]): string[] {
   return stripped;
 }
 
-async function dispatchCanonAgent(options: {
+function dispatchCanonAgent(options: {
   repoRoot: string;
   routeFolder: string;
   doctrineDocs: DocEntry[];
   providers: Record<string, { command: string; args: string[] }>;
   providerOrder: string[];
-}): Promise<CanonResponse | null> {
+}): CanonResponse | null {
   const { repoRoot, routeFolder, doctrineDocs, providers, providerOrder } = options;
   const providerName = resolveLibrarianProvider(providers, providerOrder);
   if (!providerName) return null;
@@ -223,45 +183,13 @@ Respond with ONLY valid JSON on a single line:
 
 If no doctrine docs are relevant, return an empty array for relevant_docs.`;
 
-  // Prefer direct API call when ANTHROPIC_API_KEY is set — avoids CLI subprocess auth issues.
-  if (process.env["ANTHROPIC_API_KEY"]) {
-    try {
-      const text = await callAnthropicAPI(prompt);
-      const parsed = parseCanonResponse(text);
-      if (parsed) return parsed;
-      console.log(`  API parse failed, raw: ${text.slice(0, 200)}`);
-      return null;
-    } catch (e) {
-      console.log(`  API error: ${(e as Error).message}`);
-      return null;
-    }
-  }
-
-  // Canon dispatch is pure reasoning — strip worker-only flags (--permission-mode, --allowedTools)
-  // to avoid failures when the provider config is tuned for code-editing agents.
-  const rawArgs = (cfg.args ?? []).map((a) => (a === "{{worker_prompt}}" ? prompt : a));
-  const args = stripWorkerFlags(rawArgs);
-
-  // When cfg.command is "env", extract KEY=VALUE prefix args into the spawn env
-  // so credentials and env vars are inherited correctly by the subprocess.
-  let spawnCmd = cfg.command;
-  let spawnArgs = args;
-  const extraEnv: Record<string, string> = {};
-  if (cfg.command === "env") {
-    const firstNonEnvIdx = args.findIndex((a) => !a.includes("=") || a.startsWith("-"));
-    for (const a of args.slice(0, firstNonEnvIdx)) {
-      const [k, ...v] = a.split("=");
-      extraEnv[k] = v.join("=");
-    }
-    spawnCmd = args[firstNonEnvIdx];
-    spawnArgs = args.slice(firstNonEnvIdx + 1);
-  }
-
-  const result = spawnSync(spawnCmd, spawnArgs, {
+  // Same dispatch pattern as dispatchLibrarianReview — pass args straight through,
+  // letting the provider config (e.g. env CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=0) handle auth.
+  const args = (cfg.args ?? []).map((a) => (a === "{{worker_prompt}}" ? prompt : a));
+  const result = spawnSync(cfg.command, stripWorkerFlags(args), {
     encoding: "utf-8",
     timeout: 120000,
     cwd: repoRoot,
-    env: { ...process.env, ...extraEnv },
   });
 
   if (result.error) {
@@ -326,7 +254,7 @@ export async function enrichCanonFiles(repoRoot: string): Promise<void> {
     const routeFolder = relative(repoRoot, dir);
     console.log(`  Dispatching librarian for: ${routeFolder}`);
 
-    const response = await dispatchCanonAgent({
+    const response = dispatchCanonAgent({
       repoRoot,
       routeFolder,
       doctrineDocs,
