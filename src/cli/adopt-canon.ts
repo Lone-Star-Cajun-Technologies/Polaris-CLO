@@ -173,10 +173,27 @@ If no doctrine docs are relevant, return an empty array for relevant_docs.`;
   // to avoid failures when the provider config is tuned for code-editing agents.
   const rawArgs = (cfg.args ?? []).map((a) => (a === "{{worker_prompt}}" ? prompt : a));
   const args = stripWorkerFlags(rawArgs);
-  const result = spawnSync(cfg.command, args, {
+
+  // When cfg.command is "env", extract KEY=VALUE prefix args into the spawn env
+  // so credentials and env vars are inherited correctly by the subprocess.
+  let spawnCmd = cfg.command;
+  let spawnArgs = args;
+  const extraEnv: Record<string, string> = {};
+  if (cfg.command === "env") {
+    const firstNonEnvIdx = args.findIndex((a) => !a.includes("=") || a.startsWith("-"));
+    for (const a of args.slice(0, firstNonEnvIdx)) {
+      const [k, ...v] = a.split("=");
+      extraEnv[k] = v.join("=");
+    }
+    spawnCmd = args[firstNonEnvIdx];
+    spawnArgs = args.slice(firstNonEnvIdx + 1);
+  }
+
+  const result = spawnSync(spawnCmd, spawnArgs, {
     encoding: "utf-8",
     timeout: 120000,
     cwd: repoRoot,
+    env: { ...process.env, ...extraEnv },
   });
 
   if (result.error) {
