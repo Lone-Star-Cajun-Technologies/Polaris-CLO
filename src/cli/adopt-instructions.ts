@@ -4,7 +4,7 @@ import type { AdoptionPlan, RepoScanInventory } from "./adoption-plan.js";
 
 type InstructionDecision = "preserve" | "thin-adapter" | "migrate";
 
-interface InstructionActionRecord {
+export interface InstructionActionRecord {
   source_path: string;
   decision: InstructionDecision;
   reason: string;
@@ -150,9 +150,9 @@ export function handleInstructionFiles(
   plan: AdoptionPlan,
   inventory: RepoScanInventory,
   repoRoot: string,
-): Promise<void> {
+): Promise<InstructionActionRecord[]> {
   if (plan.dry_run) {
-    return Promise.resolve();
+    return Promise.resolve([]);
   }
   const doctrineExists = hasDoctrine(repoRoot);
   const now = new Date().toISOString();
@@ -200,5 +200,5 @@ export function handleInstructionFiles(
   }
 
   appendInstructionProvenance(repoRoot, provenance);
-  return Promise.resolve();
+  return Promise.resolve(provenance);
 }
