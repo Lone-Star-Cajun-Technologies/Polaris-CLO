@@ -112,4 +112,53 @@ describe("handleInstructionFiles — repoRoot injection", () => {
     expect(vi.mocked(fs.writeFileSync)).not.toHaveBeenCalled();
     expect(mockedExistsSync).not.toHaveBeenCalled();
   });
+
+  it("thin adapter content points to POLARIS_RULES.md", async () => {
+    mockedExistsSync.mockImplementation((p) => {
+      const s = String(p);
+      return s === `${REPO_ROOT}/CLAUDE.md` || s === `${REPO_ROOT}/POLARIS_RULES.md`;
+    });
+    mockedReadFileSync.mockImplementation((p) => {
+      if (String(p).endsWith("CLAUDE.md")) return "# Old instructions with real content";
+      return "";
+    });
+
+    await handleInstructionFiles(
+      { ...BASE_PLAN },
+      { ...BASE_INVENTORY, agent_instruction_files: [{ path: "CLAUDE.md", provider: "claude", recommendation: "preserve", reason: "test", size_bytes: 100, has_polaris_delegation: false }] },
+      REPO_ROOT,
+    );
+
+    // The thin adapter written to CLAUDE.md should reference POLARIS_RULES.md
+    // Use exact path to avoid matching the backup file which also ends with CLAUDE.md
+    const claudeWrite = vi.mocked(fs.writeFileSync).mock.calls.find(
+      ([p]) => String(p) === `${REPO_ROOT}/CLAUDE.md`,
+    );
+    expect(claudeWrite).toBeDefined();
+    expect(String(claudeWrite![1])).toContain("POLARIS_RULES.md");
+  });
+
+  it("preserves file already containing POLARIS_RULES.md pointer", async () => {
+    mockedExistsSync.mockImplementation((p) => {
+      const s = String(p);
+      return s === `${REPO_ROOT}/CLAUDE.md` || s === `${REPO_ROOT}/POLARIS_RULES.md`;
+    });
+    mockedReadFileSync.mockImplementation((p) => {
+      if (String(p).endsWith("CLAUDE.md"))
+        return "# Agent Instructions\n\nRead [POLARIS_RULES.md](POLARIS_RULES.md) before doing any work.";
+      return "";
+    });
+
+    await handleInstructionFiles(
+      { ...BASE_PLAN },
+      { ...BASE_INVENTORY, agent_instruction_files: [{ path: "CLAUDE.md", provider: "claude", recommendation: "preserve", reason: "test", size_bytes: 100, has_polaris_delegation: false }] },
+      REPO_ROOT,
+    );
+
+    // File already has POLARIS_RULES.md delegation — should not be overwritten
+    const claudeWrite = vi.mocked(fs.writeFileSync).mock.calls.find(
+      ([p]) => String(p).endsWith("CLAUDE.md"),
+    );
+    expect(claudeWrite).toBeUndefined();
+  });
 });

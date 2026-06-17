@@ -12,7 +12,7 @@ interface InstructionActionRecord {
   timestamp: string;
 }
 
-const DELEGATION_MARKERS = ["<!-- polaris:delegate", "POLARIS.md", "Polaris runtime"];
+const DELEGATION_MARKERS = ["<!-- polaris:delegate", "POLARIS_RULES.md", "POLARIS.md", "Polaris runtime"];
 
 function isSupportedInstructionPath(path: string): boolean {
   return (

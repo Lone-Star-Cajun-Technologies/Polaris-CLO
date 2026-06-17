@@ -79,7 +79,7 @@ function buildAgentPointer(): string {
     "# Agent Instructions",
     "",
     "This repository is managed by Polaris.",
-    "Read [POLARIS.md](POLARIS.md) before beginning any work.",
+    "Read [POLARIS_RULES.md](POLARIS_RULES.md) before beginning any work.",
     "",
   ].join("\n");
 }
@@ -89,7 +89,7 @@ function buildCopilotPointer(): string {
     "# Copilot Instructions",
     "",
     "This repository is managed by Polaris.",
-    "Read [POLARIS.md](../../POLARIS.md) before beginning any work.",
+    "Read [POLARIS_RULES.md](../../POLARIS_RULES.md) before beginning any work.",
     "",
   ].join("\n");
 }
