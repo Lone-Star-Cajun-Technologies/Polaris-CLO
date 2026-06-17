@@ -41,7 +41,7 @@ const baseInventory: RepoScanInventory = {
 beforeEach(() => {
   vi.clearAllMocks();
   mockedExistsSync.mockReturnValue(false);
-  mockedReadFileSync.mockReturnValue("" as unknown as Buffer);
+  mockedReadFileSync.mockReturnValue("" as unknown as Buffer<ArrayBuffer>);
 });
 
 describe("generatePolarisRules", () => {
@@ -140,7 +140,7 @@ describe("generatePolarisRules (template path)", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockedReadFileSync.mockReturnValue("" as unknown as Buffer);
+    mockedReadFileSync.mockReturnValue("" as unknown as Buffer<ArrayBuffer>);
   });
 
   it("uses template when workspaceDir is provided and template exists", async () => {
@@ -148,7 +148,7 @@ describe("generatePolarisRules (template path)", () => {
     mockedExistsSync.mockImplementation((p) => {
       return String(p).endsWith("POLARIS_RULES.md") && String(p).includes("/workspace/");
     });
-    mockedReadFileSync.mockReturnValue(FAKE_TEMPLATE as unknown as Buffer);
+    mockedReadFileSync.mockReturnValue(FAKE_TEMPLATE as unknown as Buffer<ArrayBuffer>);
 
     await generatePolarisRules("/repo", baseInventory, { workspaceDir: "/workspace" });
 
@@ -172,7 +172,7 @@ describe("generatePolarisRules (template path)", () => {
     mockedExistsSync.mockImplementation((p) => {
       return String(p).endsWith("POLARIS_RULES.md") && String(p).includes("/workspace/");
     });
-    mockedReadFileSync.mockReturnValue(FAKE_TEMPLATE as unknown as Buffer);
+    mockedReadFileSync.mockReturnValue(FAKE_TEMPLATE as unknown as Buffer<ArrayBuffer>);
 
     await generatePolarisRules("/repo", baseInventory, { workspaceDir: "/workspace" });
 
