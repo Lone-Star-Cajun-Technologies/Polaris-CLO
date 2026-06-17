@@ -12,7 +12,7 @@ role_file: .polaris/roles/librarian.md
 Run the following command:
 
 ```
-npm run polaris -- skill packet review
+polaris skill packet review
 ```
 
 - Do not begin work until a packet is returned.

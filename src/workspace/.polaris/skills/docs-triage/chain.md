@@ -16,7 +16,7 @@ Query runtime state before acting. Do not infer triage scope or prior progress f
 Always use the repo-local Polaris CLI:
 
 ```
-npm run polaris -- docs triage [--dry-run] [--batch-size <n>] [--resume] [--repo-root <path>]
+polaris docs triage [--dry-run] [--batch-size <n>] [--resume] [--repo-root <path>]
 ```
 
 - `--dry-run`: prints cluster count, estimated batches, estimated tokens, and model — no LLM calls

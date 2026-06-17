@@ -30,7 +30,7 @@ here because finalization is part of the run lifecycle governed by this skill. S
 Run the following command:
 
 ```
-npm run polaris -- skill packet run
+polaris skill packet run
 ```
 
 - Do not begin work until a packet is returned.

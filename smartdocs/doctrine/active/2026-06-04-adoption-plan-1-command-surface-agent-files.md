@@ -15,7 +15,7 @@ ingested-at: 2026-06-05T05:21:02.223Z
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Replace all `npm run polaris --` references with `polaris` in skill files, create `POLARIS_RULES.md` generation logic, reduce agent files to pointer-only format, and update this repo's own AGENTS.md/CLAUDE.md accordingly.
+**Goal:** Replace all `polaris` references with `polaris` in skill files, create `POLARIS_RULES.md` generation logic, reduce agent files to pointer-only format, and update this repo's own AGENTS.md/CLAUDE.md accordingly.
 
 **Architecture:** Skill files become provider-agnostic by referencing `polaris <command>` directly. A new `src/cli/adopt-rules.ts` module generates `POLARIS_RULES.md` as the single shared governance source. Agent files (`AGENTS.md`, `CLAUDE.md`, etc.) are reduced to a 2-line pointer. `buildThinAdapter` in `adopt-instructions.ts` is updated to emit the pointer format. `POLARIS_RULES.md` and `CODEX.md` are added to the default SmartDocs ignore list.
 
@@ -27,7 +27,7 @@ ingested-at: 2026-06-05T05:21:02.223Z
 
 | Action | Path | Responsibility |
 |---|---|---|
-| Modify | `.polaris/skills/**/*.md` (all) | Replace `npm run polaris --` → `polaris` |
+| Modify | `.polaris/skills/**/*.md` (all) | Replace `polaris` → `polaris` |
 | Modify | `.polaris/skills/ROUTING.md` | Replace `POL-###` → `<CLUSTER-ID>` in routing table |
 | Create | `src/cli/adopt-rules.ts` | `generatePolarisRules()` — write `POLARIS_RULES.md` for adopted repo |
 | Create | `src/cli/adopt-rules.test.ts` | Tests for `generatePolarisRules()` |
@@ -40,7 +40,7 @@ ingested-at: 2026-06-05T05:21:02.223Z
 
 ---
 
-## Task 1: Replace `npm run polaris --` with `polaris` in skill files
+## Task 1: Replace `polaris` with `polaris` in skill files
 
 **Files:**
 - Modify: `.polaris/skills/**/*.md` (all — use bulk replace)
@@ -57,7 +57,7 @@ Expected: ~15 files with matches, ~50+ total occurrences.
 
 ```bash
 find .polaris/skills -name "*.md" -exec \
-  perl -pi -e 's/npm run polaris -- /polaris /g' {} \;
+  perl -pi -e 's/polaris /polaris /g' {} \;
 ```
 
 - [ ] **Step 3: Verify no occurrences remain**

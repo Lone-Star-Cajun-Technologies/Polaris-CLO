@@ -3,6 +3,7 @@
   "version": "0.3.22",
   "description": "Polaris — standalone taskchain orchestration framework for governed AI agent workflows",
   "bin": {
+    "polaris": "dist/cli/index.js",
     "polaris-cli": "dist/cli/index.js"
   },
   "main": "dist/index.js",

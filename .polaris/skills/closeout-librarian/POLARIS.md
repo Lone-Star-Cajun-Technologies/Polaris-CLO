@@ -29,7 +29,7 @@ step 08 of the `polaris-run` chain after cluster-complete is confirmed.
 
 The Foreman generates the packet via:
 ```bash
-npm run polaris -- librarian packet <cluster-id>
+polaris librarian packet <cluster-id>
 ```
 
 Then dispatches the Librarian as a bounded subagent session.

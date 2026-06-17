@@ -52,7 +52,7 @@ stop_rules:
 3. Verify the working tree is clean.
 4. Run:
    ```bash
-   npm run polaris -- map index && npm run polaris -- finalize run --state-file .taskchain_artifacts/polaris-run/current-state.json
+   polaris map index && polaris finalize run --state-file .taskchain_artifacts/polaris-run/current-state.json
    ```
 
    `map index` rebuilds the atlas so finalize has accurate route data. `finalize run` then executes the full finalize sequence:

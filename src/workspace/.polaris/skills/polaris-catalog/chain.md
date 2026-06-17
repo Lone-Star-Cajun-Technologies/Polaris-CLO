@@ -29,9 +29,9 @@ Read the current step's file in `steps/` before acting. Do not read ahead.
 Always use the repo-local Polaris CLI:
 
 ```
-npm run polaris -- docs ingest --file <path>
-npm run polaris -- doctrine draft <path>
-npm run polaris -- map update --changed
+polaris docs ingest --file <path>
+polaris doctrine draft <path>
+polaris map update --changed
 ```
 
 Never assume a globally linked `polaris` command exists.

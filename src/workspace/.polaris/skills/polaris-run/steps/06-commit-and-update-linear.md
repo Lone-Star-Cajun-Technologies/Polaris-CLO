@@ -42,12 +42,12 @@ stop_rules:
    Followed by: what was done, commit hash, validation result from step 05.
 4. Mark the child Done in Linear **only if** its acceptance criteria are satisfied.
    - If criteria are not met: leave the child open, add a comment with the gap, treat as blocked.
-5. Do not run `npm run polaris -- map update --changed` per child. Map update belongs at final delivery/session end unless runtime requirements explicitly override this.
+5. Do not run `polaris map update --changed` per child. Map update belongs at final delivery/session end unless runtime requirements explicitly override this.
 
 ## Blocker escalation
 
 If the child cannot be marked Done:
-- Run `npm run polaris -- loop abort "<reason>"`.
+- Run `polaris loop abort "<reason>"`.
 - Add a comment with the unblock condition.
 - Halt. Do not continue to the next child.
 

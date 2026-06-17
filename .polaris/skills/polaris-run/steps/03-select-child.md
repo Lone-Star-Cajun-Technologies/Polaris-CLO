@@ -41,7 +41,7 @@ stop_rules:
    - Do not push. Do not create a PR.
 5. If clusters.json exists, use it to determine execution order and dependencies. If absent, use the child issue ordering from Linear (lowest-numbered first) as a last-resort fallback — do not improvise ordering from chat reasoning or assumptions.
 6. Verify the selected child is not blocked in Linear. If blocked:
-   - Run `npm run polaris -- loop abort "<reason>"`.
+   - Run `polaris loop abort "<reason>"`.
    - Report blocked state and halt. Do not skip to a later child.
 7. Set the selected child as `active_child`.
 

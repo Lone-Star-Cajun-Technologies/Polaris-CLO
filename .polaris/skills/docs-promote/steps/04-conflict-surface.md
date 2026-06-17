@@ -16,7 +16,7 @@ Surface every conflict before asking for approval. The agent must not approve an
 Run the dry gate for each:
 
 ```bash
-npm run polaris -- doctrine spec-promote <path>
+polaris doctrine spec-promote <path>
 ```
 
 Capture the full stdout. This is the conflict report. Do **not** pass `--approve`.

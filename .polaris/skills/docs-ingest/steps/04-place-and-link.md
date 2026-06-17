@@ -21,9 +21,9 @@ Execute placements for all files that cleared steps 02–03. High-confidence, no
 3. **Check for existing file** at the target path. If a file already exists there: halt for that file and report. Do not overwrite without explicit approval.
 
 4. **Use the Polaris CLI** — do not move files manually. The CLI handles provenance, map updates, and duplicate detection:
-   - `spec-raw` or low-confidence fallback: `npm run polaris -- docs ingest --file <path>` (CLI routes to `smartdocs/raw/`; if source is already there, no move occurs)
-   - `doctrine-candidate`: `npm run polaris -- doctrine draft <path>`
-   - All other classifications: use `npm run polaris -- docs ingest --file <path>`
+   - `spec-raw` or low-confidence fallback: `polaris docs ingest --file <path>` (CLI routes to `smartdocs/raw/`; if source is already there, no move occurs)
+   - `doctrine-candidate`: `polaris doctrine draft <path>`
+   - All other classifications: use `polaris docs ingest --file <path>`
    - If source is already in `smartdocs/` (reclassification): update front-matter only, re-run ingest to refresh provenance.
    - Do not write anything to root `docs/`.
 
@@ -37,7 +37,7 @@ Execute placements for all files that cleared steps 02–03. High-confidence, no
 
 6. **Provenance record** — the CLI writes `<filename>.provenance.json` alongside the placed file automatically. Verify it exists after placement.
 
-7. **Update Polaris map** — the CLI calls `updateMapEntry` internally. After the batch: run `npm run polaris -- map update --changed` to synchronize the atlas.
+7. **Update Polaris map** — the CLI calls `updateMapEntry` internally. After the batch: run `polaris map update --changed` to synchronize the atlas.
 
 ## Hard rules
 
@@ -58,7 +58,7 @@ allowed_files:
 expected_evidence:
   - all approved files placed at correct target paths within smartdocs/
   - provenance records written alongside each placed file
-  - map updated via npm run polaris -- map update --changed
+  - map updated via polaris map update --changed
   - low-confidence files confirmed routed to smartdocs/raw/
   - no placements to root docs/ or high-authority paths without approval
 stop_rules:

@@ -25,7 +25,7 @@ npm install -g polaris
 ### Verify
 
 ```bash
-npm run polaris -- --version
+polaris --version
 ```
 
 If the binary is not found, the skill will attempt `npx --no-install polaris` as a fallback. If that also fails, the tool returns a clear error with install instructions.

@@ -27,7 +27,7 @@ stop and use `polaris-catalog <POL-###>` instead.
 Run the following command:
 
 ```
-npm run polaris -- skill packet promote
+polaris skill packet promote
 ```
 
 - Do not begin work until a packet is returned.
@@ -61,10 +61,10 @@ Use this skill when documents have been ingested and need to be reviewed for pro
 - Read `smartdocs/raw/` and `smartdocs/doctrine/candidate/` to identify promotion candidates
 - Read linked source files (from `linkedMapArea` in provenance sidecar) to verify relevance and staleness
 - Read `smartdocs/doctrine/active/` and `smartdocs/specs/active/` to check for conflicts
-- Call `npm run polaris -- doctrine spec-promote <path>` to surface the conflict report (without `--approve`)
-- Call `npm run polaris -- doctrine spec-promote <path> --approve` **only after** surfacing the report and receiving explicit user confirmation
-- Call `npm run polaris -- doctrine promote <path>` for doctrine candidates that pass governance checks
-- Call `npm run polaris -- doctrine deprecate <path>` for active docs that are superseded or stale
+- Call `polaris doctrine spec-promote <path>` to surface the conflict report (without `--approve`)
+- Call `polaris doctrine spec-promote <path> --approve` **only after** surfacing the report and receiving explicit user confirmation
+- Call `polaris doctrine promote <path>` for doctrine candidates that pass governance checks
+- Call `polaris doctrine deprecate <path>` for active docs that are superseded or stale
 - Emit telemetry events
 
 ## Hard rules — what docs-promote must NOT do
@@ -72,7 +72,7 @@ Use this skill when documents have been ingested and need to be reviewed for pro
 - Auto-promote without surfacing the conflict report first
 - Call `--approve` without explicit user confirmation in the session
 - Mutate source files (`src/`, tests, config)
-- Call `npm run polaris -- loop continue` or `npm run polaris -- finalize`
+- Call `polaris loop continue` or `polaris finalize`
 - Promote to `architecture/` or `decisions/` — those require explicit ADR process
 - Suppress or ignore detected conflicts
 

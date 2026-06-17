@@ -41,7 +41,7 @@ The Foreman does NOT:
 
 Run:
 ```bash
-npm run polaris -- librarian packet <cluster-id>
+polaris librarian packet <cluster-id>
 ```
 
 This generates a `CloseoutLibrarianPacket` at:

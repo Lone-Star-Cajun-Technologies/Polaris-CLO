@@ -270,7 +270,7 @@ reviewPacket?: ReviewPacket;
 ## CLI Changes
 
 ```
-npm run polaris -- docs ingest [options]
+polaris docs ingest [options]
 
 New flags:
   --interactive                     blocking prompts for review-required docs

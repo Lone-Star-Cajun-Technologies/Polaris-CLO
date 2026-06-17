@@ -16,7 +16,7 @@ Query runtime state before acting. Do not infer analysis scope or prior progress
 Always use the repo-local Polaris CLI:
 
 ```
-npm run polaris -- <command>
+polaris <command>
 ```
 
 Never assume a globally linked `polaris` command exists.
@@ -69,7 +69,7 @@ Telemetry file: `.taskchain_artifacts/polaris-analyze/runs/<run-id>/telemetry.js
 |---|---|---|
 | `run-start` | agent | 01 — before any Linear access |
 | `step-complete` | agent | end of every step |
-| `loop-aborted` | `npm run polaris -- loop abort` | any blocker halt |
+| `loop-aborted` | `polaris loop abort` | any blocker halt |
 
 Required fields on every event: `event`, `run_id`, `timestamp`.
 
