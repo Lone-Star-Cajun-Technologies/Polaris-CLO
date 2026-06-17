@@ -1,0 +1,126 @@
+{
+  "schema_version": "1.0",
+  "role": "closeout-librarian",
+  "run_id": "polaris-run-pol-382-2026-06-17-001",
+  "dispatch_id": "de1ca738-611d-4e3c-a8af-29c9dfa474ec",
+  "cluster_id": "POL-382",
+  "status": "success",
+  "commit_sha": "dc012e616400a445f24501b42cc8f12fb70dd0fa",
+  "commit_message": "docs(closeout): reconcile cognition for cluster POL-382\n\nRun: polaris-run-pol-382-2026-06-17-001\nCluster: POL-382\nChildren: POL-383, POL-384, POL-385, POL-386, POL-387, POL-388\nFiles updated:\n- POLARIS.md: 6 files\n- SUMMARY.md: 5 files\n- docs ingested: 0\n- links repaired: 0",
+  "files_committed": [
+    "smartdocs/doctrine/POLARIS.md",
+    "smartdocs/doctrine/SUMMARY.md",
+    "smartdocs/doctrine/active/POLARIS.md",
+    "smartdocs/doctrine/active/SUMMARY.md",
+    "src/cli/POLARIS.md",
+    "src/cli/SUMMARY.md",
+    "src/config/POLARIS.md",
+    "src/config/SUMMARY.md",
+    "src/workspace/.polaris/skills/closeout-librarian/POLARIS.md",
+    "test/POLARIS.md",
+    "test/SUMMARY.md"
+  ],
+  "drift_reconciliation": {
+    "medic_ran": false,
+    "charts_created": [],
+    "drift_observations": [
+      {
+        "type": "canon_mismatch",
+        "target": "smartdocs/doctrine/POLARIS.md and smartdocs/doctrine/active/POLARIS.md",
+        "severity": "low"
+      },
+      {
+        "type": "summary_outdated",
+        "target": "src/cli/SUMMARY.md, src/config/SUMMARY.md, test/SUMMARY.md",
+        "severity": "medium"
+      },
+      {
+        "type": "route_guidance_outdated",
+        "target": "src/workspace/.polaris/skills/closeout-librarian/POLARIS.md",
+        "severity": "low"
+      }
+    ],
+    "chart_links_required": false,
+    "charts_linked": []
+  },
+  "polaris_md_updates": [
+    {
+      "file": "smartdocs/doctrine/POLARIS.md",
+      "action": "update",
+      "change_summary": "Corrected canonical path and added operator approval constraint for doctrine candidates."
+    },
+    {
+      "file": "smartdocs/doctrine/active/POLARIS.md",
+      "action": "update",
+      "change_summary": "Corrected canonical path and documented active doctrine promotion gate."
+    },
+    {
+      "file": "src/cli/POLARIS.md",
+      "action": "update",
+      "change_summary": "Documented adoption helper ownership and workspace/provenance/staging constraints."
+    },
+    {
+      "file": "src/config/POLARIS.md",
+      "action": "update",
+      "change_summary": "Documented Polaris-native repo-analysis provider detection and GitNexus boundary."
+    },
+    {
+      "file": "src/workspace/.polaris/skills/closeout-librarian/POLARIS.md",
+      "action": "update",
+      "change_summary": "Aligned bundled closeout-librarian step inventory with current chain steps."
+    },
+    {
+      "file": "test/POLARIS.md",
+      "action": "update",
+      "change_summary": "Promoted draft test route cognition with current integration-test responsibilities."
+    }
+  ],
+  "summary_md_updates": [
+    {
+      "file": "smartdocs/doctrine/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Corrected parent path and added review-gated doctrine promotion context."
+    },
+    {
+      "file": "smartdocs/doctrine/active/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Corrected parent path and documented active doctrine authority boundary."
+    },
+    {
+      "file": "src/cli/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Refreshed adoption current-state summary for bundled assets, provenance, and fresh-repo proof."
+    },
+    {
+      "file": "src/config/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Refreshed provider detection summary for Polaris graph repo analysis."
+    },
+    {
+      "file": "test/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Promoted draft test summary with current fresh-repo adoption proof coverage."
+    }
+  ],
+  "docs_ingested": [],
+  "docs_archived": [
+    {
+      "source_path": "smartdocs/raw/pol-381-canonical-doctrine-genesis-analysis.md",
+      "target_path": null,
+      "action": "archive",
+      "reason": "One-time analysis that drove POL-382 implementation; no ongoing active authority promotion required."
+    }
+  ],
+  "yaml_updates": [],
+  "cognition_archived": [],
+  "link_validation": {
+    "total_checked": 3,
+    "valid": 3,
+    "broken": 0,
+    "repaired": 0,
+    "unrepairable": []
+  },
+  "blockers": [],
+  "reconciled_at": "2026-06-17T19:10:46Z",
+  "evidence_summary": "Reconciled route cognition and summaries for doctrine, CLI adoption, config provider detection, the bundled closeout-librarian skill packet, and integration tests. POL-381 raw analysis was treated as a one-time source analysis, not promoted to active authority. Link checks across touched docs were valid. A single closeout documentation commit was created and sealed for finalize."
+}

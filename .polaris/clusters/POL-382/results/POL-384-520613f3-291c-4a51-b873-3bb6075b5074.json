@@ -1,0 +1,23 @@
+{
+  "child_id": "POL-384",
+  "status": "done",
+  "commit": "7ada22a7fa3b11cb4b258207d7d48aed7be9c858",
+  "validation": {
+    "passed": [
+      "npm run build",
+      "npm test",
+      "npx vitest run src/cli/adopt-rules.test.ts",
+      "polaris-cli graph build",
+      "polaris-cli graph query runInit",
+      "polaris-cli graph impact runInit",
+      "rg -n GitNexus|gitnexus .polaris/skills src/workspace/.polaris/skills POLARIS_RULES.md src/cli/adopt-rules.ts polaris.config.json (0 matches)"
+    ]
+  },
+  "next_recommended_action": "continue",
+  "tracker_updated": false,
+  "state_updated": false,
+  "telemetry_updated": false,
+  "run_id": "polaris-run-pol-382-2026-06-17-001",
+  "error_message": null,
+  "compact_return_errors": []
+}

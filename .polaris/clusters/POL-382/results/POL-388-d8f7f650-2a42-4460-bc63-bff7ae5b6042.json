@@ -1,0 +1,21 @@
+{
+  "child_id": "POL-388",
+  "status": "done",
+  "commit": "bdce211aa26c1819595938673dcb40ff4db401f5",
+  "validation": {
+    "passed": [
+      "npm run build",
+      "npm test",
+      "npx vitest run src/cli/init.test.ts src/cli/adopt-command.test.ts src/cli/adopt-assets.test.ts src/cli/adopt-report.test.ts test/integration/fresh-repo-adoption.test.ts",
+      "npm pack --dry-run",
+      "polaris-cli init --adopt --dry-run"
+    ]
+  },
+  "next_recommended_action": "continue",
+  "tracker_updated": false,
+  "state_updated": false,
+  "telemetry_updated": false,
+  "run_id": "polaris-run-pol-382-2026-06-17-001",
+  "error_message": null,
+  "compact_return_errors": []
+}

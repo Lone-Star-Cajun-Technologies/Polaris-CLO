@@ -1,0 +1,21 @@
+{
+  "child_id": "POL-383",
+  "status": "done",
+  "commit": "88ec28a3b8ba269dcafb223cceff826ad70170cf",
+  "validation": {
+    "passed": [
+      "npm run build",
+      "npm test",
+      "npx vitest run src/cli/adopt-rules.test.ts",
+      "rg -n \"npm run polaris --\" .polaris/skills src/workspace/.polaris/skills POLARIS_RULES.md src/cli/adopt-rules.ts",
+      "polaris-cli --help"
+    ]
+  },
+  "next_recommended_action": "continue",
+  "tracker_updated": false,
+  "state_updated": false,
+  "telemetry_updated": false,
+  "run_id": "polaris-run-pol-382-2026-06-17-001",
+  "error_message": null,
+  "compact_return_errors": []
+}
