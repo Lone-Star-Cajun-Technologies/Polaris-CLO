@@ -161,6 +161,7 @@ function dispatchCanonAgent(options: {
 
   const cfg = providers[providerName];
   const docList = doctrineDocs
+    .slice(0, 30)
     .map((d, i) => `${i + 1}. [${d.title}] path: ${d.path}`)
     .join("\n");
 
