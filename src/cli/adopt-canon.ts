@@ -229,8 +229,11 @@ If no doctrine docs are relevant, return an empty array for relevant_docs.`;
       const text = await callAnthropicAPI(prompt);
       const parsed = parseCanonResponse(text);
       if (parsed) return parsed;
+      console.log(`  API parse failed, raw: ${text.slice(0, 200)}`);
+      return null;
     } catch (e) {
-      console.log(`  API error: ${(e as Error).message}, falling back to CLI`);
+      console.log(`  API error: ${(e as Error).message}`);
+      return null;
     }
   }
 
