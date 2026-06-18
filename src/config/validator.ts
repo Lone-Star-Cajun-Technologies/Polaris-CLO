@@ -34,6 +34,7 @@ const SUPPORTED_GRAPH_INVALIDATION_TRIGGERS = [
   "config-change",
 ] as const;
 const SUPPORTED_EXECUTION_ROLES = [
+  "foreman",
   "orchestrator",
   "startup",
   "worker",

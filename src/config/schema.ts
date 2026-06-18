@@ -19,6 +19,7 @@ export interface ProviderConfig {
 }
 
 export type ExecutionRole =
+  | "foreman"
   | "orchestrator"
   | "startup"
   | "worker"
