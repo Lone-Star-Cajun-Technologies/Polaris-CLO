@@ -104,7 +104,7 @@ export interface BootstrapInitOptions {
 export const BOOTSTRAP_REQUIRED_ERROR =
   "Run state must be initialized through 'polaris loop bootstrap' before dispatch. " +
   "Parent sessions may not hand-create run state. " +
-  "Use: npm run polaris -- loop bootstrap --cluster-id <ID> --children <CSV>";
+  "Use: npx polaris loop bootstrap --cluster-id <ID> --children <CSV>";
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Seal helpers
@@ -327,7 +327,7 @@ export function runLoopBootstrapInit(options: BootstrapInitOptions): Promise<voi
     `Bootstrap complete. State initialized at: ${stateFile}\n` +
     `Run ID: ${runId}\n` +
     `Children: ${openChildren.join(", ")}\n` +
-    `Next: npm run polaris -- loop dispatch\n`,
+    `Next: npx polaris loop dispatch\n`,
   );
 
   return clusterStateInitPromise;

@@ -22,6 +22,7 @@ export type ExecutionRole =
   | "orchestrator"
   | "startup"
   | "worker"
+  | "foreman"
   | "analyst"
   | "analysis"
   | "repair"

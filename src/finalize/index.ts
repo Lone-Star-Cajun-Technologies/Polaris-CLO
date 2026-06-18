@@ -138,7 +138,7 @@ function checkLibrarianGate(repoRoot: string, clusterId: string): string | null 
   if (!latestPacket) {
     return (
       "Closeout Librarian has not been dispatched for this cluster.\n" +
-      `  1. Generate packet:  npm run polaris -- librarian packet ${clusterId} --state-file <state-file>\n` +
+      `  1. Generate packet:  npx polaris librarian packet ${clusterId} --state-file <state-file>\n` +
       `  2. Dispatch the Librarian with the generated packet path as the sole session prompt.\n` +
       `  3. Wait for the Librarian to write its sealed result.\n` +
       `  4. Re-run finalize.\n` +
@@ -149,12 +149,12 @@ function checkLibrarianGate(repoRoot: string, clusterId: string): string | null 
   try {
     packetJson = JSON.parse(readFileSync(latestPacket, "utf-8")) as Record<string, unknown>;
   } catch {
-    return `Cannot read Librarian packet at ${latestPacket}. Regenerate with: npm run polaris -- librarian packet ${clusterId}`;
+    return `Cannot read Librarian packet at ${latestPacket}. Regenerate with: npx polaris librarian packet ${clusterId}`;
   }
 
   const resultPath = packetJson["result_path"];
   if (typeof resultPath !== "string") {
-    return `Librarian packet is malformed: missing result_path. Regenerate with: npm run polaris -- librarian packet ${clusterId}`;
+    return `Librarian packet is malformed: missing result_path. Regenerate with: npx polaris librarian packet ${clusterId}`;
   }
 
   if (!existsSync(resultPath)) {
@@ -186,18 +186,22 @@ function checkLibrarianGate(repoRoot: string, clusterId: string): string | null 
     return `Librarian result run_id mismatch (packet: ${packetJson["run_id"]}, result: ${result.run_id}).`;
   }
 
-  // Validate files_committed against packet scope constraints
+  // Validate files_committed against packet scope constraints.
+  // allowed_write_paths and prohibited_write_paths in the packet are absolute paths.
+  // files_committed in the result are repo-relative paths (git output). Resolve each
+  // to absolute before comparing so the patterns match correctly.
   const allowedWritePaths = (packetJson["allowed_write_paths"] ?? []) as string[];
   const prohibitedWritePaths = (packetJson["prohibited_write_paths"] ?? []) as string[];
   const filesCommitted = result.files_committed ?? [];
 
   for (const file of filesCommitted) {
-    const prohibitedMatch = prohibitedWritePaths.find((pattern) => patternMatchesPath(pattern, file));
+    const absFile = resolve(repoRoot, file);
+    const prohibitedMatch = prohibitedWritePaths.find((pattern) => patternMatchesPath(pattern, absFile));
     if (prohibitedMatch) {
       return `Librarian wrote to prohibited path: ${file} (matched pattern: ${prohibitedMatch})`;
     }
 
-    const allowedMatch = allowedWritePaths.find((pattern) => patternMatchesPath(pattern, file));
+    const allowedMatch = allowedWritePaths.find((pattern) => patternMatchesPath(pattern, absFile));
     if (allowedMatch) continue; // explicitly allowed
 
     return `Librarian wrote to out-of-scope path: ${file} (not in allowed_write_paths)`;

@@ -166,7 +166,7 @@ describe("runLoopAbort", () => {
       pr_url: null,
       blocker: {
         summary: "test blocker",
-        unblock_condition: `Resolve blocker then run: npm run polaris -- loop run POL-5`,
+        unblock_condition: `Resolve blocker then run: npx polaris loop run POL-5`,
       },
     });
   });
@@ -191,7 +191,7 @@ describe("runLoopAbort", () => {
       expect(exitSpy).toHaveBeenCalledWith(0);
       expect(stderrMessages.some((m) => m.includes("Loop aborted"))).toBe(true);
       expect(stderrMessages.some((m) => m.includes("blocked by missing dep"))).toBe(true);
-      expect(stderrMessages.some((m) => m.includes("npm run polaris -- loop run"))).toBe(true);
+      expect(stderrMessages.some((m) => m.includes("npx polaris loop run"))).toBe(true);
     } finally {
       exitSpy.mockRestore();
       stderrSpy.mockRestore();
