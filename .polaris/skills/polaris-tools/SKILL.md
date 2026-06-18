@@ -1,7 +1,7 @@
 ---
 name: polaris-tools
 description: Exposes compact read-only Polaris status helpers. Direct run, ungated loop continuation, and finalize remain operator-only.
-role: foreman
+role: orchestrator
 role_file: .polaris/roles/foreman.md
 ---
 

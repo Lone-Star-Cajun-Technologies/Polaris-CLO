@@ -200,7 +200,7 @@ export async function generatePolarisRules(
   inventory: RepoScanInventory,
   options: GeneratePolarisRulesOptions = {},
 ): Promise<void> {
-  const { overwrite = true, workspaceDir } = options;
+  const { overwrite = false, workspaceDir } = options;
   const outputPath = join(repoRoot, "POLARIS_RULES.md");
 
   if (existsSync(outputPath) && !overwrite) {
