@@ -50,7 +50,7 @@ function appendBlockedLedgerEvent(repoRoot: string, state: LoopState, childId: s
     timestamp: new Date().toISOString(),
     blocker: {
       summary: reason,
-      unblock_condition: `Resolve blocker then run: npm run polaris -- loop run ${state.cluster_id}`,
+      unblock_condition: `Resolve blocker then run: npx polaris loop run ${state.cluster_id}`,
     },
   } satisfies RunBlockedEvent);
 }
@@ -233,7 +233,7 @@ export function runLoopAbort(options: AbortOptions): void {
   });
 
   process.stderr.write(
-    `Loop aborted. Reason: ${reason}. Resolve blocker then run: npm run polaris -- loop run ${updatedState.cluster_id}\n`,
+    `Loop aborted. Reason: ${reason}. Resolve blocker then run: npx polaris loop run ${updatedState.cluster_id}\n`,
   );
   process.exit(0);
 }

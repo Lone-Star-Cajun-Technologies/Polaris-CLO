@@ -1,4 +1,4 @@
-import { existsSync, renameSync } from "node:fs";
+import { existsSync, readFileSync, renameSync } from "node:fs";
 import { join } from "node:path";
 import { readClusterState } from "../cluster-state/store.js";
 import { LocalGraph } from "../tracker/local-graph.js";
@@ -40,7 +40,7 @@ async function loadOrSyncGraph(clusterId: string, repoRoot: string): Promise<Loc
     const config = loadConfig(repoRoot);
     if (!config.tracker?.linear?.enabled) {
       throw new Error(
-        `No local cluster graph found for ${clusterId}. Run 'npm run polaris -- tracker sync-in ${clusterId}' or bootstrap with --children.`,
+        `No local cluster graph found for ${clusterId}. Run 'npx polaris tracker sync-in ${clusterId}' or bootstrap with --children.`,
       );
     }
 
@@ -96,7 +96,7 @@ function topoSort(children: string[], getDeps: (id: string) => string[]): string
   return sorted;
 }
 
-function buildBootstrapPlan(clusterId: string, graph: LocalGraph): BootstrapPlan {
+function buildBootstrapPlan(clusterId: string, graph: LocalGraph, repoRoot: string): BootstrapPlan {
   const activeCluster = graph.getActiveCluster();
 
   // Exclude the cluster root from runnable children when it has implementation
@@ -108,7 +108,15 @@ function buildBootstrapPlan(clusterId: string, graph: LocalGraph): BootstrapPlan
     ? activeCluster.children.filter((id) => id !== clusterRoot)
     : activeCluster.children;
   const unsortedChildren = runnableChildren.length > 0 ? runnableChildren : [clusterId];
-  const openChildren = topoSort(unsortedChildren, (id) => graph.getDependencies(id));
+
+  // If a cluster-plan.json exists, use its children order as the preferred
+  // tiebreaker within each ready wave of the topological sort. The plan order
+  // reflects the analyst's intended sequencing; clusters.json order is whatever
+  // the tracker returned, which may be arbitrary.
+  const planOrder = readClusterPlanOrder(clusterId, repoRoot);
+  const preferredOrder = applyPlanOrder(unsortedChildren, planOrder);
+
+  const openChildren = topoSort(preferredOrder, (id) => graph.getDependencies(id));
 
   const openChildrenMeta: BootstrapPlan["openChildrenMeta"] = {};
 
@@ -128,6 +136,28 @@ function buildBootstrapPlan(clusterId: string, graph: LocalGraph): BootstrapPlan
   }
 
   return { openChildren, openChildrenMeta };
+}
+
+function readClusterPlanOrder(clusterId: string, repoRoot: string): string[] {
+  const planPath = join(repoRoot, ".polaris", "clusters", clusterId, "cluster-plan.json");
+  if (!existsSync(planPath)) return [];
+  try {
+    const plan = JSON.parse(readFileSync(planPath, "utf-8")) as { children?: Array<{ id: string }> };
+    if (Array.isArray(plan.children)) {
+      return plan.children.map((c) => c.id).filter(Boolean);
+    }
+  } catch {
+    // malformed plan — fall back to no preferred order
+  }
+  return [];
+}
+
+function applyPlanOrder(children: string[], planOrder: string[]): string[] {
+  if (planOrder.length === 0) return children;
+  const childSet = new Set(children);
+  const ordered = planOrder.filter((id) => childSet.has(id));
+  const remaining = children.filter((id) => !ordered.includes(id));
+  return [...ordered, ...remaining];
 }
 
 function preserveMismatchedState(stateFile: string): void {
@@ -260,6 +290,7 @@ export async function ensureClusterRunState(options: EnsureClusterRunStateOption
   const { openChildren, openChildrenMeta } = buildBootstrapPlan(
     clusterId,
     await loadOrSyncGraph(clusterId, repoRoot),
+    repoRoot,
   );
 
   await bootstrapHandler({

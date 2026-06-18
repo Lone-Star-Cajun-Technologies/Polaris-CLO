@@ -37,6 +37,7 @@ const SUPPORTED_EXECUTION_ROLES = [
   "orchestrator",
   "startup",
   "worker",
+  "foreman",
   "analyst",
   "analysis",
   "repair",

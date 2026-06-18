@@ -88,15 +88,20 @@
       },
       "librarian": {
         "providers": [
-          "claude",
           "codex",
           "devin",
-          "copilot"
+          "copilot",
+          "claude"
         ]
       },
       "finalizer": {
         "providers": [
           "copilot"
+        ]
+      },
+      "foreman": {
+        "providers": [
+          "codex"
         ]
       }
     }

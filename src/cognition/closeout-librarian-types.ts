@@ -315,6 +315,9 @@ export function validateCloseoutLibrarianResult(value: unknown): string[] {
   if (r["commit_sha"] !== null && typeof r["commit_sha"] !== "string") {
     errors.push("commit_sha must be a string or null");
   }
+  if (typeof r["commit_message"] !== "string") {
+    errors.push("commit_message must be a string");
+  }
   if (!Array.isArray(r["files_committed"])) {
     errors.push("files_committed must be an array");
   }

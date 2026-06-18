@@ -42,7 +42,7 @@ import type { LoopState } from "./checkpoint.js";
  * This is the canonical error message for dispatch boundary violations.
  */
 export const INLINE_EXECUTION_ERROR =
-  "Child execution requires dispatch boundary. Parent/orchestrator may not implement child inline. Use npm run polaris -- loop dispatch.";
+  "Child execution requires dispatch boundary. Parent/orchestrator may not implement child inline. Use npx polaris loop dispatch.";
 
 /**
  * Error emitted when PR creation is attempted without a passing Librarian gate.
@@ -54,7 +54,7 @@ export const LIBRARIAN_GATE_ERROR =
  * Error emitted when `polaris loop continue` is called without a prior dispatch.
  */
 export const DISPATCH_REQUIRED_ERROR =
-  "Dispatch required before continuation. Call `npm run polaris -- loop dispatch` first, then run the worker before calling continue.";
+  "Dispatch required before continuation. Call `npx polaris loop dispatch` first, then run the worker before calling continue.";
 
 // ──────────────────────────────────────────────────────────────────────────────
 // State machine types
@@ -241,7 +241,7 @@ export function assertNoActiveChildBeforeDispatch(
     throw new Error(
       `active_child is already set to "${state.active_child}". Previous dispatch was not completed. ` +
         INLINE_EXECUTION_ERROR +
-        " Use `npm run polaris -- loop abort` to reset blocked state.",
+        " Use `npx polaris loop abort` to reset blocked state.",
     );
   }
 }
