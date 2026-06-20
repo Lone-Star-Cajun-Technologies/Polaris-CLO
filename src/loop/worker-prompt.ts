@@ -83,6 +83,13 @@ export interface WorkerPromptInput {
   /** Expanded issue context — included only in full mode. */
   issueContext?: IssueContext;
   mode: WorkerPromptMode;
+  /**
+   * Controls injection of the implementation discipline ladder.
+   * - "full": full 6-rung ladder including inline shortcut convention (default)
+   * - "lite": ladder without the inline shortcut convention
+   * - "off": omit entirely
+   */
+  simplicityMode?: "full" | "lite" | "off";
 }
 
 // ── Prompt metrics ────────────────────────────────────────────────────────────
@@ -98,6 +105,34 @@ export interface WorkerPromptMetrics {
 export interface WorkerPromptResult {
   prompt: string;
   metrics: WorkerPromptMetrics;
+}
+
+// ── Discipline section ────────────────────────────────────────────────────────
+
+function buildDisciplineSection(mode: "full" | "lite" | "off"): string[] {
+  if (mode === "off") return [];
+  const lines: string[] = [
+    "## Implementation Discipline",
+    "Before writing code, stop at the first rung that holds:",
+    "",
+    "1. Does this need to exist?   → no: skip it (YAGNI)",
+    "2. Stdlib does it?            → use it",
+    "3. Native platform feature?   → use it",
+    "4. Installed dependency?      → use it",
+    "5. One line?                  → one line",
+    "6. Only then: the minimum that works",
+    "",
+    "Lazy, not negligent: validation, error handling, security, and accessibility are never on the chopping block.",
+  ];
+  if (mode === "full") {
+    lines.push(
+      "",
+      "When you defer a simplification for later, mark it inline:",
+      "  // ponytail: <what you deferred and why>",
+    );
+  }
+  lines.push("");
+  return lines;
 }
 
 // ── Builder ───────────────────────────────────────────────────────────────────
@@ -126,6 +161,11 @@ export function buildWorkerPrompt(input: WorkerPromptInput): WorkerPromptResult 
   lines.push('## Goal');
   lines.push(input.goal.trim());
   lines.push('');
+
+  // ── Implementation Discipline ─────────────────────────────────────────────
+  for (const line of buildDisciplineSection(input.simplicityMode ?? 'full')) {
+    lines.push(line);
+  }
 
   // ── Scope ─────────────────────────────────────────────────────────────────
   lines.push('## Scope');
