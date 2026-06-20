@@ -409,6 +409,12 @@ export interface CompileImplPacketInput {
    * Pass 'full' for cross-cutting or architectural children.
    */
   promptMode?: WorkerPromptMode;
+  /**
+   * Simplicity discipline mode for the worker prompt.
+   * Resolved by dispatch from run state + project config.
+   * Defaults to "full" when omitted.
+   */
+  simplicityMode?: "full" | "lite" | "off";
 }
 
 /**
@@ -471,6 +477,7 @@ export function compileImplPacket(input: CompileImplPacketInput): WorkerPacket {
     allowedScope: resolvedScope,
     validationCommands: resolvedValidation,
     mode: promptMode,
+    simplicityMode: input.simplicityMode,
   });
 
   return {

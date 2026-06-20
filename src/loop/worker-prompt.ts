@@ -332,6 +332,7 @@ export interface BuildPromptFromPacketInput {
   allowedScope?: string[];
   validationCommands?: string[];
   mode: WorkerPromptMode;
+  simplicityMode?: "full" | "lite" | "off";
 }
 
 /**
@@ -370,5 +371,6 @@ export function buildPromptFromPacketInput(
     telemetryFile: input.telemetryFile,
     issueContext: input.issueContext,
     mode: input.mode,
+    simplicityMode: input.simplicityMode,
   });
 }

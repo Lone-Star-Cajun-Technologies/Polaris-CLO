@@ -219,6 +219,25 @@ describe("compileImplPacket", () => {
   });
 });
 
+// ── compileImplPacket simplicityMode ─────────────────────────────────────────
+
+describe("compileImplPacket simplicityMode threading", () => {
+  it("injects discipline section when simplicityMode is full", () => {
+    const packet = compileImplPacket({ ...BASE, childId: "POL-121", simplicityMode: "full" });
+    expect(packet.instructions.primary_goal).toContain("## Implementation Discipline");
+  });
+
+  it("omits discipline section when simplicityMode is off", () => {
+    const packet = compileImplPacket({ ...BASE, childId: "POL-121", simplicityMode: "off" });
+    expect(packet.instructions.primary_goal).not.toContain("## Implementation Discipline");
+  });
+
+  it("defaults to full (includes discipline section) when simplicityMode is omitted", () => {
+    const packet = compileImplPacket({ ...BASE, childId: "POL-121" });
+    expect(packet.instructions.primary_goal).toContain("## Implementation Discipline");
+  });
+});
+
 // ── compileFinalizePacket ─────────────────────────────────────────────────────
 
 describe("compileFinalizePacket", () => {
