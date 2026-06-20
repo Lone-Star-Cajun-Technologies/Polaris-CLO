@@ -19,6 +19,7 @@ import {
   type WorkerPromptInput,
 } from "./worker-prompt.js";
 import type { LoopState } from "./checkpoint.js";
+import type { LoopState } from "./checkpoint.js";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -346,5 +347,22 @@ describe("buildPromptFromPacketInput", () => {
     expect(metrics.mode).toBe("compact");
     expect(metrics.char_count).toBeGreaterThan(0);
     expect(metrics.estimated_tokens).toBeGreaterThan(0);
+  });
+});
+
+describe("LoopState.simplicity_bypass field", () => {
+  it("accepts simplicity_bypass: true as a valid LoopState field", () => {
+    const state: Partial<LoopState> = { simplicity_bypass: true };
+    expect(state.simplicity_bypass).toBe(true);
+  });
+
+  it("accepts simplicity_bypass: false as a valid LoopState field", () => {
+    const state: Partial<LoopState> = { simplicity_bypass: false };
+    expect(state.simplicity_bypass).toBe(false);
+  });
+
+  it("defaults to undefined when simplicity_bypass is absent", () => {
+    const state: Partial<LoopState> = {};
+    expect(state.simplicity_bypass).toBeUndefined();
   });
 });

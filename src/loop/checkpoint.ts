@@ -187,6 +187,12 @@ export interface LoopState {
    * by dispatch with a hard error directing the operator to re-bootstrap.
    */
   run_bootstrap_seal?: RunBootstrapSeal;
+  /**
+   * When true, the simplicity discipline ladder is omitted from worker prompts for this run.
+   * Set via `polaris simplicity --bypass`; cleared via `polaris simplicity --restore`.
+   * Takes precedence over `polaris.config.json` simplicity.mode.
+   */
+  simplicity_bypass?: boolean;
 }
 
 export interface CheckpointEvent {
