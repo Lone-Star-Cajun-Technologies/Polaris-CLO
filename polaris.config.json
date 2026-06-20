@@ -111,6 +111,9 @@
     "max_children": 6,
     "stop_on_fail": false
   },
+  "simplicity": {
+    "mode": "full"
+  },
   "docs": {
     "ingestBatchSize": 10
   },
