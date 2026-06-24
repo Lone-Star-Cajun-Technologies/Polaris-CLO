@@ -348,3 +348,57 @@ describe("buildPromptFromPacketInput", () => {
     expect(metrics.estimated_tokens).toBeGreaterThan(0);
   });
 });
+
+describe("buildWorkerPrompt simplicity discipline section", () => {
+  it("injects ## Implementation Discipline section by default (undefined mode = full)", () => {
+    const { prompt } = buildWorkerPrompt(makeBaseInput());
+    expect(prompt).toContain("## Implementation Discipline");
+    expect(prompt).toContain("Does this need to exist?");
+    expect(prompt).toContain("ponytail:");
+  });
+
+  it("injects full discipline section when simplicityMode is full", () => {
+    const { prompt } = buildWorkerPrompt(makeBaseInput({ simplicityMode: "full" }));
+    expect(prompt).toContain("## Implementation Discipline");
+    expect(prompt).toContain("Does this need to exist?");
+    expect(prompt).toContain("ponytail:");
+  });
+
+  it("injects discipline section without inline shortcut note when simplicityMode is lite", () => {
+    const { prompt } = buildWorkerPrompt(makeBaseInput({ simplicityMode: "lite" }));
+    expect(prompt).toContain("## Implementation Discipline");
+    expect(prompt).toContain("Does this need to exist?");
+    expect(prompt).not.toContain("ponytail:");
+  });
+
+  it("omits ## Implementation Discipline when simplicityMode is off", () => {
+    const { prompt } = buildWorkerPrompt(makeBaseInput({ simplicityMode: "off" }));
+    expect(prompt).not.toContain("## Implementation Discipline");
+  });
+
+  it("discipline section appears after ## Goal and before ## Scope", () => {
+    const { prompt } = buildWorkerPrompt(makeBaseInput({ simplicityMode: "full" }));
+    const goalPos = prompt.indexOf("## Goal");
+    const disciplinePos = prompt.indexOf("## Implementation Discipline");
+    const scopePos = prompt.indexOf("## Scope");
+    expect(goalPos).toBeLessThan(disciplinePos);
+    expect(disciplinePos).toBeLessThan(scopePos);
+  });
+});
+
+describe("LoopState.simplicity_bypass field", () => {
+  it("accepts simplicity_bypass: true as a valid LoopState field", () => {
+    const state: Partial<LoopState> = { simplicity_bypass: true };
+    expect(state.simplicity_bypass).toBe(true);
+  });
+
+  it("accepts simplicity_bypass: false as a valid LoopState field", () => {
+    const state: Partial<LoopState> = { simplicity_bypass: false };
+    expect(state.simplicity_bypass).toBe(false);
+  });
+
+  it("defaults to undefined when simplicity_bypass is absent", () => {
+    const state: Partial<LoopState> = {};
+    expect(state.simplicity_bypass).toBeUndefined();
+  });
+});

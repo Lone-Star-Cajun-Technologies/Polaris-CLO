@@ -338,4 +338,14 @@ export interface PolarisConfig {
      */
     level?: "standard" | "strict" | "minimal";
   };
+  /**
+   * Controls the implementation discipline ladder injected into every worker prompt.
+   * - "full": inject the full 6-rung ladder including inline shortcut convention (default)
+   * - "lite": inject the ladder without the inline shortcut convention
+   * - "off": do not inject; workers receive no simplicity guidance
+   * Per-run bypass via `polaris simplicity --bypass` overrides this setting.
+   */
+  simplicity?: {
+    mode?: "full" | "lite" | "off";
+  };
 }

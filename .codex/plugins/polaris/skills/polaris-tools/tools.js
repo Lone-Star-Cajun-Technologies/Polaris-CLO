@@ -10,11 +10,9 @@
  *   node tools.js polaris_loop_status
  */
 
-'use strict';
-
-const { spawnSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+let spawnSync;
+let fs;
+let path;
 
 // ── binary resolution ──────────────────────────────────────────────────────
 
@@ -171,21 +169,32 @@ function unknownTool(tool) {
 
 // ── dispatch ───────────────────────────────────────────────────────────────
 
-const [, , tool, ...rest] = process.argv;
+async function main() {
+  ({ spawnSync } = await import('node:child_process'));
+  fs = await import('node:fs');
+  path = await import('node:path');
 
-switch (tool) {
-  case 'polaris_run':
-    operatorOnly('polaris_run', 'polaris run <issue_id>');
-    break;
-  case 'polaris_loop_continue':
-    operatorOnly('polaris_loop_continue', 'polaris loop continue');
-    break;
-  case 'polaris_status':
-    polarisStatus('polaris_status', ['status', '--json']);
-    break;
-  case 'polaris_loop_status':
-    polarisStatus('polaris_loop_status', ['loop', 'status', '--json']);
-    break;
-  default:
-    unknownTool(tool);
+  const [, , tool] = process.argv;
+
+  switch (tool) {
+    case 'polaris_run':
+      operatorOnly('polaris_run', 'polaris run <issue_id>');
+      break;
+    case 'polaris_loop_continue':
+      operatorOnly('polaris_loop_continue', 'polaris loop continue');
+      break;
+    case 'polaris_status':
+      polarisStatus('polaris_status', ['status', '--json']);
+      break;
+    case 'polaris_loop_status':
+      polarisStatus('polaris_loop_status', ['loop', 'status', '--json']);
+      break;
+    default:
+      unknownTool(tool);
+  }
 }
+
+main().catch((error) => {
+  console.log(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }));
+  process.exit(1);
+});

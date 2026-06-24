@@ -18,6 +18,16 @@ import type { ExecutionRole, RoleProviderPolicy, PolarisConfig } from "../config
 import { readClusterStateSync, writeClusterStateSync } from "../cluster-state/store.js";
 import type { ChildState, ClusterState } from "../cluster-state/types.js";
 import { selectPromptMode } from "./worker-prompt.js";
+
+type SimplicityMode = "full" | "lite" | "off";
+
+function resolveSimplicityMode(
+  state: LoopState,
+  config?: { simplicity?: { mode?: SimplicityMode } },
+): SimplicityMode {
+  if (state.simplicity_bypass) return "off";
+  return config?.simplicity?.mode ?? "full";
+}
 import {
   advanceDispatchEpoch,
   assertNoActiveChildBeforeDispatch,
@@ -886,6 +896,7 @@ function buildPacket(
   telemetryFile: string,
   repoRoot: string,
   resultFile: string,
+  config?: Required<PolarisConfig>,
 ): WorkerPacket {
   const childMeta = state.open_children_meta?.[childId];
   // Hydrate body from cluster snapshot when runtime state lacks it.
@@ -924,6 +935,7 @@ function buildPacket(
     allowedScope: resolvedScope.length > 0 ? resolvedScope : undefined,
     maxConcurrentWorkers: 1,
     promptMode: selectPromptMode(childId, state),
+    simplicityMode: resolveSimplicityMode(state, config),
     resultFile: canonicalPath(absoluteResultFile(repoRoot, resultFile)),
   });
 }
@@ -1193,6 +1205,7 @@ export function runLoopDispatch(options: DispatchOptions): void {
     telemetryFile,
     options.repoRoot,
     canonicalResultFile,
+    loadedConfig,
   );
 
   const packetFailure = detectPacketGenerationFailure(packet);

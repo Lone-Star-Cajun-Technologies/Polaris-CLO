@@ -28,7 +28,16 @@ describe("SKILL_ROLE_MAP", () => {
 
 describe("SUPPORTED_SKILLS", () => {
   it("includes all supported skills", () => {
-    expect(SUPPORTED_SKILLS).toEqual(["analyze", "run", "ingest", "promote", "triage", "review"]);
+    expect(SUPPORTED_SKILLS).toEqual([
+      "analyze",
+      "run",
+      "ingest",
+      "promote",
+      "triage",
+      "review",
+      "catalog",
+      "reconcile",
+    ]);
   });
 });
 
@@ -200,6 +209,29 @@ describe("generateSkillPacket", () => {
       const packet = generateSkillPacket("promote", DEFAULT_CONFIG);
       const prohibited = packet.prohibited_actions.join(" ");
       expect(prohibited).toContain("--approve");
+    });
+  });
+
+  describe("catalog packet", () => {
+    it("authorizes bounded cognition and raw document classification", () => {
+      const packet = generateSkillPacket("catalog", DEFAULT_CONFIG);
+
+      expect(packet.active_role).toBe("Librarian");
+      expect(packet.authority_boundaries.join(" ")).toContain("smartdocs/raw/");
+      expect(packet.allowed_outputs.join(" ")).toContain("POLARIS.md");
+      expect(packet.prohibited_actions.join(" ")).toContain("low-confidence");
+      expect(packet.prohibited_actions.join(" ")).toContain("Git push");
+    });
+  });
+
+  describe("reconcile packet", () => {
+    it("authorizes cognition updates while prohibiting document lifecycle actions", () => {
+      const packet = generateSkillPacket("reconcile", DEFAULT_CONFIG);
+
+      expect(packet.active_role).toBe("Librarian");
+      expect(packet.allowed_outputs.join(" ")).toContain("SUMMARY.md");
+      expect(packet.prohibited_actions.join(" ")).toContain("Move, ingest, classify, or promote documents");
+      expect(packet.prohibited_actions.join(" ")).toContain("source code");
     });
   });
 

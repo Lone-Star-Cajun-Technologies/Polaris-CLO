@@ -28,6 +28,7 @@ import { createLibrarianCommand } from "./librarian.js";
 import { createMedicCommand } from "./medic.js";
 import { runWelfareCheck, printWelfareCheckReport } from "../map/welfare.js";
 import { createAdoptCommand } from "./adopt-command.js";
+import { runSimplicityCommand } from "../loop/simplicity.js";
 
 export interface PolarisCommandHandlers {
   runLoopStatus?: typeof runLoopStatus;
@@ -162,6 +163,20 @@ export function createPolarisCommand(options: PolarisCommandOptions = {}): Comma
   );
 
   program.addCommand(createAdoptCommand({ repoRoot }));
+
+  program
+    .command("simplicity")
+    .description("View or override the simplicity discipline mode for the active run")
+    .option("--bypass", "Omit the discipline ladder from worker prompts for this run")
+    .option("--restore", "Re-enable the discipline ladder (clear bypass)")
+    .option("--state-file <path>", "Override path to current-state.json")
+    .action((cmdOptions: { bypass?: boolean; restore?: boolean; stateFile?: string }) => {
+      runSimplicityCommand({
+        bypass: !!cmdOptions.bypass,
+        restore: !!cmdOptions.restore,
+        stateFile: resolveStateFile(repoRoot, cmdOptions.stateFile),
+      });
+    });
 
   const agentCmd = new Command("agent").description(
     "Manage Polaris agent provider configuration",
