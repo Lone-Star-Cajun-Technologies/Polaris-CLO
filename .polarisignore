@@ -1,8 +1,22 @@
 # Runtime artifacts — never map these
 .taskchain_artifacts/**
 smartdocs/.obsidian/**
+smartdocs/**
+docs/**
+branding/**
 node_modules/**
 dist/**
 coverage/**
+.polaris/**
+.agents/**
+.claude/**
+.codex/**
+.gemini/**
+.github/**
+.test-scratch/**
+.DS_Store
+.git
+src/POLARIS.md
+src/SUMMARY.md
 *.jsonl
 *.json.bak
