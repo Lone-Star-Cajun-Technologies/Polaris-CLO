@@ -196,13 +196,15 @@ function checkLibrarianGate(repoRoot: string, clusterId: string): string | null 
 
   for (const file of filesCommitted) {
     const absFile = resolve(repoRoot, file);
+
+    // Allowed takes precedence over prohibited — a specific allowed path wins over a broad prohibition.
+    const allowedMatch = allowedWritePaths.find((pattern) => patternMatchesPath(pattern, absFile));
+    if (allowedMatch) continue;
+
     const prohibitedMatch = prohibitedWritePaths.find((pattern) => patternMatchesPath(pattern, absFile));
     if (prohibitedMatch) {
       return `Librarian wrote to prohibited path: ${file} (matched pattern: ${prohibitedMatch})`;
     }
-
-    const allowedMatch = allowedWritePaths.find((pattern) => patternMatchesPath(pattern, absFile));
-    if (allowedMatch) continue; // explicitly allowed
 
     return `Librarian wrote to out-of-scope path: ${file} (not in allowed_write_paths)`;
   }
