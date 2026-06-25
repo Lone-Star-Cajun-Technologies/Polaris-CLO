@@ -2,6 +2,29 @@ export type SkillName = "analyze" | "run" | "ingest" | "promote" | "triage" | "r
 
 export type AgentRole = "Analyst" | "Foreman" | "Librarian" | "Worker";
 
+export type SetupBootstrapMode = "init" | "adopt";
+
+export type SetupBootstrapCheckpoint =
+  | "canon"
+  | "doc-movement"
+  | "instruction-files"
+  | "graph-root"
+  | "route-scaffold"
+  | "source-mutation";
+
+export interface SetupBootstrapPacket {
+  packet_id: string;
+  packet_kind: "setup-bootstrap";
+  active_role: "Foreman";
+  role_file: string;
+  mode: SetupBootstrapMode;
+  authority_boundaries: string[];
+  prohibited_actions: string[];
+  approval_checkpoints: SetupBootstrapCheckpoint[];
+  stop_conditions: string[];
+  generated_at: string;
+}
+
 export interface ConfidencePolicy {
   threshold: number;
   auto_deep_analysis: boolean;

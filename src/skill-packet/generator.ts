@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { SkillPacketConfig } from "../config/schema.js";
-import type { SkillName, AgentRole, SkillPacket } from "./types.js";
+import type { SkillName, AgentRole, SkillPacket, SetupBootstrapMode, SetupBootstrapPacket, SetupBootstrapCheckpoint } from "./types.js";
 
 export const SKILL_ROLE_MAP: Record<SkillName, AgentRole> = {
   analyze: "Analyst",
@@ -267,6 +267,47 @@ function buildReviewPacket(): Omit<SkillPacket, "packet_id" | "skill_name" | "ac
       "Ambiguous packet that requires explicit user input",
       "Ingest error on apply — report and wait for instruction",
     ],
+  };
+}
+
+const SETUP_BOOTSTRAP_CHECKPOINTS: SetupBootstrapCheckpoint[] = [
+  "canon",
+  "doc-movement",
+  "instruction-files",
+  "graph-root",
+  "route-scaffold",
+  "source-mutation",
+];
+
+export function generateSetupBootstrapPacket(mode: SetupBootstrapMode): SetupBootstrapPacket {
+  return {
+    packet_id: randomUUID(),
+    packet_kind: "setup-bootstrap",
+    active_role: "Foreman",
+    role_file: ".polaris/skills/polaris-run/SKILL.md",
+    mode,
+    authority_boundaries: [
+      "Read repository structure and existing configuration files",
+      "Create or update Polaris configuration and scaffold files",
+      "Dispatch Workers for bounded setup sub-tasks",
+      "Coordinate approval checkpoints before advancing to the next setup phase",
+      "Write to .polaris/ directories as part of init or adopt setup",
+      "Update POLARIS.md and SUMMARY.md within the project root",
+    ],
+    prohibited_actions: [
+      "Mutate source files without an approved checkpoint (unapproved mutation is forbidden)",
+      "Implement features directly — all implementation must be delegated to a Worker",
+      "Advance past an approval checkpoint without explicit user confirmation",
+      "Modify tracker state or issue descriptions during setup",
+    ],
+    approval_checkpoints: SETUP_BOOTSTRAP_CHECKPOINTS,
+    stop_conditions: [
+      "All setup phases complete and scaffold is valid",
+      "An approval checkpoint is reached — pause and await user confirmation",
+      "A required configuration value is missing and cannot be inferred",
+      "A Worker returns a failure result during setup",
+    ],
+    generated_at: new Date().toISOString(),
   };
 }
 
