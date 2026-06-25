@@ -1,0 +1,54 @@
+{
+  "schemaVersion": "v2",
+  "source": {
+    "id": "POL-396",
+    "type": "Linear",
+    "analysis": {
+      "id": "POL-392",
+      "doc": "smartdocs/raw/pol-392-foreman-assignment-bootstrap-handoff-design.md"
+    }
+  },
+  "nodes": {
+    "POL-396": {
+      "id": "POL-396",
+      "title": "IMPLEMENT: Foreman assignment and bootstrap handoff",
+      "status": "Backlog",
+      "body": "## Objective\n\nDefine how `polaris init` and `polaris adopt` select/create a Foreman and hand interactive setup work to it via a governed setup-bootstrap packet that encodes and enforces approval checkpoints.\n\n## Context\n\nImplements the design from ANALYZE POL-392 (see `smartdocs/raw/pol-392-foreman-assignment-bootstrap-handoff-design.md`). Shared prerequisite for POL-390 and POL-391. Reuses `agent-setup.ts`, `.polaris/roles/foreman.md`, and `src/skill-packet/`.\n\n## Goal\n\nA Foreman assignment helper and a provider-neutral setup-bootstrap packet that the human-facing setup commands use to launch a governed Foreman that stops at every approval checkpoint.\n\n## Scope\n\n* src/skill-packet/generator.ts\n* src/skill-packet/types.ts\n* src/cli/agent-setup.ts\n* src/cli/init.ts\n* src/cli/adopt-command.ts\n* src/loop/adapters/**\n\n## Acceptance Criteria\n\n- [ ] A `setup-bootstrap` packet kind generates with active_role Foreman, role_file pointer, and the full approval_checkpoints list.\n- [ ] Foreman provider resolves from `execution.providerPolicy.foreman`; prompts if unset.\n- [ ] The packet prohibits unapproved canon/doc/instruction/graph-root/source mutation.\n- [ ] Packet is provider-neutral; provider specifics stay in adapters.\n\n## Validation\n\n* npm run build\n* npx vitest run src/skill-packet src/cli/agent-setup\n\n## Ordering\n\nNone (prerequisite for POL-390 and POL-391).\n\n## Non-goals\n\n* Do not replace existing worker dispatch.\n* Do not loosen Foreman/Worker boundaries or quiet-mode behavior."
+    },
+    "POL-406": {
+      "id": "POL-406",
+      "title": "IMPLEMENT: Foreman assignment and selection during init and adopt",
+      "status": "Backlog",
+      "body": "## Objective\n\nAdd a Foreman resolution/assignment helper used by both `polaris init` and `polaris adopt`.\n\n## Context\n\nFirst child of POL-396 (design: `smartdocs/raw/pol-392-foreman-assignment-bootstrap-handoff-design.md`). Reuses `agent-setup.ts` role/provider selection and `.polaris/roles/foreman.md`.\n\n## Goal\n\nA helper that resolves the Foreman provider from `execution.providerPolicy.foreman`, prompting once if unset, and returns a Foreman binding for setup.\n\n## Scope\n\n* src/cli/agent-setup.ts\n\n## Acceptance Criteria\n\n* Foreman provider resolves from config when present.\n* When unset, the operator is prompted once and the choice persists.\n* The binding references `.polaris/roles/foreman.md` (no duplication of role text).\n\n## Validation\n\n* npm run build\n* npx vitest run src/cli/agent-setup\n\n## Ordering\n\n* None (first in cluster).\n\n## Non-goals\n\n* Do not build the bootstrap packet yet (next child)."
+    },
+    "POL-407": {
+      "id": "POL-407",
+      "title": "IMPLEMENT: Foreman setup-bootstrap packet schema and generator",
+      "status": "Backlog",
+      "body": "## Objective\n\nAdd a `setup-bootstrap` packet kind alongside existing skill packets, scoped to Foreman-led setup.\n\n## Context\n\nSecond child of POL-396. Extends `src/skill-packet/generator.ts` and `types.ts`; mirrors `generateSkillPacket`.\n\n## Goal\n\nA provider-neutral packet with active_role Foreman, a role_file pointer, authority_boundaries, prohibited_actions, the full approval_checkpoints list, and stop_conditions.\n\n## Scope\n\n* src/skill-packet/generator.ts\n* src/skill-packet/types.ts\n\n## Acceptance Criteria\n\n* Generating a `setup-bootstrap` packet for mode init|adopt returns the documented shape.\n* approval_checkpoints includes canon, doc-movement, instruction-files, graph-root, route-scaffold, source-mutation.\n* prohibited_actions forbids unapproved mutation and direct implementation.\n\n## Validation\n\n* npm run build\n* npx vitest run src/skill-packet\n\n## Ordering\n\n* Depends on child 1 (Foreman assignment).\n\n## Non-goals\n\n* Do not wire provider launch yet (next child)."
+    },
+    "POL-408": {
+      "id": "POL-408",
+      "title": "IMPLEMENT: Provider handoff via execution adapters",
+      "status": "Backlog",
+      "body": "## Objective\n\nLaunch/instruct the assigned Foreman with the setup-bootstrap packet via the existing execution adapters.\n\n## Context\n\nThird child of POL-396. Reuses `execution.providers.<name>` templates and `src/loop/adapters/`. Keeps the packet provider-neutral; provider specifics stay in adapters.\n\n## Goal\n\n`polaris init` and `polaris adopt` hand the bootstrap packet to the Foreman through the configured provider's adapter.\n\n## Scope\n\n* src/loop/adapters/**\n* src/cli/init.ts\n* src/cli/adopt-command.ts\n\n## Acceptance Criteria\n\n* The Foreman is launched with the bootstrap packet as its instruction source.\n* Provider selection comes from config; claude and codex are exercised in tests.\n* No provider-specific logic leaks into the packet generator.\n\n## Validation\n\n* npm run build\n* npx vitest run src/loop/adapters\n\n## Ordering\n\n* Depends on child 2 (bootstrap packet).\n\n## Non-goals\n\n* Do not replace existing worker dispatch."
+    },
+    "POL-409": {
+      "id": "POL-409",
+      "title": "IMPLEMENT: Encode and enforce setup approval checkpoints",
+      "status": "Backlog",
+      "body": "## Objective\n\nMake the setup approval checkpoints non-optional: the Foreman must halt and surface each gate; it cannot self-approve.\n\n## Context\n\nFourth child of POL-396. Couples the packet's encoded checkpoints to runtime enforcement.\n\n## Goal\n\nEnforcement that stops the Foreman at each checkpoint and requires an operator approval signal before proceeding.\n\n## Scope\n\n* src/skill-packet/generator.ts\n* src/loop/adapters/**\n\n## Acceptance Criteria\n\n* Tests assert the Foreman halts at each checkpoint without operator approval.\n* Self-approval is impossible by construction.\n* Quiet-mode and Foreman/Worker boundaries are preserved.\n\n## Validation\n\n* npm run build\n* npx vitest run src/skill-packet src/loop/adapters\n\n## Ordering\n\n* Depends on child 3 (provider handoff).\n\n## Non-goals\n\n* Do not loosen any existing boundary."
+    }
+  },
+  "edges": [
+    { "from": "POL-396", "to": "POL-406", "type": "parent-child" },
+    { "from": "POL-396", "to": "POL-407", "type": "parent-child" },
+    { "from": "POL-396", "to": "POL-408", "type": "parent-child" },
+    { "from": "POL-396", "to": "POL-409", "type": "parent-child" },
+    { "from": "POL-406", "to": "POL-407", "type": "blocks" },
+    { "from": "POL-407", "to": "POL-408", "type": "blocks" },
+    { "from": "POL-408", "to": "POL-409", "type": "blocks" }
+  ],
+  "executionOrder": ["POL-406", "POL-407", "POL-408", "POL-409"],
+  "created_at": "2026-06-25T03:21:00Z"
+}

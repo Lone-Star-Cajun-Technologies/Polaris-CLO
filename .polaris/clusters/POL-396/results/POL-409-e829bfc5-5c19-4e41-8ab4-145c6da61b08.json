@@ -1,0 +1,11 @@
+{
+  "child_id": "POL-409",
+  "status": "success",
+  "commit": "46b80b029e94044ad88311fac47ea9a704871cfe",
+  "validation": "passed",
+  "next_recommended_action": "continue",
+  "tracker_updated": false,
+  "state_updated": false,
+  "telemetry_updated": false,
+  "run_id": "polaris-run-foreman-bootstrap-handoff-2026-06-25-001"
+}
