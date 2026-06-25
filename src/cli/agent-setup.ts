@@ -3,6 +3,11 @@ import * as readline from "node:readline";
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
+export interface ForemanBinding {
+  provider: string;
+  roleFile: string;
+}
+
 const SUPPORTED_PROVIDERS = [
   { name: "claude",  detectCmd: "claude",  displayName: "Claude (Anthropic)" },
   { name: "codex",   detectCmd: "codex",   displayName: "Codex (OpenAI)"     },
@@ -60,6 +65,71 @@ async function selectProvider(
       }
     });
   });
+}
+
+/**
+ * Resolves the Foreman provider for init/adopt.
+ *
+ * If `execution.providerPolicy.foreman.providers[0]` is already set in config,
+ * returns a binding immediately (no prompt). Otherwise prompts once, persists
+ * the choice to polaris.config.json, and returns the binding.
+ *
+ * The binding always references `.polaris/roles/foreman.md` — role text is not
+ * duplicated here.
+ */
+export async function resolveForeman(
+  repoRoot: string,
+  config: Record<string, unknown>,
+  opts?: {
+    writeConfig?: (path: string, data: Record<string, unknown>) => void;
+    detectProviders?: () => Array<{ name: string; displayName: string; installed: boolean }>;
+    /** Override prompt; receives detected providers list and returns chosen name or null. */
+    selectProvider?: (
+      detected: Array<{ name: string; displayName: string; installed: boolean }>,
+    ) => Promise<string | null>;
+  },
+): Promise<ForemanBinding> {
+  const execution = (config.execution as Record<string, unknown>) ?? {};
+  const providerPolicy = (execution.providerPolicy as Record<string, unknown>) ?? {};
+  const foremanPolicy = (providerPolicy.foreman as Record<string, unknown>) ?? {};
+  const existing = (foremanPolicy.providers as string[] | undefined)?.[0];
+
+  const roleFile = ".polaris/roles/foreman.md";
+
+  if (existing) {
+    return { provider: existing, roleFile };
+  }
+
+  // Prompt once for Foreman provider
+  const detected = opts?.detectProviders?.() ?? detectProviders();
+  const chosen = opts?.selectProvider
+    ? await opts.selectProvider(detected)
+    : await selectProvider("foreman", detected, []);
+  if (!chosen) {
+    throw new Error(
+      "No supported agent installed. Cannot assign a Foreman. " +
+        "Install one of: " + SUPPORTED_PROVIDERS.map((p) => p.name).join(", "),
+    );
+  }
+
+  // Persist choice
+  const updatedPolicy = {
+    ...providerPolicy,
+    foreman: { ...(foremanPolicy as object), providers: [chosen] },
+  };
+  const updatedConfig = {
+    ...config,
+    execution: { ...execution, providerPolicy: updatedPolicy },
+  };
+
+  const configPath = resolve(repoRoot, "polaris.config.json");
+  if (opts?.writeConfig) {
+    opts.writeConfig(configPath, updatedConfig);
+  } else {
+    writeFileSync(configPath, JSON.stringify(updatedConfig, null, 2) + "\n");
+  }
+
+  return { provider: chosen, roleFile };
 }
 
 export async function runAgentSetup(repoRoot: string): Promise<void> {
