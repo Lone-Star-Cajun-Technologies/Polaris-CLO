@@ -1,5 +1,5 @@
 {
-  "scan_date": "2026-06-25T04:14:47.150Z",
+  "scan_date": "2026-06-25T04:15:59.844Z",
   "file_count": 1308,
   "coverage_pct": 42,
   "instructionCoverage": {
@@ -1284,7 +1284,7 @@
       "taskchain": "polaris-finalize",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-06-25T04:14:47.150Z",
+      "last_updated": "2026-06-25T04:15:59.844Z",
       "updated_by": "polaris-map-update",
       "tags": [
         "finalize",
