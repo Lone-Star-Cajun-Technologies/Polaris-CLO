@@ -51,7 +51,7 @@ function getBranch(repoRoot: string): string {
 }
 
 function normalizeBranchName(branch: string): string {
-  return branch.toLowerCase().replace(/_/g, "-");
+  return branch.toLowerCase().replace(/[_/]/g, "-");
 }
 
 function extractClusterSlug(clusterId: string): string {
