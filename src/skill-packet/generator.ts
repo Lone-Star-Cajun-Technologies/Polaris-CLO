@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { SkillPacketConfig } from "../config/schema.js";
-import type { SkillName, AgentRole, SkillPacket, SetupBootstrapMode, SetupBootstrapPacket, SetupBootstrapCheckpoint } from "./types.js";
+import type { SkillName, AgentRole, SkillPacket, SetupBootstrapMode, SetupBootstrapPacket, SetupBootstrapCheckpoint, CheckpointGate } from "./types.js";
 
 export const SKILL_ROLE_MAP: Record<SkillName, AgentRole> = {
   analyze: "Analyst",
@@ -279,6 +279,34 @@ const SETUP_BOOTSTRAP_CHECKPOINTS: SetupBootstrapCheckpoint[] = [
   "source-mutation",
 ];
 
+/**
+ * Builds the checkpoint gate that is embedded in every setup-bootstrap packet.
+ *
+ * Each checkpoint gate entry is a halt instruction — the Foreman MUST stop
+ * and surface the gate to the operator before proceeding. Self-approval is
+ * structurally impossible: `self_approval_prohibited` is typed as `true` and
+ * this function never sets it to anything else.
+ */
+function buildCheckpointGate(): CheckpointGate {
+  const gateInstruction = (name: SetupBootstrapCheckpoint): string =>
+    `HALT at checkpoint "${name}": stop, surface this gate to the operator, and wait for explicit approval before proceeding. You may not self-approve.`;
+
+  return {
+    gates: {
+      canon: gateInstruction("canon"),
+      "doc-movement": gateInstruction("doc-movement"),
+      "instruction-files": gateInstruction("instruction-files"),
+      "graph-root": gateInstruction("graph-root"),
+      "route-scaffold": gateInstruction("route-scaffold"),
+      "source-mutation": gateInstruction("source-mutation"),
+    },
+    self_approval_prohibited: true,
+    enforcement_note:
+      "Checkpoint gates are non-optional. The Foreman must halt and surface each gate to the operator. " +
+      "Proceeding without explicit operator approval is a protocol violation.",
+  };
+}
+
 export function generateSetupBootstrapPacket(mode: SetupBootstrapMode): SetupBootstrapPacket {
   return {
     packet_id: randomUUID(),
@@ -298,9 +326,11 @@ export function generateSetupBootstrapPacket(mode: SetupBootstrapMode): SetupBoo
       "Mutate source files without an approved checkpoint (unapproved mutation is forbidden)",
       "Implement features directly — all implementation must be delegated to a Worker",
       "Advance past an approval checkpoint without explicit user confirmation",
+      "Self-approve any checkpoint — operator approval is mandatory and cannot be delegated to the Foreman",
       "Modify tracker state or issue descriptions during setup",
     ],
     approval_checkpoints: SETUP_BOOTSTRAP_CHECKPOINTS,
+    checkpoint_gate: buildCheckpointGate(),
     stop_conditions: [
       "All setup phases complete and scaffold is valid",
       "An approval checkpoint is reached — pause and await user confirmation",

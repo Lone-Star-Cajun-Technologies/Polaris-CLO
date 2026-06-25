@@ -12,6 +12,26 @@ import type { BootstrapPacket, DispatchResult } from "./types.js";
 import { TerminalCliAdapter } from "./terminal-cli.js";
 
 /**
+ * Validate that the setup-bootstrap packet has checkpoint gate enforcement.
+ *
+ * This is the "by construction" guard: a packet without a valid checkpoint_gate
+ * (or with self_approval_prohibited !== true) cannot be dispatched. Because
+ * `generateSetupBootstrapPacket` always sets self_approval_prohibited to true,
+ * any packet that fails this check was manually constructed — and is rejected.
+ *
+ * @throws {Error} if checkpoint_gate is absent or self_approval_prohibited is not true.
+ */
+function assertCheckpointGateEnforced(packet: SetupBootstrapPacket): void {
+  if (!packet.checkpoint_gate || packet.checkpoint_gate.self_approval_prohibited !== true) {
+    throw new Error(
+      `Cannot dispatch setup-bootstrap packet "${packet.packet_id}": ` +
+        `checkpoint_gate.self_approval_prohibited must be true. ` +
+        `Use generateSetupBootstrapPacket() to produce a valid packet.`
+    );
+  }
+}
+
+/**
  * Wraps a SetupBootstrapPacket into a BootstrapPacket-compatible shape
  * that existing adapters can dispatch. The setup-bootstrap fields are
  * carried as context so the foreman receives the full packet.
@@ -44,10 +64,15 @@ export interface DispatchForemanInput {
 /**
  * Dispatch the Foreman with the setup-bootstrap packet.
  *
+ * Enforces checkpoint gate presence before dispatch — a packet without
+ * self_approval_prohibited: true is rejected, making self-approval
+ * impossible by construction.
+ *
  * Uses the existing TerminalCliAdapter so provider-specific logic stays
  * in provider configs — this function is provider-neutral.
  */
 export async function dispatchForeman(input: DispatchForemanInput): Promise<DispatchResult> {
+  assertCheckpointGateEnforced(input.packet);
   const adapter = new TerminalCliAdapter(input.executionConfig);
   const bootstrapPacket = toBootstrapPacket(input.packet);
   return adapter.dispatch(bootstrapPacket, {

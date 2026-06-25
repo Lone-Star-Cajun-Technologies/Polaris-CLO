@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { dispatchForeman } from "./foreman-dispatch.js";
 import { generateSetupBootstrapPacket } from "../../skill-packet/generator.js";
 import type { ExecutionConfig } from "../../config/schema.js";
+import type { SetupBootstrapPacket } from "../../skill-packet/types.js";
 
 function makeExecutionConfig(providers: Record<string, { command: string; args?: string[] }>): ExecutionConfig {
   return {
@@ -120,5 +121,66 @@ describe("dispatchForeman", () => {
     });
 
     expect(result.exit_code).toBe(0);
+  });
+});
+
+describe("dispatchForeman — checkpoint gate enforcement", () => {
+  const config = makeExecutionConfig({
+    claude: { command: "echo", args: ["test"] },
+  });
+
+  it("dispatches successfully when checkpoint_gate has self_approval_prohibited: true", async () => {
+    const packet = generateSetupBootstrapPacket("init");
+    // generateSetupBootstrapPacket always sets self_approval_prohibited: true
+    expect(packet.checkpoint_gate.self_approval_prohibited).toBe(true);
+
+    const result = await dispatchForeman({ packet, provider: "claude", executionConfig: config, dryRun: true });
+    expect(result.exit_code).toBe(0);
+  });
+
+  it("rejects a packet missing checkpoint_gate entirely", async () => {
+    const packet = generateSetupBootstrapPacket("init");
+    // Simulate a manually constructed packet without checkpoint_gate
+    const tampered = { ...packet } as unknown as SetupBootstrapPacket;
+    // @ts-expect-error intentionally removing required field for test
+    delete tampered.checkpoint_gate;
+
+    await expect(
+      dispatchForeman({ packet: tampered, provider: "claude", executionConfig: config, dryRun: true }),
+    ).rejects.toThrow(/checkpoint_gate.self_approval_prohibited must be true/);
+  });
+
+  it("rejects a packet where self_approval_prohibited is not true", async () => {
+    const packet = generateSetupBootstrapPacket("adopt");
+    // Simulate a tampered packet with self_approval_prohibited forced to false
+    const tampered: SetupBootstrapPacket = {
+      ...packet,
+      // @ts-expect-error intentionally overriding literal type for test
+      checkpoint_gate: { ...packet.checkpoint_gate, self_approval_prohibited: false },
+    };
+
+    await expect(
+      dispatchForeman({ packet: tampered, provider: "claude", executionConfig: config, dryRun: true }),
+    ).rejects.toThrow(/checkpoint_gate.self_approval_prohibited must be true/);
+  });
+
+  it("foreman cannot self-approve: gate instruction forbids it for every checkpoint", () => {
+    const packet = generateSetupBootstrapPacket("init");
+    const checkpoints = packet.approval_checkpoints;
+    for (const checkpoint of checkpoints) {
+      const gate = packet.checkpoint_gate.gates[checkpoint];
+      expect(gate).toContain("You may not self-approve");
+    }
+  });
+
+  it("all checkpoints produce a halt gate (Foreman must stop at each one)", () => {
+    const packet = generateSetupBootstrapPacket("adopt");
+    const checkpoints = packet.approval_checkpoints;
+    expect(checkpoints.length).toBeGreaterThan(0);
+    for (const checkpoint of checkpoints) {
+      const gate = packet.checkpoint_gate.gates[checkpoint];
+      expect(gate).toContain("HALT");
+      expect(gate).toContain("wait for explicit approval");
+    }
   });
 });
