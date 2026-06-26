@@ -24,6 +24,7 @@ import {
   createEmptyOperatorContext,
 } from "./adoption-context.js";
 import type { OperatorContext } from "./adoption-context.js";
+import { requireApprovalGates } from "./adopt-approve.js";
 
 export type AdoptPhase =
   | "scan"
@@ -273,6 +274,12 @@ export async function runFullAdoption(
     inventory,
     skipAgents: options.skipAgents,
   });
+
+  // Approval gates: one per mutation category before any broad mutation.
+  const gatesApproved = await requireApprovalGates(plan, { repoRoot });
+  if (!gatesApproved) {
+    return;
+  }
 
   console.log("[4/8] consolidate");
   await runAdoptPhase("consolidate", repoRoot, { inventory, plan });

@@ -4,8 +4,10 @@ import { join } from "node:path";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { execFileSync } from "node:child_process";
+import { Readable, Writable } from "node:stream";
 import { runAdoptPhase, runFullAdoption } from "./adopt-command.js";
-import type { RepoScanInventory } from "./adoption-plan.js";
+import { requireApprovalGates, promptCategoryApproval } from "./adopt-approve.js";
+import type { RepoScanInventory, AdoptionPlan } from "./adoption-plan.js";
 
 function makeRoot(): string {
   const root = mkdtempSync(join(tmpdir(), "polaris-adopt-test-"));
@@ -213,6 +215,118 @@ describe("POL-388: Adoption phase ordering is deterministic", () => {
     expect(reconcileIdx).toBeGreaterThanOrEqual(0);
     expect(installIdx).toBeLessThan(reconcileIdx);
 
+    rmSync(root, { recursive: true, force: true });
+  });
+});
+
+// POL-405: Approval gates before broad mutations
+describe("POL-405: Approval gates", () => {
+  /** Build a minimal AdoptionPlan with the given step categories/actions. */
+  function makePlan(overrides: Partial<AdoptionPlan> = {}): AdoptionPlan {
+    return {
+      plan_id: "test-gates",
+      generated_at: "2026-06-26T00:00:00.000Z",
+      repo_state: "existing",
+      approved: false,
+      approved_at: null,
+      dry_run: false,
+      steps: [],
+      impact_summary: {
+        files_to_create: 0, files_to_move: 0, files_to_modify: 0,
+        instruction_files_affected: 0, smartdocs_candidates_moved: 0,
+        cognition_files_to_generate: 0,
+      },
+      ...overrides,
+    };
+  }
+
+  function makeInputStream(response: string): Readable {
+    return Readable.from([`${response}\n`]);
+  }
+
+  function makeOutputStream(): { stream: Writable; captured: () => string } {
+    const chunks: string[] = [];
+    const stream = new Writable({
+      write(chunk, _enc, cb) { chunks.push(String(chunk)); cb(); },
+    });
+    return { stream, captured: () => chunks.join("") };
+  }
+
+  it("requireApprovalGates: returns false for non-interactive run (no tty, no explicit stdin)", async () => {
+    const root = makeRoot();
+    const plan = makePlan({
+      steps: [{
+        step_id: "s1", order: 1, phase: "A", category: "scaffold",
+        action: "create", dest_path: ".polaris/", description: "scaffold",
+        destructive: false, requires_approval: false, estimated_risk: "low",
+        status: "pending", evidence_refs: [], operator_refs: [], routing: "candidate",
+      }],
+    });
+    const { stream: stdout, captured } = makeOutputStream();
+    // Don't pass stdin — defaults to process.stdin which has no TTY in test
+    const result = await requireApprovalGates(plan, { repoRoot: root, stdout });
+    expect(result).toBe(false);
+    expect(captured()).toContain("non-interactive");
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it("requireApprovalGates: skips gate for empty category", async () => {
+    const root = makeRoot();
+    const plan = makePlan(); // no steps at all
+    const { stream: stdout } = makeOutputStream();
+    const stdin = makeInputStream(""); // never read
+    // nonInteractiveSafe bypasses the tty check
+    const result = await requireApprovalGates(plan, { repoRoot: root, stdin, stdout, nonInteractiveSafe: true });
+    expect(result).toBe(true);
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it("requireApprovalGates: returns false when operator declines a category", async () => {
+    const root = makeRoot();
+    const plan = makePlan({
+      steps: [{
+        step_id: "m1", order: 1, phase: "C", category: "smartdocs-migrate",
+        action: "move", source_path: "docs/foo.md", dest_path: "smartdocs/raw/foo.md",
+        description: "Move foo.md", destructive: true, requires_approval: true,
+        estimated_risk: "low", status: "pending", evidence_refs: [], operator_refs: [],
+        routing: "review-required",
+      }],
+    });
+    const { stream: stdout, captured } = makeOutputStream();
+    const stdin = makeInputStream("n"); // decline
+    const result = await requireApprovalGates(plan, { repoRoot: root, stdin, stdout, nonInteractiveSafe: true });
+    expect(result).toBe(false);
+    expect(captured()).toContain("Document Movement");
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it("requireApprovalGates: returns true when operator approves all categories", async () => {
+    const root = makeRoot();
+    const plan = makePlan({
+      steps: [{
+        step_id: "m1", order: 1, phase: "C", category: "smartdocs-migrate",
+        action: "move", source_path: "docs/foo.md", dest_path: "smartdocs/raw/foo.md",
+        description: "Move foo.md", destructive: true, requires_approval: true,
+        estimated_risk: "low", status: "pending", evidence_refs: [], operator_refs: [],
+        routing: "review-required",
+      }],
+    });
+    const { stream: stdout } = makeOutputStream();
+    const stdin = makeInputStream("y"); // approve
+    const result = await requireApprovalGates(plan, { repoRoot: root, stdin, stdout, nonInteractiveSafe: true });
+    expect(result).toBe(true);
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it("promptCategoryApproval: logs telemetry with approval result", async () => {
+    const root = makeRoot();
+    mkdirSync(join(root, ".polaris"), { recursive: true });
+    const { stream: stdout } = makeOutputStream();
+    const stdin = makeInputStream("y");
+    const approved = await promptCategoryApproval("doc-movement", [], { repoRoot: root, stdin, stdout });
+    // No actionable steps — still returns true (nothing to approve)
+    // Telemetry file should have been written
+    expect(existsSync(join(root, ".polaris", "adoption-telemetry.jsonl"))).toBe(true);
     rmSync(root, { recursive: true, force: true });
   });
 });
