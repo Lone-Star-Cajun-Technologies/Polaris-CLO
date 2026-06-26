@@ -34,6 +34,7 @@ import { handleInstructionFiles } from "./adopt-instructions.js";
 import { scaffoldRootSurfaces as defaultScaffoldRootSurfaces } from "./adopt-workspace.js";
 import { installWorkspaceAssets as defaultInstallWorkspaceAssets, runGraphBuild as defaultRunGraphBuild } from "./adopt-assets.js";
 import { resolveForeman } from "./agent-setup.js";
+import { runInterview, type RunInterviewOptions } from "./setup-interview/runner.js";
 import { generateSetupBootstrapPacket } from "../skill-packet/generator.js";
 import { dispatchForeman } from "../loop/adapters/foreman-dispatch.js";
 import type { WorkspaceInstallResult, GraphBuildResult } from "./adopt-assets.js";
@@ -100,6 +101,8 @@ export interface InitOptions {
   reconcileAgentFiles?: (repoRoot: string, opts?: ReconcileOptions) => Promise<AgentReconcileRecord[]>;
   /** Injected timestamp for deterministic testing. */
   now?: Date;
+  /** Injected interview runner — for unit testing. */
+  runInterview?: (repoRoot: string, opts: RunInterviewOptions) => ReturnType<typeof runInterview>;
 }
 
 const PLAN_COMPLETE_STATUSES = new Set(["completed", "skipped"]);
@@ -565,6 +568,18 @@ export async function runInit(options: InitOptions = {}): Promise<void> {
       "This repo has existing content. Run `polaris init --adopt` to begin adoption.\nThis repo has existing content. Run polaris init --adopt to begin adoption.\n",
     );
     return;
+  }
+
+  // New/empty repo: run the setup interview before writing config.
+  if (!options.adopt && (repoState === "empty" || repoState === "new")) {
+    const interviewFn = options.runInterview ?? runInterview;
+    try {
+      await interviewFn(repoRoot, { now: options.now });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      process.stdout.write(`${msg}\n`);
+      return;
+    }
   }
 
   // Load existing config (if any) so we preserve user-authored fields.
