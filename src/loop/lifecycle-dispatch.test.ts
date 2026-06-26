@@ -109,6 +109,9 @@ function baseConfig(): Required<PolarisConfig> {
       auto_deep_analysis: false,
       allow_cross_provider_delegation: false,
     },
+    simplicity: {
+      mode: "full",
+    },
   };
 }
 

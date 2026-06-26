@@ -19,7 +19,6 @@ import {
   type WorkerPromptInput,
 } from "./worker-prompt.js";
 import type { LoopState } from "./checkpoint.js";
-import type { LoopState } from "./checkpoint.js";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
