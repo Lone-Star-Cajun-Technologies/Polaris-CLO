@@ -1478,10 +1478,15 @@ describe("runInit — setup interview for empty/new repos", () => {
 
     await runInit({
       repoRoot: REPO_ROOT,
+      yes: true,
       detectRepoState: vi.fn().mockReturnValue("empty"),
       detectProviders: vi.fn().mockReturnValue([]),
       detectRepoAnalysisProviders: vi.fn().mockReturnValue([]),
       runInterview: mockInterview,
+      scaffoldRootSurfaces: vi.fn().mockReturnValue({ created: [], skipped: [] }),
+      generatePolarisRules: vi.fn().mockResolvedValue(undefined),
+      migrateSmartDocs: vi.fn().mockResolvedValue(undefined),
+      runMapIndex: vi.fn(),
     });
 
     expect(mockInterview).toHaveBeenCalledOnce();
@@ -1502,10 +1507,15 @@ describe("runInit — setup interview for empty/new repos", () => {
 
     await runInit({
       repoRoot: REPO_ROOT,
+      yes: true,
       detectRepoState: vi.fn().mockReturnValue("new"),
       detectProviders: vi.fn().mockReturnValue([]),
       detectRepoAnalysisProviders: vi.fn().mockReturnValue([]),
       runInterview: mockInterview,
+      scaffoldRootSurfaces: vi.fn().mockReturnValue({ created: [], skipped: [] }),
+      generatePolarisRules: vi.fn().mockResolvedValue(undefined),
+      migrateSmartDocs: vi.fn().mockResolvedValue(undefined),
+      runMapIndex: vi.fn(),
     });
 
     expect(mockInterview).toHaveBeenCalledOnce();
@@ -1593,20 +1603,29 @@ describe("runInit — setup interview for empty/new repos", () => {
       mode: "init",
       status: "answered",
       started_at: "2026-06-26T00:00:00.000Z",
-      answers: { project_purpose: "test" },
+      answers: { project_purpose: "test", source_roots: ["src"], canonical_doc_folders: ["docs"] },
       generation_plan: null,
       approved_at: null,
     });
 
     await runInit({
       repoRoot: REPO_ROOT,
+      yes: true,
       detectRepoState: vi.fn().mockReturnValue("empty"),
       detectProviders: vi.fn().mockReturnValue([]),
       detectRepoAnalysisProviders: vi.fn().mockReturnValue([]),
       runInterview: mockInterview,
+      scaffoldRootSurfaces: vi.fn().mockReturnValue({ created: [], skipped: [] }),
+      generatePolarisRules: vi.fn().mockResolvedValue(undefined),
+      migrateSmartDocs: vi.fn().mockResolvedValue(undefined),
+      runMapIndex: vi.fn(),
     });
 
     const configWrite = mockedWriteFileSync.mock.calls.find(([path]) => path === join(REPO_ROOT, "polaris.config.json"));
     expect(configWrite).toBeDefined();
+    const written = JSON.parse(configWrite![1] as string) as Record<string, unknown>;
+    expect(written).toMatchObject({
+      repo: { sourceRoots: ["src"], docsRoots: ["docs"] },
+    });
   });
 });
