@@ -1,0 +1,79 @@
+{
+  "schema_version": "1.0",
+  "cluster_id": "POL-396",
+  "state_generation": 10,
+  "child_states": [
+    {
+      "id": "POL-406",
+      "status": "done",
+      "commit": "17017cb13e51d45330d1aac736ab178892f80e37"
+    },
+    {
+      "id": "POL-407",
+      "status": "done",
+      "commit": "5ce10d1b6644c47f5f33c8c0dab25a4a1bcc0ab0"
+    },
+    {
+      "id": "POL-408",
+      "status": "done",
+      "commit": "45063bcba47ac230c8e74c134b97b5c58293fb8a"
+    },
+    {
+      "id": "POL-409",
+      "status": "done",
+      "commit": "46b80b029e94044ad88311fac47ea9a704871cfe"
+    }
+  ],
+  "claim_metadata": {
+    "POL-406": {
+      "worker_id": "polaris-run-foreman-bootstrap-handoff-2026-06-25-001:POL-406:1782359100240",
+      "claimed_at": "2026-06-25T03:45:00.240Z",
+      "expires_at": "2026-06-25T04:15:00.240Z"
+    },
+    "POL-408": {
+      "worker_id": "polaris-run-foreman-bootstrap-handoff-2026-06-25-001:POL-408:1782359435939",
+      "claimed_at": "2026-06-25T03:50:35.939Z",
+      "expires_at": "2026-06-25T04:20:35.939Z"
+    }
+  },
+  "packet_pointers": {
+    "POL-406": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-396/packets/POL-406-84890328-3afd-4055-94d4-6e678bcc4cdd.json",
+    "POL-407": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-396/packets/POL-407-dd783ef4-9936-47fb-b5c0-814244c47945.json",
+    "POL-408": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-396/packets/POL-408-4b0c9ef5-94f8-4d89-afc5-902f8068ede5.json",
+    "POL-409": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-396/packets/POL-409-e829bfc5-5c19-4e41-8ab4-145c6da61b08.json"
+  },
+  "result_pointers": {
+    "POL-406": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-396/results/POL-406-84890328-3afd-4055-94d4-6e678bcc4cdd.json",
+    "POL-407": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-396/results/POL-407-dd783ef4-9936-47fb-b5c0-814244c47945.json",
+    "POL-408": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-396/results/POL-408-4b0c9ef5-94f8-4d89-afc5-902f8068ede5.json",
+    "POL-409": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-396/results/POL-409-e829bfc5-5c19-4e41-8ab4-145c6da61b08.json"
+  },
+  "validation_results": {
+    "POL-406": {
+      "passed": true,
+      "output": "{\"passed\":[\"npm run build\",\"npx vitest run src/cli/agent-setup\"]}"
+    },
+    "POL-407": {
+      "passed": true,
+      "output": "passed"
+    },
+    "POL-408": {
+      "passed": true,
+      "output": "{\"passed\":[\"npm run build\",\"npx vitest run src/loop/adapters\"]}"
+    },
+    "POL-409": {
+      "passed": true,
+      "output": "passed"
+    }
+  },
+  "commits": {
+    "POL-406": "17017cb13e51d45330d1aac736ab178892f80e37",
+    "POL-407": "5ce10d1b6644c47f5f33c8c0dab25a4a1bcc0ab0",
+    "POL-408": "45063bcba47ac230c8e74c134b97b5c58293fb8a",
+    "POL-409": "46b80b029e94044ad88311fac47ea9a704871cfe"
+  },
+  "tracker_mutations": {},
+  "blockers": [],
+  "delivery_branch": "philmeaux/pol-396-implement-foreman-assignment-and-bootstrap-handoff",
+  "base_branch": "main"
+}

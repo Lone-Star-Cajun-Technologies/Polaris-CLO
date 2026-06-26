@@ -461,7 +461,7 @@ export function compileImplPacket(input: CompileImplPacketInput): WorkerPacket {
     `Create exactly ONE git commit: [${input.childId}] ${childTitle}.`,
     `Do NOT modify open_children or completed_children in ${input.stateFile}. The parent runtime (loop continue) owns that state transition.`,
     `Append a telemetry event to ${input.telemetryFile}.`,
-    `Write compact return JSON to stdout (fields: ${IMPL_RETURN_CONTRACT.join(', ')}).`,
+    `Write compact return JSON to stdout (fields: ${IMPL_RETURN_CONTRACT.join(', ')}). next_recommended_action MUST be exactly "continue" on success, "stop" on unresolvable blocker, or "investigate" if manual review is needed.`,
     `TERMINATE SESSION IMMEDIATELY. Do not select or execute the next child.`,
   ];
 

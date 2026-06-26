@@ -1,4 +1,5 @@
 import { join } from "node:path";
+import { readFileSync } from "node:fs";
 import { Command } from "commander";
 import { scanRepo } from "./adopt-scan.js";
 import {
@@ -6,13 +7,16 @@ import {
   generateAdoptionPlanArtifacts,
 } from "./adoption-plan.js";
 import type { RepoScanInventory, AdoptionPlan } from "./adoption-plan.js";
-import { runAgentSetup } from "./agent-setup.js";
+import { runAgentSetup, resolveForeman } from "./agent-setup.js";
 import { migrateSmartDocs } from "./adopt-smartdocs.js";
 import { installWorkspaceAssets, runGraphBuild } from "./adopt-assets.js";
 import { generatePolarisRules } from "./adopt-rules.js";
 import { generateFolderCognition } from "./adopt-cognition.js";
 import { enrichCanonFiles } from "./adopt-canon.js";
 import { reconcileAgentFiles } from "./adopt-genesis.js";
+import { generateSetupBootstrapPacket } from "../skill-packet/generator.js";
+import { dispatchForeman } from "../loop/adapters/foreman-dispatch.js";
+import type { ExecutionConfig } from "../config/schema.js";
 
 export type AdoptPhase =
   | "scan"
@@ -65,6 +69,23 @@ export async function runAdoptPhase(
       }
       if (!options.skipAgents) {
         await runAgentSetup(repoRoot);
+      }
+      // Dispatch the Foreman with the setup-bootstrap packet.
+      try {
+        const configPath = join(repoRoot, "polaris.config.json");
+        const config = JSON.parse(readFileSync(configPath, "utf-8")) as Record<string, unknown>;
+        const execution = config.execution as ExecutionConfig | undefined;
+        if (execution?.providers && Object.keys(execution.providers).length > 0) {
+          const binding = await resolveForeman(repoRoot, config);
+          const setupPacket = generateSetupBootstrapPacket("adopt");
+          await dispatchForeman({
+            packet: setupPacket,
+            provider: binding.provider,
+            executionConfig: execution,
+          });
+        }
+      } catch {
+        // Foreman dispatch is best-effort — don't block adoption.
       }
       break;
     }

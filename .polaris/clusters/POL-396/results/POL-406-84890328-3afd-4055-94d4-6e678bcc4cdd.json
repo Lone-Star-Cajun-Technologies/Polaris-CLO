@@ -1,0 +1,13 @@
+{
+  "child_id": "POL-406",
+  "status": "success",
+  "commit": "17017cb13e51d45330d1aac736ab178892f80e37",
+  "validation": {
+    "passed": ["npm run build", "npx vitest run src/cli/agent-setup"]
+  },
+  "next_recommended_action": "continue",
+  "tracker_updated": false,
+  "state_updated": false,
+  "telemetry_updated": false,
+  "run_id": "polaris-run-foreman-bootstrap-handoff-2026-06-25-001"
+}

@@ -33,6 +33,9 @@ import { runMapIndex } from "../map/index.js";
 import { handleInstructionFiles } from "./adopt-instructions.js";
 import { scaffoldRootSurfaces as defaultScaffoldRootSurfaces } from "./adopt-workspace.js";
 import { installWorkspaceAssets as defaultInstallWorkspaceAssets, runGraphBuild as defaultRunGraphBuild } from "./adopt-assets.js";
+import { resolveForeman } from "./agent-setup.js";
+import { generateSetupBootstrapPacket } from "../skill-packet/generator.js";
+import { dispatchForeman } from "../loop/adapters/foreman-dispatch.js";
 import type { WorkspaceInstallResult, GraphBuildResult } from "./adopt-assets.js";
 import { reconcileAgentFiles as defaultReconcileAgentFiles } from "./adopt-genesis.js";
 import type { AgentReconcileRecord, ReconcileOptions } from "./adopt-genesis.js";
@@ -608,6 +611,23 @@ export async function runInit(options: InitOptions = {}): Promise<void> {
   }
 
   if (!options.adopt) {
+    // Launch Foreman with setup-bootstrap packet when execution providers are configured.
+    const initExecution = asRecord(updated.execution);
+    const initProviders = asRecord(initExecution.providers);
+    if (Object.keys(initProviders).length > 0) {
+      try {
+        const binding = await resolveForeman(repoRoot, updated);
+        const setupPacket = generateSetupBootstrapPacket("init");
+        await dispatchForeman({
+          packet: setupPacket,
+          provider: binding.provider,
+          executionConfig: updated.execution as import("../config/schema.js").ExecutionConfig,
+          dryRun: options.dryRun,
+        });
+      } catch {
+        // Foreman dispatch is best-effort during init — don't block setup.
+      }
+    }
     return;
   }
 

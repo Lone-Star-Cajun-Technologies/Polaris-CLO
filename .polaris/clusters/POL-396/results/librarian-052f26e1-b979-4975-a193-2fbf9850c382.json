@@ -1,0 +1,99 @@
+{
+  "schema_version": "1.0",
+  "role": "closeout-librarian",
+  "run_id": "polaris-run-foreman-bootstrap-handoff-2026-06-25-001",
+  "dispatch_id": "052f26e1-b979-4975-a193-2fbf9850c382",
+  "cluster_id": "POL-396",
+  "status": "partial",
+  "commit_sha": "426d887488756285c498a8f20b833cee082a499b",
+  "commit_message": "docs(closeout): reconcile cognition for cluster POL-396\n\nRun: polaris-run-foreman-bootstrap-handoff-2026-06-25-001\nCluster: POL-396\nChildren: POL-406, POL-407, POL-408, POL-409\nFiles updated:\n- POLARIS.md: 2 files (src/cli, src/loop/adapters)\n- SUMMARY.md: 2 files (src/cli, src/loop/adapters)\n- docs ingested: 0 (smartdocs/ gitignored — spec written but not staged)\n- links repaired: 1",
+  "files_committed": [
+    "src/cli/POLARIS.md",
+    "src/cli/SUMMARY.md",
+    "src/loop/adapters/POLARIS.md",
+    "src/loop/adapters/SUMMARY.md"
+  ],
+  "drift_reconciliation": {
+    "medic_ran": false,
+    "charts_created": [],
+    "drift_observations": [
+      {
+        "type": "missing_documentation",
+        "target": "src/loop/adapters/POLARIS.md",
+        "severity": "high",
+        "note": "Was a draft template with no content; fully authored to describe foreman-dispatch, checkpoint gate, adapter interface."
+      },
+      {
+        "type": "summary_outdated",
+        "target": "src/loop/adapters/SUMMARY.md",
+        "severity": "high",
+        "note": "Was a draft template with no content; fully authored."
+      },
+      {
+        "type": "route_guidance_outdated",
+        "target": "src/cli/POLARIS.md",
+        "severity": "medium",
+        "note": "Added agent-setup.ts entry (resolveForeman/runAgentSetup) and Foreman bootstrap dispatch editing rules."
+      },
+      {
+        "type": "summary_outdated",
+        "target": "src/cli/SUMMARY.md",
+        "severity": "medium",
+        "note": "Current State did not mention Foreman assignment/bootstrap dispatch capability added by this cluster."
+      }
+    ],
+    "chart_links_required": false,
+    "charts_linked": []
+  },
+  "polaris_md_updates": [
+    {
+      "file": "src/loop/adapters/POLARIS.md",
+      "action": "update",
+      "change_summary": "Replaced draft template with full operational guide describing foreman-dispatch, checkpoint gate enforcement, adapter interface, TerminalCliAdapter, AgentSubtaskAdapter, registry, and editing rules."
+    },
+    {
+      "file": "src/cli/POLARIS.md",
+      "action": "update",
+      "change_summary": "Added agent-setup.ts to What belongs here; added resolveForeman and Foreman bootstrap dispatch editing rules."
+    }
+  ],
+  "summary_md_updates": [
+    {
+      "file": "src/loop/adapters/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Replaced draft template with full summary covering ExecutionAdapter, TerminalCliAdapter, AgentSubtaskAdapter, dispatchForeman, checkpoint gate enforcement, and current state."
+    },
+    {
+      "file": "src/cli/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Extended Current State to describe agent-setup.ts resolveForeman, runAgentSetup, and Foreman bootstrap dispatch wiring in init.ts and adopt-command.ts."
+    }
+  ],
+  "docs_ingested": [
+    {
+      "source_path": "smartdocs/raw/pol-392-foreman-assignment-bootstrap-handoff-design.md",
+      "target_path": "smartdocs/specs/active/foreman-bootstrap-handoff-spec.md",
+      "action": "ingest",
+      "reason": "Spec for implemented behavior (Foreman assignment and bootstrap handoff, POL-396 cluster). File written to filesystem but not staged due to smartdocs/ gitignore."
+    }
+  ],
+  "docs_archived": [],
+  "yaml_updates": [],
+  "cognition_archived": [],
+  "link_validation": {
+    "total_checked": 5,
+    "valid": 4,
+    "broken": 1,
+    "repaired": 1,
+    "unrepairable": []
+  },
+  "blockers": [
+    {
+      "type": "informational",
+      "description": "smartdocs/ directory is gitignored — foreman-bootstrap-handoff-spec.md and its provenance file were written to the filesystem but could not be staged or committed. The files exist on disk. If the gitignore rule is intentional for this repo, no action is needed; if smartdocs should be tracked, remove the smartdocs/ gitignore entry.",
+      "resolution_required": false
+    }
+  ],
+  "reconciled_at": "2026-06-24T00:00:00.000Z",
+  "evidence_summary": "Cluster POL-396 implemented the Foreman assignment and bootstrap handoff architecture (POL-392 design): resolveForeman/runAgentSetup in agent-setup.ts (POL-406); SetupBootstrapPacket and CheckpointGate types plus generateSetupBootstrapPacket generator (POL-407); foreman-dispatch.ts with checkpoint gate enforcement, wired into init.ts and adopt-command.ts (POL-408/409). POLARIS.md and SUMMARY.md for src/loop/adapters were draft templates — both fully authored. src/cli POLARIS.md and SUMMARY.md updated to reflect agent-setup.ts and Foreman bootstrap dispatch. The pol-392 design doc was promoted to smartdocs/specs/active/foreman-bootstrap-handoff-spec.md but could not be committed because smartdocs/ is gitignored. One broken link repaired (raw path updated to canonical spec path). No cognition notes to archive. All four worker children returned success."
+}

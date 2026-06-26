@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { generateSkillPacket, SKILL_ROLE_MAP, SUPPORTED_SKILLS } from "./generator.js";
-import type { SkillName } from "./types.js";
+import { generateSkillPacket, generateSetupBootstrapPacket, SKILL_ROLE_MAP, SUPPORTED_SKILLS } from "./generator.js";
+import type { SkillName, SetupBootstrapCheckpoint } from "./types.js";
 
 const DEFAULT_CONFIG = {
   analysis_confidence_threshold: 85,
@@ -238,6 +238,80 @@ describe("generateSkillPacket", () => {
   it("each packet has a unique packet_id", () => {
     const p1 = generateSkillPacket("analyze", DEFAULT_CONFIG);
     const p2 = generateSkillPacket("analyze", DEFAULT_CONFIG);
+    expect(p1.packet_id).not.toBe(p2.packet_id);
+  });
+});
+
+const EXPECTED_CHECKPOINTS: SetupBootstrapCheckpoint[] = [
+  "canon",
+  "doc-movement",
+  "instruction-files",
+  "graph-root",
+  "route-scaffold",
+  "source-mutation",
+];
+
+describe("generateSetupBootstrapPacket", () => {
+  it.each(["init", "adopt"] as const)("generates a valid packet for mode %s", (mode) => {
+    const packet = generateSetupBootstrapPacket(mode);
+    expect(packet.packet_kind).toBe("setup-bootstrap");
+    expect(packet.active_role).toBe("Foreman");
+    expect(packet.mode).toBe(mode);
+    expect(packet.packet_id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+    );
+  });
+
+  it("includes all expected approval_checkpoints", () => {
+    const packet = generateSetupBootstrapPacket("init");
+    expect(packet.approval_checkpoints).toEqual(EXPECTED_CHECKPOINTS);
+  });
+
+  it("embeds a checkpoint_gate with self_approval_prohibited: true", () => {
+    const packet = generateSetupBootstrapPacket("init");
+    expect(packet.checkpoint_gate).toBeDefined();
+    expect(packet.checkpoint_gate.self_approval_prohibited).toBe(true);
+  });
+
+  it("checkpoint_gate has a gate entry for every checkpoint", () => {
+    const packet = generateSetupBootstrapPacket("init");
+    for (const checkpoint of EXPECTED_CHECKPOINTS) {
+      expect(packet.checkpoint_gate.gates[checkpoint]).toBeDefined();
+      expect(packet.checkpoint_gate.gates[checkpoint]).toContain("HALT");
+      expect(packet.checkpoint_gate.gates[checkpoint]).toContain("You may not self-approve");
+    }
+  });
+
+  it("each gate instruction names its checkpoint", () => {
+    const packet = generateSetupBootstrapPacket("adopt");
+    for (const checkpoint of EXPECTED_CHECKPOINTS) {
+      expect(packet.checkpoint_gate.gates[checkpoint]).toContain(checkpoint);
+    }
+  });
+
+  it("checkpoint_gate.enforcement_note is non-empty and references halting", () => {
+    const packet = generateSetupBootstrapPacket("init");
+    expect(packet.checkpoint_gate.enforcement_note.length).toBeGreaterThan(0);
+    expect(packet.checkpoint_gate.enforcement_note).toContain("halt");
+  });
+
+  it("prohibited_actions forbids self-approval", () => {
+    const packet = generateSetupBootstrapPacket("init");
+    const prohibited = packet.prohibited_actions.join(" ");
+    expect(prohibited).toContain("Self-approve");
+    expect(prohibited).toContain("operator approval");
+  });
+
+  it("stop_conditions require halting at each checkpoint", () => {
+    const packet = generateSetupBootstrapPacket("init");
+    const stops = packet.stop_conditions.join(" ");
+    expect(stops).toContain("approval checkpoint");
+    expect(stops).toContain("pause");
+  });
+
+  it("each packet has a unique packet_id", () => {
+    const p1 = generateSetupBootstrapPacket("init");
+    const p2 = generateSetupBootstrapPacket("init");
     expect(p1.packet_id).not.toBe(p2.packet_id);
   });
 });
