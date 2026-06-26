@@ -45,6 +45,9 @@ function baseConfig(): Required<PolarisConfig> {
       auto_finalize: false,
       notification_format: "terse",
     },
+    simplicity: {
+      mode: "full",
+    },
     execution: {
       adapter: "terminal-cli",
       providers: {
@@ -108,9 +111,6 @@ function baseConfig(): Required<PolarisConfig> {
       analysis_confidence_threshold: 85,
       auto_deep_analysis: false,
       allow_cross_provider_delegation: false,
-    },
-    simplicity: {
-      mode: "full",
     },
   };
 }
