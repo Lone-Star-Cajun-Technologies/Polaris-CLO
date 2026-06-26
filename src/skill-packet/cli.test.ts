@@ -71,7 +71,7 @@ describe("polaris skill packet CLI", () => {
     expect(result.stdout).toContain("skill packet");
   });
 
-  it.each(["analyze", "run", "ingest", "promote"])(
+  it.each(["analyze", "run", "ingest", "promote", "catalog", "reconcile"])(
     "generates a valid JSON packet for %s",
     async (skill) => {
       const result = await runSkillCommand(["packet", skill]);

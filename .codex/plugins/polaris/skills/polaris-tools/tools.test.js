@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
@@ -31,6 +31,39 @@ function tempRepoWithState(state) {
 }
 
 describe("polaris Codex plugin helper", () => {
+  it("ships a helper that runs inside a type module repository", () => {
+    const repo = tempRepoWithState({
+      run_id: "run-esm",
+      cluster_id: "POL-ESM",
+      status: "ready",
+      active_child: null,
+      completed_children: [],
+      open_children: [],
+    });
+    const helperDir = join(repo, ".polaris", "skills", "polaris-tools");
+    mkdirSync(helperDir, { recursive: true });
+    writeFileSync(join(repo, "package.json"), JSON.stringify({ type: "module" }));
+    copyFileSync(helper, join(helperDir, "tools.js"));
+
+    const result = spawnSync(
+      process.execPath,
+      [join(helperDir, "tools.js"), "polaris_status"],
+      {
+        cwd: repo,
+        env: { ...process.env, PATH: "/definitely-no-polaris" },
+        encoding: "utf8",
+      },
+    );
+
+    expect(result.status).toBe(0);
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      tool: "polaris_status",
+      run_id: "run-esm",
+      cluster_id: "POL-ESM",
+      status: "ready",
+    });
+  });
+
   it("returns a clear missing-binary error when status has no CLI and no state file", () => {
     const repo = mkdtempSync(join(tmpdir(), "polaris-tools-empty-"));
 

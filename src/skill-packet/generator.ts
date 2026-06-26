@@ -9,6 +9,8 @@ export const SKILL_ROLE_MAP: Record<SkillName, AgentRole> = {
   promote: "Librarian",
   triage: "Librarian",
   review: "Librarian",
+  catalog: "Librarian",
+  reconcile: "Librarian",
 };
 
 const ROLE_SUMMARIES: Record<AgentRole, string> = {
@@ -341,6 +343,73 @@ export function generateSetupBootstrapPacket(mode: SetupBootstrapMode): SetupBoo
   };
 }
 
+function buildCatalogPacket(): Omit<SkillPacket, "packet_id" | "skill_name" | "active_role" | "role_summary" | "source_config_snapshot" | "generated_at"> {
+  return {
+    authority_boundaries: [
+      "Read packet-scoped POLARIS.md and SUMMARY.md files",
+      "Update cognition files only within packet-allowed write paths",
+      "Read smartdocs/raw/ and classify documents through supported Polaris CLI commands",
+      "Auto-place only high-confidence documents",
+      "Leave low-confidence documents in raw when unattended or request operator direction",
+    ],
+    prohibited_actions: [
+      "Modify implementation source code, tests, or configuration",
+      "Write outside packet-allowed paths",
+      "Auto-place low-confidence documents",
+      "Move or copy SmartDocs directly instead of using supported CLI commands",
+      "Call polaris loop continue or polaris finalize",
+      "Git push or create a pull request",
+    ],
+    allowed_outputs: [
+      "Updated POLARIS.md and SUMMARY.md files in packet-allowed paths",
+      "Classified documents placed through supported Polaris CLI commands",
+      "A sealed local cognition and document commit",
+      "A report of deferred low-confidence documents",
+    ],
+    deliverables: [
+      "Packet-scoped cognition reconciled",
+      "Raw documents classified or explicitly deferred",
+      "All changes recorded in one sealed local commit",
+    ],
+    stop_conditions: [
+      "All packet-scoped cognition and raw documents processed",
+      "A required command is unsupported by the installed CLI",
+      "A requested write falls outside packet-allowed paths",
+      "An unresolved conflict requires operator direction",
+    ],
+  };
+}
+
+function buildReconcilePacket(): Omit<SkillPacket, "packet_id" | "skill_name" | "active_role" | "role_summary" | "source_config_snapshot" | "generated_at"> {
+  return {
+    authority_boundaries: [
+      "Read packet-scoped folders and their POLARIS.md and SUMMARY.md files",
+      "Update cognition files only within packet-allowed write paths",
+      "Create one sealed local cognition commit",
+    ],
+    prohibited_actions: [
+      "Modify implementation source code, tests, or configuration",
+      "Move, ingest, classify, or promote documents",
+      "Write outside packet-allowed paths",
+      "Call polaris loop continue or polaris finalize",
+      "Git push or create a pull request",
+    ],
+    allowed_outputs: [
+      "Updated POLARIS.md and SUMMARY.md files in packet-allowed paths",
+      "A sealed local cognition commit",
+    ],
+    deliverables: [
+      "Packet-scoped cognition reconciled with completed work",
+      "All cognition changes recorded in one sealed local commit",
+    ],
+    stop_conditions: [
+      "All packet-scoped cognition reconciled",
+      "A requested write falls outside packet-allowed paths",
+      "Work evidence is missing or contradictory",
+    ],
+  };
+}
+
 export function generateSkillPacket(
   skillName: SkillName,
   config: Required<SkillPacketConfig>,
@@ -377,6 +446,12 @@ export function generateSkillPacket(
     case "review":
       body = buildReviewPacket();
       break;
+    case "catalog":
+      body = buildCatalogPacket();
+      break;
+    case "reconcile":
+      body = buildReconcilePacket();
+      break;
   }
 
   return {
@@ -390,4 +465,13 @@ export function generateSkillPacket(
   };
 }
 
-export const SUPPORTED_SKILLS: SkillName[] = ["analyze", "run", "ingest", "promote", "triage", "review"];
+export const SUPPORTED_SKILLS: SkillName[] = [
+  "analyze",
+  "run",
+  "ingest",
+  "promote",
+  "triage",
+  "review",
+  "catalog",
+  "reconcile",
+];
