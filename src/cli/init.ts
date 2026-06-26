@@ -107,7 +107,7 @@ export interface InitOptions {
   /** Injected interview runner — for unit testing. */
   runInterview?: (repoRoot: string, opts: RunInterviewOptions) => ReturnType<typeof runInterview>;
   /** Injected setup artifact generator — for unit testing. */
-  generateSetupArtifacts?: (record: InterviewRecord, opts: { repoRoot?: string; dryRun?: boolean; yes?: boolean; now?: Date }) => ReturnType<typeof generateSetupArtifacts>;
+  generateSetupArtifacts?: (record: InterviewRecord, opts: Parameters<typeof generateSetupArtifacts>[1]) => ReturnType<typeof generateSetupArtifacts>;
   /** Injected POLARIS_RULES.md generator — for unit testing. */
   generatePolarisRules?: (repoRoot: string, inventory: import("./adoption-plan.js").RepoScanInventory, options?: { overwrite?: boolean; workspaceDir?: string }) => Promise<void>;
   /** Injected SmartDocs migration — for unit testing. */

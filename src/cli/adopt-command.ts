@@ -153,8 +153,8 @@ export async function runAdoptPhase(
   switch (phase) {
     case "scan": {
       const inventory = await scanRepo(repoRoot, { rescan: true });
-      const plan = generateAdoptionPlan(inventory);
-      generateAdoptionPlanArtifacts(repoRoot, inventory);
+      const operatorContext = loadOperatorContext(repoRoot) ?? undefined;
+      generateAdoptionPlanArtifacts(repoRoot, inventory, { operatorContext });
       console.log(
         `Scan complete: ${inventory.smartdocs_candidates.length} doc(s), ${inventory.likely_canonical_folders.length} folder(s).`,
       );
@@ -262,12 +262,15 @@ export async function runFullAdoption(
 ): Promise<void> {
   console.log("[1/8] scan");
   await runAdoptPhase("scan", repoRoot);
-  // Re-read inventory and plan for later phases
+  // Re-read inventory for later phases
   const inventory = await scanRepo(repoRoot, { rescan: false });
-  const plan = generateAdoptionPlan(inventory);
 
   console.log("[2/8] interview");
   await runAdoptPhase("interview", repoRoot, { inventory });
+
+  // Regenerate plan after interview to incorporate operator context
+  const operatorContext = loadOperatorContext(repoRoot) ?? undefined;
+  const plan = generateAdoptionPlan(inventory, { operatorContext });
 
   console.log("[3/8] agents");
   await runAdoptPhase("agents", repoRoot, {

@@ -114,15 +114,18 @@ function normalizePath(path: string): string {
 }
 
 function isTrusted(path: string, operatorContext?: OperatorContext): boolean {
-  return operatorContext?.trusted_docs.includes(path) ?? false;
+  const normalized = normalizePath(path);
+  return operatorContext?.trusted_docs.some((p) => normalizePath(p) === normalized) ?? false;
 }
 
 function isStale(path: string, operatorContext?: OperatorContext): boolean {
-  return operatorContext?.stale_docs.includes(path) ?? false;
+  const normalized = normalizePath(path);
+  return operatorContext?.stale_docs.some((p) => normalizePath(p) === normalized) ?? false;
 }
 
 function isNeverTouch(path: string, operatorContext?: OperatorContext): boolean {
-  return operatorContext?.never_touch.includes(path) ?? false;
+  const normalized = normalizePath(path);
+  return operatorContext?.never_touch.some((p) => normalizePath(p) === normalized) ?? false;
 }
 
 function instructionIntent(
@@ -235,9 +238,10 @@ function buildSteps(
       candidate,
       operatorContext,
     );
+    const stepOrder = order++;
     steps.push(
-      createStep(order++, {
-        step_id: `smartdocs-migrate-${order.toString().padStart(3, "0")}`,
+      createStep(stepOrder, {
+        step_id: `smartdocs-migrate-${stepOrder.toString().padStart(3, "0")}`,
         phase: "C",
         category: "smartdocs-migrate",
         action: "move",
@@ -266,9 +270,10 @@ function buildSteps(
       routing = "candidate";
       operator_refs.push(`operator:trusted_docs:${normalizedFolder}`);
     }
+    const stepOrder = order++;
     steps.push(
-      createStep(order++, {
-        step_id: `cognition-generate-${order.toString().padStart(3, "0")}`,
+      createStep(stepOrder, {
+        step_id: `cognition-generate-${stepOrder.toString().padStart(3, "0")}`,
         phase: "C",
         category: "cognition-generate",
         action: "create",
@@ -307,9 +312,10 @@ function buildSteps(
       routing = "review-required";
     }
 
+    const stepOrder = order++;
     steps.push(
-      createStep(order++, {
-        step_id: `instruction-refactor-${order.toString().padStart(3, "0")}`,
+      createStep(stepOrder, {
+        step_id: `instruction-refactor-${stepOrder.toString().padStart(3, "0")}`,
         phase: "C",
         category: "instruction-refactor",
         action,
@@ -333,9 +339,10 @@ function buildSteps(
   }
 
   for (const ignorePath of inventory.ignore_candidates) {
+    const stepOrder = order++;
     steps.push(
-      createStep(order++, {
-        step_id: `ignore-rules-${order.toString().padStart(3, "0")}`,
+      createStep(stepOrder, {
+        step_id: `ignore-rules-${stepOrder.toString().padStart(3, "0")}`,
         phase: "C",
         category: "ignore-rules",
         action: "append",
