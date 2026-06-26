@@ -47,6 +47,7 @@ import {
   formatGitignoreBlock,
   isPathBlockedFromStaging,
 } from "../finalize/artifact-policy.js";
+import { buildCheckpointReport, writeCheckpointReport, printCheckpointReport } from "./setup-interview/report.js";
 
 export { detectRepoState } from "./init-detect.js";
 export type { RepoState } from "./init-detect.js";
@@ -607,6 +608,28 @@ export async function runInit(options: InitOptions = {}): Promise<void> {
       migrateSmartDocs: options.migrateSmartDocs,
       runMapIndex: options.runMapIndex,
     });
+
+    // Post-setup validation and checkpoint report
+    if (!options.dryRun) {
+      const checkpointReport = buildCheckpointReport({
+        repoRoot,
+        record,
+        now: options.now,
+      });
+      
+      writeCheckpointReport(repoRoot, checkpointReport);
+      printCheckpointReport(checkpointReport);
+
+      // Check for validation failures
+      const failedValidations = Object.entries(checkpointReport.validationResults).filter(
+        ([_, result]) => !result.passed
+      );
+
+      if (failedValidations.length > 0) {
+        process.stdout.write(`\nWarning: ${failedValidations.length} file(s) failed validation. Check the report above for details.\n`);
+      }
+    }
+
     return;
   }
 
