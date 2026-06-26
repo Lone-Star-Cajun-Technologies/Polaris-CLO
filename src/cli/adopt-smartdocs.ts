@@ -153,6 +153,16 @@ export function migrateSmartDocs(plan: AdoptionPlan, repoRoot = resolve(process.
       continue;
     }
 
+    if (step.routing !== "candidate") {
+      effectivePlan.steps[index] = {
+        ...step,
+        status: "skipped",
+        completed_at: now,
+        error: `routing not candidate: ${step.routing}`,
+      };
+      continue;
+    }
+
     const sourcePath = step.source_path ?? "";
     const destPath =
       step.dest_path ?? `smartdocs/raw/${basename(sourcePath || `step-${step.order}.md`)}`;
