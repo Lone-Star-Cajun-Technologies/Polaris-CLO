@@ -1,0 +1,48 @@
+{
+  "schema_version": "1.0",
+  "role": "closeout-librarian",
+  "status": "success",
+  "run_id": "polaris-run-pol-397-2026-06-26-001",
+  "cluster_id": "POL-397",
+  "dispatch_id": "3e7f06dc-ea70-40d7-81a8-97bccc7587d1",
+  "commit_sha": "271befa9e5f4c48e3040a4c6483718d0d7444658",
+  "commit_message": "docs(closeout): reconcile cognition for cluster POL-397",
+  "reconciled_at": "2026-06-26T00:00:00.000Z",
+  "polaris_md_updates": [
+    {
+      "path": "src/POLARIS.md",
+      "folder_slug": "src",
+      "action": "updated"
+    },
+    {
+      "path": "src/cli/POLARIS.md",
+      "folder_slug": "src-cli",
+      "action": "updated"
+    }
+  ],
+  "summary_md_updates": [
+    {
+      "path": "src/SUMMARY.md",
+      "folder_slug": "src",
+      "action": "updated"
+    },
+    {
+      "path": "src/cli/SUMMARY.md",
+      "folder_slug": "src-cli",
+      "action": "updated"
+    }
+  ],
+  "docs_ingested": [],
+  "docs_archived": [],
+  "yaml_updates": [],
+  "cognition_archived": [],
+  "files_committed": [
+    "src/POLARIS.md",
+    "src/SUMMARY.md",
+    "src/cli/POLARIS.md",
+    "src/cli/SUMMARY.md"
+  ],
+  "blockers": [],
+  "link_validation": [],
+  "evidence_summary": "Git commit 271befa9e5f4c48e3040a4c6483718d0d7444658 ('docs(closeout): reconcile cognition for cluster POL-397') updated 4 files across 2 affected folders (src/, src/cli/). POLARIS.md and SUMMARY.md updated for both src/ and src/cli/. No cognition notes to archive. No smartdocs ingested or archived. No blockers encountered."
+}

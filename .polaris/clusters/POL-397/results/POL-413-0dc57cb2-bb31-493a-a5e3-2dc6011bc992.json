@@ -1,0 +1,11 @@
+{
+  "child_id": "POL-413",
+  "status": "success",
+  "commit": "c3cade85c1c6328b1b0ab492ca75226ba1fc7b43",
+  "validation": "passed",
+  "next_recommended_action": "continue",
+  "tracker_updated": false,
+  "state_updated": false,
+  "telemetry_updated": false,
+  "run_id": "polaris-run-pol-397-2026-06-26-001"
+}

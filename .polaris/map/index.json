@@ -1,5 +1,5 @@
 {
-  "scan_date": "2026-06-26T14:08:13.530Z",
+  "scan_date": "2026-06-26T14:39:22.181Z",
   "file_count": 1312,
   "coverage_pct": 41,
   "instructionCoverage": {
@@ -40,7 +40,7 @@
       "taskchain": "polaris-cli",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-06-26T14:08:13.530Z",
+      "last_updated": "2026-06-26T14:39:22.181Z",
       "updated_by": "polaris-map-update",
       "tags": [
         "cli"
@@ -53,7 +53,7 @@
       "taskchain": "polaris-cli",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-06-26T14:08:13.530Z",
+      "last_updated": "2026-06-26T14:39:22.181Z",
       "updated_by": "polaris-map-update",
       "tags": [
         "cli"
@@ -15183,8 +15183,8 @@
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
-      "last_updated": "2026-06-25T04:12:56.926Z",
-      "updated_by": "polaris-map-index",
+      "last_updated": "2026-06-26T14:39:22.181Z",
+      "updated_by": "polaris-map-update",
       "tags": [],
       "instructionFile": "src/POLARIS.md"
     },
@@ -15194,8 +15194,8 @@
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
-      "last_updated": "2026-06-25T04:12:56.926Z",
-      "updated_by": "polaris-map-index",
+      "last_updated": "2026-06-26T14:39:22.181Z",
+      "updated_by": "polaris-map-update",
       "tags": [],
       "instructionFile": "src/POLARIS.md"
     },
