@@ -8367,5 +8367,27 @@
     "last_updated": "2026-06-25T04:12:56.926Z",
     "updated_by": "polaris-map-index",
     "tags": []
+  },
+  "smartdocs/specs/active/pol-390-new-repo-setup-interview-design.md": {
+    "domain": "unknown",
+    "route": "smartdocs/specs/active/pol-390-new-repo-setup-interview-design.md",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-06-26T03:55:23.673Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": "smartdocs/specs/active/POLARIS.md"
+  },
+  "smartdocs/specs/active/pol-390-new-repo-setup-interview-design.provenance.json": {
+    "domain": "unknown",
+    "route": "smartdocs/specs/active/pol-390-new-repo-setup-interview-design.provenance.json",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-06-26T03:55:23.673Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": "smartdocs/specs/active/POLARIS.md"
   }
 }

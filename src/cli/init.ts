@@ -34,6 +34,9 @@ import { handleInstructionFiles } from "./adopt-instructions.js";
 import { scaffoldRootSurfaces as defaultScaffoldRootSurfaces } from "./adopt-workspace.js";
 import { installWorkspaceAssets as defaultInstallWorkspaceAssets, runGraphBuild as defaultRunGraphBuild } from "./adopt-assets.js";
 import { resolveForeman } from "./agent-setup.js";
+import { runInterview, type RunInterviewOptions } from "./setup-interview/runner.js";
+import { generateSetupArtifacts } from "./setup-interview/generate.js";
+import type { InterviewRecord } from "./setup-interview/schema.js";
 import { generateSetupBootstrapPacket } from "../skill-packet/generator.js";
 import { dispatchForeman } from "../loop/adapters/foreman-dispatch.js";
 import type { WorkspaceInstallResult, GraphBuildResult } from "./adopt-assets.js";
@@ -44,6 +47,7 @@ import {
   formatGitignoreBlock,
   isPathBlockedFromStaging,
 } from "../finalize/artifact-policy.js";
+import { buildCheckpointReport, writeCheckpointReport, printCheckpointReport } from "./setup-interview/report.js";
 
 export { detectRepoState } from "./init-detect.js";
 export type { RepoState } from "./init-detect.js";
@@ -100,6 +104,16 @@ export interface InitOptions {
   reconcileAgentFiles?: (repoRoot: string, opts?: ReconcileOptions) => Promise<AgentReconcileRecord[]>;
   /** Injected timestamp for deterministic testing. */
   now?: Date;
+  /** Injected interview runner — for unit testing. */
+  runInterview?: (repoRoot: string, opts: RunInterviewOptions) => ReturnType<typeof runInterview>;
+  /** Injected setup artifact generator — for unit testing. */
+  generateSetupArtifacts?: (record: InterviewRecord, opts: { repoRoot?: string; dryRun?: boolean; yes?: boolean; now?: Date }) => ReturnType<typeof generateSetupArtifacts>;
+  /** Injected POLARIS_RULES.md generator — for unit testing. */
+  generatePolarisRules?: (repoRoot: string, inventory: import("./adoption-plan.js").RepoScanInventory, options?: { overwrite?: boolean; workspaceDir?: string }) => Promise<void>;
+  /** Injected SmartDocs migration — for unit testing. */
+  migrateSmartDocs?: (plan: import("./adoption-plan.js").AdoptionPlan, repoRoot?: string) => Promise<void>;
+  /** Injected map index runner — for unit testing. */
+  runMapIndex?: (repoRoot: string, dryRun: boolean, verbose: boolean, options?: { seedCognition?: boolean; skipThreshold?: boolean }) => void;
 }
 
 const PLAN_COMPLETE_STATUSES = new Set(["completed", "skipped"]);
@@ -567,6 +581,58 @@ export async function runInit(options: InitOptions = {}): Promise<void> {
     return;
   }
 
+  // New/empty repo: run the setup interview and generate artifacts behind an approval gate.
+  if (!options.adopt && (repoState === "empty" || repoState === "new")) {
+    const interviewFn = options.runInterview ?? runInterview;
+    let record: InterviewRecord;
+    try {
+      record = await interviewFn(repoRoot, { now: options.now });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      process.stdout.write(`${msg}\n`);
+      return;
+    }
+
+    const detected = detectCompaction(repoRoot);
+    const detectedRepoAnalysis = detectRepoAnalysis(repoRoot);
+    const generateFn = options.generateSetupArtifacts ?? generateSetupArtifacts;
+    await generateFn(record, {
+      repoRoot,
+      dryRun: options.dryRun,
+      yes: options.yes,
+      now: options.now,
+      detectedProviders: detected,
+      detectedRepoAnalysis,
+      scaffoldRootSurfaces: options.scaffoldRootSurfaces,
+      generatePolarisRules: options.generatePolarisRules,
+      migrateSmartDocs: options.migrateSmartDocs,
+      runMapIndex: options.runMapIndex,
+    });
+
+    // Post-setup validation and checkpoint report
+    if (!options.dryRun) {
+      const checkpointReport = buildCheckpointReport({
+        repoRoot,
+        record,
+        now: options.now,
+      });
+      
+      writeCheckpointReport(repoRoot, checkpointReport);
+      printCheckpointReport(checkpointReport);
+
+      // Check for validation failures
+      const failedValidations = Object.entries(checkpointReport.validationResults).filter(
+        ([_, result]) => !result.passed
+      );
+
+      if (failedValidations.length > 0) {
+        process.stdout.write(`\nWarning: ${failedValidations.length} file(s) failed validation. Check the report above for details.\n`);
+      }
+    }
+
+    return;
+  }
+
   // Load existing config (if any) so we preserve user-authored fields.
   let existing: Record<string, unknown> = {};
   if (existsSync(configPath)) {
@@ -787,7 +853,7 @@ export function createInitCommand(options: InitOptions = {}): Command {
     .option("--status", "detect and print current repository state without writing files")
     .option("--adopt", "run existing repository adoption flow")
     .option("--resume", "resume an approved adoption plan without prompting")
-    .option("--yes", "auto-approve adoption plan when used with --adopt")
+    .option("--yes", "auto-approve setup or adoption plan without prompting")
     .option("--commit", "create an adoption commit when used with --adopt")
     .action(async (cmdOptions: { dryRun?: boolean; status?: boolean; adopt?: boolean; resume?: boolean; yes?: boolean; commit?: boolean }) => {
       await runInit({

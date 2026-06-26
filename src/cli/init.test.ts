@@ -62,6 +62,7 @@ describe("runInit — no existing config", () => {
 
     runInit({
       repoRoot: REPO_ROOT,
+      detectRepoState: vi.fn().mockReturnValue("partial"),
       detectProviders: detect,
       detectRepoAnalysisProviders: vi.fn().mockReturnValue([]),
     });
@@ -82,6 +83,7 @@ describe("runInit — no existing config", () => {
 
     runInit({
       repoRoot: REPO_ROOT,
+      detectRepoState: vi.fn().mockReturnValue("partial"),
       detectProviders: detect,
       detectRepoAnalysisProviders: vi.fn().mockReturnValue([]),
     });
@@ -98,6 +100,7 @@ describe("runInit — no existing config", () => {
 
     runInit({
       repoRoot: REPO_ROOT,
+      detectRepoState: vi.fn().mockReturnValue("partial"),
       detectProviders: detect,
       detectRepoAnalysisProviders: vi.fn().mockReturnValue([]),
     });
@@ -117,6 +120,7 @@ describe("runInit — no existing config", () => {
 
     runInit({
       repoRoot: REPO_ROOT,
+      detectRepoState: vi.fn().mockReturnValue("partial"),
       detectProviders: detectCompaction,
       detectRepoAnalysisProviders: detectRepoAnalysis,
     });
@@ -141,6 +145,7 @@ describe("runInit — existing config", () => {
 
     runInit({
       repoRoot: REPO_ROOT,
+      detectRepoState: vi.fn().mockReturnValue("partial"),
       detectProviders: detect,
       detectRepoAnalysisProviders: vi.fn().mockReturnValue([]),
     });
@@ -165,6 +170,7 @@ describe("runInit — existing config", () => {
 
     runInit({
       repoRoot: REPO_ROOT,
+      detectRepoState: vi.fn().mockReturnValue("partial"),
       detectProviders: detect,
       detectRepoAnalysisProviders: vi.fn().mockReturnValue(["gitnexus"]),
     });
@@ -188,6 +194,7 @@ describe("runInit — existing config", () => {
 
     runInit({
       repoRoot: REPO_ROOT,
+      detectRepoState: vi.fn().mockReturnValue("partial"),
       detectProviders: vi.fn().mockReturnValue([]),
       detectRepoAnalysisProviders: vi.fn().mockReturnValue([]),
     });
@@ -209,6 +216,7 @@ describe("runInit — existing config", () => {
 
     runInit({
       repoRoot: REPO_ROOT,
+      detectRepoState: vi.fn().mockReturnValue("partial"),
       detectProviders: detect,
       detectRepoAnalysisProviders: vi.fn().mockReturnValue([]),
     });
@@ -230,6 +238,7 @@ describe("runInit — dry-run", () => {
     runInit({
       repoRoot: REPO_ROOT,
       dryRun: true,
+      detectRepoState: vi.fn().mockReturnValue("partial"),
       detectProviders: detect,
       detectRepoAnalysisProviders: vi.fn().mockReturnValue([]),
     });
@@ -244,6 +253,7 @@ describe("runInit — dry-run", () => {
     runInit({
       repoRoot: REPO_ROOT,
       dryRun: true,
+      detectRepoState: vi.fn().mockReturnValue("partial"),
       detectProviders: detect,
       detectRepoAnalysisProviders: vi.fn().mockReturnValue([]),
     });
@@ -617,6 +627,7 @@ describe("runInit — stdout messaging", () => {
 
     runInit({
       repoRoot: REPO_ROOT,
+      detectRepoState: vi.fn().mockReturnValue("partial"),
       detectProviders: detect,
       detectRepoAnalysisProviders: vi.fn().mockReturnValue([]),
     });
@@ -631,6 +642,7 @@ describe("runInit — stdout messaging", () => {
 
     runInit({
       repoRoot: REPO_ROOT,
+      detectRepoState: vi.fn().mockReturnValue("partial"),
       detectProviders: detect,
       detectRepoAnalysisProviders: vi.fn().mockReturnValue([]),
     });
@@ -1441,5 +1453,179 @@ describe("runInit --adopt — orchestration fixes", () => {
 
     expect(installIdx).toBeLessThan(graphIdx);    // Phase B before C2
     expect(graphIdx).toBeLessThan(reconcileIdx);  // C2 before D
+  });
+});
+
+describe("runInit — setup interview for empty/new repos", () => {
+  it("calls runInterview when repo state is empty", async () => {
+    mockedExistsSync.mockReturnValue(false);
+    const mockInterview = vi.fn().mockResolvedValue({
+      schema_version: "1.0",
+      mode: "init",
+      status: "answered",
+      started_at: "2026-06-26T00:00:00.000Z",
+      answers: {
+        project_purpose: "test",
+        source_roots: ["src"],
+        languages: ["typescript"],
+        canonical_doc_folders: ["docs"],
+        never_touch: [],
+        providers_by_role: {},
+      },
+      generation_plan: null,
+      approved_at: null,
+    });
+
+    await runInit({
+      repoRoot: REPO_ROOT,
+      yes: true,
+      detectRepoState: vi.fn().mockReturnValue("empty"),
+      detectProviders: vi.fn().mockReturnValue([]),
+      detectRepoAnalysisProviders: vi.fn().mockReturnValue([]),
+      runInterview: mockInterview,
+      scaffoldRootSurfaces: vi.fn().mockReturnValue({ created: [], skipped: [] }),
+      generatePolarisRules: vi.fn().mockResolvedValue(undefined),
+      migrateSmartDocs: vi.fn().mockResolvedValue(undefined),
+      runMapIndex: vi.fn(),
+    });
+
+    expect(mockInterview).toHaveBeenCalledOnce();
+    expect(mockInterview).toHaveBeenCalledWith(REPO_ROOT, expect.objectContaining({}));
+  });
+
+  it("calls runInterview when repo state is new", async () => {
+    mockedExistsSync.mockReturnValue(false);
+    const mockInterview = vi.fn().mockResolvedValue({
+      schema_version: "1.0",
+      mode: "init",
+      status: "answered",
+      started_at: "2026-06-26T00:00:00.000Z",
+      answers: { project_purpose: "test", source_roots: ["src"], languages: [], canonical_doc_folders: [], never_touch: [], providers_by_role: {} },
+      generation_plan: null,
+      approved_at: null,
+    });
+
+    await runInit({
+      repoRoot: REPO_ROOT,
+      yes: true,
+      detectRepoState: vi.fn().mockReturnValue("new"),
+      detectProviders: vi.fn().mockReturnValue([]),
+      detectRepoAnalysisProviders: vi.fn().mockReturnValue([]),
+      runInterview: mockInterview,
+      scaffoldRootSurfaces: vi.fn().mockReturnValue({ created: [], skipped: [] }),
+      generatePolarisRules: vi.fn().mockResolvedValue(undefined),
+      migrateSmartDocs: vi.fn().mockResolvedValue(undefined),
+      runMapIndex: vi.fn(),
+    });
+
+    expect(mockInterview).toHaveBeenCalledOnce();
+  });
+
+  it("prints clear message and returns when interview throws (non-interactive)", async () => {
+    mockedExistsSync.mockReturnValue(false);
+    const mockInterview = vi.fn().mockRejectedValue(
+      new Error("polaris init: interview requires an interactive terminal.\nProvide answers via --resume with a stored interview file, or run interactively."),
+    );
+
+    await runInit({
+      repoRoot: REPO_ROOT,
+      detectRepoState: vi.fn().mockReturnValue("empty"),
+      detectProviders: vi.fn().mockReturnValue([]),
+      detectRepoAnalysisProviders: vi.fn().mockReturnValue([]),
+      runInterview: mockInterview,
+    });
+
+    expect(stdoutOutput).toContain("polaris init: interview requires an interactive terminal.");
+    expect(mockedWriteFileSync).not.toHaveBeenCalled();
+  });
+
+  it("does not call runInterview when repo state is existing (adopt path)", async () => {
+    mockedExistsSync.mockReturnValue(false);
+    const mockInterview = vi.fn();
+
+    await runInit({
+      repoRoot: REPO_ROOT,
+      adopt: true,
+      yes: true,
+      detectRepoState: vi.fn().mockReturnValue("existing"),
+      detectProviders: vi.fn().mockReturnValue([]),
+      detectRepoAnalysisProviders: vi.fn().mockReturnValue([]),
+      runInterview: mockInterview,
+      scanAdoptionInventory: vi.fn().mockReturnValue({
+        scan_date: "2026-06-26T00:00:00.000Z",
+        repo_state: "existing",
+        package_manager: null,
+        source_roots: [],
+        docs_roots: [],
+        test_commands: [],
+        build_commands: [],
+        package_scripts: {},
+        generated_roots: [],
+        cache_roots: [],
+        fixture_roots: [],
+        agent_instruction_files: [],
+        existing_smartdocs_dirs: [],
+        architecture_notes: [],
+        likely_canonical_folders: [],
+        smartdocs_candidates: [],
+        ignore_candidates: [],
+      }),
+      generateAdoptionArtifacts: vi.fn().mockReturnValue({
+        plan: {
+          plan_id: "test",
+          generated_at: "2026-06-26T00:00:00.000Z",
+          repo_state: "existing",
+          approved: false,
+          approved_at: null,
+          dry_run: false,
+          steps: [],
+          impact_summary: { files_to_create: 0, files_to_move: 0, files_to_modify: 0, instruction_files_affected: 0, smartdocs_candidates_moved: 0, cognition_files_to_generate: 0 },
+        },
+        json: "{}\n",
+        markdown: "# Plan\n",
+        jsonPath: `${REPO_ROOT}/.polaris/adoption-plan.json`,
+        markdownPath: `${REPO_ROOT}/.polaris/adoption-plan.md`,
+        wroteFiles: false,
+      }),
+      scaffoldRootSurfaces: vi.fn().mockReturnValue({ created: [], skipped: [] }),
+      installWorkspaceAssets: vi.fn().mockReturnValue({ installed: [], alreadyPresent: [], skipped: [], conflicted: [] }),
+      runGraphBuild: vi.fn().mockReturnValue({ status: "graph-success" as const }),
+      reconcileAgentFiles: vi.fn().mockResolvedValue([]),
+    });
+
+    expect(mockInterview).not.toHaveBeenCalled();
+  });
+
+  it("writes config after a successful interview", async () => {
+    mockedExistsSync.mockReturnValue(false);
+    const mockInterview = vi.fn().mockResolvedValue({
+      schema_version: "1.0",
+      mode: "init",
+      status: "answered",
+      started_at: "2026-06-26T00:00:00.000Z",
+      answers: { project_purpose: "test", source_roots: ["src"], canonical_doc_folders: ["docs"] },
+      generation_plan: null,
+      approved_at: null,
+    });
+
+    await runInit({
+      repoRoot: REPO_ROOT,
+      yes: true,
+      detectRepoState: vi.fn().mockReturnValue("empty"),
+      detectProviders: vi.fn().mockReturnValue([]),
+      detectRepoAnalysisProviders: vi.fn().mockReturnValue([]),
+      runInterview: mockInterview,
+      scaffoldRootSurfaces: vi.fn().mockReturnValue({ created: [], skipped: [] }),
+      generatePolarisRules: vi.fn().mockResolvedValue(undefined),
+      migrateSmartDocs: vi.fn().mockResolvedValue(undefined),
+      runMapIndex: vi.fn(),
+    });
+
+    const configWrite = mockedWriteFileSync.mock.calls.find(([path]) => path === join(REPO_ROOT, "polaris.config.json"));
+    expect(configWrite).toBeDefined();
+    const written = JSON.parse(configWrite![1] as string) as Record<string, unknown>;
+    expect(written).toMatchObject({
+      repo: { sourceRoots: ["src"], docsRoots: ["docs"] },
+    });
   });
 });

@@ -1,10 +1,10 @@
 {
-  "scan_date": "2026-06-25T04:15:59.844Z",
-  "file_count": 1308,
-  "coverage_pct": 42,
+  "scan_date": "2026-06-26T03:55:23.673Z",
+  "file_count": 1310,
+  "coverage_pct": 41,
   "instructionCoverage": {
-    "routesCovered": 1228,
-    "routesTotal": 1308,
+    "routesCovered": 1230,
+    "routesTotal": 1310,
     "coveragePercent": 94
   },
   "entries": {
@@ -40,7 +40,7 @@
       "taskchain": "polaris-cli",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-06-25T04:13:12.395Z",
+      "last_updated": "2026-06-26T03:55:23.673Z",
       "updated_by": "polaris-map-update",
       "tags": [
         "cli"
@@ -53,7 +53,7 @@
       "taskchain": "polaris-cli",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-06-25T04:13:12.395Z",
+      "last_updated": "2026-06-26T03:55:23.673Z",
       "updated_by": "polaris-map-update",
       "tags": [
         "cli"
@@ -15589,6 +15589,28 @@
       "last_updated": "2026-06-25T04:12:56.926Z",
       "updated_by": "polaris-map-index",
       "tags": []
+    },
+    "smartdocs/specs/active/pol-390-new-repo-setup-interview-design.md": {
+      "domain": "unknown",
+      "route": "smartdocs/specs/active/pol-390-new-repo-setup-interview-design.md",
+      "taskchain": "polaris-core",
+      "confidence": 0,
+      "classification": "needs-review",
+      "last_updated": "2026-06-26T03:55:23.673Z",
+      "updated_by": "polaris-map-update",
+      "tags": [],
+      "instructionFile": "smartdocs/specs/active/POLARIS.md"
+    },
+    "smartdocs/specs/active/pol-390-new-repo-setup-interview-design.provenance.json": {
+      "domain": "unknown",
+      "route": "smartdocs/specs/active/pol-390-new-repo-setup-interview-design.provenance.json",
+      "taskchain": "polaris-core",
+      "confidence": 0,
+      "classification": "needs-review",
+      "last_updated": "2026-06-26T03:55:23.673Z",
+      "updated_by": "polaris-map-update",
+      "tags": [],
+      "instructionFile": "smartdocs/specs/active/POLARIS.md"
     }
   }
 }

@@ -10,6 +10,10 @@ export interface PromptApprovalOptions {
   stdin?: Readable;
   stdout?: Writable;
   now?: Date;
+  /** Optional markdown to display instead of the adoption plan markdown. */
+  markdown?: string;
+  /** Optional custom persistence function. Defaults to writing adoption-plan.json. */
+  persist?: (plan: AdoptionPlan, repoRoot: string, now: Date) => void;
 }
 
 function adoptionPlanJsonPath(repoRoot: string): string {
@@ -58,9 +62,11 @@ export async function promptApproval(
   const stdout = options.stdout ?? process.stdout;
   const stdin = options.stdin ?? process.stdin;
   const markdownPath = adoptionPlanMarkdownPath(repoRoot);
-  const markdown = existsSync(markdownPath)
-    ? readFileSync(markdownPath, "utf-8")
-    : renderAdoptionPlanMarkdown(plan);
+  const markdown =
+    options.markdown ??
+    (existsSync(markdownPath)
+      ? readFileSync(markdownPath, "utf-8")
+      : renderAdoptionPlanMarkdown(plan));
 
   stdout.write(`${markdown.replace(/\s*$/, "")}\n\n`);
 
@@ -77,7 +83,12 @@ export async function promptApproval(
   }
 
   if (response.trim().toLowerCase() === "y") {
-    persistApprovedAdoptionPlan(plan, repoRoot, options.now ?? new Date());
+    const approvalNow = options.now ?? new Date();
+    if (options.persist) {
+      options.persist(plan, repoRoot, approvalNow);
+    } else {
+      persistApprovedAdoptionPlan(plan, repoRoot, approvalNow);
+    }
     return true;
   }
 

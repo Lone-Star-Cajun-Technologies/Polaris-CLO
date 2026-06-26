@@ -1,0 +1,62 @@
+{
+  "schemaVersion": "v2",
+  "source": {
+    "id": "POL-394",
+    "type": "linear",
+    "analysis": {
+      "id": "POL-390",
+      "doc": "smartdocs/raw/pol-390-new-repo-setup-interview-design.md"
+    }
+  },
+  "nodes": {
+    "POL-394": {
+      "id": "POL-394",
+      "title": "IMPLEMENT: New-repo Polaris setup interview",
+      "status": "Backlog",
+      "body": "## Objective\n\nAdd a Foreman-led setup interview to `polaris init` for new/empty repos that captures operator intent and drives approval-gated generation of genesis, config, rules, route surfaces, and initial SmartDocs intake.\n\n## Context\n\nImplements the design from ANALYZE POL-390 (see `smartdocs/raw/pol-390-new-repo-setup-interview-design.md`). Extends existing `src/cli/init.ts`, `init-detect.ts`, and `agent-setup.ts` rather than building greenfield. Depends on Foreman handoff cluster (POL-392).\n\n## Goal\n\nA working `polaris init` new-repo path that runs a resumable interview, previews a generation plan, and generates scaffolding only after operator approval.\n\n## Scope\n\n* src/cli/setup-interview/**\n* src/cli/init.ts\n* src/cli/agent-setup.ts\n* src/cli/adopt-approve.ts\n\n## Acceptance Criteria\n\n* `polaris init` in an empty repo runs the interview, persists answers, and resumes via `--resume`.\n* No file is generated before the operator approves the generation plan.\n* Generated artifacts include GENESIS.md, polaris.config.json, POLARIS_RULES.md, and route surfaces.\n* A post-setup checkpoint report is produced.\n\n## Validation\n\n* npm run build\n* npx vitest run src/cli/setup-interview src/cli/init.test.ts\n\n## Ordering\n\nDepends on POL-392 (Foreman assignment + bootstrap handoff).\n\n## Non-goals\n\n* Do not implement slash commands (POL-393) or adoption changes (POL-391).\n* Do not auto-promote any generated doc to canon."
+    },
+    "POL-398": {
+      "id": "POL-398",
+      "title": "IMPLEMENT: Setup-interview schema and resumable storage",
+      "status": "Backlog",
+      "sessionType": "implement",
+      "body": "## Objective\n\nDefine the setup-interview output schema and a resumable persistence layer for new-repo init.\n\n## Context\n\nFirst child of the POL-394 cluster (design: `smartdocs/raw/pol-390-new-repo-setup-interview-design.md`). All later children consume this schema.\n\n## Goal\n\nA typed interview schema and read/write helpers persisting to `.polaris/setup/interview.json`, supporting resume from the next unanswered question or the approval gate.\n\n## Scope\n\n* src/cli/setup-interview/schema.ts\n* src/cli/setup-interview/store.ts\n\n## Acceptance Criteria\n\n* `interview.json` round-trips through typed load/save helpers.\n* Status transitions in-progress → answered → approved are represented.\n* A partially-answered file resumes without data loss.\n\n## Validation\n\n* npm run build\n* npx vitest run src/cli/setup-interview\n\n## Ordering\n\n* None (first in cluster).\n\n## Non-goals\n\n* Do not wire into `init.ts` (next child).\n* Do not generate any scaffolding."
+    },
+    "POL-399": {
+      "id": "POL-399",
+      "title": "IMPLEMENT: Foreman-led interview runner wired into polaris init",
+      "status": "Backlog",
+      "sessionType": "implement",
+      "body": "## Objective\n\nAdd the interview runner and wire it into the new/empty-repo branch of `polaris init`.\n\n## Context\n\nSecond child of POL-394. Consumes the schema/store from child 1; reuses `agent-setup.ts` for provider/role answers and `init-detect.ts` to confirm the new-repo path.\n\n## Goal\n\n`polaris init` on an empty repo runs the question bank, persists answers, and resumes via `--resume`.\n\n## Scope\n\n* src/cli/setup-interview/runner.ts\n* src/cli/init.ts\n* src/cli/agent-setup.ts\n\n## Acceptance Criteria\n\n* Running `polaris init` in an empty temp dir launches the interview.\n* Answers persist via the child-1 store; `--resume` continues mid-interview.\n* Non-interactive runs without `--yes` + answers file stop with a clear message.\n\n## Validation\n\n* npm run build\n* npx vitest run src/cli/setup-interview src/cli/init.test.ts\n\n## Ordering\n\n* Depends on child 1 (schema + storage).\n\n## Non-goals\n\n* Do not generate scaffolding yet (next child)."
+    },
+    "POL-400": {
+      "id": "POL-400",
+      "title": "IMPLEMENT: Approval-gated generation from interview output",
+      "status": "Backlog",
+      "sessionType": "implement",
+      "body": "## Objective\n\nGenerate genesis, config, rules, route surfaces, and initial SmartDocs intake from interview output, behind a single mandatory approval gate.\n\n## Context\n\nThird child of POL-394. Reuses `adopt-approve.ts:promptApproval` and existing generators referenced by `init.ts` (`scaffoldRootSurfaces`, `generatePolarisRules`, `migrateSmartDocs`, `runMapIndex`).\n\n## Goal\n\nA preview-then-approve flow that writes GENESIS.md, polaris.config.json, POLARIS_RULES.md, and route surfaces only after approval.\n\n## Scope\n\n* src/cli/setup-interview/generate.ts\n* src/cli/init.ts\n* src/cli/adopt-approve.ts\n\n## Acceptance Criteria\n\n* No file is written before approval; `--dry-run` previews the plan only.\n* `--yes` pre-approves when explicitly passed.\n* Generated artifacts match interview answers (source roots, canonical folders).\n\n## Validation\n\n* npm run build\n* npx vitest run src/cli/setup-interview src/cli/init.test.ts\n\n## Ordering\n\n* Depends on child 2 (interview runner).\n\n## Non-goals\n\n* Do not auto-promote any generated doc to canon."
+    },
+    "POL-401": {
+      "id": "POL-401",
+      "title": "IMPLEMENT: Post-setup validation and checkpoint report",
+      "status": "Backlog",
+      "sessionType": "implement",
+      "body": "## Objective\n\nRun validation after generation and produce an operator checkpoint report for new-repo setup.\n\n## Context\n\nFourth child of POL-394. Mirrors the existing adoption report pattern (`adopt-report.ts`).\n\n## Goal\n\nA post-setup step that validates generated artifacts and prints/writes a checkpoint report summarizing what was created and what to do next.\n\n## Scope\n\n* src/cli/setup-interview/report.ts\n* src/cli/init.ts\n\n## Acceptance Criteria\n\n* After generation, a checkpoint report lists created files and validation results.\n* Validation failures are surfaced clearly and do not silently pass.\n\n## Validation\n\n* npm run build\n* npx vitest run src/cli/setup-interview\n\n## Ordering\n\n* Depends on child 3 (generation).\n\n## Non-goals\n\n* Do not implement slash commands or adoption reporting."
+    }
+  },
+  "dependencies": {
+    "POL-399": ["POL-398"],
+    "POL-400": ["POL-399"],
+    "POL-401": ["POL-400"]
+  },
+  "clusters": {
+    "cluster-01": {
+      "id": "cluster-01",
+      "title": "New-repo setup interview",
+      "children": ["POL-398", "POL-399", "POL-400", "POL-401"],
+      "cluster_root": "POL-394"
+    }
+  },
+  "activeCluster": "cluster-01",
+  "created_at": "2026-06-25T03:21:00Z"
+}
