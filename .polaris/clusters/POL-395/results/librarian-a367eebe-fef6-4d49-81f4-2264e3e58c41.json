@@ -1,0 +1,106 @@
+{
+  "schema_version": "1.0",
+  "role": "closeout-librarian",
+  "run_id": "polaris-run-pol-395-2026-06-26-001",
+  "dispatch_id": "a367eebe-fef6-4d49-81f4-2264e3e58c41",
+  "cluster_id": "POL-395",
+  "status": "success",
+  "commit_sha": "0b3725ff7a825e9fcb84cfbbe43bcdd54d2bc9af",
+  "commit_message": "docs(closeout): reconcile cognition for cluster POL-395\n\nRun: polaris-run-pol-395-2026-06-26-001\nCluster: POL-395\nChildren: POL-402, POL-403, POL-404, POL-405\nFiles updated:\n- POLARIS.md: 1 files\n- SUMMARY.md: 1 files\n- docs ingested: 1\n- links repaired: 0",
+  "files_committed": [
+    "src/cli/POLARIS.md",
+    "src/cli/SUMMARY.md",
+    "smartdocs/specs/active/pol-391-existing-repo-operator-interview-design.md",
+    "smartdocs/specs/active/pol-391-existing-repo-operator-interview-design.provenance.json"
+  ],
+  "drift_reconciliation": {
+    "medic_ran": false,
+    "charts_created": [],
+    "drift_observations": [
+      {
+        "type": "canon_mismatch",
+        "target": "src/cli/POLARIS.md",
+        "severity": "medium",
+        "note": "adoption-context.ts (new module) not listed; interview phase and approval gates not described in editing rules"
+      },
+      {
+        "type": "summary_outdated",
+        "target": "src/cli/SUMMARY.md",
+        "severity": "medium",
+        "note": "Current State lacked: adoption-context.ts, interview phase, requireApprovalGates(), routing-aware plan generation"
+      },
+      {
+        "type": "missing_documentation",
+        "target": "smartdocs/specs/active/pol-391-existing-repo-operator-interview-design.md",
+        "severity": "low",
+        "note": "Design spec for implemented behavior was still in raw; promoted to specs/active"
+      }
+    ],
+    "chart_links_required": false,
+    "charts_linked": []
+  },
+  "polaris_md_updates": [
+    {
+      "file": "src/cli/POLARIS.md",
+      "action": "update",
+      "change_summary": "Added adoption-context.ts to file inventory. Added editing rule describing interview phase order, operator-context separation, and requireApprovalGates() requirement before mutation phases."
+    }
+  ],
+  "summary_md_updates": [
+    {
+      "file": "src/cli/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Appended to Current State: adoption-context.ts two-model design, interview phase, requireApprovalGates() with four category gates and non-interactive guard."
+    },
+    {
+      "file": "src/SUMMARY.md",
+      "action": "no_change"
+    }
+  ],
+  "docs_ingested": [
+    {
+      "source_path": "smartdocs/raw/pol-391-existing-repo-operator-interview-design.md",
+      "target_path": "smartdocs/specs/active/pol-391-existing-repo-operator-interview-design.md",
+      "action": "promote",
+      "reason": "Design spec for operator interview architecture now fully implemented by POL-402, POL-403, POL-404, POL-405"
+    }
+  ],
+  "docs_archived": [
+    {
+      "source_path": "smartdocs/raw/pol-389-agent-first-setup-ux-synthesis.md",
+      "target_path": null,
+      "action": "archive",
+      "reason": "UX synthesis; not directly implemented in this cluster; keep raw for operator review"
+    },
+    {
+      "source_path": "smartdocs/raw/pol-392-foreman-assignment-bootstrap-handoff-design.md",
+      "target_path": null,
+      "action": "archive",
+      "reason": "Implemented in POL-396 (separate cluster); not in scope for POL-395 librarian"
+    },
+    {
+      "source_path": "smartdocs/raw/pol-393-agent-plugin-slash-command-design.md",
+      "target_path": null,
+      "action": "archive",
+      "reason": "Not implemented in this cluster; keep raw"
+    }
+  ],
+  "yaml_updates": [
+    {
+      "file": "smartdocs/specs/active/pol-391-existing-repo-operator-interview-design.md",
+      "action": "update",
+      "change_summary": "Set status: active, kind: spec, promoted_by: closeout-librarian at time of promotion."
+    }
+  ],
+  "cognition_archived": [],
+  "link_validation": {
+    "total_checked": 4,
+    "valid": 4,
+    "broken": 0,
+    "repaired": 0,
+    "unrepairable": []
+  },
+  "blockers": [],
+  "reconciled_at": "2026-06-26T00:00:00.000Z",
+  "evidence_summary": "Cluster POL-395 implemented four children (POL-402 through POL-405) adding the operator-answer model (adoption-context.ts), interview phase (adopt-command.ts), routing-aware plan generation (adoption-plan.ts), and approval gates (adopt-approve.ts, adopt-instructions.ts, adopt-smartdocs.ts). POLARIS.md for src/cli was updated to list adoption-context.ts and describe the interview/gate pattern in editing rules. SUMMARY.md was updated to reflect the two-model adoption design, interview phase, and requireApprovalGates() framework. The design spec pol-391-existing-repo-operator-interview-design.md was promoted from smartdocs/raw to smartdocs/specs/active since all four ordered children are now implemented. No cognition notes were pending. No broken links were found. src/POLARIS.md and src/SUMMARY.md required no changes. pol-392 was not promoted (it belongs to POL-396). All committed files are within allowed_write_paths."
+}

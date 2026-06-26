@@ -1,0 +1,172 @@
+{
+  "schema_version": "1.0",
+  "role": "closeout-librarian",
+  "run_id": "polaris-run-pol-395-2026-06-26-001",
+  "dispatch_id": "a367eebe-fef6-4d49-81f4-2264e3e58c41",
+  "cluster_id": "POL-395",
+  "completed_children": [
+    "POL-402",
+    "POL-403",
+    "POL-404",
+    "POL-405"
+  ],
+  "child_summaries": [
+    {
+      "child_id": "POL-402",
+      "title": "IMPLEMENT: Operator-answer model stored separately from evidence",
+      "commit_sha": "61701cfc6a7886d3722b3ce037777e47227c0516",
+      "changed_files": [
+        "src/cli/adoption-context.test.ts",
+        "src/cli/adoption-context.ts"
+      ],
+      "compact_return_path": ".polaris/clusters/POL-395/results/POL-402-df88aaf0-56f9-4780-81aa-36b3b8ea74de.json",
+      "cognition_note_path": null
+    },
+    {
+      "child_id": "POL-403",
+      "title": "IMPLEMENT: Foreman adoption interview phase in adopt-command",
+      "commit_sha": "3585b292c674dec5f2f145768b9962ff3fa6252d",
+      "changed_files": [
+        "src/cli/adopt-command.test.ts",
+        "src/cli/adopt-command.ts"
+      ],
+      "compact_return_path": ".polaris/clusters/POL-395/results/POL-403-2ac1e918-4041-404c-9a24-910da35b7e87.json",
+      "cognition_note_path": null
+    },
+    {
+      "child_id": "POL-404",
+      "title": "IMPLEMENT: Adoption plan cites evidence and operator answers with routing",
+      "commit_sha": "a2e89a2ddf61c5a82f372fa26534a2703d83391c",
+      "changed_files": [
+        "src/cli/adopt-smartdocs.ts",
+        "src/cli/adoption-plan.ts"
+      ],
+      "compact_return_path": ".polaris/clusters/POL-395/results/POL-404-35028939-d61e-41d7-92ac-08b7d71f6123.json",
+      "cognition_note_path": null
+    },
+    {
+      "child_id": "POL-405",
+      "title": "IMPLEMENT: Approval gates before doc/instruction/graph-root/route changes",
+      "commit_sha": "2e6c42594462d49eff12051e3f7053b33be84548",
+      "changed_files": [
+        "src/cli/adopt-approve.ts",
+        "src/cli/adopt-command.test.ts",
+        "src/cli/adopt-command.ts",
+        "src/cli/adopt-instructions.ts"
+      ],
+      "compact_return_path": ".polaris/clusters/POL-395/results/POL-405-3a2421d3-828c-4a2d-8229-89f3b6e2c467.json",
+      "cognition_note_path": null
+    }
+  ],
+  "run_report_path": null,
+  "current_state_path": ".polaris/clusters/POL-395/state.json",
+  "affected_folders": [
+    "src/",
+    "src/cli/"
+  ],
+  "polaris_md_paths": [
+    {
+      "folder": "src/",
+      "folder_slug": "src",
+      "polaris_md": "src/POLARIS.md",
+      "summary_md": "src/SUMMARY.md",
+      "cognition_index": null
+    },
+    {
+      "folder": "src/cli/",
+      "folder_slug": "src-cli",
+      "polaris_md": "src/cli/POLARIS.md",
+      "summary_md": "src/cli/SUMMARY.md",
+      "cognition_index": null
+    }
+  ],
+  "cognition_notes": [],
+  "cognition_archive_paths": [],
+  "smartdocs_raw_paths": [
+    "smartdocs/raw/.gitkeep",
+    "smartdocs/raw/POLARIS.md",
+    "smartdocs/raw/pol-373-distribution-readiness-tracker-lifecycle-analysis.md",
+    "smartdocs/raw/pol-381-canonical-doctrine-genesis-analysis.md",
+    "smartdocs/raw/pol-389-agent-first-setup-ux-synthesis.md",
+    "smartdocs/raw/pol-390-new-repo-setup-interview-design.md",
+    "smartdocs/raw/pol-391-existing-repo-operator-interview-design.md",
+    "smartdocs/raw/pol-392-foreman-assignment-bootstrap-handoff-design.md",
+    "smartdocs/raw/pol-393-agent-plugin-slash-command-design.md"
+  ],
+  "existing_specs": [
+    "smartdocs/specs/active/Claude Plugin Runtime Integration Spec.md",
+    "smartdocs/specs/active/POLARIS.md",
+    "smartdocs/specs/active/SUMMARY.md",
+    "smartdocs/specs/active/canon-reconciliation-protocol.md",
+    "smartdocs/specs/active/closeout-librarian-spec.md",
+    "smartdocs/specs/active/connect-compatibility.md",
+    "smartdocs/specs/active/current-state-schema.md",
+    "smartdocs/specs/active/docs-authority-model.md",
+    "smartdocs/specs/active/ephemeral-validation-plan.md",
+    "smartdocs/specs/active/execution-adapters.md",
+    "smartdocs/specs/active/folder-cognition-staging-librarian.md",
+    "smartdocs/specs/active/foreman-bootstrap-handoff-spec.md",
+    "smartdocs/specs/active/foreman-quiet-mode-spec.md",
+    "smartdocs/specs/active/foreman-worker-architecture.md",
+    "smartdocs/specs/active/foreman-worker-migration-plan.md",
+    "smartdocs/specs/active/mcp-confirmed-dispatch-architecture.md",
+    "smartdocs/specs/active/mcp-mutation-safety-model.md",
+    "smartdocs/specs/active/pol-200-adaptive-folder-cognition-librarian-lifecycle.md",
+    "smartdocs/specs/active/pol-325-codegraph-integration-analysis.md",
+    "smartdocs/specs/active/pol-390-new-repo-setup-interview-design.md",
+    "smartdocs/specs/active/pol-76-mcp-bridge-analysis.md",
+    "smartdocs/specs/active/pol-97-cli-operator-surface-analysis.md",
+    "smartdocs/specs/active/polaris-artifact-promotion-commit-hygiene-policy.md",
+    "smartdocs/specs/active/polaris-implementation-plan.md",
+    "smartdocs/specs/active/provider-capability-matrix.md",
+    "smartdocs/specs/active/provider-role-dispatch-governance.md",
+    "smartdocs/specs/active/runtime-enforcement-spec.md",
+    "smartdocs/specs/active/taskchain-authoring.md",
+    "smartdocs/specs/active/taskchain-format.md",
+    "smartdocs/specs/active/windsurf-orchestrator.md",
+    "smartdocs/specs/active/worker-heartbeat-spec.md",
+    "smartdocs/specs/active/worker-lifecycle-state-machine.md",
+    "smartdocs/specs/active/worker-session-contract.md",
+    "smartdocs/specs/active/worker-telemetry-spec.md"
+  ],
+  "existing_doctrine": [
+    "smartdocs/doctrine/active/2026-05-23-provider-capability-abstraction.md",
+    "smartdocs/doctrine/active/2026-06-04-adoption-plan-1-command-surface-agent-files.md",
+    "smartdocs/doctrine/active/2026-06-04-polaris-adoption-architecture-design.md",
+    "smartdocs/doctrine/active/2026-06-05-adoption-architecture-final-decisions.md",
+    "smartdocs/doctrine/active/POLARIS.md",
+    "smartdocs/doctrine/active/SUMMARY.md",
+    "smartdocs/doctrine/active/issue-hierarchy-doctrine.md",
+    "smartdocs/doctrine/active/pol-223-role-system-worker-assignment-child-recovery-analysis.md",
+    "smartdocs/doctrine/active/polaris-implementation-plan.md",
+    "smartdocs/doctrine/active/smartdocs-summary-architecture.md"
+  ],
+  "result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-395/results/librarian-a367eebe-fef6-4d49-81f4-2264e3e58c41.json",
+  "prohibited_write_paths": [
+    "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-395/state.json",
+    "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-395/state.json",
+    "/Users/lsctech/Developer/Polaris/.taskchain_artifacts",
+    "/Users/lsctech/Developer/Polaris/.polaris/runs",
+    "/Users/lsctech/Developer/Polaris/.polaris/map",
+    "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-395/packets",
+    "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-395/results",
+    "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-395-2026-06-26-001/telemetry.jsonl",
+    "/Users/lsctech/Developer/Polaris/src",
+    "/Users/lsctech/Developer/Polaris/test",
+    "/Users/lsctech/Developer/Polaris/scripts"
+  ],
+  "allowed_write_paths": [
+    "/Users/lsctech/Developer/Polaris/src/POLARIS.md",
+    "/Users/lsctech/Developer/Polaris/src/cli/POLARIS.md",
+    "/Users/lsctech/Developer/Polaris/src/SUMMARY.md",
+    "/Users/lsctech/Developer/Polaris/src/cli/SUMMARY.md",
+    "/Users/lsctech/Developer/Polaris/smartdocs",
+    "/Users/lsctech/Developer/Polaris/.polaris/cognition/archive",
+    "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-395/results/librarian-a367eebe-fef6-4d49-81f4-2264e3e58c41.json"
+  ],
+  "constraints": {
+    "max_summary_addition_lines": 50,
+    "require_polaris_confidence_threshold": 0.8,
+    "librarian_timeout_seconds": 600
+  }
+}
