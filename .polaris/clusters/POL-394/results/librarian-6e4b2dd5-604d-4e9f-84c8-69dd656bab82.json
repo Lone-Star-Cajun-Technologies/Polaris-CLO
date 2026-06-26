@@ -1,0 +1,88 @@
+{
+  "schema_version": "1.0",
+  "role": "closeout-librarian",
+  "run_id": "polaris-run-pol-394-2026-06-26-001",
+  "dispatch_id": "6e4b2dd5-604d-4e9f-84c8-69dd656bab82",
+  "cluster_id": "POL-394",
+  "status": "success",
+  "commit_sha": "1f225e159dc52f774572051b79ac67a2a9e6f22d",
+  "commit_message": "docs(closeout): reconcile cognition for cluster POL-394\n\nRun: polaris-run-pol-394-2026-06-26-001\nCluster: POL-394\nChildren: POL-398, POL-399, POL-400, POL-401\nFiles updated:\n- POLARIS.md: 1 files\n- SUMMARY.md: 1 files\n- docs ingested: 1\n- links repaired: 0",
+  "files_committed": [
+    "src/cli/POLARIS.md",
+    "src/cli/SUMMARY.md",
+    "smartdocs/specs/active/pol-390-new-repo-setup-interview-design.md",
+    "smartdocs/specs/active/pol-390-new-repo-setup-interview-design.provenance.json"
+  ],
+  "drift_reconciliation": {
+    "medic_ran": false,
+    "charts_created": [],
+    "drift_observations": [
+      {
+        "type": "missing_documentation",
+        "target": "src/cli/POLARIS.md",
+        "severity": "medium",
+        "detail": "setup-interview/ subsystem not mentioned; new three-step new-repo init flow not documented"
+      },
+      {
+        "type": "summary_outdated",
+        "target": "src/cli/SUMMARY.md",
+        "severity": "medium",
+        "detail": "Current State section did not reflect new setup interview, approval-gated generation, or checkpoint report capability"
+      }
+    ],
+    "chart_links_required": false,
+    "charts_linked": []
+  },
+  "polaris_md_updates": [
+    {
+      "file": "src/cli/POLARIS.md",
+      "action": "update",
+      "change_summary": "Added setup-interview/ subsystem to What belongs here; clarified What does not belong in index.ts; added editing rule for the three-step new-repo init flow."
+    }
+  ],
+  "summary_md_updates": [
+    {
+      "file": "src/cli/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Updated Current State to describe setup-interview/ subsystem, three-step new-repo flow, and adopt-approve.ts optional markdown/persist extensions. Added setup-interview canonical sources."
+    },
+    {
+      "file": "src/SUMMARY.md",
+      "action": "no_change"
+    }
+  ],
+  "docs_ingested": [
+    {
+      "source_path": "smartdocs/raw/pol-390-new-repo-setup-interview-design.md",
+      "target_path": "smartdocs/specs/active/pol-390-new-repo-setup-interview-design.md",
+      "action": "ingest",
+      "reason": "Design spec for implemented behavior in POL-394 children POL-398 through POL-401; all implementation children listed in the doc match completed children."
+    }
+  ],
+  "docs_archived": [
+    {
+      "source_path": "smartdocs/raw/pol-389-agent-first-setup-ux-synthesis.md",
+      "target_path": null,
+      "action": "archive",
+      "reason": "One-time UX synthesis analysis that decomposed into POL-390 through POL-393. Consumed as design input; no ongoing authority as a spec."
+    }
+  ],
+  "yaml_updates": [
+    {
+      "file": "smartdocs/specs/active/pol-390-new-repo-setup-interview-design.md",
+      "action": "update",
+      "change_summary": "Added kind: spec, status: active, promoted_by: closeout-librarian frontmatter fields on promotion."
+    }
+  ],
+  "cognition_archived": [],
+  "link_validation": {
+    "total_checked": 3,
+    "valid": 3,
+    "broken": 0,
+    "repaired": 0,
+    "unrepairable": []
+  },
+  "blockers": [],
+  "reconciled_at": "2026-06-26T00:00:00.000Z",
+  "evidence_summary": "POL-394 delivered a new src/cli/setup-interview/ subsystem (schema, store, runner, generate, report) wired into polaris init for empty/new repos as a three-step flow: interview, approval-gated artifact generation, and checkpoint report. adopt-approve.ts was extended with optional markdown and custom persist callback. src/cli/POLARIS.md was updated to document the new subsystem in What belongs here, clarify the index.ts scope note, and add an editing rule for the three-step flow. src/cli/SUMMARY.md Current State was updated to describe the full new-repo init path and the adopt-approve.ts extensions. The design spec pol-390-new-repo-setup-interview-design.md was promoted from smartdocs/raw/ to smartdocs/specs/active/ with correct frontmatter and a provenance file. The UX synthesis doc pol-389 was recorded as archived (kept in place). src/POLARIS.md and src/SUMMARY.md required no changes. No broken links found. No cognition notes to archive."
+}
