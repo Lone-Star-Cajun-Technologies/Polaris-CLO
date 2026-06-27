@@ -203,7 +203,7 @@ export async function requireApprovalGates(
   if (!options.nonInteractiveSafe && stdin === process.stdin && !process.stdin.isTTY) {
     const stdout = options.stdout ?? process.stdout;
     stdout.write(
-      "Adoption aborted: interactive approval is required. Re-run in a TTY (interactive terminal).\n",
+      "Adoption aborted: non-interactive run requires a supplied context file (--context) or explicit approval.\n",
     );
     logAdoptionApprovalTelemetry(options.repoRoot ?? process.cwd(), {
       event: "category-approval-blocked",
