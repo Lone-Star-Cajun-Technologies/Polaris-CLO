@@ -1,0 +1,68 @@
+{
+  "schema_version": "1.0",
+  "cluster_id": "POL-395",
+  "state_generation": 10,
+  "child_states": [
+    {
+      "id": "POL-402",
+      "status": "done",
+      "commit": "61701cfc6a7886d3722b3ce037777e47227c0516"
+    },
+    {
+      "id": "POL-403",
+      "status": "done",
+      "commit": "3585b292c674dec5f2f145768b9962ff3fa6252d"
+    },
+    {
+      "id": "POL-404",
+      "status": "done",
+      "commit": "a2e89a2ddf61c5a82f372fa26534a2703d83391c"
+    },
+    {
+      "id": "POL-405",
+      "status": "done",
+      "commit": "2e6c42594462d49eff12051e3f7053b33be84548"
+    }
+  ],
+  "claim_metadata": {},
+  "packet_pointers": {
+    "POL-402": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-395/packets/POL-402-df88aaf0-56f9-4780-81aa-36b3b8ea74de.json",
+    "POL-403": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-395/packets/POL-403-2ac1e918-4041-404c-9a24-910da35b7e87.json",
+    "POL-404": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-395/packets/POL-404-35028939-d61e-41d7-92ac-08b7d71f6123.json",
+    "POL-405": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-395/packets/POL-405-3a2421d3-828c-4a2d-8229-89f3b6e2c467.json"
+  },
+  "result_pointers": {
+    "POL-402": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-395/results/POL-402-df88aaf0-56f9-4780-81aa-36b3b8ea74de.json",
+    "POL-403": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-395/results/POL-403-2ac1e918-4041-404c-9a24-910da35b7e87.json",
+    "POL-404": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-395/results/POL-404-35028939-d61e-41d7-92ac-08b7d71f6123.json",
+    "POL-405": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-395/results/POL-405-3a2421d3-828c-4a2d-8229-89f3b6e2c467.json"
+  },
+  "validation_results": {
+    "POL-402": {
+      "passed": true,
+      "output": "passed"
+    },
+    "POL-403": {
+      "passed": true,
+      "output": "passed"
+    },
+    "POL-404": {
+      "passed": true,
+      "output": "passed"
+    },
+    "POL-405": {
+      "passed": true,
+      "output": "passed"
+    }
+  },
+  "commits": {
+    "POL-402": "61701cfc6a7886d3722b3ce037777e47227c0516",
+    "POL-403": "3585b292c674dec5f2f145768b9962ff3fa6252d",
+    "POL-404": "a2e89a2ddf61c5a82f372fa26534a2703d83391c",
+    "POL-405": "2e6c42594462d49eff12051e3f7053b33be84548"
+  },
+  "tracker_mutations": {},
+  "blockers": [],
+  "delivery_branch": "pol-395-delivery",
+  "base_branch": "main"
+}

@@ -1,5 +1,6 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import type { OperatorContext } from "./adoption-context.js";
 
 export interface AgentInstructionFile {
   path: string;
@@ -39,6 +40,8 @@ export interface RepoScanInventory {
   ignore_candidates: string[];
 }
 
+export type DocRouting = "raw" | "candidate" | "hold" | "review-required";
+
 export interface AdoptionStep {
   step_id: string;
   order: number;
@@ -62,6 +65,9 @@ export interface AdoptionStep {
   status: "pending" | "completed" | "skipped" | "failed";
   completed_at?: string;
   error?: string;
+  evidence_refs?: string[];
+  operator_refs?: string[];
+  routing?: DocRouting;
 }
 
 export interface AdoptionImpact {
@@ -87,6 +93,7 @@ export interface AdoptionPlan {
 export interface GenerateAdoptionPlanOptions {
   dryRun?: boolean;
   now?: Date;
+  operatorContext?: OperatorContext;
 }
 
 export interface AdoptionPlanArtifacts {
@@ -106,18 +113,72 @@ function normalizePath(path: string): string {
   return path.endsWith("/") ? path.slice(0, -1) : path;
 }
 
+function isTrusted(path: string, operatorContext?: OperatorContext): boolean {
+  const normalized = normalizePath(path);
+  return operatorContext?.trusted_docs.some((p) => normalizePath(p) === normalized) ?? false;
+}
+
+function isStale(path: string, operatorContext?: OperatorContext): boolean {
+  const normalized = normalizePath(path);
+  return operatorContext?.stale_docs.some((p) => normalizePath(p) === normalized) ?? false;
+}
+
+function isNeverTouch(path: string, operatorContext?: OperatorContext): boolean {
+  const normalized = normalizePath(path);
+  return operatorContext?.never_touch.some((p) => normalizePath(p) === normalized) ?? false;
+}
+
+function instructionIntent(
+  path: string,
+  operatorContext?: OperatorContext,
+): OperatorContext["instruction_file_intent"][string] | undefined {
+  return operatorContext?.instruction_file_intent[path];
+}
+
+function deriveSmartDocsRouting(
+  candidate: SmartDocsCandidate,
+  operatorContext?: OperatorContext,
+): { routing: DocRouting; evidence_refs: string[]; operator_refs: string[] } {
+  const evidence_refs = [`scan:smartdocs_candidate:${candidate.path}`];
+  const operator_refs: string[] = [];
+
+  if (isNeverTouch(candidate.path, operatorContext) || isStale(candidate.path, operatorContext)) {
+    if (isNeverTouch(candidate.path, operatorContext)) operator_refs.push(`operator:never_touch:${candidate.path}`);
+    if (isStale(candidate.path, operatorContext)) operator_refs.push(`operator:stale_docs:${candidate.path}`);
+    return { routing: "hold", evidence_refs, operator_refs };
+  }
+
+  if (isTrusted(candidate.path, operatorContext)) {
+    operator_refs.push(`operator:trusted_docs:${candidate.path}`);
+    return { routing: "candidate", evidence_refs, operator_refs };
+  }
+
+  return { routing: "review-required", evidence_refs, operator_refs };
+}
+
 function createStep(
   order: number,
-  partial: Omit<AdoptionStep, "order" | "status">,
+  partial: Omit<AdoptionStep, "order" | "status"> & {
+    evidence_refs?: string[];
+    operator_refs?: string[];
+    routing?: DocRouting;
+  },
 ): AdoptionStep {
+  const { evidence_refs, operator_refs, routing, ...rest } = partial;
   return {
-    ...partial,
+    evidence_refs: evidence_refs ?? [],
+    operator_refs: operator_refs ?? [],
+    routing: routing ?? "candidate",
+    ...rest,
     order,
     status: "pending",
   };
 }
 
-function buildSteps(inventory: RepoScanInventory): AdoptionStep[] {
+function buildSteps(
+  inventory: RepoScanInventory,
+  operatorContext?: OperatorContext,
+): AdoptionStep[] {
   const steps: AdoptionStep[] = [];
   let order = 1;
 
@@ -132,6 +193,9 @@ function buildSteps(inventory: RepoScanInventory): AdoptionStep[] {
       destructive: true,
       requires_approval: false,
       estimated_risk: "low",
+      routing: "candidate",
+      evidence_refs: ["adoption:step:provider-config-lock"],
+      operator_refs: [],
     }),
   );
 
@@ -146,6 +210,9 @@ function buildSteps(inventory: RepoScanInventory): AdoptionStep[] {
       destructive: false,
       requires_approval: false,
       estimated_risk: "low",
+      routing: "candidate",
+      evidence_refs: ["adoption:step:adoption-scaffold"],
+      operator_refs: [],
     }),
   );
 
@@ -160,13 +227,21 @@ function buildSteps(inventory: RepoScanInventory): AdoptionStep[] {
       destructive: false,
       requires_approval: false,
       estimated_risk: "low",
+      routing: "candidate",
+      evidence_refs: ["adoption:step:workspace-root-surfaces"],
+      operator_refs: [],
     }),
   );
 
   for (const candidate of inventory.smartdocs_candidates) {
+    const { routing, evidence_refs, operator_refs } = deriveSmartDocsRouting(
+      candidate,
+      operatorContext,
+    );
+    const stepOrder = order++;
     steps.push(
-      createStep(order++, {
-        step_id: `smartdocs-migrate-${order.toString().padStart(3, "0")}`,
+      createStep(stepOrder, {
+        step_id: `smartdocs-migrate-${stepOrder.toString().padStart(3, "0")}`,
         phase: "C",
         category: "smartdocs-migrate",
         action: "move",
@@ -176,15 +251,29 @@ function buildSteps(inventory: RepoScanInventory): AdoptionStep[] {
         destructive: true,
         requires_approval: true,
         estimated_risk: candidate.estimated_risk,
+        routing,
+        evidence_refs,
+        operator_refs,
       }),
     );
   }
 
   for (const folder of inventory.likely_canonical_folders) {
     const normalizedFolder = normalizePath(folder);
+    const evidence_refs = [`scan:canonical_folder:${normalizedFolder}`];
+    const operator_refs: string[] = [];
+    let routing: DocRouting = "raw";
+    if (isNeverTouch(normalizedFolder, operatorContext)) {
+      routing = "hold";
+      operator_refs.push(`operator:never_touch:${normalizedFolder}`);
+    } else if (isTrusted(normalizedFolder, operatorContext)) {
+      routing = "candidate";
+      operator_refs.push(`operator:trusted_docs:${normalizedFolder}`);
+    }
+    const stepOrder = order++;
     steps.push(
-      createStep(order++, {
-        step_id: `cognition-generate-${order.toString().padStart(3, "0")}`,
+      createStep(stepOrder, {
+        step_id: `cognition-generate-${stepOrder.toString().padStart(3, "0")}`,
         phase: "C",
         category: "cognition-generate",
         action: "create",
@@ -193,6 +282,9 @@ function buildSteps(inventory: RepoScanInventory): AdoptionStep[] {
         destructive: false,
         requires_approval: true,
         estimated_risk: "medium",
+        routing,
+        evidence_refs,
+        operator_refs,
       }),
     );
   }
@@ -206,10 +298,24 @@ function buildSteps(inventory: RepoScanInventory): AdoptionStep[] {
         : file.recommendation === "thin-adapter"
           ? "medium"
           : "low";
+    const evidence_refs = [`scan:agent_instruction_file:${file.path}`];
+    const operator_refs: string[] = [];
+    const intent = instructionIntent(file.path, operatorContext);
+    let routing: DocRouting;
+    if (intent === "preserve") {
+      routing = "hold";
+      operator_refs.push(`operator:instruction_file_intent:${file.path}:preserve`);
+    } else if (intent === "migrate" || intent === "thin-adapter") {
+      routing = "candidate";
+      operator_refs.push(`operator:instruction_file_intent:${file.path}:${intent}`);
+    } else {
+      routing = "review-required";
+    }
 
+    const stepOrder = order++;
     steps.push(
-      createStep(order++, {
-        step_id: `instruction-refactor-${order.toString().padStart(3, "0")}`,
+      createStep(stepOrder, {
+        step_id: `instruction-refactor-${stepOrder.toString().padStart(3, "0")}`,
         phase: "C",
         category: "instruction-refactor",
         action,
@@ -225,14 +331,18 @@ function buildSteps(inventory: RepoScanInventory): AdoptionStep[] {
         destructive,
         requires_approval: destructive,
         estimated_risk: risk,
+        routing,
+        evidence_refs,
+        operator_refs,
       }),
     );
   }
 
   for (const ignorePath of inventory.ignore_candidates) {
+    const stepOrder = order++;
     steps.push(
-      createStep(order++, {
-        step_id: `ignore-rules-${order.toString().padStart(3, "0")}`,
+      createStep(stepOrder, {
+        step_id: `ignore-rules-${stepOrder.toString().padStart(3, "0")}`,
         phase: "C",
         category: "ignore-rules",
         action: "append",
@@ -241,6 +351,9 @@ function buildSteps(inventory: RepoScanInventory): AdoptionStep[] {
         destructive: true,
         requires_approval: true,
         estimated_risk: "low",
+        routing: "candidate",
+        evidence_refs: [`scan:ignore_candidate:${ignorePath}`],
+        operator_refs: [],
       }),
     );
   }
@@ -256,6 +369,9 @@ function buildSteps(inventory: RepoScanInventory): AdoptionStep[] {
       destructive: true,
       requires_approval: true,
       estimated_risk: "medium",
+      routing: "candidate",
+      evidence_refs: ["adoption:step:atlas-generate"],
+      operator_refs: [],
     }),
   );
 
@@ -270,6 +386,9 @@ function buildSteps(inventory: RepoScanInventory): AdoptionStep[] {
       destructive: true,
       requires_approval: true,
       estimated_risk: "medium",
+      routing: "candidate",
+      evidence_refs: ["adoption:step:stage-adoption"],
+      operator_refs: [],
     }),
   );
 
@@ -302,7 +421,7 @@ export function generateAdoptionPlan(
   options: GenerateAdoptionPlanOptions = {},
 ): AdoptionPlan {
   const generatedAt = (options.now ?? new Date()).toISOString();
-  const steps = buildSteps(inventory);
+  const steps = buildSteps(inventory, options.operatorContext);
   return {
     plan_id: formatPlanId(generatedAt),
     generated_at: generatedAt,
@@ -359,7 +478,7 @@ export function renderAdoptionPlanMarkdown(plan: AdoptionPlan): string {
       const source = step.source_path ? ` source: \`${step.source_path}\`` : "";
       const dest = step.dest_path ? ` destination: \`${step.dest_path}\`` : "";
       lines.push(
-        `- **${step.order}. ${step.step_id}** — ${step.category} / ${step.action} / approval ${step.requires_approval ? "required" : "not required"} / risk ${step.estimated_risk} / status ${step.status}${source}${dest}`,
+        `- **${step.order}. ${step.step_id}** — ${step.category} / ${step.action} / approval ${step.requires_approval ? "required" : "not required"} / risk ${step.estimated_risk} / routing ${step.routing} / status ${step.status}${source}${dest}`,
       );
       lines.push(`  - ${step.description}`);
     }

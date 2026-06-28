@@ -9,6 +9,7 @@ The CLI entry point for Polaris. It wires the `polaris` binary, registers all to
 - `index.ts` — binary entry point; registers subsystem commands via `addCommand()`
 - `graph.ts` — `polaris graph build|query|impact` command group and output formatting
 - `adopt-*.ts` — adoption scanning, workspace asset installation, instruction migration, report generation, and safe staging helpers for `polaris init --adopt`
+- `adoption-context.ts` — operator-answer model; loads/saves `.polaris/adoption/operator-context.json` (trusted_docs, stale_docs, never_touch, priority_systems, instruction_file_intent), kept separate from scan evidence
 - `agent-setup.ts` — `runAgentSetup()` (interactive role/provider configuration) and `resolveForeman()` (resolves or prompts for the Foreman provider, persists to config); used by `init.ts` and `adopt-command.ts` to wire Foreman bootstrap dispatch
 - `setup-interview/` — interactive setup interview for empty/new repositories: `schema.ts` (record types and `InterviewRecord` schema), `store.ts` (resumable persistent storage at `.polaris/setup/interview.json`), `runner.ts` (question-by-question TTY runner with resume support), `generate.ts` (approval-gated artifact generation from interview output — writes `GENESIS.md`, `polaris.config.json`, `POLARIS_RULES.md`, root route surfaces, SmartDocs intake, and map index), `report.ts` (post-setup validation and checkpoint report written to `.polaris/runs/`)
 - `librarian.ts` — closeout librarian packet/result command surface
@@ -29,6 +30,7 @@ The CLI entry point for Polaris. It wires the `polaris` binary, registers all to
 - Unknown commands and bare subsystem commands must exit non-zero with actionable help.
 - `welfare-check` is a safe/read-only top-level command wired from `src/map/welfare.ts`; it exits non-zero when route health review is required.
 - Adoption must install bundled workspace assets, preserve instruction-file provenance, point agent files at `POLARIS_RULES.md`, and filter runtime scratch before staging.
+- Adoption phases run in order: scan → interview → agents → (approval gates) → consolidate → map → skills → rules → canon. The interview phase writes operator answers to `adoption-context.ts` separately from scan evidence; plan generation in `adoption-plan.ts` merges both. `requireApprovalGates()` in `adopt-approve.ts` must run before any mutation phase (doc-movement, instruction-file, graph-root, route-scaffold); each gate previews the category diff and requires explicit `y` approval.
 - `resolveForeman()` is the canonical Foreman provider resolution path: if `execution.providerPolicy.foreman.providers[0]` is already set, it returns immediately; otherwise it prompts once and persists the choice. Use this (not ad-hoc config reads) whenever Foreman assignment is needed.
 - Foreman bootstrap dispatch from `init.ts` and `adopt-command.ts` is best-effort: dispatch errors must not block the init/adopt flow.
 - Keep `index.ts` short — it should remain a thin wiring file.

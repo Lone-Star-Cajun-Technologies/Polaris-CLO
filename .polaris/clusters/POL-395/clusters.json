@@ -1,0 +1,62 @@
+{
+  "schemaVersion": "v2",
+  "source": {
+    "id": "POL-395",
+    "type": "linear",
+    "analysis": {
+      "id": "POL-391",
+      "doc": "smartdocs/raw/pol-391-existing-repo-operator-interview-design.md"
+    }
+  },
+  "nodes": {
+    "POL-395": {
+      "id": "POL-395",
+      "title": "IMPLEMENT: Existing-repo operator interview for adoption",
+      "status": "Backlog",
+      "body": "## Objective\n\nAdd a Foreman-led operator interview to existing-repo adoption that captures operator context separately from discovered evidence and makes adoption plans cite both, with approval gates before broad mutation.\n\n## Context\n\nImplements the design from ANALYZE POL-391 (see `smartdocs/raw/pol-391-existing-repo-operator-interview-design.md`). Reuses existing `adoption-plan.ts` evidence model and `adopt-approve.ts` gating. Depends on POL-392.\n\n## Goal\n\nAn adoption flow where operator answers are stored separately, plans cite evidence + operator context, and no discovered doc is promoted above raw without an operator signal and approval.\n\n## Scope\n\n* src/cli/adopt-command.ts\n* src/cli/adoption-context.ts\n* src/cli/adoption-plan.ts\n* src/cli/adopt-approve.ts\n* src/cli/adopt-instructions.ts\n* src/cli/adopt-smartdocs.ts\n\n## Acceptance Criteria\n\n* Operator answers persist to `.polaris/adoption/operator-context.json`, separate from the scan inventory.\n* Adoption plan items carry evidence_refs, operator_refs, and a routing field.\n* No doc routes above raw/review-required on discovery alone.\n* Gates fire before doc movement, instruction-file, graph-root, and route changes.\n\n## Validation\n\n* npm run build\n* npx vitest run src/cli/adopt-command.test.ts src/cli/adoption-plan.test.ts\n\n## Ordering\n\nDepends on POL-392 (Foreman assignment + bootstrap handoff).\n\n## Non-goals\n\n* Do not mutate SmartDocs lifecycle semantics.\n* Do not weaken existing approval gates."
+    },
+    "POL-402": {
+      "id": "POL-402",
+      "title": "IMPLEMENT: Operator-answer model stored separately from evidence",
+      "status": "Backlog",
+      "sessionType": "implement",
+      "body": "## Objective\n\nAdd an operator-answer model persisted separately from the discovered scan inventory.\n\n## Context\n\nFirst child of POL-395 (design: `smartdocs/raw/pol-391-existing-repo-operator-interview-design.md`). Keeps operator claims distinct from `RepoScanInventory`.\n\n## Goal\n\nA typed operator-context model and store writing to `.polaris/adoption/operator-context.json`.\n\n## Scope\n\n* src/cli/adoption-context.ts\n\n## Acceptance Criteria\n\n* `operator-context.json` round-trips through typed helpers.\n* The file is written separately from the scan inventory (no merge).\n* Fields include trusted_docs, stale_docs, never_touch, priority_systems, instruction_file_intent.\n\n## Validation\n\n* npm run build\n* npx vitest run src/cli/adoption-context\n\n## Ordering\n\n* None (first in cluster).\n\n## Non-goals\n\n* Do not modify the scan inventory model."
+    },
+    "POL-403": {
+      "id": "POL-403",
+      "title": "IMPLEMENT: Foreman adoption interview phase in adopt-command",
+      "status": "Backlog",
+      "sessionType": "implement",
+      "body": "## Objective\n\nAdd an `interview` phase to `adopt-command.ts`, seeded from scan-inventory gaps, that captures operator answers.\n\n## Context\n\nSecond child of POL-395. Inserts between `scan` and `consolidate` phases; consumes the child-1 model.\n\n## Goal\n\n`polaris adopt` runs a Foreman-led interview seeded from inventory gaps and persists answers via the operator-context store.\n\n## Scope\n\n* src/cli/adopt-command.ts\n\n## Acceptance Criteria\n\n* A new `interview` phase exists in the AdoptPhase union and runs after scan.\n* Questions are seeded from untrusted docs, ambiguous source roots, instruction files, and canonical-folder candidates.\n* Answers persist via child 1; `--resume` continues.\n\n## Validation\n\n* npm run build\n* npx vitest run src/cli/adopt-command.test.ts\n\n## Ordering\n\n* Depends on child 1 (operator-answer model).\n\n## Non-goals\n\n* Do not change doc routing yet (next child)."
+    },
+    "POL-404": {
+      "id": "POL-404",
+      "title": "IMPLEMENT: Adoption plan cites evidence and operator answers with routing",
+      "status": "Backlog",
+      "sessionType": "implement",
+      "body": "## Objective\n\nExtend adoption plan items to carry evidence_refs, operator_refs, and a routing field so location alone never confers doctrine trust.\n\n## Context\n\nThird child of POL-395. Extends `adoption-plan.ts`; routing ∈ {raw, candidate, hold, review-required}.\n\n## Goal\n\nPlan items cite both evidence and operator answers, defaulting discovered docs to raw/review-required unless an operator signal promotes them.\n\n## Scope\n\n* src/cli/adoption-plan.ts\n* src/cli/adopt-smartdocs.ts\n\n## Acceptance Criteria\n\n* Each plan item has evidence_refs, operator_refs, and routing.\n* No doc routes above raw/review-required without an operator signal.\n* Routing is honored by the smartdocs migration path.\n\n## Validation\n\n* npm run build\n* npx vitest run src/cli/adoption-plan.test.ts\n\n## Ordering\n\n* Depends on child 2 (interview phase).\n\n## Non-goals\n\n* Do not mutate SmartDocs lifecycle semantics beyond routing."
+    },
+    "POL-405": {
+      "id": "POL-405",
+      "title": "IMPLEMENT: Approval gates before doc/instruction/graph-root/route changes",
+      "status": "Backlog",
+      "sessionType": "implement",
+      "body": "## Objective\n\nAdd distinct approval gates before document movement, instruction-file changes, graph-root changes, and route scaffolding during adoption.\n\n## Context\n\nFourth child of POL-395. Extends `adopt-approve.ts`; reuses `promptApproval`.\n\n## Goal\n\nEach broad-mutation category previews its diff and requires explicit approval before applying.\n\n## Scope\n\n* src/cli/adopt-approve.ts\n* src/cli/adopt-instructions.ts\n* src/cli/adopt-command.ts\n\n## Acceptance Criteria\n\n* Separate gates fire for doc movement, instruction-file edits, graph-root changes, and route scaffolding.\n* Non-interactive runs without a supplied context file stop before mutation.\n* Approvals are logged via existing adoption approval telemetry.\n\n## Validation\n\n* npm run build\n* npx vitest run src/cli/adopt-command.test.ts\n\n## Ordering\n\n* Depends on child 3 (plan routing).\n\n## Non-goals\n\n* Do not weaken or remove existing gates."
+    }
+  },
+  "dependencies": {
+    "POL-403": ["POL-402"],
+    "POL-404": ["POL-403"],
+    "POL-405": ["POL-404"]
+  },
+  "clusters": {
+    "cluster-01": {
+      "id": "cluster-01",
+      "title": "Existing-repo operator interview",
+      "children": ["POL-402", "POL-403", "POL-404", "POL-405"],
+      "cluster_root": "POL-395"
+    }
+  },
+  "activeCluster": "cluster-01",
+  "created_at": "2026-06-25T03:21:00Z"
+}

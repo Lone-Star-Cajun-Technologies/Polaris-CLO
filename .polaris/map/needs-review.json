@@ -8389,5 +8389,27 @@
     "updated_by": "polaris-map-update",
     "tags": [],
     "instructionFile": "smartdocs/specs/active/POLARIS.md"
+  },
+  "smartdocs/specs/active/pol-391-existing-repo-operator-interview-design.md": {
+    "domain": "unknown",
+    "route": "smartdocs/specs/active/pol-391-existing-repo-operator-interview-design.md",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-06-26T14:08:13.530Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": "smartdocs/specs/active/POLARIS.md"
+  },
+  "smartdocs/specs/active/pol-391-existing-repo-operator-interview-design.provenance.json": {
+    "domain": "unknown",
+    "route": "smartdocs/specs/active/pol-391-existing-repo-operator-interview-design.provenance.json",
+    "taskchain": "polaris-core",
+    "confidence": 0,
+    "classification": "needs-review",
+    "last_updated": "2026-06-26T14:08:13.530Z",
+    "updated_by": "polaris-map-update",
+    "tags": [],
+    "instructionFile": "smartdocs/specs/active/POLARIS.md"
   }
 }

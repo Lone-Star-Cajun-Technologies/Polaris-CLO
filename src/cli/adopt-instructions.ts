@@ -1,6 +1,8 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
+import type { Readable, Writable } from "node:stream";
 import type { AdoptionPlan, RepoScanInventory } from "./adoption-plan.js";
+import { promptCategoryApproval } from "./adopt-approve.js";
 
 type InstructionDecision = "preserve" | "thin-adapter" | "migrate";
 
@@ -146,13 +148,35 @@ function appendInstructionProvenance(
   writeFileSync(provenancePath, `${JSON.stringify(updated, null, 2)}\n`, "utf-8");
 }
 
-export function handleInstructionFiles(
+export interface HandleInstructionFilesOptions {
+  stdin?: Readable;
+  stdout?: Writable;
+  /** Skip the approval gate (e.g., already approved upstream). Defaults to false. */
+  skipApprovalGate?: boolean;
+}
+
+export async function handleInstructionFiles(
   plan: AdoptionPlan,
   inventory: RepoScanInventory,
   repoRoot: string,
+  options: HandleInstructionFilesOptions = {},
 ): Promise<InstructionActionRecord[]> {
   if (plan.dry_run) {
-    return Promise.resolve([]);
+    return [];
+  }
+
+  // Approval gate: show instruction-refactor steps and ask before mutating,
+  // unless the overall plan is already approved or the caller opts out.
+  if (!options.skipApprovalGate && !plan.approved) {
+    const instructionSteps = plan.steps.filter((s) => s.category === "instruction-refactor");
+    if (instructionSteps.filter((s) => s.action !== "skip").length > 0) {
+      const approved = await promptCategoryApproval("instruction-file", instructionSteps, {
+        repoRoot,
+        stdin: options.stdin,
+        stdout: options.stdout,
+      });
+      if (!approved) return [];
+    }
   }
   const doctrineExists = hasDoctrine(repoRoot);
   const now = new Date().toISOString();
