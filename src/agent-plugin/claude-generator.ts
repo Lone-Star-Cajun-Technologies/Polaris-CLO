@@ -72,7 +72,7 @@ See \`${command.routing}\` for the full routing protocol and skill directory res
 2. Read \`.polaris/skills/<target-skill>/SKILL.md\` — it is the authoritative instruction source.
 3. Run the skill bootloader:
    \`\`\`bash
-   polaris skill packet ${command.skill}
+   polaris skill packet ${command.skill}${command.args.length > 0 ? " $ARGUMENTS" : ""}
    \`\`\`
    Do not begin work until a packet is returned.
    If no packet is produced, stop and report: **Polaris could not authorize this run.**
@@ -124,7 +124,10 @@ ${command.command}
 export function generateAllClaudeShims(outDir: string = ".claude/commands"): string[] {
   fs.mkdirSync(outDir, { recursive: true });
   const written: string[] = [];
+  const seen = new Set<string>();
   for (const command of SLASH_COMMANDS) {
+    if (seen.has(command.name)) continue;
+    seen.add(command.name);
     const filePath = path.join(outDir, `${command.name}.md`);
     fs.writeFileSync(filePath, generateClaudeShim(command), "utf8");
     written.push(filePath);

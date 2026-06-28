@@ -7,5 +7,6 @@
   "tracker_updated": false,
   "state_updated": false,
   "telemetry_updated": false,
-  "run_id": "polaris-run-pol-397-2026-06-26-001"
+  "run_id": "polaris-run-pol-397-2026-06-26-001",
+  "cluster_id": "POL-397"
 }

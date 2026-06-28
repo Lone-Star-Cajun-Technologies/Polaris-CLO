@@ -26,7 +26,7 @@ See `.polaris/skills/ROUTING.md` for the full routing protocol and skill directo
 2. Read `.polaris/skills/<target-skill>/SKILL.md` — it is the authoritative instruction source.
 3. Run the skill bootloader:
    ```bash
-   polaris skill packet analyze
+   polaris skill packet analyze $ARGUMENTS
    ```
    Do not begin work until a packet is returned.
    If no packet is produced, stop and report: **Polaris could not authorize this run.**

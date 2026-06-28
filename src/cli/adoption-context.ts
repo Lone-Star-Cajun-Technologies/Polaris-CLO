@@ -22,7 +22,17 @@ export function loadOperatorContext(repoRoot: string): OperatorContext | null {
   const path = contextPath(repoRoot);
   if (!existsSync(path)) return null;
   try {
-    return JSON.parse(readFileSync(path, "utf-8")) as OperatorContext;
+    const parsed = JSON.parse(readFileSync(path, "utf-8"));
+    if (
+      !Array.isArray(parsed?.trusted_docs) ||
+      !Array.isArray(parsed?.never_touch) ||
+      typeof parsed?.instruction_file_intent !== "object" ||
+      parsed?.instruction_file_intent === null ||
+      Array.isArray(parsed?.instruction_file_intent)
+    ) {
+      return null;
+    }
+    return parsed as OperatorContext;
   } catch {
     return null;
   }

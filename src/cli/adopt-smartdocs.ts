@@ -153,7 +153,7 @@ export function migrateSmartDocs(plan: AdoptionPlan, repoRoot = resolve(process.
       continue;
     }
 
-    if (step.routing !== "candidate") {
+    if (step.routing !== undefined && step.routing !== "candidate") {
       effectivePlan.steps[index] = {
         ...step,
         status: "skipped",

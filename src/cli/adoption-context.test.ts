@@ -102,4 +102,22 @@ describe("saveOperatorContext / loadOperatorContext", () => {
     writeFileSync(join(root, ".polaris", "adoption", "operator-context.json"), "not-json", "utf-8");
     expect(loadOperatorContext(root)).toBeNull();
   });
+
+  it("returns null when context file is valid JSON but missing required array fields", () => {
+    const root = makeFixtureRoot("operator-context-schema-drift");
+    mkdirSync(join(root, ".polaris", "adoption"), { recursive: true });
+    // Payload has valid JSON structure but trusted_docs is missing (schema drift)
+    const driftPayload = {
+      schema_version: "1.0",
+      answered_at: new Date().toISOString(),
+      never_touch: [],
+      instruction_file_intent: {},
+    };
+    writeFileSync(
+      join(root, ".polaris", "adoption", "operator-context.json"),
+      JSON.stringify(driftPayload),
+      "utf-8",
+    );
+    expect(loadOperatorContext(root)).toBeNull();
+  });
 });

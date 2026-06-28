@@ -141,28 +141,28 @@
     "smartdocs/doctrine/active/polaris-implementation-plan.md",
     "smartdocs/doctrine/active/smartdocs-summary-architecture.md"
   ],
-  "result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-395/results/librarian-a367eebe-fef6-4d49-81f4-2264e3e58c41.json",
+  "result_path": ".polaris/clusters/POL-395/results/librarian-a367eebe-fef6-4d49-81f4-2264e3e58c41.json",
   "prohibited_write_paths": [
-    "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-395/state.json",
-    "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-395/state.json",
-    "/Users/lsctech/Developer/Polaris/.taskchain_artifacts",
-    "/Users/lsctech/Developer/Polaris/.polaris/runs",
-    "/Users/lsctech/Developer/Polaris/.polaris/map",
-    "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-395/packets",
-    "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-395/results",
-    "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-395-2026-06-26-001/telemetry.jsonl",
-    "/Users/lsctech/Developer/Polaris/src",
-    "/Users/lsctech/Developer/Polaris/test",
-    "/Users/lsctech/Developer/Polaris/scripts"
+    ".polaris/clusters/POL-395/state.json",
+    ".polaris/clusters/POL-395/state.json",
+    ".taskchain_artifacts",
+    ".polaris/runs",
+    ".polaris/map",
+    ".polaris/clusters/POL-395/packets",
+    ".polaris/clusters/POL-395/results",
+    ".taskchain_artifacts/polaris-run/runs/polaris-run-pol-395-2026-06-26-001/telemetry.jsonl",
+    "src",
+    "test",
+    "scripts"
   ],
   "allowed_write_paths": [
-    "/Users/lsctech/Developer/Polaris/src/POLARIS.md",
-    "/Users/lsctech/Developer/Polaris/src/cli/POLARIS.md",
-    "/Users/lsctech/Developer/Polaris/src/SUMMARY.md",
-    "/Users/lsctech/Developer/Polaris/src/cli/SUMMARY.md",
-    "/Users/lsctech/Developer/Polaris/smartdocs",
-    "/Users/lsctech/Developer/Polaris/.polaris/cognition/archive",
-    "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-395/results/librarian-a367eebe-fef6-4d49-81f4-2264e3e58c41.json"
+    "src/POLARIS.md",
+    "src/cli/POLARIS.md",
+    "src/SUMMARY.md",
+    "src/cli/SUMMARY.md",
+    "smartdocs",
+    ".polaris/cognition/archive",
+    ".polaris/clusters/POL-395/results/librarian-a367eebe-fef6-4d49-81f4-2264e3e58c41.json"
   ],
   "constraints": {
     "max_summary_addition_lines": 50,

@@ -320,8 +320,11 @@ export function createAdoptCommand(opts: { repoRoot: string }): Command {
   cmd
     .command("interview")
     .description("Run Foreman-led interview to capture operator context")
-    .option("--resume", "resume a previous interview (skips already-answered questions)")
     .action(async () => {
+      if (!process.stdin.isTTY) {
+        process.stderr.write("Error: the interview subcommand requires an interactive terminal.\n");
+        process.exit(1);
+      }
       const inventory = await scanRepo(repoRoot, { rescan: false });
       await runAdoptPhase("interview", repoRoot, { inventory });
     });

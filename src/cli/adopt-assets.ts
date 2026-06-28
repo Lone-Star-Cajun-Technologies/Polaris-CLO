@@ -201,6 +201,10 @@ export function installWorkspaceAssets(
 
   // 6. Agent-plugin shims (Claude Code commands)
   const shimOutDir = join(repoRoot, ".claude", "commands");
+  if (isAncestorSymlink(repoRoot, ".claude/commands")) {
+    skipped.push(".claude/commands");
+    return { installed, alreadyPresent, skipped, conflicted };
+  }
   const shimSync = syncShims(shimOutDir);
 
   return { installed, alreadyPresent, skipped, conflicted, shimSync };

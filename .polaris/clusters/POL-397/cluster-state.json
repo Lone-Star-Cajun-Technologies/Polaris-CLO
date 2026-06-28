@@ -26,16 +26,16 @@
   ],
   "claim_metadata": {},
   "packet_pointers": {
-    "POL-410": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-397/packets/POL-410-2bc7a2da-0030-469b-a7aa-1e93cb983f05.json",
-    "POL-411": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-397/packets/POL-411-f26fd5ff-c616-476c-b564-44744576f5d1.json",
-    "POL-412": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-397/packets/POL-412-07df6f57-a7cb-4f42-a1cf-b37cdf116740.json",
-    "POL-413": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-397/packets/POL-413-0dc57cb2-bb31-493a-a5e3-2dc6011bc992.json"
+    "POL-410": ".polaris/clusters/POL-397/packets/POL-410-2bc7a2da-0030-469b-a7aa-1e93cb983f05.json",
+    "POL-411": ".polaris/clusters/POL-397/packets/POL-411-f26fd5ff-c616-476c-b564-44744576f5d1.json",
+    "POL-412": ".polaris/clusters/POL-397/packets/POL-412-07df6f57-a7cb-4f42-a1cf-b37cdf116740.json",
+    "POL-413": ".polaris/clusters/POL-397/packets/POL-413-0dc57cb2-bb31-493a-a5e3-2dc6011bc992.json"
   },
   "result_pointers": {
-    "POL-410": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-397/results/POL-410-2bc7a2da-0030-469b-a7aa-1e93cb983f05.json",
-    "POL-411": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-397/results/POL-411-f26fd5ff-c616-476c-b564-44744576f5d1.json",
-    "POL-412": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-397/results/POL-412-07df6f57-a7cb-4f42-a1cf-b37cdf116740.json",
-    "POL-413": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-397/results/POL-413-0dc57cb2-bb31-493a-a5e3-2dc6011bc992.json"
+    "POL-410": ".polaris/clusters/POL-397/results/POL-410-2bc7a2da-0030-469b-a7aa-1e93cb983f05.json",
+    "POL-411": ".polaris/clusters/POL-397/results/POL-411-f26fd5ff-c616-476c-b564-44744576f5d1.json",
+    "POL-412": ".polaris/clusters/POL-397/results/POL-412-07df6f57-a7cb-4f42-a1cf-b37cdf116740.json",
+    "POL-413": ".polaris/clusters/POL-397/results/POL-413-0dc57cb2-bb31-493a-a5e3-2dc6011bc992.json"
   },
   "validation_results": {
     "POL-410": {

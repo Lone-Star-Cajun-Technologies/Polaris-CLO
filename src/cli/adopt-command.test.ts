@@ -289,7 +289,7 @@ describe("POL-405: Approval gates", () => {
         action: "move", source_path: "docs/foo.md", dest_path: "smartdocs/raw/foo.md",
         description: "Move foo.md", destructive: true, requires_approval: true,
         estimated_risk: "low", status: "pending", evidence_refs: [], operator_refs: [],
-        routing: "review-required",
+        routing: "candidate",
       }],
     });
     const { stream: stdout, captured } = makeOutputStream();
@@ -318,15 +318,14 @@ describe("POL-405: Approval gates", () => {
     rmSync(root, { recursive: true, force: true });
   });
 
-  it("promptCategoryApproval: logs telemetry with approval result", async () => {
+  it("promptCategoryApproval: returns true immediately when no actionable steps", async () => {
     const root = makeRoot();
-    mkdirSync(join(root, ".polaris"), { recursive: true });
     const { stream: stdout } = makeOutputStream();
     const stdin = makeInputStream("y");
     const approved = await promptCategoryApproval("doc-movement", [], { repoRoot: root, stdin, stdout });
-    // No actionable steps — still returns true (nothing to approve)
-    // Telemetry file should have been written
-    expect(existsSync(join(root, ".polaris", "adoption-telemetry.jsonl"))).toBe(true);
+    // No actionable steps — short-circuits without prompting or writing telemetry
+    expect(approved).toBe(true);
+    expect(existsSync(join(root, ".polaris", "adoption-telemetry.jsonl"))).toBe(false);
     rmSync(root, { recursive: true, force: true });
   });
 });
