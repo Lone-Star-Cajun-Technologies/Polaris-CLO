@@ -5,7 +5,7 @@ Print the current Polaris loop run state summary
 
 ## Usage
 
-```
+```text
 /polaris-status
 ```
 
@@ -17,6 +17,6 @@ None.
 
 Run the following CLI command:
 
-```
+```bash
 polaris status
 ```

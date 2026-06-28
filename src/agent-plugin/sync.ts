@@ -84,5 +84,11 @@ export interface SyncResult {
 export function syncShims(outDir: string = ".claude/commands"): SyncResult {
   const drift = detectShimDrift(outDir);
   const written = generateAllClaudeShims(outDir);
+  for (const name of drift.orphaned) {
+    const orphanPath = path.join(outDir, `${name}.md`);
+    if (fs.existsSync(orphanPath)) {
+      fs.rmSync(orphanPath);
+    }
+  }
   return { written, drift };
 }

@@ -5,7 +5,7 @@ Execute a Polaris run cluster via the Foreman skill packet
 
 ## Usage
 
-```
+```text
 /polaris-run <cluster_id>
 ```
 
@@ -25,7 +25,7 @@ See `.polaris/skills/ROUTING.md` for the full routing protocol and skill directo
 1. Look up `/polaris-run` in `.polaris/skills/ROUTING.md` to find the target skill directory.
 2. Read `.polaris/skills/<target-skill>/SKILL.md` — it is the authoritative instruction source.
 3. Run the skill bootloader:
-   ```
+   ```bash
    polaris skill packet run
    ```
    Do not begin work until a packet is returned.

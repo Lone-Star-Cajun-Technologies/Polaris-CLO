@@ -5,7 +5,7 @@ Analyze a cluster and produce an implementation plan via the Analyst skill packe
 
 ## Usage
 
-```
+```text
 /polaris-analyze <cluster_id>
 ```
 
@@ -25,7 +25,7 @@ See `.polaris/skills/ROUTING.md` for the full routing protocol and skill directo
 1. Look up `/polaris-analyze` in `.polaris/skills/ROUTING.md` to find the target skill directory.
 2. Read `.polaris/skills/<target-skill>/SKILL.md` — it is the authoritative instruction source.
 3. Run the skill bootloader:
-   ```
+   ```bash
    polaris skill packet analyze
    ```
    Do not begin work until a packet is returned.

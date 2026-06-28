@@ -25,10 +25,15 @@ describe("detectShimDrift", () => {
   });
 
   it("reports all commands as missing when outDir does not exist", () => {
-    const dir = path.join(makeTmpDir(), "does-not-exist");
-    const report = detectShimDrift(dir);
-    expect(report.missing).toHaveLength(SLASH_COMMANDS.length);
-    expect(report.hasDrift).toBe(true);
+    const parent = makeTmpDir();
+    try {
+      const dir = path.join(parent, "does-not-exist");
+      const report = detectShimDrift(dir);
+      expect(report.missing).toHaveLength(SLASH_COMMANDS.length);
+      expect(report.hasDrift).toBe(true);
+    } finally {
+      fs.rmSync(parent, { recursive: true });
+    }
   });
 
   it("reports no drift after syncShims", () => {
@@ -124,6 +129,20 @@ describe("syncShims", () => {
       // Second sync: no drift before (shims just written)
       const second = syncShims(dir);
       expect(second.drift.hasDrift).toBe(false);
+    } finally {
+      fs.rmSync(dir, { recursive: true });
+    }
+  });
+
+  it("removes orphaned shims not in the manifest", () => {
+    const dir = makeTmpDir();
+    try {
+      syncShims(dir);
+      const orphanPath = path.join(dir, "polaris-unknown.md");
+      fs.writeFileSync(orphanPath, "orphan", "utf8");
+      expect(fs.existsSync(orphanPath)).toBe(true);
+      syncShims(dir);
+      expect(fs.existsSync(orphanPath)).toBe(false);
     } finally {
       fs.rmSync(dir, { recursive: true });
     }

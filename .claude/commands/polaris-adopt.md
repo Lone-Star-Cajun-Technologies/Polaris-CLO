@@ -5,7 +5,7 @@ Adopt Polaris into an existing repository
 
 ## Usage
 
-```
+```text
 /polaris-adopt
 ```
 
@@ -17,6 +17,6 @@ None.
 
 Run the following CLI command:
 
-```
+```bash
 polaris adopt
 ```

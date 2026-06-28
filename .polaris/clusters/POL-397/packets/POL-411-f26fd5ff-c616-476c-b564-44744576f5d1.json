@@ -25,7 +25,7 @@
     ],
     "allowed_scope": [
       "src/agent-plugin/claude-generator.ts",
-      ".claude/commands/** (generated output)"
+      ".claude/commands/**"
     ],
     "validation_commands": [
       "npm run build",

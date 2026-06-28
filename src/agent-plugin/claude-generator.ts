@@ -51,7 +51,7 @@ ${command.description}
 
 ## Usage
 
-\`\`\`
+\`\`\`text
 ${usage}
 \`\`\`
 
@@ -71,7 +71,7 @@ See \`${command.routing}\` for the full routing protocol and skill directory res
 1. Look up \`/${command.name}\` in \`${command.routing}\` to find the target skill directory.
 2. Read \`.polaris/skills/<target-skill>/SKILL.md\` — it is the authoritative instruction source.
 3. Run the skill bootloader:
-   \`\`\`
+   \`\`\`bash
    polaris skill packet ${command.skill}
    \`\`\`
    Do not begin work until a packet is returned.
@@ -98,7 +98,7 @@ ${command.description}
 
 ## Usage
 
-\`\`\`
+\`\`\`text
 ${usage}
 \`\`\`
 
@@ -110,7 +110,7 @@ ${argLines}
 
 Run the following CLI command:
 
-\`\`\`
+\`\`\`bash
 ${command.command}
 \`\`\`
 `;

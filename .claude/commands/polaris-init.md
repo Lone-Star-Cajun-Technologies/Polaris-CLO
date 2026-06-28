@@ -5,7 +5,7 @@ Initialize a new Polaris workspace
 
 ## Usage
 
-```
+```text
 /polaris-init
 ```
 
@@ -17,6 +17,6 @@ None.
 
 Run the following CLI command:
 
-```
+```bash
 polaris init
 ```
