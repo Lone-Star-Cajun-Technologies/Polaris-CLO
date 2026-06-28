@@ -159,6 +159,8 @@ export async function promptCategoryApproval(
   const label = CATEGORY_LABELS[category];
   const actionableSteps = steps.filter((s) => s.action !== "skip");
 
+  if (actionableSteps.length === 0) return true;
+
   stdout.write(`\n--- ${label} (${actionableSteps.length} step(s)) ---\n`);
   stdout.write(renderStepDiff(actionableSteps));
 
@@ -222,7 +224,12 @@ export async function requireApprovalGates(
 
   for (const category of categories) {
     const stepCategories = CATEGORY_STEP_MAP[category];
-    const steps = plan.steps.filter((s) => stepCategories.includes(s.category));
+    const steps = plan.steps.filter((s) => {
+      if (!stepCategories.includes(s.category)) return false;
+      // Doc-movement gate only fires for steps that migrateSmartDocs will execute
+      if (category === "doc-movement" && s.routing !== "candidate") return false;
+      return true;
+    });
     // Skip gate if no actionable steps in this category
     if (steps.filter((s) => s.action !== "skip").length === 0) continue;
 

@@ -1,0 +1,62 @@
+{
+  "schemaVersion": "v2",
+  "source": {
+    "id": "POL-397",
+    "type": "linear",
+    "analysis": {
+      "id": "POL-393",
+      "doc": "smartdocs/raw/pol-393-agent-plugin-slash-command-design.md"
+    }
+  },
+  "nodes": {
+    "POL-397": {
+      "id": "POL-397",
+      "title": "IMPLEMENT: Agent slash-command shims for Polaris skills",
+      "status": "Backlog",
+      "body": "## Objective\n\nGenerate agent-host slash-command shims (Claude Code first) that expand `/polaris-*` intent shortcuts into existing Polaris skill packets, bootloaders, validation gates, and reporting formats without bypassing governance.\n\n## Context\n\nImplements the design from ANALYZE POL-393 (see `smartdocs/raw/pol-393-agent-plugin-slash-command-design.md`). Routes through existing `src/skill-packet/` and `.polaris/skills/ROUTING.md`; adds no parallel runtime. Depends on POL-392 for init/adopt intent verbs.\n\n## Goal\n\nA neutral command manifest plus a Claude Code shim generator that emits `.claude/commands/polaris-*.md` shims mapping each verb to a skill packet or CLI command, with arg validation and re-syncable versioning.\n\n## Scope\n\n* src/agent-plugin/**\n* .claude/commands/** (generated output)\n* src/cli/adopt-assets.ts\n\n## Acceptance Criteria\n\n* A neutral command manifest maps verbs to skills (SUPPORTED_SKILLS) or CLI commands.\n* The Claude Code generator emits per-verb shim files that resolve to a valid packet or command.\n* Argument arity/type is validated before any packet runs; bad input yields generated help/error.\n* Generated shims carry a version stamp and are re-syncable.\n\n## Validation\n\n* npm run build\n* npx vitest run src/agent-plugin\n\n## Ordering\n\nDepends on POL-392 (init/adopt intent verbs launch the Foreman).\n\n## Non-goals\n\n* Do not remove normal CLI commands.\n* Do not bypass governance or assume cross-provider plugin parity."
+    },
+    "POL-410": {
+      "id": "POL-410",
+      "title": "IMPLEMENT: Slash-command manifest and packet-mapping rules",
+      "status": "Backlog",
+      "sessionType": "implement",
+      "body": "## Objective\n\nDefine a neutral slash-command manifest and the rules mapping each verb to a skill packet or a CLI command.\n\n## Context\n\nFirst child of POL-397 (design: `smartdocs/raw/pol-393-agent-plugin-slash-command-design.md`). Maps verbs to `SUPPORTED_SKILLS` via `src/skill-packet/` and `.polaris/skills/ROUTING.md`.\n\n## Goal\n\nA typed manifest listing `/polaris-*` verbs with their skill or delegated CLI command and arg specs.\n\n## Scope\n\n* src/agent-plugin/commands.ts\n\n## Acceptance Criteria\n\n* Manifest covers run, analyze, init, adopt, reconcile, status.\n* Skill-backed verbs resolve to a valid SUPPORTED_SKILLS name; intent verbs delegate to a real CLI command.\n* Arg specs (names/arity) are declared per verb.\n\n## Validation\n\n* npm run build\n* npx vitest run src/agent-plugin\n\n## Ordering\n\n* None (first in cluster).\n\n## Non-goals\n\n* Do not emit shim files yet (next child)."
+    },
+    "POL-411": {
+      "id": "POL-411",
+      "title": "IMPLEMENT: Claude Code shim generator",
+      "status": "Backlog",
+      "sessionType": "implement",
+      "body": "## Objective\n\nGenerate Claude Code slash-command shim files from the manifest (first target host).\n\n## Context\n\nSecond child of POL-397. Emits `.claude/commands/polaris-*.md` shims that read the skill SKILL.md, run `polaris skill packet <name>`, and execute the chain.\n\n## Goal\n\nA generator that writes one shim per manifest verb, each resolving to a valid packet or CLI command.\n\n## Scope\n\n* src/agent-plugin/claude-generator.ts\n* .claude/commands/** (generated output)\n\n## Acceptance Criteria\n\n* Each manifest verb produces a `.claude/commands/polaris-<verb>.md` shim.\n* Generated shims route through the existing packet+chain path (no parallel runtime).\n* Host specifics are isolated in the Claude generator.\n\n## Validation\n\n* npm run build\n* npx vitest run src/agent-plugin\n\n## Ordering\n\n* Depends on child 1 (manifest + mapping).\n\n## Non-goals\n\n* Do not implement other hosts; do not remove CLI commands."
+    },
+    "POL-412": {
+      "id": "POL-412",
+      "title": "IMPLEMENT: Argument parsing/validation and help/error generation",
+      "status": "Backlog",
+      "sessionType": "implement",
+      "body": "## Objective\n\nValidate slash-command arguments before any packet runs and generate help/error output.\n\n## Context\n\nThird child of POL-397. Uses the manifest arg specs from child 1.\n\n## Goal\n\nArgument validation that rejects bad input with a generated help/error message before invoking a packet.\n\n## Scope\n\n* src/agent-plugin/args.ts\n* src/agent-plugin/help.ts\n\n## Acceptance Criteria\n\n* Arity/type mismatches produce a generated error and do not run a packet.\n* `--help`-style output is generated per verb from the manifest.\n* Valid input passes through to the resolved packet/command.\n\n## Validation\n\n* npm run build\n* npx vitest run src/agent-plugin\n\n## Ordering\n\n* Depends on child 2 (shim generator).\n\n## Non-goals\n\n* Do not bypass governance or approval gates."
+    },
+    "POL-413": {
+      "id": "POL-413",
+      "title": "IMPLEMENT: Workspace sync and versioning for generated shims",
+      "status": "Backlog",
+      "sessionType": "implement",
+      "body": "## Objective\n\nStamp generated shims with a version and make them re-syncable as part of workspace asset install.\n\n## Context\n\nFourth child of POL-397. Hooks into the init/adopt asset install path (`adopt-assets.ts`).\n\n## Goal\n\nA sync step that regenerates shims, stamps a version, and reports drift from SUPPORTED_SKILLS / ROUTING.md.\n\n## Scope\n\n* src/agent-plugin/sync.ts\n* src/cli/adopt-assets.ts\n\n## Acceptance Criteria\n\n* Generated shims carry a version stamp.\n* `polaris agent-plugin sync` (or asset install) regenerates and updates shims.\n* Drift between shims and SUPPORTED_SKILLS/ROUTING.md is detected and reported.\n\n## Validation\n\n* npm run build\n* npx vitest run src/agent-plugin\n\n## Ordering\n\n* Depends on child 3 (arg validation + help).\n\n## Non-goals\n\n* Do not assume cross-provider plugin parity."
+    }
+  },
+  "dependencies": {
+    "POL-411": ["POL-410"],
+    "POL-412": ["POL-411"],
+    "POL-413": ["POL-412"]
+  },
+  "clusters": {
+    "cluster-01": {
+      "id": "cluster-01",
+      "title": "Agent plugin / slash-command architecture",
+      "children": ["POL-410", "POL-411", "POL-412", "POL-413"],
+      "cluster_root": "POL-397"
+    }
+  },
+  "activeCluster": "cluster-01",
+  "created_at": "2026-06-25T03:21:00Z"
+}

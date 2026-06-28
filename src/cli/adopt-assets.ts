@@ -7,13 +7,17 @@ import {
 } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { join, resolve } from "node:path";
+import { syncShims, type ShimDriftReport } from "../agent-plugin/sync.js";
 
 export interface WorkspaceInstallResult {
   installed: string[];
   alreadyPresent: string[];
   skipped: string[];
   conflicted: string[];
+  shimSync?: { written: string[]; drift: ShimDriftReport };
 }
+
+export type { ShimDriftReport };
 
 export type GraphBuildStatus = "graph-success" | "graph-failed" | "graph-skipped";
 
@@ -195,7 +199,15 @@ export function installWorkspaceAssets(
     }
   }
 
-  return { installed, alreadyPresent, skipped, conflicted };
+  // 6. Agent-plugin shims (Claude Code commands)
+  const shimOutDir = join(repoRoot, ".claude", "commands");
+  if (isAncestorSymlink(repoRoot, ".claude/commands")) {
+    skipped.push(".claude/commands");
+    return { installed, alreadyPresent, skipped, conflicted };
+  }
+  const shimSync = syncShims(shimOutDir);
+
+  return { installed, alreadyPresent, skipped, conflicted, shimSync };
 }
 
 export function runGraphBuild(repoRoot: string): GraphBuildResult {

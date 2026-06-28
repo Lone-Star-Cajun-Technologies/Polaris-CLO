@@ -1,65 +1,72 @@
 {
   "schema_version": "1.0",
   "role": "closeout-librarian",
-  "run_id": "polaris-run-pol-395-2026-06-26-001",
-  "dispatch_id": "a367eebe-fef6-4d49-81f4-2264e3e58c41",
-  "cluster_id": "POL-395",
+  "run_id": "polaris-run-pol-397-2026-06-26-001",
+  "dispatch_id": "3e7f06dc-ea70-40d7-81a8-97bccc7587d1",
+  "cluster_id": "POL-397",
   "completed_children": [
-    "POL-402",
-    "POL-403",
-    "POL-404",
-    "POL-405"
+    "POL-410",
+    "POL-411",
+    "POL-412",
+    "POL-413"
   ],
   "child_summaries": [
     {
-      "child_id": "POL-402",
-      "title": "IMPLEMENT: Operator-answer model stored separately from evidence",
-      "commit_sha": "61701cfc6a7886d3722b3ce037777e47227c0516",
+      "child_id": "POL-410",
+      "title": "IMPLEMENT: Slash-command manifest and packet-mapping rules",
+      "commit_sha": "3089cfabf6354d80e30ad6b1d620c3ebf5731169",
       "changed_files": [
-        "src/cli/adoption-context.test.ts",
-        "src/cli/adoption-context.ts"
+        "src/agent-plugin/commands.test.ts",
+        "src/agent-plugin/commands.ts"
       ],
-      "compact_return_path": ".polaris/clusters/POL-395/results/POL-402-df88aaf0-56f9-4780-81aa-36b3b8ea74de.json",
+      "compact_return_path": ".polaris/clusters/POL-397/results/POL-410-2bc7a2da-0030-469b-a7aa-1e93cb983f05.json",
       "cognition_note_path": null
     },
     {
-      "child_id": "POL-403",
-      "title": "IMPLEMENT: Foreman adoption interview phase in adopt-command",
-      "commit_sha": "3585b292c674dec5f2f145768b9962ff3fa6252d",
+      "child_id": "POL-411",
+      "title": "IMPLEMENT: Claude Code shim generator",
+      "commit_sha": "f6f52330cea260cdd43c3f65d1e8277e70cd5a65",
       "changed_files": [
-        "src/cli/adopt-command.test.ts",
-        "src/cli/adopt-command.ts"
+        ".claude/commands/polaris-adopt.md",
+        ".claude/commands/polaris-analyze.md",
+        ".claude/commands/polaris-init.md",
+        ".claude/commands/polaris-reconcile.md",
+        ".claude/commands/polaris-run.md",
+        ".claude/commands/polaris-status.md",
+        "src/agent-plugin/claude-generator.test.ts",
+        "src/agent-plugin/claude-generator.ts"
       ],
-      "compact_return_path": ".polaris/clusters/POL-395/results/POL-403-2ac1e918-4041-404c-9a24-910da35b7e87.json",
+      "compact_return_path": ".polaris/clusters/POL-397/results/POL-411-f26fd5ff-c616-476c-b564-44744576f5d1.json",
       "cognition_note_path": null
     },
     {
-      "child_id": "POL-404",
-      "title": "IMPLEMENT: Adoption plan cites evidence and operator answers with routing",
-      "commit_sha": "a2e89a2ddf61c5a82f372fa26534a2703d83391c",
+      "child_id": "POL-412",
+      "title": "IMPLEMENT: Argument parsing/validation and help/error generation",
+      "commit_sha": "a04f00cf417ed17f7f8adddd2be4f6c00ca434dc",
       "changed_files": [
-        "src/cli/adopt-smartdocs.ts",
-        "src/cli/adoption-plan.ts"
+        "src/agent-plugin/args.test.ts",
+        "src/agent-plugin/args.ts",
+        "src/agent-plugin/help.test.ts",
+        "src/agent-plugin/help.ts"
       ],
-      "compact_return_path": ".polaris/clusters/POL-395/results/POL-404-35028939-d61e-41d7-92ac-08b7d71f6123.json",
+      "compact_return_path": ".polaris/clusters/POL-397/results/POL-412-07df6f57-a7cb-4f42-a1cf-b37cdf116740.json",
       "cognition_note_path": null
     },
     {
-      "child_id": "POL-405",
-      "title": "IMPLEMENT: Approval gates before doc/instruction/graph-root/route changes",
-      "commit_sha": "2e6c42594462d49eff12051e3f7053b33be84548",
+      "child_id": "POL-413",
+      "title": "IMPLEMENT: Workspace sync and versioning for generated shims",
+      "commit_sha": "c3cade85c1c6328b1b0ab492ca75226ba1fc7b43",
       "changed_files": [
-        "src/cli/adopt-approve.ts",
-        "src/cli/adopt-command.test.ts",
-        "src/cli/adopt-command.ts",
-        "src/cli/adopt-instructions.ts"
+        "src/agent-plugin/sync.test.ts",
+        "src/agent-plugin/sync.ts",
+        "src/cli/adopt-assets.ts"
       ],
-      "compact_return_path": ".polaris/clusters/POL-395/results/POL-405-3a2421d3-828c-4a2d-8229-89f3b6e2c467.json",
+      "compact_return_path": ".polaris/clusters/POL-397/results/POL-413-0dc57cb2-bb31-493a-a5e3-2dc6011bc992.json",
       "cognition_note_path": null
     }
   ],
   "run_report_path": null,
-  "current_state_path": ".polaris/clusters/POL-395/state.json",
+  "current_state_path": ".polaris/clusters/POL-397/cluster-state.json",
   "affected_folders": [
     "src/",
     "src/cli/"
@@ -114,6 +121,7 @@
     "smartdocs/specs/active/pol-200-adaptive-folder-cognition-librarian-lifecycle.md",
     "smartdocs/specs/active/pol-325-codegraph-integration-analysis.md",
     "smartdocs/specs/active/pol-390-new-repo-setup-interview-design.md",
+    "smartdocs/specs/active/pol-391-existing-repo-operator-interview-design.md",
     "smartdocs/specs/active/pol-76-mcp-bridge-analysis.md",
     "smartdocs/specs/active/pol-97-cli-operator-surface-analysis.md",
     "smartdocs/specs/active/polaris-artifact-promotion-commit-hygiene-policy.md",
@@ -141,16 +149,16 @@
     "smartdocs/doctrine/active/polaris-implementation-plan.md",
     "smartdocs/doctrine/active/smartdocs-summary-architecture.md"
   ],
-  "result_path": ".polaris/clusters/POL-395/results/librarian-a367eebe-fef6-4d49-81f4-2264e3e58c41.json",
+  "result_path": ".polaris/clusters/POL-397/results/librarian-3e7f06dc-ea70-40d7-81a8-97bccc7587d1.json",
   "prohibited_write_paths": [
-    ".polaris/clusters/POL-395/state.json",
-    ".polaris/clusters/POL-395/state.json",
+    ".polaris/clusters/POL-397/state.json",
+    ".polaris/clusters/POL-397/state.json",
     ".taskchain_artifacts",
     ".polaris/runs",
     ".polaris/map",
-    ".polaris/clusters/POL-395/packets",
-    ".polaris/clusters/POL-395/results",
-    ".taskchain_artifacts/polaris-run/runs/polaris-run-pol-395-2026-06-26-001/telemetry.jsonl",
+    ".polaris/clusters/POL-397/packets",
+    ".polaris/clusters/POL-397/results",
+    ".taskchain_artifacts/polaris-run/runs/polaris-run-pol-397-2026-06-26-001/telemetry.jsonl",
     "src",
     "test",
     "scripts"
@@ -162,7 +170,7 @@
     "src/cli/SUMMARY.md",
     "smartdocs",
     ".polaris/cognition/archive",
-    ".polaris/clusters/POL-395/results/librarian-a367eebe-fef6-4d49-81f4-2264e3e58c41.json"
+    ".polaris/clusters/POL-397/results/librarian-3e7f06dc-ea70-40d7-81a8-97bccc7587d1.json"
   ],
   "constraints": {
     "max_summary_addition_lines": 50,

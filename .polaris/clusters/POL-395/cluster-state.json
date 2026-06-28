@@ -26,16 +26,16 @@
   ],
   "claim_metadata": {},
   "packet_pointers": {
-    "POL-402": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-395/packets/POL-402-df88aaf0-56f9-4780-81aa-36b3b8ea74de.json",
-    "POL-403": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-395/packets/POL-403-2ac1e918-4041-404c-9a24-910da35b7e87.json",
-    "POL-404": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-395/packets/POL-404-35028939-d61e-41d7-92ac-08b7d71f6123.json",
-    "POL-405": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-395/packets/POL-405-3a2421d3-828c-4a2d-8229-89f3b6e2c467.json"
+    "POL-402": ".polaris/clusters/POL-395/packets/POL-402-df88aaf0-56f9-4780-81aa-36b3b8ea74de.json",
+    "POL-403": ".polaris/clusters/POL-395/packets/POL-403-2ac1e918-4041-404c-9a24-910da35b7e87.json",
+    "POL-404": ".polaris/clusters/POL-395/packets/POL-404-35028939-d61e-41d7-92ac-08b7d71f6123.json",
+    "POL-405": ".polaris/clusters/POL-395/packets/POL-405-3a2421d3-828c-4a2d-8229-89f3b6e2c467.json"
   },
   "result_pointers": {
-    "POL-402": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-395/results/POL-402-df88aaf0-56f9-4780-81aa-36b3b8ea74de.json",
-    "POL-403": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-395/results/POL-403-2ac1e918-4041-404c-9a24-910da35b7e87.json",
-    "POL-404": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-395/results/POL-404-35028939-d61e-41d7-92ac-08b7d71f6123.json",
-    "POL-405": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-395/results/POL-405-3a2421d3-828c-4a2d-8229-89f3b6e2c467.json"
+    "POL-402": ".polaris/clusters/POL-395/results/POL-402-df88aaf0-56f9-4780-81aa-36b3b8ea74de.json",
+    "POL-403": ".polaris/clusters/POL-395/results/POL-403-2ac1e918-4041-404c-9a24-910da35b7e87.json",
+    "POL-404": ".polaris/clusters/POL-395/results/POL-404-35028939-d61e-41d7-92ac-08b7d71f6123.json",
+    "POL-405": ".polaris/clusters/POL-395/results/POL-405-3a2421d3-828c-4a2d-8229-89f3b6e2c467.json"
   },
   "validation_results": {
     "POL-402": {
