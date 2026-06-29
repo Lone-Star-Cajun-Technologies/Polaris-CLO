@@ -11,6 +11,7 @@ The `src/` tree contains the Polaris application source: CLI entrypoints, runtim
 - `medic/` — Medic chart ID generation and chart schema validation (chart creation tooling)
 - `lint/` — Repository lint rules; currently enforces Navigation Before Retrieval doctrine on skill chain files
 - `agent-plugin/` — Host-agnostic slash-command manifest, Claude Code shim generator, argument validation, help/error generation, and shim drift detection/sync
+- `autoresearch/` — Dev-gated retroactive run scoring pipeline and artifact improvement proposal routing; provides `scoreRun` (binary gate scorecard), `buildProposals` (fix zone mapping), and `routeProposals` (Linear issue creation)
 
 ## What does not belong here
 
