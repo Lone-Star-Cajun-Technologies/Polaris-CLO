@@ -1,0 +1,11 @@
+{
+  "child_id": "POL-416",
+  "status": "success",
+  "commit": "a5a3e121089ae9466bdce3cc1f4f60bc75aaad2a",
+  "validation": "passed",
+  "next_recommended_action": "continue",
+  "tracker_updated": false,
+  "state_updated": false,
+  "telemetry_updated": false,
+  "run_id": "polaris-run-foreman-token-burn-2026-06-29-001"
+}

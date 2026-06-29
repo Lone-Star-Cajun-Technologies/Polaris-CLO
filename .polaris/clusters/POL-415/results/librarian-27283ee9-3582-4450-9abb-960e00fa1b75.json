@@ -1,0 +1,69 @@
+{
+  "schema_version": "1.0",
+  "role": "closeout-librarian",
+  "run_id": "polaris-run-foreman-token-burn-2026-06-29-001",
+  "dispatch_id": "27283ee9-3582-4450-9abb-960e00fa1b75",
+  "cluster_id": "POL-415",
+  "status": "success",
+  "commit_sha": "5284687baa6998963b2bd982011b93fec283fe71",
+  "commit_message": "docs(closeout): reconcile cognition for cluster POL-415\n\nRun: polaris-run-foreman-token-burn-2026-06-29-001\nCluster: POL-415\nChildren: POL-416, POL-417, POL-418\nFiles updated:\n- POLARIS.md: 1 files\n- SUMMARY.md: 1 files\n- docs ingested: 0\n- links repaired: 0",
+  "files_committed": [
+    "src/loop/POLARIS.md",
+    "src/loop/SUMMARY.md"
+  ],
+  "drift_reconciliation": {
+    "medic_ran": false,
+    "charts_created": [],
+    "drift_observations": [
+      {
+        "type": "missing_documentation",
+        "target": "src/loop/POLARIS.md",
+        "severity": "medium",
+        "description": "writeStateAtomic body-stripping behavior, BootstrapPacket.open_children shape change, and bootstrap-context-size telemetry event not documented"
+      },
+      {
+        "type": "summary_outdated",
+        "target": "src/loop/SUMMARY.md",
+        "severity": "low",
+        "description": "Key behaviors missing: body stripping, BootstrapPacket.open_children shape, bootstrap-context-size event"
+      }
+    ],
+    "chart_links_required": false,
+    "charts_linked": []
+  },
+  "polaris_md_updates": [
+    {
+      "file": "src/loop/POLARIS.md",
+      "action": "update",
+      "change_summary": "Added three editing rules: writeStateAtomic body-stripping for non-next children with clusters.json recovery path; BootstrapPacket.open_children shape as {next_child, remaining_count}; bootstrap-context-size JSONL event before each dispatch."
+    }
+  ],
+  "summary_md_updates": [
+    {
+      "file": "src/loop/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Added three key behaviors: bootstrap-context-size telemetry event; writeStateAtomic body-slimming with clusters.json recovery; BootstrapPacket.open_children as {next_child, remaining_count}."
+    }
+  ],
+  "docs_ingested": [],
+  "docs_archived": [
+    {
+      "source_path": "smartdocs/raw/pol-414-foreman-token-burn-autoresearch-analysis.md",
+      "target_path": null,
+      "action": "archive",
+      "reason": "One-time pre-implementation analysis; implementation cluster POL-415 now complete. Kept in place."
+    }
+  ],
+  "yaml_updates": [],
+  "cognition_archived": [],
+  "link_validation": {
+    "total_checked": 0,
+    "valid": 0,
+    "broken": 0,
+    "repaired": 0,
+    "unrepairable": []
+  },
+  "blockers": [],
+  "reconciled_at": "2026-06-28T00:00:00Z",
+  "evidence_summary": "Cluster POL-415 completed three token-burn reduction children. POL-416 added body-stripping in writeStateAtomic for non-next children. POL-417 changed BootstrapPacket.open_children from a full array to {next_child, remaining_count}. POL-418 added bootstrap-context-size JSONL telemetry before each dispatch. Both src/loop/POLARIS.md and src/loop/SUMMARY.md were updated to document these behavioral changes. The raw analysis doc pol-414 was classified as a completed one-time analysis and left in place. No docs were promoted to specs/active. No cognition notes were pending. No links were broken by the edits. Commit 5284687 contains only the two documentation files."
+}

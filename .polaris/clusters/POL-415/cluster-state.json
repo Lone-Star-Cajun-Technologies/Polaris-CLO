@@ -1,0 +1,56 @@
+{
+  "schema_version": "1.0",
+  "cluster_id": "POL-415",
+  "state_generation": 8,
+  "child_states": [
+    {
+      "id": "POL-416",
+      "status": "done",
+      "commit": "a5a3e121089ae9466bdce3cc1f4f60bc75aaad2a"
+    },
+    {
+      "id": "POL-417",
+      "status": "done",
+      "commit": "5c7abf58fd549f2f9fc844e050d212a7c1b1be78"
+    },
+    {
+      "id": "POL-418",
+      "status": "done",
+      "commit": "8a54cb0f70c40e1ac0c26460fb92a2c45b7cc289"
+    }
+  ],
+  "claim_metadata": {},
+  "packet_pointers": {
+    "POL-416": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-415/packets/POL-416-35784346-6076-4e07-b8ee-1023f3e0c1db.json",
+    "POL-417": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-415/packets/POL-417-7076df78-cd4b-4050-ba88-5034cf5e127d.json",
+    "POL-418": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-415/packets/POL-418-d4177777-2046-41bc-adcb-f3361b10a9de.json"
+  },
+  "result_pointers": {
+    "POL-416": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-415/results/POL-416-35784346-6076-4e07-b8ee-1023f3e0c1db.json",
+    "POL-417": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-415/results/POL-417-7076df78-cd4b-4050-ba88-5034cf5e127d.json",
+    "POL-418": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-415/results/POL-418-d4177777-2046-41bc-adcb-f3361b10a9de.json"
+  },
+  "validation_results": {
+    "POL-416": {
+      "passed": true,
+      "output": "passed"
+    },
+    "POL-417": {
+      "passed": true,
+      "output": "passed"
+    },
+    "POL-418": {
+      "passed": true,
+      "output": "passed"
+    }
+  },
+  "commits": {
+    "POL-416": "a5a3e121089ae9466bdce3cc1f4f60bc75aaad2a",
+    "POL-417": "5c7abf58fd549f2f9fc844e050d212a7c1b1be78",
+    "POL-418": "8a54cb0f70c40e1ac0c26460fb92a2c45b7cc289"
+  },
+  "tracker_mutations": {},
+  "blockers": [],
+  "delivery_branch": "philmeaux/pol-415-implement-autoresearch-style-foreman-token-burn-reduction",
+  "base_branch": "main"
+}

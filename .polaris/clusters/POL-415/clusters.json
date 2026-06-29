@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "v2",
+  "source": {
+    "id": "POL-415",
+    "type": "linear",
+    "analysis": {
+      "id": "POL-414",
+      "doc": "smartdocs/raw/pol-414-foreman-token-burn-autoresearch-analysis.md"
+    }
+  },
+  "nodes": {
+    "POL-415": {
+      "id": "POL-415",
+      "title": "IMPLEMENT: Autoresearch-style Foreman token-burn reduction (lazy context loading)",
+      "status": "Backlog",
+      "body": "## Objective\nReduce Foreman agent token consumption during polaris-run sessions by implementing autoresearch-style (just-in-time) context loading — the Foreman fetches only what it needs for the current dispatch decision rather than pre-loading all child data at session start.\n\n## Context\nPolaris has a known token-efficiency goal. The Foreman's token burn is primarily driven by `open_children_meta` in `current-state.json`, which carries full `body` text for ALL remaining children — even those not yet dispatched.\n\nIncident POL-288 documented 21.7M cached tokens consumed in a single Foreman run. The autoresearch-style optimization: the Foreman starts each session with minimal context and pulls child data only when building the packet for that specific child.\n\nAnalyze source: POL-414\n\n## Goal\nReduce the token footprint of `current-state.json` by stripping `body` fields from non-next children in `open_children_meta`, slimming the bootstrap packet, and adding telemetry to measure the improvement.\n\n## Scope\n\n- src/loop/checkpoint.ts\n- src/loop/parent.ts\n- src/loop/bootstrap-packet.ts\n\n## Acceptance Criteria\n\n- [ ] `open_children_meta` does not carry `body` for children beyond the next one to dispatch\n- [ ] Worker dispatch succeeds when body is fetched on-demand from `clusters.json`\n- [ ] Foreman bootstrap packet no longer includes the full `open_children` array\n- [ ] `bootstrap-context-size` telemetry event is emitted before each dispatch\n- [ ] All existing tests pass\n\n## Validation\n\n- npm run build\n- npm test\n- npx vitest run src/loop\n\n## Ordering\n\nChildren: POL-416 → POL-417 → POL-418 (POL-418 can run in parallel with POL-417)\n\n## Non-goals\n\n- Do not change the worker prompt or worker packet format\n- Do not modify the clusters.json schema\n- Do not change tracker adapter behavior"
+    },
+    "POL-416": {
+      "id": "POL-416",
+      "title": "IMPLEMENT: Strip body from non-next children in open_children_meta at checkpoint",
+      "status": "Backlog",
+      "sessionType": "implement",
+      "body": "## Objective\nStrip the `body` field from all `open_children_meta` entries except the next child to dispatch, reducing the size of `current-state.json` written after each checkpoint.\n\n## Context\n`open_children_meta` in `LoopState` (`src/loop/checkpoint.ts:160`) carries `body` for ALL remaining children. The `buildPacket()` function in `src/loop/parent.ts:363` already has a fallback to `readBodyFromClusterSnapshot` when body is absent.\n\nAnalyze source: POL-414. Parent: POL-415.\n\n## Goal\nWhen writing `current-state.json` via `writeStateAtomic`, strip `body` from all `open_children_meta` entries except `state.open_children[0]`.\n\n## Scope\n\n- src/loop/checkpoint.ts\n- src/loop/parent.ts\n- src/loop/checkpoint.test.ts\n\n## Acceptance Criteria\n\n- [ ] After `writeStateAtomic`, `open_children_meta[N].body` is absent for all children except `open_children[0]`\n- [ ] `buildPacket()` successfully resolves child body from `clusters.json` when body is absent\n- [ ] `title`, `labels`, `type`, `dispatch_record`, and `result_file` preserved for all children\n- [ ] Existing dispatch loop tests pass\n- [ ] Unit test: write state with 3 children, verify only next child retains body\n\n## Validation\n\n- npm run build\n- npx vitest run src/loop/checkpoint.test.ts src/loop/parent.test.ts\n\n## Ordering\n\nNone — first child.\n\n## Non-goals\n\n- Do not strip title, labels, type, dispatch_record, or result_file\n- Do not change readBodyFromClusterSnapshot\n- Do not modify the clusters.json schema\n- Do not change the LoopState TypeScript interface"
+    },
+    "POL-417": {
+      "id": "POL-417",
+      "title": "IMPLEMENT: Slim Foreman bootstrap packet — replace open_children list with next+count",
+      "status": "Backlog",
+      "sessionType": "implement",
+      "body": "## Objective\nReplace the `open_children: string[]` array in the Foreman bootstrap packet with a slim `{next_child, remaining_count}` object.\n\n## Context\n`buildBootstrapPacket()` in `src/loop/bootstrap-packet.ts:118` includes the full list of all remaining child IDs. The Foreman dispatches one child at a time and only needs next+count.\n\nAnalyze source: POL-414. Parent: POL-415. Blocked by: POL-416.\n\n## Goal\nChange `BootstrapPacket.open_children` from `string[]` to `{next_child: string | null, remaining_count: number}`.\n\n## Scope\n\n- src/loop/bootstrap-packet.ts\n- src/loop/bootstrap-packet.test.ts\n\n## Acceptance Criteria\n\n- [ ] `BootstrapPacket.open_children` replaced with `{next_child: string | null, remaining_count: number}`\n- [ ] `buildBootstrapPacket()` derives `next_child = state.open_children[0] ?? null` and `remaining_count = state.open_children.length`\n- [ ] Existing tests updated to reflect new schema\n- [ ] TypeScript build passes\n\n## Validation\n\n- npm run build\n- npx vitest run src/loop/bootstrap-packet.test.ts src/loop/parent.test.ts\n\n## Ordering\n\nBlocked by POL-416.\n\n## Non-goals\n\n- Do not change CompactBootstrapState in execution-adapter.ts\n- Do not change current-state.json format\n- Do not modify WorkerPacket type"
+    },
+    "POL-418": {
+      "id": "POL-418",
+      "title": "IMPLEMENT: Add bootstrap-context-size telemetry event to Foreman dispatch",
+      "status": "Backlog",
+      "sessionType": "implement",
+      "body": "## Objective\nEmit a `bootstrap-context-size` telemetry event before each child dispatch, measuring estimated token footprint of the Foreman's loaded context.\n\n## Context\nNo telemetry currently measures Foreman context size at dispatch time. Worker prompts already track `prompt_estimated_tokens` — this extends the pattern to the Foreman side.\n\nAnalyze source: POL-414. Parent: POL-415.\n\n## Goal\nEmit a JSONL telemetry event before each `adapter.dispatch()` call recording byte size and estimated tokens for `current-state.json` and the serialized bootstrap packet.\n\n## Scope\n\n- src/loop/parent.ts\n\n## Acceptance Criteria\n\n- [ ] `bootstrap-context-size` event appended to `telemetry.jsonl` before each dispatch\n- [ ] Fields: event, run_id, child_id, state_file_bytes, state_estimated_tokens, bootstrap_packet_bytes, bootstrap_estimated_tokens, combined_estimated_tokens, timestamp\n- [ ] Token estimate: `Math.round(bytes / 4)` consistent with worker-prompt.ts:101\n- [ ] Not emitted in dry-run mode\n- [ ] Unit test verifies event is emitted with correct fields\n\n## Validation\n\n- npm run build\n- npx vitest run src/loop/parent.test.ts\n\n## Ordering\n\nCan run concurrently with or after POL-416 and POL-417.\n\n## Non-goals\n\n- Do not change actual dispatch process\n- Do not measure actual LLM token usage\n- Do not add telemetry to worker side"
+    }
+  },
+  "dependencies": {
+    "POL-417": ["POL-416"]
+  },
+  "clusters": {
+    "cluster-01": {
+      "id": "cluster-01",
+      "title": "Foreman token-burn reduction",
+      "children": ["POL-416", "POL-417", "POL-418"],
+      "cluster_root": "POL-415"
+    }
+  },
+  "activeCluster": "cluster-01",
+  "metadata": {
+    "generatedAt": "2026-06-28T04:08:00Z",
+    "generatedBy": "polaris-analyze",
+    "analyzeIssue": "POL-414",
+    "runId": "polaris-analyze-foreman-token-burn-2026-06-28-001"
+  }
+}
