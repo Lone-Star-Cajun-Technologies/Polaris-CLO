@@ -27,9 +27,12 @@ import {
   validateState,
   writeStateAtomic,
   readBodyFromClusterSnapshot,
+  buildWorkerResultContract,
+  computePacketHashFromPath,
   type ChildDispatchRecord,
   type LoopState,
 } from "./checkpoint.js";
+import type { WorkerResultContract } from "../types/result-packet.js";
 import { createAdapter } from "./adapters/registry.js";
 import type { BootstrapPacket, WorkerSummary } from "./adapters/types.js";
 import { checkBudget, policyFromConfig } from "./budget.js";
@@ -1753,9 +1756,31 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     }
 
     // workerStatus === "done" has already been validated upstream.
+    // Build the durable Role Evidence Contract for this completed child.
+    const nextRecommendedAction: WorkerResultContract['next_recommended_action'] =
+      summaryAsRecord?.['next_recommended_action'] === 'continue' ||
+      summaryAsRecord?.['next_recommended_action'] === 'stop' ||
+      summaryAsRecord?.['next_recommended_action'] === 'investigate'
+        ? summaryAsRecord['next_recommended_action'] as WorkerResultContract['next_recommended_action']
+        : 'continue';
+
+    const workerResult: WorkerResultContract = buildWorkerResultContract({
+      state,
+      childId: nextChild,
+      resultFile: packet.result_file_contract.result_file,
+      telemetryFile,
+      lastCommit: lastCommit ?? null,
+      validation: validationSummary,
+      packetHash: computePacketHashFromPath(packetPath),
+      status: 'done',
+      nextRecommendedAction,
+      resultData: summaryAsRecord?.['result_data'] as Record<string, unknown> | undefined,
+    });
+
     // If the reloaded state already reflects the completed child,
     // the worker owns the completion checkpoint and the parent
-    // must not rewrite it.
+    // must not rewrite the open/closed lists, but it still records the
+    // Role Evidence Contract so scoring can consume it later.
     if (!workerWroteCompletion) {
       // ── Dispatch boundary: verify dispatch happened before advancing ──────
       // The parent dispatched via adapter, so dispatch_boundary should show
@@ -1787,6 +1812,10 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
       state = {
         ...advanced,
         dispatch_boundary: advanceContinueEpoch(state.dispatch_boundary),
+        completed_children_results: {
+          ...advanced.completed_children_results,
+          [nextChild]: workerResult,
+        },
       };
       childrenDispatched += 1;
       // Worker did not write its own completion — orchestrator fills the gap.
@@ -1799,6 +1828,10 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
       state = {
         ...state,
         dispatch_boundary: advanceContinueEpoch(state.dispatch_boundary),
+        completed_children_results: {
+          ...state.completed_children_results,
+          [nextChild]: workerResult,
+        },
       };
       childrenDispatched += 1;
       if (!dryRun) {

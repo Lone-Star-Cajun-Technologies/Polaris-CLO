@@ -1,0 +1,98 @@
+{
+  "schema_version": "2.1",
+  "worker_role": "impl",
+  "run_id": "polaris-run-autoresearch-evidence-loop-2026-06-29-001",
+  "cluster_id": "POL-420",
+  "active_child": "POL-421",
+  "state_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json",
+  "telemetry_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-autoresearch-evidence-loop-2026-06-29-001/telemetry.jsonl",
+  "instructions": {
+    "primary_goal": "Issue: POL-421 — POL-421\nWorktree: .\nBranch: philmeaux/pol-420-implement-evidence-first-autoresearch-loop-for-polaris\n\n## Goal\n## Objective\nDefine the autoresearch Role Evidence Contract: standardized fields all Polaris role sessions (Worker, Foreman, Analyst, Librarian, Medic) must emit to be eligible for retroactive scoring. Audit current emission against the contract and implement missing fields.\n\n## Context\nThe current worker result schema contains only: child_id, status, commit, validation, next_recommended_action, tracker_updated, state_updated, telemetry_updated, run_id. Many fields required for retroactive gate evaluation are absent. Every Polaris role should act like a flight recorder: emitting durable evidence that the autoresearch scoring pipeline consumes later.\n\nAnalyze source: POL-419, POL-424. Parent: POL-420.\n\n## Goal\n1. Define the Role Evidence Contract as a TypeScript interface covering all role sessions\n2. Audit current worker result JSON, packet schema, and ledger events against the contract\n3. Implement missing fields in worker result type and emission points\n4. Produce the evidence contract document in smartdocs/raw/\n\n## Scope\n\n- src/types/ or src/loop/ (WorkerResultContract interface)\n- src/loop/parent.ts (update worker result construction)\n- src/loop/checkpoint.ts (dispatch_epoch accessible for foreman_intervened)\n- smartdocs/raw/ (evidence contract document)\n\n## Acceptance Criteria\n\n- [ ] WorkerResultContract TypeScript interface defined with all required fields\n- [ ] Worker result JSON includes: role, provider, cluster_id, skill_name, packet_hash, worker_id, escalation_count, heartbeat_count, result_artifact_path, packet_path, telemetry_path\n- [ ] user_intervened and foreman_intervened emitted as null (scored retroactively)\n- [ ] Evidence contract document in smartdocs/raw/ distinguishing repo-local vs. Polaris-dev-only\n- [ ] TypeScript build passes; existing tests pass\n- [ ] Unit tests: new fields present in result JSON; packet_hash computed correctly\n\n## Validation\n\n- npm run build\n- npx vitest run src/loop/\n\n## Ordering\n\nNone — first child. Blocks POL-422 and POL-423.\n\n## Non-goals\n\n- Do not build the scoring pipeline (POL-422)\n- Do not define proposal format (POL-423)\n- Do not require transcript capture — session_pointer is optional/null in v1\n- Do not change the fundamental telemetry schema\n\n## Implementation Discipline\nBefore writing code, stop at the first rung that holds:\n\n1. Does this need to exist?   → no: skip it (YAGNI)\n2. Stdlib does it?            → use it\n3. Native platform feature?   → use it\n4. Installed dependency?      → use it\n5. One line?                  → one line\n6. Only then: the minimum that works\n\nLazy, not negligent: validation, error handling, security, and accessibility are never on the chopping block.\n\nWhen you defer a simplification for later, mark it inline:\n  // ponytail: <what you deferred and why>\n\n## Scope\nTouch only:\n- src/types/ or src/loop/ (WorkerResultContract interface)\n- src/loop/parent.ts (update worker result construction)\n- src/loop/checkpoint.ts (dispatch_epoch accessible for foreman_intervened)\n- smartdocs/raw/ (evidence contract document)\n\n## Acceptance Criteria\n\n## Validation\n- npm run build\n- npx vitest run src/loop/\n\n## Commit\n[POL-421] POL-421\n\n## Governance\n- Do NOT modify open_children or completed_children in /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json. The parent runtime (loop continue) owns state transitions.\n- Append a telemetry event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-autoresearch-evidence-loop-2026-06-29-001/telemetry.jsonl.\n\n## Worker Progress Telemetry (MANDATORY)\nThe parent CANNOT see your work. You MUST emit heartbeat events so the parent knows you are alive and making progress.\n\nAfter EVERY step, append a JSONL event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-autoresearch-evidence-loop-2026-06-29-001/telemetry.jsonl:\n```jsonl\n{\"event\":\"worker-heartbeat\",\"run_id\":\"<from packet>\",\"child_id\":\"POL-421\",\"step_cursor\":\"<current step>\",\"timestamp\":\"<ISO8601>\",\"progress_pct\":<0-100>,\"files_changed\":<count>,\"current_file\":\"<file being edited>\"}\n```\n\nRequired heartbeat points:\n  1. Immediately after reading this packet (step_cursor: \"start\")\n  2. After verifying state file (step_cursor: \"verify\")\n  3. After EACH file edit (step_cursor: \"implement\")\n  4. After running validation (step_cursor: \"validate\")\n  5. After creating commit (step_cursor: \"commit\")\n  6. Before terminating (step_cursor: \"complete\" or \"failed\")\n\nIf heartbeats stop, the parent will assume you crashed and may dispatch a replacement worker.\n\n## Approval Escalation (when uncertain)\nYou have a sealed packet defining your exact scope, allowed files, and validation commands. Use this to decide:\n\nRule 1 - Auto-approve WITHIN scope (normal work):\n  - If the operation touches files within `instructions.allowed_scope` → Just do it\n  - If the command is in `instructions.validation_commands` → Just run it\n  - Low risk, expected work → No need to ask, emit heartbeat with step_cursor: \"implement\"\n\nRule 2 - ESCALATE out-of-scope or high-risk:\n  - File outside allowed_scope → Emit worker-blocked with approval_type: \"out-of-scope\"\n  - Destructive operation (rm -rf, major refactor) → Emit worker-blocked with approval_type: \"destructive\"\n  - External API calls with cost → Emit worker-blocked with approval_type: \"cost\"\n  - Changing secrets/.env → Emit worker-blocked with approval_type: \"security\"\n  - Unclear requirements → Emit worker-blocked with approval_type: \"ambiguous\"\n\nTo escalate, emit IMMEDIATELY to telemetry:\n```jsonl\n{\"event\":\"worker-blocked\",\"run_id\":\"<from packet>\",\"child_id\":\"POL-421\",\"reason\":\"needs-approval\",\"approval_type\":\"<out-of-scope|destructive|cost|security|ambiguous>\",\"description\":\"<specifically what needs approval>\",\"blocker_id\":\"<unique-id>\",\"timestamp\":\"<ISO8601>\"}\n```\n\nThen: Continue heartbeats every 30s with step_cursor: \"blocked-awaiting-approval\"\nWait for parent response. If no response in 5 minutes → TERMINATE with approval-timeout.\n\nRemember: Your packet scope is your authority. Within scope = proceed. Outside scope = escalate.\n\n## Route Cognition Delta\nAfter implementation, apply route-local cognition delta — only if something materially changed.\n\n**POLARIS.md** — update only when ALL of the following are true:\n  - You touched a file in that folder (not a distant folder).\n  - The change materially affects: folder responsibilities, commands/workflows,\n    execution constraints, ownership/routing, or operational behavior.\n  - The current POLARIS.md content is actually wrong or incomplete as a result.\n  DO NOT update POLARIS.md for: formatting fixes, comment changes, tiny refactors,\n  internal implementation details, or any change that leaves the operational guidance\n  still accurate. When in doubt, do not update.\n\n**SUMMARY.md** — update only when: linked docs/specs changed, canon relationships\n  changed, architecture meaning changed, or doctrine/spec linkage changed.\n  SUMMARY.md is informational only. Do not create it if missing — that is a hint for\n  operators, not a task for workers. Keep it short. Never add operational doctrine.\n\n**Never** scan unrelated folders. **Never** regenerate all route docs.\nIf no material change occurred, skip this section entirely.\n\n## Report Back\n- files changed\n- validation results\n- commit hash\n- blockers\n\nTERMINATE SESSION IMMEDIATELY. Do not select or execute the next child.",
+    "steps": [
+      "Verify: read /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json and confirm active_child === \"POL-421\".",
+      "Implement POL-421: \"POL-421\".",
+      "Issue description:\n## Objective\nDefine the autoresearch Role Evidence Contract: standardized fields all Polaris role sessions (Worker, Foreman, Analyst, Librarian, Medic) must emit to be eligible for retroactive scoring. Audit current emission against the contract and implement missing fields.\n\n## Context\nThe current worker result schema contains only: child_id, status, commit, validation, next_recommended_action, tracker_updated, state_updated, telemetry_updated, run_id. Many fields required for retroactive gate evaluation are absent. Every Polaris role should act like a flight recorder: emitting durable evidence that the autoresearch scoring pipeline consumes later.\n\nAnalyze source: POL-419, POL-424. Parent: POL-420.\n\n## Goal\n1. Define the Role Evidence Contract as a TypeScript interface covering all role sessions\n2. Audit current worker result JSON, packet schema, and ledger events against the contract\n3. Implement missing fields in worker result type and emission points\n4. Produce the evidence contract document in smartdocs/raw/\n\n## Scope\n\n- src/types/ or src/loop/ (WorkerResultContract interface)\n- src/loop/parent.ts (update worker result construction)\n- src/loop/checkpoint.ts (dispatch_epoch accessible for foreman_intervened)\n- smartdocs/raw/ (evidence contract document)\n\n## Acceptance Criteria\n\n- [ ] WorkerResultContract TypeScript interface defined with all required fields\n- [ ] Worker result JSON includes: role, provider, cluster_id, skill_name, packet_hash, worker_id, escalation_count, heartbeat_count, result_artifact_path, packet_path, telemetry_path\n- [ ] user_intervened and foreman_intervened emitted as null (scored retroactively)\n- [ ] Evidence contract document in smartdocs/raw/ distinguishing repo-local vs. Polaris-dev-only\n- [ ] TypeScript build passes; existing tests pass\n- [ ] Unit tests: new fields present in result JSON; packet_hash computed correctly\n\n## Validation\n\n- npm run build\n- npx vitest run src/loop/\n\n## Ordering\n\nNone — first child. Blocks POL-422 and POL-423.\n\n## Non-goals\n\n- Do not build the scoring pipeline (POL-422)\n- Do not define proposal format (POL-423)\n- Do not require transcript capture — session_pointer is optional/null in v1\n- Do not change the fundamental telemetry schema",
+      "Requirements:",
+      "   1. [ ] WorkerResultContract TypeScript interface defined with all required fields",
+      "   2. [ ] Worker result JSON includes: role, provider, cluster_id, skill_name, packet_hash, worker_id, escalation_count, heartbeat_count, result_artifact_path, packet_path, telemetry_path",
+      "   3. [ ] user_intervened and foreman_intervened emitted as null (scored retroactively)",
+      "   4. [ ] Evidence contract document in smartdocs/raw/ distinguishing repo-local vs. Polaris-dev-only",
+      "   5. [ ] TypeScript build passes; existing tests pass",
+      "   6. [ ] Unit tests: new fields present in result JSON; packet_hash computed correctly",
+      "Run validation commands and confirm all pass.",
+      "Create exactly ONE git commit: [POL-421] POL-421.",
+      "Do NOT modify open_children or completed_children in /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json. The parent runtime (loop continue) owns that state transition.",
+      "Append a telemetry event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-autoresearch-evidence-loop-2026-06-29-001/telemetry.jsonl.",
+      "Write compact return JSON to stdout (fields: child_id, status, commit, validation, next_recommended_action). next_recommended_action MUST be exactly \"continue\" on success, \"stop\" on unresolvable blocker, or \"investigate\" if manual review is needed.",
+      "TERMINATE SESSION IMMEDIATELY. Do not select or execute the next child."
+    ],
+    "allowed_scope": [
+      "src/types/ or src/loop/ (WorkerResultContract interface)",
+      "src/loop/parent.ts (update worker result construction)",
+      "src/loop/checkpoint.ts (dispatch_epoch accessible for foreman_intervened)",
+      "smartdocs/raw/ (evidence contract document)"
+    ],
+    "validation_commands": [
+      "npm run build",
+      "npx vitest run src/loop/"
+    ],
+    "issue_context": {
+      "id": "POL-421",
+      "title": "POL-421",
+      "key_requirements": [],
+      "body": "## Objective\nDefine the autoresearch Role Evidence Contract: standardized fields all Polaris role sessions (Worker, Foreman, Analyst, Librarian, Medic) must emit to be eligible for retroactive scoring. Audit current emission against the contract and implement missing fields.\n\n## Context\nThe current worker result schema contains only: child_id, status, commit, validation, next_recommended_action, tracker_updated, state_updated, telemetry_updated, run_id. Many fields required for retroactive gate evaluation are absent. Every Polaris role should act like a flight recorder: emitting durable evidence that the autoresearch scoring pipeline consumes later.\n\nAnalyze source: POL-419, POL-424. Parent: POL-420.\n\n## Goal\n1. Define the Role Evidence Contract as a TypeScript interface covering all role sessions\n2. Audit current worker result JSON, packet schema, and ledger events against the contract\n3. Implement missing fields in worker result type and emission points\n4. Produce the evidence contract document in smartdocs/raw/\n\n## Scope\n\n- src/types/ or src/loop/ (WorkerResultContract interface)\n- src/loop/parent.ts (update worker result construction)\n- src/loop/checkpoint.ts (dispatch_epoch accessible for foreman_intervened)\n- smartdocs/raw/ (evidence contract document)\n\n## Acceptance Criteria\n\n- [ ] WorkerResultContract TypeScript interface defined with all required fields\n- [ ] Worker result JSON includes: role, provider, cluster_id, skill_name, packet_hash, worker_id, escalation_count, heartbeat_count, result_artifact_path, packet_path, telemetry_path\n- [ ] user_intervened and foreman_intervened emitted as null (scored retroactively)\n- [ ] Evidence contract document in smartdocs/raw/ distinguishing repo-local vs. Polaris-dev-only\n- [ ] TypeScript build passes; existing tests pass\n- [ ] Unit tests: new fields present in result JSON; packet_hash computed correctly\n\n## Validation\n\n- npm run build\n- npx vitest run src/loop/\n\n## Ordering\n\nNone — first child. Blocks POL-422 and POL-423.\n\n## Non-goals\n\n- Do not build the scoring pipeline (POL-422)\n- Do not define proposal format (POL-423)\n- Do not require transcript capture — session_pointer is optional/null in v1\n- Do not change the fundamental telemetry schema"
+    }
+  },
+  "lifecycle": {
+    "terminate_after_completion": true,
+    "max_concurrent": 1,
+    "cleanup_on_exit": "commit-and-exit"
+  },
+  "return_contract": [
+    "child_id",
+    "status",
+    "commit",
+    "validation",
+    "next_recommended_action"
+  ],
+  "prompt_mode": "compact",
+  "prompt_metrics": {
+    "mode": "compact",
+    "char_count": 7548,
+    "estimated_tokens": 1887
+  },
+  "role_context": {
+    "role": "worker",
+    "role_authority": "implementation",
+    "may_implement": true,
+    "may_assign_workers": false,
+    "prohibited_actions": [
+      "modify-cluster-plan",
+      "dispatch-children",
+      "polaris-loop-dispatch",
+      "polaris-loop-continue"
+    ]
+  },
+  "prohibited_write_paths": [
+    ".taskchain_artifacts/",
+    ".polaris/clusters/",
+    ".polaris/runs/",
+    "**/telemetry.jsonl"
+  ],
+  "result_file_contract": {
+    "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-420/results/POL-421-125a4985-55ec-4808-9495-ba666a6a11c0.json",
+    "result_required_fields": {
+      "run_id": "polaris-run-autoresearch-evidence-loop-2026-06-29-001",
+      "cluster_id": "POL-420",
+      "child_id": "<child_id>",
+      "status": "<status>",
+      "commit": "<commit>",
+      "validation": "<validation>",
+      "next_recommended_action": "<next_recommended_action>"
+    }
+  },
+  "context": {
+    "branch": "philmeaux/pol-420-implement-evidence-first-autoresearch-loop-for-polaris",
+    "worker_role": "impl"
+  }
+}
