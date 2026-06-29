@@ -80,7 +80,7 @@ function findClusterStateForPacket(
 ): ClusterState {
   const clustersDir = resolve(repoRoot, ".polaris", "clusters");
   const hints = new Set(
-    [packet.last_completed_child, ...packet.open_children].filter(
+    [packet.last_completed_child, packet.open_children.next_child].filter(
       (value): value is string => typeof value === "string" && value.length > 0,
     ),
   );
@@ -140,13 +140,16 @@ function rebuildLoopStateFromClusterState(
   const completedChildren = clusterState.child_states
     .filter((child) => COMPLETED_CHILD_STATUSES.has(child.status))
     .map((child) => child.id);
-  const openChildren = packet.open_children.filter((childId) => clusterChildren.has(childId));
-  const fallbackOpenChildren =
-    openChildren.length > 0
-      ? openChildren
-      : clusterState.child_states
-          .filter((child) => OPEN_CHILD_STATUSES.has(child.status))
-          .map((child) => child.id);
+  // Reconstruct full open queue from all open child_states
+  const allOpenChildren = clusterState.child_states
+    .filter((child) => OPEN_CHILD_STATUSES.has(child.status))
+    .map((child) => child.id);
+  // Place next_child first if present, then append remaining open children
+  const nextChild = packet.open_children.next_child;
+  const openChildren = nextChild && clusterChildren.has(nextChild)
+    ? [nextChild, ...allOpenChildren.filter((id) => id !== nextChild)]
+    : allOpenChildren;
+  const fallbackOpenChildren = openChildren;
   const activeChild =
     fallbackOpenChildren.find((childId) => {
       const status = clusterState.child_states.find((child) => child.id === childId)?.status;
@@ -239,7 +242,9 @@ function appendResumedLedgerEvent(
     : [];
   const openChildren = Array.isArray(state.open_children)
     ? state.open_children
-    : packet.open_children;
+    : packet.open_children.next_child
+      ? [packet.open_children.next_child]
+      : [];
 
   new LedgerWriter(join(repoRoot, DEFAULT_LEDGER_PATH)).append({
     schema_version: 1,

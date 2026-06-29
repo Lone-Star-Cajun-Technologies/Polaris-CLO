@@ -25,7 +25,7 @@ export interface BootstrapPacket {
   last_completed_step: string | null;
   last_completed_child: string;
   next_step: string;
-  open_children: string[];
+  open_children: { next_child: string | null; remaining_count: number };
   artifact_pointers: {
     current_state: string;
     telemetry: string;
@@ -123,7 +123,7 @@ export function buildBootstrapPacket(
     last_completed_step: state.step_cursor,
     last_completed_child: completedChild,
     next_step: nextChild ? "03-execute-child" : "CLUSTER-COMPLETE",
-    open_children: state.open_children,
+    open_children: { next_child: state.open_children[0] ?? null, remaining_count: state.open_children.length },
     artifact_pointers: {
       current_state: relStateFile,
       telemetry: relTelemetryFile,

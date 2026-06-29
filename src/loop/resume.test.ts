@@ -84,7 +84,7 @@ function makePacket(
     last_completed_step: "checkpoint",
     last_completed_child: "POL-23",
     next_step: "03-execute-child",
-    open_children: ["POL-24"],
+    open_children: { next_child: "POL-24", remaining_count: 1 },
     artifact_pointers: {
       current_state: stateFile,
       telemetry: "/tmp/telemetry.jsonl",

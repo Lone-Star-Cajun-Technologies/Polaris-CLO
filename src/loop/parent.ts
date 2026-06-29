@@ -18,7 +18,7 @@
  *   06 – CONTINUE (back to step 02) or halt (STOP / CLUSTER COMPLETE)
  */
 
-import { appendFileSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { appendFileSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { ensureDeliveryBranch } from "./git-custody.js";
@@ -188,6 +188,34 @@ function resolveTelemetryFile(state: LoopState, repoRoot: string): string {
   const artifactDir =
     state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "polaris-run");
   return join(artifactDir, "runs", state.run_id, "telemetry.jsonl");
+}
+
+function estimateTokensFromBytes(bytes: number): number {
+  return Math.round(bytes / 4);
+}
+
+function emitBootstrapContextSize(
+  telemetryFile: string,
+  runId: string,
+  childId: string,
+  stateFile: string,
+  packet: WorkerPacket,
+): void {
+  const stateFileBytes = statSync(stateFile).size;
+  const bootstrapPacketBytes = Buffer.byteLength(JSON.stringify(packet), "utf-8");
+  const stateEstimatedTokens = estimateTokensFromBytes(stateFileBytes);
+  const bootstrapEstimatedTokens = estimateTokensFromBytes(bootstrapPacketBytes);
+  appendTelemetry(telemetryFile, {
+    event: "bootstrap-context-size",
+    run_id: runId,
+    child_id: childId,
+    state_file_bytes: stateFileBytes,
+    state_estimated_tokens: stateEstimatedTokens,
+    bootstrap_packet_bytes: bootstrapPacketBytes,
+    bootstrap_estimated_tokens: bootstrapEstimatedTokens,
+    combined_estimated_tokens: stateEstimatedTokens + bootstrapEstimatedTokens,
+    timestamp: new Date().toISOString(),
+  });
 }
 
 /**
@@ -402,6 +430,78 @@ function buildPacket(
 
 function absoluteResultFile(repoRoot: string, filePath: string): string {
   return isAbsolute(filePath) ? filePath : resolve(repoRoot, filePath);
+}
+
+/**
+ * Flush bodies from open_children_meta to the durable clusters.json snapshot.
+ * Called once before the dispatch loop so that writeStateAtomic (which strips
+ * body from non-next children) does not cause data loss when the loop reloads
+ * state from disk between dispatches.
+ *
+ * Only writes nodes that have a body in open_children_meta but lack one in the
+ * existing snapshot. Never removes or overwrites existing body data.
+ * Never throws.
+ */
+function flushBodiesToClusterSnapshot(state: LoopState, repoRoot: string): void {
+  const meta = state.open_children_meta;
+  if (!meta) return;
+
+  const snapshotPath = join(repoRoot, ".polaris", "clusters", state.cluster_id, "clusters.json");
+  let snapshot: {
+    schemaVersion?: string;
+    nodes?: Record<string, { id?: string; title?: string; body?: string; status?: string }>;
+    [key: string]: unknown;
+  } = {};
+
+  try {
+    const raw = readFileSync(snapshotPath, "utf-8");
+    snapshot = JSON.parse(raw) as typeof snapshot;
+  } catch (err) {
+    // Distinguish "file not found" from "present but corrupted"
+    if (err && typeof err === 'object' && 'code' in err && err.code === 'ENOENT') {
+      // File absent — start fresh
+      snapshot = {
+        schemaVersion: "v2",
+        source: { id: state.cluster_id, type: "local" },
+        nodes: {},
+        dependencies: {},
+        clusters: { [state.cluster_id]: { id: state.cluster_id, title: state.cluster_id, children: state.open_children } },
+        activeCluster: state.cluster_id,
+      };
+    } else {
+      // File present but corrupted — do not overwrite
+      return;
+    }
+  }
+
+  if (typeof snapshot.nodes !== "object" || snapshot.nodes === null) {
+    snapshot.nodes = {};
+  }
+
+  let changed = false;
+  for (const [id, childMeta] of Object.entries(meta)) {
+    const body = childMeta?.body;
+    if (!body || body.trim().length === 0) continue;
+    const existing = snapshot.nodes[id];
+    if (existing && existing.body && existing.body.trim().length > 0) continue;
+    snapshot.nodes[id] = {
+      ...(existing ?? {}),
+      id,
+      title: childMeta.title ?? existing?.title ?? id,
+      body,
+      status: existing?.status ?? "Todo",
+    };
+    changed = true;
+  }
+
+  if (!changed) return;
+
+  try {
+    mkdirSync(dirname(snapshotPath), { recursive: true });
+    writeFileSync(snapshotPath, JSON.stringify(snapshot, null, 2), "utf-8");
+  } catch {
+    // Best-effort — do not fail the loop if snapshot write fails
+  }
 }
 
 function buildClusterArtifactPaths(
@@ -828,6 +928,15 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
 
   let childrenDispatched = 0;
 
+  // ── Flush bodies to clusters.json before stripping begins ──────────────
+  // writeStateAtomic strips body from all open_children_meta entries except
+  // open_children[0]. Flush any bodies present in open_children_meta to the
+  // durable cluster snapshot so readBodyFromClusterSnapshot can hydrate them
+  // on subsequent iterations after reload from disk.
+  if (!dryRun) {
+    flushBodiesToClusterSnapshot(state, repoRoot);
+  }
+
   // ── Lifecycle manager: enforce one-active-worker policy ─────────────────
   // forceReleaseAll() clears any orphaned registrations from a previous
   // crashed session. Registrations are session-memory only; they are not
@@ -1199,6 +1308,8 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
         dry_run: dryRun,
         timestamp: new Date().toISOString(),
       });
+
+      emitBootstrapContextSize(telemetryFile, state.run_id, nextChild, stateFile, packet);
     }
 
     let dispatchResult;
@@ -1504,6 +1615,10 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
       } else {
         state = reloadedState;
         reloadedStateValid = true;
+        // Flush bodies from worker-updated state to clusters.json before any stripping
+        if (!dryRun) {
+          flushBodiesToClusterSnapshot(state, repoRoot);
+        }
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);

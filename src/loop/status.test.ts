@@ -125,7 +125,7 @@ describe("runLoopStatus", () => {
       last_completed_step: "checkpoint",
       last_completed_child: "POL-25",
       next_step: "03-execute-child",
-      open_children: ["POL-26", "POL-27"],
+      open_children: { next_child: "POL-26", remaining_count: 2 },
       artifact_pointers: {
         current_state: stateFile,
         telemetry: "/tmp/telemetry.jsonl",
@@ -158,7 +158,7 @@ describe("runLoopStatus", () => {
       last_completed_step: "checkpoint",
       last_completed_child: "POL-25",
       next_step: "03-execute-child",
-      open_children: ["POL-26", "POL-27"],
+      open_children: { next_child: "POL-26", remaining_count: 2 },
       artifact_pointers: {
         current_state: stateFile,
         telemetry: "/tmp/telemetry.jsonl",

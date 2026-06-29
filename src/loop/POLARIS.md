@@ -33,6 +33,9 @@ The loop subsystem manages the session lifecycle for Polaris cluster runs. It ha
 - `polaris loop abort` must set `status: blocked` and emit a `loop-aborted` JSONL event before exiting.
 - The parent loop emits `child-completed` and `cluster-complete` ledger events via `LedgerWriter` after each successful child and at cluster completion. These are append-only durable records in the run ledger. Ledger event writes are gated by the `dryRun` flag: when `dryRun` is true, ledger events are not written; ledger writes occur only when `dryRun` is false.
 - The `child-complete` telemetry event includes `elapsed_seconds` (computed from `dispatch_record.dispatched_at`) and `commit_files` (files from the worker's last commit). `elapsed_seconds` is omitted when dispatch time is unavailable; `commit_files` may be null when the commit cannot be resolved.
+- `writeStateAtomic` strips `body` from `open_children_meta` for all children except the immediate next child to reduce state file size. Body content is preserved in `.polaris/clusters/<id>/clusters.json` and is recoverable via `readBodyFromClusterSnapshot`. Do not rely on `body` being present in `open_children_meta` for non-next children at runtime.
+- `BootstrapPacket.open_children` is `{ next_child: string | null, remaining_count: number }`, not a full array. Only the next child identity and remaining count are included; the full child list is not transmitted in bootstrap packets.
+- A `bootstrap-context-size` JSONL event is emitted before each child dispatch. It records the byte size of the serialized state file and worker packet with an estimated token count (`Math.round(bytes / 4)`). This event is skipped in dry-run mode.
 
 ## Route model
 

@@ -128,7 +128,7 @@ describe("runLoopContinue", () => {
     expect(packet.run_id).toBe("pol-5-session-1");
     expect(packet.last_completed_child).toBe("POL-23");
     expect(packet.current_state_sha).toBeTruthy();
-    expect(packet.open_children).toEqual(["POL-24", "POL-25", "POL-26", "POL-27"]);
+    expect(packet.open_children).toEqual({ next_child: "POL-24", remaining_count: 4 });
     expect(packet.execution_adapter.mode).toBe("terminal-cli");
     expect(packet.execution_adapter.compact_bootstrap_state.child_id).toBe("POL-24");
   });
@@ -419,7 +419,7 @@ describe("runLoopContinue", () => {
     expect(updated.completed_children).toEqual(["POL-23"]);
     expect(updated.open_children).toEqual(["POL-24"]);
     expect(updated.next_open_child).toBe("POL-24");
-    expect(packet.open_children).toEqual(["POL-24"]);
+    expect(packet.open_children).toEqual({ next_child: "POL-24", remaining_count: 1 });
     expect(packet.execution_adapter.compact_bootstrap_state.child_id).toBe("POL-24");
   });
 
