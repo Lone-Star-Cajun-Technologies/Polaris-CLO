@@ -1,0 +1,58 @@
+{
+  "schema_version": "1.0",
+  "cluster_id": "POL-420",
+  "state_generation": 8,
+  "child_states": [
+    {
+      "id": "POL-421",
+      "status": "done"
+    },
+    {
+      "id": "POL-422",
+      "status": "done",
+      "commit": "af49551892ccc9c505e260e5c20769a3d9aa1f2e"
+    },
+    {
+      "id": "POL-423",
+      "status": "done",
+      "commit": "335269b00cafb2bd129e0b16efd6e78bb9a4e540"
+    }
+  ],
+  "claim_metadata": {
+    "POL-421": {
+      "worker_id": "polaris-run-autoresearch-evidence-loop-2026-06-29-001:POL-421:1782740289831",
+      "claimed_at": "2026-06-29T13:38:09.831Z",
+      "expires_at": "2026-06-29T14:08:09.831Z"
+    }
+  },
+  "packet_pointers": {
+    "POL-421": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-420/packets/POL-421-125a4985-55ec-4808-9495-ba666a6a11c0.json",
+    "POL-422": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-420/packets/POL-422-87d2b255-05e2-43e9-95c3-3f02d75916de.json",
+    "POL-423": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-420/packets/POL-423-a40c2ba7-4142-452b-9699-38b1f258e4de.json"
+  },
+  "result_pointers": {
+    "POL-421": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-420/results/POL-421-125a4985-55ec-4808-9495-ba666a6a11c0.json",
+    "POL-422": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-420/results/POL-422-87d2b255-05e2-43e9-95c3-3f02d75916de.json",
+    "POL-423": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-420/results/POL-423-a40c2ba7-4142-452b-9699-38b1f258e4de.json"
+  },
+  "validation_results": {
+    "POL-421": "passed",
+    "POL-422": {
+      "passed": true,
+      "output": "passed"
+    },
+    "POL-423": {
+      "passed": true,
+      "output": "passed"
+    }
+  },
+  "commits": {
+    "POL-421": "58bc480fd55b7f229aeb5108797d93c928627b3e",
+    "POL-422": "af49551892ccc9c505e260e5c20769a3d9aa1f2e",
+    "POL-423": "335269b00cafb2bd129e0b16efd6e78bb9a4e540"
+  },
+  "tracker_mutations": {},
+  "blockers": [],
+  "delivery_branch": "philmeaux/pol-420-implement-evidence-first-autoresearch-loop-for-polaris",
+  "base_branch": "main"
+}

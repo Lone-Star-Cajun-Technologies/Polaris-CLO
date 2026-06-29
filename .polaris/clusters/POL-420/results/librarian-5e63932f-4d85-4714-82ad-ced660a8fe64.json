@@ -1,0 +1,105 @@
+{
+  "schema_version": "1.0",
+  "role": "closeout-librarian",
+  "run_id": "polaris-run-autoresearch-evidence-loop-2026-06-29-002",
+  "dispatch_id": "5e63932f-4d85-4714-82ad-ced660a8fe64",
+  "cluster_id": "POL-420",
+  "status": "success",
+  "commit_sha": "93c62e8",
+  "commit_message": "docs(closeout): reconcile cognition for cluster POL-420\n\nRun: polaris-run-autoresearch-evidence-loop-2026-06-29-002\nCluster: POL-420\nChildren: POL-422, POL-423\nFiles updated:\n- POLARIS.md: 2 files\n- SUMMARY.md: 2 files\n- docs ingested: 0\n- links repaired: 0",
+  "files_committed": [
+    "src/POLARIS.md",
+    "src/SUMMARY.md",
+    "src/cli/POLARIS.md",
+    "src/cli/SUMMARY.md"
+  ],
+  "drift_reconciliation": {
+    "medic_ran": false,
+    "charts_created": [],
+    "drift_observations": [
+      {
+        "type": "missing_documentation",
+        "target": "src/POLARIS.md",
+        "severity": "medium",
+        "note": "New autoresearch/ route not listed in 'What belongs here' section"
+      },
+      {
+        "type": "missing_documentation",
+        "target": "src/cli/POLARIS.md",
+        "severity": "medium",
+        "note": "New autoresearch.ts CLI file not listed in 'What belongs here' section"
+      },
+      {
+        "type": "summary_outdated",
+        "target": "src/SUMMARY.md",
+        "severity": "medium",
+        "note": "Current State did not describe autoresearch scoring/proposal pipeline"
+      },
+      {
+        "type": "summary_outdated",
+        "target": "src/cli/SUMMARY.md",
+        "severity": "low",
+        "note": "autoresearch command group missing from top-level command list and Current State"
+      }
+    ],
+    "chart_links_required": false,
+    "charts_linked": []
+  },
+  "polaris_md_updates": [
+    {
+      "file": "src/POLARIS.md",
+      "action": "update",
+      "change_summary": "Added autoresearch/ to 'What belongs here' describing dev-gated retroactive scoring, proposal building, and Linear routing"
+    },
+    {
+      "file": "src/cli/POLARIS.md",
+      "action": "update",
+      "change_summary": "Added autoresearch.ts entry with score/propose subcommand descriptions and dev-gate editing rule"
+    }
+  ],
+  "summary_md_updates": [
+    {
+      "file": "src/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Extended Current State with autoresearch/ route: 8 binary gates, scoreRun, buildProposals, routeProposals, dev-context gate"
+    },
+    {
+      "file": "src/cli/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Added autoresearch to command group list and described autoresearch score/propose commands in Current State"
+    }
+  ],
+  "docs_ingested": [],
+  "docs_archived": [
+    {
+      "source_path": "smartdocs/raw/pol-424-autoresearch-realignment-analysis.md",
+      "target_path": null,
+      "action": "archive",
+      "reason": "One-time planning analysis; implementation diverged from original framing; stay in raw"
+    },
+    {
+      "source_path": "smartdocs/raw/autoresearch-role-evidence-contract.md",
+      "target_path": null,
+      "action": "archive",
+      "reason": "Evidence contract for POL-421 (not implemented in this cluster); not yet promotable to specs/active"
+    },
+    {
+      "source_path": "smartdocs/raw/pol-419-portable-autoresearch-loop-analysis.md",
+      "target_path": null,
+      "action": "archive",
+      "reason": "One-time analysis doc; cluster plan executed, stays in raw"
+    }
+  ],
+  "yaml_updates": [],
+  "cognition_archived": [],
+  "link_validation": {
+    "total_checked": 2,
+    "valid": 2,
+    "broken": 0,
+    "repaired": 0,
+    "unrepairable": []
+  },
+  "blockers": [],
+  "reconciled_at": "2026-06-29T00:00:00.000Z",
+  "evidence_summary": "POL-420 (children POL-422, POL-423) added the src/autoresearch/ route: an 8-gate binary scoring pipeline (scoreRun), a fix-zone proposal builder (buildProposals), and a Linear proposal router (routeProposals), all dev-gated via isPolarisDevContext(). The CLI surface was extended with polaris autoresearch score and polaris autoresearch propose subcommands in src/cli/autoresearch.ts. Both src/POLARIS.md and src/cli/POLARIS.md were updated to document the new route and file. Both SUMMARY.md files were refreshed to include the autoresearch command group in the current-state description. Three raw analysis docs (pol-424, pol-419, autoresearch-role-evidence-contract) were assessed and left in place as archived planning artifacts — none describe fully implemented behavior warranting promotion to specs/active. No cognition notes to archive. No links required repair. POL-421 (evidence contract expansion) was not in this cluster and remains open; the autoresearch-role-evidence-contract.md raw doc should be revisited when POL-421 completes."
+}

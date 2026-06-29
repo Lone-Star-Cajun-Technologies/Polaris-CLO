@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "v2",
+  "source": {
+    "id": "POL-420",
+    "type": "linear",
+    "analysis": {
+      "id": "POL-419",
+      "doc": "smartdocs/raw/pol-419-portable-autoresearch-loop-analysis.md",
+      "realignment": {
+        "id": "POL-424",
+        "doc": "smartdocs/raw/pol-424-autoresearch-realignment-analysis.md"
+      }
+    }
+  },
+  "nodes": {
+    "POL-420": {
+      "id": "POL-420",
+      "title": "IMPLEMENT: Evidence-first autoresearch loop for Polaris artifact optimization",
+      "status": "Backlog",
+      "body": "## Objective\nImplement an evidence-first artifact optimization loop that enables Polaris to inspect completed run evidence, score runs against a binary gate scorecard, diagnose failure patterns, and route improvement proposals to Polaris development for human review — without model training, fine-tuning, or automatic mutation of any canonical artifact.\n\n## Context\nPOL-414/415 implemented autoresearch-style (just-in-time) context loading for the Foreman's dispatch loop. POL-419 extended the concept: run evidence collected in any Polaris-governed repository should feed a dev-gated analysis loop that proposes improvements to Polaris itself.\n\nPOL-424 clarified the architectural direction. Polaris does not optimize foundation models. Polaris optimizes the quality, repeatability, and efficiency of its own orchestration artifacts using evidence gathered from completed runs.\n\nThe optimization loop is:\nCompleted Run → Evidence → Score → Diagnosis → Proposal → Review-Gated Improvement\n\nNot: Replay Implementation → Retrain → Fine-tune\n\nGovernance constraint: Evidence emission is portable. Scoring, proposal generation, and application is restricted to Polaris development authority.\n\nAnalyze source: POL-419, POL-424\n\n## Goal\n1. Role flight recorder: standardized evidence fields all Polaris role sessions emit\n2. Retroactive scoring pipeline: dev-gated CLI that reads completed run artifacts and scores them against a binary gate scorecard\n3. Fix zone mapping + proposal routing: maps failed gates to Polaris artifact targets and routes proposals to Polaris development via Linear for human review\n\n## Scope\n\n- src/loop/ (worker result and packet schema extensions)\n- src/cli/ (new autoresearch commands)\n- New module: src/autoresearch/ (scoring, diagnosis, proposal routing)\n\n## Acceptance Criteria\n\n- [ ] Role evidence contract defined — TypeScript types covering all role sessions\n- [ ] Worker result JSON includes: role, provider, packet_hash, intervention markers, artifact pointers\n- [ ] `polaris autoresearch score <run-id>` evaluates completed run artifacts against binary gates\n- [ ] Binary gate scorecard covers: user-intervened, foreman-resent-packet, validation-failed, worker-went-out-of-scope, worker-output-required-fixing, foreman-token-burn-over-budget, state-repair-required\n- [ ] Fix zone mapping table maps each failed gate to a Polaris artifact type\n- [ ] `polaris autoresearch propose <diagnosis-file>` files Linear issues; proposals never auto-applied\n- [ ] Dev gate enforced on all autoresearch commands\n- [ ] All existing tests pass; npm run build passes\n\n## Validation\n\n- npm run build\n- npm test\n\n## Ordering\n\nChildren: POL-421 → POL-422 → POL-423 (strictly sequential)\n\n## Non-goals\n\n- Do not fine-tune foundation models\n- Do not train LoRAs or implement GPU training loops\n- Do not silently mutate canonical doctrine or skill files\n- Do not silently mutate user repositories\n- Do not make this a repo-local self-modifying agent feature\n- Do not auto-apply proposals\n- Do not implement iterative evidence-accumulation loops (training-loop mechanic)"
+    },
+    "POL-421": {
+      "id": "POL-421",
+      "title": "IMPLEMENT: Role flight recorder — define evidence contract and expand role emission",
+      "status": "Backlog",
+      "sessionType": "implement",
+      "body": "## Objective\nDefine the autoresearch Role Evidence Contract: standardized fields all Polaris role sessions (Worker, Foreman, Analyst, Librarian, Medic) must emit to be eligible for retroactive scoring. Audit current emission against the contract and implement missing fields.\n\n## Context\nThe current worker result schema contains only: child_id, status, commit, validation, next_recommended_action, tracker_updated, state_updated, telemetry_updated, run_id. Many fields required for retroactive gate evaluation are absent. Every Polaris role should act like a flight recorder: emitting durable evidence that the autoresearch scoring pipeline consumes later.\n\nAnalyze source: POL-419, POL-424. Parent: POL-420.\n\n## Goal\n1. Define the Role Evidence Contract as a TypeScript interface covering all role sessions\n2. Audit current worker result JSON, packet schema, and ledger events against the contract\n3. Implement missing fields in worker result type and emission points\n4. Produce the evidence contract document in smartdocs/raw/\n\n## Scope\n\n- src/types/ or src/loop/ (WorkerResultContract interface)\n- src/loop/parent.ts (update worker result construction)\n- src/loop/checkpoint.ts (dispatch_epoch accessible for foreman_intervened)\n- smartdocs/raw/ (evidence contract document)\n\n## Acceptance Criteria\n\n- [ ] WorkerResultContract TypeScript interface defined with all required fields\n- [ ] Worker result JSON includes: role, provider, cluster_id, skill_name, packet_hash, worker_id, escalation_count, heartbeat_count, result_artifact_path, packet_path, telemetry_path\n- [ ] user_intervened and foreman_intervened emitted as null (scored retroactively)\n- [ ] Evidence contract document in smartdocs/raw/ distinguishing repo-local vs. Polaris-dev-only\n- [ ] TypeScript build passes; existing tests pass\n- [ ] Unit tests: new fields present in result JSON; packet_hash computed correctly\n\n## Validation\n\n- npm run build\n- npx vitest run src/loop/\n\n## Ordering\n\nNone — first child. Blocks POL-422 and POL-423.\n\n## Non-goals\n\n- Do not build the scoring pipeline (POL-422)\n- Do not define proposal format (POL-423)\n- Do not require transcript capture — session_pointer is optional/null in v1\n- Do not change the fundamental telemetry schema"
+    },
+    "POL-422": {
+      "id": "POL-422",
+      "title": "IMPLEMENT: Retroactive run scoring pipeline and binary gate scorecard",
+      "status": "Backlog",
+      "sessionType": "implement",
+      "body": "## Objective\nImplement `polaris autoresearch score <run-id>` — a dev-gated CLI command that reads completed Polaris run artifacts, evaluates them against a binary gate scorecard, and outputs a structured diagnosis report identifying which gates failed and which Polaris artifacts are likely implicated.\n\n## Context\nWith the role evidence contract established (POL-421), this child builds the scoring pipeline. The pipeline operates on existing run artifacts without any iterative evidence accumulation or re-execution of implementation work. Score = passed_gates / evaluable_gates. The failed gate list is the diagnostic map.\n\nAnalyze source: POL-419, POL-424. Parent: POL-420. Blocked by: POL-421.\n\n## Goal\nImplement `polaris autoresearch score <run-id>` that:\n1. Locates the run directory and associated cluster artifacts\n2. Reads: ledger.jsonl, run-report.md, result JSONs, packet JSONs, telemetry.jsonl (if present)\n3. Evaluates binary gates (false = passed, true = failed)\n4. Outputs JSON diagnosis report with gate_results, failed_gates, score, diagnosis_hints\n5. Is dev-gated — refuses to run outside Polaris development context\n\n## Binary Gates (v1)\n\n- user-intervened: git log commits after polaris-finalize before PR merge\n- foreman-resent-packet: dispatch_epoch in current-state.json\n- foreman-fixed-worker-output: commit history between child-complete and next dispatch\n- worker-output-required-fixing: git log after polaris-finalize vs. finalize timestamp\n- validation-failed: result.validation fields in result JSONs\n- worker-went-out-of-scope: result.status + worker-blocked events in telemetry\n- foreman-token-burn-over-budget: bootstrap-context-size events (skip if absent)\n- state-repair-required: medic result artifacts in cluster directory\n\n## Scope\n\n- src/cli/ (autoresearch score command)\n- New src/autoresearch/ module (scoring engine, gate evaluators, dev gate)\n- src/loop/ledger.ts (read path only — no mutations)\n\n## Acceptance Criteria\n\n- [ ] Command registered: polaris autoresearch score <run-id>\n- [ ] Dev gate enforced — exits with error outside Polaris dev context\n- [ ] Reads run artifacts from .polaris/runs/<run-id>/ and .polaris/clusters/<cluster-id>/\n- [ ] Evaluates all 8 v1 gates; skips gates where data is unavailable\n- [ ] Score = passed / evaluable (0.0–1.0)\n- [ ] Output is valid JSON matching the diagnosis report schema\n- [ ] diagnosis_hints maps failed gates to fix_zone and human-readable hint\n- [ ] TypeScript build passes\n- [ ] Unit tests: each gate (pass/fail/skip), score calculation, dev gate rejection, output schema\n\n## Validation\n\n- npm run build\n- npx vitest run src/autoresearch/\n\n## Ordering\n\nBlocked by POL-421.\n\n## Non-goals\n\n- Do not implement iterative evidence accumulation (no query-fetch-assess loop)\n- Do not re-execute or replay implementation work\n- Do not mutate any run artifacts or telemetry files\n- Do not implement proposal routing to Linear (POL-423)\n- Do not fine-tune models"
+    },
+    "POL-423": {
+      "id": "POL-423",
+      "title": "IMPLEMENT: Fix zone mapping and dev-gated artifact improvement proposal routing",
+      "status": "Backlog",
+      "sessionType": "implement",
+      "body": "## Objective\nMap binary gate failures to Polaris artifact fix zones and implement dev-gated proposal routing (`polaris autoresearch propose <diagnosis-file>`) that files improvement proposals as Linear issues in the Polaris development team for human review.\n\n## Context\nThe scoring pipeline (POL-422) produces a diagnosis report with failed gates. This child defines how failed gates map to specific Polaris artifact types and routes the resulting proposals to Polaris development. Proposals are never auto-applied.\n\nAnalyze source: POL-419, POL-424. Parent: POL-420. Blocked by: POL-422.\n\n## Goal\n1. Define fix zone mapping table: gate → Polaris artifact type + hint\n2. Define AutresearchProposal TypeScript type with ArtifactType union (no \"doctrine\" type)\n3. Implement polaris autoresearch propose <diagnosis-file> CLI\n4. Dev gate: command checks Polaris development context\n5. Create Linear issues for each proposal; human review always required\n\n## ArtifactType\n\nskill-prompt | worker-template | foreman-template | analyzer-template | librarian-template | medic-template | workflow-script | runtime-config | provider-role-recommendation | cli-default | scoring-rule\n\n(NOT \"doctrine\" — doctrine changes go through canonical governance)\n\n## Scope\n\n- src/autoresearch/ (proposal schema, fix zone map, routing module)\n- src/cli/ (propose command)\n- src/tracker/ (Linear routing integration — new routing path only)\n\n## Acceptance Criteria\n\n- [ ] AutresearchProposal TypeScript type defined with ArtifactType union\n- [ ] Fix zone mapping table implemented: gate IDs → artifact types + hints\n- [ ] polaris autoresearch propose <diagnosis-file> validates input against proposal schema\n- [ ] Dev gate enforced — exits with error outside Polaris dev context\n- [ ] Accepted proposals create Linear issues with autoresearch-proposal label\n- [ ] Proposals NOT auto-applied — filed for human review only\n- [ ] Linear issue body includes: gate IDs, fix zone, evidence run IDs, artifact type, confidence\n- [ ] TypeScript build passes\n- [ ] Unit tests: schema validation, fix zone mapping, dev gate rejection, Linear issue creation\n\n## Validation\n\n- npm run build\n- npx vitest run src/autoresearch/\n\n## Ordering\n\nBlocked by POL-422.\n\n## Non-goals\n\n- Do not auto-apply proposals\n- Do not allow proposal routing from target repos\n- Do not include \"doctrine\" as a proposal type\n- Do not implement replay or approval/rejection tracking in v1\n- Do not fine-tune models"
+    }
+  },
+  "dependencies": {
+    "POL-422": ["POL-421"],
+    "POL-423": ["POL-422"]
+  },
+  "clusters": {
+    "cluster-01": {
+      "id": "cluster-01",
+      "title": "Evidence-first autoresearch loop",
+      "children": ["POL-421", "POL-422", "POL-423"],
+      "cluster_root": "POL-420"
+    }
+  },
+  "activeCluster": "cluster-01",
+  "metadata": {
+    "generatedAt": "2026-06-29T13:15:00Z",
+    "generatedBy": "polaris-analyze",
+    "analyzeIssue": "POL-419",
+    "realignedBy": "POL-424",
+    "realignedAt": "2026-06-29T13:15:00Z",
+    "runId": "polaris-analyze-realign-autoresearch-evidence-driven-2026-06-29-001"
+  }
+}

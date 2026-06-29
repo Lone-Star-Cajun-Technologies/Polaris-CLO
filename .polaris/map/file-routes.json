@@ -166,8 +166,8 @@
     "taskchain": "polaris-cli",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-29T03:23:32.379Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-06-29T14:20:06.883Z",
+    "updated_by": "polaris-map-update",
     "tags": [
       "cli"
     ],
@@ -179,8 +179,8 @@
     "taskchain": "polaris-cli",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-06-29T03:23:32.379Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-06-29T14:20:06.883Z",
+    "updated_by": "polaris-map-update",
     "tags": [
       "cli"
     ],
