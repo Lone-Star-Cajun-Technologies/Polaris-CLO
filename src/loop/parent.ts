@@ -404,6 +404,72 @@ function absoluteResultFile(repoRoot: string, filePath: string): string {
   return isAbsolute(filePath) ? filePath : resolve(repoRoot, filePath);
 }
 
+/**
+ * Flush bodies from open_children_meta to the durable clusters.json snapshot.
+ * Called once before the dispatch loop so that writeStateAtomic (which strips
+ * body from non-next children) does not cause data loss when the loop reloads
+ * state from disk between dispatches.
+ *
+ * Only writes nodes that have a body in open_children_meta but lack one in the
+ * existing snapshot. Never removes or overwrites existing body data.
+ * Never throws.
+ */
+function flushBodiesToClusterSnapshot(state: LoopState, repoRoot: string): void {
+  const meta = state.open_children_meta;
+  if (!meta) return;
+
+  const snapshotPath = join(repoRoot, ".polaris", "clusters", state.cluster_id, "clusters.json");
+  let snapshot: {
+    schemaVersion?: string;
+    nodes?: Record<string, { id?: string; title?: string; body?: string; status?: string }>;
+    [key: string]: unknown;
+  } = {};
+
+  try {
+    const raw = readFileSync(snapshotPath, "utf-8");
+    snapshot = JSON.parse(raw) as typeof snapshot;
+  } catch {
+    // File absent or unparseable — start fresh
+    snapshot = {
+      schemaVersion: "v2",
+      source: { id: state.cluster_id, type: "local" },
+      nodes: {},
+      dependencies: {},
+      clusters: { [state.cluster_id]: { id: state.cluster_id, title: state.cluster_id, children: state.open_children } },
+      activeCluster: state.cluster_id,
+    };
+  }
+
+  if (typeof snapshot.nodes !== "object" || snapshot.nodes === null) {
+    snapshot.nodes = {};
+  }
+
+  let changed = false;
+  for (const [id, childMeta] of Object.entries(meta)) {
+    const body = childMeta?.body;
+    if (!body || body.trim().length === 0) continue;
+    const existing = snapshot.nodes[id];
+    if (existing && existing.body && existing.body.trim().length > 0) continue;
+    snapshot.nodes[id] = {
+      ...(existing ?? {}),
+      id,
+      title: childMeta.title ?? existing?.title ?? id,
+      body,
+      status: existing?.status ?? "Todo",
+    };
+    changed = true;
+  }
+
+  if (!changed) return;
+
+  try {
+    mkdirSync(dirname(snapshotPath), { recursive: true });
+    writeFileSync(snapshotPath, JSON.stringify(snapshot, null, 2), "utf-8");
+  } catch {
+    // Best-effort — do not fail the loop if snapshot write fails
+  }
+}
+
 function buildClusterArtifactPaths(
   repoRoot: string,
   clusterId: string,
@@ -827,6 +893,15 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
   }
 
   let childrenDispatched = 0;
+
+  // ── Flush bodies to clusters.json before stripping begins ──────────────
+  // writeStateAtomic strips body from all open_children_meta entries except
+  // open_children[0]. Flush any bodies present in open_children_meta to the
+  // durable cluster snapshot so readBodyFromClusterSnapshot can hydrate them
+  // on subsequent iterations after reload from disk.
+  if (!dryRun) {
+    flushBodiesToClusterSnapshot(state, repoRoot);
+  }
 
   // ── Lifecycle manager: enforce one-active-worker policy ─────────────────
   // forceReleaseAll() clears any orphaned registrations from a previous

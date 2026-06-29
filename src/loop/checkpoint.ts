@@ -460,7 +460,20 @@ export function validateState(state: unknown): string[] {
 }
 
 export function writeStateAtomic(stateFile: string, state: LoopState): string {
-  const content = JSON.stringify(state, null, 2);
+  const nextChild = state.open_children[0];
+  const slimmedState: LoopState = state.open_children_meta
+    ? {
+        ...state,
+        open_children_meta: Object.fromEntries(
+          Object.entries(state.open_children_meta).map(([id, meta]) =>
+            id === nextChild
+              ? [id, meta]
+              : [id, (({ body: _b, ...rest }) => rest)(meta as { body?: string } & typeof meta)],
+          ),
+        ),
+      }
+    : state;
+  const content = JSON.stringify(slimmedState, null, 2);
   const tmp = `${stateFile}.tmp`;
   mkdirSync(dirname(stateFile), { recursive: true });
   writeFileSync(tmp, content, "utf-8");
