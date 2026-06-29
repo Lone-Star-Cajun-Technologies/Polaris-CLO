@@ -80,7 +80,7 @@ function findClusterStateForPacket(
 ): ClusterState {
   const clustersDir = resolve(repoRoot, ".polaris", "clusters");
   const hints = new Set(
-    [packet.last_completed_child, ...packet.open_children].filter(
+    [packet.last_completed_child, packet.open_children.next_child].filter(
       (value): value is string => typeof value === "string" && value.length > 0,
     ),
   );
@@ -140,7 +140,9 @@ function rebuildLoopStateFromClusterState(
   const completedChildren = clusterState.child_states
     .filter((child) => COMPLETED_CHILD_STATUSES.has(child.status))
     .map((child) => child.id);
-  const openChildren = packet.open_children.filter((childId) => clusterChildren.has(childId));
+  const openChildren = packet.open_children.next_child && clusterChildren.has(packet.open_children.next_child)
+    ? [packet.open_children.next_child]
+    : [];
   const fallbackOpenChildren =
     openChildren.length > 0
       ? openChildren
@@ -239,7 +241,9 @@ function appendResumedLedgerEvent(
     : [];
   const openChildren = Array.isArray(state.open_children)
     ? state.open_children
-    : packet.open_children;
+    : packet.open_children.next_child
+      ? [packet.open_children.next_child]
+      : [];
 
   new LedgerWriter(join(repoRoot, DEFAULT_LEDGER_PATH)).append({
     schema_version: 1,

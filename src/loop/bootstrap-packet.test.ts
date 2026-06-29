@@ -245,7 +245,7 @@ describe("buildBootstrapPacket — packet shape", () => {
 
     expect(packet.run_id).toBe("run-test-001");
     expect(packet.skill).toBe("polaris-run");
-    expect(packet.open_children).toEqual(["POL-120"]);
+    expect(packet.open_children).toEqual({ next_child: "POL-120", remaining_count: 1 });
     expect(packet.last_completed_child).toBe("POL-119");
   });
 
