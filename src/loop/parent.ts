@@ -18,7 +18,7 @@
  *   06 – CONTINUE (back to step 02) or halt (STOP / CLUSTER COMPLETE)
  */
 
-import { appendFileSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { appendFileSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { ensureDeliveryBranch } from "./git-custody.js";
@@ -188,6 +188,34 @@ function resolveTelemetryFile(state: LoopState, repoRoot: string): string {
   const artifactDir =
     state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "polaris-run");
   return join(artifactDir, "runs", state.run_id, "telemetry.jsonl");
+}
+
+function estimateTokensFromBytes(bytes: number): number {
+  return Math.round(bytes / 4);
+}
+
+function emitBootstrapContextSize(
+  telemetryFile: string,
+  runId: string,
+  childId: string,
+  stateFile: string,
+  packet: WorkerPacket,
+): void {
+  const stateFileBytes = statSync(stateFile).size;
+  const bootstrapPacketBytes = Buffer.byteLength(JSON.stringify(packet), "utf-8");
+  const stateEstimatedTokens = estimateTokensFromBytes(stateFileBytes);
+  const bootstrapEstimatedTokens = estimateTokensFromBytes(bootstrapPacketBytes);
+  appendTelemetry(telemetryFile, {
+    event: "bootstrap-context-size",
+    run_id: runId,
+    child_id: childId,
+    state_file_bytes: stateFileBytes,
+    state_estimated_tokens: stateEstimatedTokens,
+    bootstrap_packet_bytes: bootstrapPacketBytes,
+    bootstrap_estimated_tokens: bootstrapEstimatedTokens,
+    combined_estimated_tokens: stateEstimatedTokens + bootstrapEstimatedTokens,
+    timestamp: new Date().toISOString(),
+  });
 }
 
 /**
@@ -1274,6 +1302,8 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
         dry_run: dryRun,
         timestamp: new Date().toISOString(),
       });
+
+      emitBootstrapContextSize(telemetryFile, state.run_id, nextChild, stateFile, packet);
     }
 
     let dispatchResult;

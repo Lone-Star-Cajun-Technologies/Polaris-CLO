@@ -416,6 +416,71 @@ describe("runParentLoop", () => {
     });
   });
 
+  it("emits bootstrap-context-size telemetry before each dispatch", async () => {
+    const calls: MockCall[] = [];
+    const mockAdapter = makeMockAdapter([SUCCESS_RESULT, SUCCESS_RESULT], calls);
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100", "POL-101"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(result.haltReason).toBe("cluster-complete");
+    expect(calls).toHaveLength(2);
+
+    const telemetryFile = join(tmpDir, "runs", "test-run-001", "telemetry.jsonl");
+    const events = readJsonLines(telemetryFile);
+    const contextSizeEvents = events.filter((e) => e.event === "bootstrap-context-size");
+    expect(contextSizeEvents).toHaveLength(2);
+
+    const dispatchedChildIds = contextSizeEvents.map((e) => e.child_id);
+    expect(dispatchedChildIds).toEqual(["POL-100", "POL-101"]);
+
+    for (const event of contextSizeEvents) {
+      expect(event).toMatchObject({
+        event: "bootstrap-context-size",
+        run_id: "test-run-001",
+      });
+      expect(typeof event.state_file_bytes).toBe("number");
+      expect(typeof event.bootstrap_packet_bytes).toBe("number");
+      expect(event.state_file_bytes).toBeGreaterThan(0);
+      expect(event.bootstrap_packet_bytes).toBeGreaterThan(0);
+      expect(event.state_estimated_tokens).toBe(Math.round((event.state_file_bytes as number) / 4));
+      expect(event.bootstrap_estimated_tokens).toBe(Math.round((event.bootstrap_packet_bytes as number) / 4));
+      expect(event.combined_estimated_tokens).toBe(
+        (event.state_estimated_tokens as number) + (event.bootstrap_estimated_tokens as number),
+      );
+      expect(typeof event.timestamp).toBe("string");
+    }
+  });
+
+  it("does not emit bootstrap-context-size telemetry in dry-run mode", async () => {
+    const calls: MockCall[] = [];
+    const mockAdapter = makeMockAdapter([SUCCESS_RESULT], calls);
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir, dryRun: true });
+
+    expect(result.haltReason).toBe("cluster-complete");
+    expect(calls).toHaveLength(1);
+
+    const telemetryFile = join(tmpDir, "runs", "test-run-001", "telemetry.jsonl");
+    if (existsSync(telemetryFile)) {
+      const events = readJsonLines(telemetryFile);
+      expect(events.some((e) => e.event === "bootstrap-context-size")).toBe(false);
+    }
+  });
+
   it("ADAPTER HANDOFF: dispatch + continue, not halt", async () => {
     // Verify that after each dispatch the loop continues to the next child
     const calls: MockCall[] = [];
