@@ -638,6 +638,7 @@ describe("runParentLoop", () => {
     const completedResults = finalState["completed_children_results"] as Record<string, Record<string, unknown>> | undefined;
     const evidence = completedResults?.["POL-100"];
     expect(evidence).toBeDefined();
+    if (!evidence) return;
 
     expect(evidence["child_id"]).toBe("POL-100");
     expect(evidence["status"]).toBe("done");
