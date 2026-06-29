@@ -456,16 +456,22 @@ function flushBodiesToClusterSnapshot(state: LoopState, repoRoot: string): void 
   try {
     const raw = readFileSync(snapshotPath, "utf-8");
     snapshot = JSON.parse(raw) as typeof snapshot;
-  } catch {
-    // File absent or unparseable — start fresh
-    snapshot = {
-      schemaVersion: "v2",
-      source: { id: state.cluster_id, type: "local" },
-      nodes: {},
-      dependencies: {},
-      clusters: { [state.cluster_id]: { id: state.cluster_id, title: state.cluster_id, children: state.open_children } },
-      activeCluster: state.cluster_id,
-    };
+  } catch (err) {
+    // Distinguish "file not found" from "present but corrupted"
+    if (err && typeof err === 'object' && 'code' in err && err.code === 'ENOENT') {
+      // File absent — start fresh
+      snapshot = {
+        schemaVersion: "v2",
+        source: { id: state.cluster_id, type: "local" },
+        nodes: {},
+        dependencies: {},
+        clusters: { [state.cluster_id]: { id: state.cluster_id, title: state.cluster_id, children: state.open_children } },
+        activeCluster: state.cluster_id,
+      };
+    } else {
+      // File present but corrupted — do not overwrite
+      return;
+    }
   }
 
   if (typeof snapshot.nodes !== "object" || snapshot.nodes === null) {
@@ -1609,6 +1615,10 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
       } else {
         state = reloadedState;
         reloadedStateValid = true;
+        // Flush bodies from worker-updated state to clusters.json before any stripping
+        if (!dryRun) {
+          flushBodiesToClusterSnapshot(state, repoRoot);
+        }
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
