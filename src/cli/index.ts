@@ -29,6 +29,7 @@ import { createMedicCommand } from "./medic.js";
 import { runWelfareCheck, printWelfareCheckReport } from "../map/welfare.js";
 import { createAdoptCommand } from "./adopt-command.js";
 import { runSimplicityCommand } from "../loop/simplicity.js";
+import { createAutoresearchCommand } from "./autoresearch.js";
 
 export interface PolarisCommandHandlers {
   runLoopStatus?: typeof runLoopStatus;
@@ -163,6 +164,8 @@ export function createPolarisCommand(options: PolarisCommandOptions = {}): Comma
   );
 
   program.addCommand(createAdoptCommand({ repoRoot }));
+
+  program.addCommand(createAutoresearchCommand({ repoRoot }));
 
   program
     .command("simplicity")
