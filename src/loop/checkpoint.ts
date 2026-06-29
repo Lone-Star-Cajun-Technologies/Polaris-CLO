@@ -4,11 +4,13 @@ import {
   renameSync,
   mkdirSync,
   appendFileSync,
+  existsSync,
 } from "node:fs";
 import { createHash } from "node:crypto";
 import { dirname, join } from "node:path";
 import { getMonotonicTimestamp } from "../utils/monotonic-timestamp.js";
 import type { RunBootstrapSeal } from "./run-bootstrap.js";
+import type { WorkerResultContract } from "../types/result-packet.js";
 
 export interface BlockerRecord {
   reason: string;
@@ -155,7 +157,7 @@ export interface LoopState {
   session_type?: "analyze" | "implement" | string;
   active_child: string;
   completed_children: string[];
-  completed_children_results?: Record<string, ChildResultSummary>;
+  completed_children_results?: Record<string, WorkerResultContract>;
   open_children: string[];
   open_children_meta?: Record<string, { type?: string; title?: string; body?: string; labels?: string[]; result_file?: string; dispatch_record?: ChildDispatchRecord }>;
   step_cursor: string | null;
@@ -561,6 +563,126 @@ export function appendStaleDispatchAbortedEvent(
   const timestampedEvent = { ...event, timestamp: getMonotonicTimestamp() };
   mkdirSync(dirname(telemetryFile), { recursive: true });
   appendFileSync(telemetryFile, JSON.stringify(timestampedEvent) + "\n", "utf-8");
+}
+
+/**
+ * Normalize a raw validation value to one of the canonical result states.
+ */
+export function toValidationStatus(
+  validation: unknown,
+): "passed" | "failed" | "skipped" {
+  if (typeof validation === "string") {
+    const v = validation.trim().toLowerCase();
+    if (v === "passed" || v === "failed" || v === "skipped") return v;
+    if (["pass", "success", "ok"].includes(v)) return "passed";
+  }
+  if (validation === true) return "passed";
+  if (validation === false) return "failed";
+  if (typeof validation === "object" && validation !== null && !Array.isArray(validation)) {
+    const r = validation as Record<string, unknown>;
+    if (Array.isArray(r["passed"]) && (r["passed"] as unknown[]).length > 0) return "passed";
+    if (Array.isArray(r["failed"]) && (r["failed"] as unknown[]).length > 0) return "failed";
+  }
+  return "skipped";
+}
+
+/**
+ * Count telemetry events of a specific name for a given child.
+ * Returns 0 when the telemetry file is missing or unreadable.
+ */
+export function countTelemetryEvents(
+  telemetryFile: string,
+  eventName: string,
+  childId: string,
+): number {
+  if (!existsSync(telemetryFile)) return 0;
+  try {
+    const content = readFileSync(telemetryFile, "utf-8").trim();
+    if (!content) return 0;
+    let count = 0;
+    for (const line of content.split("\n")) {
+      if (!line.trim()) continue;
+      try {
+        const event = JSON.parse(line) as Record<string, unknown>;
+        if (event["event"] === eventName && event["child_id"] === childId) {
+          count += 1;
+        }
+      } catch {
+        // Skip malformed lines
+      }
+    }
+    return count;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Compute the SHA-256 hash of a packet file. Returns an empty string when
+ * the file is missing or unreadable so evidence never blocks completion.
+ */
+export function computePacketHashFromPath(packetPath: string): string {
+  try {
+    const raw = readFileSync(packetPath, "utf-8");
+    return createHash("sha256").update(raw, "utf-8").digest("hex");
+  } catch {
+    return "";
+  }
+}
+
+export interface BuildWorkerResultContractArgs {
+  state: LoopState;
+  childId: string;
+  resultFile: string;
+  telemetryFile: string;
+  lastCommit: string | null;
+  validation: unknown;
+  packetHash: string;
+  status?: "done" | "failed" | "blocked" | "error";
+  nextRecommendedAction?: "continue" | "stop" | "investigate";
+  resultData?: Record<string, unknown>;
+}
+
+/**
+ * Build a WorkerResultContract from the durable dispatch state and telemetry.
+ * Missing optional values are filled with safe defaults so the record is always
+ * complete enough for retroactive scoring.
+ */
+export function buildWorkerResultContract(
+  args: BuildWorkerResultContractArgs,
+): WorkerResultContract {
+  const dispatchRecord = args.state.open_children_meta?.[args.childId]?.dispatch_record;
+  const role = dispatchRecord?.role ?? "worker";
+  const provider = dispatchRecord?.provider ?? "unknown";
+  const workerId = dispatchRecord?.worker_id ?? dispatchRecord?.dispatch_id ?? "unknown";
+  const packetPath = dispatchRecord?.packet_path ?? "";
+  const heartbeatCount = countTelemetryEvents(args.telemetryFile, "worker-heartbeat", args.childId);
+  const escalationCount = countTelemetryEvents(args.telemetryFile, "worker-blocked", args.childId);
+
+  return {
+    child_id: args.childId,
+    status: args.status ?? "done",
+    validation: toValidationStatus(args.validation),
+    commit: args.lastCommit,
+    next_recommended_action: args.nextRecommendedAction ?? "continue",
+    run_id: args.state.run_id,
+    cluster_id: args.state.cluster_id,
+    skill_name: args.state.skill ?? null,
+    role,
+    provider,
+    packet_hash: args.packetHash,
+    worker_id: workerId,
+    escalation_count: escalationCount,
+    heartbeat_count: heartbeatCount,
+    result_artifact_path: args.resultFile,
+    packet_path: packetPath,
+    telemetry_path: args.telemetryFile,
+    user_intervened: null,
+    foreman_intervened: null,
+    dispatch_epoch: args.state.dispatch_boundary?.dispatch_epoch,
+    session_pointer: null,
+    result_data: args.resultData,
+  };
 }
 
 /**

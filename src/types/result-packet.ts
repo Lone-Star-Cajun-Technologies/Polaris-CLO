@@ -99,3 +99,49 @@ export interface MedicResult {
   timestamp: string;
   error_message?: string;
 }
+
+/**
+ * Role Evidence Contract — standardized fields every Polaris role session
+ * (Worker, Foreman, Analyst, Librarian, Medic) must emit to be eligible for
+ * retroactive autoresearch scoring. v1 captures the durable artifact pointers
+ * and dispatch context that the scoring pipeline consumes later.
+ */
+export interface WorkerResultContract {
+  /** Identifiers */
+  child_id: string;
+  run_id: string;
+  cluster_id: string;
+
+  /** Outcome */
+  status: "done" | "failed" | "blocked" | "error";
+  validation: "passed" | "failed" | "skipped";
+  commit: string | null;
+  next_recommended_action: "continue" | "stop" | "investigate";
+
+  /** Role and execution context */
+  role: string;
+  provider: string;
+  skill_name: string | null;
+
+  /** Dispatch evidence */
+  packet_hash: string;
+  worker_id: string;
+  escalation_count: number;
+  heartbeat_count: number;
+
+  /** Artifact paths */
+  result_artifact_path: string;
+  packet_path: string;
+  telemetry_path: string;
+
+  /** Intervention flags — scored retroactively, emitted as null in v1 */
+  user_intervened: boolean | null;
+  foreman_intervened: boolean | null;
+
+  /** Polaris-dev-only scoring context (optional/null in v1) */
+  dispatch_epoch?: number;
+  session_pointer?: string | null;
+
+  /** Optional free-form results from the child execution. */
+  result_data?: Record<string, unknown>;
+}

@@ -14,6 +14,7 @@ import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSyn
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { runParentLoop } from "./parent.js";
 import { createLoopCommand } from "./index.js";
 import { createBootstrapSeal } from "./run-bootstrap.js";
@@ -616,6 +617,51 @@ describe("runParentLoop", () => {
     expect(result.haltReason).toBe("cluster-complete");
     expect(result.childrenDispatched).toBe(1);
     expect(result.message).toContain("Cluster complete");
+  });
+
+  it("records the full Role Evidence Contract in completed_children_results", async () => {
+    const calls: MockCall[] = [];
+    const mockAdapter = makeMockAdapter([SUCCESS_RESULT], calls);
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(result.haltReason).toBe("cluster-complete");
+
+    const finalState = JSON.parse(readFileSync(stateFile, "utf-8")) as Record<string, unknown>;
+    const completedResults = finalState["completed_children_results"] as Record<string, Record<string, unknown>> | undefined;
+    const evidence = completedResults?.["POL-100"];
+    expect(evidence).toBeDefined();
+
+    expect(evidence["child_id"]).toBe("POL-100");
+    expect(evidence["status"]).toBe("done");
+    expect(evidence["validation"]).toBe("skipped");
+    expect(evidence["commit"]).toBe("abc1234");
+    expect(evidence["next_recommended_action"]).toBe("continue");
+    expect(evidence["role"]).toBe("worker");
+    expect(evidence["provider"]).toBe("mock");
+    expect(evidence["cluster_id"]).toBe("POL-99");
+    expect(evidence["skill_name"]).toBe("polaris-run");
+    expect(typeof evidence["packet_hash"]).toBe("string");
+    expect(typeof evidence["worker_id"]).toBe("string");
+    expect(evidence["escalation_count"]).toBe(0);
+    expect(evidence["heartbeat_count"]).toBe(0);
+    expect(typeof evidence["result_artifact_path"]).toBe("string");
+    expect(typeof evidence["packet_path"]).toBe("string");
+    expect(typeof evidence["telemetry_path"]).toBe("string");
+    expect(evidence["user_intervened"]).toBeNull();
+    expect(evidence["foreman_intervened"]).toBeNull();
+    expect(evidence["dispatch_epoch"]).toBe(1);
+
+    const packetRaw = readFileSync(String(evidence["packet_path"]), "utf-8");
+    const expectedHash = createHash("sha256").update(packetRaw, "utf-8").digest("hex");
+    expect(evidence["packet_hash"]).toBe(expectedHash);
   });
 
   it("workerWroteCompletion accepts valid commit evidence and does not double-count", async () => {

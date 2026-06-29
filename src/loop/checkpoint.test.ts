@@ -1,9 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { mkdirSync, readFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
-import { writeStateAtomic } from "./checkpoint.js";
+import { createHash } from "node:crypto";
+import {
+  writeStateAtomic,
+  toValidationStatus,
+  countTelemetryEvents,
+  computePacketHashFromPath,
+} from "./checkpoint.js";
 import type { LoopState } from "./checkpoint.js";
 
 function tmpStateFile(): string {
@@ -102,5 +108,68 @@ describe("writeStateAtomic — body stripping", () => {
     // nextChild is undefined — all entries should have body stripped
     expect("body" in meta["POL-001"]!).toBe(false);
     expect(meta["POL-001"]!.title).toBe("Done");
+  });
+});
+
+describe("toValidationStatus", () => {
+  it("normalizes canonical strings", () => {
+    expect(toValidationStatus("passed")).toBe("passed");
+    expect(toValidationStatus("failed")).toBe("failed");
+    expect(toValidationStatus("skipped")).toBe("skipped");
+    expect(toValidationStatus("PASS")).toBe("passed");
+  });
+
+  it("returns passed for true and validation objects with passed entries", () => {
+    expect(toValidationStatus(true)).toBe("passed");
+    expect(toValidationStatus({ passed: ["npm run build"], failed: [] })).toBe("passed");
+  });
+
+  it("returns skipped for unknown values", () => {
+    expect(toValidationStatus(undefined)).toBe("skipped");
+    expect(toValidationStatus(null)).toBe("skipped");
+    expect(toValidationStatus({})).toBe("skipped");
+  });
+});
+
+describe("computePacketHashFromPath", () => {
+  it("returns the SHA-256 of the packet file", () => {
+    const dir = join(tmpdir(), `pol-checkpoint-hash-${randomUUID()}`);
+    mkdirSync(dir, { recursive: true });
+    const packetPath = join(dir, "packet.json");
+    const content = JSON.stringify({ run_id: "r1", child_id: "POL-1" }, null, 2);
+    writeFileSync(packetPath, content, "utf-8");
+    const expected = createHash("sha256").update(content, "utf-8").digest("hex");
+    expect(computePacketHashFromPath(packetPath)).toBe(expected);
+  });
+
+  it("returns an empty string for a missing packet", () => {
+    const missingPath = join(tmpdir(), `pol-checkpoint-missing-${randomUUID()}`, "packet.json");
+    expect(computePacketHashFromPath(missingPath)).toBe("");
+  });
+});
+
+describe("countTelemetryEvents", () => {
+  it("counts events by name and child", () => {
+    const dir = join(tmpdir(), `pol-checkpoint-events-${randomUUID()}`);
+    mkdirSync(dir, { recursive: true });
+    const telemetryFile = join(dir, "telemetry.jsonl");
+    writeFileSync(
+      telemetryFile,
+      [
+        JSON.stringify({ event: "worker-heartbeat", child_id: "POL-1" }),
+        JSON.stringify({ event: "worker-heartbeat", child_id: "POL-1" }),
+        JSON.stringify({ event: "worker-blocked", child_id: "POL-1" }),
+        JSON.stringify({ event: "worker-heartbeat", child_id: "POL-2" }),
+      ].join("\n") + "\n",
+      "utf-8",
+    );
+    expect(countTelemetryEvents(telemetryFile, "worker-heartbeat", "POL-1")).toBe(2);
+    expect(countTelemetryEvents(telemetryFile, "worker-blocked", "POL-1")).toBe(1);
+    expect(countTelemetryEvents(telemetryFile, "worker-heartbeat", "POL-2")).toBe(1);
+  });
+
+  it("returns 0 for missing telemetry files", () => {
+    const missingPath = join(tmpdir(), `pol-checkpoint-no-events-${randomUUID()}`, "telemetry.jsonl");
+    expect(countTelemetryEvents(missingPath, "worker-heartbeat", "POL-1")).toBe(0);
   });
 });

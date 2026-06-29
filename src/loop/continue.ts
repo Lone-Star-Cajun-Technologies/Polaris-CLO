@@ -13,8 +13,11 @@ import {
   appendBoundaryEvent,
   appendCompactReturnReceivedEvent,
   appendWorkerScopeFidelityEvent,
+  buildWorkerResultContract,
+  computePacketHashFromPath,
   type LoopState,
 } from "./checkpoint.js";
+import type { WorkerResultContract } from "../types/result-packet.js";
 import { buildBootstrapPacket, writeBootstrapPacket } from "./bootstrap-packet.js";
 import { loadConfig } from "../config/loader.js";
 import type { ExecutionAdapterMode } from "./execution-adapter.js";
@@ -574,16 +577,24 @@ export function runLoopContinue(options: ContinueOptions): void {
     : undefined;
 
   // Record per-child result summary in loop state (belt-and-suspenders for finalize evidence)
-  const updatedCompletedChildrenResults: Record<string, import("./checkpoint.js").ChildResultSummary> = {
+  const updatedCompletedChildrenResults: Record<string, WorkerResultContract> = {
     ...(state.completed_children_results ?? {}),
   };
   if (completedChild && completionResultFile) {
-    updatedCompletedChildrenResults[completedChild] = {
+    const telemetryFile = resolveTelemetryFilePath(state, repoRoot);
+    const dispatchRecord = state.open_children_meta?.[completedChild]?.dispatch_record;
+    const packetPath = dispatchRecord?.packet_path ?? "";
+    updatedCompletedChildrenResults[completedChild] = buildWorkerResultContract({
+      state,
+      childId: completedChild,
+      resultFile: completionResultFile,
+      telemetryFile,
+      lastCommit: completionCommit || null,
+      validation: completionValidation,
+      packetHash: packetPath ? computePacketHashFromPath(packetPath) : "",
       status: "done",
-      validation: hasValidationEvidence(completionValidation) ? "passed" : "skipped",
-      commit: completionCommit || null,
-      next_recommended_action: "continue",
-    };
+      nextRecommendedAction: "continue",
+    });
   }
 
   const updatedState = {

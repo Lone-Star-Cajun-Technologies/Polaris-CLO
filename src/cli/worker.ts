@@ -6,7 +6,13 @@ import { Command } from "commander";
 import { readBootstrapPacket } from "../loop/worker.js";
 import { getWorkerCommitPolicy, isWorkerPacket } from "../loop/worker-packet.js";
 import { validateWorkerCommitScope } from "../loop/git-custody.js";
-import { readState, writeStateAtomic, type LoopState } from "../loop/checkpoint.js";
+import {
+  readState,
+  writeStateAtomic,
+  buildWorkerResultContract,
+  computePacketHashFromPath,
+  type LoopState,
+} from "../loop/checkpoint.js";
 import type { SealedWorkerResult } from "../loop/worker-packet.js";
 import { readClusterStateSync, writeClusterStateSync } from "../cluster-state/store.js";
 
@@ -127,17 +133,29 @@ function updateCompletionState(
   state: LoopState,
   childId: string,
   commit: string,
+  packet: ReturnType<typeof readActiveWorkerPacket>,
+  repoRoot: string,
 ) {
   const completedChildren = Array.from(new Set([...state.completed_children, childId]));
   const remainingOpenChildren = state.open_children.filter((child) => child !== childId);
+  const dispatchRecord = state.open_children_meta?.[childId]?.dispatch_record;
+  const resultFile = packet.result_file_contract.result_file;
+  const telemetryFile = resolveRepoPath(repoRoot, packet.telemetry_file);
+  const packetPath = dispatchRecord?.packet_path ?? "";
+  const workerResult = buildWorkerResultContract({
+    state,
+    childId,
+    resultFile,
+    telemetryFile,
+    lastCommit: commit,
+    validation: "passed",
+    packetHash: packetPath ? computePacketHashFromPath(packetPath) : "",
+    status: "done",
+    nextRecommendedAction: "continue",
+  });
   const completedChildrenResults = {
     ...(state.completed_children_results ?? {}),
-    [childId]: {
-      status: "done" as const,
-      validation: "passed" as const,
-      commit,
-      next_recommended_action: "continue" as const,
-    },
+    [childId]: workerResult,
   };
 
   return {
@@ -285,7 +303,7 @@ export function createWorkerCommand(options: WorkerCommandOptions): Command {
         }
 
         const state = readState(stateFile);
-        const updatedState = updateCompletionState(state, packet.active_child, validation.result.commit);
+        const updatedState = updateCompletionState(state, packet.active_child, validation.result.commit, packet, options.repoRoot);
         writeStateAtomic(stateFile, updatedState);
 
         // Sync cluster-state.json so finalize and the parent loop see a consistent view.
