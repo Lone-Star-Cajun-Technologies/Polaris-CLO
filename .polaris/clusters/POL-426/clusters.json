@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "v2",
+  "source": {
+    "id": "POL-426",
+    "type": "Linear",
+    "analysis": {
+      "id": "initial-sync",
+      "doc": "Synchronized from Linear issue identifier: POL-426"
+    }
+  },
+  "nodes": {
+    "POL-426": {
+      "id": "POL-426",
+      "title": "Implement: Fix autoresearch scoring evidence collection",
+      "status": "Todo",
+      "body": "## Objective\n\nFix three bugs in the autoresearch scoring pipeline that cause `polaris autoresearch score` to produce\ninaccurate results for all runs — legacy and current. After this fix, the scoring pipeline correctly\nlocates WorkerResultContract evidence and evaluates gates without false positives.\n\n## Context\n\n[POL-425](https://linear.app/lsctech/issue/POL-425/analyze-legacy-worker-result-artifacts-prevent-autoresearch-evidence) (Analyze) identified that the `extractWorkerResultContracts` function in `score.ts` reads from\ncluster result files (`.polaris/clusters/<id>/results/*.json`). Those files only contain the legacy simple\nformat and never include `packet_hash` or `worker_id`. The actual `WorkerResultContract` objects built by\n`buildWorkerResultContract` (checkpoint.ts) are stored in `current-state.json` under\n`completed_children_results` — a field the scorer never reads.\n\nTwo secondary bugs were also found during analysis:\n\n* Librarian artifacts (`librarian-*.json`) in the `results/` directory have no `validation` field, causing\n  `gateValidationFailed` to emit a false positive on every run that used a closeout-librarian.\n* `gateForemanResentPacket` uses `dispatch_epoch > 1` which flags any multi-session run, not actual\n  per-child re-dispatch.\n\nSource analysis: `smartdocs/raw/pol-425-legacy-worker-result-artifacts-analysis.md`\n\n## Goal\n\nAfter implementation:\n\n1. `polaris autoresearch score <run-id>` reads `WorkerResultContract`s from `current-state.json`\n   `completed_children_results` when present.\n2. Librarian and other non-worker artifacts are excluded from `resultPackets`, eliminating the\n   `validation-failed` false positive.\n3. `gateForemanResentPacket` no longer falsely flags multi-session runs.\n\n## Scope\n\n* src/autoresearch/score.ts\n* src/autoresearch/gates.ts\n* src/autoresearch/score.test.ts\n\n## Acceptance Criteria\n\n- [ ] `polaris autoresearch score polaris-run-autoresearch-evidence-loop-2026-06-29-002` no longer reports `validation-failed`\n- [ ] `user-intervened` and `foreman-fixed-worker-output` gates evaluate (not skip) when `completed_children_results` is present in state\n- [ ] `gateForemanResentPacket` skips or correctly evaluates without false-positive on normal multi-session runs\n- [ ] Tests pass\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/autoresearch\n\n## Ordering\n\nTwo independent children — either order.\n\n## Non-goals\n\n* Do not modify `src/loop/checkpoint.ts`, `src/types/result-packet.ts`, or any loop source.\n* Do not change the `WorkerResultContract` schema.\n* Do not add backfill migration for legacy run state files."
+    },
+    "POL-425": {
+      "id": "POL-425",
+      "title": "Analyze: Legacy worker result artifacts prevent autoresearch evidence collection",
+      "status": "Done"
+    },
+    "POL-428": {
+      "id": "POL-428",
+      "title": "Fix: Correct gateForemanResentPacket semantics for multi-session runs",
+      "status": "Todo",
+      "body": "## Objective\n\nFix `gateForemanResentPacket` so it detects actual per-child re-dispatch instead of falsely failing\non any run that needed more than one foreman session.\n\n## Context\n\nCurrent implementation in `src/autoresearch/gates.ts`:\n\n```typescript\nexport function gateForemanResentPacket(artifacts: RunArtifacts): GateResult {\n  const dispatchEpoch = asRecord(asRecord(state)?.[\"dispatch_boundary\"])?.[\"dispatch_epoch\"];\n  const failed = dispatchEpoch > 1;\n  return { gate: \"foreman-resent-packet\", outcome: failed ? \"failed\" : \"passed\", ... };\n}\n```\n\n`dispatch_epoch` counts the number of foreman loop sessions (how many times `polaris loop continue`\nwas called). A normal multi-session run has `dispatch_epoch > 1` — epoch 1 dispatches the first\nbatch of children, epoch 2 dispatches the next. This is expected behavior, not a bug.\n\nThe gate is supposed to detect when the SAME child was dispatched more than once (i.e., the foreman\nre-sent a worker packet to the same child after that child already returned a result). This is the\nactual problematic behavior the gate should detect.\n\nConfirmed false positive: `polaris-run-autoresearch-evidence-loop-2026-06-29-002` has 3 children\nover 2 foreman sessions — correctly designed — but shows `foreman-resent-packet: FAILED`.\n\n## Goal\n\n`gateForemanResentPacket` returns `skipped` when per-child dispatch count data is unavailable, or\ncorrectly detects per-child re-dispatch when the data is available.\n\n## Scope\n\n* src/autoresearch/gates.ts\n* src/autoresearch/score.test.ts\n\n## Acceptance Criteria\n\n- [ ] `gateForemanResentPacket` no longer returns `failed` purely because `dispatch_epoch > 1`\n- [ ] When `open_children_meta` dispatch records are available, gate checks whether any child has\n  a dispatch count > 1 (re-dispatched)\n- [ ] When dispatch count data is insufficient to determine re-dispatch, gate returns `skipped`\n  with an appropriate detail message\n- [ ] Running `polaris autoresearch score polaris-run-autoresearch-evidence-loop-2026-06-29-002`\n  no longer reports `foreman-resent-packet: failed`\n- [ ] Unit tests cover: single epoch (should pass), multi-epoch with distinct children (should pass\n  or skip), per-child re-dispatch detected (should fail)\n- [ ] Tests pass\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/autoresearch\n\n## Ordering\n\nIndependent — can run concurrently with [POL-427](https://linear.app/lsctech/issue/POL-427/fix-load-workerresultcontracts-from-state-and-filter-non-worker-result) (evidence loading fix).\n\n## Non-goals\n\n* Do not modify `dispatch_boundary` schema or `dispatch_epoch` semantics in loop runtime.\n* Do not change how `dispatch_epoch` is incremented during dispatch.\n* Do not touch `src/loop/` files."
+    },
+    "POL-427": {
+      "id": "POL-427",
+      "title": "Fix: Load WorkerResultContracts from state and filter non-worker result artifacts",
+      "status": "Todo",
+      "body": "## Objective\n\nFix the evidence loading path in `score.ts` so `loadRunArtifacts` returns populated\n`workerResultContracts` and a clean `resultPackets` list.\n\n## Context\n\nTwo bugs in `src/autoresearch/score.ts`:\n\n**Bug A — Wrong evidence source:**\n`extractWorkerResultContracts(resultPackets)` looks for `packet_hash` + `worker_id` in cluster\nresult files. Those files only contain the legacy simple format. The actual `WorkerResultContract`\nobjects built by `buildWorkerResultContract` (checkpoint.ts) live in `current-state.json` under\n`completed_children_results: Record<string, WorkerResultContract>`. The scorer never reads this field.\n\nResult: `workerResultContracts` is always empty. Gates `user-intervened`, `foreman-fixed-worker-output`,\nand `worker-output-required-fixing` always skip.\n\n**Bug B — Librarian artifact contamination:**\n`readResultPackets` reads ALL `.json` files from `.polaris/clusters/<id>/results/`, including\n`librarian-<UUID>.json` artifacts from the closeout-librarian role. The librarian artifact has no\n`validation` field. In `gateValidationFailed`, `if (!validation) return true` fires on the librarian\nresult, causing a false-positive FAILED gate on every run that used a closeout-librarian.\n\nWorker result files follow the pattern `<CHILD-ID>-<UUID>.json` (e.g. `POL-422-87d2b255-….json`).\nNon-worker artifacts use `librarian-<UUID>.json`, `CHART-<UUID>.json`, `medic-result-<UUID>.json`.\n\n## Goal\n\n1. `loadRunArtifacts` returns a populated `workerResultContracts` array when `current-state.json`\n   contains `completed_children_results`.\n2. `readResultPackets` returns only worker result files, excluding librarian/medic/chart artifacts.\n\n## Scope\n\n* src/autoresearch/score.ts\n* src/autoresearch/score.test.ts\n\n## Acceptance Criteria\n\n- [ ] `loadRunArtifacts` reads `completed_children_results` from the run's `current-state.json` and\n  returns those contracts as `workerResultContracts` when the field is present\n- [ ] When `completed_children_results` is absent (truly legacy state), falls back to\n  `extractWorkerResultContracts(resultPackets)` for backward compatibility\n- [ ] `readResultPackets` excludes files matching `librarian-`, `CHART-`, `medic-result-` filename prefixes\n- [ ] Running `polaris autoresearch score polaris-run-autoresearch-evidence-loop-2026-06-29-002` no\n  longer reports `validation-failed`\n- [ ] Unit tests cover: contract extraction from state, fallback path, librarian exclusion\n- [ ] Tests pass\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/autoresearch\n\n## Ordering\n\nIndependent — can run concurrently with POL-428 (gateForemanResentPacket fix).\n\n## Non-goals\n\n* Do not modify `src/loop/checkpoint.ts` or `src/types/result-packet.ts`.\n* Do not rename or reformat existing `WorkerResultContract` fields.\n* Do not backfill `completed_children_results` into legacy state files."
+    }
+  },
+  "dependencies": {},
+  "clusters": {
+    "POL-426": {
+      "id": "POL-426",
+      "title": "Linear Issue: POL-426",
+      "children": [
+        "POL-428",
+        "POL-427"
+      ],
+      "cluster_root": "POL-426"
+    }
+  },
+  "activeCluster": "POL-426"
+}

@@ -129,13 +129,66 @@ describe("gateForemanResentPacket", () => {
     expect(gateForemanResentPacket(artifacts).outcome).toBe("passed");
   });
 
-  it("fails when dispatch_epoch=3", () => {
+  it("skips when dispatch_epoch>1 but per-child dispatch data is unavailable", () => {
     const artifacts = emptyArtifacts({
       currentState: { dispatch_boundary: { dispatch_epoch: 3, continue_epoch: 2 } },
     });
     const result = gateForemanResentPacket(artifacts);
+    expect(result.outcome).toBe("skipped");
+    expect(result.detail).toContain("per-child dispatch count data unavailable");
+  });
+
+  it("passes when multi-epoch with distinct children", () => {
+    const artifacts = emptyArtifacts({
+      currentState: { dispatch_boundary: { dispatch_epoch: 2, continue_epoch: 1 } },
+      ledgerEvents: [
+        { event: "child-dispatched", issue_id: "POL-422", dispatch_epoch: 1 },
+        { event: "child-dispatched", issue_id: "POL-423", dispatch_epoch: 2 },
+      ],
+    });
+    expect(gateForemanResentPacket(artifacts).outcome).toBe("passed");
+  });
+
+  it("fails when a child is re-dispatched", () => {
+    const artifacts = emptyArtifacts({
+      currentState: { dispatch_boundary: { dispatch_epoch: 2, continue_epoch: 1 } },
+      ledgerEvents: [
+        { event: "child-dispatched", issue_id: "POL-422", dispatch_epoch: 1 },
+        { event: "child-dispatched", issue_id: "POL-422", dispatch_epoch: 2 },
+      ],
+    });
+    const result = gateForemanResentPacket(artifacts);
     expect(result.outcome).toBe("failed");
-    expect(result.detail).toContain("dispatch_epoch=3");
+    expect(result.detail).toContain("POL-422");
+  });
+
+  it("detects re-dispatch from telemetry child-dispatched events", () => {
+    const artifacts = emptyArtifacts({
+      currentState: { dispatch_boundary: { dispatch_epoch: 2, continue_epoch: 1 } },
+      telemetryEvents: [
+        { event: "child-dispatched", child_id: "POL-422" },
+        { event: "child-dispatched", child_id: "POL-422" },
+      ],
+    });
+    const result = gateForemanResentPacket(artifacts);
+    expect(result.outcome).toBe("failed");
+    expect(result.detail).toContain("POL-422");
+  });
+
+  it("detects re-dispatch from open_children_meta dispatch_count", () => {
+    const artifacts = emptyArtifacts({
+      currentState: {
+        dispatch_boundary: { dispatch_epoch: 2, continue_epoch: 1 },
+        open_children_meta: {
+          "POL-422": {
+            dispatch_record: { dispatch_count: 2 },
+          },
+        },
+      },
+    });
+    const result = gateForemanResentPacket(artifacts);
+    expect(result.outcome).toBe("failed");
+    expect(result.detail).toContain("POL-422");
   });
 
   it("skips when dispatch_boundary is absent", () => {
@@ -328,6 +381,94 @@ describe("gateStateRepairRequired", () => {
     writeFileSync(join(resultsDir, "medic-result-abc.json"), JSON.stringify({ status: "success" }));
     const artifacts = emptyArtifacts({ clusterDir: dir });
     expect(gateStateRepairRequired(artifacts).outcome).toBe("failed");
+  });
+});
+
+// ── loadRunArtifacts ──────────────────────────────────────────────────────────
+
+describe("loadRunArtifacts", () => {
+  it("extracts workerResultContracts from completed_children_results in current-state.json", () => {
+    const dir = join(tmpdir(), `polaris-lra-state-${Date.now()}`);
+    const runsDir = join(dir, ".taskchain_artifacts", "polaris-run", "runs", "test-run-state");
+    mkdirSync(runsDir, { recursive: true });
+    const contract = {
+      child_id: "POL-001",
+      run_id: "test-run-state",
+      cluster_id: "POL-000",
+      status: "done",
+      validation: "passed",
+      commit: "abc123",
+      next_recommended_action: "continue",
+      role: "worker",
+      provider: "devin",
+      skill_name: "polaris-run",
+      packet_hash: "hash1",
+      worker_id: "worker-001",
+      escalation_count: 0,
+      heartbeat_count: 3,
+      result_artifact_path: "/fake/path",
+      packet_path: "/fake/packet",
+      telemetry_path: "/fake/telemetry",
+      user_intervened: null,
+      foreman_intervened: null,
+    };
+    writeFileSync(
+      join(runsDir, "current-state.json"),
+      JSON.stringify({
+        run_id: "test-run-state",
+        cluster_id: "POL-000",
+        completed_children_results: { "POL-001": contract },
+      }),
+    );
+    const artifacts = loadRunArtifacts(dir, "test-run-state");
+    expect(artifacts.workerResultContracts).toHaveLength(1);
+    expect(artifacts.workerResultContracts[0].child_id).toBe("POL-001");
+    expect(artifacts.workerResultContracts[0].worker_id).toBe("worker-001");
+  });
+
+  it("falls back to extractWorkerResultContracts from result packets when completed_children_results is absent", () => {
+    const dir = join(tmpdir(), `polaris-lra-fallback-${Date.now()}`);
+    const clusterResultsDir = join(dir, ".polaris", "clusters", "POL-000", "results");
+    mkdirSync(clusterResultsDir, { recursive: true });
+    const taskchainStateDir = join(dir, ".taskchain_artifacts", "polaris-run");
+    mkdirSync(taskchainStateDir, { recursive: true });
+    // State without completed_children_results
+    writeFileSync(
+      join(taskchainStateDir, "current-state.json"),
+      JSON.stringify({ run_id: "test-run-fallback", cluster_id: "POL-000" }),
+    );
+    // Legacy result file with worker_id field
+    const legacyContract = { child_id: "POL-002", worker_id: "worker-002", packet_hash: "hash2" };
+    writeFileSync(join(clusterResultsDir, "POL-002-abc.json"), JSON.stringify(legacyContract));
+    const artifacts = loadRunArtifacts(dir, "test-run-fallback");
+    expect(artifacts.workerResultContracts).toHaveLength(1);
+    expect(artifacts.workerResultContracts[0].worker_id).toBe("worker-002");
+  });
+
+  it("excludes librarian, CHART, and medic-result files from resultPackets", () => {
+    const dir = join(tmpdir(), `polaris-lra-filter-${Date.now()}`);
+    const clusterResultsDir = join(dir, ".polaris", "clusters", "POL-000", "results");
+    mkdirSync(clusterResultsDir, { recursive: true });
+    const taskchainStateDir = join(dir, ".taskchain_artifacts", "polaris-run");
+    mkdirSync(taskchainStateDir, { recursive: true });
+    writeFileSync(
+      join(taskchainStateDir, "current-state.json"),
+      JSON.stringify({ run_id: "test-run-filter", cluster_id: "POL-000" }),
+    );
+    // Worker result — should be included
+    writeFileSync(
+      join(clusterResultsDir, "POL-003-def.json"),
+      JSON.stringify({ child_id: "POL-003", status: "success", validation: { passed: ["build"] } }),
+    );
+    // Non-worker artifacts — should be excluded
+    writeFileSync(join(clusterResultsDir, "librarian-uuid.json"), JSON.stringify({ role: "librarian" }));
+    writeFileSync(join(clusterResultsDir, "CHART-uuid.json"), JSON.stringify({ role: "chart" }));
+    writeFileSync(join(clusterResultsDir, "medic-result-uuid.json"), JSON.stringify({ role: "medic" }));
+
+    const artifacts = loadRunArtifacts(dir, "test-run-filter");
+    expect(artifacts.resultPackets).toHaveLength(1);
+    const packet = artifacts.resultPackets[0] as Record<string, unknown>;
+    expect(packet["child_id"]).toBe("POL-003");
   });
 });
 
