@@ -129,13 +129,66 @@ describe("gateForemanResentPacket", () => {
     expect(gateForemanResentPacket(artifacts).outcome).toBe("passed");
   });
 
-  it("fails when dispatch_epoch=3", () => {
+  it("skips when dispatch_epoch>1 but per-child dispatch data is unavailable", () => {
     const artifacts = emptyArtifacts({
       currentState: { dispatch_boundary: { dispatch_epoch: 3, continue_epoch: 2 } },
     });
     const result = gateForemanResentPacket(artifacts);
+    expect(result.outcome).toBe("skipped");
+    expect(result.detail).toContain("per-child dispatch count data unavailable");
+  });
+
+  it("passes when multi-epoch with distinct children", () => {
+    const artifacts = emptyArtifacts({
+      currentState: { dispatch_boundary: { dispatch_epoch: 2, continue_epoch: 1 } },
+      ledgerEvents: [
+        { event: "child-dispatched", issue_id: "POL-422", dispatch_epoch: 1 },
+        { event: "child-dispatched", issue_id: "POL-423", dispatch_epoch: 2 },
+      ],
+    });
+    expect(gateForemanResentPacket(artifacts).outcome).toBe("passed");
+  });
+
+  it("fails when a child is re-dispatched", () => {
+    const artifacts = emptyArtifacts({
+      currentState: { dispatch_boundary: { dispatch_epoch: 2, continue_epoch: 1 } },
+      ledgerEvents: [
+        { event: "child-dispatched", issue_id: "POL-422", dispatch_epoch: 1 },
+        { event: "child-dispatched", issue_id: "POL-422", dispatch_epoch: 2 },
+      ],
+    });
+    const result = gateForemanResentPacket(artifacts);
     expect(result.outcome).toBe("failed");
-    expect(result.detail).toContain("dispatch_epoch=3");
+    expect(result.detail).toContain("POL-422");
+  });
+
+  it("detects re-dispatch from telemetry child-dispatched events", () => {
+    const artifacts = emptyArtifacts({
+      currentState: { dispatch_boundary: { dispatch_epoch: 2, continue_epoch: 1 } },
+      telemetryEvents: [
+        { event: "child-dispatched", child_id: "POL-422" },
+        { event: "child-dispatched", child_id: "POL-422" },
+      ],
+    });
+    const result = gateForemanResentPacket(artifacts);
+    expect(result.outcome).toBe("failed");
+    expect(result.detail).toContain("POL-422");
+  });
+
+  it("detects re-dispatch from open_children_meta dispatch_count", () => {
+    const artifacts = emptyArtifacts({
+      currentState: {
+        dispatch_boundary: { dispatch_epoch: 2, continue_epoch: 1 },
+        open_children_meta: {
+          "POL-422": {
+            dispatch_record: { dispatch_count: 2 },
+          },
+        },
+      },
+    });
+    const result = gateForemanResentPacket(artifacts);
+    expect(result.outcome).toBe("failed");
+    expect(result.detail).toContain("POL-422");
   });
 
   it("skips when dispatch_boundary is absent", () => {
