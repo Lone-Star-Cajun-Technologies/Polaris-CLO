@@ -1,0 +1,53 @@
+{
+  "schemaVersion": "v2",
+  "source": {
+    "id": "POL-430",
+    "type": "Linear",
+    "analysis": {
+      "id": "initial-sync",
+      "doc": "Synchronized from Linear issue identifier: POL-430"
+    }
+  },
+  "nodes": {
+    "POL-430": {
+      "id": "POL-430",
+      "title": "Implement: Add polaris upgrade command to sync POLARIS_RULES.md",
+      "status": "Todo",
+      "body": "## Objective\n\nAdd a `polaris upgrade` CLI command that refreshes `POLARIS_RULES.md` in an existing managed repo from the CLI's embedded template, without requiring a full repo scan.\n\n## Context\n\n[POL-429](https://linear.app/lsctech/issue/POL-429/analyze-add-polaris-upgrade-command-to-sync-polaris-rulesmd-on-cli) (Analyze) identified that `POLARIS_RULES.md` is written once by `polaris adopt` and never automatically refreshed when the CLI is updated. When new skill commands are added to the routing table, managed repos miss them until someone manually re-runs adopt with `overwrite: true`. There is no upgrade path today.\n\nThe fix: a `polaris upgrade` command that (1) reads the CLI's current embedded template, (2) extracts the repo-specific `## Repository Overview` from the existing `POLARIS_RULES.md`, (3) rebuilds the file with the new template + preserved overview + version stamp, and (4) skips if the version stamp is already current.\n\nSource analysis: `smartdocs/raw/pol-429-polaris-upgrade-command-analysis.md`\n\n## Goal\n\n`polaris upgrade` is fast, idempotent, safe to run in CI on every install, and requires no full repo scan. After running, `POLARIS_RULES.md` reflects the current CLI's routing table and governance rules.\n\n## Scope\n\n* src/cli/adopt-rules.ts\n* src/cli/adopt-rules.test.ts\n* src/cli/upgrade-command.ts\n* src/cli/upgrade-command.test.ts\n* src/cli/index.ts\n\n## Acceptance Criteria\n\n- [ ] `polaris upgrade` refreshes `POLARIS_RULES.md` from the CLI's embedded template\n- [ ] Existing `## Repository Overview` content is preserved across upgrade\n- [ ] A version stamp (`<!-- polaris-version: X.Y.Z -->`) is embedded in the generated file\n- [ ] Command is a no-op (exits 0, prints \"already up to date\") when stamp matches current version\n- [ ] Tests pass\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/cli/adopt-rules src/cli/upgrade-command\n\n## Ordering\n\nChild 1 (logic) must complete before Child 2 (CLI surface).\n\n## Non-goals\n\n* Do not refresh `.polaris/skills/` — skills may be customized per repo\n* Do not run a full repo scan\n* Do not touch agent instruction files (CLAUDE.md, AGENTS.md) — they are already thin pointers after adoption"
+    },
+    "POL-429": {
+      "id": "POL-429",
+      "title": "Analyze: Add polaris upgrade command to sync POLARIS_RULES.md on CLI version update",
+      "status": "Done"
+    },
+    "POL-432": {
+      "id": "POL-432",
+      "title": "Implement: Add polaris upgrade CLI command and register in index.ts",
+      "status": "Todo",
+      "body": "## Objective\n\nWire the `polaris upgrade` CLI command using the `refreshPolarisRules` function added in [POL-431](https://linear.app/lsctech/issue/POL-431/fix-add-refreshpolarisrules-and-extractrepooverview-to-adopt-rulests).\n\n## Context\n\n[POL-431](https://linear.app/lsctech/issue/POL-431/fix-add-refreshpolarisrules-and-extractrepooverview-to-adopt-rulests) adds `refreshPolarisRules(repoRoot, version)` to `adopt-rules.ts`. This child creates the CLI surface: a new `upgrade-command.ts` that calls it and registers the command in `index.ts`.\n\nThe command should:\n\n1. Resolve `repoRoot` (same pattern as other commands — default to `cwd`)\n2. Call `getVersion()` from `version.ts` for the current CLI version\n3. Call `refreshPolarisRules(repoRoot, version)`\n4. Print `\"POLARIS_RULES.md updated to version X.Y.Z\"` on update, or `\"Already up to date (X.Y.Z)\"` on skip\n5. Exit 0 in both cases; exit 1 on error\n\n## Goal\n\n`polaris upgrade` works end-to-end in a managed repo. Running it twice in a row is a no-op on the second call.\n\n## Scope\n\n* src/cli/upgrade-command.ts\n* src/cli/upgrade-command.test.ts\n* src/cli/index.ts\n\n## Acceptance Criteria\n\n- [ ] `polaris upgrade` runs successfully in a managed repo with an existing `POLARIS_RULES.md`\n- [ ] Prints update confirmation including the version when file is refreshed\n- [ ] Prints \"already up to date\" with version when stamp matches\n- [ ] Running twice in a row: second run is a no-op\n- [ ] `polaris upgrade --help` shows a useful description\n- [ ] Command is registered in `index.ts` alongside `adopt` and other top-level commands\n- [ ] Tests pass\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/cli/upgrade-command\n\n## Ordering\n\nDepends on [POL-431](https://linear.app/lsctech/issue/POL-431/fix-add-refreshpolarisrules-and-extractrepooverview-to-adopt-rulests) being Done first.\n\n## Non-goals\n\n* Do not implement `--force` flag (idempotent overwrite can be added later if needed).\n* Do not add `--dry-run` in this pass.\n* Do not refresh anything other than `POLARIS_RULES.md`."
+    },
+    "POL-431": {
+      "id": "POL-431",
+      "title": "Fix: Add refreshPolarisRules and extractRepoOverview to adopt-rules.ts",
+      "status": "Todo",
+      "body": "## Objective\n\nAdd the core refresh logic to `adopt-rules.ts` so the upgrade command can rebuild `POLARIS_RULES.md` without a full repo scan.\n\n## Context\n\n`generatePolarisRules` in `adopt-rules.ts` requires a `RepoScanInventory` to build the `## Repository Overview` section. Running a full scan during upgrade is too expensive. Instead, the upgrade path should extract the existing overview from the current `POLARIS_RULES.md` and replant it into the new template.\n\nTwo additions are needed:\n\n* `extractRepoOverview(content: string): string` — parses the `## Repository Overview` section out of an existing `POLARIS_RULES.md`. Returns a safe fallback if the section is absent or malformed.\n* `refreshPolarisRules(repoRoot: string, currentVersion: string): RefreshResult` — reads the existing file, checks the embedded version stamp (`<!-- polaris-version: X.Y.Z -->`), skips if already current, otherwise extracts overview, rebuilds content via `buildContentInline`, prepends version stamp, and writes.\n\nThe version stamp format: first line of the file is `<!-- polaris-version: X.Y.Z -->`.\n\n`buildContentInline` should remain unchanged — `refreshPolarisRules` prepends the stamp before writing.\n\n## Goal\n\n`refreshPolarisRules(repoRoot, version)` is exported and callable from the upgrade command. It returns `{ status: \"updated\" | \"skipped\", path: string }`.\n\n## Scope\n\n* src/cli/adopt-rules.ts\n* src/cli/adopt-rules.test.ts\n\n## Acceptance Criteria\n\n- [ ] `extractRepoOverview(content)` correctly parses the `## Repository Overview` section from a valid `POLARIS_RULES.md`\n- [ ] `extractRepoOverview` returns `\"Repository managed by Polaris.\"` when the section is absent or empty\n- [ ] `refreshPolarisRules` reads the existing file's version stamp and returns `{ status: \"skipped\" }` when it matches `currentVersion`\n- [ ] `refreshPolarisRules` overwrites the file and returns `{ status: \"updated\" }` when the stamp is absent or differs\n- [ ] The written file's first line is `<!-- polaris-version: X.Y.Z -->`\n- [ ] The written file's `## Repository Overview` matches what was extracted from the original\n- [ ] Unit tests cover: parse with section present, parse with section absent, skip on version match, update on version mismatch\n- [ ] Tests pass\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/cli/adopt-rules\n\n## Ordering\n\nMust complete before POL-432 (upgrade-command.ts).\n\n## Non-goals\n\n* Do not modify `generatePolarisRules` or `buildContentInline`.\n* Do not scan the repo filesystem.\n* Do not touch agent instruction files."
+    }
+  },
+  "dependencies": {
+    "POL-432": [
+      "POL-431"
+    ]
+  },
+  "clusters": {
+    "POL-430": {
+      "id": "POL-430",
+      "title": "Linear Issue: POL-430",
+      "children": [
+        "POL-432",
+        "POL-431"
+      ],
+      "cluster_root": "POL-430"
+    }
+  },
+  "activeCluster": "POL-430"
+}
