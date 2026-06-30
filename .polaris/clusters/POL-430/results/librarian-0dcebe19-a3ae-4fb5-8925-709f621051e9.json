@@ -8,8 +8,8 @@
   "commit_sha": "f683bfbd97f2859feeb7483328a715633c8a5766",
   "commit_message": "docs(closeout): reconcile cognition for cluster POL-430\n\nRun: polaris-run-pol-430-2026-06-30-001\nCluster: POL-430\nChildren: POL-431, POL-432\nFiles updated:\n- POLARIS.md: 1 files\n- SUMMARY.md: 1 files\n- docs ingested: 0\n- links repaired: 0",
   "files_committed": [
-    "/Users/lsctech/Developer/Polaris/src/cli/POLARIS.md",
-    "/Users/lsctech/Developer/Polaris/src/cli/SUMMARY.md"
+    "src/cli/POLARIS.md",
+    "src/cli/SUMMARY.md"
   ],
   "drift_reconciliation": {
     "medic_ran": false,

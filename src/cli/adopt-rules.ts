@@ -219,7 +219,7 @@ export function refreshPolarisRules(
   }
 
   const firstLine = content.split(/\r?\n/)[0] ?? "";
-  const versionMatch = firstLine.match(/^<!-- polaris-version: ([\d.]+) -->$/);
+  const versionMatch = firstLine.match(/^<!-- polaris-version: ([\d.]+-?[\w.]*) -->$/);
   const existingVersion = versionMatch?.[1];
 
   if (existingVersion === currentVersion) {

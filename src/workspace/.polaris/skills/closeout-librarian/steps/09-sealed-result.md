@@ -24,7 +24,7 @@ interface CloseoutLibrarianResult {
   status: "success" | "partial" | "blocked" | "failure";
   commit_sha: string | null;
   commit_message: string;
-  files_committed: string[];
+  files_committed: string[];  // repo-relative paths (e.g., "src/cli/POLARIS.md")
   drift_reconciliation: DriftReconciliationResult;
   polaris_md_updates: FileUpdate[];
   summary_md_updates: FileUpdate[];
