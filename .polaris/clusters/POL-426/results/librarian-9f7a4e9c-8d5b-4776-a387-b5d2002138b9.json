@@ -1,0 +1,67 @@
+{
+  "schema_version": "1.0",
+  "role": "closeout-librarian",
+  "run_id": "polaris-run-pol-426-2026-06-30-001",
+  "dispatch_id": "9f7a4e9c-8d5b-4776-a387-b5d2002138b9",
+  "cluster_id": "POL-426",
+  "status": "success",
+  "commit_sha": "17f1017467dc25b09c77d7c42d54ff534fb9ca5e",
+  "commit_message": "docs(closeout): reconcile cognition for cluster POL-426\n\nRun: polaris-run-pol-426-2026-06-30-001\nCluster: POL-426\nChildren: POL-428, POL-427\nFiles updated:\n- POLARIS.md: 1 files\n- SUMMARY.md: 1 files\n- docs ingested: 0\n- links repaired: 0",
+  "files_committed": [
+    "src/POLARIS.md",
+    "src/SUMMARY.md"
+  ],
+  "drift_reconciliation": {
+    "medic_ran": false,
+    "charts_created": [],
+    "drift_observations": [
+      {
+        "type": "route_guidance_outdated",
+        "target": "src/POLARIS.md",
+        "severity": "low"
+      },
+      {
+        "type": "summary_outdated",
+        "target": "src/SUMMARY.md",
+        "severity": "medium"
+      }
+    ],
+    "chart_links_required": false,
+    "charts_linked": []
+  },
+  "polaris_md_updates": [
+    {
+      "file": "src/POLARIS.md",
+      "action": "update",
+      "change_summary": "Documented current autoresearch scoring evidence sources and per-child packet resend semantics."
+    }
+  ],
+  "summary_md_updates": [
+    {
+      "file": "src/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Refreshed current-state snapshot for corrected autoresearch scoring evidence and gate behavior."
+    }
+  ],
+  "docs_ingested": [],
+  "docs_archived": [
+    {
+      "source_path": "smartdocs/raw/pol-425-legacy-worker-result-artifacts-analysis.md",
+      "target_path": null,
+      "action": "archive",
+      "reason": "One-time implementation analysis for POL-426; keep raw as provenance rather than promote to active spec."
+    }
+  ],
+  "yaml_updates": [],
+  "cognition_archived": [],
+  "link_validation": {
+    "total_checked": 1,
+    "valid": 1,
+    "broken": 0,
+    "repaired": 0,
+    "unrepairable": []
+  },
+  "blockers": [],
+  "reconciled_at": "2026-06-30T16:00:00Z",
+  "evidence_summary": "POL-426 corrected autoresearch scoring to load WorkerResultContracts from run state, filter non-worker result artifacts, and detect Foreman packet resends per child. src/POLARIS.md and src/SUMMARY.md were updated to reflect that current behavior, and the POL-425 raw analysis was retained as one-time provenance rather than promoted. Link validation found no broken links. The librarian commit was created with only the allowed documentation files."
+}
