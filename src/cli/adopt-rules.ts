@@ -8,6 +8,11 @@ export interface GeneratePolarisRulesOptions {
   workspaceDir?: string;
 }
 
+export interface RefreshResult {
+  status: "updated" | "skipped";
+  path: string;
+}
+
 function buildRepoOverview(inventory: RepoScanInventory): string {
   const notes = inventory.architecture_notes.filter(Boolean);
   const roots = inventory.source_roots.filter(Boolean);
@@ -193,6 +198,42 @@ function buildContentInline(overview: string): string {
     "Do not assume global repository context unless explicitly provided by the runtime.",
     "",
   ].join("\n");
+}
+
+export function extractRepoOverview(content: string): string {
+  const match = content.match(/(?:^|\n)## Repository Overview\r?\n([\s\S]*?)(?:\r?\n## |$)/);
+  if (!match) return "Repository managed by Polaris.";
+  const overview = match[1].trim().replace(/(^|\n)---\s*$/, "").trim();
+  return overview || "Repository managed by Polaris.";
+}
+
+export function refreshPolarisRules(
+  repoRoot: string,
+  currentVersion: string,
+): RefreshResult {
+  const outputPath = join(repoRoot, "POLARIS_RULES.md");
+
+  let content = "";
+  if (existsSync(outputPath)) {
+    content = readFileSync(outputPath, "utf-8");
+  }
+
+  const firstLine = content.split(/\r?\n/)[0] ?? "";
+  const versionMatch = firstLine.match(/^<!-- polaris-version: ([\d.]+) -->$/);
+  const existingVersion = versionMatch?.[1];
+
+  if (existingVersion === currentVersion) {
+    return { status: "skipped", path: outputPath };
+  }
+
+  const overview = extractRepoOverview(content);
+  const newContent = `<!-- polaris-version: ${currentVersion} -->\n${buildContentInline(overview)}`;
+
+  const dir = dirname(outputPath);
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(outputPath, newContent, "utf-8");
+
+  return { status: "updated", path: outputPath };
 }
 
 export async function generatePolarisRules(
