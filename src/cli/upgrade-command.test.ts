@@ -16,8 +16,9 @@ function captureStdout<T>(fn: () => T): { result: T; stdout: string } {
   const originalWrite = process.stdout.write.bind(process.stdout);
   const chunks: string[] = [];
   process.stdout.write = ((chunk: unknown, ...args: unknown[]) => {
-    chunks.push(String(chunk));
-    return originalWrite(chunk, ...(args as [BufferEncoding | undefined, ((err?: Error | null) => void) | undefined]));
+    const text = String(chunk);
+    chunks.push(text);
+    return originalWrite(text, ...(args as [BufferEncoding | undefined, ((err?: Error | null) => void) | undefined]));
   }) as typeof process.stdout.write;
   try {
     return { result: fn(), stdout: chunks.join("") };
