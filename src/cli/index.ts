@@ -28,6 +28,7 @@ import { createLibrarianCommand } from "./librarian.js";
 import { createMedicCommand } from "./medic.js";
 import { runWelfareCheck, printWelfareCheckReport } from "../map/welfare.js";
 import { createAdoptCommand } from "./adopt-command.js";
+import { createUpgradeCommand } from "./upgrade-command.js";
 import { runSimplicityCommand } from "../loop/simplicity.js";
 import { createAutoresearchCommand } from "./autoresearch.js";
 
@@ -164,6 +165,8 @@ export function createPolarisCommand(options: PolarisCommandOptions = {}): Comma
   );
 
   program.addCommand(createAdoptCommand({ repoRoot }));
+
+  program.addCommand(createUpgradeCommand({ repoRoot }));
 
   program.addCommand(createAutoresearchCommand({ repoRoot }));
 

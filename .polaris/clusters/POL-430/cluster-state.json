@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0",
+  "cluster_id": "POL-430",
+  "state_generation": 6,
+  "child_states": [
+    {
+      "id": "POL-432",
+      "status": "done",
+      "commit": "a16e76e6165700be3bc6dc18361ee70ca402a6a4"
+    },
+    {
+      "id": "POL-431",
+      "status": "done",
+      "commit": "509c403ddfece563f17e34e01c764ebb66ae1ae6"
+    }
+  ],
+  "claim_metadata": {},
+  "packet_pointers": {
+    "POL-431": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-430/packets/POL-431-a7ee1493-7567-4785-8e91-ec1fb12c6743.json",
+    "POL-432": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-430/packets/POL-432-c463c05e-f445-4966-ba90-fc215012065a.json"
+  },
+  "result_pointers": {
+    "POL-431": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-430/results/POL-431-a7ee1493-7567-4785-8e91-ec1fb12c6743.json",
+    "POL-432": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-430/results/POL-432-c463c05e-f445-4966-ba90-fc215012065a.json"
+  },
+  "validation_results": {
+    "POL-431": {
+      "passed": true,
+      "output": "passed"
+    },
+    "POL-432": {
+      "passed": true,
+      "output": "passed"
+    }
+  },
+  "commits": {
+    "POL-431": "509c403ddfece563f17e34e01c764ebb66ae1ae6",
+    "POL-432": "a16e76e6165700be3bc6dc18361ee70ca402a6a4"
+  },
+  "tracker_mutations": {},
+  "blockers": [],
+  "delivery_branch": "pol-430-delivery",
+  "base_branch": "main"
+}

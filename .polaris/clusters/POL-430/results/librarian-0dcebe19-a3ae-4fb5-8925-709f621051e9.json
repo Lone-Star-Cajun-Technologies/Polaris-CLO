@@ -1,0 +1,77 @@
+{
+  "schema_version": "1.0",
+  "role": "closeout-librarian",
+  "run_id": "polaris-run-pol-430-2026-06-30-001",
+  "dispatch_id": "0dcebe19-a3ae-4fb5-8925-709f621051e9",
+  "cluster_id": "POL-430",
+  "status": "success",
+  "commit_sha": "f683bfbd97f2859feeb7483328a715633c8a5766",
+  "commit_message": "docs(closeout): reconcile cognition for cluster POL-430\n\nRun: polaris-run-pol-430-2026-06-30-001\nCluster: POL-430\nChildren: POL-431, POL-432\nFiles updated:\n- POLARIS.md: 1 files\n- SUMMARY.md: 1 files\n- docs ingested: 0\n- links repaired: 0",
+  "files_committed": [
+    "src/cli/POLARIS.md",
+    "src/cli/SUMMARY.md"
+  ],
+  "drift_reconciliation": {
+    "medic_ran": false,
+    "charts_created": [],
+    "drift_observations": [
+      {
+        "type": "route_guidance_outdated",
+        "target": "src/cli/POLARIS.md",
+        "severity": "medium"
+      },
+      {
+        "type": "summary_outdated",
+        "target": "src/cli/SUMMARY.md",
+        "severity": "medium"
+      }
+    ],
+    "chart_links_required": false,
+    "charts_linked": []
+  },
+  "polaris_md_updates": [
+    {
+      "file": "src/POLARIS.md",
+      "action": "no_change",
+      "change_summary": "Source-root guidance already covered CLI route ownership and did not need a cluster-specific update."
+    },
+    {
+      "file": "src/cli/POLARIS.md",
+      "action": "update",
+      "change_summary": "Documented the upgrade command, POLARIS_RULES.md refresh responsibility, and command testability boundary."
+    }
+  ],
+  "summary_md_updates": [
+    {
+      "file": "src/SUMMARY.md",
+      "action": "no_change",
+      "change_summary": "Source-root summary remained accurate; the new behavior is route-local to src/cli."
+    },
+    {
+      "file": "src/cli/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Added upgrade to the current CLI command surface and summarized POLARIS_RULES.md refresh behavior."
+    }
+  ],
+  "docs_ingested": [],
+  "docs_archived": [
+    {
+      "source_path": "smartdocs/raw/pol-429-polaris-upgrade-command-analysis.md",
+      "target_path": null,
+      "action": "archive",
+      "reason": "One-time implementation analysis for POL-430; completed behavior is reflected in route docs and code."
+    }
+  ],
+  "yaml_updates": [],
+  "cognition_archived": [],
+  "link_validation": {
+    "total_checked": 1,
+    "valid": 1,
+    "broken": 0,
+    "repaired": 0,
+    "unrepairable": []
+  },
+  "blockers": [],
+  "reconciled_at": "2026-06-30T14:29:14Z",
+  "evidence_summary": "POL-430 added POLARIS_RULES.md refresh helpers and the polaris upgrade command. The CLI route POLARIS.md and SUMMARY.md were reconciled for the new operator surface; src-level docs remained current. The POL-429 raw analysis was classified as a completed one-time analysis. The closeout documentation commit is reachable at f683bfbd97f2859feeb7483328a715633c8a5766."
+}

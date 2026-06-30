@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import * as fs from "node:fs";
-import { generatePolarisRules } from "./adopt-rules.js";
+import { generatePolarisRules, extractRepoOverview, refreshPolarisRules } from "./adopt-rules.js";
 import type { RepoScanInventory } from "./adoption-plan.js";
 
 vi.mock("node:fs", async (importOriginal) => {
@@ -179,5 +179,74 @@ describe("generatePolarisRules (template path)", () => {
     const content = mockedWriteFileSync.mock.calls[0]?.[1] as string;
     expect(content).not.toContain("{{REPO_OVERVIEW}}");
     expect(content).toContain("TypeScript monorepo with CLI tooling");
+  });
+});
+
+describe("extractRepoOverview", () => {
+  it("parses the Repository Overview section from a valid POLARIS_RULES.md", () => {
+    const content = `# Polaris Rules\n\n## Repository Overview\n\nCustom overview text.\nMore detail.\n\n---\n\n## Temporary Worker Doctrine\n`;
+    expect(extractRepoOverview(content)).toBe("Custom overview text.\nMore detail.");
+  });
+
+  it("returns the fallback when the section is absent", () => {
+    expect(extractRepoOverview("# Polaris Rules\n\n## Temporary Worker Doctrine\n")).toBe(
+      "Repository managed by Polaris.",
+    );
+  });
+
+  it("returns the fallback when the section is empty", () => {
+    expect(extractRepoOverview("# Polaris Rules\n\n## Repository Overview\n\n## Temporary Worker Doctrine\n")).toBe(
+      "Repository managed by Polaris.",
+    );
+  });
+});
+
+describe("refreshPolarisRules", () => {
+  const existingOverview = "Existing repo overview.";
+  const existingFile = `<!-- polaris-version: 1.0.0 -->\n# Polaris Rules\n\n## Repository Overview\n\n${existingOverview}\n\n---\n\n## Temporary Worker Doctrine\n`;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockedExistsSync.mockReturnValue(false);
+    mockedReadFileSync.mockReturnValue("" as unknown as Buffer<ArrayBuffer>);
+  });
+
+  it("returns skipped when the version stamp matches the current version", () => {
+    mockedExistsSync.mockReturnValue(true);
+    mockedReadFileSync.mockReturnValue(existingFile as unknown as Buffer<ArrayBuffer>);
+
+    const result = refreshPolarisRules("/repo", "1.0.0");
+
+    expect(result).toEqual({ status: "skipped", path: "/repo/POLARIS_RULES.md" });
+    expect(mockedWriteFileSync).not.toHaveBeenCalled();
+  });
+
+  it("overwrites and returns updated when the version stamp differs", () => {
+    mockedExistsSync.mockReturnValue(true);
+    mockedReadFileSync.mockReturnValue(existingFile as unknown as Buffer<ArrayBuffer>);
+
+    const result = refreshPolarisRules("/repo", "1.1.0");
+
+    expect(result).toEqual({ status: "updated", path: "/repo/POLARIS_RULES.md" });
+    expect(mockedWriteFileSync).toHaveBeenCalledOnce();
+
+    const content = mockedWriteFileSync.mock.calls[0]?.[1] as string;
+    expect(content.split("\n")[0]).toBe("<!-- polaris-version: 1.1.0 -->");
+    expect(content).toContain(`## Repository Overview\n\n${existingOverview}`);
+  });
+
+  it("overwrites and returns updated when the version stamp is absent", () => {
+    mockedExistsSync.mockReturnValue(true);
+    mockedReadFileSync.mockReturnValue(
+      existingFile.replace("<!-- polaris-version: 1.0.0 -->\n", "") as unknown as Buffer<ArrayBuffer>,
+    );
+
+    const result = refreshPolarisRules("/repo", "1.1.0");
+
+    expect(result).toEqual({ status: "updated", path: "/repo/POLARIS_RULES.md" });
+    expect(mockedWriteFileSync).toHaveBeenCalledOnce();
+
+    const content = mockedWriteFileSync.mock.calls[0]?.[1] as string;
+    expect(content.split("\n")[0]).toBe("<!-- polaris-version: 1.1.0 -->");
   });
 });

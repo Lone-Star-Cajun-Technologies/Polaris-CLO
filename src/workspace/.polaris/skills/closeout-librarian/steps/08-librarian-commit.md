@@ -101,6 +101,8 @@ Capture the resulting commit SHA.
 
 Record the commit SHA and list of committed files for step 09.
 
+Use `git diff --cached --name-only` output as the source for `files_committed` — git outputs repo-relative paths (e.g., "src/cli/POLARIS.md"), which is the required format for the result JSON.
+
 ## Failure Handling
 
 If `git commit` fails:
