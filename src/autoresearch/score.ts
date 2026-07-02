@@ -132,12 +132,14 @@ function safeReaddir(dir: string): string[] {
   }
 }
 
+const NON_WORKER_PREFIXES = ["librarian-", "CHART-", "medic-result-"];
+
 function readResultPackets(clusterDir: string | null): unknown[] {
   if (!clusterDir) return [];
   const resultsDir = join(clusterDir, "results");
   if (!existsSync(resultsDir)) return [];
   return safeReaddir(resultsDir)
-    .filter((f) => f.endsWith(".json"))
+    .filter((f) => f.endsWith(".json") && !NON_WORKER_PREFIXES.some((p) => f.startsWith(p)))
     .map((f) => readJson(join(resultsDir, f)))
     .filter((v) => v !== undefined);
 }
@@ -204,8 +206,26 @@ export function loadRunArtifacts(repoRoot: string, runId: string): RunArtifacts 
   // Result packets from cluster results dir
   const resultPackets = readResultPackets(clusterDir);
 
-  // Also check for WorkerResultContracts inside result packets
-  const workerResultContracts = extractWorkerResultContracts(resultPackets);
+  // WorkerResultContracts: prefer completed_children_results from current-state.json (Bug A fix)
+  let workerResultContracts: WorkerResultContract[];
+  const stateRec =
+    currentState && typeof currentState === "object" && currentState !== null
+      ? (currentState as Record<string, unknown>)
+      : null;
+  const completedChildrenResults = stateRec?.["completed_children_results"];
+  if (completedChildrenResults && typeof completedChildrenResults === "object" && !Array.isArray(completedChildrenResults)) {
+    workerResultContracts = Object.values(completedChildrenResults as Record<string, unknown>).filter(
+      (v): v is WorkerResultContract =>
+        v !== null && typeof v === "object" && typeof (v as Record<string, unknown>)["worker_id"] === "string",
+    );
+    // If filtering produced zero contracts, fall back to legacy extraction
+    if (workerResultContracts.length === 0) {
+      workerResultContracts = extractWorkerResultContracts(resultPackets);
+    }
+  } else {
+    // Legacy fallback: extract from result packet files
+    workerResultContracts = extractWorkerResultContracts(resultPackets);
+  }
 
   return {
     runId,

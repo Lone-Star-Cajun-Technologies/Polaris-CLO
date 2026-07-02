@@ -96,9 +96,18 @@ export function gateUserIntervened(artifacts: RunArtifacts): GateResult {
 }
 
 /**
- * foreman-resent-packet: Was the packet dispatched more than once (dispatch_epoch > 1)?
+ * foreman-resent-packet: Was the same child dispatched more than once?
  *
- * Evidence: dispatch_boundary.dispatch_epoch in current-state.json.
+ * Evidence:
+ *   - open_children_meta.<child>.dispatch_record.dispatch_count (if runtime tracks it)
+ *   - ledger child-dispatched events (issue_id)
+ *   - telemetry child-dispatched events (child_id)
+ *
+ * A normal multi-session run has dispatch_epoch > 1 because distinct children are
+ * dispatched across sessions. That is expected. The problematic pattern is the
+ * foreman re-sending a worker packet to the same child after that child already
+ * returned a result. When per-child dispatch count data is unavailable, the gate
+ * is skipped rather than failing on dispatch_epoch alone.
  */
 export function gateForemanResentPacket(artifacts: RunArtifacts): GateResult {
   const state = artifacts.currentState;
@@ -109,12 +118,75 @@ export function gateForemanResentPacket(artifacts: RunArtifacts): GateResult {
     return { gate: "foreman-resent-packet", outcome: "skipped", detail: "dispatch_epoch not present in state" };
   }
 
-  const failed = dispatchEpoch > 1;
+  const perChildCounts = countChildDispatches(artifacts);
+
+  if (perChildCounts) {
+    const reDispatched = Array.from(perChildCounts.entries())
+      .filter(([, count]) => count > 1)
+      .map(([childId]) => childId);
+    const failed = reDispatched.length > 0;
+    return {
+      gate: "foreman-resent-packet",
+      outcome: failed ? "failed" : "passed",
+      detail: failed ? `child re-dispatched: ${reDispatched.join(", ")}` : undefined,
+    };
+  }
+
+  // No per-child dispatch data available. A single epoch cannot contain a re-dispatch.
+  if (dispatchEpoch === 1) {
+    return { gate: "foreman-resent-packet", outcome: "passed" };
+  }
+
   return {
     gate: "foreman-resent-packet",
-    outcome: failed ? "failed" : "passed",
-    detail: failed ? `dispatch_epoch=${dispatchEpoch}` : undefined,
+    outcome: "skipped",
+    detail: "per-child dispatch count data unavailable",
   };
+}
+
+/** Counts per-child dispatches from all available artifact sources, or null if none are present. */
+function countChildDispatches(artifacts: RunArtifacts): Map<string, number> | null {
+  const counts = new Map<string, number>();
+
+  // Count from open_children_meta dispatch_record
+  const state = asRecord(artifacts.currentState);
+  const openChildrenMeta = asRecord(state?.["open_children_meta"]);
+  for (const [childId, meta] of Object.entries(openChildrenMeta ?? {})) {
+    const metaRec = asRecord(meta);
+    const dispatchRecord = asRecord(metaRec?.["dispatch_record"]);
+    const dispatchCount = dispatchRecord?.["dispatch_count"];
+    if (typeof dispatchCount === "number") {
+      counts.set(childId, Math.max(counts.get(childId) ?? 0, dispatchCount));
+    }
+  }
+
+  // Count child-dispatched events from ledger (each event = evidence of one dispatch)
+  const ledgerCounts = new Map<string, number>();
+  for (const event of artifacts.ledgerEvents) {
+    const rec = asRecord(event);
+    if (rec?.["event"] === "child-dispatched" && typeof rec["issue_id"] === "string") {
+      const childId = rec["issue_id"];
+      ledgerCounts.set(childId, (ledgerCounts.get(childId) ?? 0) + 1);
+    }
+  }
+  for (const [childId, count] of ledgerCounts.entries()) {
+    counts.set(childId, Math.max(counts.get(childId) ?? 0, count));
+  }
+
+  // Count child-dispatched events from telemetry (each event = evidence of one dispatch)
+  const telemetryCounts = new Map<string, number>();
+  for (const event of artifacts.telemetryEvents) {
+    const rec = asRecord(event);
+    if (rec?.["event"] === "child-dispatched" && typeof rec["child_id"] === "string") {
+      const childId = rec["child_id"];
+      telemetryCounts.set(childId, (telemetryCounts.get(childId) ?? 0) + 1);
+    }
+  }
+  for (const [childId, count] of telemetryCounts.entries()) {
+    counts.set(childId, Math.max(counts.get(childId) ?? 0, count));
+  }
+
+  return counts.size > 0 ? counts : null;
 }
 
 /**
