@@ -148,6 +148,7 @@ export function gateForemanResentPacket(artifacts: RunArtifacts): GateResult {
 function countChildDispatches(artifacts: RunArtifacts): Map<string, number> | null {
   const counts = new Map<string, number>();
 
+  // Count from open_children_meta dispatch_record
   const state = asRecord(artifacts.currentState);
   const openChildrenMeta = asRecord(state?.["open_children_meta"]);
   for (const [childId, meta] of Object.entries(openChildrenMeta ?? {})) {
@@ -159,20 +160,30 @@ function countChildDispatches(artifacts: RunArtifacts): Map<string, number> | nu
     }
   }
 
+  // Count child-dispatched events from ledger (each event = evidence of one dispatch)
+  const ledgerCounts = new Map<string, number>();
   for (const event of artifacts.ledgerEvents) {
     const rec = asRecord(event);
     if (rec?.["event"] === "child-dispatched" && typeof rec["issue_id"] === "string") {
       const childId = rec["issue_id"];
-      counts.set(childId, (counts.get(childId) ?? 0) + 1);
+      ledgerCounts.set(childId, (ledgerCounts.get(childId) ?? 0) + 1);
     }
   }
+  for (const [childId, count] of ledgerCounts.entries()) {
+    counts.set(childId, Math.max(counts.get(childId) ?? 0, count));
+  }
 
+  // Count child-dispatched events from telemetry (each event = evidence of one dispatch)
+  const telemetryCounts = new Map<string, number>();
   for (const event of artifacts.telemetryEvents) {
     const rec = asRecord(event);
     if (rec?.["event"] === "child-dispatched" && typeof rec["child_id"] === "string") {
       const childId = rec["child_id"];
-      counts.set(childId, (counts.get(childId) ?? 0) + 1);
+      telemetryCounts.set(childId, (telemetryCounts.get(childId) ?? 0) + 1);
     }
+  }
+  for (const [childId, count] of telemetryCounts.entries()) {
+    counts.set(childId, Math.max(counts.get(childId) ?? 0, count));
   }
 
   return counts.size > 0 ? counts : null;

@@ -218,6 +218,10 @@ export function loadRunArtifacts(repoRoot: string, runId: string): RunArtifacts 
       (v): v is WorkerResultContract =>
         v !== null && typeof v === "object" && typeof (v as Record<string, unknown>)["worker_id"] === "string",
     );
+    // If filtering produced zero contracts, fall back to legacy extraction
+    if (workerResultContracts.length === 0) {
+      workerResultContracts = extractWorkerResultContracts(resultPackets);
+    }
   } else {
     // Legacy fallback: extract from result packet files
     workerResultContracts = extractWorkerResultContracts(resultPackets);
