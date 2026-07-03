@@ -141,24 +141,40 @@ function parseSections(body: string): Map<string, string> {
 /**
  * Extracts bullet list items from the given text and returns them as trimmed strings.
  *
- * Strips inline parenthetical annotations (e.g., "(new)", "(thread flag through...)")
- * from each item so that allowed_scope entries in worker packets contain only bare
- * file paths or valid glob patterns.
+ * This is a generic list parser used by all section types (Validation, Acceptance
+ * Criteria, Ordering, Non-goals, etc.). It does NOT strip parenthetical annotations
+ * — that logic is scope-specific and handled separately.
  *
  * @param text - Section content to scan for bullet list lines (lines starting with `- ` or `* `)
- * @returns The extracted list item strings, trimmed of whitespace and stripped of parenthetical suffixes; empty items are omitted.
+ * @returns The extracted list item strings, trimmed of whitespace; empty items are omitted.
  */
 function parseListItems(text: string): string[] {
   return text
     .split('\n')
     .filter((line) => /^\s*[-*]\s/.test(line))
     .map((line) => line.replace(/^\s*[-*]\s+/, '').trim())
-    .map((line) => line.replace(/\s*\([^)]*\)\s*$/, '').trim())
     .filter((s) => s.length > 0);
 }
 
 /**
+ * Removes trailing parenthetical annotations from a string.
+ *
+ * Used exclusively for Scope section items to strip annotations like "(new)" or
+ * "(thread flag through...)" so that allowed_scope entries in worker packets
+ * contain only bare file paths or valid glob patterns.
+ *
+ * @param s - The string to process
+ * @returns The input string with trailing `(...)` removed, re-trimmed
+ */
+function stripTrailingParenthetical(s: string): string {
+  return s.replace(/\s*\([^)]*\)\s*$/, '').trim();
+}
+
+/**
  * Extracts list items from the first section whose header matches a provided set.
+ *
+ * This is a generic section parser that does NOT apply any parenthetical stripping.
+ * For Scope sections, use `findScopeSection` instead.
  *
  * @param sections - Map of normalized header names to their section content; iteration follows the map's order
  * @param headers - Set of normalized header names to match against section headers
@@ -168,6 +184,26 @@ function findSection(sections: Map<string, string>, headers: Set<string>): strin
   for (const [header, content] of sections) {
     if (headers.has(header)) {
       return parseListItems(content);
+    }
+  }
+  return [];
+}
+
+/**
+ * Extracts list items from the Scope section, stripping trailing parenthetical annotations.
+ *
+ * Scope section items often include human-readable annotations like "(new)" or
+ * "(thread flag through...)". These are stripped so that allowed_scope entries in
+ * worker packets contain only bare file paths or valid glob patterns.
+ *
+ * @param sections - Map of normalized header names to their section content
+ * @param headers - Set of normalized Scope header variants (e.g., SCOPE_HEADERS)
+ * @returns An array of scope paths with parentheticals removed, or an empty array if no Scope section is found
+ */
+function findScopeSection(sections: Map<string, string>, headers: Set<string>): string[] {
+  for (const [header, content] of sections) {
+    if (headers.has(header)) {
+      return parseListItems(content).map(stripTrailingParenthetical).filter((s) => s.length > 0);
     }
   }
   return [];
@@ -216,7 +252,7 @@ export function parseIssueBody(body: string): ParsedIssueBody {
   }
   const sections = parseSections(body);
 
-  const rawScope = findSection(sections, SCOPE_HEADERS);
+  const rawScope = findScopeSection(sections, SCOPE_HEADERS);
   const scopeBlocked = rawScope.length > 0 && rawScope.every((item) => TBD_BLOCKED_RE.test(item));
   const filteredScope = rawScope.filter((item) => !TBD_BLOCKED_RE.test(item));
 
