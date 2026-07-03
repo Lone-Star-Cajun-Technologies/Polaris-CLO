@@ -523,9 +523,95 @@ function extractSpecKeywords(content: string, pattern: RegExp): Set<string> {
 }
 
 export interface SpecConflict {
-  type: "content" | "map";
+  type: "content" | "map" | "stale-assumption";
   conflictingFile: string;
   detail: string;
+}
+
+// Regex to extract markdown links: [text](href)
+const MD_LINK_RE = /\[([^\]]*)\]\(([^)]+)\)/g;
+
+// Tiers that are subject to strict link checking (raw/ is permissive per OKF §5.3)
+const STRICT_LINK_TIERS = ["candidate", "active"];
+
+/**
+ * Determine whether a file path is in a strict-check tier (candidate/ or active/)
+ * under smartdocs/. Returns false for raw/ or anything outside smartdocs/.
+ */
+function isStrictTier(filePath: string, repoRoot: string): boolean {
+  const rel = relative(resolve(repoRoot), resolve(filePath)).replace(/\\/g, "/");
+  if (!rel.startsWith("smartdocs/")) return false;
+  return STRICT_LINK_TIERS.some((tier) => rel.includes(`/${tier}/`) || rel.includes(`/${tier}\\`));
+}
+
+/**
+ * Resolve a markdown link href found in `sourceFile` to an absolute filesystem path.
+ *
+ * Supports two forms:
+ *   - Bundle-relative: `/smartdocs/...` — resolved from repoRoot
+ *   - Relative: `./foo.md`, `../foo.md`, `foo.md` — resolved from the source file's directory
+ *
+ * Returns null if the href does not point into smartdocs/ (e.g. external URLs, src/ links).
+ */
+function resolveSmartDocsLink(href: string, sourceFile: string, repoRoot: string): string | null {
+  // Strip anchors
+  const bare = href.split("#")[0];
+  if (!bare.endsWith(".md")) return null;
+
+  let abs: string;
+  if (bare.startsWith("/")) {
+    // Bundle-relative: treat / as repoRoot
+    abs = join(resolve(repoRoot), bare.slice(1));
+  } else if (bare.startsWith("http://") || bare.startsWith("https://")) {
+    return null;
+  } else {
+    // Relative to source file's directory
+    abs = join(dirname(resolve(sourceFile)), bare);
+  }
+
+  // Only check links that land inside smartdocs/
+  const rel = relative(resolve(repoRoot), abs).replace(/\\/g, "/");
+  if (!rel.startsWith("smartdocs/")) return null;
+  return abs;
+}
+
+/**
+ * Check all markdown cross-links in a strict-tier (candidate/ or active/) SmartDoc.
+ *
+ * For each link whose href resolves into smartdocs/**, verifies the target exists.
+ * Missing targets are returned as SpecConflict entries with type "stale-assumption".
+ * Files from raw/ are never checked — pass isRaw=true or detect via filePath.
+ *
+ * @param filePath - Absolute path to the source document
+ * @param content  - File content (already read by caller)
+ * @param repoRoot - Repository root directory
+ * @returns Array of stale-assumption conflicts for every broken smartdocs/ link
+ */
+export function checkSmartDocsLinks(
+  filePath: string,
+  content: string,
+  repoRoot: string,
+): SpecConflict[] {
+  if (!isStrictTier(filePath, repoRoot)) return [];
+
+  const conflicts: SpecConflict[] = [];
+  const re = new RegExp(MD_LINK_RE.source, MD_LINK_RE.flags);
+
+  for (const match of content.matchAll(re)) {
+    const href = match[2];
+    if (!href) continue;
+    const target = resolveSmartDocsLink(href, filePath, repoRoot);
+    if (target === null) continue; // not a smartdocs/ link — skip
+    if (!existsSync(target)) {
+      conflicts.push({
+        type: "stale-assumption",
+        conflictingFile: relative(resolve(repoRoot), resolve(filePath)).replace(/\\/g, "/"),
+        detail: `broken link: "${href}" → target not found: ${relative(resolve(repoRoot), target).replace(/\\/g, "/")}`,
+      });
+    }
+  }
+
+  return conflicts;
 }
 
 export interface SpecPromoteOptions extends DoctrineOptions {
