@@ -78,6 +78,15 @@ export interface ParsedFrontMatter {
    * When these files are touched, SUMMARY.md delta signals are enriched.
    */
   source_paths?: string;
+  // Federation metadata (reserved now, activated later per smartdocs-2-0-architecture §7.14)
+  repo_id?: string;
+  project_id?: string;
+  authority_scope?: string;
+  inherits_from?: string;
+  upstream_standard?: string;
+  conformance?: string;
+  divergence_rationale?: string;
+  cross_repo_refs?: string;
   // Index signature allows arbitrary frontmatter keys
   [key: string]: string | undefined;
 }
