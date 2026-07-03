@@ -523,9 +523,88 @@ function extractSpecKeywords(content: string, pattern: RegExp): Set<string> {
 }
 
 export interface SpecConflict {
-  type: "content" | "map" | "stale-assumption";
+  type: "content" | "map" | "stale-assumption" | "suggested-supersession";
   conflictingFile: string;
   detail: string;
+}
+
+/**
+ * Compute the Jaccard similarity between two keyword sets.
+ * Returns a value in [0, 1]; 0 means no overlap, 1 means identical.
+ */
+function jaccardSimilarity(a: Set<string>, b: Set<string>): number {
+  if (a.size === 0 && b.size === 0) return 0;
+  let intersection = 0;
+  for (const kw of a) { if (b.has(kw)) intersection++; }
+  return intersection / (a.size + b.size - intersection);
+}
+
+/**
+ * Extract a combined keyword set from a document using both REQUIRES and PROHIBITS patterns.
+ * Reuses the existing extractSpecKeywords function — no second algorithm.
+ */
+function extractAllKeywords(content: string): Set<string> {
+  const requires = extractSpecKeywords(content, MODAL_REQUIRES);
+  const prohibits = extractSpecKeywords(content, MODAL_PROHIBITS);
+  return new Set([...requires, ...prohibits]);
+}
+
+// Jaccard threshold above which an active doc is considered a supersession candidate.
+// 0.3 is deliberately permissive: better to surface an advisory than to miss it.
+const SUPERSESSION_THRESHOLD = 0.3;
+
+/**
+ * Detect whether an incoming doctrine-candidate document has high content overlap with
+ * any existing active doctrine document. When overlap exceeds the threshold, the active
+ * doc is returned as a suggested-supersession advisory conflict.
+ *
+ * This is report-only: it never writes to `supersedes`/`superseded_by` frontmatter.
+ * The caller (or the user via CLI) decides whether to act on the suggestion.
+ *
+ * @param candidatePath - Absolute or repo-relative path to the candidate document
+ * @param options       - Doctrine options (must include `repoRoot`)
+ * @returns Array of SpecConflict entries with type "suggested-supersession"; empty when
+ *          no active docs exist or no overlap exceeds the threshold
+ */
+export function detectDoctrineSupersession(
+  candidatePath: string,
+  options: DoctrineOptions,
+): SpecConflict[] {
+  const repoRoot = resolve(options.repoRoot);
+  const source = resolvePath(candidatePath, repoRoot);
+
+  if (!existsSync(source)) return [];
+
+  let candidateContent: string;
+  try { candidateContent = readFileSync(source, "utf-8"); } catch { return []; }
+
+  const candidateKeywords = extractAllKeywords(candidateContent);
+  // No keywords in candidate → no meaningful overlap can be computed
+  if (candidateKeywords.size === 0) return [];
+
+  const activeDir = resolve(repoRoot, "smartdocs", "doctrine", "active");
+  if (!existsSync(activeDir)) return [];
+
+  const conflicts: SpecConflict[] = [];
+  let activeFiles: string[];
+  try { activeFiles = readdirSync(activeDir).filter((f) => f.endsWith(".md")); } catch { return []; }
+
+  for (const file of activeFiles) {
+    let activeContent: string;
+    try { activeContent = readFileSync(join(activeDir, file), "utf-8"); } catch { continue; }
+    const activeKeywords = extractAllKeywords(activeContent);
+    if (activeKeywords.size === 0) continue;
+    const score = jaccardSimilarity(candidateKeywords, activeKeywords);
+    if (score >= SUPERSESSION_THRESHOLD) {
+      conflicts.push({
+        type: "suggested-supersession",
+        conflictingFile: file,
+        detail: `candidate has ${Math.round(score * 100)}% keyword overlap with active doc "${file}" — consider adding supersedes: ${file.replace(/\.md$/, "")} to frontmatter`,
+      });
+    }
+  }
+
+  return conflicts;
 }
 
 // Regex to extract markdown links: [text](href)

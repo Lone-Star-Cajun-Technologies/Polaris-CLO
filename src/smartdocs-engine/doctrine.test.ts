@@ -12,6 +12,7 @@ import {
   parseFrontMatter,
   specPromote,
   migrateProvenance,
+  detectDoctrineSupersession,
 } from "./doctrine.js";
 
 function makeTempDir(): string {
@@ -639,5 +640,84 @@ describe("migrateProvenance", () => {
     expect(result.skipped).toBe(1);
     expect(result.records[0].status).toBe("skipped-no-md");
     expect(existsSync(sidecarPath)).toBe(true);
+  });
+});
+
+describe("detectDoctrineSupersession", () => {
+  let repoRoot: string;
+
+  beforeEach(() => {
+    repoRoot = makeTempDir();
+  });
+
+  it("returns a suggested-supersession conflict when candidate overlaps heavily with an active doc", () => {
+    // Candidate and active share the same modal keywords — identical content → 100% Jaccard
+    const candidatePath = join(repoRoot, "smartdocs", "doctrine", "candidate", "new-policy.md");
+    writeFileSync(
+      candidatePath,
+      `${CANDIDATE_MARKER}\n# New Policy\n\nAgents must always validate inputs. Agents must never skip validation.`,
+    );
+    writeFileSync(
+      join(repoRoot, "smartdocs", "doctrine", "active", "old-policy.md"),
+      "# Old Policy\n\nAgents must always validate inputs. Agents must never skip validation.",
+    );
+
+    const conflicts = detectDoctrineSupersession(candidatePath, { repoRoot });
+
+    expect(conflicts.length).toBe(1);
+    expect(conflicts[0].type).toBe("suggested-supersession");
+    expect(conflicts[0].conflictingFile).toBe("old-policy.md");
+    expect(conflicts[0].detail).toContain("supersedes");
+  });
+
+  it("returns no conflicts when candidate has low keyword overlap with active docs", () => {
+    const candidatePath = join(repoRoot, "smartdocs", "doctrine", "candidate", "unrelated.md");
+    writeFileSync(
+      candidatePath,
+      `${CANDIDATE_MARKER}\n# Unrelated\n\nAgents must always commit changes before merging.`,
+    );
+    writeFileSync(
+      join(repoRoot, "smartdocs", "doctrine", "active", "other-policy.md"),
+      "# Other Policy\n\nAgents must never expose secrets. Agents must always rotate tokens.",
+    );
+
+    const conflicts = detectDoctrineSupersession(candidatePath, { repoRoot });
+
+    expect(conflicts.length).toBe(0);
+  });
+
+  it("returns no conflicts when doctrine/active/ has no documents", () => {
+    const candidatePath = join(repoRoot, "smartdocs", "doctrine", "candidate", "lonely.md");
+    writeFileSync(
+      candidatePath,
+      `${CANDIDATE_MARKER}\n# Lonely\n\nAgents must always validate inputs.`,
+    );
+    // active/ directory exists but is empty (created by makeTempDir)
+
+    const conflicts = detectDoctrineSupersession(candidatePath, { repoRoot });
+
+    expect(conflicts.length).toBe(0);
+  });
+
+  it("does not write supersedes/superseded_by frontmatter — report only", () => {
+    const candidatePath = join(repoRoot, "smartdocs", "doctrine", "candidate", "check-fm.md");
+    const originalContent = `${CANDIDATE_MARKER}\n# Check FM\n\nAgents must always validate inputs. Agents must never skip validation.`;
+    writeFileSync(candidatePath, originalContent);
+    writeFileSync(
+      join(repoRoot, "smartdocs", "doctrine", "active", "base.md"),
+      "# Base\n\nAgents must always validate inputs. Agents must never skip validation.",
+    );
+
+    detectDoctrineSupersession(candidatePath, { repoRoot });
+
+    // Candidate file must be unchanged
+    expect(readFileSync(candidatePath, "utf-8")).toBe(originalContent);
+    // Active file must be unchanged
+    const activeContent = readFileSync(
+      join(repoRoot, "smartdocs", "doctrine", "active", "base.md"),
+      "utf-8",
+    );
+    expect(activeContent).not.toContain("supersedes");
+    expect(activeContent).not.toContain("superseded_by");
   });
 });
