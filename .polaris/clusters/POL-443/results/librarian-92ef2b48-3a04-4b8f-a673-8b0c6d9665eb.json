@@ -1,0 +1,60 @@
+{
+  "schema_version": "1.0",
+  "role": "closeout-librarian",
+  "run_id": "polaris-run-pol-443-2026-07-03-001",
+  "dispatch_id": "92ef2b48-3a04-4b8f-a673-8b0c6d9665eb",
+  "cluster_id": "POL-443",
+  "status": "success",
+  "commit_sha": "c1fe885bbdbab3f4cd6c855c996ca8e23d5b7bb4",
+  "commit_message": "docs(closeout): reconcile cognition for cluster POL-443\n\nRun: polaris-run-pol-443-2026-07-03-001\nCluster: POL-443\nChildren: POL-444, POL-445, POL-447, POL-448, POL-446\nFiles updated:\n- POLARIS.md: 2 files\n- SUMMARY.md: 3 files\n- docs ingested: 0\n- links repaired: 0",
+  "files_committed": [
+    "smartdocs/SUMMARY.md",
+    "smartdocs/raw/POLARIS.md",
+    "src/SUMMARY.md",
+    "src/smartdocs-engine/POLARIS.md",
+    "src/smartdocs-engine/SUMMARY.md"
+  ],
+  "polaris_md_updates": [
+    {
+      "file": "smartdocs/raw/POLARIS.md",
+      "action": "update",
+      "change_summary": "Corrected the raw route title and clarified that schema notes and analyses may live in raw staging before promotion."
+    },
+    {
+      "file": "src/smartdocs-engine/POLARIS.md",
+      "action": "update",
+      "change_summary": "Captured SmartDocs index seeding, lifecycle logs, frontmatter reservations, strict link checks, and supersession advisories."
+    }
+  ],
+  "summary_md_updates": [
+    {
+      "file": "smartdocs/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Added current SmartDocs index and lifecycle log behavior to the vault-level summary."
+    },
+    {
+      "file": "src/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Updated source-root SmartDocs responsibilities to include indexing, frontmatter governance, logs, and link checks."
+    },
+    {
+      "file": "src/smartdocs-engine/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Refreshed the route snapshot with new seeding, link-staleness, lifecycle log, supersession, and frontmatter behavior."
+    }
+  ],
+  "docs_ingested": [],
+  "docs_archived": [],
+  "yaml_updates": [],
+  "cognition_archived": [],
+  "link_validation": {
+    "total_checked": 4,
+    "valid": 4,
+    "broken": 0,
+    "repaired": 0,
+    "unrepairable": []
+  },
+  "blockers": [],
+  "reconciled_at": "2026-07-03T21:07:19Z",
+  "evidence_summary": "Reconciled POL-443 SmartDocs cognition after the completed children added SmartDocs index generation, frontmatter schema reservations, two-tier link staleness checks, suggested supersession detection, and lifecycle log generation. Updated affected POLARIS.md and SUMMARY.md files only; no docs were promoted, no cognition notes were present to archive, and touched-doc links were valid. No operator blockers remain."
+}

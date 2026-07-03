@@ -380,6 +380,7 @@ export class TerminalCliAdapter implements ExecutionAdapter {
       const sealedResult = {
         ...normalized,
         run_id: packet.run_id,
+        cluster_id: packet.cluster_id,
         child_id: String(normalized["child_id"] ?? packet.active_child),
         status: effectiveStatus,
         commit:

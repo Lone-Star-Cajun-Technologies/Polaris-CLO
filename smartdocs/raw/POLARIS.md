@@ -1,4 +1,4 @@
-# smartdocs/docs/raw
+# smartdocs/raw
 
 ## Purpose
 
@@ -9,6 +9,7 @@ Raw ingest staging lives here. Treat this folder as transient source material be
 - Ingested source docs
 - Draft material awaiting normalization
 - Temporary validation inputs
+- Schema notes and implementation analyses that are not yet promoted to active specs
 
 ## What does not belong here
 

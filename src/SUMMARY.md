@@ -6,7 +6,7 @@ Application source root for Polaris. The tree contains command entrypoints, loop
 ## Core Concepts
 - Folder-local guidance lives beside implementation in `POLARIS.md`.
 - Cognition and map are read-only analysis layers; they report signals, not writes.
-- Smart Docs governs canonical documentation under `smartdocs/`.
+- Smart Docs governs canonical documentation under `smartdocs/`, including seeded route cognition, SmartDocs indexes, frontmatter governance metadata, lifecycle logs, and canon/link checks.
 - Graph route manages extraction/resolution/query/store behavior and governance outputs under `.polaris/graph/`.
 - Route welfare checks combine atlas identity completeness with route health signals and are exposed through the CLI as read-only reporting.
 - Autoresearch scoring is evidence-first: worker intervention gates read `completed_children_results` from run state, result packet scoring ignores non-worker artifacts, and foreman packet resend detection is based on repeated dispatches for the same child rather than multi-session dispatch epochs.
@@ -25,7 +25,7 @@ Application source root for Polaris. The tree contains command entrypoints, loop
 - `src/loop/` coordinates child execution and invokes cognition/map validation after children complete.
 - `src/config/` defines the config surface consumed by all other routes.
 - `src/cognition/` and `src/map/` provide read-only detection signals for documentation and atlas maintenance.
-- `src/smartdocs-engine/` ingests/promotes docs and maintains canonical authority structure.
+- `src/smartdocs-engine/` ingests/promotes docs, seeds SmartDocs cognition/index files, validates links, records lifecycle logs, and maintains canonical authority structure.
 - `src/graph/` builds graph artifacts, resolves edges, and serves query helpers for CLI consumers.
 
 ## Current State

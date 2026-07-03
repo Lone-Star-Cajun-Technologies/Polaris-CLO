@@ -10,6 +10,10 @@ import {
   generateSummaryDraft,
   seedSummary,
   seedSummaryAll,
+  generateBundleRootIndex,
+  generateDirectoryIndex,
+  seedIndex,
+  seedIndexAll,
 } from "./seed-instructions.js";
 import type { FileRouteEntry } from "../map/atlas.js";
 
@@ -376,5 +380,194 @@ describe("seedSummaryAll", () => {
     expect(written).not.toContain("node_modules");
     expect(written).not.toContain("dist");
     expect(written).not.toContain("coverage");
+  });
+});
+
+function setupSmartDocs(): void {
+  mkdirSync(join(TMP, "smartdocs", "doctrine", "active"), { recursive: true });
+  mkdirSync(join(TMP, "smartdocs", "specs", "active"), { recursive: true });
+  mkdirSync(join(TMP, "smartdocs", "architecture"), { recursive: true });
+  mkdirSync(join(TMP, "smartdocs", "raw"), { recursive: true });
+}
+
+describe("generateBundleRootIndex", () => {
+  beforeEach(() => {
+    setup();
+    setupSmartDocs();
+  });
+  afterEach(teardown);
+
+  it("includes okf_version frontmatter and draft marker", () => {
+    writeFileSync(
+      join(TMP, ".polaris/map/file-routes.json"),
+      JSON.stringify({
+        "src/smartdocs-engine/index.ts": makeEntry({ instructionFile: "src/smartdocs-engine/POLARIS.md" }),
+      }),
+    );
+    writeFileSync(join(TMP, "smartdocs/doctrine/active/doctrine.md"), `${DRAFT_MARKER}\n# Doctrine\n`);
+    writeFileSync(join(TMP, "smartdocs/specs/active/spec.md"), `${DRAFT_MARKER}\n# Spec\n`);
+    const content = generateBundleRootIndex(TMP, {});
+    expect(content.startsWith("---\nokf_version: \"0.1\"\n---\n")).toBe(true);
+    expect(content.includes(DRAFT_MARKER)).toBe(true);
+    expect(content.includes("## Governance")).toBe(true);
+    expect(content.includes("## Specs")).toBe(true);
+    expect(content.includes("## Routes")).toBe(true);
+  });
+
+  it("links doctrine and spec files found in active directories", () => {
+    writeFileSync(
+      join(TMP, "smartdocs/doctrine/active/doctrine.md"),
+      "---\ndescription: Active doctrine\n---\n# Doctrine",
+    );
+    writeFileSync(
+      join(TMP, "smartdocs/specs/active/spec.md"),
+      "---\ntitle: Spec Title\n---\n# Spec",
+    );
+    const content = generateBundleRootIndex(TMP, {});
+    expect(content.includes("[Active doctrine](doctrine/active/doctrine.md)")).toBe(true);
+    expect(content.includes("[Spec Title](specs/active/spec.md)")).toBe(true);
+  });
+
+  it("links route POLARIS.md files from atlas", () => {
+    const routes: Record<string, FileRouteEntry> = {
+      "src/smartdocs-engine/index.ts": makeEntry({ instructionFile: "src/smartdocs-engine/POLARIS.md" }),
+    };
+    const content = generateBundleRootIndex(TMP, routes);
+    expect(content.includes("[src/smartdocs-engine/POLARIS.md](../src/smartdocs-engine/POLARIS.md)")).toBe(true);
+  });
+});
+
+describe("generateDirectoryIndex", () => {
+  beforeEach(() => {
+    setup();
+    setupSmartDocs();
+  });
+  afterEach(teardown);
+
+  it("has no frontmatter and includes draft marker", () => {
+    const content = generateDirectoryIndex("smartdocs/architecture", TMP);
+    expect(content.startsWith(DRAFT_MARKER)).toBe(true);
+    expect(content.includes("---")).toBe(false);
+  });
+
+  it("lists concept files using description frontmatter", () => {
+    writeFileSync(
+      join(TMP, "smartdocs/architecture/concept.md"),
+      "---\ndescription: My concept\n---\n# Concept",
+    );
+    const content = generateDirectoryIndex("smartdocs/architecture", TMP);
+    expect(content.includes("[My concept](concept.md)")).toBe(true);
+  });
+
+  it("falls back to title then filename when description is missing", () => {
+    writeFileSync(
+      join(TMP, "smartdocs/architecture/concept.md"),
+      "---\ntitle: My Title\n---\n# Concept",
+    );
+    const content = generateDirectoryIndex("smartdocs/architecture", TMP);
+    expect(content.includes("[My Title](concept.md)")).toBe(true);
+  });
+
+  it("omits reserved index files from listing", () => {
+    writeFileSync(join(TMP, "smartdocs/architecture/concept.md"), "# Concept");
+    writeFileSync(join(TMP, "smartdocs/architecture/index.md"), "# Index");
+    writeFileSync(join(TMP, "smartdocs/architecture/POLARIS.md"), "# POLARIS");
+    writeFileSync(join(TMP, "smartdocs/architecture/SUMMARY.md"), "# SUMMARY");
+    const content = generateDirectoryIndex("smartdocs/architecture", TMP);
+    expect(content.includes("[concept](concept.md)")).toBe(true);
+    expect(content.includes("index.md")).toBe(false);
+    expect(content.includes("POLARIS.md")).toBe(false);
+    expect(content.includes("SUMMARY.md")).toBe(false);
+  });
+});
+
+describe("seedIndex", () => {
+  beforeEach(() => {
+    setup();
+    setupSmartDocs();
+  });
+  afterEach(teardown);
+
+  it("writes bundle-root index.md and returns written", () => {
+    const result = seedIndex("smartdocs", TMP);
+    expect(result).toBe("written");
+    const outPath = join(TMP, "smartdocs/index.md");
+    expect(existsSync(outPath)).toBe(true);
+    const content = readFileSync(outPath, "utf-8");
+    expect(content.startsWith("---\nokf_version: \"0.1\"\n---\n")).toBe(true);
+    expect(content.includes(DRAFT_MARKER)).toBe(true);
+  });
+
+  it("writes directory-level index.md and returns written", () => {
+    const result = seedIndex("smartdocs/architecture", TMP);
+    expect(result).toBe("written");
+    const outPath = join(TMP, "smartdocs/architecture/index.md");
+    expect(existsSync(outPath)).toBe(true);
+    const content = readFileSync(outPath, "utf-8");
+    expect(content.startsWith(DRAFT_MARKER)).toBe(true);
+    expect(content.includes("---")).toBe(false);
+  });
+
+  it("returns skipped-exists when human-edited index.md present", () => {
+    writeFileSync(join(TMP, "smartdocs/index.md"), "# Human-edited");
+    const result = seedIndex("smartdocs", TMP);
+    expect(result).toBe("skipped-exists");
+  });
+
+  it("returns skipped-draft when draft index.md already present", () => {
+    writeFileSync(join(TMP, "smartdocs/index.md"), `${DRAFT_MARKER}\n# Draft`);
+    const result = seedIndex("smartdocs", TMP);
+    expect(result).toBe("skipped-draft");
+  });
+
+  it("does not write file in dry-run mode", () => {
+    const result = seedIndex("smartdocs", TMP, { dryRun: true });
+    expect(result).toBe("written");
+    expect(existsSync(join(TMP, "smartdocs/index.md"))).toBe(false);
+  });
+});
+
+describe("seedIndexAll", () => {
+  beforeEach(() => {
+    setup();
+    setupSmartDocs();
+  });
+  afterEach(teardown);
+
+  it("generates bundle-root and directory-level indexes", () => {
+    const { written, skippedExists, skippedDraft } = seedIndexAll(TMP);
+    expect(written).toContain("smartdocs");
+    expect(written).toContain("smartdocs/architecture");
+    expect(written).toContain("smartdocs/doctrine/active");
+    expect(written).toContain("smartdocs/specs/active");
+    expect(skippedExists).toEqual([]);
+    expect(skippedDraft).toEqual([]);
+  });
+
+  it("skips raw directories", () => {
+    const { written } = seedIndexAll(TMP);
+    expect(written).not.toContain("smartdocs/raw");
+  });
+
+  it("skips directories with human-edited index.md", () => {
+    writeFileSync(join(TMP, "smartdocs/architecture/index.md"), "# Human-edited");
+    const { written, skippedExists } = seedIndexAll(TMP);
+    expect(skippedExists).toContain("smartdocs/architecture");
+    expect(written).not.toContain("smartdocs/architecture");
+  });
+
+  it("skips directories with draft index.md", () => {
+    writeFileSync(join(TMP, "smartdocs/architecture/index.md"), `${DRAFT_MARKER}\n# Draft`);
+    const { skippedDraft, written } = seedIndexAll(TMP);
+    expect(skippedDraft).toContain("smartdocs/architecture");
+    expect(written).not.toContain("smartdocs/architecture");
+  });
+
+  it("does not write files in dry-run mode", () => {
+    const { written } = seedIndexAll(TMP, { dryRun: true });
+    expect(written.length).toBeGreaterThan(0);
+    for (const dir of written) {
+      expect(existsSync(join(TMP, dir, "index.md"))).toBe(false);
+    }
   });
 });

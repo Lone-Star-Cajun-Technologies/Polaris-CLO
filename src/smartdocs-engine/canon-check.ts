@@ -1,5 +1,7 @@
-import { existsSync, readdirSync, readFileSync, mkdirSync, writeFileSync, appendFileSync } from "node:fs";
-import { join, dirname, resolve, basename } from "node:path";
+import { existsSync, readdirSync, readFileSync, mkdirSync, writeFileSync, appendFileSync, Dirent } from "node:fs";
+import { join, dirname, resolve, basename, relative } from "node:path";
+import { checkSmartDocsLinks } from "./doctrine.js";
+import type { SpecConflict } from "./doctrine.js";
 
 export type CanonOutcome =
   | "aligned"
@@ -379,4 +381,98 @@ function writeCandidateDraftDocs(conflicts: CanonConflict[], repoRoot: string, c
   } catch {
     // Non-fatal
   }
+}
+
+// ── SmartDocs two-tier link staleness check ───────────────────────────────────
+
+export interface SmartDocsLinkCheckOptions {
+  repoRoot: string;
+  runId: string;
+  telemetryFile: string;
+  childId?: string;
+}
+
+export interface SmartDocsLinkCheckResult {
+  conflicts: SpecConflict[];
+  filesChecked: number;
+}
+
+/** Subdirectories of smartdocs/ that are subject to strict link checking */
+const STRICT_SMARTDOCS_DIRS = [
+  join("smartdocs", "doctrine", "candidate"),
+  join("smartdocs", "doctrine", "active"),
+  join("smartdocs", "specs", "candidate"),
+  join("smartdocs", "specs", "active"),
+];
+
+/**
+ * Recursively walk a directory and return all .md file paths.
+ *
+ * @param dir - Directory to walk
+ * @returns Array of absolute paths to all .md files found recursively
+ */
+function walkMarkdownFiles(dir: string): string[] {
+  const results: string[] = [];
+  let entries: Dirent[];
+  try {
+    entries = readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return results;
+  }
+  for (const entry of entries) {
+    const fullPath = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      results.push(...walkMarkdownFiles(fullPath));
+    } else if (entry.isFile() && entry.name.endsWith(".md")) {
+      results.push(fullPath);
+    }
+  }
+  return results;
+}
+
+/**
+ * Walk the strict-tier smartdocs directories (candidate/ and active/ under doctrine/ and specs/)
+ * and check every .md file for broken cross-links into smartdocs/.
+ *
+ * Recursively traverses subdirectories to find nested documents.
+ * Files in raw/ are never checked (OKF §5.3 permissive default).
+ * Broken links are reported as SpecConflict entries with type "stale-assumption".
+ *
+ * @param options - Options including repoRoot, runId, and telemetryFile
+ * @returns Object with all detected conflicts and the count of files checked
+ */
+export function runSmartDocsLinkCheck(options: SmartDocsLinkCheckOptions): SmartDocsLinkCheckResult {
+  const { repoRoot, runId, telemetryFile, childId } = options;
+  const root = resolve(repoRoot);
+  const allConflicts: SpecConflict[] = [];
+  let filesChecked = 0;
+
+  for (const subdir of STRICT_SMARTDOCS_DIRS) {
+    const dir = join(root, subdir);
+    if (!existsSync(dir)) continue;
+    const markdownFiles = walkMarkdownFiles(dir);
+    for (const filePath of markdownFiles) {
+      let content: string;
+      try {
+        content = readFileSync(filePath, "utf-8");
+      } catch {
+        continue;
+      }
+      filesChecked++;
+      const conflicts = checkSmartDocsLinks(filePath, content, root);
+      allConflicts.push(...conflicts);
+    }
+  }
+
+  appendTelemetry(telemetryFile, {
+    event: "smartdocs-link-check-result",
+    run_id: runId,
+    child_id: childId ?? null,
+    files_checked: filesChecked,
+    broken_links: allConflicts.length,
+    conflicts: allConflicts,
+    timestamp: new Date().toISOString(),
+  });
+
+  return { conflicts: allConflicts, filesChecked };
 }

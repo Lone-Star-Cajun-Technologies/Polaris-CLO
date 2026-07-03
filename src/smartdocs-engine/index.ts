@@ -4,7 +4,7 @@ import { Command } from "commander";
 import { ensureDocsScaffold, ingestDocs, printIngestResults } from "./ingest.js";
 import { runReviewSession } from "./review.js";
 import { migrateDocs, printMigrateResults } from "./migrate.js";
-import { seedInstructions, seedInstructionsAll, seedSummary, seedSummaryAll, type IneligibleEntry } from "./seed-instructions.js";
+import { seedInstructions, seedInstructionsAll, seedSummary, seedSummaryAll, seedIndex, seedIndexAll, type IneligibleEntry } from "./seed-instructions.js";
 import { validateInstructions, printReport } from "./validate-instructions.js";
 import { doctrineDraft, doctrinePromote, doctrineDeprecate, specPromote, migrateProvenance } from "./doctrine.js";
 import { auditIngestRiskSurface, formatAuditMarkdown, formatAuditSummaryTable } from "./audit.js";
@@ -459,6 +459,50 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
     });
 
   docs
+    .command("seed-index [path]")
+    .description("Generate OKF-conformant index.md files for smartdocs/")
+    .option("-r, --repo-root <path>", "Repository root", defaultRepoRoot)
+    .option("--all", "Generate index.md for all smartdocs directories lacking one")
+    .option("--dry-run", "Print what would be written without writing files")
+    .action((pathArg: string | undefined, options: {
+      repoRoot: string;
+      all?: boolean;
+      dryRun?: boolean;
+    }) => {
+      if (options.all) {
+        const {
+          written,
+          skippedExists,
+          skippedDraft,
+        } = seedIndexAll(options.repoRoot, {
+          dryRun: options.dryRun,
+        });
+        for (const dir of written) {
+          console.log(`${options.dryRun ? "[dry-run] would write" : "written"}: ${dir}/index.md`);
+        }
+        for (const dir of skippedExists) {
+          console.log(`skipped (human-edited): ${dir}/index.md`);
+        }
+        for (const dir of skippedDraft) {
+          console.log(`skipped (draft exists): ${dir}/index.md`);
+        }
+        console.log(`\nDone. ${written.length} written, ${skippedExists.length} skipped (exists), ${skippedDraft.length} skipped (draft).`);
+        return;
+      }
+
+      const targetPath = pathArg || "smartdocs";
+      const result = seedIndex(targetPath, options.repoRoot, { dryRun: options.dryRun });
+      if (result === "written") {
+        const label = options.dryRun ? "[dry-run] would write" : "written";
+        console.log(`${label}: ${targetPath}/index.md`);
+      } else if (result === "skipped-exists") {
+        console.warn(`warning: ${targetPath}/index.md already exists (no draft marker) — skipped`);
+      } else {
+        console.log(`skipped (draft exists): ${targetPath}/index.md`);
+      }
+    });
+
+  docs
     .command("audit")
     .description("Scan repo for files at risk of recursive ingestion")
     .option("--json", "Emit AuditResult as JSON")
@@ -521,9 +565,10 @@ export function createDoctrineCommand(): Command {
     .description("Move a doc from smartdocs/raw/ or smartdocs/doctrine/raw/ to docs/doctrine/candidate/")
     .option("-r, --repo-root <path>", "Repository root", process.cwd())
     .option("--run-id <id>", "Override the generated doctrine run ID")
-    .action((path: string, options: { repoRoot: string; runId?: string }) => {
+    .option("--reason <text>", "Reason for this draft")
+    .action((path: string, options: { repoRoot: string; runId?: string; reason?: string }) => {
       try {
-        const result = doctrineDraft(path, { repoRoot: options.repoRoot, runId: options.runId });
+        const result = doctrineDraft(path, { repoRoot: options.repoRoot, runId: options.runId, reason: options.reason });
         console.log(`drafted: ${result.destination}`);
         console.log(`provenance: ${result.lifecyclePath}`);
       } catch (err) {
@@ -537,11 +582,13 @@ export function createDoctrineCommand(): Command {
     .description("Move a doc from smartdocs/doctrine/candidate/ to smartdocs/doctrine/active/")
     .option("-r, --repo-root <path>", "Repository root", process.cwd())
     .option("--run-id <id>", "Override the generated doctrine run ID")
-    .action((path: string, options: { repoRoot: string; runId?: string }) => {
+    .option("--reason <text>", "Reason for this promotion")
+    .action((path: string, options: { repoRoot: string; runId?: string; reason?: string }) => {
       try {
         const result = doctrinePromote(path, {
           repoRoot: options.repoRoot,
-          runId: options.runId
+          runId: options.runId,
+          reason: options.reason,
         });
         console.log(`promoted: ${result.destination}`);
         console.log(`provenance: ${result.lifecyclePath}`);
@@ -556,11 +603,13 @@ export function createDoctrineCommand(): Command {
     .description("Move a doc from smartdocs/doctrine/active/ to smartdocs/doctrine/deprecated/")
     .option("-r, --repo-root <path>", "Repository root", process.cwd())
     .option("--run-id <id>", "Override the generated doctrine run ID")
-    .action((path: string, options: { repoRoot: string; runId?: string }) => {
+    .option("--reason <text>", "Reason for this deprecation")
+    .action((path: string, options: { repoRoot: string; runId?: string; reason?: string }) => {
       try {
         const result = doctrineDeprecate(path, {
           repoRoot: options.repoRoot,
           runId: options.runId,
+          reason: options.reason,
         });
         console.log(`deprecated: ${result.destination}`);
         console.log(`provenance: ${result.lifecyclePath}`);
@@ -576,12 +625,14 @@ export function createDoctrineCommand(): Command {
     .option("-r, --repo-root <path>", "Repository root", process.cwd())
     .option("--run-id <id>", "Override the generated run ID")
     .option("--approve", "Proceed despite detected conflicts")
-    .action((path: string, options: { repoRoot: string; runId?: string; approve?: boolean }) => {
+    .option("--reason <text>", "Reason for this promotion")
+    .action((path: string, options: { repoRoot: string; runId?: string; approve?: boolean; reason?: string }) => {
       try {
         const result = specPromote(path, {
           repoRoot: options.repoRoot,
           runId: options.runId,
           approve: options.approve,
+          reason: options.reason,
         });
         console.log(result.report);
         if (result.halted) {
