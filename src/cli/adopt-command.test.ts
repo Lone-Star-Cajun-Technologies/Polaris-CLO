@@ -43,6 +43,31 @@ describe("adopt-command", () => {
     expect(existsSync(join(root, "POLARIS_RULES.md"))).toBe(true);
   });
 
+  it("phase=consolidate creates smartdocs/index.md and smartdocs/log.md", async () => {
+    const root = makeRoot();
+    const plan: AdoptionPlan = {
+      plan_id: "test-consolidate",
+      generated_at: "2026-07-03T00:00:00.000Z",
+      repo_state: "existing",
+      approved: true,
+      approved_at: "2026-07-03T00:00:00.000Z",
+      dry_run: false,
+      steps: [],
+      impact_summary: {
+        files_to_create: 0,
+        files_to_move: 0,
+        files_to_modify: 0,
+        instruction_files_affected: 0,
+        smartdocs_candidates_moved: 0,
+        cognition_files_to_generate: 0,
+      },
+    };
+    await runAdoptPhase("consolidate", root, { inventory: minimalInventory, plan });
+    expect(existsSync(join(root, "smartdocs", "index.md"))).toBe(true);
+    expect(existsSync(join(root, "smartdocs", "log.md"))).toBe(true);
+    rmSync(root, { recursive: true, force: true });
+  });
+
   it("throws on unknown phase name", async () => {
     const root = makeRoot();
     await expect(runAdoptPhase("unknown-phase" as never, root, {})).rejects.toThrow("Unknown adopt phase");

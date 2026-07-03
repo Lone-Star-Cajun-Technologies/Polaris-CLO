@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs";
 import * as child_process from "node:child_process";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { finalizeAdoption, isBeyondSymlink, runInit } from "./init.js";
 
 vi.mock("node:fs", async (importOriginal) => {
@@ -1627,5 +1628,41 @@ describe("runInit — setup interview for empty/new repos", () => {
     expect(written).toMatchObject({
       repo: { sourceRoots: ["src"], docsRoots: ["docs"] },
     });
+  });
+
+  it("creates smartdocs/index.md and smartdocs/log.md after polaris init", async () => {
+    const realFs = await vi.importActual<typeof import("node:fs")>("node:fs");
+    const root = realFs.mkdtempSync(join(tmpdir(), "polaris-init-smartdocs-"));
+    mockedExistsSync.mockImplementation(realFs.existsSync as never);
+    mockedMkdirSync.mockImplementation(realFs.mkdirSync as never);
+    mockedWriteFileSync.mockImplementation(realFs.writeFileSync as never);
+    mockedReadFileSync.mockImplementation(realFs.readFileSync as never);
+    mockedRenameSync.mockImplementation(realFs.renameSync as never);
+    mockedLstatSync.mockImplementation(realFs.lstatSync as never);
+    mockedAppendFileSync.mockImplementation(realFs.appendFileSync as never);
+
+    await runInit({
+      repoRoot: root,
+      yes: true,
+      detectRepoState: vi.fn().mockReturnValue("empty"),
+      detectProviders: vi.fn().mockReturnValue([]),
+      detectRepoAnalysisProviders: vi.fn().mockReturnValue([]),
+      runInterview: vi.fn().mockResolvedValue({
+        schema_version: "1.0",
+        mode: "init",
+        status: "answered",
+        started_at: "2026-06-26T00:00:00.000Z",
+        answers: { project_purpose: "test", source_roots: ["src"], languages: [], canonical_doc_folders: [], never_touch: [], providers_by_role: {} },
+        generation_plan: null,
+        approved_at: null,
+      }),
+      scaffoldRootSurfaces: vi.fn().mockReturnValue({ created: [], skipped: [] }),
+      generatePolarisRules: vi.fn().mockResolvedValue(undefined),
+      runMapIndex: vi.fn(),
+    });
+
+    expect(realFs.existsSync(join(root, "smartdocs", "index.md"))).toBe(true);
+    expect(realFs.existsSync(join(root, "smartdocs", "log.md"))).toBe(true);
+    realFs.rmSync(root, { recursive: true, force: true });
   });
 });
