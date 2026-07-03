@@ -141,14 +141,19 @@ function parseSections(body: string): Map<string, string> {
 /**
  * Extracts bullet list items from the given text and returns them as trimmed strings.
  *
+ * Strips inline parenthetical annotations (e.g., "(new)", "(thread flag through...)")
+ * from each item so that allowed_scope entries in worker packets contain only bare
+ * file paths or valid glob patterns.
+ *
  * @param text - Section content to scan for bullet list lines (lines starting with `- ` or `* `)
- * @returns The extracted list item strings, trimmed of whitespace; empty items are omitted.
+ * @returns The extracted list item strings, trimmed of whitespace and stripped of parenthetical suffixes; empty items are omitted.
  */
 function parseListItems(text: string): string[] {
   return text
     .split('\n')
     .filter((line) => /^\s*[-*]\s/.test(line))
     .map((line) => line.replace(/^\s*[-*]\s+/, '').trim())
+    .map((line) => line.replace(/\s*\([^)]*\)\s*$/, '').trim())
     .filter((s) => s.length > 0);
 }
 

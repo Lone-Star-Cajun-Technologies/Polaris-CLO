@@ -33,9 +33,11 @@ Keys are grouped into three categories:
 3. **Relationship / federation** — how the document relates to sibling docs and to shared LSCT
 doctrine across repositories.
 
-All values are strings in this schema. Lists or structured values are represented as single-line
-string values (e.g., comma-separated paths, YAML flow-style lists) and parsed by consumers that
-care about them; generic OKF readers see only the raw string.
+All values are stored as strings in the YAML frontmatter block, with one exception: the
+`confidence` key uses a numeric scalar (`0.0`–`1.0`) to support automated confidence-gated
+promotion. Lists or other structured values are represented as single-line string values (e.g.,
+comma-separated paths, YAML flow-style lists) and parsed by consumers that care about them;
+generic OKF readers see only the raw string.
 
 ## Identity and lifecycle keys
 

@@ -569,6 +569,12 @@ export function seedIndex(
     throw new Error(`Path traversal detected: target path is outside repo root`);
   }
 
+  // Reject targets outside smartdocs/
+  const relTarget = relCheck.replace(/\\/g, "/");
+  if (!relTarget.startsWith("smartdocs/") && relTarget !== "smartdocs") {
+    throw new Error(`seedIndex only writes index.md under smartdocs/; rejecting target: ${relTarget}`);
+  }
+
   const outFile = join(absTarget, "index.md");
 
   if (existsSync(outFile)) {
@@ -585,7 +591,6 @@ export function seedIndex(
     ...readNeedsReview(atlasPath),
   };
 
-  const relTarget = relCheck.replace(/\\/g, "/");
   const isBundleRoot = relTarget === "smartdocs";
   const content = isBundleRoot
     ? generateBundleRootIndex(repoRoot, allRoutes)

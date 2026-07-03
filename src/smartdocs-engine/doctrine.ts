@@ -277,6 +277,10 @@ const DIRECTORY_LOG_HEADER = "# Directory Update Log";
  * newest heading already matches today's date, the entry is inserted under that
  * heading; otherwise a new today's heading is prepended before the existing entries.
  *
+ * This function is best-effort: failures during read/write are caught and logged
+ * as warnings but do not propagate to the caller, ensuring log.md update failures
+ * do not block directory transitions.
+ *
  * @param directory - Directory that contains (or will contain) log.md
  * @param verb - Lifecycle verb rendered as the bold prefix (Draft, Promote, Deprecate)
  * @param reason - Human-readable prose entry for this change
@@ -286,29 +290,39 @@ function logDirectoryChange(
   verb: "Draft" | "Promote" | "Deprecate",
   reason: string,
 ): void {
-  const logPath = join(directory, "log.md");
-  const today = new Date().toISOString().slice(0, 10);
-  const entry = `**${verb}**: ${reason}`;
+  try {
+    const logPath = join(directory, "log.md");
+    const today = new Date().toISOString().slice(0, 10);
+    const entry = `**${verb}**: ${reason}`;
 
-  let content = existsSync(logPath) ? readFileSync(logPath, "utf-8") : "";
-  content = content.replace(/\r\n/g, "\n");
+    let content = existsSync(logPath) ? readFileSync(logPath, "utf-8") : "";
+    content = content.replace(/\r\n/g, "\n");
 
-  const todayHeading = `## ${today}`;
-  const firstHeadingMatch = content.match(/^## (\d{4}-\d{2}-\d{2})/m);
+    const todayHeading = `## ${today}`;
+    // Use anchored regex to match heading at start of line, not substring in prose.
+    const firstHeadingMatch = content.match(/^## (\d{4}-\d{2}-\d{2})/m);
 
-  if (firstHeadingMatch && firstHeadingMatch[1] === today) {
-    const headingIndex = content.indexOf(todayHeading);
-    const afterHeading = headingIndex + todayHeading.length;
-    const newContent = `${content.slice(0, afterHeading)}\n${entry}${content.slice(afterHeading)}`;
-    writeFileSync(logPath, newContent, "utf-8");
-  } else if (content.trim().startsWith(DIRECTORY_LOG_HEADER)) {
-    const afterHeader = content.indexOf(DIRECTORY_LOG_HEADER) + DIRECTORY_LOG_HEADER.length;
-    const tail = content.slice(afterHeader).replace(/^\n*/, "\n\n");
-    const newContent = `${DIRECTORY_LOG_HEADER}\n\n${todayHeading}\n${entry}${tail}`;
-    writeFileSync(logPath, newContent, "utf-8");
-  } else {
-    const existing = content.trim() ? `${content}\n\n` : "";
-    writeFileSync(logPath, `${DIRECTORY_LOG_HEADER}\n\n${todayHeading}\n${entry}\n${existing}`, "utf-8");
+    if (firstHeadingMatch && firstHeadingMatch[1] === today) {
+      // Find the actual heading line position using anchored search.
+      const headingMatch = content.match(new RegExp(`^${todayHeading}`, 'm'));
+      if (headingMatch && headingMatch.index !== undefined) {
+        const headingIndex = headingMatch.index;
+        const afterHeading = headingIndex + todayHeading.length;
+        const newContent = `${content.slice(0, afterHeading)}\n${entry}${content.slice(afterHeading)}`;
+        writeFileSync(logPath, newContent, "utf-8");
+      }
+    } else if (content.trim().startsWith(DIRECTORY_LOG_HEADER)) {
+      const afterHeader = content.indexOf(DIRECTORY_LOG_HEADER) + DIRECTORY_LOG_HEADER.length;
+      const tail = content.slice(afterHeader).replace(/^\n*/, "\n\n");
+      const newContent = `${DIRECTORY_LOG_HEADER}\n\n${todayHeading}\n${entry}${tail}`;
+      writeFileSync(logPath, newContent, "utf-8");
+    } else {
+      const existing = content.trim() ? `${content}\n\n` : "";
+      writeFileSync(logPath, `${DIRECTORY_LOG_HEADER}\n\n${todayHeading}\n${entry}\n${existing}`, "utf-8");
+    }
+  } catch (err) {
+    // Best-effort: log warning but do not propagate failure.
+    console.warn(`[warn] Failed to update log.md in ${directory}: ${err instanceof Error ? err.message : String(err)}`);
   }
 }
 

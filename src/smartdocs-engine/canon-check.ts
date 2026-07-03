@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync, mkdirSync, writeFileSync, appendFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, mkdirSync, writeFileSync, appendFileSync, Dirent } from "node:fs";
 import { join, dirname, resolve, basename, relative } from "node:path";
 import { checkSmartDocsLinks } from "./doctrine.js";
 import type { SpecConflict } from "./doctrine.js";
@@ -406,9 +406,35 @@ const STRICT_SMARTDOCS_DIRS = [
 ];
 
 /**
+ * Recursively walk a directory and return all .md file paths.
+ *
+ * @param dir - Directory to walk
+ * @returns Array of absolute paths to all .md files found recursively
+ */
+function walkMarkdownFiles(dir: string): string[] {
+  const results: string[] = [];
+  let entries: Dirent[];
+  try {
+    entries = readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return results;
+  }
+  for (const entry of entries) {
+    const fullPath = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      results.push(...walkMarkdownFiles(fullPath));
+    } else if (entry.isFile() && entry.name.endsWith(".md")) {
+      results.push(fullPath);
+    }
+  }
+  return results;
+}
+
+/**
  * Walk the strict-tier smartdocs directories (candidate/ and active/ under doctrine/ and specs/)
  * and check every .md file for broken cross-links into smartdocs/.
  *
+ * Recursively traverses subdirectories to find nested documents.
  * Files in raw/ are never checked (OKF §5.3 permissive default).
  * Broken links are reported as SpecConflict entries with type "stale-assumption".
  *
@@ -424,14 +450,8 @@ export function runSmartDocsLinkCheck(options: SmartDocsLinkCheckOptions): Smart
   for (const subdir of STRICT_SMARTDOCS_DIRS) {
     const dir = join(root, subdir);
     if (!existsSync(dir)) continue;
-    let entries: string[];
-    try {
-      entries = readdirSync(dir).filter((f) => f.endsWith(".md"));
-    } catch {
-      continue;
-    }
-    for (const entry of entries) {
-      const filePath = join(dir, entry);
+    const markdownFiles = walkMarkdownFiles(dir);
+    for (const filePath of markdownFiles) {
       let content: string;
       try {
         content = readFileSync(filePath, "utf-8");

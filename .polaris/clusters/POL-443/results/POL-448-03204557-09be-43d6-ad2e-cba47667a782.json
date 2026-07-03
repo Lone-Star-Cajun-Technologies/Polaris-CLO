@@ -1,6 +1,7 @@
 {
   "child_id": "POL-448",
-  "status": "success",
+  "cluster_id": "POL-443",
+  "status": "done",
   "commit": "8f8e400e1e3d5edc6a171971f2c5408003e497b7",
   "validation": "passed",
   "next_recommended_action": "continue",
