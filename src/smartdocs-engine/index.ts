@@ -4,7 +4,7 @@ import { Command } from "commander";
 import { ensureDocsScaffold, ingestDocs, printIngestResults } from "./ingest.js";
 import { runReviewSession } from "./review.js";
 import { migrateDocs, printMigrateResults } from "./migrate.js";
-import { seedInstructions, seedInstructionsAll, seedSummary, seedSummaryAll, type IneligibleEntry } from "./seed-instructions.js";
+import { seedInstructions, seedInstructionsAll, seedSummary, seedSummaryAll, seedIndex, seedIndexAll, type IneligibleEntry } from "./seed-instructions.js";
 import { validateInstructions, printReport } from "./validate-instructions.js";
 import { doctrineDraft, doctrinePromote, doctrineDeprecate, specPromote, migrateProvenance } from "./doctrine.js";
 import { auditIngestRiskSurface, formatAuditMarkdown, formatAuditSummaryTable } from "./audit.js";
@@ -455,6 +455,50 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
         console.warn(`warning: ${pathArg}/SUMMARY.md already exists (no draft marker) — skipped`);
       } else {
         console.log(`skipped (draft exists): ${pathArg}/SUMMARY.md`);
+      }
+    });
+
+  docs
+    .command("seed-index [path]")
+    .description("Generate OKF-conformant index.md files for smartdocs/")
+    .option("-r, --repo-root <path>", "Repository root", defaultRepoRoot)
+    .option("--all", "Generate index.md for all smartdocs directories lacking one")
+    .option("--dry-run", "Print what would be written without writing files")
+    .action((pathArg: string | undefined, options: {
+      repoRoot: string;
+      all?: boolean;
+      dryRun?: boolean;
+    }) => {
+      if (options.all) {
+        const {
+          written,
+          skippedExists,
+          skippedDraft,
+        } = seedIndexAll(options.repoRoot, {
+          dryRun: options.dryRun,
+        });
+        for (const dir of written) {
+          console.log(`${options.dryRun ? "[dry-run] would write" : "written"}: ${dir}/index.md`);
+        }
+        for (const dir of skippedExists) {
+          console.log(`skipped (human-edited): ${dir}/index.md`);
+        }
+        for (const dir of skippedDraft) {
+          console.log(`skipped (draft exists): ${dir}/index.md`);
+        }
+        console.log(`\nDone. ${written.length} written, ${skippedExists.length} skipped (exists), ${skippedDraft.length} skipped (draft).`);
+        return;
+      }
+
+      const targetPath = pathArg || "smartdocs";
+      const result = seedIndex(targetPath, options.repoRoot, { dryRun: options.dryRun });
+      if (result === "written") {
+        const label = options.dryRun ? "[dry-run] would write" : "written";
+        console.log(`${label}: ${targetPath}/index.md`);
+      } else if (result === "skipped-exists") {
+        console.warn(`warning: ${targetPath}/index.md already exists (no draft marker) — skipped`);
+      } else {
+        console.log(`skipped (draft exists): ${targetPath}/index.md`);
       }
     });
 

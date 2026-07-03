@@ -3,6 +3,7 @@ import { resolve, relative, join, dirname, basename } from "node:path";
 import { loadConfig } from "../config/loader.js";
 import { readFileRoutes, readNeedsReview, type FileRouteEntry } from "../map/atlas.js";
 import { isDirectoryEligible, type DirectoryEligibilityOptions } from "./smartdoc-ignore.js";
+import { parseFrontMatter } from "./doctrine.js";
 
 export const DRAFT_MARKER = "<!-- polaris:draft -->";
 
@@ -200,6 +201,143 @@ export function generateSummaryDraft(
     "<!-- Places where the summary may be stale (honesty field). -->",
     "",
   ];
+
+  return lines.join("\n");
+}
+
+const RESERVED_INDEX_NAMES = new Set(["index.md", "POLARIS.md", "SUMMARY.md", "log.md"]);
+
+function isReservedIndexName(name: string): boolean {
+  return RESERVED_INDEX_NAMES.has(name);
+}
+
+function listConceptFiles(dir: string): string[] {
+  try {
+    return readdirSync(dir, { withFileTypes: true })
+      .filter((e) => e.isFile() && e.name.endsWith(".md") && !isReservedIndexName(e.name))
+      .map((e) => join(dir, e.name))
+      .sort();
+  } catch {
+    return [];
+  }
+}
+
+function conceptLabel(filePath: string): string {
+  try {
+    const content = readFileSync(filePath, "utf-8");
+    const fm = parseFrontMatter(content);
+    const base = basename(filePath);
+    return fm.description || fm.title || base.replace(/\.md$/, "");
+  } catch {
+    return basename(filePath).replace(/\.md$/, "");
+  }
+}
+
+function collectSmartDocsDirs(dir: string, root: string, result: string[] = []): string[] {
+  try {
+    const rel = relative(root, dir).replace(/\\/g, "/");
+    if (rel.split("/").some((s) => s === "raw" || s.startsWith("."))) {
+      return result;
+    }
+    result.push(rel);
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      if (entry.name.startsWith(".") || entry.name === "raw") continue;
+      const full = join(dir, entry.name);
+      collectSmartDocsDirs(full, root, result);
+    }
+  } catch {
+    // ignore unreadable dirs
+  }
+  return result;
+}
+
+export function generateBundleRootIndex(
+  repoRoot: string,
+  allRoutes: Record<string, FileRouteEntry>,
+): string {
+  const lines: string[] = [
+    "---",
+    "okf_version: \"0.1\"",
+    "---",
+    "",
+    DRAFT_MARKER,
+    "# SmartDocs — Polaris Cognition Bundle",
+    "",
+    "> Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.",
+    "",
+    "## Governance",
+    "",
+  ];
+
+  const doctrineDir = join(repoRoot, "smartdocs", "doctrine", "active");
+  const doctrineFiles = listConceptFiles(doctrineDir);
+  if (doctrineFiles.length > 0) {
+    for (const file of doctrineFiles) {
+      const relPath = relative(join(repoRoot, "smartdocs"), file).replace(/\\/g, "/");
+      lines.push(`- [${conceptLabel(file)}](${relPath})`);
+    }
+  } else {
+    lines.push("- [Doctrine — Active](doctrine/active/)");
+  }
+  lines.push("");
+
+  lines.push("## Specs", "");
+  const specsDir = join(repoRoot, "smartdocs", "specs", "active");
+  const specsFiles = listConceptFiles(specsDir);
+  if (specsFiles.length > 0) {
+    for (const file of specsFiles) {
+      const relPath = relative(join(repoRoot, "smartdocs"), file).replace(/\\/g, "/");
+      lines.push(`- [${conceptLabel(file)}](${relPath})`);
+    }
+  } else {
+    lines.push("- [Specs — Active](specs/active/)");
+  }
+  lines.push("");
+
+  lines.push("## Routes", "");
+  const instructionFiles = [
+    ...new Set(Object.values(allRoutes).map((e) => e.instructionFile).filter(Boolean)),
+  ].sort();
+  if (instructionFiles.length > 0) {
+    for (const file of instructionFiles) {
+      lines.push(`- [${file}](../${file})`);
+    }
+  } else {
+    lines.push("<!-- Route POLARIS.md files will be listed here from atlas signals. -->");
+  }
+  lines.push("");
+
+  return lines.join("\n");
+}
+
+export function generateDirectoryIndex(
+  targetDir: string,
+  repoRoot: string,
+): string {
+  const absDir = resolve(repoRoot, targetDir);
+  const dirLabel = basename(absDir) || "SmartDocs";
+  const files = listConceptFiles(absDir);
+
+  const lines: string[] = [
+    DRAFT_MARKER,
+    `# ${dirLabel}`,
+    "",
+    "> Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.",
+    "",
+    "## Concepts",
+    "",
+  ];
+
+  if (files.length > 0) {
+    for (const file of files) {
+      const relPath = relative(absDir, file).replace(/\\/g, "/");
+      lines.push(`- [${conceptLabel(file)}](${relPath})`);
+    }
+  } else {
+    lines.push("<!-- No concept files in this directory yet. -->");
+  }
+  lines.push("");
 
   return lines.join("\n");
 }
@@ -418,4 +556,96 @@ export function seedSummaryAll(
   }
 
   return { written, skippedExists, skippedDraft, skippedIneligible, skippedRoot };
+}
+
+export function seedIndex(
+  targetPath: string,
+  repoRoot: string,
+  opts: { dryRun?: boolean } = {},
+): "written" | "skipped-exists" | "skipped-draft" {
+  const absTarget = resolve(repoRoot, targetPath);
+  const relCheck = relative(repoRoot, absTarget);
+  if (relCheck.startsWith("..") || relCheck.startsWith("/")) {
+    throw new Error(`Path traversal detected: target path is outside repo root`);
+  }
+
+  const outFile = join(absTarget, "index.md");
+
+  if (existsSync(outFile)) {
+    if (hasDraftMarker(outFile)) {
+      return "skipped-draft";
+    }
+    return "skipped-exists";
+  }
+
+  const config = loadConfig(repoRoot);
+  const atlasPath = resolve(repoRoot, config.repo.sidecarOutputPath ?? ".polaris/map");
+  const allRoutes = {
+    ...readFileRoutes(atlasPath),
+    ...readNeedsReview(atlasPath),
+  };
+
+  const relTarget = relCheck.replace(/\\/g, "/");
+  const isBundleRoot = relTarget === "smartdocs";
+  const content = isBundleRoot
+    ? generateBundleRootIndex(repoRoot, allRoutes)
+    : generateDirectoryIndex(relTarget, repoRoot);
+
+  if (!opts.dryRun) {
+    writeFileSync(outFile, content, "utf-8");
+  }
+  return "written";
+}
+
+export function seedIndexAll(
+  repoRoot: string,
+  opts: { dryRun?: boolean } = {},
+): SeedAllResult {
+  const config = loadConfig(repoRoot);
+  const atlasPath = resolve(repoRoot, config.repo.sidecarOutputPath ?? ".polaris/map");
+  const allRoutes = {
+    ...readFileRoutes(atlasPath),
+    ...readNeedsReview(atlasPath),
+  };
+
+  const smartdocsRoot = resolve(repoRoot, "smartdocs");
+  if (!existsSync(smartdocsRoot)) {
+    return { written: [], skippedExists: [], skippedDraft: [], skippedIneligible: [] };
+  }
+
+  const dirs = collectSmartDocsDirs(smartdocsRoot, repoRoot);
+  const smartdocsRel = "smartdocs";
+  if (!dirs.includes(smartdocsRel)) {
+    dirs.unshift(smartdocsRel);
+  }
+
+  const written: string[] = [];
+  const skippedExists: string[] = [];
+  const skippedDraft: string[] = [];
+
+  for (const relDir of dirs) {
+    const absDir = resolve(repoRoot, relDir);
+    const outFile = join(absDir, "index.md");
+
+    if (existsSync(outFile)) {
+      if (hasDraftMarker(outFile)) {
+        skippedDraft.push(relDir);
+      } else {
+        skippedExists.push(relDir);
+      }
+      continue;
+    }
+
+    const isBundleRoot = relDir === "smartdocs";
+    const content = isBundleRoot
+      ? generateBundleRootIndex(repoRoot, allRoutes)
+      : generateDirectoryIndex(relDir, repoRoot);
+
+    if (!opts.dryRun) {
+      writeFileSync(outFile, content, "utf-8");
+    }
+    written.push(relDir);
+  }
+
+  return { written, skippedExists, skippedDraft, skippedIneligible: [] };
 }
