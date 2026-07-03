@@ -25,6 +25,10 @@ function makeTempDir(): string {
   return root;
 }
 
+function todayHeading(): string {
+  return `## ${new Date().toISOString().slice(0, 10)}`;
+}
+
 describe("doctrineDraft", () => {
   let repoRoot: string;
 
@@ -84,6 +88,38 @@ describe("doctrineDraft", () => {
     writeFileSync(dest, "# Already there");
 
     expect(() => doctrineDraft(source, { repoRoot })).toThrow("Destination already exists");
+  });
+
+  it("creates log.md with default reason when none is provided", () => {
+    const source = join(repoRoot, "smartdocs", "raw", "log-default.md");
+    writeFileSync(source, "# Log Default");
+
+    const result = doctrineDraft(source, { repoRoot, runId: "test-run-log-001" });
+
+    const logPath = join(repoRoot, "smartdocs", "doctrine", "candidate", "log.md");
+    expect(existsSync(logPath)).toBe(true);
+    const logContent = readFileSync(logPath, "utf-8");
+    expect(logContent).toContain("# Directory Update Log");
+    expect(logContent).toContain(todayHeading());
+    expect(logContent).toContain("**Draft**: log-default.md drafted to doctrine/candidate/");
+  });
+
+  it("appends an explicit reason to an existing log.md", () => {
+    const source = join(repoRoot, "smartdocs", "raw", "log-explicit.md");
+    writeFileSync(source, "# Log Explicit");
+    const logPath = join(repoRoot, "smartdocs", "doctrine", "candidate", "log.md");
+    writeFileSync(logPath, "# Directory Update Log\n\n## 2020-01-01\n**Draft**: older entry\n");
+
+    const result = doctrineDraft(source, {
+      repoRoot,
+      runId: "test-run-log-002",
+      reason: "Custom draft rationale",
+    });
+
+    const logContent = readFileSync(logPath, "utf-8");
+    expect(logContent.indexOf(todayHeading())).toBeLessThan(logContent.indexOf("## 2020-01-01"));
+    expect(logContent).toContain("**Draft**: Custom draft rationale");
+    expect(logContent).toContain("**Draft**: older entry");
   });
 });
 
@@ -293,6 +329,60 @@ describe("doctrinePromote", () => {
     expect(auditEvent.promoted_by).toBe("polaris-cli");
     expect(result.destination).toBeDefined();
   });
+
+  it("creates log.md in active directory with default reason", () => {
+    const candidatePath = join(repoRoot, "smartdocs", "doctrine", "candidate", "log-promote-default.md");
+    const content = [
+      CANDIDATE_MARKER,
+      "---",
+      "doc-type: doctrine",
+      "confidence: 0.9",
+      "recommended-action: promote",
+      "overlap-analysis: none",
+      "---",
+      "",
+      "# Log Promote Default",
+    ].join("\n");
+    writeFileSync(candidatePath, content);
+
+    const result = doctrinePromote(candidatePath, { repoRoot, runId: "test-run-promote-log" });
+
+    const logPath = join(repoRoot, "smartdocs", "doctrine", "active", "log.md");
+    expect(existsSync(logPath)).toBe(true);
+    const logContent = readFileSync(logPath, "utf-8");
+    expect(logContent).toContain("# Directory Update Log");
+    expect(logContent).toContain(todayHeading());
+    expect(logContent).toContain("**Promote**: log-promote-default.md promoted to doctrine/active/");
+  });
+
+  it("appends explicit reason to existing log.md", () => {
+    const candidatePath = join(repoRoot, "smartdocs", "doctrine", "candidate", "log-promote-explicit.md");
+    const content = [
+      CANDIDATE_MARKER,
+      "---",
+      "doc-type: doctrine",
+      "confidence: 0.9",
+      "recommended-action: promote",
+      "overlap-analysis: none",
+      "---",
+      "",
+      "# Log Promote Explicit",
+    ].join("\n");
+    writeFileSync(candidatePath, content);
+    const logPath = join(repoRoot, "smartdocs", "doctrine", "active", "log.md");
+    writeFileSync(logPath, "# Directory Update Log\n\n## 2020-01-01\n**Promote**: older\n");
+
+    const result = doctrinePromote(candidatePath, {
+      repoRoot,
+      runId: "test-run-promote-log-explicit",
+      reason: "Approved by architecture review",
+    });
+
+    const logContent = readFileSync(logPath, "utf-8");
+    expect(logContent.indexOf(todayHeading())).toBeLessThan(logContent.indexOf("## 2020-01-01"));
+    expect(logContent).toContain("**Promote**: Approved by architecture review");
+    expect(logContent).toContain("**Promote**: older");
+  });
 });
 
 describe("addCandidateGovernanceMetadata", () => {
@@ -470,6 +560,38 @@ describe("doctrineDeprecate", () => {
     const result = doctrineDeprecate(activePath, { repoRoot, runId: "test-run-dep-noprov" });
     expect(existsSync(result.destination)).toBe(true);
   });
+
+  it("creates log.md in deprecated directory with default reason", () => {
+    const activePath = join(repoRoot, "smartdocs", "doctrine", "active", "log-dep-default.md");
+    writeFileSync(activePath, "# Log Dep Default");
+
+    const result = doctrineDeprecate(activePath, { repoRoot, runId: "test-run-dep-log" });
+
+    const logPath = join(repoRoot, "smartdocs", "doctrine", "deprecated", "log.md");
+    expect(existsSync(logPath)).toBe(true);
+    const logContent = readFileSync(logPath, "utf-8");
+    expect(logContent).toContain("# Directory Update Log");
+    expect(logContent).toContain(todayHeading());
+    expect(logContent).toContain("**Deprecate**: log-dep-default.md deprecated to doctrine/deprecated/");
+  });
+
+  it("appends explicit reason to existing log.md", () => {
+    const activePath = join(repoRoot, "smartdocs", "doctrine", "active", "log-dep-explicit.md");
+    writeFileSync(activePath, "# Log Dep Explicit");
+    const logPath = join(repoRoot, "smartdocs", "doctrine", "deprecated", "log.md");
+    writeFileSync(logPath, "# Directory Update Log\n\n## 2020-01-01\n**Deprecate**: older\n");
+
+    const result = doctrineDeprecate(activePath, {
+      repoRoot,
+      runId: "test-run-dep-log-explicit",
+      reason: "Superseded by new architecture",
+    });
+
+    const logContent = readFileSync(logPath, "utf-8");
+    expect(logContent.indexOf(todayHeading())).toBeLessThan(logContent.indexOf("## 2020-01-01"));
+    expect(logContent).toContain("**Deprecate**: Superseded by new architecture");
+    expect(logContent).toContain("**Deprecate**: older");
+  });
 });
 
 describe("specPromote", () => {
@@ -581,6 +703,53 @@ describe("specPromote", () => {
     const event = JSON.parse(readFileSync(result.lifecyclePath, "utf-8").trim().split("\n")[0]);
     expect(event.event).toBe("spec-promote");
     expect(event.run_id).toBe("spec-lifecycle-001");
+  });
+
+  it("creates log.md in specs/active with default reason", () => {
+    const src = join(repoRoot, "smartdocs", "raw", "log-spec-default.md");
+    writeFileSync(src, "# Log Spec Default\n\nNo conflicts.");
+
+    const result = specPromote(src, { repoRoot, runId: "spec-log-001" });
+
+    const logPath = join(repoRoot, "smartdocs", "specs", "active", "log.md");
+    expect(existsSync(logPath)).toBe(true);
+    const logContent = readFileSync(logPath, "utf-8");
+    expect(logContent).toContain("# Directory Update Log");
+    expect(logContent).toContain(todayHeading());
+    expect(logContent).toContain("**Promote**: log-spec-default.md promoted to specs/active/");
+  });
+
+  it("appends explicit reason to existing log.md", () => {
+    const src = join(repoRoot, "smartdocs", "raw", "log-spec-explicit.md");
+    writeFileSync(src, "# Log Spec Explicit\n\nNo conflicts.");
+    const logPath = join(repoRoot, "smartdocs", "specs", "active", "log.md");
+    writeFileSync(logPath, "# Directory Update Log\n\n## 2020-01-01\n**Promote**: older\n");
+
+    const result = specPromote(src, {
+      repoRoot,
+      runId: "spec-log-002",
+      reason: "Approved for v2.0 release",
+    });
+
+    const logContent = readFileSync(logPath, "utf-8");
+    expect(logContent.indexOf(todayHeading())).toBeLessThan(logContent.indexOf("## 2020-01-01"));
+    expect(logContent).toContain("**Promote**: Approved for v2.0 release");
+    expect(logContent).toContain("**Promote**: older");
+  });
+
+  it("does not write log.md when promotion is halted", () => {
+    writeFileSync(
+      join(repoRoot, "smartdocs", "specs", "active", "existing-halt.md"),
+      "# Existing Halt\n\nAgents must always validate inputs.",
+    );
+    const src = join(repoRoot, "smartdocs", "raw", "halt-spec.md");
+    writeFileSync(src, "# Halt Spec\n\nAgents must never validate inputs.");
+
+    const result = specPromote(src, { repoRoot, runId: "spec-halt-001" });
+
+    expect(result.halted).toBe(true);
+    const logPath = join(repoRoot, "smartdocs", "specs", "active", "log.md");
+    expect(existsSync(logPath)).toBe(false);
   });
 });
 

@@ -565,9 +565,10 @@ export function createDoctrineCommand(): Command {
     .description("Move a doc from smartdocs/raw/ or smartdocs/doctrine/raw/ to docs/doctrine/candidate/")
     .option("-r, --repo-root <path>", "Repository root", process.cwd())
     .option("--run-id <id>", "Override the generated doctrine run ID")
-    .action((path: string, options: { repoRoot: string; runId?: string }) => {
+    .option("--reason <text>", "Reason for this draft")
+    .action((path: string, options: { repoRoot: string; runId?: string; reason?: string }) => {
       try {
-        const result = doctrineDraft(path, { repoRoot: options.repoRoot, runId: options.runId });
+        const result = doctrineDraft(path, { repoRoot: options.repoRoot, runId: options.runId, reason: options.reason });
         console.log(`drafted: ${result.destination}`);
         console.log(`provenance: ${result.lifecyclePath}`);
       } catch (err) {
@@ -581,11 +582,13 @@ export function createDoctrineCommand(): Command {
     .description("Move a doc from smartdocs/doctrine/candidate/ to smartdocs/doctrine/active/")
     .option("-r, --repo-root <path>", "Repository root", process.cwd())
     .option("--run-id <id>", "Override the generated doctrine run ID")
-    .action((path: string, options: { repoRoot: string; runId?: string }) => {
+    .option("--reason <text>", "Reason for this promotion")
+    .action((path: string, options: { repoRoot: string; runId?: string; reason?: string }) => {
       try {
         const result = doctrinePromote(path, {
           repoRoot: options.repoRoot,
-          runId: options.runId
+          runId: options.runId,
+          reason: options.reason,
         });
         console.log(`promoted: ${result.destination}`);
         console.log(`provenance: ${result.lifecyclePath}`);
@@ -600,11 +603,13 @@ export function createDoctrineCommand(): Command {
     .description("Move a doc from smartdocs/doctrine/active/ to smartdocs/doctrine/deprecated/")
     .option("-r, --repo-root <path>", "Repository root", process.cwd())
     .option("--run-id <id>", "Override the generated doctrine run ID")
-    .action((path: string, options: { repoRoot: string; runId?: string }) => {
+    .option("--reason <text>", "Reason for this deprecation")
+    .action((path: string, options: { repoRoot: string; runId?: string; reason?: string }) => {
       try {
         const result = doctrineDeprecate(path, {
           repoRoot: options.repoRoot,
           runId: options.runId,
+          reason: options.reason,
         });
         console.log(`deprecated: ${result.destination}`);
         console.log(`provenance: ${result.lifecyclePath}`);
@@ -620,12 +625,14 @@ export function createDoctrineCommand(): Command {
     .option("-r, --repo-root <path>", "Repository root", process.cwd())
     .option("--run-id <id>", "Override the generated run ID")
     .option("--approve", "Proceed despite detected conflicts")
-    .action((path: string, options: { repoRoot: string; runId?: string; approve?: boolean }) => {
+    .option("--reason <text>", "Reason for this promotion")
+    .action((path: string, options: { repoRoot: string; runId?: string; approve?: boolean; reason?: string }) => {
       try {
         const result = specPromote(path, {
           repoRoot: options.repoRoot,
           runId: options.runId,
           approve: options.approve,
+          reason: options.reason,
         });
         console.log(result.report);
         if (result.halted) {

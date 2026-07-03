@@ -16,6 +16,7 @@ export const CANDIDATE_MARKER = "<!-- polaris:doctrine-candidate -->";
 export interface DoctrineOptions {
   repoRoot: string;
   runId?: string;
+  reason?: string;
 }
 
 export interface DoctrineResult {
@@ -266,6 +267,51 @@ function appendLifecycle(lifecyclePath: string, event: Record<string, unknown>):
   appendFileSync(lifecyclePath, JSON.stringify(event) + "\n", "utf-8");
 }
 
+const DIRECTORY_LOG_HEADER = "# Directory Update Log";
+
+/**
+ * Append a dated prose entry to a per-directory log.md file, following the OKF convention:
+ * date-grouped YYYY-MM-DD headings, newest-first, with a bold verb prefix.
+ *
+ * Creates the file with the canonical header if it does not yet exist. If the
+ * newest heading already matches today's date, the entry is inserted under that
+ * heading; otherwise a new today's heading is prepended before the existing entries.
+ *
+ * @param directory - Directory that contains (or will contain) log.md
+ * @param verb - Lifecycle verb rendered as the bold prefix (Draft, Promote, Deprecate)
+ * @param reason - Human-readable prose entry for this change
+ */
+function logDirectoryChange(
+  directory: string,
+  verb: "Draft" | "Promote" | "Deprecate",
+  reason: string,
+): void {
+  const logPath = join(directory, "log.md");
+  const today = new Date().toISOString().slice(0, 10);
+  const entry = `**${verb}**: ${reason}`;
+
+  let content = existsSync(logPath) ? readFileSync(logPath, "utf-8") : "";
+  content = content.replace(/\r\n/g, "\n");
+
+  const todayHeading = `## ${today}`;
+  const firstHeadingMatch = content.match(/^## (\d{4}-\d{2}-\d{2})/m);
+
+  if (firstHeadingMatch && firstHeadingMatch[1] === today) {
+    const headingIndex = content.indexOf(todayHeading);
+    const afterHeading = headingIndex + todayHeading.length;
+    const newContent = `${content.slice(0, afterHeading)}\n${entry}${content.slice(afterHeading)}`;
+    writeFileSync(logPath, newContent, "utf-8");
+  } else if (content.trim().startsWith(DIRECTORY_LOG_HEADER)) {
+    const afterHeader = content.indexOf(DIRECTORY_LOG_HEADER) + DIRECTORY_LOG_HEADER.length;
+    const tail = content.slice(afterHeader).replace(/^\n*/, "\n\n");
+    const newContent = `${DIRECTORY_LOG_HEADER}\n\n${todayHeading}\n${entry}${tail}`;
+    writeFileSync(logPath, newContent, "utf-8");
+  } else {
+    const existing = content.trim() ? `${content}\n\n` : "";
+    writeFileSync(logPath, `${DIRECTORY_LOG_HEADER}\n\n${todayHeading}\n${entry}\n${existing}`, "utf-8");
+  }
+}
+
 /**
  * Resolve a filesystem path against a repository root and return an absolute path.
  *
@@ -325,6 +371,9 @@ export function doctrineDraft(path: string, options: DoctrineOptions): DoctrineR
     destination,
     timestamp: new Date().toISOString(),
   });
+
+  const reason = options.reason ?? `${basename(destination)} drafted to doctrine/candidate/`;
+  logDirectoryChange(dirname(destination), "Draft", reason);
 
   return { source, destination, runId, lifecyclePath };
 }
@@ -438,6 +487,9 @@ export function doctrinePromote(path: string, options: DoctrineOptions): Doctrin
     timestamp: new Date().toISOString(),
   });
 
+  const reason = options.reason ?? `${basename(destination)} promoted to doctrine/active/`;
+  logDirectoryChange(dirname(destination), "Promote", reason);
+
   return { source, destination, runId, lifecyclePath };
 }
 
@@ -499,6 +551,9 @@ export function doctrineDeprecate(path: string, options: DoctrineOptions): Doctr
     deprecated_at: deprecatedAt,
     timestamp: deprecatedAt,
   });
+
+  const reason = options.reason ?? `${basename(destination)} deprecated to doctrine/deprecated/`;
+  logDirectoryChange(dirname(destination), "Deprecate", reason);
 
   return { source, destination, runId, lifecyclePath };
 }
@@ -845,6 +900,9 @@ export function specPromote(path: string, options: SpecPromoteOptions): SpecProm
     approved: options.approve ?? false,
     timestamp: new Date().toISOString(),
   });
+
+  const reason = options.reason ?? `${basename(destination)} promoted to specs/active/`;
+  logDirectoryChange(dirname(destination), "Promote", reason);
 
   return { source, destination, runId, lifecyclePath, conflicts, halted: false, report };
 }
