@@ -825,9 +825,6 @@ describe("runLoopContinue", () => {
       console.log = origLog;
     }
 
-    // The transition call is fire-and-forget; flush the microtask queue before asserting.
-    await new Promise((r) => setImmediate(r));
-
     const telemetryFile = join(
       testDir,
       ".taskchain_artifacts",
@@ -836,15 +833,26 @@ describe("runLoopContinue", () => {
       "pol-5-session-1",
       "telemetry.jsonl",
     );
-    const lines = readFileSync(telemetryFile, "utf-8").trim().split("\n").map((l) => JSON.parse(l));
-    const attempt = lines.find((e) => e.event === "lifecycle-transition-attempt");
+
+    // The transition call is fire-and-forget; poll briefly rather than assuming a fixed
+    // number of microtask ticks, since that's environment-dependent (flaky under CI).
+    let attempt: Record<string, unknown> | undefined;
+    for (let i = 0; i < 50 && !attempt; i++) {
+      if (existsSync(telemetryFile)) {
+        const lines = readFileSync(telemetryFile, "utf-8").trim().split("\n").map((l) => JSON.parse(l));
+        attempt = lines.find((e: Record<string, unknown>) => e.event === "lifecycle-transition-attempt");
+      }
+      if (!attempt) {
+        await new Promise((r) => setTimeout(r, 20));
+      }
+    }
     expect(attempt).toBeDefined();
-    expect(attempt.transition_event).toBe("child-validation-passed");
-    expect(attempt.child_id).toBe("POL-23");
+    expect(attempt?.transition_event).toBe("child-validation-passed");
+    expect(attempt?.child_id).toBe("POL-23");
     // No polaris.config.json in this fixture — no tracker adapter configured, so the
     // transition is safely skipped rather than applied.
-    expect(attempt.skipped).toBe(true);
-    expect(attempt.skip_reason).toBe("No tracker adapter configured");
+    expect(attempt?.skipped).toBe(true);
+    expect(attempt?.skip_reason).toBe("No tracker adapter configured");
   });
 
   it("bridges commit and validation_results into cluster-state.json after successful continue", () => {
