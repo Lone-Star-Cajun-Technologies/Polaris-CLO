@@ -203,8 +203,9 @@ export async function runAdoptPhase(
       if (!options.inventory || !options.plan) {
         throw new Error("consolidate requires inventory and plan");
       }
+      const dryRun = options.plan.dry_run ?? options.dryRun ?? false;
       await migrateSmartDocs(options.plan, repoRoot);
-      await reconcileAgentFiles(repoRoot);
+      await reconcileAgentFiles(repoRoot, { dryRun });
       break;
     }
 

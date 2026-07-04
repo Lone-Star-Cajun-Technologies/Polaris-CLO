@@ -68,6 +68,35 @@ describe("adopt-command", () => {
     rmSync(root, { recursive: true, force: true });
   });
 
+  it("phase=consolidate --dry-run writes nothing", async () => {
+    const root = makeRoot();
+    writeFileSync(join(root, "CLAUDE.md"), "# Agent instructions\n\nDo stuff.\n", "utf-8");
+    const plan: AdoptionPlan = {
+      plan_id: "test-dry-run",
+      generated_at: "2026-07-03T00:00:00.000Z",
+      repo_state: "existing",
+      approved: true,
+      approved_at: "2026-07-03T00:00:00.000Z",
+      dry_run: true,
+      steps: [],
+      impact_summary: {
+        files_to_create: 0,
+        files_to_move: 0,
+        files_to_modify: 0,
+        instruction_files_affected: 0,
+        smartdocs_candidates_moved: 0,
+        cognition_files_to_generate: 0,
+      },
+    };
+    await runAdoptPhase("consolidate", root, { inventory: minimalInventory, plan });
+    // CLAUDE.md must be untouched
+    expect(existsSync(join(root, "CLAUDE.md"))).toBe(true);
+    expect(existsSync(join(root, "smartdocs", "index.md"))).toBe(false);
+    expect(existsSync(join(root, "smartdocs", "log.md"))).toBe(false);
+    expect(existsSync(join(root, ".polaris", "adoption-plan.json"))).toBe(false);
+    rmSync(root, { recursive: true, force: true });
+  });
+
   it("throws on unknown phase name", async () => {
     const root = makeRoot();
     await expect(runAdoptPhase("unknown-phase" as never, root, {})).rejects.toThrow("Unknown adopt phase");

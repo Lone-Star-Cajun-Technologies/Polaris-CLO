@@ -18,6 +18,7 @@ export interface AgentReconcileRecord {
 export interface ReconcileOptions {
   anthropicKey?: string;
   now?: Date;
+  dryRun?: boolean;
 }
 
 interface GenesisProvenanceRecord {
@@ -51,7 +52,9 @@ function isAlreadyPointer(content: string): boolean {
 function appendGenesisProvenance(
   repoRoot: string,
   records: GenesisProvenanceRecord[],
+  dryRun = false,
 ): void {
+  if (dryRun) return;
   if (records.length === 0) return;
 
   const provenancePath = join(repoRoot, ".polaris", "adoption-provenance.json");
@@ -90,6 +93,7 @@ export async function reconcileAgentFiles(
   const provenanceRecords: GenesisProvenanceRecord[] = [];
   const now = options?.now ?? new Date();
   const timestamp = now.toISOString();
+  const dryRun = options?.dryRun ?? false;
 
   for (const file of AGENT_FILES) {
     const filePath = join(repoRoot, file);
@@ -109,6 +113,14 @@ export async function reconcileAgentFiles(
         timestamp,
         migration_outcome: "already-present",
       });
+      continue;
+    }
+
+    if (dryRun) {
+      process.stdout.write(
+        `[dry-run] would prompt to compress and archive ${file} as genesis doctrine\n`,
+      );
+      results.push({ file, outcome: "skipped" });
       continue;
     }
 
@@ -204,13 +216,14 @@ export async function reconcileAgentFiles(
     const genesisPath = `smartdocs/doctrine/active/${dateStr}-genesis-agent-doctrine.md`;
     const genesisFullPath = join(repoRoot, genesisPath);
 
-    mkdirSync(join(repoRoot, "smartdocs/doctrine/active"), { recursive: true });
-    writeFileSync(genesisFullPath, distilled, "utf8");
-
-    const thinPointer =
-      `# Agent Instructions\n\nRead [POLARIS_RULES.md](POLARIS_RULES.md) before beginning any work.\n\n` +
-      `<!-- genesis doctrine archived: ${genesisPath} -->\n`;
-    writeFileSync(filePath, thinPointer, "utf8");
+    if (!dryRun) {
+      mkdirSync(join(repoRoot, "smartdocs/doctrine/active"), { recursive: true });
+      writeFileSync(genesisFullPath, distilled, "utf8");
+      const thinPointer =
+        `# Agent Instructions\n\nRead [POLARIS_RULES.md](POLARIS_RULES.md) before beginning any work.\n\n` +
+        `<!-- genesis doctrine archived: ${genesisPath} -->\n`;
+      writeFileSync(filePath, thinPointer, "utf8");
+    }
 
     results.push({ file, outcome: "compressed", genesisPath });
     provenanceRecords.push({
@@ -222,6 +235,6 @@ export async function reconcileAgentFiles(
     });
   }
 
-  appendGenesisProvenance(repoRoot, provenanceRecords);
+  appendGenesisProvenance(repoRoot, provenanceRecords, dryRun);
   return results;
 }

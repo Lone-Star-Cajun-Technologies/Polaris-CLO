@@ -145,8 +145,19 @@ const SMARTDOCS_BUNDLE_INDEX_CONTENT = `---\nokf_version: "0.1"\n---\n\n# SmartD
 
 const SMARTDOCS_BUNDLE_LOG_CONTENT = "# SmartDocs — Change Log\n";
 
-export function scaffoldBundleRoot(repoRoot: string): void {
+export function scaffoldBundleRoot(repoRoot: string, dryRun = false): void {
   const smartdocsDir = join(repoRoot, "smartdocs");
+
+  if (dryRun) {
+    if (!existsSync(join(smartdocsDir, "index.md"))) {
+      process.stdout.write(`[dry-run] would create smartdocs/index.md\n`);
+    }
+    if (!existsSync(join(smartdocsDir, "log.md"))) {
+      process.stdout.write(`[dry-run] would create smartdocs/log.md\n`);
+    }
+    return;
+  }
+
   mkdirSync(smartdocsDir, { recursive: true });
 
   const indexPath = join(smartdocsDir, "index.md");
@@ -165,6 +176,7 @@ export function migrateSmartDocs(plan: AdoptionPlan, repoRoot = resolve(process.
   const provenanceRecords: SmartDocsMigrationRecord[] = [];
   const seenRecords = existingRecordKeys(repoRoot);
   const now = new Date().toISOString();
+  const dryRun = effectivePlan.dry_run ?? false;
 
   for (let index = 0; index < effectivePlan.steps.length; index += 1) {
     const step = effectivePlan.steps[index];
@@ -173,12 +185,14 @@ export function migrateSmartDocs(plan: AdoptionPlan, repoRoot = resolve(process.
     }
 
     if (step.routing !== undefined && step.routing !== "candidate") {
-      effectivePlan.steps[index] = {
-        ...step,
-        status: "skipped",
-        completed_at: now,
-        error: `routing not candidate: ${step.routing}`,
-      };
+      if (!dryRun) {
+        effectivePlan.steps[index] = {
+          ...step,
+          status: "skipped",
+          completed_at: now,
+          error: `routing not candidate: ${step.routing}`,
+        };
+      }
       continue;
     }
 
@@ -187,44 +201,54 @@ export function migrateSmartDocs(plan: AdoptionPlan, repoRoot = resolve(process.
       step.dest_path ?? `smartdocs/raw/${basename(sourcePath || `step-${step.order}.md`)}`;
 
     if (!sourcePath) {
-      effectivePlan.steps[index] = normalizeStatus(step, "skipped", now);
+      if (!dryRun) effectivePlan.steps[index] = normalizeStatus(step, "skipped", now);
       continue;
     }
 
     if (isExcludedSourcePath(sourcePath)) {
-      effectivePlan.steps[index] = normalizeStatus(step, "skipped", now);
+      if (!dryRun) effectivePlan.steps[index] = normalizeStatus(step, "skipped", now);
       continue;
     }
 
     const sourceAbs = join(repoRoot, sourcePath);
     const destAbs = join(repoRoot, destPath);
-    mkdirSync(dirname(destAbs), { recursive: true });
 
     if (!existsSync(sourceAbs)) {
       if (existsSync(destAbs)) {
-        effectivePlan.steps[index] = normalizeStatus(step, "completed", step.completed_at ?? now);
-        const record = {
-          step_id: step.step_id,
-          source_path: sourcePath,
-          dest_path: destPath,
-          migrated_at: step.completed_at ?? now,
-          migration_run_id: effectivePlan.plan_id,
-          transport: "reconciled" as const,
-        };
-        if (!seenRecords.has(recordKey(record))) {
-          provenanceRecords.push(record);
-          seenRecords.add(recordKey(record));
+        if (!dryRun) {
+          effectivePlan.steps[index] = normalizeStatus(step, "completed", step.completed_at ?? now);
+          const record = {
+            step_id: step.step_id,
+            source_path: sourcePath,
+            dest_path: destPath,
+            migrated_at: step.completed_at ?? now,
+            migration_run_id: effectivePlan.plan_id,
+            transport: "reconciled" as const,
+          };
+          if (!seenRecords.has(recordKey(record))) {
+            provenanceRecords.push(record);
+            seenRecords.add(recordKey(record));
+          }
         }
       } else {
-        effectivePlan.steps[index] = {
-          ...step,
-          status: "skipped",
-          completed_at: now,
-          error: `source missing: ${sourcePath}`,
-        };
+        if (!dryRun) {
+          effectivePlan.steps[index] = {
+            ...step,
+            status: "skipped",
+            completed_at: now,
+            error: `source missing: ${sourcePath}`,
+          };
+        }
       }
       continue;
     }
+
+    if (dryRun) {
+      process.stdout.write(`[dry-run] would move ${sourcePath} → ${destPath}\n`);
+      continue;
+    }
+
+    mkdirSync(dirname(destAbs), { recursive: true });
 
     let transport: SmartDocsMigrationRecord["transport"] = "git mv";
     try {
@@ -256,9 +280,11 @@ export function migrateSmartDocs(plan: AdoptionPlan, repoRoot = resolve(process.
     }
   }
 
-  scaffoldBundleRoot(repoRoot);
-  savePlan(repoRoot, effectivePlan);
-  saveProvenance(repoRoot, provenanceRecords);
-  Object.assign(plan, effectivePlan);
+  scaffoldBundleRoot(repoRoot, dryRun);
+  if (!dryRun) {
+    savePlan(repoRoot, effectivePlan);
+    saveProvenance(repoRoot, provenanceRecords);
+    Object.assign(plan, effectivePlan);
+  }
   return Promise.resolve();
 }
