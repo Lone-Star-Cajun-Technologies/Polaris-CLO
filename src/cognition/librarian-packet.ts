@@ -175,10 +175,11 @@ export function generateLibrarianPacket(options: GenerateLibrarianPacketOptions)
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function resolveStateFile(repoRoot: string, clusterId: string): string {
-  // Check current convention: cluster-state.json
-  const clusterState = path.join(repoRoot, ".polaris", "clusters", clusterId, "cluster-state.json");
-  if (fs.existsSync(clusterState)) return clusterState;
-  // Check legacy convention: state.json
+  // Note: .polaris/clusters/<id>/cluster-state.json is intentionally not a candidate here.
+  // It holds the ClusterState schema (child_states, packet_pointers, ...), not the LoopState
+  // schema (completed_children, run_id, open_children_meta, ...) that readState()/this
+  // function require.
+  // Check per-cluster run-state convention: state.json
   const legacyState = path.join(repoRoot, ".polaris", "clusters", clusterId, "state.json");
   if (fs.existsSync(legacyState)) return legacyState;
   // Check taskchain artifacts fallback
@@ -187,8 +188,8 @@ function resolveStateFile(repoRoot: string, clusterId: string): string {
   // Check legacy runs fallback
   const legacyRuns = path.join(repoRoot, ".polaris", "runs", "current-state.json");
   if (fs.existsSync(legacyRuns)) return legacyRuns;
-  // Return current convention path as default
-  return clusterState;
+  // Return per-cluster state path as default
+  return legacyState;
 }
 
 function findResultFile(resultsDir: string, childId: string): string | null {

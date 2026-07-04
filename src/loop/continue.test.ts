@@ -764,6 +764,97 @@ describe("runLoopContinue", () => {
     expect(updated.last_commit).toBe("abc1234");
   });
 
+  it("emits a lifecycle-transition-attempt telemetry event for child-validation-passed after a successful continue", async () => {
+    const clusterDir = join(testDir, ".polaris", "clusters", "POL-5");
+    const resultFile = join(clusterDir, "results", "POL-23-sealed.json");
+    mkdirSync(join(clusterDir, "results"), { recursive: true });
+    writeFileSync(
+      resultFile,
+      JSON.stringify({
+        run_id: "pol-5-session-1",
+        child_id: "POL-23",
+        status: "success",
+        commit: "abc1234",
+        validation: "ok",
+      }),
+    );
+    writeFileSync(
+      join(clusterDir, "cluster-state.json"),
+      JSON.stringify({
+        schema_version: "1.0",
+        cluster_id: "POL-5",
+        state_generation: 1,
+        child_states: [],
+        claim_metadata: {},
+        packet_pointers: {},
+        result_pointers: {},
+        validation_results: {},
+        commits: {},
+        tracker_mutations: {},
+        blockers: [],
+      }),
+    );
+    const state = {
+      schema_version: "1.0",
+      run_id: "pol-5-session-1",
+      cluster_id: "POL-5",
+      active_child: "POL-23",
+      completed_children: [],
+      open_children: ["POL-23", "POL-24"],
+      open_children_meta: {
+        "POL-23": {
+          result_file: resultFile,
+        },
+      },
+      step_cursor: "dispatch",
+      context_budget: { children_completed: 0, max_children_per_session: 3 },
+      status: "running",
+      next_open_child: "POL-23",
+      dispatch_boundary: {
+        dispatch_epoch: 1,
+        continue_epoch: 0,
+        last_dispatched_child: "POL-23",
+      },
+    };
+    const stateFile = writeState(testDir, state);
+    const origLog = console.log;
+    console.log = () => {};
+    try {
+      runLoopContinue({ stateFile, repoRoot: testDir });
+    } finally {
+      console.log = origLog;
+    }
+
+    const telemetryFile = join(
+      testDir,
+      ".taskchain_artifacts",
+      "polaris-run",
+      "runs",
+      "pol-5-session-1",
+      "telemetry.jsonl",
+    );
+
+    // The transition call is fire-and-forget; poll briefly rather than assuming a fixed
+    // number of microtask ticks, since that's environment-dependent (flaky under CI).
+    let attempt: Record<string, unknown> | undefined;
+    for (let i = 0; i < 50 && !attempt; i++) {
+      if (existsSync(telemetryFile)) {
+        const lines = readFileSync(telemetryFile, "utf-8").trim().split("\n").map((l) => JSON.parse(l));
+        attempt = lines.find((e: Record<string, unknown>) => e.event === "lifecycle-transition-attempt");
+      }
+      if (!attempt) {
+        await new Promise((r) => setTimeout(r, 20));
+      }
+    }
+    expect(attempt).toBeDefined();
+    expect(attempt?.transition_event).toBe("child-validation-passed");
+    expect(attempt?.child_id).toBe("POL-23");
+    // No polaris.config.json in this fixture — no tracker adapter configured, so the
+    // transition is safely skipped rather than applied.
+    expect(attempt?.skipped).toBe(true);
+    expect(attempt?.skip_reason).toBe("No tracker adapter configured");
+  });
+
   it("bridges commit and validation_results into cluster-state.json after successful continue", () => {
     const clusterDir = join(testDir, ".polaris", "clusters", "POL-5");
     const resultFile = join(clusterDir, "results", "POL-23-sealed.json");

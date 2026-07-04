@@ -1,5 +1,5 @@
-import { join, isAbsolute, resolve } from "node:path";
-import { existsSync, readFileSync, appendFileSync, statSync } from "node:fs";
+import { join, isAbsolute, resolve, dirname } from "node:path";
+import { existsSync, readFileSync, appendFileSync, statSync, mkdirSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { readClusterStateSync, writeClusterStateSync } from "../cluster-state/store.js";
@@ -34,6 +34,8 @@ import {
   type LedgerRunType,
 } from "./ledger.js";
 import { dispatchCognitionLibrarian } from "../cognition/librarian-dispatch.js";
+import { loadTrackerAdapter } from "../tracker/index.js";
+import { LifecycleTransitionService } from "../tracker/lifecycle-transition.js";
 
 export interface ContinueOptions {
   stateFile: string;
@@ -252,6 +254,11 @@ function countLoopAbortedEvents(telemetryFile: string, runId: string): number {
     .filter((event): event is Record<string, unknown> => !!event)
     .filter((event) => event.event === "loop-aborted" && event.run_id === runId)
     .length;
+}
+
+function appendTelemetryEvent(telemetryFile: string, event: Record<string, unknown>): void {
+  mkdirSync(dirname(telemetryFile), { recursive: true });
+  appendFileSync(telemetryFile, JSON.stringify(event) + "\n", "utf-8");
 }
 
 function resolveTelemetryFilePath(state: LoopState, repoRoot: string): string {
@@ -515,6 +522,71 @@ export function runLoopContinue(options: ContinueOptions): void {
         );
         process.exit(1);
       }
+    }
+
+    // ── Apply lifecycle transition for child-validation-passed event ───────
+    // Fire-and-forget: tracker mutations must not block state checkpointing.
+    // Policy default targets "in_review" (not "done") — "done" is reserved for
+    // the child-merged event, applied once the delivering PR actually merges.
+    let transitionAdapter;
+    let transitionConfig;
+    const transitionTelemetryFile = resolveTelemetryFilePath(state, repoRoot);
+    try {
+      transitionConfig = loadConfig(repoRoot);
+      transitionAdapter = loadTrackerAdapter(transitionConfig);
+    } catch (err) {
+      appendTelemetryEvent(transitionTelemetryFile, {
+        event: "lifecycle-transition-error",
+        run_id: state.run_id,
+        child_id: completedChild,
+        transition_event: "child-validation-passed",
+        error: `Failed to load config or tracker adapter: ${err instanceof Error ? err.message : String(err)}`,
+        timestamp: new Date().toISOString(),
+      });
+      transitionAdapter = null;
+      transitionConfig = null;
+    }
+    // Note: transitionAdapter may legitimately be null (no tracker adapter configured) —
+    // that's not an error, and applyTransitionSafe/applyTransition handle a null adapter
+    // by returning a skip result. Only skip the attempt entirely when config loading itself
+    // failed (transitionConfig is null).
+    if (transitionConfig) {
+      new LifecycleTransitionService()
+        .applyTransitionSafe({
+          adapter: transitionAdapter,
+          policy: transitionConfig.tracker?.lifecyclePolicy,
+          taskId: completedChild,
+          event: "child-validation-passed",
+          evidence: {
+            commit: completionCommit,
+            validationResults: completionValidation,
+          },
+          timestamp: new Date().toISOString(),
+        })
+        .then((result) => {
+          appendTelemetryEvent(transitionTelemetryFile, {
+            event: "lifecycle-transition-attempt",
+            run_id: state.run_id,
+            child_id: completedChild,
+            transition_event: result.event,
+            target_state: result.targetState,
+            applied: result.applied,
+            skipped: result.skipped,
+            skip_reason: result.skipReason,
+            error: result.error,
+            timestamp: result.timestamp,
+          });
+        })
+        .catch((err) => {
+          appendTelemetryEvent(transitionTelemetryFile, {
+            event: "lifecycle-transition-error",
+            run_id: state.run_id,
+            child_id: completedChild,
+            transition_event: "child-validation-passed",
+            error: err instanceof Error ? err.message : String(err),
+            timestamp: new Date().toISOString(),
+          });
+        });
     }
   }
 
