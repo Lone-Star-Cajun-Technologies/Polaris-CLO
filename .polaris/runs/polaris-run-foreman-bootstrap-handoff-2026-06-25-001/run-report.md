@@ -2,7 +2,7 @@
 
 **Status:** cluster-complete
 **Branch:** philmeaux/pol-396-implement-foreman-assignment-and-bootstrap-handoff
-**PR:** TBD — set at delivery step 9
+**PR:** https://github.com/Lone-Star-Cajun-Technologies/Polaris-CLO/pull/136
 **Children completed:** 4 of 4
 **Validation:** passed
 
