@@ -10,3 +10,8 @@ okf_version: "0.1"
 ## Concepts
 
 <!-- No concept files in this directory yet. -->
+
+## Subdirectories
+
+- [findings/](findings/index.md)
+- [resolved/](resolved/index.md)

@@ -10,3 +10,9 @@ okf_version: "0.1"
 ## Concepts
 
 <!-- No concept files in this directory yet. -->
+
+## Subdirectories
+
+- [generated/](generated/index.md)
+- [run-reports/](run-reports/index.md)
+- [summaries/](summaries/index.md)

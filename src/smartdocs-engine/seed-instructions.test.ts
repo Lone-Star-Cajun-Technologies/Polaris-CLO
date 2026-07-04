@@ -479,6 +479,34 @@ describe("generateDirectoryIndex", () => {
     expect(content.includes("POLARIS.md")).toBe(false);
     expect(content.includes("SUMMARY.md")).toBe(false);
   });
+
+  it("lists child subdirectories with links to their index.md", () => {
+    mkdirSync(join(TMP, "smartdocs/architecture/active"), { recursive: true });
+    mkdirSync(join(TMP, "smartdocs/architecture/candidate"), { recursive: true });
+
+    const content = generateDirectoryIndex("smartdocs/architecture", TMP);
+
+    expect(content).toContain("## Subdirectories");
+    expect(content).toContain("- [active/](active/index.md)");
+    expect(content).toContain("- [candidate/](candidate/index.md)");
+  });
+
+  it("omits the Subdirectories section when there are no child directories", () => {
+    const content = generateDirectoryIndex("smartdocs/architecture", TMP);
+    expect(content).not.toContain("## Subdirectories");
+  });
+
+  it("excludes hidden and raw/ directories from the Subdirectories list", () => {
+    mkdirSync(join(TMP, "smartdocs/architecture/.hidden"), { recursive: true });
+    mkdirSync(join(TMP, "smartdocs/architecture/raw"), { recursive: true });
+    mkdirSync(join(TMP, "smartdocs/architecture/visible"), { recursive: true });
+
+    const content = generateDirectoryIndex("smartdocs/architecture", TMP);
+
+    expect(content).toContain("- [visible/](visible/index.md)");
+    expect(content).not.toContain(".hidden");
+    expect(content).not.toContain("[raw/]");
+  });
 });
 
 describe("seedIndex", () => {
