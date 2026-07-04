@@ -13,7 +13,7 @@ The smartdocs-engine implements the Smart Docs lifecycle for Polaris: doc ingest
 - `doctrine.ts` — explicit doctrine lifecycle commands (`draft`, `promote`, `deprecate`) and spec promotion flows; writes per-directory `log.md` lifecycle entries and reports suggested supersession conflicts
 - `migrate.ts`, `audit.ts` — doc migration and ingest risk surface audit
 - `smartdoc-ignore.ts` — ingest and seed eligibility authority
-- `index.ts`, `*.test.ts` — command registration and tests
+- `index.ts`, `*.test.ts` — command registration and tests; `index.ts` also defines `polaris docs reformat-okf [--dry-run]`, a composed command sequencing migrate → seed-index --all → seed-instructions --all in one invocation
 - `.smartdocignore`-driven exclusions for generated runtime artifacts, including `.polaris/graph/**`
 
 ## What does not belong here
@@ -38,6 +38,7 @@ The smartdocs-engine implements the Smart Docs lifecycle for Polaris: doc ingest
 - Doctrine auto-promotion telemetry uses `doc-auto-promoted`; reserve `doctrine-promoted` for explicit lifecycle promotion.
 - SmartDocs frontmatter reserves governance, provenance, relationship, and future federation keys while preserving unknown keys.
 - Graph governance outputs, SQLite files, and similar runtime byproducts are ignored by default so Smart Docs only processes authoritative content.
+- `reformat-okf` must never touch agent instruction files (`CLAUDE.md`, `AGENTS.md`, `.codex/`, `.claude/`, `.agents/`) in any of its three sequenced steps.
 
 ## Route model
 

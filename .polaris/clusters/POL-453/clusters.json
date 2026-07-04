@@ -1,25 +1,43 @@
 {
-  "source_id": "POL-453",
-  "analyze_source_id": "POL-452",
-  "source_type": "linear",
-  "created_at": "2026-07-04T02:09:30Z",
-  "clusters": [
-    {
-      "cluster_id": "cluster-01",
-      "children": [
-        {
-          "id": "POL-454",
-          "title": "Gate migrateSmartDocs and reconcileAgentFiles writes behind dry-run",
-          "session_type": "implement",
-          "blockedBy": []
-        },
-        {
-          "id": "POL-455",
-          "title": "Add composed docs-only OKF migration recipe (no agent-file changes)",
-          "session_type": "implement",
-          "blockedBy": []
-        }
-      ]
+  "schemaVersion": "v2",
+  "source": {
+    "id": "POL-453",
+    "type": "Linear",
+    "analysis": {
+      "id": "POL-452",
+      "doc": "Synchronized from Linear issue identifier: POL-453"
     }
-  ]
+  },
+  "nodes": {
+    "POL-453": {
+      "id": "POL-453",
+      "title": "IMPLEMENT: fix adopt dry-run gating + add OKF docs-only migration recipe",
+      "status": "Backlog",
+      "body": "## Objective\n\nMake `polaris adopt consolidate --dry-run` actually dry, and give operators a docs-only path to migrate existing smartdocs into the OKF-style structure without running the full adopt flow.\n\n## Context\n\nAnalyzed from POL-452. `reconcileAgentFiles` (src/cli/adopt-genesis.ts) and `migrateSmartDocs` (src/cli/adopt-smartdocs.ts) both ignore `plan.dry_run`/`dryRun` entirely and perform real writes even when `--dry-run` is passed and prompts are declined. See POL-452 analysis comment for full evidence.\n\n## Goal\n\n- `--dry-run` produces zero working-tree diff for both smartdocs migration and agent-file reconciliation.\n- Operators can migrate/reformat existing smartdocs to OKF structure without touching CLAUDE.md/AGENTS.md or running the 8-phase adopt.\n\n## Scope\n\n* src/cli/adopt-genesis.ts\n* src/cli/adopt-smartdocs.ts\n* src/cli/adopt-command.ts\n* src/smartdocs-engine/index.ts (docs command composition only, no new engine logic)\n\n## Acceptance Criteria\n\n- `polaris adopt consolidate --dry-run` on a repo with an existing CLAUDE.md/AGENTS.md and pending smartdocs moves produces zero working-tree diff.\n- Declining the archive prompt under `--dry-run` never calls writeFileSync/mkdirSync/renameSync.\n- A documented or scripted composition of `polaris docs migrate` + `polaris docs seed-index --all` + `polaris docs seed-instructions --all` achieves OKF-only migration without invoking `reconcileAgentFiles`.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/cli/adopt-command.test.ts src/cli/adopt-smartdocs.test.ts\n\n## Ordering\n\nChildren execute in listed order; no cross-dependency required, but the dry-run fix (child 1) should land before documenting/validating the docs-only recipe (child 2).\n\n## Non-goals\n\n- No changes to the interactive archive/compression feature's actual (non-dry-run) behavior.\n- No new smartdocs-engine commands — compose existing `docs` subcommands only."
+    },
+    "POL-454": {
+      "id": "POL-454",
+      "title": "Gate migrateSmartDocs and reconcileAgentFiles writes behind dry-run",
+      "status": "Backlog",
+      "sessionType": "implement",
+      "body": "## Objective\n\n`polaris adopt consolidate --dry-run` must not write anything to the working tree.\n\n## Context\n\nAnalyzed in POL-452. Two independent write paths ignore dry-run today:\n1. `reconcileAgentFiles(repoRoot)` in src/cli/adopt-genesis.ts — no `dryRun` param exists on `ReconcileOptions` (currently `{ anthropicKey?: string; now?: Date }`). 4 unconditional write sites: the pointer-comment write on decline (~line 128), the genesis doctrine file write (~line 208), the thin-pointer replacement write (~line 213), and provenance write via `appendGenesisProvenance` (~line 82/225).\n2. `migrateSmartDocs(plan, repoRoot)` in src/cli/adopt-smartdocs.ts — never reads `plan.dry_run` anywhere despite the field existing on `AdoptionPlan`. Unconditionally runs `git mv`/`renameSync`, writes `smartdocs/index.md`/`log.md` via `scaffoldBundleRoot`, and writes `.polaris/adoption-plan.json` (`savePlan`) + `.polaris/adoption-provenance.json` (`saveProvenance`).\n\n## Goal\n\nAdd `dryRun` gating to both `reconcileAgentFiles` (extend `ReconcileOptions` with `dryRun?: boolean`) and `migrateSmartDocs` (read `plan.dry_run`), mirroring the existing correct idiom in `src/smartdocs-engine/index.ts`'s `docs migrate --dry-run` / `docs migrate-provenance --dry-run`: compute what would happen, print a `[dry-run] would ...` line per action, skip the actual write/rename/mkdir call, still return a normal result shape. In `src/cli/adopt-command.ts`, thread the dry-run flag from the `consolidate` case (lines ~202-209) into both calls — `AdoptPhaseOptions.dryRun` already exists as a field but is never read; either wire it here or derive dry-run consistently from `options.plan.dry_run` (pick one source of truth and use it in both call sites).\n\n## Scope\n\n* src/cli/adopt-genesis.ts\n* src/cli/adopt-smartdocs.ts\n* src/cli/adopt-command.ts\n\n## Acceptance Criteria\n\n- With `--dry-run`, `reconcileAgentFiles` performs zero `writeFileSync`/`mkdirSync` calls and does not launch the interactive archive prompt in a way that can write on decline — either skip the prompt under dry-run or ensure decline path never writes.\n- With `--dry-run`, `migrateSmartDocs` performs zero `git mv`/`renameSync`/`writeFileSync`/`mkdirSync` calls, and instead logs/returns what it would do.\n- Running `polaris adopt consolidate --dry-run` against a repo fixture with an existing CLAUDE.md and pending smartdocs candidates produces zero diff on the temp repo.\n- Existing non-dry-run behavior (real archive, real migration) is unchanged.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/cli/adopt-command.test.ts src/cli/adopt-smartdocs.test.ts\n\n## Ordering\n\n- None — no blocking siblings.\n\n## Non-goals\n\n- No changes to the Anthropic-backed compression/archival logic itself when not in dry-run mode.\n- No changes to `docs migrate --dry-run`/`docs migrate-provenance --dry-run` (already correct; used as reference only)."
+    },
+    "POL-455": {
+      "id": "POL-455",
+      "title": "Add composed docs-only OKF migration recipe (no agent-file changes)",
+      "status": "Backlog",
+      "sessionType": "implement",
+      "body": "## Objective\n\nGive operators a documented (or thinly scripted) way to migrate/reformat existing smartdocs into the OKF-style structure without touching agent instruction files or running the full 8-phase `polaris adopt`.\n\n## Context\n\nAnalyzed in POL-452/POL-453. `migrateSmartDocs` (src/cli/adopt-smartdocs.ts) and the seed functions in `src/smartdocs-engine/seed-instructions.ts` (`seedIndex`, `seedIndexAll`, `seedInstructions`, `seedInstructionsAll`, `seedSummary`, `seedSummaryAll`) are already fully decoupled from `reconcileAgentFiles`. A CLI command family already exists (`src/smartdocs-engine/index.ts`, registered via `createDocsCommand()` in src/cli/index.ts): `polaris docs migrate [--dry-run]`, `polaris docs seed-index [path] [--all]`, `polaris docs seed-instructions [path] [--all]`, plus `seed-summary`, `audit`, `validate-instructions`.\n\nThis means the \"docs-only OKF migration\" ask does not require new engine code — it can be satisfied by documenting the correct composition of existing commands (and optionally wrapping them in one convenience command if that's clearly better UX).\n\n## Goal\n\nAn operator who already has smartdocs content but wants it reformatted to OKF structure (index.md + `okf_version` frontmatter per src/smartdocs-engine/seed-instructions.ts) can do so in one documented step, without invoking `polaris adopt` or `reconcileAgentFiles`.\n\n## Scope\n\n* src/smartdocs-engine/index.ts (only if a thin composed command is added — no new migration/seeding logic)\n* docs/ or README (recipe documentation)\n\n## Acceptance Criteria\n\n- Running `polaris docs migrate` + `polaris docs seed-index --all` + `polaris docs seed-instructions --all` in sequence (or a single new composed command that just calls these three) migrates and OKF-formats existing smartdocs.\n- No CLAUDE.md/AGENTS.md/agent instruction file is touched by this recipe.\n- The recipe/command is documented somewhere discoverable (CLI `--help` text and/or docs/).\n\n## Validation\n\n* npm run build\n* npm test\n* Manual: run the recipe against a repo with pre-existing non-OKF smartdocs/ content and confirm index.md files gain `okf_version` frontmatter and no agent files change.\n\n## Ordering\n\n- Depends on POL-454 landing first only in the sense that dry-run trustworthiness should be verified before this recipe is documented as safe to preview; not a hard blocker for implementation.\n\n## Non-goals\n\n- No new smartdocs-engine ingestion/classification logic.\n- No changes to the full `polaris adopt` 8-phase flow."
+    }
+  },
+  "dependencies": {},
+  "clusters": {
+    "POL-453": {
+      "id": "POL-453",
+      "title": "Linear Issue: POL-453",
+      "children": ["POL-454", "POL-455"],
+      "cluster_root": "POL-453"
+    }
+  },
+  "activeCluster": "POL-453"
 }

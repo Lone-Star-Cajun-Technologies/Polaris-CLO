@@ -61,6 +61,16 @@ describe("scaffoldBundleRoot", () => {
   });
 });
 
+describe("scaffoldBundleRoot dry-run", () => {
+  it("writes nothing when dryRun=true", () => {
+    const root = makeRoot();
+    scaffoldBundleRoot(root, true);
+    expect(existsSync(join(root, "smartdocs", "index.md"))).toBe(false);
+    expect(existsSync(join(root, "smartdocs", "log.md"))).toBe(false);
+    rmSync(root, { recursive: true, force: true });
+  });
+});
+
 describe("migrateSmartDocs", () => {
   it("calls scaffoldBundleRoot unconditionally when there are zero migration steps", async () => {
     const root = makeRoot();
@@ -68,6 +78,45 @@ describe("migrateSmartDocs", () => {
     expect(existsSync(join(root, "smartdocs", "index.md"))).toBe(true);
     expect(existsSync(join(root, "smartdocs", "log.md"))).toBe(true);
     expect(existsSync(join(root, ".polaris", "adoption-plan.json"))).toBe(true);
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it("dry-run: writes nothing when plan.dry_run=true", async () => {
+    const root = makeRoot();
+    const source = join(root, "docs", "old.md");
+    writeFileSync(source, "# Old doc\n", "utf-8");
+
+    const plan: import("./adoption-plan.js").AdoptionPlan = {
+      ...makeEmptyPlan(),
+      dry_run: true,
+      steps: [
+        {
+          step_id: "d1",
+          order: 1,
+          phase: "C",
+          category: "smartdocs-migrate",
+          action: "move",
+          source_path: "docs/old.md",
+          dest_path: "smartdocs/raw/old.md",
+          description: "Move old.md",
+          destructive: true,
+          requires_approval: true,
+          estimated_risk: "low",
+          status: "pending",
+          routing: "candidate",
+        },
+      ],
+    };
+
+    await migrateSmartDocs(plan, root);
+
+    // source must still be present
+    expect(existsSync(source)).toBe(true);
+    // smartdocs bundle root must NOT be created
+    expect(existsSync(join(root, "smartdocs", "index.md"))).toBe(false);
+    expect(existsSync(join(root, "smartdocs", "log.md"))).toBe(false);
+    // adoption-plan.json must NOT be written
+    expect(existsSync(join(root, ".polaris", "adoption-plan.json"))).toBe(false);
     rmSync(root, { recursive: true, force: true });
   });
 

@@ -1,0 +1,12 @@
+{
+  "child_id": "POL-455",
+  "status": "success",
+  "commit": "24d6b31712ac1efef1974f2589e13f2a6cca4129",
+  "validation": "passed",
+  "next_recommended_action": "continue",
+  "tracker_updated": false,
+  "state_updated": false,
+  "telemetry_updated": false,
+  "run_id": "polaris-run-adopt-dry-run-fix-2026-07-04-001",
+  "cluster_id": "POL-453"
+}
