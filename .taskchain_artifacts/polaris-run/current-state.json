@@ -1,12 +1,10 @@
 {
   "schema_version": "1.0",
   "run_id": "polaris-run-adopt-dry-run-fix-2026-07-04-001",
-  "related_run_id": null,
   "cluster_id": "POL-453",
   "skill": "polaris-run",
   "artifact_dir": ".taskchain_artifacts/polaris-run",
   "status": "blocked",
-  "current_step_id": "02-prepare-branch",
   "branch": "philmeaux/pol-453-implement-fix-adopt-dry-run-gating-add-okf-docs-only",
   "session_type": "implement",
   "active_child": "",
@@ -24,6 +22,15 @@
     }
   },
   "step_cursor": "blocked",
-  "blocker": "Working tree is on `main` with 53 pre-existing uncommitted changes unrelated to POL-453 (agent-plugin work, .codex plugin files, prior Polaris run artifacts). Step 02 (prepare-branch) requires a clean checkout before creating/switching to the parent-scoped branch, and this dirty state cannot be isolated from POL-453's scope.",
-  "updated_at": "2026-07-04T02:10:56Z"
+  "context_budget": {
+    "children_completed": 0,
+    "max_children_per_session": 1
+  },
+  "next_open_child": "POL-454",
+  "blocker": {
+    "reason": "Working tree is on `main` with 53 pre-existing uncommitted changes unrelated to POL-453 (agent-plugin work, .codex plugin files, prior Polaris run artifacts). Step 02 (prepare-branch) requires a clean checkout before creating/switching to the parent-scoped branch, and this dirty state cannot be isolated from POL-453's scope.",
+    "child_id": "",
+    "timestamp": "2026-07-04T02:10:56Z",
+    "resolved": false
+  }
 }

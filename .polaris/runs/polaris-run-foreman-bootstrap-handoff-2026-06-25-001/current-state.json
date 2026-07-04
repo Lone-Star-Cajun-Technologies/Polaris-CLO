@@ -33,31 +33,7 @@
     "open_children_sha": "76e351e44490238190f0a6a65859e38b39e9e9583c0dcc0288c0ba2ce89defde",
     "sealed_at": "2026-06-25T03:44:55.140Z"
   },
-  "open_children_meta": {
-    "POL-409": {
-      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-396/results/POL-409-e829bfc5-5c19-4e41-8ab4-145c6da61b08.json",
-      "dispatch_record": {
-        "dispatch_id": "e829bfc5-5c19-4e41-8ab4-145c6da61b08",
-        "child_id": "POL-409",
-        "run_id": "polaris-run-foreman-bootstrap-handoff-2026-06-25-001",
-        "cluster_id": "POL-396",
-        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-396/packets/POL-409-e829bfc5-5c19-4e41-8ab4-145c6da61b08.json",
-        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-396/results/POL-409-e829bfc5-5c19-4e41-8ab4-145c6da61b08.json",
-        "provider": "devin",
-        "dispatched_at": "2026-06-25T03:56:23.764Z",
-        "status": "dispatched",
-        "dispatch_mode": "direct-worker",
-        "runtime_state": "packet-created",
-        "worker_id": "polaris-run-foreman-bootstrap-handoff-2026-06-25-001:POL-409:1782359783764",
-        "session_id": null,
-        "attachment_capable": false,
-        "role": "worker",
-        "role_authority": "implementation",
-        "may_implement": true,
-        "session_type": "implementation"
-      }
-    }
-  },
+  "open_children_meta": {},
   "completed_children_results": {
     "POL-406": {
       "status": "done",
