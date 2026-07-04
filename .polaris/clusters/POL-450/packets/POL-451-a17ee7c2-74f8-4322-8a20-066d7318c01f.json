@@ -1,0 +1,101 @@
+{
+  "schema_version": "2.1",
+  "worker_role": "impl",
+  "run_id": "polaris-run-pol-450-2026-07-03-001",
+  "cluster_id": "POL-450",
+  "active_child": "POL-451",
+  "state_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json",
+  "telemetry_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-450-2026-07-03-001/telemetry.jsonl",
+  "instructions": {
+    "primary_goal": "Issue: POL-451 — Scaffold smartdocs/index.md and smartdocs/log.md in migrateSmartDocs\nWorktree: .\nBranch: pol-450-delivery\n\n## Goal\n## Objective\n\nAdd bundle-root scaffolding to `migrateSmartDocs` so `smartdocs/index.md` and `smartdocs/log.md` always exist after `polaris init`, `polaris init --adopt`, or `polaris adopt`.\n\n## Context\n\n[POL-450](<https://linear.app/lsctech/issue/POL-450>) IMPLEMENT parent, single child. Scoped by analysis [POL-449](<https://linear.app/lsctech/issue/POL-449>) — see `smartdocs/raw/pol-449-bundle-root-scaffolding-analysis.md` for full rationale on template content, placement, and the deferred (non-goal) items.\n\n## Goal\n\n* New function `scaffoldBundleRoot(repoRoot: string): void` in `src/cli/adopt-smartdocs.ts`.\n* Called once, unconditionally, at the end of `migrateSmartDocs` (after the existing move loop, before/alongside `savePlan`/`saveProvenance` — does not touch either).\n* Creates `smartdocs/index.md` if absent, using the architecture-doc §7.2 template (frontmatter `okf_version: \"0.1\"`, `# SmartDocs — Polaris Cognition Bundle` heading, `# Governance` section linking `specs/active/docs-authority-model.md` and `doctrine/active/`, `# Routes` section left as a static placeholder comment — no dynamic file-routes.json generation in this pass).\n* Creates `smartdocs/log.md` if absent, using the architecture-doc §3 convention (reserved filename, header only, e.g. `# SmartDocs — Change Log`, no seeded entries — the \"why\" text source for entries is explicitly out of scope, §11 open question 3).\n* Never overwrites either file if it already exists.\n\n## Scope\n\n* src/cli/adopt-smartdocs.ts\n* src/cli/adopt-smartdocs.test.ts (new)\n* src/cli/init.test.ts\n* src/cli/adopt-command.test.ts\n\n## Acceptance Criteria\n\n- [ ] `scaffoldBundleRoot` creates both files when both are missing\n- [ ] `scaffoldBundleRoot` is a no-op (files untouched, byte-identical) when both already exist\n- [ ] `scaffoldBundleRoot` creates only the missing file when exactly one exists\n- [ ] `migrateSmartDocs` calls `scaffoldBundleRoot` unconditionally, including when there are zero migration steps to process\n- [ ] Existing `migrateSmartDocs` move/rename/provenance behavior has zero regressions (existing test coverage, if any, plus new coverage)\n- [ ] `init.test.ts` gains an assertion that `smartdocs/index.md` and `smartdocs/log.md` exist after `polaris init`\n- [ ] `adopt-command.test.ts` gains an assertion that both files exist after the `consolidate` phase\n- [ ] `npm run build` and `npm test` pass\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/cli/adopt-smartdocs.test.ts src/cli/init.test.ts src/cli/adopt-command.test.ts\n\n## Ordering\n\n* None.\n\n## Non-goals\n\n* No frontmatter-schema validation (schema doc not yet written)\n* No `polaris-reconcile`/`polaris-catalog` wiring\n* No dynamic `# Routes` generation from `.polaris/map/file-routes.json`\n* No `log.md` entry-writing logic — scaffold only creates the empty header\n* No changes to `seed-instructions.ts` or `adopt-cognition.ts`\n\n## Implementation Discipline\nBefore writing code, stop at the first rung that holds:\n\n1. Does this need to exist?   → no: skip it (YAGNI)\n2. Stdlib does it?            → use it\n3. Native platform feature?   → use it\n4. Installed dependency?      → use it\n5. One line?                  → one line\n6. Only then: the minimum that works\n\nLazy, not negligent: validation, error handling, security, and accessibility are never on the chopping block.\n\nWhen you defer a simplification for later, mark it inline:\n  // ponytail: <what you deferred and why>\n\n## Scope\nTouch only:\n- src/cli/adopt-smartdocs.ts\n- src/cli/adopt-smartdocs.test.ts (new)\n- src/cli/init.test.ts\n- src/cli/adopt-command.test.ts\n\n## Acceptance Criteria\n\n## Validation\n- npm run build\n- npm test\n- npx vitest run src/cli/adopt-smartdocs.test.ts src/cli/init.test.ts src/cli/adopt-command.test.ts\n\n## Commit\n[POL-451] Scaffold smartdocs/index.md and smartdocs/log.md in migrateSmartDocs\n\n## Governance\n- Do NOT modify open_children or completed_children in /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json. The parent runtime (loop continue) owns state transitions.\n- Append a telemetry event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-450-2026-07-03-001/telemetry.jsonl.\n\n## Worker Progress Telemetry (MANDATORY)\nThe parent CANNOT see your work. You MUST emit heartbeat events so the parent knows you are alive and making progress.\n\nAfter EVERY step, append a JSONL event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-450-2026-07-03-001/telemetry.jsonl:\n```jsonl\n{\"event\":\"worker-heartbeat\",\"run_id\":\"<from packet>\",\"child_id\":\"POL-451\",\"step_cursor\":\"<current step>\",\"timestamp\":\"<ISO8601>\",\"progress_pct\":<0-100>,\"files_changed\":<count>,\"current_file\":\"<file being edited>\"}\n```\n\nRequired heartbeat points:\n  1. Immediately after reading this packet (step_cursor: \"start\")\n  2. After verifying state file (step_cursor: \"verify\")\n  3. After EACH file edit (step_cursor: \"implement\")\n  4. After running validation (step_cursor: \"validate\")\n  5. After creating commit (step_cursor: \"commit\")\n  6. Before terminating (step_cursor: \"complete\" or \"failed\")\n\nIf heartbeats stop, the parent will assume you crashed and may dispatch a replacement worker.\n\n## Approval Escalation (when uncertain)\nYou have a sealed packet defining your exact scope, allowed files, and validation commands. Use this to decide:\n\nRule 1 - Auto-approve WITHIN scope (normal work):\n  - If the operation touches files within `instructions.allowed_scope` → Just do it\n  - If the command is in `instructions.validation_commands` → Just run it\n  - Low risk, expected work → No need to ask, emit heartbeat with step_cursor: \"implement\"\n\nRule 2 - ESCALATE out-of-scope or high-risk:\n  - File outside allowed_scope → Emit worker-blocked with approval_type: \"out-of-scope\"\n  - Destructive operation (rm -rf, major refactor) → Emit worker-blocked with approval_type: \"destructive\"\n  - External API calls with cost → Emit worker-blocked with approval_type: \"cost\"\n  - Changing secrets/.env → Emit worker-blocked with approval_type: \"security\"\n  - Unclear requirements → Emit worker-blocked with approval_type: \"ambiguous\"\n\nTo escalate, emit IMMEDIATELY to telemetry:\n```jsonl\n{\"event\":\"worker-blocked\",\"run_id\":\"<from packet>\",\"child_id\":\"POL-451\",\"reason\":\"needs-approval\",\"approval_type\":\"<out-of-scope|destructive|cost|security|ambiguous>\",\"description\":\"<specifically what needs approval>\",\"blocker_id\":\"<unique-id>\",\"timestamp\":\"<ISO8601>\"}\n```\n\nThen: Continue heartbeats every 30s with step_cursor: \"blocked-awaiting-approval\"\nWait for parent response. If no response in 5 minutes → TERMINATE with approval-timeout.\n\nRemember: Your packet scope is your authority. Within scope = proceed. Outside scope = escalate.\n\n## Route Cognition Delta\nAfter implementation, apply route-local cognition delta — only if something materially changed.\n\n**POLARIS.md** — update only when ALL of the following are true:\n  - You touched a file in that folder (not a distant folder).\n  - The change materially affects: folder responsibilities, commands/workflows,\n    execution constraints, ownership/routing, or operational behavior.\n  - The current POLARIS.md content is actually wrong or incomplete as a result.\n  DO NOT update POLARIS.md for: formatting fixes, comment changes, tiny refactors,\n  internal implementation details, or any change that leaves the operational guidance\n  still accurate. When in doubt, do not update.\n\n**SUMMARY.md** — update only when: linked docs/specs changed, canon relationships\n  changed, architecture meaning changed, or doctrine/spec linkage changed.\n  SUMMARY.md is informational only. Do not create it if missing — that is a hint for\n  operators, not a task for workers. Keep it short. Never add operational doctrine.\n\n**Never** scan unrelated folders. **Never** regenerate all route docs.\nIf no material change occurred, skip this section entirely.\n\n## Report Back\n- files changed\n- validation results\n- commit hash\n- blockers\n\nTERMINATE SESSION IMMEDIATELY. Do not select or execute the next child.",
+    "steps": [
+      "Verify: read /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json and confirm active_child === \"POL-451\".",
+      "Implement POL-451: \"Scaffold smartdocs/index.md and smartdocs/log.md in migrateSmartDocs\".",
+      "Issue description:\n## Objective\n\nAdd bundle-root scaffolding to `migrateSmartDocs` so `smartdocs/index.md` and `smartdocs/log.md` always exist after `polaris init`, `polaris init --adopt`, or `polaris adopt`.\n\n## Context\n\n[POL-450](<https://linear.app/lsctech/issue/POL-450>) IMPLEMENT parent, single child. Scoped by analysis [POL-449](<https://linear.app/lsctech/issue/POL-449>) — see `smartdocs/raw/pol-449-bundle-root-scaffolding-analysis.md` for full rationale on template content, placement, and the deferred (non-goal) items.\n\n## Goal\n\n* New function `scaffoldBundleRoot(repoRoot: string): void` in `src/cli/adopt-smartdocs.ts`.\n* Called once, unconditionally, at the end of `migrateSmartDocs` (after the existing move loop, before/alongside `savePlan`/`saveProvenance` — does not touch either).\n* Creates `smartdocs/index.md` if absent, using the architecture-doc §7.2 template (frontmatter `okf_version: \"0.1\"`, `# SmartDocs — Polaris Cognition Bundle` heading, `# Governance` section linking `specs/active/docs-authority-model.md` and `doctrine/active/`, `# Routes` section left as a static placeholder comment — no dynamic file-routes.json generation in this pass).\n* Creates `smartdocs/log.md` if absent, using the architecture-doc §3 convention (reserved filename, header only, e.g. `# SmartDocs — Change Log`, no seeded entries — the \"why\" text source for entries is explicitly out of scope, §11 open question 3).\n* Never overwrites either file if it already exists.\n\n## Scope\n\n* src/cli/adopt-smartdocs.ts\n* src/cli/adopt-smartdocs.test.ts (new)\n* src/cli/init.test.ts\n* src/cli/adopt-command.test.ts\n\n## Acceptance Criteria\n\n- [ ] `scaffoldBundleRoot` creates both files when both are missing\n- [ ] `scaffoldBundleRoot` is a no-op (files untouched, byte-identical) when both already exist\n- [ ] `scaffoldBundleRoot` creates only the missing file when exactly one exists\n- [ ] `migrateSmartDocs` calls `scaffoldBundleRoot` unconditionally, including when there are zero migration steps to process\n- [ ] Existing `migrateSmartDocs` move/rename/provenance behavior has zero regressions (existing test coverage, if any, plus new coverage)\n- [ ] `init.test.ts` gains an assertion that `smartdocs/index.md` and `smartdocs/log.md` exist after `polaris init`\n- [ ] `adopt-command.test.ts` gains an assertion that both files exist after the `consolidate` phase\n- [ ] `npm run build` and `npm test` pass\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/cli/adopt-smartdocs.test.ts src/cli/init.test.ts src/cli/adopt-command.test.ts\n\n## Ordering\n\n* None.\n\n## Non-goals\n\n* No frontmatter-schema validation (schema doc not yet written)\n* No `polaris-reconcile`/`polaris-catalog` wiring\n* No dynamic `# Routes` generation from `.polaris/map/file-routes.json`\n* No `log.md` entry-writing logic — scaffold only creates the empty header\n* No changes to `seed-instructions.ts` or `adopt-cognition.ts`",
+      "Requirements:",
+      "   1. [ ] `scaffoldBundleRoot` creates both files when both are missing",
+      "   2. [ ] `scaffoldBundleRoot` is a no-op (files untouched, byte-identical) when both already exist",
+      "   3. [ ] `scaffoldBundleRoot` creates only the missing file when exactly one exists",
+      "   4. [ ] `migrateSmartDocs` calls `scaffoldBundleRoot` unconditionally, including when there are zero migration steps to process",
+      "   5. [ ] Existing `migrateSmartDocs` move/rename/provenance behavior has zero regressions (existing test coverage, if any, plus new coverage)",
+      "   6. [ ] `init.test.ts` gains an assertion that `smartdocs/index.md` and `smartdocs/log.md` exist after `polaris init`",
+      "   7. [ ] `adopt-command.test.ts` gains an assertion that both files exist after the `consolidate` phase",
+      "   8. [ ] `npm run build` and `npm test` pass",
+      "Run validation commands and confirm all pass.",
+      "Create exactly ONE git commit: [POL-451] Scaffold smartdocs/index.md and smartdocs/log.md in migrateSmartDocs.",
+      "Do NOT modify open_children or completed_children in /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json. The parent runtime (loop continue) owns that state transition.",
+      "Append a telemetry event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-450-2026-07-03-001/telemetry.jsonl.",
+      "Write compact return JSON to stdout (fields: child_id, status, commit, validation, next_recommended_action). next_recommended_action MUST be exactly \"continue\" on success, \"stop\" on unresolvable blocker, or \"investigate\" if manual review is needed.",
+      "TERMINATE SESSION IMMEDIATELY. Do not select or execute the next child."
+    ],
+    "allowed_scope": [
+      "src/cli/adopt-smartdocs.ts",
+      "src/cli/adopt-smartdocs.test.ts (new)",
+      "src/cli/init.test.ts",
+      "src/cli/adopt-command.test.ts"
+    ],
+    "validation_commands": [
+      "npm run build",
+      "npm test",
+      "npx vitest run src/cli/adopt-smartdocs.test.ts src/cli/init.test.ts src/cli/adopt-command.test.ts"
+    ],
+    "issue_context": {
+      "id": "POL-451",
+      "title": "Scaffold smartdocs/index.md and smartdocs/log.md in migrateSmartDocs",
+      "key_requirements": [],
+      "body": "## Objective\n\nAdd bundle-root scaffolding to `migrateSmartDocs` so `smartdocs/index.md` and `smartdocs/log.md` always exist after `polaris init`, `polaris init --adopt`, or `polaris adopt`.\n\n## Context\n\n[POL-450](<https://linear.app/lsctech/issue/POL-450>) IMPLEMENT parent, single child. Scoped by analysis [POL-449](<https://linear.app/lsctech/issue/POL-449>) — see `smartdocs/raw/pol-449-bundle-root-scaffolding-analysis.md` for full rationale on template content, placement, and the deferred (non-goal) items.\n\n## Goal\n\n* New function `scaffoldBundleRoot(repoRoot: string): void` in `src/cli/adopt-smartdocs.ts`.\n* Called once, unconditionally, at the end of `migrateSmartDocs` (after the existing move loop, before/alongside `savePlan`/`saveProvenance` — does not touch either).\n* Creates `smartdocs/index.md` if absent, using the architecture-doc §7.2 template (frontmatter `okf_version: \"0.1\"`, `# SmartDocs — Polaris Cognition Bundle` heading, `# Governance` section linking `specs/active/docs-authority-model.md` and `doctrine/active/`, `# Routes` section left as a static placeholder comment — no dynamic file-routes.json generation in this pass).\n* Creates `smartdocs/log.md` if absent, using the architecture-doc §3 convention (reserved filename, header only, e.g. `# SmartDocs — Change Log`, no seeded entries — the \"why\" text source for entries is explicitly out of scope, §11 open question 3).\n* Never overwrites either file if it already exists.\n\n## Scope\n\n* src/cli/adopt-smartdocs.ts\n* src/cli/adopt-smartdocs.test.ts (new)\n* src/cli/init.test.ts\n* src/cli/adopt-command.test.ts\n\n## Acceptance Criteria\n\n- [ ] `scaffoldBundleRoot` creates both files when both are missing\n- [ ] `scaffoldBundleRoot` is a no-op (files untouched, byte-identical) when both already exist\n- [ ] `scaffoldBundleRoot` creates only the missing file when exactly one exists\n- [ ] `migrateSmartDocs` calls `scaffoldBundleRoot` unconditionally, including when there are zero migration steps to process\n- [ ] Existing `migrateSmartDocs` move/rename/provenance behavior has zero regressions (existing test coverage, if any, plus new coverage)\n- [ ] `init.test.ts` gains an assertion that `smartdocs/index.md` and `smartdocs/log.md` exist after `polaris init`\n- [ ] `adopt-command.test.ts` gains an assertion that both files exist after the `consolidate` phase\n- [ ] `npm run build` and `npm test` pass\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/cli/adopt-smartdocs.test.ts src/cli/init.test.ts src/cli/adopt-command.test.ts\n\n## Ordering\n\n* None.\n\n## Non-goals\n\n* No frontmatter-schema validation (schema doc not yet written)\n* No `polaris-reconcile`/`polaris-catalog` wiring\n* No dynamic `# Routes` generation from `.polaris/map/file-routes.json`\n* No `log.md` entry-writing logic — scaffold only creates the empty header\n* No changes to `seed-instructions.ts` or `adopt-cognition.ts`"
+    }
+  },
+  "lifecycle": {
+    "terminate_after_completion": true,
+    "max_concurrent": 1,
+    "cleanup_on_exit": "commit-and-exit"
+  },
+  "return_contract": [
+    "child_id",
+    "status",
+    "commit",
+    "validation",
+    "next_recommended_action"
+  ],
+  "prompt_mode": "compact",
+  "prompt_metrics": {
+    "mode": "compact",
+    "char_count": 8205,
+    "estimated_tokens": 2051
+  },
+  "role_context": {
+    "role": "worker",
+    "role_authority": "implementation",
+    "may_implement": true,
+    "may_assign_workers": false,
+    "prohibited_actions": [
+      "modify-cluster-plan",
+      "dispatch-children",
+      "polaris-loop-dispatch",
+      "polaris-loop-continue"
+    ]
+  },
+  "prohibited_write_paths": [
+    ".taskchain_artifacts/",
+    ".polaris/clusters/",
+    ".polaris/runs/",
+    "**/telemetry.jsonl"
+  ],
+  "result_file_contract": {
+    "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-450/results/POL-451-a17ee7c2-74f8-4322-8a20-066d7318c01f.json",
+    "result_required_fields": {
+      "run_id": "polaris-run-pol-450-2026-07-03-001",
+      "cluster_id": "POL-450",
+      "child_id": "<child_id>",
+      "status": "<status>",
+      "commit": "<commit>",
+      "validation": "<validation>",
+      "next_recommended_action": "<next_recommended_action>"
+    }
+  },
+  "context": {
+    "branch": "pol-450-delivery",
+    "worker_role": "impl"
+  }
+}
