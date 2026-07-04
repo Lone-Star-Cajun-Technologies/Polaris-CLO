@@ -16,6 +16,43 @@ export interface DocsCommandOptions {
   repoRoot?: string;
 }
 
+interface SeedAllPrintable {
+  written: string[];
+  skippedExists: string[];
+  skippedDraft: string[];
+}
+
+/**
+ * Prints the shared written/skipped-exists/skipped-draft report and summary line used by
+ * every `seed-*-all` command (seed-index, seed-instructions, seed-summary, reformat-okf).
+ *
+ * @param filename - The generated filename (e.g. "index.md") to report against each directory.
+ * @param dryRun - Whether this was a dry-run pass (controls the "would write" vs "written" label).
+ * @param result - The written/skippedExists/skippedDraft arrays from a seed-*-all call.
+ * @param options.leadingBlankLine - Whether to prefix the summary line with a blank line (default true).
+ * @param options.extraSummary - Extra summary text appended after "skipped (draft)" (e.g. root/ineligible counts).
+ */
+function printSeedAllResult(
+  filename: string,
+  dryRun: boolean | undefined,
+  { written, skippedExists, skippedDraft }: SeedAllPrintable,
+  options: { leadingBlankLine?: boolean; extraSummary?: string } = {},
+): void {
+  const { leadingBlankLine = true, extraSummary = "" } = options;
+  for (const dir of written) {
+    console.log(`${dryRun ? "[dry-run] would write" : "written"}: ${dir}/${filename}`);
+  }
+  for (const dir of skippedExists) {
+    console.log(`skipped (human-edited): ${dir}/${filename}`);
+  }
+  for (const dir of skippedDraft) {
+    console.log(`skipped (draft exists): ${dir}/${filename}`);
+  }
+  console.log(
+    `${leadingBlankLine ? "\n" : ""}Done. ${written.length} written, ${skippedExists.length} skipped (exists), ${skippedDraft.length} skipped (draft)${extraSummary}.`,
+  );
+}
+
 /**
  * Build and return the top-level "docs" Commander command group for Polaris docs lifecycle workflows.
  *
@@ -326,15 +363,6 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
           includeHidden: options.includeHidden,
           includeRoot: options.includeRoot,
         });
-        for (const dir of written) {
-          console.log(`${options.dryRun ? "[dry-run] would write" : "written"}: ${dir}/POLARIS.md`);
-        }
-        for (const dir of skippedExists) {
-          console.log(`skipped (human-edited): ${dir}/POLARIS.md`);
-        }
-        for (const dir of skippedDraft) {
-          console.log(`skipped (draft exists): ${dir}/POLARIS.md`);
-        }
         if (options.dryRun) {
           if (skippedRoot) {
             console.log(`\nSkipped (root):`);
@@ -357,7 +385,12 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
           }
         }
         const rootCount = skippedRoot ? 1 : 0;
-        console.log(`\nDone. ${written.length} written, ${skippedExists.length} skipped (exists), ${skippedDraft.length} skipped (draft), ${rootCount} skipped (root), ${skippedIneligible.length} skipped (ineligible).`);
+        printSeedAllResult(
+          "POLARIS.md",
+          options.dryRun,
+          { written, skippedExists, skippedDraft },
+          { extraSummary: `, ${rootCount} skipped (root), ${skippedIneligible.length} skipped (ineligible)` },
+        );
         return;
       }
 
@@ -407,15 +440,6 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
           includeHidden: options.includeHidden,
           includeRoot: options.includeRoot,
         });
-        for (const dir of written) {
-          console.log(`${options.dryRun ? "[dry-run] would write" : "written"}: ${dir}/SUMMARY.md`);
-        }
-        for (const dir of skippedExists) {
-          console.log(`skipped (human-edited): ${dir}/SUMMARY.md`);
-        }
-        for (const dir of skippedDraft) {
-          console.log(`skipped (draft exists): ${dir}/SUMMARY.md`);
-        }
         if (options.dryRun) {
           if (skippedRoot) {
             console.log(`\nSkipped (root):`);
@@ -438,7 +462,12 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
           }
         }
         const rootCount = skippedRoot ? 1 : 0;
-        console.log(`\nDone. ${written.length} written, ${skippedExists.length} skipped (exists), ${skippedDraft.length} skipped (draft), ${rootCount} skipped (root), ${skippedIneligible.length} skipped (ineligible).`);
+        printSeedAllResult(
+          "SUMMARY.md",
+          options.dryRun,
+          { written, skippedExists, skippedDraft },
+          { extraSummary: `, ${rootCount} skipped (root), ${skippedIneligible.length} skipped (ineligible)` },
+        );
         return;
       }
 
@@ -477,16 +506,7 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
         } = seedIndexAll(options.repoRoot, {
           dryRun: options.dryRun,
         });
-        for (const dir of written) {
-          console.log(`${options.dryRun ? "[dry-run] would write" : "written"}: ${dir}/index.md`);
-        }
-        for (const dir of skippedExists) {
-          console.log(`skipped (human-edited): ${dir}/index.md`);
-        }
-        for (const dir of skippedDraft) {
-          console.log(`skipped (draft exists): ${dir}/index.md`);
-        }
-        console.log(`\nDone. ${written.length} written, ${skippedExists.length} skipped (exists), ${skippedDraft.length} skipped (draft).`);
+        printSeedAllResult("index.md", options.dryRun, { written, skippedExists, skippedDraft });
         return;
       }
 
@@ -530,16 +550,7 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
       console.log(`\n${label ? label + " " : ""}Step 2/3: seed-index --all`);
       try {
         const { written, skippedExists, skippedDraft } = seedIndexAll(repoRoot, { dryRun });
-        for (const dir of written) {
-          console.log(`${dryRun ? "[dry-run] would write" : "written"}: ${dir}/index.md`);
-        }
-        for (const dir of skippedExists) {
-          console.log(`skipped (human-edited): ${dir}/index.md`);
-        }
-        for (const dir of skippedDraft) {
-          console.log(`skipped (draft exists): ${dir}/index.md`);
-        }
-        console.log(`Done. ${written.length} written, ${skippedExists.length} skipped (exists), ${skippedDraft.length} skipped (draft).`);
+        printSeedAllResult("index.md", dryRun, { written, skippedExists, skippedDraft }, { leadingBlankLine: false });
       } catch (err) {
         console.error(`reformat-okf: seed-index failed — ${err instanceof Error ? err.message : String(err)}`);
         process.exit(1);
@@ -549,17 +560,13 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
       console.log(`\n${label ? label + " " : ""}Step 3/3: seed-instructions --all`);
       try {
         const { written, skippedExists, skippedDraft, skippedIneligible, skippedRoot } = seedInstructionsAll(repoRoot, { dryRun });
-        for (const dir of written) {
-          console.log(`${dryRun ? "[dry-run] would write" : "written"}: ${dir}/POLARIS.md`);
-        }
-        for (const dir of skippedExists) {
-          console.log(`skipped (human-edited): ${dir}/POLARIS.md`);
-        }
-        for (const dir of skippedDraft) {
-          console.log(`skipped (draft exists): ${dir}/POLARIS.md`);
-        }
         const rootCount = skippedRoot ? 1 : 0;
-        console.log(`Done. ${written.length} written, ${skippedExists.length} skipped (exists), ${skippedDraft.length} skipped (draft), ${rootCount} skipped (root), ${skippedIneligible.length} skipped (ineligible).`);
+        printSeedAllResult(
+          "POLARIS.md",
+          dryRun,
+          { written, skippedExists, skippedDraft },
+          { leadingBlankLine: false, extraSummary: `, ${rootCount} skipped (root), ${skippedIneligible.length} skipped (ineligible)` },
+        );
       } catch (err) {
         console.error(`reformat-okf: seed-instructions failed — ${err instanceof Error ? err.message : String(err)}`);
         process.exit(1);
