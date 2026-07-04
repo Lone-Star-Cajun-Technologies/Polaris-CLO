@@ -8,12 +8,12 @@
 <!-- One paragraph describing what this folder does. -->
 
 **Domain:** tracker
-**Route:** src/tracker
+**Route:** src/tracker/adapters/local-file
 **Taskchain:** polaris-tracker
 
 ## What belongs here
 
-- `index.ts` — src/tracker (tracker)
+- `index.ts` — Local file tracker adapter implementation for file-based issue tracking
 
 ## What does not belong here
 
@@ -29,8 +29,8 @@
 
 ## Read before editing
 
-- [README.md](src/tracker/adapters/github/README.md)
-- [README.md](src/tracker/adapters/jira/README.md)
+- [POLARIS.md](../POLARIS.md)
+- [POLARIS.md](../../POLARIS.md)
 
 ## Related routes
 

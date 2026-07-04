@@ -13,11 +13,11 @@
 
 ## What belongs here
 
-- `adapter.test.ts` — src/graph (graph)
-- `adapter.ts` — src/graph (graph)
-- `queries.ts` — src/graph (graph)
-- `schema.sql` — src/graph (graph)
-- `types.ts` — src/graph (graph)
+- `adapter.ts` — SQLite adapter for graph storage and persistence
+- `adapter.test.ts` — Unit tests for the graph store adapter
+- `queries.ts` — SQL query helpers for graph operations
+- `schema.sql` — SQLite schema definition for graph storage
+- `types.ts` — Type definitions for graph store operations
 
 ## What does not belong here
 
@@ -33,7 +33,7 @@
 
 ## Read before editing
 
-- [POLARIS.md](src/graph/POLARIS.md)
+- [POLARIS.md](../POLARIS.md)
 
 ## Related routes
 

@@ -13,10 +13,11 @@
 
 ## What belongs here
 
-- `adapter.ts` — src/graph (graph)
-- `extract.ts` — src/graph (graph)
-- `index.ts` — src/graph (graph)
-- `runtime.ts` — src/graph (graph)
+- `adapter.ts` — Rust graph adapter implementation
+- `extract.ts` — Rust symbol extraction logic
+- `index.ts` — Rust adapter registration and exports
+- `runtime.ts` — Rust runtime configuration and tree-sitter setup
+- `fixtures/adapter.test.ts` — Unit tests for the Rust adapter
 
 ## What does not belong here
 
@@ -32,7 +33,7 @@
 
 ## Read before editing
 
-- [POLARIS.md](src/graph/POLARIS.md)
+- [POLARIS.md](../../POLARIS.md)
 
 ## Related routes
 
