@@ -115,6 +115,7 @@ export function generateLibrarianPacket(options: GenerateLibrarianPacketOptions)
   // Prohibited: anything that is not documentation or cognition
   const prohibitedWritePaths = [
     stateFile,
+    path.join(repoRoot, ".polaris", "clusters", clusterId, "cluster-state.json"),
     path.join(repoRoot, ".polaris", "clusters", clusterId, "state.json"),
     path.join(repoRoot, ".taskchain_artifacts"),
     path.join(repoRoot, ".polaris", "runs"),
@@ -174,13 +175,20 @@ export function generateLibrarianPacket(options: GenerateLibrarianPacketOptions)
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function resolveStateFile(repoRoot: string, clusterId: string): string {
-  const canonical = path.join(repoRoot, ".polaris", "clusters", clusterId, "state.json");
-  if (fs.existsSync(canonical)) return canonical;
+  // Check current convention: cluster-state.json
+  const clusterState = path.join(repoRoot, ".polaris", "clusters", clusterId, "cluster-state.json");
+  if (fs.existsSync(clusterState)) return clusterState;
+  // Check legacy convention: state.json
+  const legacyState = path.join(repoRoot, ".polaris", "clusters", clusterId, "state.json");
+  if (fs.existsSync(legacyState)) return legacyState;
+  // Check taskchain artifacts fallback
   const taskchain = path.join(repoRoot, ".taskchain_artifacts", "polaris-run", "current-state.json");
   if (fs.existsSync(taskchain)) return taskchain;
-  const legacy = path.join(repoRoot, ".polaris", "runs", "current-state.json");
-  if (fs.existsSync(legacy)) return legacy;
-  return canonical;
+  // Check legacy runs fallback
+  const legacyRuns = path.join(repoRoot, ".polaris", "runs", "current-state.json");
+  if (fs.existsSync(legacyRuns)) return legacyRuns;
+  // Return current convention path as default
+  return clusterState;
 }
 
 function findResultFile(resultsDir: string, childId: string): string | null {
