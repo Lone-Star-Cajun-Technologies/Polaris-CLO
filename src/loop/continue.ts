@@ -546,43 +546,47 @@ export function runLoopContinue(options: ContinueOptions): void {
       transitionAdapter = null;
       transitionConfig = null;
     }
-    if (transitionAdapter && transitionConfig) {
+    // Note: transitionAdapter may legitimately be null (no tracker adapter configured) —
+    // that's not an error, and applyTransitionSafe/applyTransition handle a null adapter
+    // by returning a skip result. Only skip the attempt entirely when config loading itself
+    // failed (transitionConfig is null).
+    if (transitionConfig) {
       new LifecycleTransitionService()
         .applyTransitionSafe({
           adapter: transitionAdapter,
           policy: transitionConfig.tracker?.lifecyclePolicy,
-        taskId: completedChild,
-        event: "child-validation-passed",
-        evidence: {
-          commit: completionCommit,
-          validationResults: completionValidation,
-        },
-        timestamp: new Date().toISOString(),
-      })
-      .then((result) => {
-        appendTelemetryEvent(transitionTelemetryFile, {
-          event: "lifecycle-transition-attempt",
-          run_id: state.run_id,
-          child_id: completedChild,
-          transition_event: result.event,
-          target_state: result.targetState,
-          applied: result.applied,
-          skipped: result.skipped,
-          skip_reason: result.skipReason,
-          error: result.error,
-          timestamp: result.timestamp,
-        });
-      })
-      .catch((err) => {
-        appendTelemetryEvent(transitionTelemetryFile, {
-          event: "lifecycle-transition-error",
-          run_id: state.run_id,
-          child_id: completedChild,
-          transition_event: "child-validation-passed",
-          error: err instanceof Error ? err.message : String(err),
+          taskId: completedChild,
+          event: "child-validation-passed",
+          evidence: {
+            commit: completionCommit,
+            validationResults: completionValidation,
+          },
           timestamp: new Date().toISOString(),
+        })
+        .then((result) => {
+          appendTelemetryEvent(transitionTelemetryFile, {
+            event: "lifecycle-transition-attempt",
+            run_id: state.run_id,
+            child_id: completedChild,
+            transition_event: result.event,
+            target_state: result.targetState,
+            applied: result.applied,
+            skipped: result.skipped,
+            skip_reason: result.skipReason,
+            error: result.error,
+            timestamp: result.timestamp,
+          });
+        })
+        .catch((err) => {
+          appendTelemetryEvent(transitionTelemetryFile, {
+            event: "lifecycle-transition-error",
+            run_id: state.run_id,
+            child_id: completedChild,
+            transition_event: "child-validation-passed",
+            error: err instanceof Error ? err.message : String(err),
+            timestamp: new Date().toISOString(),
+          });
         });
-      });
     }
   }
 
