@@ -9,7 +9,7 @@ import { SLASH_COMMANDS, type SlashCommand } from "./commands.js";
  * `.claude/commands/polaris-<verb>.md` file per verb.
  *
  * Skill-backed verbs route through the existing packet+chain path:
- *   1. Read .polaris/skills/<skill>/SKILL.md
+ *   1. Read .polaris/skills/<target-skill>/SKILL.md
  *   2. Run `polaris skill packet <skill>`
  *   3. Execute the chain
  *
@@ -68,8 +68,8 @@ See \`${command.routing}\` for the full routing protocol and skill directory res
 
 ## Execution
 
-1. Look up \`/${command.name}\` in \`${command.routing}\` to find the target skill directory.
-2. Read \`.polaris/skills/<target-skill>/SKILL.md\` — it is the authoritative instruction source.
+1. Look up \`/${command.name}\` in \`${command.routing}\` to confirm the target skill directory.
+2. Read \`.polaris/skills/${command.targetSkill}/SKILL.md\` — it is the authoritative instruction source.
 3. Run the skill bootloader:
    \`\`\`bash
    polaris skill packet ${command.skill}${command.args.length > 0 ? " $ARGUMENTS" : ""}

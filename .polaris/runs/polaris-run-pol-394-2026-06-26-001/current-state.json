@@ -1,0 +1,139 @@
+{
+  "schema_version": "1.0",
+  "run_id": "polaris-run-pol-394-2026-06-26-001",
+  "cluster_id": "POL-394",
+  "skill": "polaris-run",
+  "branch": "pol-394-delivery",
+  "session_type": "implement",
+  "active_child": "",
+  "completed_children": [
+    "POL-398",
+    "POL-399",
+    "POL-400",
+    "POL-401"
+  ],
+  "open_children": [],
+  "open_children_meta": {
+    "POL-394": {
+      "title": "New-repo setup interview"
+    },
+    "POL-398": {
+      "title": "Setup-interview schema and resumable storage",
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-394/results/POL-398-51645be4-4b74-403e-a051-2e98271c6ac6.json",
+      "dispatch_record": {
+        "dispatch_id": "51645be4-4b74-403e-a051-2e98271c6ac6",
+        "child_id": "POL-398",
+        "run_id": "polaris-run-pol-394-2026-06-26-001",
+        "cluster_id": "POL-394",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-394/packets/POL-398-51645be4-4b74-403e-a051-2e98271c6ac6.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-394/results/POL-398-51645be4-4b74-403e-a051-2e98271c6ac6.json",
+        "provider": "devin",
+        "dispatched_at": "2026-06-26T03:30:49.876Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-pol-394-2026-06-26-001:POL-398:1782444649876",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    },
+    "POL-399": {
+      "title": "Foreman-led interview runner wired into polaris init",
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-394/results/POL-399-a677d00f-d2be-4c66-838c-4fca58a80f3a.json",
+      "dispatch_record": {
+        "dispatch_id": "a677d00f-d2be-4c66-838c-4fca58a80f3a",
+        "child_id": "POL-399",
+        "run_id": "polaris-run-pol-394-2026-06-26-001",
+        "cluster_id": "POL-394",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-394/packets/POL-399-a677d00f-d2be-4c66-838c-4fca58a80f3a.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-394/results/POL-399-a677d00f-d2be-4c66-838c-4fca58a80f3a.json",
+        "provider": "devin",
+        "dispatched_at": "2026-06-26T03:32:41.058Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-pol-394-2026-06-26-001:POL-399:1782444761058",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    },
+    "POL-400": {
+      "title": "Approval-gated generation from interview output",
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-394/results/POL-400-2d9e1ccd-292b-4516-9dc2-c8c15551af12.json",
+      "dispatch_record": {
+        "dispatch_id": "2d9e1ccd-292b-4516-9dc2-c8c15551af12",
+        "child_id": "POL-400",
+        "run_id": "polaris-run-pol-394-2026-06-26-001",
+        "cluster_id": "POL-394",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-394/packets/POL-400-2d9e1ccd-292b-4516-9dc2-c8c15551af12.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-394/results/POL-400-2d9e1ccd-292b-4516-9dc2-c8c15551af12.json",
+        "provider": "devin",
+        "dispatched_at": "2026-06-26T03:38:22.498Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-pol-394-2026-06-26-001:POL-400:1782445102498",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    },
+    "POL-401": {
+      "title": "Post-setup validation and checkpoint report",
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-394/results/POL-401-8d70fae4-f657-4e37-89b0-09b44298bce2.json",
+      "dispatch_record": {
+        "dispatch_id": "8d70fae4-f657-4e37-89b0-09b44298bce2",
+        "child_id": "POL-401",
+        "run_id": "polaris-run-pol-394-2026-06-26-001",
+        "cluster_id": "POL-394",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-394/packets/POL-401-8d70fae4-f657-4e37-89b0-09b44298bce2.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-394/results/POL-401-8d70fae4-f657-4e37-89b0-09b44298bce2.json",
+        "provider": "devin",
+        "dispatched_at": "2026-06-26T03:44:26.173Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-pol-394-2026-06-26-001:POL-401:1782445466173",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    }
+  },
+  "step_cursor": "checkpoint",
+  "context_budget": {
+    "children_completed": 4,
+    "max_children_per_session": 1
+  },
+  "status": "complete",
+  "next_open_child": null,
+  "artifact_dir": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run",
+  "dispatch_boundary": {
+    "dispatch_epoch": 4,
+    "continue_epoch": 4,
+    "last_dispatched_child": "POL-401"
+  },
+  "run_bootstrap_seal": {
+    "sealer": "polaris-loop-bootstrap",
+    "run_id": "polaris-run-pol-394-2026-06-26-001",
+    "cluster_id": "POL-394",
+    "open_children_sha": "2cee77f0016c708592685b6b24e70fbc55d0b839c5706a6848f0f3a20e681f24",
+    "sealed_at": "2026-06-26T03:26:31.631Z"
+  },
+  "last_commit": "5999941247eae769ac7c38ffaf895397a77f564d",
+  "pr_url": "https://github.com/Lone-Star-Cajun-Technologies/Polaris-CLO/pull/137"
+}

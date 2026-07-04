@@ -1,0 +1,5 @@
+interface:
+  display_name: "Polaris Reconcile"
+  short_description: "Reconcile project cognition via the triage skill packet"
+  brand_color: "#6366F1"
+  default_prompt: "Use $polaris-reconcile to reconcile project cognition via the triage skill packet."

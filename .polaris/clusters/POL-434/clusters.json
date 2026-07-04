@@ -1,0 +1,73 @@
+{
+  "schemaVersion": "v2",
+  "source": {
+    "id": "POL-434",
+    "type": "Linear",
+    "analysis": {
+      "id": "polaris-analyze-polaris-md-reconciliation-2026-06-30-002",
+      "doc": "smartdocs/raw/pol-433-polaris-md-reconciliation-analysis.md"
+    }
+  },
+  "nodes": {
+    "POL-434": {
+      "id": "POL-434",
+      "title": "Implement: Reconcile route-local POLARIS.md generation and drift detection",
+      "status": "Todo"
+    },
+    "POL-433": {
+      "id": "POL-433",
+      "title": "Analyze: Canonical POLARIS.md reconciliation and route-local doctrine generation",
+      "status": "Todo"
+    },
+    "POL-435": {
+      "id": "POL-435",
+      "title": "Fix: Guard adopt-canon POLARIS.md write against overwriting reviewed files",
+      "status": "Todo"
+    },
+    "POL-436": {
+      "id": "POL-436",
+      "title": "Fix: Point canon-check doctrine/spec conflict detection at real smartdocs paths",
+      "status": "Todo"
+    },
+    "POL-437": {
+      "id": "POL-437",
+      "title": "Implement: Protected GENERATED regions and a single shared SUMMARY.md template",
+      "status": "Todo"
+    },
+    "POL-438": {
+      "id": "POL-438",
+      "title": "Implement: Populate real ReconcilePacket fields in the reconcile skill packet bootloader",
+      "status": "Todo"
+    },
+    "POL-439": {
+      "id": "POL-439",
+      "title": "Implement: Template-version fingerprint for GENERATED region drift detection",
+      "status": "Todo"
+    },
+    "POL-440": {
+      "id": "POL-440",
+      "title": "Implement: One-shot repo-wide POLARIS.md/SUMMARY.md reconciliation sweep",
+      "status": "Todo"
+    }
+  },
+  "dependencies": {
+    "POL-439": ["POL-437"],
+    "POL-440": ["POL-437", "POL-439"]
+  },
+  "clusters": {
+    "POL-434": {
+      "id": "POL-434",
+      "title": "Linear Issue: POL-434",
+      "children": [
+        "POL-435",
+        "POL-436",
+        "POL-437",
+        "POL-438",
+        "POL-439",
+        "POL-440"
+      ],
+      "cluster_root": "POL-434"
+    }
+  },
+  "activeCluster": "POL-434"
+}

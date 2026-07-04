@@ -1,0 +1,6 @@
+[marketplaces.polaris-local]
+source_type = "local"
+source = "./.codex"
+
+[plugins."polaris@polaris-local"]
+enabled = true

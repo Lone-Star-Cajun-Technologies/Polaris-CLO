@@ -1,0 +1,89 @@
+{
+  "schema_version": "1.0",
+  "run_id": "polaris-run-pol-450-2026-07-03-001",
+  "cluster_id": "POL-450",
+  "skill": "polaris-run",
+  "branch": "pol-450-delivery",
+  "session_type": "implement",
+  "active_child": "",
+  "completed_children": [
+    "POL-451"
+  ],
+  "open_children": [],
+  "open_children_meta": {
+    "POL-450": {
+      "title": "IMPLEMENT: wire SmartDocs 2.0 bundle-root scaffolding into migrateSmartDocs"
+    },
+    "POL-451": {
+      "title": "Scaffold smartdocs/index.md and smartdocs/log.md in migrateSmartDocs",
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-450/results/POL-451-a17ee7c2-74f8-4322-8a20-066d7318c01f.json",
+      "dispatch_record": {
+        "dispatch_id": "a17ee7c2-74f8-4322-8a20-066d7318c01f",
+        "child_id": "POL-451",
+        "run_id": "polaris-run-pol-450-2026-07-03-001",
+        "cluster_id": "POL-450",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-450/packets/POL-451-a17ee7c2-74f8-4322-8a20-066d7318c01f.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-450/results/POL-451-a17ee7c2-74f8-4322-8a20-066d7318c01f.json",
+        "provider": "devin",
+        "dispatched_at": "2026-07-03T22:45:10.200Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-pol-450-2026-07-03-001:POL-451:1783118710200",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    }
+  },
+  "step_cursor": "checkpoint",
+  "context_budget": {
+    "children_completed": 1,
+    "max_children_per_session": 1
+  },
+  "status": "complete",
+  "next_open_child": null,
+  "artifact_dir": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run",
+  "dispatch_boundary": {
+    "dispatch_epoch": 1,
+    "continue_epoch": 1,
+    "last_dispatched_child": "POL-451"
+  },
+  "run_bootstrap_seal": {
+    "sealer": "polaris-loop-bootstrap",
+    "run_id": "polaris-run-pol-450-2026-07-03-001",
+    "cluster_id": "POL-450",
+    "open_children_sha": "86aa87cf9ea016bac849b80442a281748f0e61ae7390e38160c41745f9f6195c",
+    "sealed_at": "2026-07-03T22:44:53.414Z"
+  },
+  "last_commit": "c8c9004de94ff98ded355db83408d9416541ed1d",
+  "completed_children_results": {
+    "POL-451": {
+      "child_id": "POL-451",
+      "status": "done",
+      "validation": "passed",
+      "commit": "c8c9004de94ff98ded355db83408d9416541ed1d",
+      "next_recommended_action": "continue",
+      "run_id": "polaris-run-pol-450-2026-07-03-001",
+      "cluster_id": "POL-450",
+      "skill_name": "polaris-run",
+      "role": "worker",
+      "provider": "devin",
+      "packet_hash": "38cf26e425eae1ee8198fc9c3f375df8248035e6ab606b676c93862caf12593d",
+      "worker_id": "polaris-run-pol-450-2026-07-03-001:POL-451:1783118710200",
+      "escalation_count": 0,
+      "heartbeat_count": 9,
+      "result_artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-450/results/POL-451-a17ee7c2-74f8-4322-8a20-066d7318c01f.json",
+      "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-450/packets/POL-451-a17ee7c2-74f8-4322-8a20-066d7318c01f.json",
+      "telemetry_path": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-450-2026-07-03-001/telemetry.jsonl",
+      "user_intervened": null,
+      "foreman_intervened": null,
+      "dispatch_epoch": 1,
+      "session_pointer": null
+    }
+  },
+  "pr_url": "https://github.com/Lone-Star-Cajun-Technologies/Polaris-CLO/pull/145"
+}

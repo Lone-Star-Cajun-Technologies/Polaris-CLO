@@ -1,0 +1,112 @@
+{
+  "schema_version": "1.0",
+  "run_id": "polaris-run-pol-430-2026-06-30-001",
+  "cluster_id": "POL-430",
+  "skill": "polaris-run",
+  "branch": "pol-430-delivery",
+  "session_type": "implement",
+  "active_child": "",
+  "completed_children": [
+    "POL-431",
+    "POL-432"
+  ],
+  "open_children": [],
+  "open_children_meta": {
+    "POL-430": {
+      "title": "Implement: Add polaris upgrade command to sync POLARIS_RULES.md"
+    },
+    "POL-431": {
+      "title": "Fix: Add refreshPolarisRules and extractRepoOverview to adopt-rules.ts",
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-430/results/POL-431-a7ee1493-7567-4785-8e91-ec1fb12c6743.json",
+      "dispatch_record": {
+        "dispatch_id": "a7ee1493-7567-4785-8e91-ec1fb12c6743",
+        "child_id": "POL-431",
+        "run_id": "polaris-run-pol-430-2026-06-30-001",
+        "cluster_id": "POL-430",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-430/packets/POL-431-a7ee1493-7567-4785-8e91-ec1fb12c6743.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-430/results/POL-431-a7ee1493-7567-4785-8e91-ec1fb12c6743.json",
+        "provider": "devin",
+        "dispatched_at": "2026-06-30T14:08:49.898Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-pol-430-2026-06-30-001:POL-431:1782828529898",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    },
+    "POL-432": {
+      "title": "Implement: Add polaris upgrade CLI command and register in index.ts",
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-430/results/POL-432-c463c05e-f445-4966-ba90-fc215012065a.json",
+      "dispatch_record": {
+        "dispatch_id": "c463c05e-f445-4966-ba90-fc215012065a",
+        "child_id": "POL-432",
+        "run_id": "polaris-run-pol-430-2026-06-30-001",
+        "cluster_id": "POL-430",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-430/packets/POL-432-c463c05e-f445-4966-ba90-fc215012065a.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-430/results/POL-432-c463c05e-f445-4966-ba90-fc215012065a.json",
+        "provider": "devin",
+        "dispatched_at": "2026-06-30T14:17:07.798Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-pol-430-2026-06-30-001:POL-432:1782829027798",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    }
+  },
+  "step_cursor": "checkpoint",
+  "context_budget": {
+    "children_completed": 2,
+    "max_children_per_session": 6
+  },
+  "status": "complete",
+  "next_open_child": null,
+  "artifact_dir": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run",
+  "dispatch_boundary": {
+    "dispatch_epoch": 2,
+    "continue_epoch": 2,
+    "last_dispatched_child": "POL-432"
+  },
+  "run_bootstrap_seal": {
+    "sealer": "polaris-loop-bootstrap",
+    "run_id": "polaris-run-pol-430-2026-06-30-001",
+    "cluster_id": "POL-430",
+    "open_children_sha": "93e8f95048a49bf8ebcff667bae5c069f53efaa187f11a53542039e8e19e0f8f",
+    "sealed_at": "2026-06-30T14:08:39.402Z"
+  },
+  "completed_children_results": {
+    "POL-431": {
+      "status": "done",
+      "validation": "passed",
+      "commit": "509c403ddfece563f17e34e01c764ebb66ae1ae6",
+      "next_recommended_action": "continue",
+      "result_artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-430/results/POL-431-a7ee1493-7567-4785-8e91-ec1fb12c6743.json",
+      "worker_id": "polaris-run-pol-430-2026-06-30-001:POL-431:1782828529898"
+    },
+    "POL-432": {
+      "status": "done",
+      "validation": "passed",
+      "commit": "a16e76e6165700be3bc6dc18361ee70ca402a6a4",
+      "next_recommended_action": "continue",
+      "result_artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-430/results/POL-432-c463c05e-f445-4966-ba90-fc215012065a.json",
+      "worker_id": "polaris-run-pol-430-2026-06-30-001:POL-432:1782829027798"
+    }
+  },
+  "last_commit": "f683bfbd97f2859feeb7483328a715633c8a5766",
+  "librarian_dispatch_id": "0dcebe19-a3ae-4fb5-8925-709f621051e9",
+  "librarian_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-430/results/librarian-0dcebe19-a3ae-4fb5-8925-709f621051e9.json",
+  "librarian_status": "success",
+  "librarian_commit": "f683bfbd97f2859feeb7483328a715633c8a5766",
+  "librarian_completed_at": "2026-06-30T14:29:14Z",
+  "pr_url": "https://github.com/Lone-Star-Cajun-Technologies/Polaris-CLO/pull/142"
+}

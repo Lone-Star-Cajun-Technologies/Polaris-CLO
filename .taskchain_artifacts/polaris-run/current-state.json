@@ -1,178 +1,29 @@
 {
   "schema_version": "1.0",
-  "run_id": "polaris-run-pol-374-2026-06-08-001",
-  "cluster_id": "POL-374",
+  "run_id": "polaris-run-adopt-dry-run-fix-2026-07-04-001",
+  "related_run_id": null,
+  "cluster_id": "POL-453",
   "skill": "polaris-run",
-  "branch": "pol-374-delivery",
+  "artifact_dir": ".taskchain_artifacts/polaris-run",
+  "status": "blocked",
+  "current_step_id": "02-prepare-branch",
+  "branch": "philmeaux/pol-453-implement-fix-adopt-dry-run-gating-add-okf-docs-only",
   "session_type": "implement",
   "active_child": "",
-  "completed_children": [
-    "POL-375",
-    "POL-376",
-    "POL-377",
-    "POL-378",
-    "POL-379",
-    "POL-380"
-  ],
-  "open_children": [],
+  "completed_children": [],
+  "open_children": ["POL-454", "POL-455"],
   "open_children_meta": {
-    "POL-374": {
-      "title": "IMPLEMENT: Harden Polaris distribution readiness and tracker lifecycle semantics",
-      "body": "## Objective\n\nMake Polaris safe and useful for clean new users and new projects by hardening distribution metadata, onboarding, artifact hygiene, tracker lifecycle policy, tracker adapter boundaries, and external-repo proof.\n\n## Context\n\nCreated from analysis issue [POL-373](https://linear.app/lsctech/issue/POL-373/analyze-distribution-readiness-gaps-and-tracker-adapter-lifecycle). The analysis artifact is `smartdocs/raw/pol-373-distribution-readiness-tracker-lifecycle-analysis.md` and should be ingested/promoted through SmartDocs rather than written directly to active specs.\n\nPolaris already has substantial adoption support in `polaris init` and `polaris init --adopt`, but distribution-readiness is not proven. The current repository still has sparse README/package metadata, no `polaris config doctor` command, fragmented artifact hygiene, and Linear-centric tracker lifecycle behavior.\n\n## Goal\n\nDeliver an implementation cluster that makes the clean new-user flow auditable: install or local package use, adopt an external repo, validate configuration, avoid runtime artifact bleed, and apply tracker lifecycle transitions through a tracker-agnostic policy surface.\n\n## Scope\n\n* package.json\n* README.md\n* src/cli/\\*\\*\n* src/config/\\*\\*\n* src/finalize/\\*\\*\n* src/tracker/\\*\\*\n* src/loop/\\*\\*\n* test/\\*\\*\n* smartdocs/raw/[POL-373](https://linear.app/lsctech/issue/POL-373/analyze-distribution-readiness-gaps-and-tracker-adapter-lifecycle)-distribution-readiness-tracker-lifecycle-analysis.md\n\n## Acceptance Criteria\n\n- [ ] Package metadata and README describe a credible local/global install and first-run path.\n- [ ] `polaris config doctor` or equivalent readiness check reports actionable bootstrap/provider/tracker/artifact status.\n- [ ] Runtime artifact hygiene is enforced consistently for adoption and finalize.\n- [ ] Tracker lifecycle policy is represented in config, validated, and mapped through adapter capabilities.\n- [ ] Dispatch, validation, triage, and finalize lifecycle transitions are policy-backed or skipped with explicit reasons.\n- [ ] A fresh external-repo fixture proves adoption/run artifact hygiene and lifecycle behavior.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/cli src/config src/tracker src/loop src/finalize test\n\n## Ordering\n\nRun children in order. Later children depend on the architecture/policy surfaces introduced by earlier children.\n\n## Non-goals\n\n* Do not publish the package to npm.\n* Do not implement full Jira or GitHub tracker adapters beyond interface/capability scaffolding unless explicitly scoped by a child.\n* Do not mark Linear issues Done/Closed automatically unless a child explicitly changes the review-gated policy with tests."
+    "POL-453": {
+      "title": "IMPLEMENT: fix adopt dry-run gating + add OKF docs-only migration recipe"
     },
-    "POL-376": {
-      "title": "IMPLEMENT: Unify artifact hygiene policy across adoption and finalize",
-      "body": "## Objective\n\nMake runtime/adoption/canonical artifact classification consistent across init/adoption, finalize, gitignore generation, and staging enforcement.\n\n## Context\n\n[POL-373](https://linear.app/lsctech/issue/POL-373/analyze-distribution-readiness-gaps-and-tracker-adapter-lifecycle) found two partial artifact policies: adoption appends broad runtime exclusions and unstages selected paths, while finalize has a richer classifier in `src/finalize/artifact-policy.ts`. Recent delivery history still shows run-specific state and runtime artifacts appearing around commits. This child depends on the distribution/config-doctor surface so doctor can report the unified policy.\n\n## Goal\n\nCreate one shared artifact hygiene policy used by adoption and finalize, with tests proving commit-eligible artifacts and runtime scratch are classified consistently.\n\n## Scope\n\n* src/finalize/artifact-policy.ts\n* src/finalize/\\*\\*\n* src/cli/init.ts\n* src/cli/\\*\\*\n* src/config/\\*\\*\n* test/\\*\\*\n* .gitignore\n\n## Acceptance Criteria\n\n- [ ] Adoption and finalize use the same classifier or a shared source of truth for Polaris-managed artifact paths.\n- [ ] Runtime scratch, current-state, run reports, bootstrap packets, mutation queues, and foreign cluster artifacts are never staged by default.\n- [ ] Commit-eligible adoption outputs and durable active-cluster evidence remain stageable when policy allows them.\n- [ ] `.gitignore` generation covers the policy's active runtime/crash-recovery classes.\n- [ ] Tests cover path classification and adoption/finalize staging behavior.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/finalize src/cli test\n\n## Ordering\n\n* Depends on [POL-375](https://linear.app/lsctech/issue/POL-375/implement-add-distribution-metadata-readme-quickstart-and-config).\n\n## Non-goals\n\n* Do not change tracker lifecycle semantics.\n* Do not remove existing durable cluster evidence from repository history.\n* Do not publish or package the CLI.",
-      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-374/results/POL-376-d97cfba3-f5f6-457c-98ef-a69cd107ed6f.json",
-      "dispatch_record": {
-        "dispatch_id": "d97cfba3-f5f6-457c-98ef-a69cd107ed6f",
-        "child_id": "POL-376",
-        "run_id": "polaris-run-pol-374-2026-06-08-001",
-        "cluster_id": "POL-374",
-        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-374/packets/POL-376-d97cfba3-f5f6-457c-98ef-a69cd107ed6f.json",
-        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-374/results/POL-376-d97cfba3-f5f6-457c-98ef-a69cd107ed6f.json",
-        "provider": "devin",
-        "dispatched_at": "2026-06-08T16:05:42.556Z",
-        "status": "dispatched",
-        "dispatch_mode": "direct-worker",
-        "runtime_state": "packet-created",
-        "worker_id": "polaris-run-pol-374-2026-06-08-001:POL-376:1780934742556",
-        "session_id": null,
-        "attachment_capable": false,
-        "role": "worker",
-        "role_authority": "implementation",
-        "may_implement": true,
-        "session_type": "implementation"
-      }
+    "POL-454": {
+      "title": "Gate migrateSmartDocs and reconcileAgentFiles writes behind dry-run"
     },
-    "POL-377": {
-      "title": "IMPLEMENT: Add tracker lifecycle policy schema and resolver",
-      "body": "## Objective\n\nRepresent tracker lifecycle semantics in Polaris config as normalized policy rather than hardcoded Linear state names.\n\n## Context\n\n[POL-373](https://linear.app/lsctech/issue/POL-373/analyze-distribution-readiness-gaps-and-tracker-adapter-lifecycle) identified that child dispatch, validation-passed, merged, triage, parent completion, and provider-failure tracker behavior need tracker-agnostic lifecycle semantics. Current config has tracker adapter fields but no lifecycle policy schema or resolver.\n\n## Goal\n\nAdd a validated `tracker.lifecyclePolicy` config surface with safe defaults, normalized lifecycle states, and a resolver that downstream runtime/tracker code can call.\n\n## Scope\n\n* src/config/schema.ts\n* src/config/schema.json\n* src/config/defaults.ts\n* src/config/validator.ts\n* src/tracker/\\*\\*\n* test/\\*\\*\n\n## Acceptance Criteria\n\n- [ ] Config types and JSON schema include `tracker.lifecyclePolicy` with normalized transition keys.\n- [ ] Defaults preserve current review-gated behavior and avoid false implementation-failure status changes on provider/runtime failures before repo work.\n- [ ] Validation rejects malformed lifecycle policy values with actionable errors.\n- [ ] A resolver returns transition intent, skip behavior, and evidence requirements for child dispatch, validation passed, merged, triage required, parent all-children-complete, parent delivery merged, and provider failure before work.\n- [ ] Tests cover defaults, valid overrides, invalid values, and missing tracker configuration.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/config src/tracker\n\n## Ordering\n\n* Depends on [POL-376](https://linear.app/lsctech/issue/POL-376/implement-unify-artifact-hygiene-policy-across-adoption-and-finalize).\n\n## Non-goals\n\n* Do not apply tracker mutations in runtime yet.\n* Do not implement GitHub or Jira adapters.\n* Do not change Linear finalize review-gate behavior except to express it in policy defaults.",
-      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-374/results/POL-377-cd9fdb91-1b3e-4710-ac4f-1ae4efe24b3c.json",
-      "dispatch_record": {
-        "dispatch_id": "cd9fdb91-1b3e-4710-ac4f-1ae4efe24b3c",
-        "child_id": "POL-377",
-        "run_id": "polaris-run-pol-374-2026-06-08-001",
-        "cluster_id": "POL-374",
-        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-374/packets/POL-377-cd9fdb91-1b3e-4710-ac4f-1ae4efe24b3c.json",
-        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-374/results/POL-377-cd9fdb91-1b3e-4710-ac4f-1ae4efe24b3c.json",
-        "provider": "devin",
-        "dispatched_at": "2026-06-08T16:07:24.642Z",
-        "status": "dispatched",
-        "dispatch_mode": "direct-worker",
-        "runtime_state": "packet-created",
-        "worker_id": "polaris-run-pol-374-2026-06-08-001:POL-377:1780934844642",
-        "session_id": null,
-        "attachment_capable": false,
-        "role": "worker",
-        "role_authority": "implementation",
-        "may_implement": true,
-        "session_type": "implementation"
-      }
-    },
-    "POL-378": {
-      "title": "IMPLEMENT: Define tracker adapter capability contract and native mappings",
-      "body": "## Objective\n\nDefine the tracker adapter boundary Polaris needs for Linear, GitHub Issues, Jira, and local file-backed tasks without implementing full new remote adapters.\n\n## Context\n\n[POL-373](https://linear.app/lsctech/issue/POL-373/analyze-distribution-readiness-gaps-and-tracker-adapter-lifecycle) found that current tracker support is Linear-centric: Linear sync-in produces an execution graph, MCP bridge mutation support is placeholder-shaped and Linear-specific, and `LinearAdapter.syncOut()` is not implemented. Tracker lifecycle policy needs adapter capability metadata and native status mapping.\n\n## Goal\n\nIntroduce a common tracker task/capability contract and implement capability/status mapping for existing Linear and local-file surfaces, with stubs or documented capability descriptors for GitHub Issues and Jira.\n\n## Scope\n\n* src/tracker/\\*\\*\n* src/config/\\*\\*\n* test/tracker/\\*\\*\n* test/\\*\\*\n* smartdocs/raw/[POL-373](https://linear.app/lsctech/issue/POL-373/analyze-distribution-readiness-gaps-and-tracker-adapter-lifecycle)-distribution-readiness-tracker-lifecycle-analysis.md\n\n## Acceptance Criteria\n\n- [ ] Tracker adapters expose capabilities for child relationships, status updates, comments, links, dependencies, and lifecycle-state mapping.\n- [ ] Linear maps native workflow states to normalized lifecycle states without hardcoding a single team's state names.\n- [ ] Local-file tracker support has a stable file-backed task model or explicit capability descriptor.\n- [ ] GitHub Issues and Jira are represented by capability/interface documentation or non-runtime descriptors sufficient for future implementation planning.\n- [ ] Unsupported transitions return explicit skip/unsupported results with reasons.\n- [ ] Tests cover capability descriptors and status mapping behavior.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/tracker test/tracker\n\n## Ordering\n\n* Depends on [POL-377](https://linear.app/lsctech/issue/POL-377/implement-add-tracker-lifecycle-policy-schema-and-resolver).\n\n## Non-goals\n\n* Do not build complete GitHub Issues or Jira adapters.\n* Do not perform live tracker mutations.\n* Do not change worker dispatch behavior yet.",
-      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-374/results/POL-378-20baa9a1-7761-4ab5-882b-f85b3e6e000b.json",
-      "dispatch_record": {
-        "dispatch_id": "20baa9a1-7761-4ab5-882b-f85b3e6e000b",
-        "child_id": "POL-378",
-        "run_id": "polaris-run-pol-374-2026-06-08-001",
-        "cluster_id": "POL-374",
-        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-374/packets/POL-378-20baa9a1-7761-4ab5-882b-f85b3e6e000b.json",
-        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-374/results/POL-378-20baa9a1-7761-4ab5-882b-f85b3e6e000b.json",
-        "provider": "devin",
-        "dispatched_at": "2026-06-08T16:08:51.153Z",
-        "status": "dispatched",
-        "dispatch_mode": "direct-worker",
-        "runtime_state": "packet-created",
-        "worker_id": "polaris-run-pol-374-2026-06-08-001:POL-378:1780934931153",
-        "session_id": null,
-        "attachment_capable": false,
-        "role": "worker",
-        "role_authority": "implementation",
-        "may_implement": true,
-        "session_type": "implementation"
-      }
-    },
-    "POL-379": {
-      "title": "IMPLEMENT: Apply tracker lifecycle policy in loop and finalize runtime boundaries",
-      "body": "## Objective\n\nApply policy-backed tracker lifecycle transitions at dispatch, validation, triage, and finalize boundaries without falsely marking provider/runtime failures as implementation failures.\n\n## Context\n\n[POL-373](https://linear.app/lsctech/issue/POL-373/analyze-distribution-readiness-gaps-and-tracker-adapter-lifecycle) found that tracker status changes are currently incomplete and Linear-centric. `TrackerSyncService` queues validated done children as `state: Done`, finalize moves the parent toward review, and child dispatch/failure/triage transitions are not driven by a normalized lifecycle policy.\n\n## Goal\n\nIntegrate the lifecycle policy and tracker capability contract into the loop/finalize runtime so transitions are idempotent, evidence-backed, and skipped with explicit reasons when unsupported.\n\n## Scope\n\n* src/loop/\\*\\*\n* src/finalize/\\*\\*\n* src/tracker/\\*\\*\n* src/cluster-state/\\*\\*\n* test/loop/\\*\\*\n* test/tracker/\\*\\*\n* test/\\*\\*\n\n## Acceptance Criteria\n\n- [ ] Child dispatch can request the configured active/in-progress lifecycle transition when the tracker supports it.\n- [ ] Validation-passed child completion queues or applies the configured review/done lifecycle transition with completion evidence.\n- [ ] Failed validation or triage-required worker results map to the configured blocked/triage lifecycle transition.\n- [ ] Provider/runtime failure before repo work records no implementation failure status unless policy explicitly asks for one.\n- [ ] Parent all-children-complete and delivery-merged transitions are policy-backed and keep the existing Done/Closed review gate safe by default.\n- [ ] Telemetry or cluster-state records transition attempts, skips, conflicts, and failures.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/loop src/finalize src/tracker test/loop test/tracker\n\n## Ordering\n\n* Depends on [POL-378](https://linear.app/lsctech/issue/POL-378/implement-define-tracker-adapter-capability-contract-and-native).\n\n## Non-goals\n\n* Do not implement full GitHub/Jira adapters.\n* Do not bypass Linear review-gate protections.\n* Do not change worker implementation scope parsing.",
-      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-374/results/POL-379-0c54f079-c9c9-4709-880e-be8a14164544.json",
-      "dispatch_record": {
-        "dispatch_id": "0c54f079-c9c9-4709-880e-be8a14164544",
-        "child_id": "POL-379",
-        "run_id": "polaris-run-pol-374-2026-06-08-001",
-        "cluster_id": "POL-374",
-        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-374/packets/POL-379-0c54f079-c9c9-4709-880e-be8a14164544.json",
-        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-374/results/POL-379-0c54f079-c9c9-4709-880e-be8a14164544.json",
-        "provider": "devin",
-        "dispatched_at": "2026-06-08T16:10:27.433Z",
-        "status": "dispatched",
-        "dispatch_mode": "direct-worker",
-        "runtime_state": "packet-created",
-        "worker_id": "polaris-run-pol-374-2026-06-08-001:POL-379:1780935027433",
-        "session_id": null,
-        "attachment_capable": false,
-        "role": "worker",
-        "role_authority": "implementation",
-        "may_implement": true,
-        "session_type": "implementation"
-      }
-    },
-    "POL-380": {
-      "title": "IMPLEMENT: Add fresh external-repo adoption and lifecycle proof",
-      "body": "## Objective\n\nProve Polaris can be adopted and run in a clean external repository without relying on Polaris-repo-specific state or leaking runtime artifacts.\n\n## Context\n\n[POL-373](https://linear.app/lsctech/issue/POL-373/analyze-distribution-readiness-gaps-and-tracker-adapter-lifecycle) identified provider-independent first-run proof as the acceptance test for distribution readiness. Earlier children add package/onboarding, config doctor, artifact policy, lifecycle policy, adapter capabilities, and runtime integration. This child validates those pieces together in a small fixture or synthetic repo.\n\n## Goal\n\nAdd an automated fresh-repo fixture test or smoke test that exercises install/local package use, `polaris init --adopt`, `polaris config doctor`, a small local or tracker-backed run, lifecycle transition behavior, and git artifact hygiene.\n\n## Scope\n\n* test/\\*\\*\n* src/cli/\\*\\*\n* src/config/\\*\\*\n* src/tracker/\\*\\*\n* src/loop/\\*\\*\n* src/finalize/\\*\\*\n* package.json\n* README.md\n\n## Acceptance Criteria\n\n- [ ] Test creates or uses a clean fixture repo outside the Polaris repository tree.\n- [ ] Test runs the local built/packed Polaris CLI or equivalent local install path.\n- [ ] `polaris init --adopt` succeeds or dry-run plus approved path is covered deterministically.\n- [ ] `polaris config doctor` reports readiness without assuming the Polaris repository's local tracker/provider stack.\n- [ ] A local or tracker-backed parent task can produce/run at least one child or deterministic stub worker result.\n- [ ] Lifecycle transitions are applied or skipped with explicit reasons according to adapter capabilities.\n- [ ] `git status --short` in the fixture does not show runtime scratch, current-state, bootstrap packets, mutation queues, or foreign cluster artifacts staged for delivery.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run test src/cli src/config src/tracker src/loop src/finalize\n\n## Ordering\n\n* Depends on [POL-379](https://linear.app/lsctech/issue/POL-379/implement-apply-tracker-lifecycle-policy-in-loop-and-finalize-runtime).\n\n## Non-goals\n\n* Do not publish to npm.\n* Do not require real Linear/GitHub/Jira credentials for the fixture.\n* Do not depend on this repository's current `.polaris` runtime state.",
-      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-374/results/POL-380-eda3c710-d34a-4c10-88d6-353bc3ffa487.json",
-      "dispatch_record": {
-        "dispatch_id": "eda3c710-d34a-4c10-88d6-353bc3ffa487",
-        "child_id": "POL-380",
-        "run_id": "polaris-run-pol-374-2026-06-08-001",
-        "cluster_id": "POL-374",
-        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-374/packets/POL-380-eda3c710-d34a-4c10-88d6-353bc3ffa487.json",
-        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-374/results/POL-380-eda3c710-d34a-4c10-88d6-353bc3ffa487.json",
-        "provider": "devin",
-        "dispatched_at": "2026-06-08T16:13:54.503Z",
-        "status": "dispatched",
-        "dispatch_mode": "direct-worker",
-        "runtime_state": "packet-created",
-        "worker_id": "polaris-run-pol-374-2026-06-08-001:POL-380:1780935234503",
-        "session_id": null,
-        "attachment_capable": false,
-        "role": "worker",
-        "role_authority": "implementation",
-        "may_implement": true,
-        "session_type": "implementation"
-      }
+    "POL-455": {
+      "title": "Add composed docs-only OKF migration recipe (no agent-file changes)"
     }
   },
-  "step_cursor": "budget-check",
-  "context_budget": {
-    "children_completed": 6,
-    "max_children_per_session": 7
-  },
-  "status": "cluster-complete",
-  "next_open_child": null,
-  "artifact_dir": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run",
-  "dispatch_boundary": {
-    "dispatch_epoch": 6,
-    "continue_epoch": 6,
-    "last_dispatched_child": "POL-380"
-  },
-  "run_bootstrap_seal": {
-    "sealer": "polaris-loop-bootstrap",
-    "run_id": "polaris-run-pol-374-2026-06-08-001",
-    "cluster_id": "POL-374",
-    "open_children_sha": "c488f15972d363395426b27ee26818e8b0cd986716e37f4d4afdcb9890245882",
-    "sealed_at": "2026-06-08T16:02:11.120Z"
-  },
-  "completed_children_results": {
-    "POL-375": {
-      "status": "done",
-      "validation": "passed",
-      "commit": "73a5291808fc241385b8e19cc398a60ceef378a9",
-      "next_recommended_action": "continue"
-    }
-  },
-  "last_commit": "c38a71def18da5c2629322ecc9a98d22657290e6"
+  "step_cursor": "blocked",
+  "blocker": "Working tree is on `main` with 53 pre-existing uncommitted changes unrelated to POL-453 (agent-plugin work, .codex plugin files, prior Polaris run artifacts). Step 02 (prepare-branch) requires a clean checkout before creating/switching to the parent-scoped branch, and this dirty state cannot be isolated from POL-453's scope.",
+  "updated_at": "2026-07-04T02:10:56Z"
 }

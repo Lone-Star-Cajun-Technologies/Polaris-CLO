@@ -10,6 +10,8 @@ describe("LinearAdapter", () => {
     listProjects: ReturnType<typeof vi.fn>;
     listIssues: ReturnType<typeof vi.fn>;
     getIssueById: ReturnType<typeof vi.fn>;
+    getIssueStateOptions: ReturnType<typeof vi.fn>;
+    updateIssueState: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
@@ -28,6 +30,8 @@ describe("LinearAdapter", () => {
       listProjects: vi.fn(),
       listIssues: vi.fn(),
       getIssueById: vi.fn(),
+      getIssueStateOptions: vi.fn(),
+      updateIssueState: vi.fn(),
     };
 
     linearClient.listTeams.mockResolvedValue([
@@ -351,5 +355,115 @@ describe("LinearAdapter", () => {
       "Linear relation type 'related' is not mapped to dependencies (supported types: blocks, blocked_by, depends_on); ignoring.",
     );
     consoleWarnSpy.mockRestore();
+  });
+
+  describe("transitionLifecycleState", () => {
+    it("skips when lifecycleState is no_status_change", async () => {
+      const adapter = new LinearAdapter(config, linearClient);
+      const result = await adapter.transitionLifecycleState("POL-1", "no_status_change");
+
+      expect(result).toEqual({
+        applied: false,
+        skipped: true,
+        skipReason: "Lifecycle state is 'no_status_change', skipping transition",
+      });
+      expect(linearClient.getIssueStateOptions).not.toHaveBeenCalled();
+    });
+
+    it("resolves the target state by type and applies the mutation", async () => {
+      linearClient.getIssueStateOptions.mockResolvedValue({
+        currentStateId: "state-in-progress",
+        states: [
+          { id: "state-backlog", name: "Backlog", type: "backlog" },
+          { id: "state-in-progress", name: "In Progress", type: "started" },
+          { id: "state-done", name: "Done", type: "completed" },
+        ],
+      });
+      linearClient.updateIssueState.mockResolvedValue(true);
+
+      const adapter = new LinearAdapter(config, linearClient);
+      const result = await adapter.transitionLifecycleState("POL-1", "done");
+
+      expect(linearClient.updateIssueState).toHaveBeenCalledWith("POL-1", "state-done");
+      expect(result).toEqual({ applied: true, skipped: false });
+    });
+
+    it("is idempotent when the issue is already in the target state", async () => {
+      linearClient.getIssueStateOptions.mockResolvedValue({
+        currentStateId: "state-done",
+        states: [{ id: "state-done", name: "Done", type: "completed" }],
+      });
+
+      const adapter = new LinearAdapter(config, linearClient);
+      const result = await adapter.transitionLifecycleState("POL-1", "done");
+
+      expect(linearClient.updateIssueState).not.toHaveBeenCalled();
+      expect(result).toEqual({
+        applied: false,
+        skipped: true,
+        skipReason: "Issue is already in target state 'Done'",
+      });
+    });
+
+    it("skips when no workflow state maps to the target lifecycle state", async () => {
+      linearClient.getIssueStateOptions.mockResolvedValue({
+        currentStateId: "state-backlog",
+        states: [{ id: "state-backlog", name: "Backlog", type: "backlog" }],
+      });
+
+      const adapter = new LinearAdapter(config, linearClient);
+      const result = await adapter.transitionLifecycleState("POL-1", "done");
+
+      expect(result).toEqual({
+        applied: false,
+        skipped: true,
+        skipReason:
+          "No Linear workflow state on this issue's team maps to lifecycle state 'done'",
+      });
+    });
+
+    it("skips when the issue is not found", async () => {
+      linearClient.getIssueStateOptions.mockResolvedValue(null);
+
+      const adapter = new LinearAdapter(config, linearClient);
+      const result = await adapter.transitionLifecycleState("POL-1", "done");
+
+      expect(result).toEqual({
+        applied: false,
+        skipped: true,
+        skipReason: "Linear issue 'POL-1' not found",
+      });
+    });
+
+    it("returns an error result when the mutation reports failure", async () => {
+      linearClient.getIssueStateOptions.mockResolvedValue({
+        currentStateId: "state-in-progress",
+        states: [
+          { id: "state-in-progress", name: "In Progress", type: "started" },
+          { id: "state-done", name: "Done", type: "completed" },
+        ],
+      });
+      linearClient.updateIssueState.mockResolvedValue(false);
+
+      const adapter = new LinearAdapter(config, linearClient);
+      const result = await adapter.transitionLifecycleState("POL-1", "done");
+
+      expect(result).toEqual({
+        applied: false,
+        skipped: false,
+        error: "Linear issueUpdate mutation for POL-1 returned success: false",
+      });
+    });
+
+    it("returns an error result when fetching state options throws", async () => {
+      linearClient.getIssueStateOptions.mockRejectedValue(new Error("network down"));
+
+      const adapter = new LinearAdapter(config, linearClient);
+      const result = await adapter.transitionLifecycleState("POL-1", "done");
+
+      expect(result.applied).toBe(false);
+      expect(result.skipped).toBe(false);
+      expect(result.error).toContain("network down");
+    });
   });
 });

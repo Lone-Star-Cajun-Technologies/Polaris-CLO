@@ -7,6 +7,7 @@ describe("validateSlashCommandArgs", () => {
     name: "polaris-run",
     kind: "skill",
     skill: "run",
+    targetSkill: "polaris-run",
     routing: ".polaris/skills/ROUTING.md",
     args: [
       {

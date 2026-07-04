@@ -1,0 +1,5 @@
+interface:
+  display_name: "Polaris Analyze"
+  short_description: "Analyze a cluster and produce an implementation plan via the Analyst skill packet"
+  brand_color: "#6366F1"
+  default_prompt: "Use $polaris-analyze to analyze a cluster and produce an implementation plan via the Analyst skill packet."

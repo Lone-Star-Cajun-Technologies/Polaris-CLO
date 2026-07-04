@@ -1,0 +1,5 @@
+interface:
+  display_name: "Docs Ingest"
+  short_description: "Ingest raw documentation files through the Polaris SmartDocs skill packet"
+  brand_color: "#6366F1"
+  default_prompt: "Use $docs-ingest to ingest raw documentation files through the Polaris SmartDocs skill packet."
