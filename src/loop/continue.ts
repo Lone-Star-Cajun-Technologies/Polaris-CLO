@@ -528,10 +528,11 @@ export function runLoopContinue(options: ContinueOptions): void {
     // Fire-and-forget: tracker mutations must not block state checkpointing.
     // Policy default targets "in_review" (not "done") — "done" is reserved for
     // the child-merged event, applied once the delivering PR actually merges.
-    const transitionConfig = loadConfig(repoRoot);
     let transitionAdapter;
+    let transitionConfig;
     const transitionTelemetryFile = resolveTelemetryFilePath(state, repoRoot);
     try {
+      transitionConfig = loadConfig(repoRoot);
       transitionAdapter = loadTrackerAdapter(transitionConfig);
     } catch (err) {
       appendTelemetryEvent(transitionTelemetryFile, {
@@ -539,15 +540,17 @@ export function runLoopContinue(options: ContinueOptions): void {
         run_id: state.run_id,
         child_id: completedChild,
         transition_event: "child-validation-passed",
-        error: `Failed to load tracker adapter: ${err instanceof Error ? err.message : String(err)}`,
+        error: `Failed to load config or tracker adapter: ${err instanceof Error ? err.message : String(err)}`,
         timestamp: new Date().toISOString(),
       });
       transitionAdapter = null;
+      transitionConfig = null;
     }
-    new LifecycleTransitionService()
-      .applyTransitionSafe({
-        adapter: transitionAdapter,
-        policy: transitionConfig.tracker?.lifecyclePolicy,
+    if (transitionAdapter && transitionConfig) {
+      new LifecycleTransitionService()
+        .applyTransitionSafe({
+          adapter: transitionAdapter,
+          policy: transitionConfig.tracker?.lifecyclePolicy,
         taskId: completedChild,
         event: "child-validation-passed",
         evidence: {
@@ -567,7 +570,7 @@ export function runLoopContinue(options: ContinueOptions): void {
           skipped: result.skipped,
           skip_reason: result.skipReason,
           error: result.error,
-          timestamp: new Date().toISOString(),
+          timestamp: result.timestamp,
         });
       })
       .catch((err) => {
@@ -580,6 +583,7 @@ export function runLoopContinue(options: ContinueOptions): void {
           timestamp: new Date().toISOString(),
         });
       });
+    }
   }
 
   if (completedChild && completionResultFile) {

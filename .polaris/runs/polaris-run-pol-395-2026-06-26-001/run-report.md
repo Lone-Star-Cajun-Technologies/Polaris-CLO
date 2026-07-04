@@ -18,6 +18,7 @@
 ## Artifacts produced
 
 - current-state.json
+- exemptions.json
 - run-report.md
 
 ## Validation summary

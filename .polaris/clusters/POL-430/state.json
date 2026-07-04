@@ -90,14 +90,16 @@
       "validation": "passed",
       "commit": "509c403ddfece563f17e34e01c764ebb66ae1ae6",
       "next_recommended_action": "continue",
-      "result_artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-430/results/POL-431-a7ee1493-7567-4785-8e91-ec1fb12c6743.json"
+      "result_artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-430/results/POL-431-a7ee1493-7567-4785-8e91-ec1fb12c6743.json",
+      "worker_id": "polaris-run-pol-430-2026-06-30-001:POL-431:1782828529898"
     },
     "POL-432": {
       "status": "done",
       "validation": "passed",
       "commit": "a16e76e6165700be3bc6dc18361ee70ca402a6a4",
       "next_recommended_action": "continue",
-      "result_artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-430/results/POL-432-c463c05e-f445-4966-ba90-fc215012065a.json"
+      "result_artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-430/results/POL-432-c463c05e-f445-4966-ba90-fc215012065a.json",
+      "worker_id": "polaris-run-pol-430-2026-06-30-001:POL-432:1782829027798"
     }
   },
   "last_commit": "f683bfbd97f2859feeb7483328a715633c8a5766",
