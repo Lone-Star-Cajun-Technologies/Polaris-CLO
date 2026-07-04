@@ -95,6 +95,34 @@ polaris docs ingest --source <path>
 polaris docs promote
 ```
 
+### Reformatting existing smartdocs to OKF structure
+
+If you already have a `smartdocs/` directory and want to reformat its content into the OKF structure (per-directory `index.md` with `okf_version` frontmatter) without running the full 8-phase `polaris adopt` or touching any agent instruction files (`CLAUDE.md`, `AGENTS.md`, etc.), use:
+
+```bash
+# Preview what will change (safe — writes nothing)
+polaris docs reformat-okf --dry-run
+
+# Apply the migration
+polaris docs reformat-okf
+```
+
+This single command is equivalent to running these three commands in sequence:
+
+```bash
+polaris docs migrate                   # move scattered markdown into smartdocs/raw/
+polaris docs seed-index --all          # write index.md (with okf_version frontmatter) to each smartdocs/ sub-directory
+polaris docs seed-instructions --all   # write POLARIS.md drafts for directories that lack one
+```
+
+Agent instruction files (`CLAUDE.md`, `AGENTS.md`, `.agents/`, `.codex/`, `.claude/`) are never modified by any of the above commands.
+
+After reformatting you can validate the result with:
+
+```bash
+polaris docs validate-instructions
+```
+
 ---
 
 ## Configuration Reference

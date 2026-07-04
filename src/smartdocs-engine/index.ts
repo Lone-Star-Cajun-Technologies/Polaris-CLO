@@ -503,6 +503,72 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
     });
 
   docs
+    .command("reformat-okf")
+    .description(
+      "Migrate existing smartdocs to OKF structure in one step: runs migrate → seed-index --all → seed-instructions --all. " +
+      "Agent instruction files (CLAUDE.md, AGENTS.md, etc.) are never touched. " +
+      "Use --dry-run to preview changes before writing."
+    )
+    .option("--dry-run", "Preview what would change without writing any files")
+    .option("-r, --repo-root <path>", "Repository root", defaultRepoRoot)
+    .action((options: { dryRun?: boolean; repoRoot: string }) => {
+      const dryRun = options.dryRun;
+      const repoRoot = options.repoRoot;
+      const label = dryRun ? "[dry-run]" : "";
+
+      // Step 1: migrate (moves scattered markdown to smartdocs/raw/)
+      console.log(`${label ? label + " " : ""}Step 1/3: migrate`);
+      try {
+        const migrateResult = migrateDocs({ repoRoot, dryRun });
+        printMigrateResults(migrateResult);
+      } catch (err) {
+        console.error(`reformat-okf: migrate failed — ${err instanceof Error ? err.message : String(err)}`);
+        process.exit(1);
+      }
+
+      // Step 2: seed-index --all (ensures index.md with okf_version frontmatter in every smartdocs dir)
+      console.log(`\n${label ? label + " " : ""}Step 2/3: seed-index --all`);
+      try {
+        const { written, skippedExists, skippedDraft } = seedIndexAll(repoRoot, { dryRun });
+        for (const dir of written) {
+          console.log(`${dryRun ? "[dry-run] would write" : "written"}: ${dir}/index.md`);
+        }
+        for (const dir of skippedExists) {
+          console.log(`skipped (human-edited): ${dir}/index.md`);
+        }
+        for (const dir of skippedDraft) {
+          console.log(`skipped (draft exists): ${dir}/index.md`);
+        }
+        console.log(`Done. ${written.length} written, ${skippedExists.length} skipped (exists), ${skippedDraft.length} skipped (draft).`);
+      } catch (err) {
+        console.error(`reformat-okf: seed-index failed — ${err instanceof Error ? err.message : String(err)}`);
+        process.exit(1);
+      }
+
+      // Step 3: seed-instructions --all (ensures POLARIS.md drafts; never touches CLAUDE.md/AGENTS.md)
+      console.log(`\n${label ? label + " " : ""}Step 3/3: seed-instructions --all`);
+      try {
+        const { written, skippedExists, skippedDraft, skippedIneligible, skippedRoot } = seedInstructionsAll(repoRoot, { dryRun });
+        for (const dir of written) {
+          console.log(`${dryRun ? "[dry-run] would write" : "written"}: ${dir}/POLARIS.md`);
+        }
+        for (const dir of skippedExists) {
+          console.log(`skipped (human-edited): ${dir}/POLARIS.md`);
+        }
+        for (const dir of skippedDraft) {
+          console.log(`skipped (draft exists): ${dir}/POLARIS.md`);
+        }
+        const rootCount = skippedRoot ? 1 : 0;
+        console.log(`Done. ${written.length} written, ${skippedExists.length} skipped (exists), ${skippedDraft.length} skipped (draft), ${rootCount} skipped (root), ${skippedIneligible.length} skipped (ineligible).`);
+      } catch (err) {
+        console.error(`reformat-okf: seed-instructions failed — ${err instanceof Error ? err.message : String(err)}`);
+        process.exit(1);
+      }
+
+      console.log(`\nreformat-okf complete.${dryRun ? " (dry-run — no files written)" : ""}`);
+    });
+
+  docs
     .command("audit")
     .description("Scan repo for files at risk of recursive ingestion")
     .option("--json", "Emit AuditResult as JSON")
