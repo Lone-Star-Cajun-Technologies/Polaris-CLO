@@ -13,6 +13,7 @@ Command-surface assembly for the `polaris` binary. This folder defines top-level
 - `init --adopt` scaffolds root surfaces, installs bundled workspace assets, migrates instruction files with provenance, runs atlas/graph setup, writes an adoption report, and stages only commit-eligible outputs.
 - `upgrade` refreshes `POLARIS_RULES.md` for existing Polaris-managed repositories without rerunning adoption or rewriting repo-local skills.
 - SmartDocs migration now guarantees bundle-root scaffolding by creating `smartdocs/index.md` and `smartdocs/log.md` when missing, while preserving existing file content.
+- `polaris adopt consolidate --dry-run` is a zero-write guarantee: `migrateSmartDocs()` and `reconcileAgentFiles()` gate every mutating call behind `plan.dry_run` and log intended actions instead.
 
 ## Architectural Role
 This route is the external operator interface for Polaris. It exposes runtime capabilities without owning business logic, preserving separation between command UX and subsystem implementation.

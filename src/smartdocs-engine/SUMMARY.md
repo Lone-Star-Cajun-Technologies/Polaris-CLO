@@ -17,6 +17,7 @@ Smart Docs lifecycle pipeline — ingests, classifies, seeds, validates, promote
 - Spec promotion reports advisory `suggested-supersession` conflicts when a raw candidate overlaps an active doc; it does not mutate supersession frontmatter automatically.
 - SmartDocs frontmatter now reserves identity, lifecycle, governance, provenance, relationship, and future federation keys while preserving unknown extension keys.
 - Generated runtime artifacts such as `.polaris/graph/**`, SQLite files, and DB snapshots are ignored by default.
+- `polaris docs reformat-okf [--dry-run]` composes migrate → seed-index --all → seed-instructions --all into one invocation for OKF-structure migration; agent instruction files are never touched by any step.
 
 ## Relationships
 - **Upstream**: `src/map` (atlas signals for seed templates), `src/cognition` (validation after seed)
