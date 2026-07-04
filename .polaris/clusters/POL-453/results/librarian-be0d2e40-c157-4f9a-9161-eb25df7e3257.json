@@ -1,0 +1,67 @@
+{
+  "schema_version": "1.0",
+  "role": "closeout-librarian",
+  "run_id": "polaris-run-adopt-dry-run-fix-2026-07-04-001",
+  "dispatch_id": "be0d2e40-c157-4f9a-9161-eb25df7e3257",
+  "cluster_id": "POL-453",
+  "status": "success",
+  "commit_sha": "058ce2f1d03c1f38486c1a8532bb0405b482317b",
+  "commit_message": "docs(closeout): reconcile cognition for cluster POL-453\n\nRun: polaris-run-adopt-dry-run-fix-2026-07-04-001\nCluster: POL-453\nChildren: POL-454, POL-455\nFiles updated:\n- POLARIS.md: 2 files\n- SUMMARY.md: 2 files\n- docs ingested: 0\n- links repaired: 0",
+  "files_committed": [
+    "src/cli/POLARIS.md",
+    "src/cli/SUMMARY.md",
+    "src/smartdocs-engine/POLARIS.md",
+    "src/smartdocs-engine/SUMMARY.md"
+  ],
+  "drift_reconciliation": {
+    "medic_ran": false,
+    "charts_created": [],
+    "drift_observations": [
+      { "type": "missing_documentation", "target": "src/cli/POLARIS.md", "severity": "medium" },
+      { "type": "missing_documentation", "target": "src/smartdocs-engine/POLARIS.md", "severity": "medium" },
+      { "type": "summary_outdated", "target": "src/cli/SUMMARY.md", "severity": "low" },
+      { "type": "summary_outdated", "target": "src/smartdocs-engine/SUMMARY.md", "severity": "low" }
+    ],
+    "chart_links_required": false,
+    "charts_linked": []
+  },
+  "polaris_md_updates": [
+    {
+      "file": "src/cli/POLARIS.md",
+      "action": "update",
+      "change_summary": "Added editing-rule bullet documenting that `polaris adopt consolidate --dry-run` is a zero-write guarantee across migrateSmartDocs()/reconcileAgentFiles() (POL-454)."
+    },
+    {
+      "file": "src/smartdocs-engine/POLARIS.md",
+      "action": "update",
+      "change_summary": "Documented new `polaris docs reformat-okf [--dry-run]` composed command in index.ts and its constraint never to touch agent instruction files (POL-455)."
+    }
+  ],
+  "summary_md_updates": [
+    {
+      "file": "src/cli/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Extended Current State/Key Constraints note with the consolidate --dry-run zero-write guarantee."
+    },
+    {
+      "file": "src/smartdocs-engine/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Added Key Behaviors bullet for the reformat-okf composed command."
+    },
+    { "file": "src/SUMMARY.md", "action": "no_change" }
+  ],
+  "docs_ingested": [],
+  "docs_archived": [],
+  "yaml_updates": [],
+  "cognition_archived": [],
+  "link_validation": {
+    "total_checked": 0,
+    "valid": 0,
+    "broken": 0,
+    "repaired": 0,
+    "unrepairable": []
+  },
+  "blockers": [],
+  "reconciled_at": "2026-07-04T02:51:56Z",
+  "evidence_summary": "Cluster POL-453 (children POL-454, POL-455) fixed dry-run write gating in polaris adopt consolidate and added the polaris docs reformat-okf composed command. Both changes were operational constraints not yet reflected in cognition, so src/cli/POLARIS.md and src/cli/SUMMARY.md were updated to document the consolidate --dry-run zero-write guarantee, and src/smartdocs-engine/POLARIS.md and src/smartdocs-engine/SUMMARY.md were updated to document reformat-okf and its guarantee to never touch agent instruction files. No cognition notes, run report, or Medic charts existed for this cluster. Checked smartdocs/raw/ for candidate documents related to this work; none were found specific to the dry-run fix or reformat-okf, so no doc ingestion/promotion occurred. Root-level src/SUMMARY.md and src/POLARIS.md were reviewed and found still accurate, no change needed. All updates committed in a single librarian commit (058ce2f). No blockers."
+}

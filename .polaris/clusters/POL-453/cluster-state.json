@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0",
+  "cluster_id": "POL-453",
+  "state_generation": 6,
+  "child_states": [
+    {
+      "id": "POL-454",
+      "status": "done",
+      "commit": "2bde15abad151e48bb5309b0df66695eaa4c94a5"
+    },
+    {
+      "id": "POL-455",
+      "status": "done",
+      "commit": "24d6b31712ac1efef1974f2589e13f2a6cca4129"
+    }
+  ],
+  "claim_metadata": {},
+  "packet_pointers": {
+    "POL-454": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-453/packets/POL-454-a43add02-e91c-4f9b-bba7-02012955e9c8.json",
+    "POL-455": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-453/packets/POL-455-fc989265-f68a-4256-9377-4e0cd0b42c95.json"
+  },
+  "result_pointers": {
+    "POL-454": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-453/results/POL-454-a43add02-e91c-4f9b-bba7-02012955e9c8.json",
+    "POL-455": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-453/results/POL-455-fc989265-f68a-4256-9377-4e0cd0b42c95.json"
+  },
+  "validation_results": {
+    "POL-454": {
+      "passed": true,
+      "output": "passed"
+    },
+    "POL-455": {
+      "passed": true,
+      "output": "passed"
+    }
+  },
+  "commits": {
+    "POL-454": "2bde15abad151e48bb5309b0df66695eaa4c94a5",
+    "POL-455": "24d6b31712ac1efef1974f2589e13f2a6cca4129"
+  },
+  "tracker_mutations": {},
+  "blockers": [],
+  "delivery_branch": "philmeaux/pol-453-implement-fix-adopt-dry-run-gating-add-okf-docs-only",
+  "base_branch": "main"
+}
