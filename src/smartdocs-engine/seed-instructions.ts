@@ -320,6 +320,10 @@ export function generateDirectoryIndex(
   const files = listConceptFiles(absDir);
 
   const lines: string[] = [
+    "---",
+    "okf_version: \"0.1\"",
+    "---",
+    "",
     DRAFT_MARKER,
     `# ${dirLabel}`,
     "",

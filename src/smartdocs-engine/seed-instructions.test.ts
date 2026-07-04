@@ -444,10 +444,10 @@ describe("generateDirectoryIndex", () => {
   });
   afterEach(teardown);
 
-  it("has no frontmatter and includes draft marker", () => {
+  it("has okf_version frontmatter and includes draft marker", () => {
     const content = generateDirectoryIndex("smartdocs/architecture", TMP);
-    expect(content.startsWith(DRAFT_MARKER)).toBe(true);
-    expect(content.includes("---")).toBe(false);
+    expect(content.startsWith('---\nokf_version: "0.1"\n---\n')).toBe(true);
+    expect(content.includes(DRAFT_MARKER)).toBe(true);
   });
 
   it("lists concept files using description frontmatter", () => {
@@ -504,8 +504,8 @@ describe("seedIndex", () => {
     const outPath = join(TMP, "smartdocs/architecture/index.md");
     expect(existsSync(outPath)).toBe(true);
     const content = readFileSync(outPath, "utf-8");
-    expect(content.startsWith(DRAFT_MARKER)).toBe(true);
-    expect(content.includes("---")).toBe(false);
+    expect(content.startsWith('---\nokf_version: "0.1"\n---\n')).toBe(true);
+    expect(content.includes(DRAFT_MARKER)).toBe(true);
   });
 
   it("returns skipped-exists when human-edited index.md present", () => {
