@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { LinearAdapter } from "../../../../src/tracker/adapters/linear/index.js";
 import type { PolarisConfig } from "../../../../src/config/schema.js";
 
@@ -134,12 +134,28 @@ describe("LinearAdapter Capabilities", () => {
       expect(result.skipReason).toContain("no_status_change");
     });
 
-    it("should return skip result for implemented transitions", async () => {
-      const result = await adapter.transitionLifecycleState("TEST-1", "in_progress");
+    it("applies a real transition when a workflow state maps to the target lifecycle state", async () => {
+      const linearClient = {
+        listTeams: vi.fn(),
+        listProjects: vi.fn(),
+        listIssues: vi.fn(),
+        getIssueById: vi.fn(),
+        getIssueStateOptions: vi.fn().mockResolvedValue({
+          currentStateId: "state-backlog",
+          states: [
+            { id: "state-backlog", name: "Backlog", type: "backlog" },
+            { id: "state-in-progress", name: "In Progress", type: "started" },
+          ],
+        }),
+        updateIssueState: vi.fn().mockResolvedValue(true),
+      };
+      const adapterWithClient = new LinearAdapter(mockConfig, linearClient);
 
-      expect(result.applied).toBe(false);
-      expect(result.skipped).toBe(true);
-      expect(result.skipReason).toContain("not yet implemented");
+      const result = await adapterWithClient.transitionLifecycleState("TEST-1", "in_progress");
+
+      expect(linearClient.updateIssueState).toHaveBeenCalledWith("TEST-1", "state-in-progress");
+      expect(result.applied).toBe(true);
+      expect(result.skipped).toBe(false);
     });
   });
 
