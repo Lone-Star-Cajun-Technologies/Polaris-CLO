@@ -141,6 +141,25 @@ function normalizeStatus(step: AdoptionStep, status: AdoptionStep["status"], com
   };
 }
 
+const SMARTDOCS_BUNDLE_INDEX_CONTENT = `---\nokf_version: "0.1"\n---\n\n# SmartDocs — Polaris Cognition Bundle\n\n# Governance\n\n- [Docs authority model](specs/active/docs-authority-model.md)\n- [Doctrine](doctrine/active/)\n\n# Routes\n\n<!-- Routes placeholder: dynamic file-routes.json generation deferred. -->\n`;
+
+const SMARTDOCS_BUNDLE_LOG_CONTENT = "# SmartDocs — Change Log\n";
+
+export function scaffoldBundleRoot(repoRoot: string): void {
+  const smartdocsDir = join(repoRoot, "smartdocs");
+  mkdirSync(smartdocsDir, { recursive: true });
+
+  const indexPath = join(smartdocsDir, "index.md");
+  if (!existsSync(indexPath)) {
+    writeFileSync(indexPath, SMARTDOCS_BUNDLE_INDEX_CONTENT, "utf-8");
+  }
+
+  const logPath = join(smartdocsDir, "log.md");
+  if (!existsSync(logPath)) {
+    writeFileSync(logPath, SMARTDOCS_BUNDLE_LOG_CONTENT, "utf-8");
+  }
+}
+
 export function migrateSmartDocs(plan: AdoptionPlan, repoRoot = resolve(process.cwd())): Promise<void> {
   const effectivePlan = loadPlan(repoRoot, plan);
   const provenanceRecords: SmartDocsMigrationRecord[] = [];
@@ -237,6 +256,7 @@ export function migrateSmartDocs(plan: AdoptionPlan, repoRoot = resolve(process.
     }
   }
 
+  scaffoldBundleRoot(repoRoot);
   savePlan(repoRoot, effectivePlan);
   saveProvenance(repoRoot, provenanceRecords);
   Object.assign(plan, effectivePlan);

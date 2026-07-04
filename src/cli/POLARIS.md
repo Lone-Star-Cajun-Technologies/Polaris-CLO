@@ -8,7 +8,7 @@ The CLI entry point for Polaris. It wires the `polaris` binary, registers all to
 
 - `index.ts` — binary entry point; registers subsystem commands via `addCommand()`
 - `graph.ts` — `polaris graph build|query|impact` command group and output formatting
-- `adopt-*.ts` — adoption scanning, workspace asset installation, instruction migration, report generation, `POLARIS_RULES.md` generation/refresh helpers, and safe staging helpers for `polaris init --adopt`
+- `adopt-*.ts` — adoption scanning, workspace asset installation, instruction migration, report generation, `POLARIS_RULES.md` generation/refresh helpers, safe staging helpers for `polaris init --adopt`, and SmartDocs bundle-root scaffolding (`smartdocs/index.md`, `smartdocs/log.md`) via `migrateSmartDocs()`
 - `upgrade-command.ts` — `polaris upgrade`; refreshes `POLARIS_RULES.md` to the current CLI version while preserving the repository overview
 - `adoption-context.ts` — operator-answer model; loads/saves `.polaris/adoption/operator-context.json` (trusted_docs, stale_docs, never_touch, priority_systems, instruction_file_intent), kept separate from scan evidence
 - `agent-setup.ts` — `runAgentSetup()` (interactive role/provider configuration) and `resolveForeman()` (resolves or prompts for the Foreman provider, persists to config); used by `init.ts` and `adopt-command.ts` to wire Foreman bootstrap dispatch
@@ -35,6 +35,7 @@ The CLI entry point for Polaris. It wires the `polaris` binary, registers all to
 - Adoption must install bundled workspace assets, preserve instruction-file provenance, point agent files at `POLARIS_RULES.md`, and filter runtime scratch before staging.
 - `polaris upgrade` is the maintenance path for existing Polaris-managed repos; it refreshes `POLARIS_RULES.md` only, uses the version stamp for idempotency, and must not rewrite repo-local skills or rerun full adoption.
 - Adoption phases run in order: scan → interview → agents → (approval gates) → consolidate → map → skills → rules → canon. The interview phase writes operator answers to `adoption-context.ts` separately from scan evidence; plan generation in `adoption-plan.ts` merges both. `requireApprovalGates()` in `adopt-approve.ts` must run before any mutation phase (doc-movement, instruction-file, graph-root, route-scaffold); each gate previews the category diff and requires explicit `y` approval.
+- `migrateSmartDocs()` must call bundle-root scaffolding unconditionally so `smartdocs/index.md` and `smartdocs/log.md` exist after init/adopt flows; scaffolding may create missing files but must never overwrite existing ones.
 - `resolveForeman()` is the canonical Foreman provider resolution path: if `execution.providerPolicy.foreman.providers[0]` is already set, it returns immediately; otherwise it prompts once and persists the choice. Use this (not ad-hoc config reads) whenever Foreman assignment is needed.
 - Autoresearch commands are dev-gated via `assertPolarisDevContext()` from `src/autoresearch/dev-gate.ts`; call it at the start of every autoresearch action handler before touching any file system or network resource.
 - Foreman bootstrap dispatch from `init.ts` and `adopt-command.ts` is best-effort: dispatch errors must not block the init/adopt flow.
