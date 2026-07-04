@@ -6,6 +6,7 @@ build/
 !.codex/plugins/**/*.js
 .env
 docs/Polaris/.obsidian/
+smartdocs/.obsidian/
 docs/superpowers/
 .claude/worktrees/
 
