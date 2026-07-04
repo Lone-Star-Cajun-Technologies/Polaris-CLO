@@ -19,6 +19,8 @@ export interface SkillSlashCommand {
   name: string;
   kind: "skill";
   skill: SkillName;
+  /** Canonical .polaris/skills directory for this user-facing verb. */
+  targetSkill: string;
   /** Path to the routing document that resolves the verb to a skill packet path. */
   routing: string;
   args: SlashCommandArg[];
@@ -40,6 +42,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     name: "polaris-run",
     kind: "skill",
     skill: "run",
+    targetSkill: "polaris-run",
     routing: ".polaris/skills/ROUTING.md",
     args: [
       {
@@ -54,6 +57,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     name: "polaris-analyze",
     kind: "skill",
     skill: "analyze",
+    targetSkill: "polaris-analyze",
     routing: ".polaris/skills/ROUTING.md",
     args: [
       {
@@ -63,6 +67,15 @@ export const SLASH_COMMANDS: SlashCommand[] = [
       },
     ],
     description: "Analyze a cluster and produce an implementation plan via the Analyst skill packet",
+  },
+  {
+    name: "polaris-finalize",
+    kind: "skill",
+    skill: "run",
+    targetSkill: "polaris-run",
+    routing: ".polaris/skills/ROUTING.md",
+    args: [],
+    description: "Finalize the active Polaris run through the Foreman skill packet",
   },
   {
     name: "polaris-init",
@@ -81,7 +94,8 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   {
     name: "polaris-reconcile",
     kind: "skill",
-    skill: "triage",
+    skill: "reconcile",
+    targetSkill: "polaris-reconcile",
     routing: ".polaris/skills/ROUTING.md",
     args: [
       {
@@ -93,11 +107,44 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     description: "Reconcile project cognition via the triage skill packet",
   },
   {
+    name: "polaris-catalog",
+    kind: "skill",
+    skill: "catalog",
+    targetSkill: "polaris-catalog",
+    routing: ".polaris/skills/ROUTING.md",
+    args: [
+      {
+        name: "cluster_id",
+        required: true,
+        description: "Cluster ID to catalog (e.g., POL-257)",
+      },
+    ],
+    description: "Catalog project cognition and SmartDocs via the catalog skill packet",
+  },
+  {
     name: "polaris-status",
     kind: "cli",
     command: "polaris status",
     args: [],
     description: "Print the current Polaris loop run state summary",
+  },
+  {
+    name: "docs-ingest",
+    kind: "skill",
+    skill: "ingest",
+    targetSkill: "docs-ingest",
+    routing: ".polaris/skills/ROUTING.md",
+    args: [],
+    description: "Ingest raw documentation files through the Polaris SmartDocs skill packet",
+  },
+  {
+    name: "docs-promote",
+    kind: "skill",
+    skill: "promote",
+    targetSkill: "docs-promote",
+    routing: ".polaris/skills/ROUTING.md",
+    args: [],
+    description: "Review and promote candidate SmartDocs through the Polaris governance skill packet",
   },
 ];
 

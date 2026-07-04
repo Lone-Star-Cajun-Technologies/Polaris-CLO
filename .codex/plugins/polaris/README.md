@@ -1,6 +1,8 @@
-# polaris — Codex plugin
+# polaris - Codex plugin
 
-Codex plugin that exposes compact, read-only Polaris status helpers within a Codex worker session. It intentionally does not expose direct run, ungated loop continuation, or finalize delivery as casual tools.
+Codex plugin that exposes governed Polaris skill wrappers and compact, read-only status helpers within a Codex worker session.
+
+The skill wrappers are thin routing surfaces. They read `.polaris/skills/ROUTING.md`, load the canonical `.polaris/skills/<target-skill>/SKILL.md`, run the authorized skill packet bootloader, and then follow the canonical `chain.md`. They do not implement a parallel Polaris runtime.
 
 ## Installation prerequisite
 
@@ -53,7 +55,22 @@ The MCP safety model exposes `polaris_loop_continue_dry_run` and `polaris_loop_c
 
 `polaris finalize` remains manual/operator-only. Do not expose finalize as a normal Codex plugin tool until a confirmed finalize approval flow exists.
 
-## Usage from Codex
+## Available skills
+
+| Skill | Canonical target | Bootloader | Description |
+|------|------------------|------------|-------------|
+| `$polaris-run` | `.polaris/skills/polaris-run/` | `polaris skill packet run <cluster_id>` | Execute a governed Polaris run cluster |
+| `$polaris-analyze` | `.polaris/skills/polaris-analyze/` | `polaris skill packet analyze <cluster_id>` | Analyze an issue and produce an implementation plan |
+| `$polaris-finalize` | `.polaris/skills/polaris-run/` | `polaris skill packet run` | Enter the Foreman final-delivery path for the active run |
+| `$polaris-reconcile` | `.polaris/skills/polaris-reconcile/` | `polaris skill packet reconcile <target>` | Reconcile packet-scoped project cognition |
+| `$polaris-catalog` | `.polaris/skills/polaris-catalog/` | `polaris skill packet catalog <cluster_id>` | Catalog cognition and SmartDocs through a packet |
+| `$docs-ingest` | `.polaris/skills/docs-ingest/` | `polaris skill packet ingest` | Ingest raw SmartDocs documents |
+| `$docs-promote` | `.polaris/skills/docs-promote/` | `polaris skill packet promote` | Review and promote candidate SmartDocs |
+| `$polaris-tools` | `.codex/plugins/polaris/skills/polaris-tools/` | n/a | Read-only compact status helper |
+
+All user-facing Polaris skill commands must follow `.polaris/skills/ROUTING.md` before any repository inspection or runtime-state reads.
+
+## Status helper usage from Codex
 
 Invoke the helper script from the repo root:
 

@@ -4,7 +4,7 @@ import * as path from "path";
 import { describe, expect, it } from "vitest";
 import { SLASH_COMMANDS } from "./commands.js";
 import { SHIM_VERSION } from "./claude-generator.js";
-import { detectShimDrift, syncShims } from "./sync.js";
+import { detectShimDrift, syncCodexPluginSkills, syncShims } from "./sync.js";
 
 function makeTmpDir(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), "polaris-sync-test-"));
@@ -143,6 +143,23 @@ describe("syncShims", () => {
       expect(fs.existsSync(orphanPath)).toBe(true);
       syncShims(dir);
       expect(fs.existsSync(orphanPath)).toBe(false);
+    } finally {
+      fs.rmSync(dir, { recursive: true });
+    }
+  });
+});
+
+describe("syncCodexPluginSkills", () => {
+  it("writes plugin skill wrappers for all skill-backed commands", () => {
+    const dir = makeTmpDir();
+    try {
+      const { written } = syncCodexPluginSkills(dir);
+      const skillCommands = SLASH_COMMANDS.filter((command) => command.kind === "skill");
+      expect(written).toHaveLength(skillCommands.length * 2);
+      for (const command of skillCommands) {
+        expect(fs.existsSync(path.join(dir, command.name, "SKILL.md"))).toBe(true);
+        expect(fs.existsSync(path.join(dir, command.name, "agents", "openai.yaml"))).toBe(true);
+      }
     } finally {
       fs.rmSync(dir, { recursive: true });
     }

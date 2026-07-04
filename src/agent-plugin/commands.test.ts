@@ -6,13 +6,17 @@ describe("slash-command manifest", () => {
   const expectedNames = [
     "polaris-run",
     "polaris-analyze",
+    "polaris-finalize",
     "polaris-init",
     "polaris-adopt",
     "polaris-reconcile",
+    "polaris-catalog",
     "polaris-status",
+    "docs-ingest",
+    "docs-promote",
   ];
 
-  it("covers run, analyze, init, adopt, reconcile, and status", () => {
+  it("covers routed Polaris commands and setup/status helpers", () => {
     expect(SLASH_COMMANDS.map((command) => command.name)).toEqual(expectedNames);
   });
 
@@ -50,10 +54,32 @@ describe("slash-command manifest", () => {
     expect(SLASH_COMMANDS.find((command) => command.name === "polaris-reconcile")?.args).toEqual([
       { name: "target", required: true, description: expect.any(String) },
     ]);
+    expect(SLASH_COMMANDS.find((command) => command.name === "polaris-catalog")?.args).toEqual([
+      { name: "cluster_id", required: true, description: expect.any(String) },
+    ]);
 
     for (const name of ["polaris-init", "polaris-adopt", "polaris-status"]) {
       const command = SLASH_COMMANDS.find((candidate) => candidate.name === name);
       expect(command?.args).toEqual([]);
     }
+  });
+
+  it("maps skill-backed verbs to canonical Polaris skill directories", () => {
+    const skillTargets = Object.fromEntries(
+      SLASH_COMMANDS.filter((command) => command.kind === "skill").map((command) => [
+        command.name,
+        command.targetSkill,
+      ]),
+    );
+
+    expect(skillTargets).toEqual({
+      "polaris-run": "polaris-run",
+      "polaris-analyze": "polaris-analyze",
+      "polaris-finalize": "polaris-run",
+      "polaris-reconcile": "polaris-reconcile",
+      "polaris-catalog": "polaris-catalog",
+      "docs-ingest": "docs-ingest",
+      "docs-promote": "docs-promote",
+    });
   });
 });

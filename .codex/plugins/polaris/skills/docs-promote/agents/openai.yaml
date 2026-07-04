@@ -1,0 +1,5 @@
+interface:
+  display_name: "Docs Promote"
+  short_description: "Review and promote candidate SmartDocs through the Polaris governance skill packet"
+  brand_color: "#6366F1"
+  default_prompt: "Use $docs-promote to review and promote candidate SmartDocs through the Polaris governance skill packet."

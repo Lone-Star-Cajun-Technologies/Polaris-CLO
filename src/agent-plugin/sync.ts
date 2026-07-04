@@ -2,6 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { SLASH_COMMANDS } from "./commands.js";
 import { generateAllClaudeShims, SHIM_VERSION } from "./claude-generator.js";
+import { generateAllCodexPluginSkills } from "./codex-generator.js";
 
 /**
  * Workspace sync and versioning for generated agent-plugin shims.
@@ -91,4 +92,14 @@ export function syncShims(outDir: string = ".claude/commands"): SyncResult {
     }
   }
   return { written, drift };
+}
+
+export interface CodexPluginSyncResult {
+  written: string[];
+}
+
+export function syncCodexPluginSkills(
+  outDir: string = ".codex/plugins/polaris/skills",
+): CodexPluginSyncResult {
+  return { written: generateAllCodexPluginSkills(outDir) };
 }

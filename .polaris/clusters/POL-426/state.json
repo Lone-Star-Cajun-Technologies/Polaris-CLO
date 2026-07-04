@@ -1,0 +1,136 @@
+{
+  "schema_version": "1.0",
+  "run_id": "polaris-run-pol-426-2026-06-30-001",
+  "cluster_id": "POL-426",
+  "skill": "polaris-run",
+  "branch": "pol-426-delivery",
+  "session_type": "implement",
+  "active_child": "",
+  "completed_children": [
+    "POL-428",
+    "POL-427"
+  ],
+  "open_children": [],
+  "open_children_meta": {
+    "POL-426": {
+      "title": "Implement: Fix autoresearch scoring evidence collection"
+    },
+    "POL-428": {
+      "title": "Fix: Correct gateForemanResentPacket semantics for multi-session runs",
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-426/results/POL-428-17c54f38-f944-46a8-a9ad-5d638b00231e.json",
+      "dispatch_record": {
+        "dispatch_id": "17c54f38-f944-46a8-a9ad-5d638b00231e",
+        "child_id": "POL-428",
+        "run_id": "polaris-run-pol-426-2026-06-30-001",
+        "cluster_id": "POL-426",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-426/packets/POL-428-17c54f38-f944-46a8-a9ad-5d638b00231e.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-426/results/POL-428-17c54f38-f944-46a8-a9ad-5d638b00231e.json",
+        "provider": "devin",
+        "dispatched_at": "2026-06-30T15:18:13.423Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-pol-426-2026-06-30-001:POL-428:1782832693423",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    },
+    "POL-427": {
+      "title": "Fix: Load WorkerResultContracts from state and filter non-worker result artifacts",
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-426/results/POL-427-6b045844-20a9-4ef4-b1fa-5709a0ba9ee8.json",
+      "dispatch_record": {
+        "dispatch_id": "6b045844-20a9-4ef4-b1fa-5709a0ba9ee8",
+        "child_id": "POL-427",
+        "run_id": "polaris-run-pol-426-2026-06-30-001",
+        "cluster_id": "POL-426",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-426/packets/POL-427-6b045844-20a9-4ef4-b1fa-5709a0ba9ee8.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-426/results/POL-427-6b045844-20a9-4ef4-b1fa-5709a0ba9ee8.json",
+        "provider": "devin",
+        "dispatched_at": "2026-06-30T15:24:12.211Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-pol-426-2026-06-30-001:POL-427:1782833052211",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    }
+  },
+  "step_cursor": "checkpoint",
+  "context_budget": {
+    "children_completed": 2,
+    "max_children_per_session": 1
+  },
+  "status": "cluster-complete",
+  "next_open_child": null,
+  "artifact_dir": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run",
+  "dispatch_boundary": {
+    "dispatch_epoch": 2,
+    "continue_epoch": 2,
+    "last_dispatched_child": "POL-427"
+  },
+  "run_bootstrap_seal": {
+    "sealer": "polaris-loop-bootstrap",
+    "run_id": "polaris-run-pol-426-2026-06-30-001",
+    "cluster_id": "POL-426",
+    "open_children_sha": "4789a8a91aba025ef2e477f418965849ced6326e780346520cdc2fd3d11f1748",
+    "sealed_at": "2026-06-30T15:17:58.335Z"
+  },
+  "last_commit": "e3b5561de50bbfac4bb61acbd9cee42c0b291034",
+  "completed_children_results": {
+    "POL-428": {
+      "child_id": "POL-428",
+      "status": "done",
+      "validation": "passed",
+      "commit": "f2d400110b063775bacf83c7e41d29984510cb4e",
+      "next_recommended_action": "continue",
+      "run_id": "polaris-run-pol-426-2026-06-30-001",
+      "cluster_id": "POL-426",
+      "skill_name": "polaris-run",
+      "role": "worker",
+      "provider": "devin",
+      "packet_hash": "6cf1e099a96fdcde7f2331b37329b708055bdf4b60a3d51f93ebac38a4afe89a",
+      "worker_id": "polaris-run-pol-426-2026-06-30-001:POL-428:1782832693423",
+      "escalation_count": 0,
+      "heartbeat_count": 7,
+      "result_artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-426/results/POL-428-17c54f38-f944-46a8-a9ad-5d638b00231e.json",
+      "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-426/packets/POL-428-17c54f38-f944-46a8-a9ad-5d638b00231e.json",
+      "telemetry_path": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-426-2026-06-30-001/telemetry.jsonl",
+      "user_intervened": null,
+      "foreman_intervened": null,
+      "dispatch_epoch": 1,
+      "session_pointer": null
+    },
+    "POL-427": {
+      "child_id": "POL-427",
+      "status": "done",
+      "validation": "passed",
+      "commit": "e3b5561de50bbfac4bb61acbd9cee42c0b291034",
+      "next_recommended_action": "continue",
+      "run_id": "polaris-run-pol-426-2026-06-30-001",
+      "cluster_id": "POL-426",
+      "skill_name": "polaris-run",
+      "role": "worker",
+      "provider": "devin",
+      "packet_hash": "7820b733115cd2e92b5657befd23d12a16c47be769a54b5d176624af7c649ac5",
+      "worker_id": "polaris-run-pol-426-2026-06-30-001:POL-427:1782833052211",
+      "escalation_count": 0,
+      "heartbeat_count": 6,
+      "result_artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-426/results/POL-427-6b045844-20a9-4ef4-b1fa-5709a0ba9ee8.json",
+      "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-426/packets/POL-427-6b045844-20a9-4ef4-b1fa-5709a0ba9ee8.json",
+      "telemetry_path": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-426-2026-06-30-001/telemetry.jsonl",
+      "user_intervened": null,
+      "foreman_intervened": null,
+      "dispatch_epoch": 2,
+      "session_pointer": null
+    }
+  }
+}

@@ -1,5 +1,5 @@
 {
-  "scan_date": "2026-06-10T00:54:47.535Z",
+  "scan_date": "2026-07-04T01:59:41.554Z",
   "repo_state": "polaris-enabled",
   "package_manager": "npm",
   "source_roots": [
@@ -16,7 +16,7 @@
     "npm run typecheck"
   ],
   "package_scripts": {
-    "build": "tsc && cp -r src/workspace dist/workspace",
+    "build": "tsc && rm -rf dist/workspace && cp -r src/workspace dist/workspace && cp .codex/plugins/polaris/skills/polaris-tools/tools.js dist/workspace/.polaris/skills/polaris-tools/tools.js",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit --project tsconfig.typecheck.json",
     "test": "vitest run",
@@ -69,6 +69,8 @@
   "existing_smartdocs_dirs": [
     "smartdocs/",
     "smartdocs/.obsidian/",
+    "smartdocs/.tmp.drivedownload/",
+    "smartdocs/.tmp.driveupload/",
     "smartdocs/architecture/",
     "smartdocs/audits/",
     "smartdocs/audits/findings/",
@@ -98,6 +100,9 @@
     ".agents/skills/grill-with-docs/ADR-FORMAT.md",
     ".claude/skills/grill-with-docs/ADR-FORMAT.md",
     "docs/superpowers/specs/2026-06-09-workspace-asset-bundling-design.md",
+    "docs/superpowers/specs/2026-06-11-interactive-governance-smartdocs-ingest-design.md",
+    "docs/superpowers/specs/2026-06-12-polaris-docs-review-design.md",
+    "docs/superpowers/specs/2026-06-13-polaris-docs-triage-design.md",
     "foreman-worker-architecture.md",
     "smartdocs/architecture/2026-05-25-claude-plugin-runtime-integration.md",
     "smartdocs/architecture/2026-06-04-pol-313-dispatch-failures.md",
@@ -113,9 +118,17 @@
     "smartdocs/doctrine/active/2026-06-04-polaris-adoption-architecture-design.md",
     "smartdocs/doctrine/active/2026-06-05-adoption-architecture-final-decisions.md",
     "smartdocs/doctrine/active/smartdocs-summary-architecture.md",
+    "smartdocs/raw/pol-390-new-repo-setup-interview-design.md",
+    "smartdocs/raw/pol-391-existing-repo-operator-interview-design.md",
+    "smartdocs/raw/pol-392-foreman-assignment-bootstrap-handoff-design.md",
+    "smartdocs/raw/pol-393-agent-plugin-slash-command-design.md",
+    "smartdocs/raw/pol-442-smartdocs-okf-redesign-analysis.md",
+    "smartdocs/raw/smartdocs-2-0-architecture.md",
     "smartdocs/raw/spec/multi-language-graph-architecture.md",
     "smartdocs/specs/active/foreman-worker-architecture.md",
     "smartdocs/specs/active/mcp-confirmed-dispatch-architecture.md",
+    "smartdocs/specs/active/pol-390-new-repo-setup-interview-design.md",
+    "smartdocs/specs/active/pol-391-existing-repo-operator-interview-design.md",
     "smartdocs/specs/raw/pol-325-codegraph-architecture.md"
   ],
   "likely_canonical_folders": [
@@ -169,6 +182,54 @@
       "suggested_destination": "smartdocs/raw/SKILL.md",
       "confidence": 0.95,
       "has_frontmatter": true,
+      "estimated_risk": "low"
+    },
+    {
+      "path": ".claude/commands/polaris-adopt.md",
+      "kind": "doc",
+      "suggested_destination": "smartdocs/raw/polaris-adopt.md",
+      "confidence": 0.7,
+      "has_frontmatter": false,
+      "estimated_risk": "low"
+    },
+    {
+      "path": ".claude/commands/polaris-analyze.md",
+      "kind": "doc",
+      "suggested_destination": "smartdocs/raw/polaris-analyze.md",
+      "confidence": 0.7,
+      "has_frontmatter": false,
+      "estimated_risk": "low"
+    },
+    {
+      "path": ".claude/commands/polaris-init.md",
+      "kind": "doc",
+      "suggested_destination": "smartdocs/raw/polaris-init.md",
+      "confidence": 0.7,
+      "has_frontmatter": false,
+      "estimated_risk": "low"
+    },
+    {
+      "path": ".claude/commands/polaris-reconcile.md",
+      "kind": "doc",
+      "suggested_destination": "smartdocs/raw/polaris-reconcile.md",
+      "confidence": 0.7,
+      "has_frontmatter": false,
+      "estimated_risk": "low"
+    },
+    {
+      "path": ".claude/commands/polaris-run.md",
+      "kind": "doc",
+      "suggested_destination": "smartdocs/raw/polaris-run.md",
+      "confidence": 0.7,
+      "has_frontmatter": false,
+      "estimated_risk": "low"
+    },
+    {
+      "path": ".claude/commands/polaris-status.md",
+      "kind": "doc",
+      "suggested_destination": "smartdocs/raw/polaris-status.md",
+      "confidence": 0.7,
+      "has_frontmatter": false,
       "estimated_risk": "low"
     },
     {
@@ -289,6 +350,62 @@
       "suggested_destination": "smartdocs/raw/README.md",
       "confidence": 0.7,
       "has_frontmatter": false,
+      "estimated_risk": "low"
+    },
+    {
+      "path": ".codex/plugins/polaris/skills/docs-ingest/SKILL.md",
+      "kind": "doc",
+      "suggested_destination": "smartdocs/raw/SKILL.md",
+      "confidence": 0.95,
+      "has_frontmatter": true,
+      "estimated_risk": "low"
+    },
+    {
+      "path": ".codex/plugins/polaris/skills/docs-promote/SKILL.md",
+      "kind": "doc",
+      "suggested_destination": "smartdocs/raw/SKILL.md",
+      "confidence": 0.95,
+      "has_frontmatter": true,
+      "estimated_risk": "low"
+    },
+    {
+      "path": ".codex/plugins/polaris/skills/polaris-analyze/SKILL.md",
+      "kind": "doc",
+      "suggested_destination": "smartdocs/raw/SKILL.md",
+      "confidence": 0.95,
+      "has_frontmatter": true,
+      "estimated_risk": "low"
+    },
+    {
+      "path": ".codex/plugins/polaris/skills/polaris-catalog/SKILL.md",
+      "kind": "doc",
+      "suggested_destination": "smartdocs/raw/SKILL.md",
+      "confidence": 0.95,
+      "has_frontmatter": true,
+      "estimated_risk": "low"
+    },
+    {
+      "path": ".codex/plugins/polaris/skills/polaris-finalize/SKILL.md",
+      "kind": "doc",
+      "suggested_destination": "smartdocs/raw/SKILL.md",
+      "confidence": 0.95,
+      "has_frontmatter": true,
+      "estimated_risk": "low"
+    },
+    {
+      "path": ".codex/plugins/polaris/skills/polaris-reconcile/SKILL.md",
+      "kind": "doc",
+      "suggested_destination": "smartdocs/raw/SKILL.md",
+      "confidence": 0.95,
+      "has_frontmatter": true,
+      "estimated_risk": "low"
+    },
+    {
+      "path": ".codex/plugins/polaris/skills/polaris-run/SKILL.md",
+      "kind": "doc",
+      "suggested_destination": "smartdocs/raw/SKILL.md",
+      "confidence": 0.95,
+      "has_frontmatter": true,
       "estimated_risk": "low"
     },
     {
@@ -452,6 +569,14 @@
       "estimated_risk": "low"
     },
     {
+      "path": ".polaris/adoption-plan.md",
+      "kind": "doc",
+      "suggested_destination": "smartdocs/raw/adoption-plan.md",
+      "confidence": 0.7,
+      "has_frontmatter": false,
+      "estimated_risk": "low"
+    },
+    {
       "path": ".polaris/bootstrap/POLARIS.md",
       "kind": "doc",
       "suggested_destination": "smartdocs/raw/POLARIS.md",
@@ -580,7 +705,31 @@
       "estimated_risk": "low"
     },
     {
+      "path": ".polaris/runs/polaris-run-autoresearch-evidence-loop-2026-06-29-002/run-report.md",
+      "kind": "architecture",
+      "suggested_destination": "smartdocs/raw/run-report.md",
+      "confidence": 0.7,
+      "has_frontmatter": false,
+      "estimated_risk": "medium"
+    },
+    {
       "path": ".polaris/runs/polaris-run-cli-parity-workflow-migration-2026-05-26-001/run-report.md",
+      "kind": "doc",
+      "suggested_destination": "smartdocs/raw/run-report.md",
+      "confidence": 0.7,
+      "has_frontmatter": false,
+      "estimated_risk": "low"
+    },
+    {
+      "path": ".polaris/runs/polaris-run-foreman-bootstrap-handoff-2026-06-25-001/run-report.md",
+      "kind": "doc",
+      "suggested_destination": "smartdocs/raw/run-report.md",
+      "confidence": 0.7,
+      "has_frontmatter": false,
+      "estimated_risk": "low"
+    },
+    {
+      "path": ".polaris/runs/polaris-run-foreman-token-burn-2026-06-29-001/run-report.md",
       "kind": "doc",
       "suggested_destination": "smartdocs/raw/run-report.md",
       "confidence": 0.7,
@@ -637,6 +786,62 @@
     },
     {
       "path": ".polaris/runs/polaris-run-pol-374-2026-06-08-001/run-report.md",
+      "kind": "doc",
+      "suggested_destination": "smartdocs/raw/run-report.md",
+      "confidence": 0.7,
+      "has_frontmatter": false,
+      "estimated_risk": "low"
+    },
+    {
+      "path": ".polaris/runs/polaris-run-pol-394-2026-06-26-001/run-report.md",
+      "kind": "doc",
+      "suggested_destination": "smartdocs/raw/run-report.md",
+      "confidence": 0.7,
+      "has_frontmatter": false,
+      "estimated_risk": "low"
+    },
+    {
+      "path": ".polaris/runs/polaris-run-pol-395-2026-06-26-001/run-report.md",
+      "kind": "doc",
+      "suggested_destination": "smartdocs/raw/run-report.md",
+      "confidence": 0.7,
+      "has_frontmatter": false,
+      "estimated_risk": "low"
+    },
+    {
+      "path": ".polaris/runs/polaris-run-pol-397-2026-06-26-001/run-report.md",
+      "kind": "doc",
+      "suggested_destination": "smartdocs/raw/run-report.md",
+      "confidence": 0.7,
+      "has_frontmatter": false,
+      "estimated_risk": "low"
+    },
+    {
+      "path": ".polaris/runs/polaris-run-pol-426-2026-06-30-001/run-report.md",
+      "kind": "doc",
+      "suggested_destination": "smartdocs/raw/run-report.md",
+      "confidence": 0.7,
+      "has_frontmatter": false,
+      "estimated_risk": "low"
+    },
+    {
+      "path": ".polaris/runs/polaris-run-pol-430-2026-06-30-001/run-report.md",
+      "kind": "doc",
+      "suggested_destination": "smartdocs/raw/run-report.md",
+      "confidence": 0.7,
+      "has_frontmatter": false,
+      "estimated_risk": "low"
+    },
+    {
+      "path": ".polaris/runs/polaris-run-pol-443-2026-07-03-001/run-report.md",
+      "kind": "doc",
+      "suggested_destination": "smartdocs/raw/run-report.md",
+      "confidence": 0.7,
+      "has_frontmatter": false,
+      "estimated_risk": "low"
+    },
+    {
+      "path": ".polaris/runs/polaris-run-pol-450-2026-07-03-001/run-report.md",
       "kind": "doc",
       "suggested_destination": "smartdocs/raw/run-report.md",
       "confidence": 0.7,
@@ -1300,6 +1505,14 @@
       "estimated_risk": "low"
     },
     {
+      "path": "docs/reports/2026-06-23-smartdocs-wave2b-checkpoint-a.md",
+      "kind": "doc",
+      "suggested_destination": "smartdocs/raw/2026-06-23-smartdocs-wave2b-checkpoint-a.md",
+      "confidence": 0.7,
+      "has_frontmatter": false,
+      "estimated_risk": "low"
+    },
+    {
       "path": "docs/SETUP.md",
       "kind": "doc",
       "suggested_destination": "smartdocs/raw/SETUP.md",
@@ -1324,9 +1537,73 @@
       "estimated_risk": "low"
     },
     {
+      "path": "docs/superpowers/plans/2026-06-11-interactive-governance-smartdocs-ingest.md",
+      "kind": "doc",
+      "suggested_destination": "smartdocs/raw/2026-06-11-interactive-governance-smartdocs-ingest.md",
+      "confidence": 0.7,
+      "has_frontmatter": false,
+      "estimated_risk": "low"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-06-12-polaris-docs-review.md",
+      "kind": "doc",
+      "suggested_destination": "smartdocs/raw/2026-06-12-polaris-docs-review.md",
+      "confidence": 0.7,
+      "has_frontmatter": false,
+      "estimated_risk": "low"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-06-13-polaris-docs-triage.md",
+      "kind": "doc",
+      "suggested_destination": "smartdocs/raw/2026-06-13-polaris-docs-triage.md",
+      "confidence": 0.7,
+      "has_frontmatter": false,
+      "estimated_risk": "low"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-06-16-polaris-adopt-command.md",
+      "kind": "doc",
+      "suggested_destination": "smartdocs/raw/2026-06-16-polaris-adopt-command.md",
+      "confidence": 0.7,
+      "has_frontmatter": false,
+      "estimated_risk": "low"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-06-20-worker-simplicity-discipline.md",
+      "kind": "doc",
+      "suggested_destination": "smartdocs/raw/2026-06-20-worker-simplicity-discipline.md",
+      "confidence": 0.7,
+      "has_frontmatter": false,
+      "estimated_risk": "low"
+    },
+    {
       "path": "docs/superpowers/specs/2026-06-09-workspace-asset-bundling-design.md",
       "kind": "spec",
       "suggested_destination": "smartdocs/raw/2026-06-09-workspace-asset-bundling-design.md",
+      "confidence": 0.7,
+      "has_frontmatter": false,
+      "estimated_risk": "low"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-06-11-interactive-governance-smartdocs-ingest-design.md",
+      "kind": "spec",
+      "suggested_destination": "smartdocs/raw/2026-06-11-interactive-governance-smartdocs-ingest-design.md",
+      "confidence": 0.7,
+      "has_frontmatter": false,
+      "estimated_risk": "low"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-06-12-polaris-docs-review-design.md",
+      "kind": "spec",
+      "suggested_destination": "smartdocs/raw/2026-06-12-polaris-docs-review-design.md",
+      "confidence": 0.7,
+      "has_frontmatter": false,
+      "estimated_risk": "low"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-06-13-polaris-docs-triage-design.md",
+      "kind": "spec",
+      "suggested_destination": "smartdocs/raw/2026-06-13-polaris-docs-triage-design.md",
       "confidence": 0.7,
       "has_frontmatter": false,
       "estimated_risk": "low"
@@ -2052,6 +2329,38 @@
       "estimated_risk": "low"
     },
     {
+      "path": "src/workspace/.polaris/skills/docs-review/chain.md",
+      "kind": "doc",
+      "suggested_destination": "smartdocs/raw/chain.md",
+      "confidence": 0.95,
+      "has_frontmatter": true,
+      "estimated_risk": "low"
+    },
+    {
+      "path": "src/workspace/.polaris/skills/docs-review/SKILL.md",
+      "kind": "doc",
+      "suggested_destination": "smartdocs/raw/SKILL.md",
+      "confidence": 0.95,
+      "has_frontmatter": true,
+      "estimated_risk": "low"
+    },
+    {
+      "path": "src/workspace/.polaris/skills/docs-triage/chain.md",
+      "kind": "doc",
+      "suggested_destination": "smartdocs/raw/chain.md",
+      "confidence": 0.95,
+      "has_frontmatter": true,
+      "estimated_risk": "low"
+    },
+    {
+      "path": "src/workspace/.polaris/skills/docs-triage/SKILL.md",
+      "kind": "doc",
+      "suggested_destination": "smartdocs/raw/SKILL.md",
+      "confidence": 0.95,
+      "has_frontmatter": true,
+      "estimated_risk": "low"
+    },
+    {
       "path": "src/workspace/.polaris/skills/polaris-analyze/chain.md",
       "kind": "doc",
       "suggested_destination": "smartdocs/raw/chain.md",
@@ -2439,6 +2748,14 @@
       "path": "src/workspace/.polaris/skills/ROUTING.md",
       "kind": "doc",
       "suggested_destination": "smartdocs/raw/ROUTING.md",
+      "confidence": 0.7,
+      "has_frontmatter": false,
+      "estimated_risk": "low"
+    },
+    {
+      "path": "src/workspace/POLARIS_RULES.md",
+      "kind": "doc",
+      "suggested_destination": "smartdocs/raw/POLARIS_RULES.md",
       "confidence": 0.7,
       "has_frontmatter": false,
       "estimated_risk": "low"

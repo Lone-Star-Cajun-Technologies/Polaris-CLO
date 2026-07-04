@@ -1,0 +1,5 @@
+interface:
+  display_name: "Polaris Finalize"
+  short_description: "Finalize the active Polaris run through the Foreman skill packet"
+  brand_color: "#6366F1"
+  default_prompt: "Use $polaris-finalize to finalize the active Polaris run through the Foreman skill packet."

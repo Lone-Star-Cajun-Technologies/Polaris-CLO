@@ -1,7 +1,7 @@
 {
   "name": "polaris",
   "version": "1.0.0",
-  "description": "Exposes compact read-only Polaris status helpers as Codex tools.",
+  "description": "Exposes governed Polaris skill wrappers and compact read-only status helpers for Codex.",
   "author": {
     "name": "Polaris",
     "email": "phil.meaux@lsctech.biz",
@@ -14,18 +14,18 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Polaris",
-    "shortDescription": "Inspect Polaris taskchain cluster status",
-    "longDescription": "Provides compact polaris_status and polaris_loop_status helpers backed by the local Polaris CLI or current-state fallback. Direct run, ungated loop continuation, and finalize delivery remain operator-only and are not exposed as casual Codex plugin tools.",
+    "shortDescription": "Run governed Polaris skills and inspect taskchain status",
+    "longDescription": "Provides thin Codex skill wrappers for Polaris governed workflows plus compact polaris_status and polaris_loop_status helpers backed by the local Polaris CLI or current-state fallback. Skill wrappers route through .polaris/skills/ROUTING.md and canonical SKILL.md packets; they do not implement a parallel runtime.",
     "developerName": "Polaris",
     "category": "Productivity",
-    "capabilities": ["Interactive", "Read"],
+    "capabilities": ["Interactive", "Read", "Write"],
     "websiteURL": "https://github.com/ItIsYeBananaduck/Polaris",
     "privacyPolicyURL": "https://github.com/ItIsYeBananaduck/Polaris",
     "termsOfServiceURL": "https://github.com/ItIsYeBananaduck/Polaris",
     "defaultPrompt": [
-      "Show polaris cluster status",
-      "Show polaris loop status",
-      "Check compact Polaris run state"
+      "Use $polaris-run to execute a governed Polaris cluster",
+      "Use $polaris-analyze to analyze a Polaris issue",
+      "Use $polaris-tools to check compact Polaris run state"
     ],
     "brandColor": "#6366F1"
   }

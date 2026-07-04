@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "cluster_id": "POL-374",
-  "state_generation": 14,
+  "state_generation": 15,
   "child_states": [
     {
       "id": "POL-380",
@@ -32,6 +32,11 @@
       "id": "POL-375",
       "status": "done",
       "commit": "73a5291808fc241385b8e19cc398a60ceef378a9"
+    },
+    {
+      "id": "POL-432",
+      "status": "done",
+      "commit": "a16e76e6165700be3bc6dc18361ee70ca402a6a4"
     }
   ],
   "claim_metadata": {
@@ -55,7 +60,8 @@
     "POL-377": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-374/results/POL-377-cd9fdb91-1b3e-4710-ac4f-1ae4efe24b3c.json",
     "POL-378": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-374/results/POL-378-20baa9a1-7761-4ab5-882b-f85b3e6e000b.json",
     "POL-379": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-374/results/POL-379-0c54f079-c9c9-4709-880e-be8a14164544.json",
-    "POL-380": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-374/results/POL-380-eda3c710-d34a-4c10-88d6-353bc3ffa487.json"
+    "POL-380": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-374/results/POL-380-eda3c710-d34a-4c10-88d6-353bc3ffa487.json",
+    "POL-432": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-430/results/POL-432-c463c05e-f445-4966-ba90-fc215012065a.json"
   },
   "validation_results": {
     "POL-375": {
@@ -81,6 +87,10 @@
     "POL-380": {
       "passed": true,
       "output": "passed"
+    },
+    "POL-432": {
+      "passed": true,
+      "output": "passed"
     }
   },
   "commits": {
@@ -89,7 +99,8 @@
     "POL-377": "e58cbd8b7c080a9721067c9cdc24e065837c265a",
     "POL-378": "7528be694155e8d783287412c83b5c3c8b83feca",
     "POL-379": "4af165f5f72a374f21fdd1599a0440cb0aedbdff",
-    "POL-380": "c38a71def18da5c2629322ecc9a98d22657290e6"
+    "POL-380": "c38a71def18da5c2629322ecc9a98d22657290e6",
+    "POL-432": "a16e76e6165700be3bc6dc18361ee70ca402a6a4"
   },
   "tracker_mutations": {},
   "blockers": [],

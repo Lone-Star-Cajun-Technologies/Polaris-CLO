@@ -1,0 +1,108 @@
+{
+  "schema_version": "1.0",
+  "run_id": "polaris-run-foreman-token-burn-2026-06-29-001",
+  "cluster_id": "POL-415",
+  "skill": "polaris-run",
+  "branch": "philmeaux/pol-415-implement-autoresearch-style-foreman-token-burn-reduction",
+  "session_type": "implement",
+  "active_child": "",
+  "completed_children": [
+    "POL-416",
+    "POL-417",
+    "POL-418"
+  ],
+  "open_children": [],
+  "step_cursor": "checkpoint",
+  "context_budget": {
+    "children_completed": 3,
+    "max_children_per_session": 1
+  },
+  "status": "complete",
+  "next_open_child": null,
+  "artifact_dir": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run",
+  "dispatch_boundary": {
+    "dispatch_epoch": 3,
+    "continue_epoch": 3,
+    "last_dispatched_child": "POL-418"
+  },
+  "run_bootstrap_seal": {
+    "sealer": "polaris-loop-bootstrap",
+    "run_id": "polaris-run-foreman-token-burn-2026-06-29-001",
+    "cluster_id": "POL-415",
+    "open_children_sha": "fd1f1682220a484d21b0792f3f304fd65418494413b5082769b54530e83e6a8a",
+    "sealed_at": "2026-06-29T03:07:38.090Z"
+  },
+  "open_children_meta": {
+    "POL-416": {
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-415/results/POL-416-35784346-6076-4e07-b8ee-1023f3e0c1db.json",
+      "dispatch_record": {
+        "dispatch_id": "35784346-6076-4e07-b8ee-1023f3e0c1db",
+        "child_id": "POL-416",
+        "run_id": "polaris-run-foreman-token-burn-2026-06-29-001",
+        "cluster_id": "POL-415",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-415/packets/POL-416-35784346-6076-4e07-b8ee-1023f3e0c1db.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-415/results/POL-416-35784346-6076-4e07-b8ee-1023f3e0c1db.json",
+        "provider": "devin",
+        "dispatched_at": "2026-06-29T03:07:41.526Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-foreman-token-burn-2026-06-29-001:POL-416:1782702461526",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    },
+    "POL-417": {
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-415/results/POL-417-7076df78-cd4b-4050-ba88-5034cf5e127d.json",
+      "dispatch_record": {
+        "dispatch_id": "7076df78-cd4b-4050-ba88-5034cf5e127d",
+        "child_id": "POL-417",
+        "run_id": "polaris-run-foreman-token-burn-2026-06-29-001",
+        "cluster_id": "POL-415",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-415/packets/POL-417-7076df78-cd4b-4050-ba88-5034cf5e127d.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-415/results/POL-417-7076df78-cd4b-4050-ba88-5034cf5e127d.json",
+        "provider": "devin",
+        "dispatched_at": "2026-06-29T03:12:44.565Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-foreman-token-burn-2026-06-29-001:POL-417:1782702764565",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    },
+    "POL-418": {
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-415/results/POL-418-d4177777-2046-41bc-adcb-f3361b10a9de.json",
+      "dispatch_record": {
+        "dispatch_id": "d4177777-2046-41bc-adcb-f3361b10a9de",
+        "child_id": "POL-418",
+        "run_id": "polaris-run-foreman-token-burn-2026-06-29-001",
+        "cluster_id": "POL-415",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-415/packets/POL-418-d4177777-2046-41bc-adcb-f3361b10a9de.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-415/results/POL-418-d4177777-2046-41bc-adcb-f3361b10a9de.json",
+        "provider": "devin",
+        "dispatched_at": "2026-06-29T03:14:47.432Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-foreman-token-burn-2026-06-29-001:POL-418:1782702887432",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    }
+  },
+  "last_commit": "8a54cb0f70c40e1ac0c26460fb92a2c45b7cc289",
+  "pr_url": "https://github.com/Lone-Star-Cajun-Technologies/Polaris-CLO/pull/140"
+}

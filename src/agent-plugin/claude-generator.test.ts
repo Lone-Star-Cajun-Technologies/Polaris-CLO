@@ -13,8 +13,7 @@ describe("generateClaudeShim", () => {
     expect(shim).toContain("polaris skill packet run");
     expect(shim).toContain(".polaris/skills/ROUTING.md");
     expect(shim).toContain("/polaris-run");
-    // Shim references the routing table for directory resolution, not a hardcoded path
-    expect(shim).toContain("target-skill");
+    expect(shim).toContain(".polaris/skills/polaris-run/SKILL.md");
   });
 
   it("produces a skill shim for polaris-analyze with bootloader instruction", () => {
@@ -30,6 +29,13 @@ describe("generateClaudeShim", () => {
     expect(shim).toContain(`<!-- polaris-shim-version: ${SHIM_VERSION} -->`);
     expect(shim).toContain("polaris init");
     expect(shim).not.toContain("polaris skill packet");
+  });
+
+  it("routes polaris-finalize through the polaris-run target skill", () => {
+    const command = SLASH_COMMANDS.find((c) => c.name === "polaris-finalize")!;
+    const shim = generateClaudeShim(command);
+    expect(shim).toContain("polaris skill packet run");
+    expect(shim).toContain(".polaris/skills/polaris-run/SKILL.md");
   });
 
   it("produces a CLI shim for polaris-status", () => {

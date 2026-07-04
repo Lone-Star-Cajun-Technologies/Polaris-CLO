@@ -1,0 +1,77 @@
+{
+  "schema_version": "1.0",
+  "run_id": "polaris-run-foreman-bootstrap-handoff-2026-06-25-001",
+  "cluster_id": "POL-396",
+  "skill": "polaris-run",
+  "branch": "philmeaux/pol-396-implement-foreman-assignment-and-bootstrap-handoff",
+  "session_type": "implement",
+  "active_child": "",
+  "completed_children": [
+    "POL-406",
+    "POL-407",
+    "POL-408",
+    "POL-409"
+  ],
+  "open_children": [],
+  "step_cursor": "checkpoint",
+  "context_budget": {
+    "children_completed": 4,
+    "max_children_per_session": 1
+  },
+  "status": "complete",
+  "next_open_child": null,
+  "artifact_dir": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run",
+  "dispatch_boundary": {
+    "dispatch_epoch": 4,
+    "continue_epoch": 4,
+    "last_dispatched_child": "POL-409"
+  },
+  "run_bootstrap_seal": {
+    "sealer": "polaris-loop-bootstrap",
+    "run_id": "polaris-run-foreman-bootstrap-handoff-2026-06-25-001",
+    "cluster_id": "POL-396",
+    "open_children_sha": "76e351e44490238190f0a6a65859e38b39e9e9583c0dcc0288c0ba2ce89defde",
+    "sealed_at": "2026-06-25T03:44:55.140Z"
+  },
+  "open_children_meta": {
+    "POL-409": {
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-396/results/POL-409-e829bfc5-5c19-4e41-8ab4-145c6da61b08.json",
+      "dispatch_record": {
+        "dispatch_id": "e829bfc5-5c19-4e41-8ab4-145c6da61b08",
+        "child_id": "POL-409",
+        "run_id": "polaris-run-foreman-bootstrap-handoff-2026-06-25-001",
+        "cluster_id": "POL-396",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-396/packets/POL-409-e829bfc5-5c19-4e41-8ab4-145c6da61b08.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-396/results/POL-409-e829bfc5-5c19-4e41-8ab4-145c6da61b08.json",
+        "provider": "devin",
+        "dispatched_at": "2026-06-25T03:56:23.764Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-foreman-bootstrap-handoff-2026-06-25-001:POL-409:1782359783764",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    }
+  },
+  "completed_children_results": {
+    "POL-406": {
+      "status": "done",
+      "validation": "passed",
+      "commit": "17017cb13e51d45330d1aac736ab178892f80e37",
+      "next_recommended_action": "continue"
+    },
+    "POL-408": {
+      "status": "done",
+      "validation": "passed",
+      "commit": "45063bcba47ac230c8e74c134b97b5c58293fb8a",
+      "next_recommended_action": "continue"
+    }
+  },
+  "last_commit": "46b80b029e94044ad88311fac47ea9a704871cfe",
+  "pr_url": "https://github.com/Lone-Star-Cajun-Technologies/Polaris-CLO/pull/136"
+}

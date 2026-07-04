@@ -1,0 +1,5 @@
+interface:
+  display_name: "Polaris Catalog"
+  short_description: "Catalog project cognition and SmartDocs via the catalog skill packet"
+  brand_color: "#6366F1"
+  default_prompt: "Use $polaris-catalog to catalog project cognition and SmartDocs via the catalog skill packet."

@@ -1,0 +1,5 @@
+interface:
+  display_name: "Polaris Run"
+  short_description: "Execute a Polaris run cluster via the Foreman skill packet"
+  brand_color: "#6366F1"
+  default_prompt: "Use $polaris-run to execute a Polaris run cluster via the Foreman skill packet."
