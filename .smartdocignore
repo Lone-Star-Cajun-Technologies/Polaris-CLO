@@ -9,3 +9,8 @@ examples/**
 templates/**
 sample-docs/**
 docs/
+
+# Shipped workspace-template source — copied to dist/workspace and installed
+# into other repos via `polaris adopt skills`. Never a Smart Docs migration
+# target for this repo itself.
+src/workspace/**
