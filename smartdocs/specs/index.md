@@ -10,3 +10,9 @@ okf_version: "0.1"
 ## Concepts
 
 <!-- No concept files in this directory yet. -->
+
+## Subdirectories
+
+- [active/](active/index.md)
+- [implemented/](implemented/index.md)
+- [superseded/](superseded/index.md)

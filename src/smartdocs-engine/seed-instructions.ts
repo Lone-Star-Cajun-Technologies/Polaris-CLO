@@ -222,6 +222,18 @@ function listConceptFiles(dir: string): string[] {
   }
 }
 
+/** Immediate child subdirectories eligible for their own index.md (excludes hidden dirs and raw/). */
+function listChildDirs(dir: string): string[] {
+  try {
+    return readdirSync(dir, { withFileTypes: true })
+      .filter((e) => e.isDirectory() && !e.name.startsWith(".") && e.name !== "raw")
+      .map((e) => e.name)
+      .sort();
+  } catch {
+    return [];
+  }
+}
+
 function conceptLabel(filePath: string): string {
   try {
     const content = readFileSync(filePath, "utf-8");
@@ -342,6 +354,19 @@ export function generateDirectoryIndex(
     lines.push("<!-- No concept files in this directory yet. -->");
   }
   lines.push("");
+
+  const childDirs = listChildDirs(absDir);
+  if (childDirs.length > 0) {
+    lines.push("## Subdirectories", "");
+    for (const child of childDirs) {
+      // Always link to the child's index.md rather than checking existsSync: generateDirectoryIndex
+      // only ever runs under smartdocs/ (enforced by seedIndex's own path guard), where every
+      // eligible subdirectory gets its own index.md — and seedIndexAll writes parents before
+      // children in the same pass, so existsSync would be write-order-dependent here.
+      lines.push(`- [${child}/](${child}/index.md)`);
+    }
+    lines.push("");
+  }
 
   return lines.join("\n");
 }
