@@ -56,11 +56,24 @@ interface LinearIssueRelation {
   relatedIssue?: LinearIssueRef;
 }
 
+interface LinearWorkflowState {
+  id: string;
+  name: string;
+  type: string;
+}
+
+interface LinearIssueStateOptions {
+  currentStateId: string | null;
+  states: LinearWorkflowState[];
+}
+
 interface LinearApiClient {
   listTeams(): Promise<LinearTeam[]>;
   listProjects(teamId: string): Promise<LinearProject[]>;
   listIssues(filters: { teamId?: string; projectId?: string }): Promise<LinearIssue[]>;
   getIssueById(id: string): Promise<LinearIssue | null>;
+  getIssueStateOptions(id: string): Promise<LinearIssueStateOptions | null>;
+  updateIssueState(id: string, stateId: string): Promise<boolean>;
 }
 
 class LinearGraphqlClient implements LinearApiClient {
@@ -271,6 +284,45 @@ class LinearGraphqlClient implements LinearApiClient {
       { id },
     );
     return data.issue;
+  }
+
+  async getIssueStateOptions(id: string): Promise<LinearIssueStateOptions | null> {
+    const data = await this.graphql<{
+      issue: { state?: { id: string } | null; team?: { states?: { nodes: LinearWorkflowState[] } } } | null;
+    }>(
+      `
+        query PolarisLinearIssueStateOptions($id: String!) {
+          issue(id: $id) {
+            state { id }
+            team {
+              states(first: 250) {
+                nodes { id name type }
+              }
+            }
+          }
+        }
+      `,
+      { id },
+    );
+    if (!data.issue) return null;
+    return {
+      currentStateId: data.issue.state?.id ?? null,
+      states: data.issue.team?.states?.nodes ?? [],
+    };
+  }
+
+  async updateIssueState(id: string, stateId: string): Promise<boolean> {
+    const data = await this.graphql<{ issueUpdate: { success: boolean } }>(
+      `
+        mutation PolarisLinearIssueUpdateState($id: String!, $stateId: String!) {
+          issueUpdate(id: $id, input: { stateId: $stateId }) {
+            success
+          }
+        }
+      `,
+      { id, stateId },
+    );
+    return data.issueUpdate.success;
   }
 }
 
@@ -670,7 +722,7 @@ export class LinearAdapter implements CapableTrackerAdapter {
   async transitionLifecycleState(
     taskId: string,
     lifecycleState: NormalizedLifecycleState,
-    evidence?: Record<string, unknown>,
+    _evidence?: Record<string, unknown>,
   ): Promise<LifecycleTransitionResult> {
     if (lifecycleState === "no_status_change") {
       return {
@@ -680,21 +732,93 @@ export class LinearAdapter implements CapableTrackerAdapter {
       };
     }
 
-    // Linear requires team-specific state IDs for state transitions.
-    // This implementation is a placeholder - full implementation would need:
-    // 1. Fetch available states for the issue's team
-    // 2. Map normalized lifecycle state to a specific Linear state ID
-    // 3. Use GraphQL mutation to update the issue state
+    let stateOptions: LinearIssueStateOptions | null;
+    try {
+      stateOptions = await this.linearClient.getIssueStateOptions(taskId);
+    } catch (err) {
+      return {
+        applied: false,
+        skipped: false,
+        error: `Failed to fetch Linear workflow states for ${taskId}: ${err instanceof Error ? err.message : String(err)}`,
+      };
+    }
 
-    console.warn(
-      `LinearAdapter: transitionLifecycleState not fully implemented. Would transition ${taskId} to ${lifecycleState}.`,
-    );
+    if (!stateOptions) {
+      return {
+        applied: false,
+        skipped: true,
+        skipReason: `Linear issue '${taskId}' not found`,
+      };
+    }
 
-    return {
-      applied: false,
-      skipped: true,
-      skipReason: "Lifecycle state transitions are not yet implemented for Linear adapter",
+    const targetState = this.resolveWorkflowState(stateOptions.states, lifecycleState);
+    if (!targetState) {
+      return {
+        applied: false,
+        skipped: true,
+        skipReason: `No Linear workflow state on this issue's team maps to lifecycle state '${lifecycleState}'`,
+      };
+    }
+
+    if (targetState.id === stateOptions.currentStateId) {
+      return {
+        applied: false,
+        skipped: true,
+        skipReason: `Issue is already in target state '${targetState.name}'`,
+      };
+    }
+
+    try {
+      const success = await this.linearClient.updateIssueState(taskId, targetState.id);
+      if (!success) {
+        return {
+          applied: false,
+          skipped: false,
+          error: `Linear issueUpdate mutation for ${taskId} returned success: false`,
+        };
+      }
+      return { applied: true, skipped: false };
+    } catch (err) {
+      return {
+        applied: false,
+        skipped: false,
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
+  }
+
+  /**
+   * Picks the Linear workflow state that best matches a normalized lifecycle state.
+   *
+   * Prefers exact `type` alignment (Linear's own backlog/unstarted/started/completed/canceled
+   * classification) so custom state names don't need to match `mapNativeStatus`'s heuristics;
+   * falls back to the first state whose name heuristically maps to the target state.
+   */
+  private resolveWorkflowState(
+    states: LinearWorkflowState[],
+    lifecycleState: NormalizedLifecycleState,
+  ): LinearWorkflowState | null {
+    const typeCandidates: Record<string, string[]> = {
+      backlog: ["backlog", "unstarted"],
+      in_progress: ["started"],
+      in_review: ["started"],
+      done: ["completed"],
+      blocked: ["started"],
+      cancelled: ["canceled", "cancelled"],
     };
+
+    const byHeuristic = states.filter(
+      (s) => this.mapNativeStatus(s.name).lifecycleState === lifecycleState,
+    );
+    if (byHeuristic.length === 1) return byHeuristic[0]!;
+
+    const wantedTypes = typeCandidates[lifecycleState] ?? [];
+    const byType = (byHeuristic.length > 0 ? byHeuristic : states).filter((s) =>
+      wantedTypes.includes(s.type),
+    );
+    if (byType.length > 0) return byType[0]!;
+
+    return byHeuristic[0] ?? null;
   }
 
   /**
