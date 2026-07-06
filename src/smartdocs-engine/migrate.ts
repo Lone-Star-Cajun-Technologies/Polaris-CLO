@@ -30,6 +30,7 @@ export interface MigrateResult {
 const ALLOWED_BASENAMES = new Set([
   "README.md",
   "POLARIS.md",
+  "POLARIS_RULES.md",
   "SUMMARY.md",
   "CHANGELOG.md",
   "LICENSE.md",
