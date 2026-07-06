@@ -151,6 +151,10 @@ export function parseFrontMatter(content: string): ParsedFrontMatter {
  */
 export function addCandidateGovernanceMetadata(content: string, docType: string): string {
   const govDefaults: Record<string, string> = {
+    // OKF-conformant type field. Mirrors doc-type's value; added alongside
+    // (not instead of) doc-type since ingest.ts and requiredFields still
+    // read doc-type for internal classification/validation.
+    "type": docType,
     "doc-type": docType,
     "confidence": "0.0",
     "recommended-action": "hold",
@@ -260,6 +264,103 @@ export function stampIngestFrontMatter(content: string, stamp: IngestStamp): str
   // No frontmatter — create one
   const block = Object.entries(fields).map(([k, v]) => `${k}: ${v}`).join("\n");
   return `---\n${block}\n---\n\n${normalized}`;
+}
+
+export interface BackfillOkfTypeResult {
+  /** Files that had `type` added, with the value it was set to. */
+  updated: { path: string; type: string }[];
+  /** Files left unchanged because `type` was already present. */
+  skipped: string[];
+}
+
+/**
+ * Insert a single missing frontmatter field into markdown content, preserving
+ * an existing frontmatter block if present or creating a new one if not.
+ * No-op (returns content unchanged) if the key is already present.
+ */
+function addMissingFrontMatterField(content: string, key: string, value: string): string {
+  const normalized = content.replace(/\r\n/g, "\n");
+
+  if (normalized.startsWith("---\n")) {
+    const end = normalized.indexOf("\n---", 4);
+    if (end !== -1) {
+      const frontMatter = normalized.slice(4, end);
+      const afterFrontMatter = normalized.slice(end + 4);
+      const hasKey = frontMatter
+        .split("\n")
+        .filter((l) => l.includes(":"))
+        .some((l) => l.slice(0, l.indexOf(":")).trim().toLowerCase() === key.toLowerCase());
+      if (hasKey) return normalized;
+      return `---\n${frontMatter}\n${key}: ${value}\n---${afterFrontMatter}`;
+    }
+  }
+
+  return `---\n${key}: ${value}\n---\n\n${normalized}`;
+}
+
+/**
+ * Retrofit existing SmartDocs with an OKF-conformant `type` frontmatter field.
+ *
+ * Walks every `.md` file under `smartdocs/`. For each file already missing a
+ * `type` key: derives the value from `kind` if present, else `doc-type` if
+ * present, else defaults to `"raw"`. Files that already declare `type` are
+ * left untouched and reported in `skipped`.
+ *
+ * This is the retroactive counterpart to `addCandidateGovernanceMetadata`,
+ * which stamps `type` on newly-governed candidate docs going forward — this
+ * function backfills docs that predate that change (or were authored by
+ * hand without a `type` field at all).
+ *
+ * @param repoRoot - Repository root; files are read from and written to
+ *   `<repoRoot>/smartdocs/**\/*.md`.
+ * @param options.dryRun - When true, computes the result without writing
+ *   any files.
+ */
+export function backfillOkfType(
+  repoRoot: string,
+  options: { dryRun?: boolean } = {},
+): BackfillOkfTypeResult {
+  const smartdocsDir = join(repoRoot, "smartdocs");
+  const result: BackfillOkfTypeResult = { updated: [], skipped: [] };
+
+  function walk(dir: string): void {
+    let entries;
+    try {
+      entries = readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+      } else if (entry.isFile() && entry.name.endsWith(".md")) {
+        processFile(full);
+      }
+    }
+  }
+
+  function processFile(filePath: string): void {
+    let content: string;
+    try {
+      content = readFileSync(filePath, "utf-8");
+    } catch {
+      return;
+    }
+    const fm = parseFrontMatter(content);
+    if (fm["type"]) {
+      result.skipped.push(filePath);
+      return;
+    }
+    const derivedType = fm.kind ?? fm["doc-type"] ?? "raw";
+    if (!options.dryRun) {
+      writeFileSync(filePath, addMissingFrontMatterField(content, "type", derivedType), "utf-8");
+    }
+    result.updated.push({ path: filePath, type: derivedType });
+  }
+
+  walk(smartdocsDir);
+  return result;
 }
 
 function appendLifecycle(lifecyclePath: string, event: Record<string, unknown>): void {

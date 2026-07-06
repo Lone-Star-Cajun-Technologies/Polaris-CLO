@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clusterCandidates, extractSymbols, loadDocMeta, readTriageCheckpoint, writeTriageCheckpoint, writeTriageQueue, runBatchComparison, runGraphCheck, runTriage } from "./triage.js";
+import { clusterCandidates, extractSymbols, loadDocMeta, readTriageCheckpoint, writeTriageCheckpoint, writeTriageQueue, runBatchComparison, runGraphCheck, runTriage, resolveLibrarianProviderConfig } from "./triage.js";
 import type { LlmClient, TriageOptions } from "./triage.js";
 import { mkdtempSync, mkdirSync, writeFileSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -389,5 +389,66 @@ describe("runTriage", () => {
     });
 
     expect(compareCalls).toBe(0);
+  });
+});
+
+describe("resolveLibrarianProviderConfig", () => {
+  it("resolves the first provider named in execution.providerPolicy.librarian.providers", () => {
+    const dir = mkdtempSync(join(tmpdir(), "triage-provider-"));
+    writeFileSync(
+      join(dir, "polaris.config.json"),
+      JSON.stringify({
+        execution: {
+          adapter: "terminal-cli",
+          providers: {
+            claude: {
+              command: "env",
+              args: ["CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=0", "claude", "--print", "--", "{{worker_prompt}}"],
+            },
+          },
+          providerPolicy: {
+            librarian: { providers: ["claude"] },
+          },
+        },
+      }),
+    );
+
+    const cfg = resolveLibrarianProviderConfig(dir);
+
+    expect(cfg).toBeDefined();
+    expect(cfg?.command).toBe("env");
+    expect(cfg?.args).toContain("{{worker_prompt}}");
+  });
+
+  it("falls back to a directly-named claude provider when providerPolicy.librarian is absent", () => {
+    const dir = mkdtempSync(join(tmpdir(), "triage-provider-"));
+    writeFileSync(
+      join(dir, "polaris.config.json"),
+      JSON.stringify({
+        execution: {
+          adapter: "terminal-cli",
+          providers: {
+            claude: { command: "claude", args: ["--print", "{{worker_prompt}}"] },
+          },
+        },
+      }),
+    );
+
+    const cfg = resolveLibrarianProviderConfig(dir);
+
+    expect(cfg).toBeDefined();
+    expect(cfg?.command).toBe("claude");
+  });
+
+  it("returns undefined when no usable provider is configured", () => {
+    const dir = mkdtempSync(join(tmpdir(), "triage-provider-"));
+    writeFileSync(
+      join(dir, "polaris.config.json"),
+      JSON.stringify({ execution: { adapter: "terminal-cli", providers: {} } }),
+    );
+
+    const cfg = resolveLibrarianProviderConfig(dir);
+
+    expect(cfg).toBeUndefined();
   });
 });

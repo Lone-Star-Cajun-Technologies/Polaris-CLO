@@ -1,6 +1,9 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { basename, extname, join } from "node:path";
 import type { TriageReviewPacket } from "../governance/types.js";
+import type { ProviderConfig } from "../config/schema.js";
+import { loadConfig } from "../config/index.js";
 
 // ---------------------------------------------------------------------------
 // Shared document metadata shape used internally by triage
@@ -403,6 +406,9 @@ export interface TriageLlmFlag {
 export interface BatchComparisonOptions {
   model: string;
   llmClient?: LlmClient;
+  /** Repo root used to resolve the configured librarian-role CLI provider when
+   * llmClient is not supplied. Defaults to process.cwd(). */
+  repoRoot?: string;
 }
 
 export function resolveTriageModel(configured?: string): string {
@@ -418,7 +424,7 @@ export async function runBatchComparison(
   canonicals: DocMeta[],
   options: BatchComparisonOptions,
 ): Promise<TriageLlmFlag[]> {
-  const client = options.llmClient ?? (await buildDefaultLlmClient());
+  const client = options.llmClient ?? (await buildDefaultLlmClient(options.repoRoot ?? process.cwd()));
 
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
@@ -433,8 +439,120 @@ export async function runBatchComparison(
   return [];
 }
 
-async function buildDefaultLlmClient(): Promise<LlmClient> {
+function buildComparisonPrompt(candidates: DocMeta[], canonicals: DocMeta[]): string {
+  const candidateSummaries = candidates
+    .map((c, i) => `[${i}] ${basename(c.path)} (${c.type || "unknown type"}) tags: ${c.tags.join(", ") || "none"}`)
+    .join("\n");
+
+  const canonicalSummaries = canonicals
+    .map((c) => `- ${basename(c.path)} (${c.type || "unknown type"}) tags: ${c.tags.join(", ") || "none"}`)
+    .join("\n");
+
+  return [
+    "You are comparing candidate documentation files against canonical documentation.",
+    "Identify any candidates that CONTRADICT or DUPLICATE a canonical.",
+    'Return ONLY a JSON array. If no issues found, return [].',
+    'Each item must be: { "candidatePath": string, "flagType": "contradiction" | "duplicate", "canonicalPath"?: string, "reason": string }',
+    "",
+    "CANDIDATES:",
+    candidateSummaries,
+    "",
+    "CANONICALS:",
+    canonicalSummaries,
+    "",
+    "Respond with JSON only. No prose.",
+  ].join("\n");
+}
+
+function parseFlagsFromText(text: string): TriageLlmFlag[] {
+  const cleaned = text.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
+  return JSON.parse(cleaned) as TriageLlmFlag[];
+}
+
+/** Expand $VAR and ${VAR} references from process.env. */
+function expandEnvVars(str: string): string {
+  return str
+    .replace(/\$\{([A-Z_][A-Z0-9_]*)\}/g, (_, name) => process.env[name] ?? "")
+    .replace(/\$([A-Z_][A-Z0-9_]*)/g, (_, name) => process.env[name] ?? "");
+}
+
+/** Substitute {{key}} template variables. Unknown keys are left as-is. */
+function substituteTemplates(str: string, vars: Record<string, string>): string {
+  return str.replace(/\{\{([^}]+)\}\}/g, (original, key) => vars[key.trim()] ?? original);
+}
+
+/**
+ * Resolve the configured CLI provider for triage's librarian-role LLM calls, per
+ * polaris.config.json's execution.providerPolicy.librarian / execution.providers —
+ * the same config the terminal-cli dispatch adapter reads for Foreman/Worker
+ * sessions. Returns undefined if no usable provider is configured, in which case
+ * callers fall back to a raw API-key-based client.
+ */
+export function resolveLibrarianProviderConfig(repoRoot: string): ProviderConfig | undefined {
+  try {
+    const config = loadConfig(repoRoot);
+    const providers = config.execution?.providers ?? {};
+    const policyNames = config.execution?.providerPolicy?.librarian?.providers ?? [];
+    for (const name of policyNames) {
+      const cfg = providers[name];
+      if (cfg) return cfg;
+    }
+    // Fall back to a directly-named "claude" provider if no policy entry resolved.
+    return providers["claude"];
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Build an LlmClient that shells out to the configured CLI provider (e.g. `claude
+ * --print`), the same mechanism the terminal-cli execution adapter uses for
+ * Foreman/Worker dispatch. This authenticates via the CLI's own session (OAuth),
+ * not a raw ANTHROPIC_API_KEY.
+ */
+function buildCliLlmClient(providerCfg: ProviderConfig): LlmClient {
+  return {
+    async compare(candidates, canonicals) {
+      const prompt = buildComparisonPrompt(candidates, canonicals);
+      const templateVars: Record<string, string> = { worker_prompt: prompt };
+
+      const command = substituteTemplates(expandEnvVars(providerCfg.command), templateVars);
+      if (!command.trim()) {
+        throw new Error(
+          `Provider command "${providerCfg.command}" expanded to an empty string — likely an unset environment variable.`,
+        );
+      }
+      const args = (providerCfg.args ?? []).map((arg) =>
+        substituteTemplates(expandEnvVars(arg), templateVars),
+      );
+
+      const stdout = execFileSync(command, args, {
+        encoding: "utf-8",
+        maxBuffer: 10 * 1024 * 1024,
+        timeout: 300000,
+      });
+
+      return parseFlagsFromText(stdout);
+    },
+  };
+}
+
+async function buildDefaultLlmClient(repoRoot: string): Promise<LlmClient> {
+  const cliProviderCfg = resolveLibrarianProviderConfig(repoRoot);
+  if (cliProviderCfg) {
+    return buildCliLlmClient(cliProviderCfg);
+  }
+
   const apiKey = process.env["ANTHROPIC_API_KEY"] ?? "";
+  if (!apiKey) {
+    throw new Error(
+      "No CLI provider configured for the librarian role (execution.providerPolicy.librarian / " +
+        "execution.providers in polaris.config.json) and ANTHROPIC_API_KEY is not set. " +
+        "Configure a librarian provider (preferred — uses the CLI's own session auth) or set " +
+        "ANTHROPIC_API_KEY as a fallback.",
+    );
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   // @ts-ignore: @anthropic-ai/sdk may not be installed as a dependency
   const mod = await import("@anthropic-ai/sdk");
@@ -444,28 +562,7 @@ async function buildDefaultLlmClient(): Promise<LlmClient> {
 
   return {
     async compare(candidates, canonicals, model) {
-      const candidateSummaries = candidates
-        .map((c, i) => `[${i}] ${basename(c.path)} (${c.type || "unknown type"}) tags: ${c.tags.join(", ") || "none"}`)
-        .join("\n");
-
-      const canonicalSummaries = canonicals
-        .map((c) => `- ${basename(c.path)} (${c.type || "unknown type"}) tags: ${c.tags.join(", ") || "none"}`)
-        .join("\n");
-
-      const prompt = [
-        "You are comparing candidate documentation files against canonical documentation.",
-        "Identify any candidates that CONTRADICT or DUPLICATE a canonical.",
-        'Return ONLY a JSON array. If no issues found, return [].',
-        'Each item must be: { "candidatePath": string, "flagType": "contradiction" | "duplicate", "canonicalPath"?: string, "reason": string }',
-        "",
-        "CANDIDATES:",
-        candidateSummaries,
-        "",
-        "CANONICALS:",
-        canonicalSummaries,
-        "",
-        "Respond with JSON only. No prose.",
-      ].join("\n");
+      const prompt = buildComparisonPrompt(candidates, canonicals);
 
       const response = await sdkClient.messages.create({
         model,
@@ -478,8 +575,7 @@ async function buildDefaultLlmClient(): Promise<LlmClient> {
         .map((b) => b.text)
         .join("");
 
-      const cleaned = text.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
-      return JSON.parse(cleaned) as TriageLlmFlag[];
+      return parseFlagsFromText(text);
     },
   };
 }
@@ -601,7 +697,7 @@ export async function runTriage(options: TriageOptions): Promise<TriageResult> {
 
     for (let i = 0; i < cluster.candidates.length; i += batchSize) {
       const batch = cluster.candidates.slice(i, i + batchSize);
-      const flags = await runBatchComparison(batch, cluster.canonicals, { model, llmClient });
+      const flags = await runBatchComparison(batch, cluster.canonicals, { model, llmClient, repoRoot });
       accumulatedFlags.push(...flags);
     }
 

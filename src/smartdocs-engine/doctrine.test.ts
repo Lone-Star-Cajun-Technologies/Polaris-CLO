@@ -13,6 +13,7 @@ import {
   specPromote,
   migrateProvenance,
   detectDoctrineSupersession,
+  backfillOkfType,
 } from "./doctrine.js";
 
 function makeTempDir(): string {
@@ -408,6 +409,7 @@ describe("addCandidateGovernanceMetadata", () => {
   it("does not modify content when all governance and relationship fields already present", () => {
     const content = [
       "---",
+      "type: doctrine",
       "doc-type: doctrine",
       "confidence: 0.9",
       "recommended-action: promote",
@@ -888,5 +890,81 @@ describe("detectDoctrineSupersession", () => {
     );
     expect(activeContent).not.toContain("supersedes");
     expect(activeContent).not.toContain("superseded_by");
+  });
+});
+
+describe("backfillOkfType", () => {
+  let repoRoot: string;
+
+  beforeEach(() => {
+    repoRoot = makeTempDir();
+  });
+
+  it("adds type derived from kind when type is missing", () => {
+    const path = join(repoRoot, "smartdocs", "doctrine", "active", "a.md");
+    writeFileSync(path, "---\nkind: doctrine\nstatus: active\n---\n\n# A");
+
+    const result = backfillOkfType(repoRoot);
+
+    expect(result.updated).toHaveLength(1);
+    expect(result.updated[0]).toEqual({ path, type: "doctrine" });
+    const content = readFileSync(path, "utf-8");
+    expect(content).toContain("type: doctrine");
+  });
+
+  it("adds type derived from doc-type when kind is absent", () => {
+    const path = join(repoRoot, "smartdocs", "doctrine", "candidate", "b.md");
+    writeFileSync(path, "---\ndoc-type: spec\nconfidence: 0.5\n---\n\n# B");
+
+    const result = backfillOkfType(repoRoot);
+
+    expect(result.updated).toHaveLength(1);
+    expect(result.updated[0]).toEqual({ path, type: "spec" });
+  });
+
+  it("defaults to raw when neither kind nor doc-type is present", () => {
+    const path = join(repoRoot, "smartdocs", "raw", "c.md");
+    writeFileSync(path, "---\nstatus: raw\n---\n\n# C");
+
+    const result = backfillOkfType(repoRoot);
+
+    expect(result.updated).toHaveLength(1);
+    expect(result.updated[0]).toEqual({ path, type: "raw" });
+  });
+
+  it("leaves files that already have type untouched and reports them as skipped", () => {
+    const path = join(repoRoot, "smartdocs", "doctrine", "active", "d.md");
+    const original = "---\ntype: doctrine\nkind: doctrine\n---\n\n# D";
+    writeFileSync(path, original);
+
+    const result = backfillOkfType(repoRoot);
+
+    expect(result.updated).toHaveLength(0);
+    expect(result.skipped).toEqual([path]);
+    expect(readFileSync(path, "utf-8")).toBe(original);
+  });
+
+  it("does not write files in dry-run mode but still reports what would change", () => {
+    const path = join(repoRoot, "smartdocs", "doctrine", "active", "e.md");
+    const original = "---\nkind: doctrine\n---\n\n# E";
+    writeFileSync(path, original);
+
+    const result = backfillOkfType(repoRoot, { dryRun: true });
+
+    expect(result.updated).toHaveLength(1);
+    expect(readFileSync(path, "utf-8")).toBe(original);
+  });
+
+  it("creates a frontmatter block when the file has none at all", () => {
+    const path = join(repoRoot, "smartdocs", "raw", "f.md");
+    writeFileSync(path, "# F\n\nNo frontmatter here.");
+
+    const result = backfillOkfType(repoRoot);
+
+    expect(result.updated).toHaveLength(1);
+    expect(result.updated[0]).toEqual({ path, type: "raw" });
+    const content = readFileSync(path, "utf-8");
+    expect(content.startsWith("---\ntype: raw\n---\n")).toBe(true);
+    expect(content).toContain("# F");
   });
 });
