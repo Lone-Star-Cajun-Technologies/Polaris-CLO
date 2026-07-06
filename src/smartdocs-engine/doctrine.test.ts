@@ -163,6 +163,20 @@ describe("doctrinePromote", () => {
     expect(content).toContain("# My Doctrine");
   });
 
+  it("updates type to doctrine on promotion, overriding a stale doctrine-candidate value", () => {
+    const candidatePath = join(repoRoot, "smartdocs", "doctrine", "candidate", "stale-type.md");
+    writeFileSync(
+      candidatePath,
+      `${CANDIDATE_MARKER}\n---\ntype: doctrine-candidate\nstatus: candidate\ndoc-type: doctrine\nconfidence: 0.9\nrecommended-action: promote\noverlap-analysis: none\n---\n\n# Stale Type`,
+    );
+
+    const result = doctrinePromote(candidatePath, { repoRoot, runId: "test-run-type" });
+
+    const content = readFileSync(result.destination, "utf-8");
+    expect(content).toContain("type: doctrine");
+    expect(content).not.toContain("type: doctrine-candidate");
+  });
+
   it("emits a doctrine-promote event to lifecycle.jsonl", () => {
     const candidatePath = join(repoRoot, "smartdocs", "doctrine", "candidate", "promoted.md");
     writeFileSync(
@@ -513,6 +527,16 @@ describe("doctrineDeprecate", () => {
     expect(content).toContain("# Old Doctrine");
   });
 
+  it("updates type to doctrine-deprecated on deprecation, overriding a stale doctrine value", () => {
+    const activePath = join(repoRoot, "smartdocs", "doctrine", "active", "stale-type.md");
+    writeFileSync(activePath, "---\ntype: doctrine\n---\n\n# Stale Type");
+
+    const result = doctrineDeprecate(activePath, { repoRoot, runId: "test-run-type" });
+
+    const content = readFileSync(result.destination, "utf-8");
+    expect(content).toContain("type: doctrine-deprecated");
+  });
+
   it("emits a doctrine-deprecate event to lifecycle.jsonl", () => {
     const activePath = join(repoRoot, "smartdocs", "doctrine", "active", "deprecated.md");
     writeFileSync(activePath, "# Deprecated");
@@ -614,6 +638,17 @@ describe("specPromote", () => {
     expect(existsSync(result.destination)).toBe(true);
     expect(existsSync(src)).toBe(false);
     expect(result.destination).toContain("specs/active/my-spec.md");
+  });
+
+  it("updates type to spec on promotion, overriding a stale raw value", () => {
+    const src = join(repoRoot, "smartdocs", "raw", "stale-type-spec.md");
+    writeFileSync(src, "---\ntype: raw\n---\n\n# Stale Type Spec\n\nThis spec must use the new API.");
+
+    const result = specPromote(src, { repoRoot, runId: "spec-run-type" });
+
+    const content = readFileSync(result.destination, "utf-8");
+    expect(content).toContain("type: spec");
+    expect(content).not.toContain("type: raw");
   });
 
   it("moves co-located .provenance.json sidecar alongside the .md", () => {

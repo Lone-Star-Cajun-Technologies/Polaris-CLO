@@ -299,6 +299,41 @@ function addMissingFrontMatterField(content: string, key: string, value: string)
 }
 
 /**
+ * Sets a frontmatter field to a new value, replacing it if present or adding
+ * it if absent. Unlike `addMissingFrontMatterField`, this always applies the
+ * given value — used when a lifecycle transition (promote/deprecate) must
+ * make `type` agree with the doc's new directory tier, overriding whatever
+ * value it carried in its previous tier.
+ */
+function setFrontMatterField(content: string, key: string, value: string): string {
+  const normalized = content.replace(/\r\n/g, "\n");
+
+  if (normalized.startsWith("---\n")) {
+    const end = normalized.indexOf("\n---", 4);
+    if (end !== -1) {
+      const frontMatter = normalized.slice(4, end);
+      const afterFrontMatter = normalized.slice(end + 4);
+      const lowerKey = key.toLowerCase();
+      let found = false;
+      const newLines = frontMatter.split("\n").map((l) => {
+        const colonIdx = l.indexOf(":");
+        if (colonIdx !== -1 && l.slice(0, colonIdx).trim().toLowerCase() === lowerKey) {
+          found = true;
+          return `${key}: ${value}`;
+        }
+        return l;
+      });
+      if (found) {
+        return `---\n${newLines.join("\n")}\n---${afterFrontMatter}`;
+      }
+      return `---\n${frontMatter}\n${key}: ${value}\n---${afterFrontMatter}`;
+    }
+  }
+
+  return `---\n${key}: ${value}\n---\n\n${normalized}`;
+}
+
+/**
  * Directory-tier defaults for `type`, keyed by the first two path segments
  * relative to `smartdocs/`. Mirrors the lifecycle-tier vocabulary already
  * used by `ingest.ts`'s `DocsClassification`, since directory position — not
@@ -622,7 +657,8 @@ export function doctrinePromote(path: string, options: DoctrineOptions): Doctrin
     throw new Error(`Destination already exists: ${destination}`);
   }
 
-  const activeContent = content.replace(`${CANDIDATE_MARKER}\n`, "").replace(CANDIDATE_MARKER, "");
+  const strippedContent = content.replace(`${CANDIDATE_MARKER}\n`, "").replace(CANDIDATE_MARKER, "");
+  const activeContent = setFrontMatterField(strippedContent, "type", "doctrine");
   writeFileSync(destination, activeContent, "utf-8");
   unlinkSync(source);
 
@@ -704,8 +740,9 @@ export function doctrineDeprecate(path: string, options: DoctrineOptions): Doctr
 
   const content = readFileSync(source, "utf-8");
   const deprecatedAt = new Date().toISOString();
+  const retypedContent = setFrontMatterField(content, "type", "doctrine-deprecated");
   const deprecatedContent =
-    `<!-- polaris:doctrine-deprecated deprecatedAt="${deprecatedAt}" runId="${runId}" -->\n${content}`;
+    `<!-- polaris:doctrine-deprecated deprecatedAt="${deprecatedAt}" runId="${runId}" -->\n${retypedContent}`;
   writeFileSync(destination, deprecatedContent, "utf-8");
   unlinkSync(source);
 
@@ -1059,7 +1096,9 @@ export function specPromote(path: string, options: SpecPromoteOptions): SpecProm
     throw new Error(`Destination already exists: ${destination}`);
   }
 
-  renameSync(source, destination);
+  const retypedContent = setFrontMatterField(content, "type", "spec");
+  writeFileSync(destination, retypedContent, "utf-8");
+  unlinkSync(source);
 
   if (existsSync(provenanceSrcPath)) {
     renameSync(provenanceSrcPath, destination.replace(/\.md$/, ".provenance.json"));
