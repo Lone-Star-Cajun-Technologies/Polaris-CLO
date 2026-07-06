@@ -22,6 +22,11 @@ describe("isAllowedException", () => {
     expect(isAllowedException("src/cli/POLARIS.md").allowed).toBe(true);
   });
 
+  it("allows SUMMARY.md in any directory", () => {
+    expect(isAllowedException("SUMMARY.md").allowed).toBe(true);
+    expect(isAllowedException("src/cli/SUMMARY.md").allowed).toBe(true);
+  });
+
   it("allows CHANGELOG.md and LICENSE.md", () => {
     expect(isAllowedException("CHANGELOG.md").allowed).toBe(true);
     expect(isAllowedException("LICENSE.md").allowed).toBe(true);
