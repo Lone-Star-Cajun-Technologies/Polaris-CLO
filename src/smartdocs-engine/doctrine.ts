@@ -299,12 +299,105 @@ function addMissingFrontMatterField(content: string, key: string, value: string)
 }
 
 /**
+ * Sets a frontmatter field to a new value, replacing it if present or adding
+ * it if absent. Unlike `addMissingFrontMatterField`, this always applies the
+ * given value — used when a lifecycle transition (promote/deprecate) must
+ * make `type` agree with the doc's new directory tier, overriding whatever
+ * value it carried in its previous tier.
+ */
+function setFrontMatterField(content: string, key: string, value: string): string {
+  const normalized = content.replace(/\r\n/g, "\n");
+
+  if (normalized.startsWith("---\n")) {
+    const end = normalized.indexOf("\n---", 4);
+    if (end !== -1) {
+      const frontMatter = normalized.slice(4, end);
+      const afterFrontMatter = normalized.slice(end + 4);
+      const lowerKey = key.toLowerCase();
+      let found = false;
+      const newLines = frontMatter.split("\n").map((l) => {
+        const colonIdx = l.indexOf(":");
+        if (colonIdx !== -1 && l.slice(0, colonIdx).trim().toLowerCase() === lowerKey) {
+          found = true;
+          return `${key}: ${value}`;
+        }
+        return l;
+      });
+      if (found) {
+        return `---\n${newLines.join("\n")}\n---${afterFrontMatter}`;
+      }
+      return `---\n${frontMatter}\n${key}: ${value}\n---${afterFrontMatter}`;
+    }
+  }
+
+  return `---\n${key}: ${value}\n---\n\n${normalized}`;
+}
+
+/**
+ * Directory-tier defaults for `type`, keyed by the first two path segments
+ * relative to `smartdocs/`. Mirrors the lifecycle-tier vocabulary already
+ * used by `ingest.ts`'s `DocsClassification`, since directory position — not
+ * frontmatter — is the authoritative signal for a doc's lifecycle state
+ * (docs-authority-model.md "Key rule"). Falling back to a literal `"raw"`
+ * for every file regardless of directory (the prior behavior) let a doc
+ * sitting in `doctrine/active/` end up with `type: raw`, contradicting its
+ * own directory-encoded authority tier.
+ */
+const DIRECTORY_TYPE_DEFAULTS: Record<string, string> = {
+  "raw": "raw",
+  "doctrine/active": "doctrine",
+  "doctrine/candidate": "doctrine-candidate",
+  "doctrine/deprecated": "doctrine-deprecated",
+  "doctrine": "doctrine",
+  "specs/raw": "raw",
+  "specs/active": "spec",
+  "specs/implemented": "spec-implemented",
+  "specs/superseded": "spec-superseded",
+  "specs/archive": "spec-archive",
+  "specs": "spec",
+  "audits/findings": "audit-finding",
+  "audits/resolved": "audit-resolved",
+  "audits": "audit",
+  "decisions": "decision",
+  "architecture": "architecture",
+  "integrations": "integration",
+  "medic": "medic",
+  "runtime/run-reports": "run-report",
+  "runtime/summaries": "runtime-summary",
+  "runtime": "runtime",
+};
+
+/**
+ * Derives a directory-tier-appropriate `type` default for a SmartDocs file
+ * that has neither `kind` nor `doc-type` set. `relPath` is relative to
+ * `smartdocs/` (forward-slash separated). Reserved front-door filenames
+ * (`POLARIS.md`, `SUMMARY.md`, `index.md`) get `"index"` regardless of tier,
+ * since they're navigational scaffolding, not tier content.
+ */
+export function deriveTypeFromDirectory(relPath: string): string {
+  const name = basename(relPath);
+  if (name === "POLARIS.md" || name === "SUMMARY.md" || name === "index.md") {
+    return "index";
+  }
+  const segments = relPath.split("/").slice(0, -1);
+  if (segments.length >= 2) {
+    const twoLevel = `${segments[0]}/${segments[1]}`;
+    if (DIRECTORY_TYPE_DEFAULTS[twoLevel]) return DIRECTORY_TYPE_DEFAULTS[twoLevel];
+  }
+  if (segments.length >= 1 && DIRECTORY_TYPE_DEFAULTS[segments[0]]) {
+    return DIRECTORY_TYPE_DEFAULTS[segments[0]];
+  }
+  return "raw";
+}
+
+/**
  * Retrofit existing SmartDocs with an OKF-conformant `type` frontmatter field.
  *
  * Walks every `.md` file under `smartdocs/`. For each file already missing a
  * `type` key: derives the value from `kind` if present, else `doc-type` if
- * present, else defaults to `"raw"`. Files that already declare `type` are
- * left untouched and reported in `skipped`.
+ * present, else derives a directory-tier-appropriate default via
+ * `deriveTypeFromDirectory` (see that function for the tier mapping). Files
+ * that already declare `type` are left untouched and reported in `skipped`.
  *
  * This is the retroactive counterpart to `addCandidateGovernanceMetadata`,
  * which stamps `type` on newly-governed candidate docs going forward — this
@@ -352,7 +445,8 @@ export function backfillOkfType(
       result.skipped.push(filePath);
       return;
     }
-    const derivedType = fm.kind ?? fm["doc-type"] ?? "raw";
+    const relPath = relative(smartdocsDir, filePath).replace(/\\/g, "/");
+    const derivedType = fm.kind ?? fm["doc-type"] ?? deriveTypeFromDirectory(relPath);
     if (!options.dryRun) {
       writeFileSync(filePath, addMissingFrontMatterField(content, "type", derivedType), "utf-8");
     }
@@ -563,7 +657,8 @@ export function doctrinePromote(path: string, options: DoctrineOptions): Doctrin
     throw new Error(`Destination already exists: ${destination}`);
   }
 
-  const activeContent = content.replace(`${CANDIDATE_MARKER}\n`, "").replace(CANDIDATE_MARKER, "");
+  const strippedContent = content.replace(`${CANDIDATE_MARKER}\n`, "").replace(CANDIDATE_MARKER, "");
+  const activeContent = setFrontMatterField(strippedContent, "type", "doctrine");
   writeFileSync(destination, activeContent, "utf-8");
   unlinkSync(source);
 
@@ -645,8 +740,9 @@ export function doctrineDeprecate(path: string, options: DoctrineOptions): Doctr
 
   const content = readFileSync(source, "utf-8");
   const deprecatedAt = new Date().toISOString();
+  const retypedContent = setFrontMatterField(content, "type", "doctrine-deprecated");
   const deprecatedContent =
-    `<!-- polaris:doctrine-deprecated deprecatedAt="${deprecatedAt}" runId="${runId}" -->\n${content}`;
+    `<!-- polaris:doctrine-deprecated deprecatedAt="${deprecatedAt}" runId="${runId}" -->\n${retypedContent}`;
   writeFileSync(destination, deprecatedContent, "utf-8");
   unlinkSync(source);
 
@@ -1000,7 +1096,9 @@ export function specPromote(path: string, options: SpecPromoteOptions): SpecProm
     throw new Error(`Destination already exists: ${destination}`);
   }
 
-  renameSync(source, destination);
+  const retypedContent = setFrontMatterField(content, "type", "spec");
+  writeFileSync(destination, retypedContent, "utf-8");
+  unlinkSync(source);
 
   if (existsSync(provenanceSrcPath)) {
     renameSync(provenanceSrcPath, destination.replace(/\.md$/, ".provenance.json"));
