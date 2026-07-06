@@ -6,7 +6,7 @@ import { runReviewSession } from "./review.js";
 import { migrateDocs, printMigrateResults } from "./migrate.js";
 import { seedInstructions, seedInstructionsAll, seedSummary, seedSummaryAll, seedIndex, seedIndexAll, type IneligibleEntry } from "./seed-instructions.js";
 import { validateInstructions, printReport } from "./validate-instructions.js";
-import { doctrineDraft, doctrinePromote, doctrineDeprecate, specPromote, migrateProvenance } from "./doctrine.js";
+import { doctrineDraft, doctrinePromote, doctrineDeprecate, specPromote, migrateProvenance, backfillOkfType } from "./doctrine.js";
 import { auditIngestRiskSurface, formatAuditMarkdown, formatAuditSummaryTable } from "./audit.js";
 import { runTriage } from "./triage.js";
 import { GraphStoreAdapter } from "../graph/store/adapter.js";
@@ -523,9 +523,26 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
     });
 
   docs
+    .command("backfill-type")
+    .description(
+      "Add OKF-conformant `type` frontmatter to existing smartdocs/ files that are missing it, " +
+      "deriving the value from `kind` or `doc-type` when present, else defaulting to \"raw\"."
+    )
+    .option("-r, --repo-root <path>", "Repository root", defaultRepoRoot)
+    .option("--dry-run", "Print what would be written without writing files")
+    .action((options: { repoRoot: string; dryRun?: boolean }) => {
+      const { updated, skipped } = backfillOkfType(options.repoRoot, { dryRun: options.dryRun });
+      for (const { path, type } of updated) {
+        console.log(`${options.dryRun ? "[dry-run] would add" : "added"} type: ${type} — ${path}`);
+      }
+      console.log(`Done. ${updated.length} updated, ${skipped.length} already had type.`);
+    });
+
+  docs
     .command("reformat-okf")
     .description(
-      "Migrate existing smartdocs to OKF structure in one step: runs migrate → seed-index --all → seed-instructions --all. " +
+      "Migrate existing smartdocs to OKF structure in one step: runs migrate → seed-index --all → " +
+      "seed-instructions --all → backfill-type. " +
       "Agent instruction files (CLAUDE.md, AGENTS.md, etc.) are never touched. " +
       "Use --dry-run to preview changes before writing."
     )
@@ -537,7 +554,7 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
       const label = dryRun ? "[dry-run]" : "";
 
       // Step 1: migrate (moves scattered markdown to smartdocs/raw/)
-      console.log(`${label ? label + " " : ""}Step 1/3: migrate`);
+      console.log(`${label ? label + " " : ""}Step 1/4: migrate`);
       try {
         const migrateResult = migrateDocs({ repoRoot, dryRun });
         printMigrateResults(migrateResult);
@@ -546,8 +563,8 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
         process.exit(1);
       }
 
-      // Step 2: seed-index --all (ensures index.md with okf_version frontmatter in every smartdocs dir)
-      console.log(`\n${label ? label + " " : ""}Step 2/3: seed-index --all`);
+      // Step 2: seed-index --all (ensures index.md with okf_version + type frontmatter in every smartdocs dir)
+      console.log(`\n${label ? label + " " : ""}Step 2/4: seed-index --all`);
       try {
         const { written, skippedExists, skippedDraft } = seedIndexAll(repoRoot, { dryRun });
         printSeedAllResult("index.md", dryRun, { written, skippedExists, skippedDraft }, { leadingBlankLine: false });
@@ -557,7 +574,7 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
       }
 
       // Step 3: seed-instructions --all (ensures POLARIS.md drafts; never touches CLAUDE.md/AGENTS.md)
-      console.log(`\n${label ? label + " " : ""}Step 3/3: seed-instructions --all`);
+      console.log(`\n${label ? label + " " : ""}Step 3/4: seed-instructions --all`);
       try {
         const { written, skippedExists, skippedDraft, skippedIneligible, skippedRoot } = seedInstructionsAll(repoRoot, { dryRun });
         const rootCount = skippedRoot ? 1 : 0;
@@ -569,6 +586,19 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
         );
       } catch (err) {
         console.error(`reformat-okf: seed-instructions failed — ${err instanceof Error ? err.message : String(err)}`);
+        process.exit(1);
+      }
+
+      // Step 4: backfill-type (existing docs missing `type` get it derived from kind/doc-type, or "raw")
+      console.log(`\n${label ? label + " " : ""}Step 4/4: backfill-type`);
+      try {
+        const { updated, skipped } = backfillOkfType(repoRoot, { dryRun });
+        for (const { path, type } of updated) {
+          console.log(`${dryRun ? "[dry-run] would add" : "added"} type: ${type} — ${path}`);
+        }
+        console.log(`Done. ${updated.length} updated, ${skipped.length} already had type.`);
+      } catch (err) {
+        console.error(`reformat-okf: backfill-type failed — ${err instanceof Error ? err.message : String(err)}`);
         process.exit(1);
       }
 

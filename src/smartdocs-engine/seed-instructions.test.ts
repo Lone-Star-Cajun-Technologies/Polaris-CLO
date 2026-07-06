@@ -407,7 +407,7 @@ describe("generateBundleRootIndex", () => {
     writeFileSync(join(TMP, "smartdocs/doctrine/active/doctrine.md"), `${DRAFT_MARKER}\n# Doctrine\n`);
     writeFileSync(join(TMP, "smartdocs/specs/active/spec.md"), `${DRAFT_MARKER}\n# Spec\n`);
     const content = generateBundleRootIndex(TMP, {});
-    expect(content.startsWith("---\nokf_version: \"0.1\"\n---\n")).toBe(true);
+    expect(content.startsWith("---\nokf_version: \"0.1\"\ntype: index\n---\n")).toBe(true);
     expect(content.includes(DRAFT_MARKER)).toBe(true);
     expect(content.includes("## Governance")).toBe(true);
     expect(content.includes("## Specs")).toBe(true);
@@ -446,7 +446,7 @@ describe("generateDirectoryIndex", () => {
 
   it("has okf_version frontmatter and includes draft marker", () => {
     const content = generateDirectoryIndex("smartdocs/architecture", TMP);
-    expect(content.startsWith('---\nokf_version: "0.1"\n---\n')).toBe(true);
+    expect(content.startsWith('---\nokf_version: "0.1"\ntype: index\n---\n')).toBe(true);
     expect(content.includes(DRAFT_MARKER)).toBe(true);
   });
 
@@ -522,7 +522,7 @@ describe("seedIndex", () => {
     const outPath = join(TMP, "smartdocs/index.md");
     expect(existsSync(outPath)).toBe(true);
     const content = readFileSync(outPath, "utf-8");
-    expect(content.startsWith("---\nokf_version: \"0.1\"\n---\n")).toBe(true);
+    expect(content.startsWith("---\nokf_version: \"0.1\"\ntype: index\n---\n")).toBe(true);
     expect(content.includes(DRAFT_MARKER)).toBe(true);
   });
 
@@ -532,7 +532,7 @@ describe("seedIndex", () => {
     const outPath = join(TMP, "smartdocs/architecture/index.md");
     expect(existsSync(outPath)).toBe(true);
     const content = readFileSync(outPath, "utf-8");
-    expect(content.startsWith('---\nokf_version: "0.1"\n---\n')).toBe(true);
+    expect(content.startsWith('---\nokf_version: "0.1"\ntype: index\n---\n')).toBe(true);
     expect(content.includes(DRAFT_MARKER)).toBe(true);
   });
 
