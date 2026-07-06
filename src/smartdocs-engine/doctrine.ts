@@ -299,12 +299,70 @@ function addMissingFrontMatterField(content: string, key: string, value: string)
 }
 
 /**
+ * Directory-tier defaults for `type`, keyed by the first two path segments
+ * relative to `smartdocs/`. Mirrors the lifecycle-tier vocabulary already
+ * used by `ingest.ts`'s `DocsClassification`, since directory position — not
+ * frontmatter — is the authoritative signal for a doc's lifecycle state
+ * (docs-authority-model.md "Key rule"). Falling back to a literal `"raw"`
+ * for every file regardless of directory (the prior behavior) let a doc
+ * sitting in `doctrine/active/` end up with `type: raw`, contradicting its
+ * own directory-encoded authority tier.
+ */
+const DIRECTORY_TYPE_DEFAULTS: Record<string, string> = {
+  "raw": "raw",
+  "doctrine/active": "doctrine",
+  "doctrine/candidate": "doctrine-candidate",
+  "doctrine/deprecated": "doctrine-deprecated",
+  "doctrine": "doctrine",
+  "specs/raw": "raw",
+  "specs/active": "spec",
+  "specs/implemented": "spec-implemented",
+  "specs/superseded": "spec-superseded",
+  "specs/archive": "spec-archive",
+  "specs": "spec",
+  "audits/findings": "audit-finding",
+  "audits/resolved": "audit-resolved",
+  "audits": "audit",
+  "decisions": "decision",
+  "architecture": "architecture",
+  "integrations": "integration",
+  "medic": "medic",
+  "runtime/run-reports": "run-report",
+  "runtime/summaries": "runtime-summary",
+  "runtime": "runtime",
+};
+
+/**
+ * Derives a directory-tier-appropriate `type` default for a SmartDocs file
+ * that has neither `kind` nor `doc-type` set. `relPath` is relative to
+ * `smartdocs/` (forward-slash separated). Reserved front-door filenames
+ * (`POLARIS.md`, `SUMMARY.md`, `index.md`) get `"index"` regardless of tier,
+ * since they're navigational scaffolding, not tier content.
+ */
+export function deriveTypeFromDirectory(relPath: string): string {
+  const name = basename(relPath);
+  if (name === "POLARIS.md" || name === "SUMMARY.md" || name === "index.md") {
+    return "index";
+  }
+  const segments = relPath.split("/").slice(0, -1);
+  if (segments.length >= 2) {
+    const twoLevel = `${segments[0]}/${segments[1]}`;
+    if (DIRECTORY_TYPE_DEFAULTS[twoLevel]) return DIRECTORY_TYPE_DEFAULTS[twoLevel];
+  }
+  if (segments.length >= 1 && DIRECTORY_TYPE_DEFAULTS[segments[0]]) {
+    return DIRECTORY_TYPE_DEFAULTS[segments[0]];
+  }
+  return "raw";
+}
+
+/**
  * Retrofit existing SmartDocs with an OKF-conformant `type` frontmatter field.
  *
  * Walks every `.md` file under `smartdocs/`. For each file already missing a
  * `type` key: derives the value from `kind` if present, else `doc-type` if
- * present, else defaults to `"raw"`. Files that already declare `type` are
- * left untouched and reported in `skipped`.
+ * present, else derives a directory-tier-appropriate default via
+ * `deriveTypeFromDirectory` (see that function for the tier mapping). Files
+ * that already declare `type` are left untouched and reported in `skipped`.
  *
  * This is the retroactive counterpart to `addCandidateGovernanceMetadata`,
  * which stamps `type` on newly-governed candidate docs going forward — this
@@ -352,7 +410,8 @@ export function backfillOkfType(
       result.skipped.push(filePath);
       return;
     }
-    const derivedType = fm.kind ?? fm["doc-type"] ?? "raw";
+    const relPath = relative(smartdocsDir, filePath).replace(/\\/g, "/");
+    const derivedType = fm.kind ?? fm["doc-type"] ?? deriveTypeFromDirectory(relPath);
     if (!options.dryRun) {
       writeFileSync(filePath, addMissingFrontMatterField(content, "type", derivedType), "utf-8");
     }

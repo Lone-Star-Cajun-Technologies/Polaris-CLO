@@ -14,6 +14,7 @@ import {
   migrateProvenance,
   detectDoctrineSupersession,
   backfillOkfType,
+  deriveTypeFromDirectory,
 } from "./doctrine.js";
 
 function makeTempDir(): string {
@@ -966,5 +967,68 @@ describe("backfillOkfType", () => {
     const content = readFileSync(path, "utf-8");
     expect(content.startsWith("---\ntype: raw\n---\n")).toBe(true);
     expect(content).toContain("# F");
+  });
+
+  it("derives a directory-tier default instead of raw for files outside raw/", () => {
+    const cases: Array<[string, string]> = [
+      ["doctrine/active/g.md", "doctrine"],
+      ["doctrine/candidate/h.md", "doctrine-candidate"],
+      ["doctrine/deprecated/i.md", "doctrine-deprecated"],
+      ["specs/active/j.md", "spec"],
+      ["specs/implemented/k.md", "spec-implemented"],
+      ["audits/findings/l.md", "audit-finding"],
+      ["audits/resolved/m.md", "audit-resolved"],
+      ["decisions/n.md", "decision"],
+      ["architecture/o.md", "architecture"],
+      ["runtime/run-reports/p.md", "run-report"],
+      ["runtime/summaries/q.md", "runtime-summary"],
+    ];
+    for (const [relPath, expectedType] of cases) {
+      const path = join(repoRoot, "smartdocs", ...relPath.split("/"));
+      mkdirSync(join(path, ".."), { recursive: true });
+      writeFileSync(path, "---\nstatus: active\n---\n\n# Doc");
+    }
+
+    const result = backfillOkfType(repoRoot);
+
+    for (const [relPath, expectedType] of cases) {
+      const path = join(repoRoot, "smartdocs", ...relPath.split("/"));
+      const entry = result.updated.find((u) => u.path === path);
+      expect(entry).toEqual({ path, type: expectedType });
+    }
+  });
+
+  it("gives reserved front-door filenames type index regardless of directory tier", () => {
+    const path = join(repoRoot, "smartdocs", "doctrine", "active", "POLARIS.md");
+    writeFileSync(path, "# Front door");
+
+    const result = backfillOkfType(repoRoot);
+
+    expect(result.updated).toEqual([{ path, type: "index" }]);
+  });
+});
+
+describe("deriveTypeFromDirectory", () => {
+  it("maps known directory tiers to their type default", () => {
+    expect(deriveTypeFromDirectory("raw/a.md")).toBe("raw");
+    expect(deriveTypeFromDirectory("doctrine/active/a.md")).toBe("doctrine");
+    expect(deriveTypeFromDirectory("doctrine/candidate/a.md")).toBe("doctrine-candidate");
+    expect(deriveTypeFromDirectory("specs/active/a.md")).toBe("spec");
+    expect(deriveTypeFromDirectory("audits/findings/a.md")).toBe("audit-finding");
+  });
+
+  it("falls back to the top-level bucket name for an unrecognized sub-tier", () => {
+    expect(deriveTypeFromDirectory("doctrine/some-new-tier/a.md")).toBe("doctrine");
+    expect(deriveTypeFromDirectory("specs/some-new-tier/a.md")).toBe("spec");
+  });
+
+  it("treats POLARIS.md, SUMMARY.md, and index.md as index regardless of tier", () => {
+    expect(deriveTypeFromDirectory("doctrine/active/POLARIS.md")).toBe("index");
+    expect(deriveTypeFromDirectory("audits/findings/SUMMARY.md")).toBe("index");
+    expect(deriveTypeFromDirectory("specs/active/index.md")).toBe("index");
+  });
+
+  it("defaults to raw for a file directly at the smartdocs/ root or an unknown top-level directory", () => {
+    expect(deriveTypeFromDirectory("some-unknown-dir/a.md")).toBe("raw");
   });
 });
