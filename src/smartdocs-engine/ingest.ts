@@ -60,7 +60,7 @@ export interface IngestResult {
   nearestSummary: string | null;
   /** Whether the ingest triggered a SUMMARY.md delta (informational only). */
   summaryDeltaWarranted: boolean;
-  routingDecision: "auto-route" | "candidate" | "review-required";
+  routingDecision: "auto-route" | "candidate" | "review-required" | "approved-override";
   reviewPacket?: import("../governance/types.js").ReviewPacket;
 }
 
@@ -590,8 +590,16 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
       join(resolve(repoRoot, TARGET_DIRS[docClassification]), basename(absSource)),
     ).replace(/\\/g, "/");
 
+    // A prior human/agent review decision or a scoped --approve-authority call
+    // overrides an otherwise-review-required outcome so the placement it
+    // decided on actually happens.
+    const priorDecision = priorQueue.find((p) => p.sourcePath === relSource)?.reviewDecision;
+    const forcedApprove =
+      routingDecision.outcome === "review-required" &&
+      (priorDecision === "approve" || Boolean(options.approveAuthority));
+
     // review-required: leave in raw/, emit packet, skip move
-    if (routingDecision.outcome === "review-required") {
+    if (routingDecision.outcome === "review-required" && !forcedApprove) {
       const packet = {
         ...routingDecision.reviewPacket!,
         sourcePath: relSource,
@@ -640,6 +648,17 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
       linked_map_area: linkedMapArea,
       cluster_id: clusterId,
     });
+
+    if (forcedApprove) {
+      emitTelemetry(telPath, runId, {
+        event: "docs-ingest-approved-override",
+        file: relSource,
+        classification: docClassification,
+        destination: relDestination,
+        reason: priorDecision === "approve" ? "prior-review-decision" : "approve-authority-flag",
+        cluster_id: clusterId,
+      });
+    }
 
     if (!options.dryRun) {
       if (resolve(absSource) !== resolve(destination)) {
@@ -728,7 +747,7 @@ export function ingestDocs(files: string[], options: IngestOptions): IngestResul
       dryRun: Boolean(options.dryRun),
       nearestSummary,
       summaryDeltaWarranted: summaryDelta.updateWarranted,
-      routingDecision: routingDecision.outcome,
+      routingDecision: forcedApprove ? "approved-override" : routingDecision.outcome,
       reviewPacket: routingDecision.reviewPacket
         ? { ...routingDecision.reviewPacket, sourcePath: relSource, proposedDestination: relDestination, conflicts: [] }
         : undefined,

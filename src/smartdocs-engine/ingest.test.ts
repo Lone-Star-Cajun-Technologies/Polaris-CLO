@@ -194,6 +194,82 @@ describe("ingestDocs", () => {
     expect(results[0].destinationPath).toBe("smartdocs/raw/architecture.md");
   });
 
+  it("places the file when a prior review decision approved it", () => {
+    const repoRoot = makeRepo();
+    mkdirSync(join(repoRoot, "smartdocs", "architecture"), { recursive: true });
+    writeFileSync(join(repoRoot, "smartdocs", "raw", "architecture.md"), "# Architecture\n\nStructural design", "utf-8");
+    writeFileSync(
+      join(repoRoot, "smartdocs", "raw", "_review-queue.json"),
+      JSON.stringify({
+        generated_at: "2026-01-01T00:00:00.000Z",
+        run_id: "prior-run",
+        packets: [
+          {
+            sourcePath: "smartdocs/raw/architecture.md",
+            proposedDestination: "smartdocs/architecture/architecture.md",
+            classificationConfidence: 0.4,
+            destinationCertainty: 0.4,
+            authorityRisk: "high",
+            reasoning: [],
+            conflicts: [],
+            recommendation: "defer",
+            outcomeReason: "test",
+            reviewDecision: "approve",
+          },
+        ],
+      }),
+      "utf-8",
+    );
+
+    const results = ingestDocs(["smartdocs/raw/architecture.md"], { repoRoot });
+    expect(results[0].routingDecision).toBe("approved-override");
+    expect(results[0].destinationPath).toBe("smartdocs/architecture/architecture.md");
+    expect(existsSync(join(repoRoot, "smartdocs", "architecture", "architecture.md"))).toBe(true);
+  });
+
+  it("places the file when approveAuthority is set, even without a prior decision", () => {
+    const repoRoot = makeRepo();
+    mkdirSync(join(repoRoot, "smartdocs", "architecture"), { recursive: true });
+    writeFileSync(join(repoRoot, "smartdocs", "raw", "architecture.md"), "# Architecture\n\nStructural design", "utf-8");
+
+    const results = ingestDocs(["smartdocs/raw/architecture.md"], { repoRoot, approveAuthority: true });
+    expect(results[0].routingDecision).toBe("approved-override");
+    expect(results[0].destinationPath).toBe("smartdocs/architecture/architecture.md");
+    expect(existsSync(join(repoRoot, "smartdocs", "architecture", "architecture.md"))).toBe(true);
+  });
+
+  it("does not force placement on a prior reject decision", () => {
+    const repoRoot = makeRepo();
+    mkdirSync(join(repoRoot, "smartdocs", "architecture"), { recursive: true });
+    writeFileSync(join(repoRoot, "smartdocs", "raw", "architecture.md"), "# Architecture\n\nStructural design", "utf-8");
+    writeFileSync(
+      join(repoRoot, "smartdocs", "raw", "_review-queue.json"),
+      JSON.stringify({
+        generated_at: "2026-01-01T00:00:00.000Z",
+        run_id: "prior-run",
+        packets: [
+          {
+            sourcePath: "smartdocs/raw/architecture.md",
+            proposedDestination: "smartdocs/architecture/architecture.md",
+            classificationConfidence: 0.4,
+            destinationCertainty: 0.4,
+            authorityRisk: "high",
+            reasoning: [],
+            conflicts: [],
+            recommendation: "defer",
+            outcomeReason: "test",
+            reviewDecision: "reject",
+          },
+        ],
+      }),
+      "utf-8",
+    );
+
+    const results = ingestDocs(["smartdocs/raw/architecture.md"], { repoRoot });
+    expect(results[0].routingDecision).toBe("review-required");
+    expect(results[0].destinationPath).toBe("smartdocs/raw/architecture.md");
+  });
+
   it("returns routingDecision on each result", () => {
     const repoRoot = makeRepo();
     const docPath = join(repoRoot, CANONICAL_TARGET, "raw", "simple-spec.md");
