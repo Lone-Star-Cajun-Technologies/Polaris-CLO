@@ -271,6 +271,7 @@ export function generateBundleRootIndex(
   const lines: string[] = [
     "---",
     "okf_version: \"0.1\"",
+    "type: index",
     "---",
     "",
     DRAFT_MARKER,
@@ -334,6 +335,7 @@ export function generateDirectoryIndex(
   const lines: string[] = [
     "---",
     "okf_version: \"0.1\"",
+    "type: index",
     "---",
     "",
     DRAFT_MARKER,
