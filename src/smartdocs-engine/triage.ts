@@ -516,19 +516,20 @@ function buildCliLlmClient(providerCfg: ProviderConfig): LlmClient {
       const prompt = buildComparisonPrompt(candidates, canonicals);
       const templateVars: Record<string, string> = { worker_prompt: prompt };
 
-      const command = expandEnvVars(substituteTemplates(providerCfg.command, templateVars));
+      const command = substituteTemplates(expandEnvVars(providerCfg.command), templateVars);
       if (!command.trim()) {
         throw new Error(
           `Provider command "${providerCfg.command}" expanded to an empty string — likely an unset environment variable.`,
         );
       }
       const args = (providerCfg.args ?? []).map((arg) =>
-        expandEnvVars(substituteTemplates(arg, templateVars)),
+        substituteTemplates(expandEnvVars(arg), templateVars),
       );
 
       const stdout = execFileSync(command, args, {
         encoding: "utf-8",
         maxBuffer: 10 * 1024 * 1024,
+        timeout: 300000,
       });
 
       return parseFlagsFromText(stdout);

@@ -531,11 +531,16 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
     .option("-r, --repo-root <path>", "Repository root", defaultRepoRoot)
     .option("--dry-run", "Print what would be written without writing files")
     .action((options: { repoRoot: string; dryRun?: boolean }) => {
-      const { updated, skipped } = backfillOkfType(options.repoRoot, { dryRun: options.dryRun });
-      for (const { path, type } of updated) {
-        console.log(`${options.dryRun ? "[dry-run] would add" : "added"} type: ${type} — ${path}`);
+      try {
+        const { updated, skipped } = backfillOkfType(options.repoRoot, { dryRun: options.dryRun });
+        for (const { path, type } of updated) {
+          console.log(`${options.dryRun ? "[dry-run] would add" : "added"} type: ${type} — ${path}`);
+        }
+        console.log(`Done. ${updated.length} updated, ${skipped.length} already had type.`);
+      } catch (err) {
+        console.error(`polaris docs backfill-type: ${err instanceof Error ? err.message : String(err)}`);
+        process.exit(1);
       }
-      console.log(`Done. ${updated.length} updated, ${skipped.length} already had type.`);
     });
 
   docs
