@@ -1,0 +1,207 @@
+{
+  "schema_version": "1.0",
+  "role": "closeout-librarian",
+  "run_id": "polaris-run-pol-463-2026-07-07-001",
+  "dispatch_id": "d378d4cb-54f6-4ffd-8496-881ccab3ee07",
+  "cluster_id": "POL-463",
+  "status": "success",
+  "commit_sha": "ce0abd6ddbdec0a06f7aba3f81ffe445271d8ff9",
+  "commit_message": "docs(closeout): reconcile cognition for cluster POL-463\n\nRun: polaris-run-pol-463-2026-07-07-001\nCluster: POL-463\nChildren: POL-464, POL-465, POL-466, POL-467, POL-468, POL-469\nFiles updated:\n- POLARIS.md: 9 files\n- SUMMARY.md: 6 files\n- docs ingested: 0\n- links repaired: 0",
+  "files_committed": [
+    "smartdocs/specs/active/SUMMARY.md",
+    "src/autoresearch/POLARIS.md",
+    "src/cluster-state/POLARIS.md",
+    "src/config/POLARIS.md",
+    "src/config/SUMMARY.md",
+    "src/loop/POLARIS.md",
+    "src/loop/SUMMARY.md",
+    "src/loop/adapters/POLARIS.md",
+    "src/loop/adapters/SUMMARY.md",
+    "src/loop/adapters/__tests__/POLARIS.md",
+    "src/loop/adapters/__tests__/SUMMARY.md",
+    "src/runtime/POLARIS.md",
+    "src/runtime/SUMMARY.md",
+    "src/runtime/scheduling/POLARIS.md",
+    "src/runtime/scheduling/SUMMARY.md"
+  ],
+  "drift_reconciliation": {
+    "medic_ran": false,
+    "charts_created": [],
+    "drift_observations": [
+      {
+        "type": "route_guidance_outdated",
+        "target": "src/loop/POLARIS.md",
+        "severity": "high",
+        "detail": "Referenced Worker Router as future planning; router is now implemented in src/loop/router/"
+      },
+      {
+        "type": "route_guidance_outdated",
+        "target": "src/loop/adapters/POLARIS.md",
+        "severity": "medium",
+        "detail": "Referenced router fallback as future; adapter fallback is now integrated"
+      },
+      {
+        "type": "canon_mismatch",
+        "target": "src/config/POLARIS.md",
+        "severity": "high",
+        "detail": "Architecture notes said router types were future; routerPolicy is now in schema and defaults"
+      },
+      {
+        "type": "missing_documentation",
+        "target": "src/runtime/scheduling/POLARIS.md",
+        "severity": "high",
+        "detail": "Draft stub did not describe child-selector.ts slot-aware scheduling"
+      },
+      {
+        "type": "missing_documentation",
+        "target": "src/runtime/POLARIS.md",
+        "severity": "medium",
+        "detail": "Draft stub did not describe runtime folder role"
+      },
+      {
+        "type": "missing_documentation",
+        "target": "src/autoresearch/POLARIS.md",
+        "severity": "medium",
+        "detail": "Draft stub did not describe SOL scoring or router outcome summarization"
+      },
+      {
+        "type": "missing_documentation",
+        "target": "src/cluster-state/POLARIS.md",
+        "severity": "medium",
+        "detail": "Draft stub did not describe cluster state store and slot claim functions"
+      },
+      {
+        "type": "missing_documentation",
+        "target": "src/loop/adapters/__tests__/POLARIS.md",
+        "severity": "low",
+        "detail": "Draft stub did not describe test coverage for adapter fallback and router evidence"
+      },
+      {
+        "type": "summary_outdated",
+        "target": "src/loop/SUMMARY.md",
+        "severity": "medium",
+        "detail": "Current State did not mention Worker Router integration"
+      },
+      {
+        "type": "summary_outdated",
+        "target": "src/loop/adapters/SUMMARY.md",
+        "severity": "medium",
+        "detail": "Current State did not mention pre-dispatch fallback integration"
+      },
+      {
+        "type": "summary_outdated",
+        "target": "src/config/SUMMARY.md",
+        "severity": "medium",
+        "detail": "Current State did not mention routerPolicy config types"
+      },
+      {
+        "type": "summary_outdated",
+        "target": "smartdocs/specs/active/SUMMARY.md",
+        "severity": "low",
+        "detail": "Worker Router spec still described as in-progress; all 6 stages are complete"
+      }
+    ],
+    "chart_links_required": false,
+    "charts_linked": []
+  },
+  "polaris_md_updates": [
+    {
+      "file": "src/loop/POLARIS.md",
+      "action": "update",
+      "change_summary": "Added router/ and missing files to What belongs here; replaced future-planning architecture notes with current implementation facts; updated Read before editing to include router source files."
+    },
+    {
+      "file": "src/loop/adapters/POLARIS.md",
+      "action": "update",
+      "change_summary": "Updated Architecture notes to reflect router fallback integration in TerminalCliAdapter and AgentSubtaskAdapter; updated Read before editing with router schema types."
+    },
+    {
+      "file": "src/config/POLARIS.md",
+      "action": "update",
+      "change_summary": "Replaced future-planning architecture note with current fact: routerPolicy (WorkerRouterPolicyConfig) is now in schema, schema.json, and defaults."
+    },
+    {
+      "file": "src/runtime/scheduling/POLARIS.md",
+      "action": "update",
+      "change_summary": "Replaced draft stub with full content describing child-selector.ts slot-aware scheduling, pure-function invariant, injected decide_route callback, and relationship to router and cluster-state."
+    },
+    {
+      "file": "src/runtime/POLARIS.md",
+      "action": "update",
+      "change_summary": "Replaced draft stub with full content describing runtime infrastructure layer, scheduling subfolder, and relationship to loop and cluster-state."
+    },
+    {
+      "file": "src/autoresearch/POLARIS.md",
+      "action": "update",
+      "change_summary": "Replaced draft stub with full content describing SOL scoring pipeline, summarizeRouterOutcomes(), dev-gate requirements, and relationship to loop telemetry."
+    },
+    {
+      "file": "src/cluster-state/POLARIS.md",
+      "action": "update",
+      "change_summary": "Replaced draft stub with full content describing atomic read/write API, pruneExpiredClaims, types, and editing rules for slot claim management."
+    },
+    {
+      "file": "src/loop/adapters/__tests__/POLARIS.md",
+      "action": "update",
+      "change_summary": "Replaced draft stub with content describing terminal-cli.test.ts coverage for dispatch, fallback, quota signals, and router evidence attachment."
+    }
+  ],
+  "summary_md_updates": [
+    {
+      "file": "src/loop/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Added Current State section describing Worker Router integration, slot-aware scheduling, adapter fallback, and SOL telemetry."
+    },
+    {
+      "file": "src/loop/adapters/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Updated Current State to describe router fallback in TerminalCliAdapter and AgentSubtaskAdapter including pre_dispatch_failure and router_evidence."
+    },
+    {
+      "file": "src/config/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Updated Current State to describe routerPolicy config surface and backward-compatible default behavior."
+    },
+    {
+      "file": "src/runtime/scheduling/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Replaced draft stub with real summary describing selectNextChild() pure function, slot claims, and architectural role."
+    },
+    {
+      "file": "src/runtime/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Replaced draft stub with real summary describing runtime infrastructure layer and scheduling subfolder."
+    },
+    {
+      "file": "src/loop/adapters/__tests__/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Replaced draft stub with real summary describing terminal-cli.test.ts adapter test coverage."
+    },
+    {
+      "file": "smartdocs/specs/active/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Updated Worker Router spec reference to reflect all 6 delivery stages complete (POL-464 through POL-469)."
+    }
+  ],
+  "docs_ingested": [],
+  "docs_archived": [
+    {
+      "source_path": "smartdocs/raw/analysis/pol-464-worker-router-analysis.md",
+      "target_path": null,
+      "action": "archive",
+      "reason": "One-time design boundaries analysis; superseded by worker-router-architecture.md spec. Retained in raw/analysis/ in place."
+    }
+  ],
+  "yaml_updates": [],
+  "cognition_archived": [],
+  "link_validation": {
+    "total_checked": 18,
+    "valid": 18,
+    "broken": 0,
+    "repaired": 0,
+    "unrepairable": []
+  },
+  "blockers": [],
+  "reconciled_at": "2026-07-07T10:51:00-05:00",
+  "evidence_summary": "POL-463 cluster (6 children: POL-464 through POL-469) delivered the complete Worker Router implementation: architecture spec, config/schema types, deterministic engine, slot-aware scheduling, adapter fallback integration, and SOL telemetry. Nine POLARIS.md files and six SUMMARY.md files were updated. Draft stubs in src/runtime/scheduling, src/runtime, src/autoresearch, src/cluster-state, and src/loop/adapters/__tests__ were replaced with real operational guidance. Stale \"future planning\" language in src/loop, src/loop/adapters, and src/config was corrected to reflect the implemented router. The smartdocs/specs/active/SUMMARY.md was updated to mark all 6 Worker Router stages complete. The pol-464 analysis doc was classified as archived in place. No broken links, no docs promoted, no cognition notes to archive. All changes committed as a single librarian commit."
+}
