@@ -38,8 +38,15 @@ function makeQcSummary(overrides: Partial<QcScoreSummary> = {}): QcScoreSummary 
     waived_findings: 0,
     unvalidated_findings: 0,
     open_by_severity: { critical: 0, high: 0, medium: 0, low: 0, info: 0 },
+    weighted_open_score: 0,
+    qc_penalty: 0,
     blocks_delivery: false,
     qc_run_count: 1,
+    provider_breakdown: {},
+    routing_breakdown: { original_worker: 0, repair_worker: 0, follow_up: 0, operator_review: 0, unset: 0 },
+    category_breakdown: {},
+    recurring_child_signals: [],
+    recurring_provider_signals: [],
     ...overrides,
   };
 }
@@ -91,5 +98,41 @@ describe("generateRunReport", () => {
     const qcSummary = makeQcSummary({ total_findings: 3, unvalidated_findings: 2 });
     const report = generateRunReport(baseReportData({ qcSummary }));
     expect(report).toContain("2 unvalidated/provider-noise excluded from scoring");
+  });
+
+  it("lists provider breakdown", () => {
+    const qcSummary = makeQcSummary({
+      provider_breakdown: {
+        coderabbit: { total: 4, blocking: 1, unvalidated: 1 },
+      },
+    });
+    const report = generateRunReport(baseReportData({ qcSummary }));
+    expect(report).toContain("coderabbit");
+    expect(report).toContain("| 4 | 1 | 1 |");
+  });
+
+  it("shows repair routing decisions", () => {
+    const qcSummary = makeQcSummary({
+      routing_breakdown: { original_worker: 1, repair_worker: 2, follow_up: 0, operator_review: 3, unset: 0 },
+    });
+    const report = generateRunReport(baseReportData({ qcSummary }));
+    expect(report).toContain("operator-review");
+    expect(report).toContain("| 3 |");
+    expect(report).toContain("repair-worker");
+    expect(report).toContain("| 2 |");
+  });
+
+  it("shows SOL score impact when qc_penalty is positive", () => {
+    const qcSummary = makeQcSummary({ weighted_open_score: 10, qc_penalty: 0.3333 });
+    const report = generateRunReport(baseReportData({ qcSummary }));
+    expect(report).toContain("SOL score impact");
+    expect(report).toContain("-33.3%");
+    expect(report).toContain("weighted open score 10.00");
+  });
+
+  it("shows no SOL score impact when qc_penalty is zero", () => {
+    const qcSummary = makeQcSummary({ weighted_open_score: 0, qc_penalty: 0 });
+    const report = generateRunReport(baseReportData({ qcSummary }));
+    expect(report).toContain("SOL score impact:** none");
   });
 });

@@ -10,11 +10,12 @@ import { join } from "node:path";
 import {
   FIX_ZONE_MAP,
   buildProposals,
+  buildQcProposals,
   loadDiagnosisReport,
   validateDiagnosisReport,
 } from "./proposal.js";
 import type { AutresearchProposal, ArtifactType } from "./proposal.js";
-import type { DiagnosisReport } from "./score.js";
+import type { DiagnosisReport, QcScoreSummary } from "./score.js";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -34,6 +35,29 @@ function makeDiagnosisReport(overrides: Partial<DiagnosisReport> = {}): Diagnosi
       successful_fallbacks: 0,
       recurring_failures: [],
     },
+    qc_summary: null,
+    ...overrides,
+  };
+}
+
+function makeQcSummary(overrides: Partial<QcScoreSummary> = {}): QcScoreSummary {
+  return {
+    total_findings: 0,
+    blocking_findings: 0,
+    autofixed_findings: 0,
+    repaired_findings: 0,
+    waived_findings: 0,
+    unvalidated_findings: 0,
+    open_by_severity: { critical: 0, high: 0, medium: 0, low: 0, info: 0 },
+    weighted_open_score: 0,
+    qc_penalty: 0,
+    blocks_delivery: false,
+    qc_run_count: 1,
+    provider_breakdown: {},
+    routing_breakdown: { original_worker: 0, repair_worker: 0, follow_up: 0, operator_review: 0, unset: 0 },
+    category_breakdown: {},
+    recurring_child_signals: [],
+    recurring_provider_signals: [],
     ...overrides,
   };
 }
@@ -169,6 +193,110 @@ describe("buildProposals", () => {
   });
 });
 
+// ── buildQcProposals ───────────────────────────────────────────────────────────
+
+describe("buildQcProposals", () => {
+  it("returns empty array when qc_summary is null", () => {
+    const report = makeDiagnosisReport({ qc_summary: null });
+    expect(buildQcProposals(report)).toHaveLength(0);
+  });
+
+  it("emits a provider-role-recommendation for a recurring blocking provider", () => {
+    const report = makeDiagnosisReport({
+      qc_summary: makeQcSummary({
+        total_findings: 3,
+        blocking_findings: 2,
+        provider_breakdown: {
+          "coderabbit": { total: 3, blocking: 2, unvalidated: 0 },
+        },
+        weighted_open_score: 15,
+        qc_penalty: 0.4,
+      }),
+    });
+    const proposals = buildQcProposals(report);
+    const providerProposal = proposals.find((p) => p.gate_id === "qc-recurring-provider:coderabbit");
+    expect(providerProposal).toBeDefined();
+    expect(providerProposal!.artifact_type).toBe("provider-role-recommendation");
+  });
+
+  it("emits a worker-template proposal for a recurring child/worker route", () => {
+    const report = makeDiagnosisReport({
+      qc_summary: makeQcSummary({
+        total_findings: 2,
+        recurring_child_signals: [
+          { child_id: "POL-123", weighted_score: 12, finding_count: 2 },
+        ],
+        weighted_open_score: 12,
+        qc_penalty: 0.3,
+      }),
+    });
+    const proposals = buildQcProposals(report);
+    const childProposal = proposals.find((p) => p.gate_id === "qc-recurring-child:POL-123");
+    expect(childProposal).toBeDefined();
+    expect(childProposal!.artifact_type).toBe("worker-template");
+  });
+
+  it("emits a runtime-config proposal when unvalidated noise dominates", () => {
+    const report = makeDiagnosisReport({
+      qc_summary: makeQcSummary({
+        total_findings: 8,
+        unvalidated_findings: 5,
+        weighted_open_score: 0,
+        qc_penalty: 0,
+      }),
+    });
+    const proposals = buildQcProposals(report);
+    expect(proposals.some((p) => p.gate_id === "qc-unvalidated-noise" && p.artifact_type === "runtime-config")).toBe(true);
+  });
+
+  it("emits a scoring-rule proposal for unresolved blocking findings", () => {
+    const report = makeDiagnosisReport({
+      qc_summary: makeQcSummary({
+        total_findings: 2,
+        blocking_findings: 1,
+        weighted_open_score: 10,
+        qc_penalty: 0.3,
+      }),
+    });
+    const proposals = buildQcProposals(report);
+    expect(proposals.some((p) => p.gate_id === "qc-recurring-validation" && p.artifact_type === "scoring-rule")).toBe(true);
+  });
+
+  it("emits a skill-prompt proposal for recurring docs-category findings", () => {
+    const report = makeDiagnosisReport({
+      qc_summary: makeQcSummary({
+        total_findings: 3,
+        category_breakdown: {
+          docs: { total: 3, blocking: 0 },
+        },
+        weighted_open_score: 0,
+        qc_penalty: 0,
+      }),
+    });
+    const proposals = buildQcProposals(report);
+    expect(proposals.some((p) => p.gate_id === "qc-recurring-docs" && p.artifact_type === "skill-prompt")).toBe(true);
+  });
+
+  it("buildProposals includes both gate and QC-derived proposals", () => {
+    const report = makeDiagnosisReport({
+      failed_gates: ["qc-blocking-findings"],
+      qc_summary: makeQcSummary({
+        total_findings: 3,
+        blocking_findings: 2,
+        provider_breakdown: {
+          "coderabbit": { total: 3, blocking: 2, unvalidated: 0 },
+        },
+        weighted_open_score: 15,
+        qc_penalty: 0.4,
+      }),
+    });
+    const proposals = buildProposals(report);
+    expect(proposals.some((p) => p.gate_id === "qc-blocking-findings")).toBe(true);
+    expect(proposals.some((p) => p.gate_id === "qc-recurring-validation")).toBe(true);
+    expect(proposals.some((p) => p.gate_id === "qc-recurring-provider:coderabbit")).toBe(true);
+  });
+});
+
 // ── validateDiagnosisReport ───────────────────────────────────────────────────
 
 describe("validateDiagnosisReport", () => {
@@ -193,6 +321,19 @@ describe("validateDiagnosisReport", () => {
   it("accepts a valid report", () => {
     const valid = makeDiagnosisReport();
     expect(() => validateDiagnosisReport(valid)).not.toThrow();
+  });
+
+  it("normalizes a missing qc_summary to null", () => {
+    const partial = {
+      run_id: "r",
+      evaluated_at: "x",
+      gate_results: [],
+      failed_gates: [],
+      score: 1,
+      diagnosis_hints: [],
+    };
+    const validated = validateDiagnosisReport(partial);
+    expect(validated.qc_summary).toBeNull();
   });
 });
 

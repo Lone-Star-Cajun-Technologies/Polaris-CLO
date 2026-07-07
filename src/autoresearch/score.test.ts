@@ -869,6 +869,117 @@ describe("computeQcSummary", () => {
     expect(result!.open_by_severity.medium).toBe(1);
     expect(result!.open_by_severity.low).toBe(1);
   });
+
+  it("computes a weighted open score from severity and attribution confidence", () => {
+    const findings: QcResult["findings"] = [
+      {
+        findingId: "f1",
+        severity: "critical",
+        title: "Critical open",
+        fixAvailable: false,
+        autofixEligible: false,
+        attribution: { confidence: "high", reason: "commit-line-match" },
+        status: "open",
+      },
+      {
+        findingId: "f2",
+        severity: "high",
+        title: "High follow-up",
+        fixAvailable: false,
+        autofixEligible: false,
+        attribution: { confidence: "medium", reason: "changed-file-owner" },
+        status: "follow-up",
+      },
+      {
+        findingId: "f3",
+        severity: "low",
+        title: "Unvalidated noise",
+        fixAvailable: false,
+        autofixEligible: false,
+        attribution: { confidence: "low", reason: "provider-uncertain" },
+        status: "open",
+      },
+    ];
+    const result = computeQcSummary([makeQcResult({ findings })]);
+    expect(result!.weighted_open_score).toBeCloseTo(13.5, 2);
+    expect(result!.qc_penalty).toBeGreaterThan(0);
+  });
+
+  it("excludes unvalidated findings from weighted score", () => {
+    const findings: QcResult["findings"] = [
+      {
+        findingId: "f1",
+        severity: "critical",
+        title: "Unattributed",
+        fixAvailable: false,
+        autofixEligible: false,
+        attribution: { confidence: "unattributed", reason: "unattributed" },
+        status: "open",
+      },
+    ];
+    const result = computeQcSummary([makeQcResult({ findings })]);
+    expect(result!.weighted_open_score).toBe(0);
+    expect(result!.qc_penalty).toBe(0);
+  });
+
+  it("aggregates recurring child/worker route signals", () => {
+    const findings: QcResult["findings"] = [
+      {
+        findingId: "f1",
+        severity: "high",
+        title: "Route issue 1",
+        fixAvailable: false,
+        autofixEligible: false,
+        attribution: { confidence: "high", reason: "commit-line-match", childId: "POL-123" },
+        status: "open",
+      },
+      {
+        findingId: "f2",
+        severity: "medium",
+        title: "Route issue 2",
+        fixAvailable: false,
+        autofixEligible: false,
+        attribution: { confidence: "high", reason: "commit-line-match", childId: "POL-123" },
+        status: "open",
+      },
+    ];
+    const result = computeQcSummary([makeQcResult({ findings })]);
+    expect(result!.recurring_child_signals).toHaveLength(1);
+    expect(result!.recurring_child_signals[0]!.child_id).toBe("POL-123");
+    expect(result!.recurring_child_signals[0]!.finding_count).toBe(2);
+    expect(result!.recurring_child_signals[0]!.weighted_score).toBeCloseTo(7, 2);
+  });
+
+  it("aggregates recurring provider signals and routing breakdown", () => {
+    const findings: QcResult["findings"] = [
+      {
+        findingId: "f1",
+        severity: "high",
+        title: "Provider issue",
+        fixAvailable: false,
+        autofixEligible: false,
+        attribution: { confidence: "high", reason: "commit-line-match" },
+        routingDecision: "operator-review",
+        status: "open",
+      },
+      {
+        findingId: "f2",
+        severity: "medium",
+        title: "Routed repair",
+        fixAvailable: false,
+        autofixEligible: false,
+        attribution: { confidence: "medium", reason: "changed-file-owner" },
+        routingDecision: "repair-worker",
+        status: "open",
+      },
+    ];
+    const result = computeQcSummary([makeQcResult({ provider: "coderabbit", findings })]);
+    expect(result!.recurring_provider_signals).toHaveLength(1);
+    expect(result!.recurring_provider_signals[0]!.provider).toBe("coderabbit");
+    expect(result!.provider_breakdown["coderabbit"]!.total).toBe(2);
+    expect(result!.routing_breakdown.operator_review).toBe(1);
+    expect(result!.routing_breakdown.repair_worker).toBe(1);
+  });
 });
 
 // ── gateQcBlockingFindings ────────────────────────────────────────────────────

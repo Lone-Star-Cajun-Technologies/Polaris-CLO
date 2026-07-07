@@ -9,7 +9,7 @@
  */
 
 import { existsSync, readFileSync } from "node:fs";
-import type { DiagnosisReport } from "./score.js";
+import type { DiagnosisReport, QcScoreSummary } from "./score.js";
 
 // ──────────────────────────────────────────────
 // ArtifactType union
@@ -158,6 +158,114 @@ export interface AutresearchProposal {
  * Maps a DiagnosisReport's failed gates to AutresearchProposal objects.
  * Gates without a fix zone entry are skipped.
  */
+const QC_FIX_ZONE_MAP: Record<string, FixZoneEntry> = {
+  "qc-recurring-provider": {
+    artifact_type: "provider-role-recommendation",
+    hint:
+      "A QC provider is producing recurring attributed findings. Review provider capability mapping, role assignment, and confidence thresholds.",
+  },
+  "qc-recurring-child": {
+    artifact_type: "worker-template",
+    hint:
+      "A child/worker route accumulates recurring QC findings. Tighten packet scope, validation commands, or acceptance criteria for this route.",
+  },
+  "qc-unvalidated-noise": {
+    artifact_type: "runtime-config",
+    hint:
+      "A large share of QC findings are low/unattributed provider noise. Raise providerConfidenceThreshold or tighten QC provider selection.",
+  },
+  "qc-recurring-validation": {
+    artifact_type: "scoring-rule",
+    hint:
+      "Unresolved QC findings indicate validation gaps. Strengthen scoring rules and repair routing before delivery.",
+  },
+  "qc-recurring-docs": {
+    artifact_type: "skill-prompt",
+    hint:
+      "Recurring QC findings relate to documentation. Update skill prompts and worker instructions that produce docs artifacts.",
+  },
+};
+
+/**
+ * Builds QC-derived improvement proposals from the diagnosis report.
+ *
+ * These recommendations target config, provider, packet-scope, validation,
+ * and docs artifacts for recurring QC failure patterns.
+ */
+export function buildQcProposals(report: DiagnosisReport): AutresearchProposal[] {
+  const qc = report.qc_summary;
+  if (!qc) return [];
+
+  const proposals: AutresearchProposal[] = [];
+  const confidence = Math.max(0, Math.min(1, 1 - qc.qc_penalty));
+
+  const addProposal = (gateId: string, artifactType: ArtifactType, hint: string): void => {
+    proposals.push({
+      gate_id: gateId,
+      artifact_type: artifactType,
+      hint,
+      run_id: report.run_id,
+      evidence_run_ids: [report.run_id],
+      confidence,
+      fix_zone: `${artifactType}/${gateId}`,
+    });
+  };
+
+  // Recurring provider signal: multiple blocking findings from the same provider.
+  for (const [provider, summary] of Object.entries(qc.provider_breakdown)) {
+    if (summary.total >= 2 && summary.blocking > 0) {
+      addProposal(
+        `qc-recurring-provider:${provider}`,
+        "provider-role-recommendation",
+        `Provider '${provider}' produced ${summary.blocking} blocking QC findings across ${summary.total} total findings. Review provider capability mapping, role assignment, and confidence thresholds.`,
+      );
+    }
+  }
+
+  // Recurring child/worker route signal: same child owns multiple findings.
+  for (const signal of qc.recurring_child_signals) {
+    if (signal.finding_count >= 2) {
+      addProposal(
+        `qc-recurring-child:${signal.child_id}`,
+        "worker-template",
+        `Child '${signal.child_id}' accumulated ${signal.finding_count} attributed QC findings (weighted score ${signal.weighted_score.toFixed(2)}). Tighten packet scope, validation commands, or acceptance criteria for this worker route.`,
+      );
+    }
+  }
+
+  // High share of unvalidated/provider-noise findings.
+  const noiseRatio = qc.total_findings > 0 ? qc.unvalidated_findings / qc.total_findings : 0;
+  if (qc.unvalidated_findings >= 3 && noiseRatio > 0.3) {
+    addProposal(
+      "qc-unvalidated-noise",
+      "runtime-config",
+      `${qc.unvalidated_findings} of ${qc.total_findings} QC findings are low/unattributed provider noise. Raise providerConfidenceThreshold or tighten QC provider selection in runtime config.`,
+    );
+  }
+
+  // Unresolved blocking findings indicate a validation/routing gap.
+  if (qc.blocking_findings > 0 && qc.weighted_open_score > 0) {
+    addProposal(
+      "qc-recurring-validation",
+      "scoring-rule",
+      `${qc.blocking_findings} blocking QC findings remain unresolved (weighted score ${qc.weighted_open_score.toFixed(2)}). Strengthen validation gates and repair routing before delivery.`,
+    );
+  }
+
+  // Recurring docs-category findings.
+  for (const [category, summary] of Object.entries(qc.category_breakdown)) {
+    if (category === "docs" && summary.total >= 2) {
+      addProposal(
+        "qc-recurring-docs",
+        "skill-prompt",
+        `${summary.total} QC findings relate to documentation. Update skill prompts and worker instructions that produce docs artifacts.`,
+      );
+    }
+  }
+
+  return proposals;
+}
+
 export function buildProposals(report: DiagnosisReport): AutresearchProposal[] {
   const proposals: AutresearchProposal[] = [];
   for (const gateId of report.failed_gates) {
@@ -173,6 +281,9 @@ export function buildProposals(report: DiagnosisReport): AutresearchProposal[] {
       fix_zone: `${entry.artifact_type}/${gateId}`,
     });
   }
+
+  proposals.push(...buildQcProposals(report));
+
   const recurringRouterFailures = report.router_outcomes?.recurring_failures ?? [];
   for (const failure of recurringRouterFailures) {
     if (failure.occurrences < 2) continue;
@@ -214,6 +325,40 @@ export function loadDiagnosisReport(filePath: string): DiagnosisReport {
   return validateDiagnosisReport(raw);
 }
 
+function defaultRoutingBreakdown(): QcScoreSummary["routing_breakdown"] {
+  return { original_worker: 0, repair_worker: 0, follow_up: 0, operator_review: 0, unset: 0 };
+}
+
+function normalizeQcScoreSummary(raw: unknown): QcScoreSummary | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const q = raw as Partial<QcScoreSummary>;
+  const zeroSeverity = { critical: 0, high: 0, medium: 0, low: 0, info: 0 };
+  const rawOpen =
+    q.open_by_severity && typeof q.open_by_severity === "object" && !Array.isArray(q.open_by_severity)
+      ? (q.open_by_severity as unknown as Record<string, number>)
+      : undefined;
+  const openBySeverity = rawOpen ? { ...zeroSeverity, ...rawOpen } : zeroSeverity;
+
+  return {
+    total_findings: q.total_findings ?? 0,
+    blocking_findings: q.blocking_findings ?? 0,
+    autofixed_findings: q.autofixed_findings ?? 0,
+    repaired_findings: q.repaired_findings ?? 0,
+    waived_findings: q.waived_findings ?? 0,
+    unvalidated_findings: q.unvalidated_findings ?? 0,
+    open_by_severity: openBySeverity,
+    weighted_open_score: q.weighted_open_score ?? 0,
+    qc_penalty: q.qc_penalty ?? 0,
+    blocks_delivery: q.blocks_delivery ?? false,
+    qc_run_count: q.qc_run_count ?? 0,
+    provider_breakdown: q.provider_breakdown ?? {},
+    routing_breakdown: q.routing_breakdown ?? defaultRoutingBreakdown(),
+    category_breakdown: q.category_breakdown ?? {},
+    recurring_child_signals: Array.isArray(q.recurring_child_signals) ? q.recurring_child_signals : [],
+    recurring_provider_signals: Array.isArray(q.recurring_provider_signals) ? q.recurring_provider_signals : [],
+  };
+}
+
 /**
  * Validates a parsed value against the DiagnosisReport schema.
  * Throws a descriptive error if required fields are missing or have wrong types.
@@ -250,8 +395,11 @@ export function validateDiagnosisReport(raw: unknown): DiagnosisReport {
         recurring_failures: [],
       };
 
+  const normalizedQcSummary = normalizeQcScoreSummary(r["qc_summary"]);
+
   return {
     ...(raw as DiagnosisReport),
     router_outcomes: normalizedRouterOutcomes,
+    qc_summary: normalizedQcSummary,
   };
 }

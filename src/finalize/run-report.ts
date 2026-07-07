@@ -17,7 +17,8 @@ function renderQcSection(qcSummary: QcScoreSummary | null | undefined): string {
 
   const { total_findings, blocking_findings, autofixed_findings, repaired_findings,
           waived_findings, unvalidated_findings, open_by_severity,
-          blocks_delivery, qc_run_count } = qcSummary;
+          blocks_delivery, qc_run_count, weighted_open_score, qc_penalty,
+          provider_breakdown, routing_breakdown } = qcSummary;
 
   const openTotal = open_by_severity.critical + open_by_severity.high +
                     open_by_severity.medium + open_by_severity.low + open_by_severity.info;
@@ -26,22 +27,50 @@ function renderQcSection(qcSummary: QcScoreSummary | null | undefined): string {
     ? "**BLOCKED** — unresolved critical/high findings must be addressed before delivery"
     : "Not blocking delivery";
 
+  const providers = Object.entries(provider_breakdown)
+    .map(([provider, summary]) => `| ${provider} | ${summary.total} | ${summary.blocking} | ${summary.unvalidated} |`)
+    .join("\n");
+
+  const routing = `
+| original-worker | ${routing_breakdown.original_worker} |
+| repair-worker | ${routing_breakdown.repair_worker} |
+| follow-up | ${routing_breakdown.follow_up} |
+| operator-review | ${routing_breakdown.operator_review} |
+| unset | ${routing_breakdown.unset} |`;
+
+  const solImpactValue = qc_penalty > 0
+    ? `-${(qc_penalty * 100).toFixed(1)}% (weighted open score ${weighted_open_score.toFixed(2)})`
+    : `none (weighted open score ${weighted_open_score.toFixed(2)})`;
+
   return `
 ## QC summary
 
-**QC runs:** ${qc_run_count}
-**Delivery status:** ${deliveryStatus}
-**Total findings:** ${total_findings} (${unvalidated_findings} unvalidated/provider-noise excluded from scoring)
+|**QC runs:** ${qc_run_count}
+|**Delivery status:** ${deliveryStatus}
+|**Total findings:** ${total_findings} (${unvalidated_findings} unvalidated/provider-noise excluded from scoring)
+|**SOL score impact:** ${solImpactValue}
 
-| Status | Count |
+|| Status | Count |
+|---|---|---|
+|| Blocking (critical/high, open) | ${blocking_findings} |
+|| Open (all severities) | ${openTotal} |
+|| Autofixed | ${autofixed_findings} |
+|| Repaired | ${repaired_findings} |
+|| Waived | ${waived_findings} |
+
+|**Open by severity:** critical=${open_by_severity.critical} high=${open_by_severity.high} medium=${open_by_severity.medium} low=${open_by_severity.low} info=${open_by_severity.info}
+
+### Providers
+
+| Provider | Total | Blocking | Unvalidated |
+|---|---|---|---|
+${providers || "| _none_ | — | — | — |"}
+
+### Repair routing
+
+| Decision | Count |
 |---|---|
-| Blocking (critical/high, open) | ${blocking_findings} |
-| Open (all severities) | ${openTotal} |
-| Autofixed | ${autofixed_findings} |
-| Repaired | ${repaired_findings} |
-| Waived | ${waived_findings} |
-
-**Open by severity:** critical=${open_by_severity.critical} high=${open_by_severity.high} medium=${open_by_severity.medium} low=${open_by_severity.low} info=${open_by_severity.info}
+${routing}
 `;
 }
 
@@ -73,15 +102,15 @@ export function generateRunReport(data: RunReportData): string {
 
   return `# Run Report: ${state.run_id}
 
-**Status:** ${state.status}
-**Branch:** ${branch}
-**PR:** ${prUrl ?? "TBD — set at delivery step 9"}
-**Children completed:** ${completedCount} of ${total}
-**Validation:** ${validationPassed ? "passed" : "failed"}
+|**Status:** ${state.status}
+|**Branch:** ${branch}
+|**PR:** ${prUrl ?? "TBD — set at delivery step 9"}
+|**Children completed:** ${completedCount} of ${total}
+|**Validation:** ${validationPassed ? "passed" : "failed"}
 ${blockerNote}
 ## Children
 
-| ID | Title | Commit | Status |
+|| ID | Title | Commit | Status |
 |---|---|---|---|
 ${childRows || "_No children recorded_"}
 
