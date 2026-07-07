@@ -43,6 +43,12 @@ The autoresearch subsystem provides a dev-gated retroactive run scoring pipeline
 - `smartdocs/specs/active/worker-router-architecture.md` — §3.9 SOL telemetry event catalog
 - `src/loop/dispatch.ts` — telemetry emission that feeds scoring
 
+## QC relationship
+
+- Autoresearch consumes normalized QC metrics as advisory SOL inputs; it does not invoke QC providers.
+- `scoreRun()` reads QC result artifacts from `.polaris/clusters/<cluster-id>/qc/` and weights findings by severity and attribution confidence.
+- QC findings are treated as noisy observations; autoresearch aggregates patterns and proposes follow-up analysis or human review, never a unilateral block.
+
 ## Related routes
 
 - `src/cli/autoresearch.ts` — CLI command surface

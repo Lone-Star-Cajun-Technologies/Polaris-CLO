@@ -66,6 +66,13 @@ The loop subsystem manages the session lifecycle for Polaris cluster runs. It ha
 - Router fallback (`pre_dispatch_failure`) is handled in execution adapters: the adapter returns `fallback_eligible: true` and `router_evidence`, and the caller may retry the next provider in the fallback chain. Once a worker emits `worker-acknowledged`, the child is bound and no further fallback is attempted.
 - SOL scoring inputs are emitted from dispatch and parent as router telemetry; `src/autoresearch/score.ts` reads these events to compute `RouterOutcomesSummary`.
 
+## QC relationship
+
+- The loop owns child dispatch ordering and is not responsible for QC execution.
+- Completed-cluster QC triggers after all children are complete and Closeout Librarian has produced documentation evidence.
+- Child-level QC is opt-in and policy-gated; it runs after a single child completes and before the next child is dispatched.
+- QC results are durable artifacts written by `src/qc/` and consumed by finalize, cluster-state, and autoresearch; the loop does not parse provider output.
+
 ## Related routes
 
 - `polaris.loop` — all files in this directory

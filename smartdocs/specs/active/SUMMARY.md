@@ -13,6 +13,10 @@ Current canonical SmartDocs specs.
   (POL-464 through POL-469) are complete: architecture documented, config/types added,
   deterministic engine implemented, slot-aware scheduling integrated, adapter fallback
   wired, and SOL telemetry emitted.
+- Includes the Quality Control architecture spec for POL-471 in
+  [quality-control-architecture.md](quality-control-architecture.md). It defines provider
+  boundaries, trigger policy (PR/completed-cluster default, child-level gated), severity,
+  attribution, auto-fix limits, repair routing, and SOL feedback boundaries.
 
 ## Relationships
 - **Parent**: `smartdocs/specs/`
