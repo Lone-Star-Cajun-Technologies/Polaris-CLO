@@ -38,7 +38,7 @@ import type { BootstrapPacket, WorkerSummary } from "./adapters/types.js";
 import { checkBudget, policyFromConfig } from "./budget.js";
 import { loadConfig } from "../config/loader.js";
 import type { ChildState } from "../cluster-state/types.js";
-import { readClusterState, writeClusterState } from "../cluster-state/store.js";
+import { readClusterState, writeClusterState, pruneExpiredClaims } from "../cluster-state/store.js";
 import { WorkerLifecycleManager } from "./lifecycle.js";
 import { compileImplPacket, type WorkerPacket } from "./worker-packet.js";
 import { selectPromptMode } from "./worker-prompt.js";
@@ -62,8 +62,11 @@ import {
   type RunStartedEvent,
 } from "./ledger.js";
 import { resolveProviderAndMode, assertProviderAllowedForRole } from "./dispatch.js";
+import { decideWorkerRoute } from "./router/index.js";
+import { selectChildSlotClaims, type SlotClaim } from "../runtime/scheduling/child-selector.js";
 import { loadTrackerAdapter } from "../tracker/index.js";
 import { LifecycleTransitionService } from "../tracker/lifecycle-transition.js";
+import { LocalGraph } from "../tracker/local-graph.js";
 
 const CLAIM_TTL_MS = 30 * 60 * 1000;
 
@@ -222,14 +225,6 @@ function emitBootstrapContextSize(
 }
 
 /**
- * Select the next open child that is not Done/blocked.
- * Returns null when all children are completed.
- */
-function selectNextChild(state: LoopState): string | null {
-  return state.open_children[0] ?? null;
-}
-
-/**
  * Returns true when the given child is detected as an analyze issue.
  * Detection is intentionally conservative: title prefix or label match only.
  */
@@ -383,6 +378,7 @@ function buildPacket(
   telemetryFile: string,
   repoRoot: string,
   resultFile: string,
+  maxConcurrentWorkers: number,
 ): WorkerPacket {
   const branch = state.branch ?? getCurrentBranch(repoRoot);
 
@@ -425,7 +421,7 @@ function buildPacket(
     telemetryFile,
     issueContext,
     allowedScope: resolvedScope.length > 0 ? resolvedScope : undefined,
-    maxConcurrentWorkers: 1,
+    maxConcurrentWorkers,
     promptMode,
     resultFile,
   });
@@ -634,6 +630,31 @@ function advanceState(state: LoopState, completedChild: string, lastCommit?: str
     context_budget: {
       ...state.context_budget,
       children_completed: completed.length,
+    },
+  };
+}
+
+function withWorkerPoolState(
+  state: LoopState,
+  maxConcurrentWorkers: number,
+  slotClaims: SlotClaim[],
+): LoopState {
+  return {
+    ...state,
+    worker_pool_state: {
+      max_concurrent: maxConcurrentWorkers,
+      slot_claims: slotClaims,
+    },
+  };
+}
+
+function pruneWorkerPoolClaimsForChild(state: LoopState, childId: string): LoopState {
+  if (!state.worker_pool_state) return state;
+  return {
+    ...state,
+    worker_pool_state: {
+      ...state.worker_pool_state,
+      slot_claims: state.worker_pool_state.slot_claims.filter((claim) => claim.child_id !== childId),
     },
   };
 }
@@ -879,6 +900,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
   const adapter = createAdapter(adapterName, executionConfig);
   const budgetPolicy = policyFromConfig(state.context_budget, config.budget);
   const allowAnalyzeChildren = allowAnalyzeChildrenFlag || (config.budget?.allow_analyze_children === true);
+  const maxConcurrentWorkers = config.execution?.routerPolicy?.defaultWorkerPool?.maxActiveWorkers ?? 1;
   const telemetryFile = resolveTelemetryFile(state, repoRoot);
 
   // Enforce provider policy for explicit --provider flag before entering the loop.
@@ -940,20 +962,75 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     flushBodiesToClusterSnapshot(state, repoRoot);
   }
 
+  let localGraph: LocalGraph | null = null;
+  try {
+    localGraph = await LocalGraph.load(state.cluster_id, repoRoot);
+  } catch {
+    localGraph = null;
+  }
+
   // ── Lifecycle manager: enforce one-active-worker policy ─────────────────
   // forceReleaseAll() clears any orphaned registrations from a previous
   // crashed session. Registrations are session-memory only; they are not
   // persisted to disk, so a fresh loop start always begins clean.
-  const lifecycle = new WorkerLifecycleManager(1);
+  const lifecycle = new WorkerLifecycleManager(maxConcurrentWorkers);
   lifecycle.forceReleaseAll();
 
   // ── Main dispatch loop ───────────────────────────────────────────────────
   // eslint-disable-next-line no-constant-condition
   while (true) {
     // ── Step 02: Select next open child ─────────────────────────────────
-    const nextChild = selectNextChild(state);
+    const existingSlotClaims = state.worker_pool_state?.slot_claims ?? [];
+
+    if (!dryRun) {
+      const clusterState = await readClusterState(state.cluster_id, repoRoot);
+      if (clusterState) {
+        const pruned = pruneExpiredClaims(clusterState);
+        if (pruned.expiredChildIds.length > 0) {
+          await writeClusterState(state.cluster_id, pruned.state, repoRoot);
+        }
+      }
+    }
+
+    const selection = selectChildSlotClaims({
+      open_children: state.open_children,
+      completed_children: state.completed_children,
+      active_child: state.active_child || null,
+      existing_claims: existingSlotClaims,
+      max_concurrent: maxConcurrentWorkers,
+      claim_ttl_ms: CLAIM_TTL_MS,
+      get_dependencies: (childId) => localGraph?.getDependencies(childId) ?? [],
+      decide_route: ({ activeSlotsByProvider }) =>
+        decideWorkerRoute({
+          role: "worker",
+          taskType: "impl",
+          adapter: adapterName,
+          providerOverride: options.provider,
+          providers: Object.keys(config.execution?.providers ?? {}),
+          rotation: config.execution?.rotation ?? [],
+          rolePolicy: config.execution?.providerPolicy?.worker,
+          roleConfiguredProvider: config.execution?.roles?.worker?.provider,
+          routerPolicy: config.execution?.routerPolicy,
+          constraints: {
+            requiredCapabilities: ["implementation"],
+          },
+          runtime: {
+            activeSlotsByProvider,
+          },
+          compatibilityMode: false,
+        }),
+    });
+    const nextSlotClaims = selection.slot_claims;
+    const nextChild = selection.selected_child;
 
     if (nextChild === null) {
+      if (state.open_children.length > 0) {
+        return {
+          haltReason: "blocked",
+          childrenDispatched,
+          message: "No schedulable child matched dependency and router slot constraints.",
+        };
+      }
       const autoFinalizeRequested = orchestrationMode === "auto" && config.orchestration?.auto_finalize === true;
       // All children completed — write final state and halt
       if (!dryRun) {
@@ -1205,7 +1282,15 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     mkdirSync(dirname(resultFile), { recursive: true });
     const statePreDispatch = state;
     let stateBeforeDispatch = state;
-    const packet = buildPacket(state, nextChild, stateFile, telemetryFile, repoRoot, resultFile);
+    const packet = buildPacket(
+      state,
+      nextChild,
+      stateFile,
+      telemetryFile,
+      repoRoot,
+      resultFile,
+      maxConcurrentWorkers,
+    );
 
     if (!dryRun) {
       try {
@@ -1240,7 +1325,11 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
         dispatchedAt,
       });
       const stateWithDispatch: LoopState = {
-        ...withChildDispatchMetadata(state, nextChild, resultFile, dispatchRecord),
+        ...withWorkerPoolState(
+          withChildDispatchMetadata(state, nextChild, resultFile, dispatchRecord),
+          maxConcurrentWorkers,
+          nextSlotClaims,
+        ),
         active_child: nextChild,
         step_cursor: "dispatch",
         dispatch_boundary: advanceDispatchEpoch(state.dispatch_boundary, nextChild),
@@ -1809,14 +1898,14 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
 
       // Advance state, including continue_epoch to match the consumed dispatch
       const advanced = advanceState(state, nextChild, lastCommit);
-      state = {
+      state = pruneWorkerPoolClaimsForChild({
         ...advanced,
         dispatch_boundary: advanceContinueEpoch(state.dispatch_boundary),
         completed_children_results: {
           ...advanced.completed_children_results,
           [nextChild]: workerResult,
         },
-      };
+      }, nextChild);
       childrenDispatched += 1;
       // Worker did not write its own completion — orchestrator fills the gap.
       if (!dryRun) {
@@ -1825,14 +1914,14 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     } else {
       // Worker wrote its own completion — advance continue_epoch to stay in sync.
       // The worker does not manage dispatch_boundary, so the parent must do it.
-      state = {
+      state = pruneWorkerPoolClaimsForChild({
         ...state,
         dispatch_boundary: advanceContinueEpoch(state.dispatch_boundary),
         completed_children_results: {
           ...state.completed_children_results,
           [nextChild]: workerResult,
         },
-      };
+      }, nextChild);
       childrenDispatched += 1;
       if (!dryRun) {
         writeStateAtomic(stateFile, state);

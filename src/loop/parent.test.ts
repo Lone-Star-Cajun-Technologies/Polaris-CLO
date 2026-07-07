@@ -384,6 +384,45 @@ describe("runParentLoop", () => {
     expect(dispatchedIds).toEqual(["POL-100", "POL-101", "POL-102"]);
   });
 
+  it("selects next child by dependency readiness when graph data is available", async () => {
+    const calls: MockCall[] = [];
+    const mockAdapter = makeMockAdapter([SUCCESS_RESULT, SUCCESS_RESULT], calls);
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-402", "POL-401"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+
+    const clusterDir = join(tmpDir, ".polaris", "clusters", "POL-99");
+    mkdirSync(clusterDir, { recursive: true });
+    writeFileSync(
+      join(clusterDir, "clusters.json"),
+      JSON.stringify({
+        schemaVersion: "v2",
+        source: { id: "POL-99", type: "Linear", analysis: { id: "test", doc: "test" } },
+        nodes: {
+          "POL-99": { id: "POL-99", title: "Cluster root", status: "Todo" },
+          "POL-401": { id: "POL-401", title: "First", status: "Todo" },
+          "POL-402": { id: "POL-402", title: "Second", status: "Todo" },
+        },
+        dependencies: {
+          "POL-402": ["POL-401"],
+        },
+        clusters: {
+          "POL-99": { id: "POL-99", title: "Cluster", children: ["POL-402", "POL-401"] },
+        },
+        activeCluster: "POL-99",
+      }),
+      "utf-8",
+    );
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+    expect(result.haltReason).toBe("cluster-complete");
+    expect(calls.map((call) => call.packet.active_child)).toEqual(["POL-401", "POL-402"]);
+  });
+
   it("appends run-started to the global ledger on entry", async () => {
     const calls: MockCall[] = [];
     const mockAdapter = makeMockAdapter([SUCCESS_RESULT], calls);

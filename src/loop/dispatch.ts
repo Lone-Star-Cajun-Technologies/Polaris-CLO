@@ -1012,6 +1012,7 @@ function buildPacket(
   telemetryFile: string,
   repoRoot: string,
   resultFile: string,
+  maxConcurrentWorkers: number,
   config?: Required<PolarisConfig>,
 ): WorkerPacket {
   const childMeta = state.open_children_meta?.[childId];
@@ -1049,7 +1050,7 @@ function buildPacket(
     telemetryFile,
     issueContext,
     allowedScope: resolvedScope.length > 0 ? resolvedScope : undefined,
-    maxConcurrentWorkers: 1,
+    maxConcurrentWorkers,
     promptMode: selectPromptMode(childId, state),
     simplicityMode: resolveSimplicityMode(state, config),
     resultFile: canonicalPath(absoluteResultFile(repoRoot, resultFile)),
@@ -1321,6 +1322,7 @@ export function runLoopDispatch(options: DispatchOptions): void {
     telemetryFile,
     options.repoRoot,
     canonicalResultFile,
+    loadedConfig?.execution?.routerPolicy?.defaultWorkerPool?.maxActiveWorkers ?? 1,
     loadedConfig,
   );
 
