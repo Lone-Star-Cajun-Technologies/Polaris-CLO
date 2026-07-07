@@ -18,6 +18,8 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { WorkerResultContract } from "../types/result-packet.js";
+import { listQcArtifactIds, readQcArtifact } from "../qc/artifacts.js";
+import type { QcResult } from "../qc/types.js";
 import { ALL_GATES, readJsonLines } from "./gates.js";
 import type { GateResult } from "./gates.js";
 
@@ -34,6 +36,8 @@ export interface RunArtifacts {
   resultPackets: unknown[];
   workerResultContracts: WorkerResultContract[];
   telemetryEvents: unknown[];
+  /** QC results loaded from .polaris/clusters/<cluster-id>/qc/. Empty when no QC data exists. */
+  qcResults: QcResult[];
 }
 
 // ──────────────────────────────────────────────
@@ -60,6 +64,37 @@ export interface RouterOutcomesSummary {
   recurring_failures: RouterFailureSummary[];
 }
 
+/** Per-severity breakdown of QC findings for scoring. */
+export interface QcFindingCounts {
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
+  info: number;
+}
+
+/** QC scoring summary attached to the DiagnosisReport. */
+export interface QcScoreSummary {
+  /** Total findings across all QC runs for this cluster. */
+  total_findings: number;
+  /** Findings that block delivery (critical/high, open or follow-up, attributed with high/medium confidence). */
+  blocking_findings: number;
+  /** Findings autofixed by Polaris. */
+  autofixed_findings: number;
+  /** Findings routed to a repair worker. */
+  repaired_findings: number;
+  /** Findings waived by operator policy. */
+  waived_findings: number;
+  /** Findings from unvalidated / provider-noise sources (low-attribution confidence). */
+  unvalidated_findings: number;
+  /** Breakdown of open (non-waived, non-fixed) findings by severity. */
+  open_by_severity: QcFindingCounts;
+  /** Whether any QC run reported policyDecision.blocksDelivery = true. */
+  blocks_delivery: boolean;
+  /** Number of QC runs included in this summary. */
+  qc_run_count: number;
+}
+
 export interface DiagnosisReport {
   run_id: string;
   cluster_id: string | null;
@@ -69,6 +104,8 @@ export interface DiagnosisReport {
   score: number;
   diagnosis_hints: DiagnosisHint[];
   router_outcomes: RouterOutcomesSummary;
+  /** QC scoring summary. Present when QC artifacts exist for the cluster; null otherwise. */
+  qc_summary: QcScoreSummary | null;
 }
 
 // ──────────────────────────────────────────────
@@ -107,6 +144,10 @@ const HINTS: Record<string, { fix_zone: string; hint: string }> = {
   "state-repair-required": {
     fix_zone: "medic / cluster-state",
     hint: "Medic artifacts detected — state repair was required during this run. Review the medic chart and root cause.",
+  },
+  "qc-blocking-findings": {
+    fix_zone: "qc / findings",
+    hint: "QC produced unresolved critical/high findings attributed to this run. Review QC artifacts, triage findings, and route repairs before delivery.",
   },
 };
 
@@ -148,6 +189,17 @@ function safeReaddir(dir: string): string[] {
 }
 
 const NON_WORKER_PREFIXES = ["librarian-", "CHART-", "medic-result-"];
+
+function loadQcArtifacts(clusterId: string | null, repoRoot: string): QcResult[] {
+  if (!clusterId) return [];
+  const ids = listQcArtifactIds(clusterId, repoRoot);
+  const results: QcResult[] = [];
+  for (const id of ids) {
+    const result = readQcArtifact(clusterId, id, repoRoot);
+    if (result) results.push(result);
+  }
+  return results;
+}
 
 function readResultPackets(clusterDir: string | null): unknown[] {
   if (!clusterDir) return [];
@@ -242,6 +294,8 @@ export function loadRunArtifacts(repoRoot: string, runId: string): RunArtifacts 
     workerResultContracts = extractWorkerResultContracts(resultPackets);
   }
 
+  const qcResults = loadQcArtifacts(clusterId, repoRoot);
+
   return {
     runId,
     runDir,
@@ -251,6 +305,7 @@ export function loadRunArtifacts(repoRoot: string, runId: string): RunArtifacts 
     resultPackets,
     workerResultContracts,
     telemetryEvents,
+    qcResults,
   };
 }
 
@@ -270,6 +325,71 @@ export function buildDiagnosisHints(failedGateNames: string[]): DiagnosisHint[] 
     const h = HINTS[gate] ?? { fix_zone: "unknown", hint: `Gate ${gate} failed — no hint available.` };
     return { gate, ...h };
   });
+}
+
+/**
+ * Computes a QcScoreSummary from the QC results loaded for this run.
+ * Returns null when no QC results are present.
+ *
+ * A finding is "blocking" if:
+ *   - severity is critical or high
+ *   - status is "open" or "follow-up" (not autofixed, repaired, or waived)
+ *   - attribution confidence is "high" or "medium" (not unvalidated provider noise)
+ *
+ * Worker scoring intentionally does not penalize for "unvalidated" or
+ * "low" attribution-confidence findings — these are treated as provider noise.
+ */
+export function computeQcSummary(qcResults: QcResult[]): QcScoreSummary | null {
+  if (qcResults.length === 0) return null;
+
+  const zeroCounts = (): QcFindingCounts => ({ critical: 0, high: 0, medium: 0, low: 0, info: 0 });
+
+  let total = 0;
+  let blocking = 0;
+  let autofixed = 0;
+  let repaired = 0;
+  let waived = 0;
+  let unvalidated = 0;
+  const openBySeverity = zeroCounts();
+  let blocksDelivery = false;
+
+  for (const result of qcResults) {
+    if (result.policyDecision.blocksDelivery) blocksDelivery = true;
+    for (const finding of result.findings) {
+      total++;
+
+      const conf = finding.attribution.confidence;
+      const isUnvalidated = conf === "low" || conf === "unattributed";
+      if (isUnvalidated) {
+        unvalidated++;
+        continue; // do not count provider noise toward any negative bucket
+      }
+
+      if (finding.status === "autofixed") { autofixed++; continue; }
+      if (finding.status === "repaired") { repaired++; continue; }
+      if (finding.status === "waived") { waived++; continue; }
+
+      // "open" or "follow-up" — count toward open_by_severity
+      const sev = finding.severity;
+      if (sev in openBySeverity) openBySeverity[sev as keyof QcFindingCounts]++;
+
+      if ((sev === "critical" || sev === "high") && (finding.status === "open" || finding.status === "follow-up")) {
+        blocking++;
+      }
+    }
+  }
+
+  return {
+    total_findings: total,
+    blocking_findings: blocking,
+    autofixed_findings: autofixed,
+    repaired_findings: repaired,
+    waived_findings: waived,
+    unvalidated_findings: unvalidated,
+    open_by_severity: openBySeverity,
+    blocks_delivery: blocksDelivery,
+    qc_run_count: qcResults.length,
+  };
 }
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
@@ -385,6 +505,7 @@ export function scoreRun(repoRoot: string, runId: string): DiagnosisReport {
   const score = computeScore(gateResults);
   const diagnosisHints = buildDiagnosisHints(failedGates);
   const routerOutcomes = summarizeRouterOutcomes(artifacts);
+  const qcSummary = computeQcSummary(artifacts.qcResults);
 
   const clusterId =
     artifacts.currentState &&
@@ -402,5 +523,6 @@ export function scoreRun(repoRoot: string, runId: string): DiagnosisReport {
     score,
     diagnosis_hints: diagnosisHints,
     router_outcomes: routerOutcomes,
+    qc_summary: qcSummary,
   };
 }

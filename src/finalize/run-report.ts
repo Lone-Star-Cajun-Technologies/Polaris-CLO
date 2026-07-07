@@ -1,4 +1,5 @@
 import type { LoopState } from "../loop/checkpoint.js";
+import type { QcScoreSummary } from "../autoresearch/score.js";
 
 export interface RunReportData {
   state: LoopState;
@@ -7,10 +8,45 @@ export interface RunReportData {
   prUrl?: string;
   artifacts?: string[];
   notes?: string[];
+  /** Optional QC summary to include in the run report. */
+  qcSummary?: QcScoreSummary | null;
+}
+
+function renderQcSection(qcSummary: QcScoreSummary | null | undefined): string {
+  if (!qcSummary) return "";
+
+  const { total_findings, blocking_findings, autofixed_findings, repaired_findings,
+          waived_findings, unvalidated_findings, open_by_severity,
+          blocks_delivery, qc_run_count } = qcSummary;
+
+  const openTotal = open_by_severity.critical + open_by_severity.high +
+                    open_by_severity.medium + open_by_severity.low + open_by_severity.info;
+
+  const deliveryStatus = blocks_delivery
+    ? "**BLOCKED** — unresolved critical/high findings must be addressed before delivery"
+    : "Not blocking delivery";
+
+  return `
+## QC summary
+
+**QC runs:** ${qc_run_count}
+**Delivery status:** ${deliveryStatus}
+**Total findings:** ${total_findings} (${unvalidated_findings} unvalidated/provider-noise excluded from scoring)
+
+| Status | Count |
+|---|---|
+| Blocking (critical/high, open) | ${blocking_findings} |
+| Open (all severities) | ${openTotal} |
+| Autofixed | ${autofixed_findings} |
+| Repaired | ${repaired_findings} |
+| Waived | ${waived_findings} |
+
+**Open by severity:** critical=${open_by_severity.critical} high=${open_by_severity.high} medium=${open_by_severity.medium} low=${open_by_severity.low} info=${open_by_severity.info}
+`;
 }
 
 export function generateRunReport(data: RunReportData): string {
-  const { state, branch, validationPassed, prUrl, artifacts, notes } = data;
+  const { state, branch, validationPassed, prUrl, artifacts, notes, qcSummary } = data;
   const total = state.completed_children.length + state.open_children.length;
   const completedCount = state.completed_children.length;
 
@@ -33,6 +69,8 @@ export function generateRunReport(data: RunReportData): string {
     ? `\n**Blocker:** ${state.blocker.reason} (child: ${state.blocker.child_id})\n`
     : "";
 
+  const qcSection = renderQcSection(qcSummary);
+
   return `# Run Report: ${state.run_id}
 
 **Status:** ${state.status}
@@ -54,7 +92,7 @@ ${artifactList}
 ## Validation summary
 
 ${validationPassed ? "Map validate passed. Schema validate passed." : "One or more validations failed — see step output above."}
-
+${qcSection}
 ## Notes
 
 ${notesList}

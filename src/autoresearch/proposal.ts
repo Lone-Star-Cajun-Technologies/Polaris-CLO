@@ -91,6 +91,11 @@ export const FIX_ZONE_MAP: Record<string, FixZoneEntry> = {
     hint:
       "Medic artifacts detected — state repair was required. Review medic template heuristics and state-repair triggers.",
   },
+  "qc-blocking-findings": {
+    artifact_type: "scoring-rule",
+    hint:
+      "Unresolved critical/high QC findings with attributed confidence. Review QC artifacts, triage open findings, and route repairs before delivery.",
+  },
 };
 
 const ROUTER_FAILURE_FIX_ZONE_MAP: Record<string, RouterFailureFixEntry> = {

@@ -414,6 +414,46 @@ function safeReaddir(dir: string): string[] {
   }
 }
 
+/**
+ * qc-blocking-findings: Are there unresolved critical/high QC findings
+ * attributed to this cluster with high or medium confidence?
+ *
+ * Evidence: qcResults loaded from .polaris/clusters/<cluster-id>/qc/.
+ * Skipped when no QC artifacts exist.
+ *
+ * Only high/medium attribution-confidence findings are counted — provider noise
+ * (low/unattributed confidence) is excluded so workers are not penalized for
+ * external reviewer uncertainty.
+ */
+export function gateQcBlockingFindings(artifacts: RunArtifacts): GateResult {
+  if (artifacts.qcResults.length === 0) {
+    return { gate: "qc-blocking-findings", outcome: "skipped", detail: "no QC artifacts found" };
+  }
+
+  let blockingCount = 0;
+  for (const result of artifacts.qcResults) {
+    for (const finding of result.findings) {
+      const conf = finding.attribution.confidence;
+      if (conf === "low" || conf === "unattributed") continue;
+      if (finding.status === "autofixed" || finding.status === "repaired" || finding.status === "waived") continue;
+      if ((finding.severity === "critical" || finding.severity === "high") &&
+          (finding.status === "open" || finding.status === "follow-up")) {
+        blockingCount++;
+      }
+    }
+  }
+
+  if (blockingCount > 0) {
+    return {
+      gate: "qc-blocking-findings",
+      outcome: "failed",
+      detail: `${blockingCount} unresolved critical/high QC finding${blockingCount === 1 ? "" : "s"} with attributed confidence`,
+    };
+  }
+
+  return { gate: "qc-blocking-findings", outcome: "passed" };
+}
+
 // ──────────────────────────────────────────────
 // Gate registry — evaluated in order
 // ──────────────────────────────────────────────
@@ -429,6 +469,7 @@ export const ALL_GATES: readonly GateEvaluator[] = [
   gateWorkerWentOutOfScope,
   gateForemanTokenBurnOverBudget,
   gateStateRepairRequired,
+  gateQcBlockingFindings,
 ] as const;
 
 export { readJsonLines };
