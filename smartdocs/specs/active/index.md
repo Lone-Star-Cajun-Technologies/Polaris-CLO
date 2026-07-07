@@ -9,6 +9,7 @@ okf_version: "0.1"
 
 ## Concepts
 
+- [autoresearch-role-evidence-contract](autoresearch-role-evidence-contract.md)
 - [Claude Plugin Runtime Integration Spec](Claude Plugin Runtime Integration Spec.md)
 - [canon-reconciliation-protocol](canon-reconciliation-protocol.md)
 - [closeout-librarian-spec](closeout-librarian-spec.md)
@@ -34,11 +35,13 @@ okf_version: "0.1"
 - [polaris-implementation-plan](polaris-implementation-plan.md)
 - [provider-capability-matrix](provider-capability-matrix.md)
 - [provider-role-dispatch-governance](provider-role-dispatch-governance.md)
+- [quality-control-architecture](quality-control-architecture.md)
 - [runtime-enforcement-spec](runtime-enforcement-spec.md)
 - [taskchain-authoring](taskchain-authoring.md)
 - [taskchain-format](taskchain-format.md)
 - [windsurf-orchestrator](windsurf-orchestrator.md)
 - [worker-heartbeat-spec](worker-heartbeat-spec.md)
 - [worker-lifecycle-state-machine](worker-lifecycle-state-machine.md)
+- [worker-router-architecture](worker-router-architecture.md)
 - [worker-session-contract](worker-session-contract.md)
 - [worker-telemetry-spec](worker-telemetry-spec.md)
