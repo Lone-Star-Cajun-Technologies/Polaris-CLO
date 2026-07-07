@@ -1,7 +1,7 @@
 {
   "orchestration": {
     "mode": "auto",
-    "auto_finalize": false,
+    "auto_finalize": true,
     "notification_format": "terse"
   },
   "execution": {
@@ -68,6 +68,13 @@
           "{{worker_prompt}}"
         ]
       },
+      "coderabbit": {
+        "command": "coderabbit",
+        "args": [
+          "review",
+          "--agent"
+        ]
+      },
       "custom": {
         "command": "$POLARIS_AGENT",
         "args": [
@@ -81,7 +88,8 @@
         "providers": [
           "devin",
           "copilot",
-          "codex"
+          "codex",
+          "kiro"
         ],
         "allowNativeSubagent": false
       },
@@ -115,6 +123,11 @@
       "foreman": {
         "providers": [
           "codex"
+        ]
+      },
+      "QC": {
+        "providers": [
+          "coderabbit"
         ]
       }
     }
