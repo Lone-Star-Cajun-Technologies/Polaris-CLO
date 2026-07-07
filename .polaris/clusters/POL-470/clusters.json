@@ -4,81 +4,117 @@
     "id": "POL-470",
     "type": "Linear",
     "analysis": {
-      "id": "POL-461",
-      "doc": "smartdocs/raw/analysis/pol-461-quality-control-analysis.md"
+      "id": "initial-sync",
+      "doc": "Synchronized from Linear issue identifier: POL-470"
     }
   },
   "nodes": {
     "POL-470": {
       "id": "POL-470",
       "title": "IMPLEMENT: Polaris Quality Control lifecycle",
-      "status": "Todo",
-      "body": "Implementation parent created from POL-461 analysis. See Linear issue body for canonical scope, validation, acceptance criteria, and non-goals."
-    },
-    "POL-471": {
-      "id": "POL-471",
-      "title": "Document QC architecture and lifecycle boundaries",
-      "status": "Todo"
-    },
-    "POL-472": {
-      "id": "POL-472",
-      "title": "Add QC config and provider contracts",
-      "status": "Todo"
-    },
-    "POL-473": {
-      "id": "POL-473",
-      "title": "Implement QC finding artifacts and provider result parsing",
-      "status": "Todo"
-    },
-    "POL-474": {
-      "id": "POL-474",
-      "title": "Integrate QC triggers with cluster completion and PR delivery",
-      "status": "Todo"
-    },
-    "POL-475": {
-      "id": "POL-475",
-      "title": "Add QC attribution, autofix gating, and repair routing",
-      "status": "Todo"
-    },
-    "POL-476": {
-      "id": "POL-476",
-      "title": "Feed QC metrics into SOL scoring and operator reports",
-      "status": "Todo"
+      "status": "In Review",
+      "body": "## Objective\n\nImplement a provider-agnostic Polaris Quality Control lifecycle that reviews completed cluster or PR work, stores durable QC evidence, routes findings to safe repair paths, attributes quality signals to workers where possible, and feeds future SOL scoring.\n\n## Context\n\nThis IMPLEMENT parent comes from ANALYZE source issue [POL-461](<https://linear.app/lsctech/issue/POL-461/analyze-polaris-quality-control-architecture>). The analysis found that Polaris already has child result packets, cluster-state result pointers, validation gates, Closeout Librarian gating, finalize PR creation, and autoresearch/SOL scoring foundations, but lacks a first-class QC provider abstraction, QC finding schema, attribution model, auto-fix policy, and repair-routing lifecycle.\n\nProvider survey summary: CodeRabbit is the preferred first provider candidate because it has PR review, local CLI review, agent JSON output, Autofix, and review metrics API surfaces. PR-Agent/Qodo, GitHub Copilot code review, Sourcery, and Greptile should remain provider candidates behind the same adapter contract. QC must remain an external critic; Polaris owns evidence, validation, routing, and final readiness decisions.\n\n## Goal\n\nDeliver a staged implementation of the QC architecture, config/provider model, artifact schema, lifecycle trigger integration, attribution and repair routing, and SOL scoring/reporting hooks.\n\n## Scope\n\n* smartdocs/raw/analysis/*quality-control-analysis.md\n* smartdocs/specs/raw/**\n* smartdocs/specs/active/**\n* src/config/**\n* src/qc/**\n* src/loop/**\n* src/finalize/**\n* src/cluster-state/**\n* src/types/**\n* src/autoresearch/**\n* src/cli/**\n* tests covering changed QC/config/runtime/scoring behavior\n\n## Acceptance Criteria\n\n- [ ] QC lifecycle architecture is documented with explicit boundaries against replacing Polaris validation or human review.\n- [ ] QC config supports provider selection, trigger policy, severity thresholds, auto-fix policy, repair-routing policy, and artifact retention.\n- [ ] QC provider abstraction supports at least CodeRabbit-first local/PR review inputs while allowing other providers later.\n- [ ] QC findings are stored as durable cluster artifacts with normalized severity, provider metadata, source location, suggested action, and attribution evidence.\n- [ ] QC runs at completed-cluster or PR level by default, with child-level QC reserved for configured high-risk work.\n- [ ] Auto-fix is gated and never allowed for critical/security/architecture findings without explicit operator policy.\n- [ ] Remaining findings route to the original worker, a repair worker, or follow-up Linear issues according to deterministic rules.\n- [ ] QC metrics feed SOL/autoresearch scoring without treating external reviewer noise as direct worker failure.\n- [ ] All child issues complete with validation passing.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/config src/qc src/loop src/finalize src/cluster-state src/autoresearch src/cli\n\n## Ordering\n\nChildren execute in dependency order: architecture/spec first, then config/provider contracts, artifact parsing/storage, lifecycle integration, attribution/repair routing, and SOL scoring/reporting.\n\n## Non-goals\n\n* Do not make CodeRabbit, Qodo, Copilot, Sourcery, Greptile, or any single vendor a required dependency.\n* Do not make QC replace Polaris validation, Closeout Librarian, finalize evidence checks, or human merge review.\n* Do not run QC after every worker by default.\n* Do not auto-fix critical, security-sensitive, or architecture-changing findings without explicit policy.\n* Do not execute implementation work from the analysis session."
     },
     "POL-461": {
       "id": "POL-461",
       "title": "ANALYZE: Polaris Quality Control architecture",
       "status": "Done"
+    },
+    "POL-477": {
+      "id": "POL-477",
+      "title": "IMPLEMENT: Polaris Self-Optimization Loop",
+      "status": "Todo"
+    },
+    "POL-476": {
+      "id": "POL-476",
+      "title": "Feed QC metrics into SOL scoring and operator reports",
+      "status": "Todo",
+      "body": "## Objective\n\nFeed QC outcome metrics into Polaris autoresearch/SOL scoring and operator reports.\n\n## Context\n\n[POL-461](https://linear.app/lsctech/issue/POL-461/analyze-polaris-quality-control-architecture) requires QC findings to become reliable quality signals for future worker scoring. Existing autoresearch scoring evaluates gates over run artifacts and worker result contracts, but it does not yet consume QC findings, provider confidence, attribution confidence, false-positive handling, or repair outcomes.\n\n## Goal\n\nExtend scoring/reporting so QC results influence future optimization without over-penalizing workers for noisy external reviewer output.\n\n## Scope\n\n* src/autoresearch/score.ts\n* src/autoresearch/gates.ts\n* src/autoresearch/proposal.ts\n* src/autoresearch/routing.ts\n* src/cli/autoresearch.ts\n* src/qc/**\n* src/loop/ledger.ts\n* src/finalize/run-report.ts\n* src/autoresearch/*.test.ts\n* src/cli/autoresearch*.test.ts\n* src/finalize/*.test.ts\n\n## Acceptance Criteria\n\n- [ ] Autoresearch scoring loads QC artifacts from the active cluster and run evidence surfaces.\n- [ ] QC score inputs distinguish confirmed findings, unvalidated findings, provider noise, auto-fixed findings, routed repair work, and unresolved blockers.\n- [ ] Worker scoring uses attribution confidence and severity weighting rather than raw finding counts.\n- [ ] Proposal generation can recommend config, provider, packet-scope, validation, or docs fixes for recurring QC failures.\n- [ ] Finalize/run reports summarize QC status, provider, finding counts by severity, blocking findings, repair routing, and SOL scoring impact.\n- [ ] Tests cover clean QC, critical blockers, low-severity noise, auto-fixed findings, unattributed findings, and recurring-worker/route signal aggregation.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/autoresearch src/qc src/cli/autoresearch.ts src/finalize\n\n## Ordering\n\nDepends on [POL-475](https://linear.app/lsctech/issue/POL-475/add-qc-attribution-autofix-gating-and-repair-routing) being Done first.\n\n## Non-goals\n\n* Do not auto-apply SOL proposals.\n* Do not expose provider secrets, prompts, or private review payloads in reports.\n* Do not treat external QC as the sole source of worker quality truth."
+    },
+    "POL-475": {
+      "id": "POL-475",
+      "title": "Add QC attribution, autofix gating, and repair routing",
+      "status": "Todo",
+      "body": "## Objective\n\nRoute QC findings to the correct repair path and attribute findings to workers using durable evidence.\n\n## Context\n\n[POL-461](https://linear.app/lsctech/issue/POL-461/analyze-polaris-quality-control-architecture) asks when QC findings should route back to the original worker, become new Linear issues, or trigger auto-fix. Polaris has result packets, commit metadata, dispatch records, cluster-state pointers, and worker result contracts that can support fair attribution, but attribution must be confidence-scored and must not punish workers for provider noise or inherited defects.\n\n## Goal\n\nImplement deterministic attribution and routing decisions for normalized QC findings, including conservative auto-fix gating.\n\n## Scope\n\n* src/qc/**\n* src/types/result-packet.ts\n* src/loop/worker-packet.ts\n* src/loop/dispatch-state.ts\n* src/cluster-state/**\n* src/finalize/linear.ts\n* src/cli/**\n* src/qc/**/*.test.ts\n* src/cluster-state/*.test.ts\n\n## Acceptance Criteria\n\n- [ ] Attribution resolver correlates findings to child IDs using changed file ownership, commit SHA, result packet pointers, dispatch records, and optional PR review metadata.\n- [ ] Attribution includes confidence and reason codes, including unattributed, inherited, shared-scope, and provider-uncertain outcomes.\n- [ ] Auto-fix is allowed only for configured providers, low/medium severities, non-security categories, clean branches, and explicitly safe fix modes.\n- [ ] Auto-fix can be disabled globally and per provider.\n- [ ] Repair routing can choose original-worker handoff, repair-worker/Medic-style handoff, follow-up Linear issue creation, or operator review.\n- [ ] High/critical findings block or escalate according to policy instead of being silently converted to low-priority follow-up work.\n- [ ] Tests cover attribution confidence, multi-child file ownership, unknown commit, provider noise, safe auto-fix, blocked auto-fix, and Linear follow-up creation payloads.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/qc src/cluster-state src/finalize/linear.test.ts src/cli\n\n## Ordering\n\nDepends on [POL-474](https://linear.app/lsctech/issue/POL-474/integrate-qc-triggers-with-cluster-completion-and-pr-delivery) being Done first.\n\n## Non-goals\n\n* Do not merge or apply auto-fix output without validation.\n* Do not mark workers as failed solely because a provider emitted an unvalidated finding.\n* Do not route security-critical findings back to unattended auto-fix by default."
+    },
+    "POL-474": {
+      "id": "POL-474",
+      "title": "Integrate QC triggers with cluster completion and PR delivery",
+      "status": "Todo",
+      "body": "## Objective\n\nIntegrate QC trigger points into the Polaris loop/finalize lifecycle without weakening existing validation gates.\n\n## Context\n\n[POL-461](https://linear.app/lsctech/issue/POL-461/analyze-polaris-quality-control-architecture) recommends PR-level or completed-cluster-level QC by default, with child-level QC reserved for high-risk work. Polaris already has child result evidence, Closeout Librarian gating, finalize evidence checks, and PR creation. This child wires QC orchestration into those lifecycle boundaries using the contracts from [POL-472](https://linear.app/lsctech/issue/POL-472/add-qc-config-and-provider-contracts) and artifacts from [POL-473](https://linear.app/lsctech/issue/POL-473/implement-qc-finding-artifacts-and-provider-result-parsing).\n\n## Goal\n\nAdd QC trigger orchestration for completed-cluster and PR review modes, with passive/dry-run behavior by default and deterministic halting policy when configured.\n\n## Scope\n\n* src/qc/**\n* src/loop/parent.ts\n* src/loop/continue.ts\n* src/loop/dispatch-boundary.ts\n* src/loop/finalize-evidence.ts\n* src/finalize/index.ts\n* src/finalize/github.ts\n* src/finalize/steps/**\n* src/cluster-state/**\n* src/loop/*.test.ts\n* src/finalize/*.test.ts\n\n## Acceptance Criteria\n\n- [ ] QC can be triggered at completed-cluster before final delivery when configured.\n- [ ] QC can be triggered after PR creation when a provider requires a PR URL.\n- [ ] Default config leaves existing finalize behavior unchanged.\n- [ ] QC failure/timeout policy is explicit: passive report, block finalize, or create follow-up work according to config.\n- [ ] Child-level QC is only selected for configured high-risk child scopes, severity-sensitive routes, or explicit operator request.\n- [ ] Existing Closeout Librarian and finalize evidence gates still run and remain authoritative.\n- [ ] Tests cover disabled QC, passive QC, blocking QC, PR-required provider mode, timeout, and child-level opt-in.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/qc src/loop src/finalize src/cluster-state\n\n## Ordering\n\nDepends on [POL-473](https://linear.app/lsctech/issue/POL-473/implement-qc-finding-artifacts-and-provider-result-parsing) being Done first.\n\n## Non-goals\n\n* Do not auto-fix findings in this child.\n* Do not replace Closeout Librarian or finalize evidence validation.\n* Do not require a GitHub PR for providers that can review local diffs."
+    },
+    "POL-473": {
+      "id": "POL-473",
+      "title": "Implement QC finding artifacts and provider result parsing",
+      "status": "Todo",
+      "body": "## Objective\n\nImplement durable QC finding artifacts and provider result parsers.\n\n## Context\n\nQC results must become Polaris-owned evidence, not transient provider output. [POL-472](<https://linear.app/lsctech/issue/POL-472/add-qc-config-and-provider-contracts>) defines the provider contracts and config policy this child stores and parses.\n\n## Goal\n\nCreate normalized QC result and finding schemas, parse provider output into those schemas, and persist cluster-scoped QC artifacts safely.\n\n## Scope\n\n* src/qc/**\n* src/types/**\n* src/cluster-state/types.ts\n* src/cluster-state/store.ts\n* src/cluster-state/*.test.ts\n* src/finalize/artifact-policy.ts\n* src/finalize/artifact-policy.test.ts\n* .polaris/clusters/**/qc/** documentation references only if needed\n\n## Acceptance Criteria\n\n- [ ] QC result schema captures run_id, cluster_id, optional pr_url, provider, trigger, started/completed timestamps, status, findings, raw artifact pointers, and parser version.\n- [ ] Finding schema captures normalized severity, category, file/range, title, message, suggested action, confidence, provider ids, fix availability, and attribution evidence.\n- [ ] Severity model maps provider severities into Polaris levels: critical, high, medium, low, info.\n- [ ] Provider parser handles CodeRabbit-style agent/CLI output and has test fixtures for unknown or partial provider output.\n- [ ] QC artifacts are written under the active cluster evidence surface and are eligible for finalize artifact promotion without allowing unrelated scratch paths.\n- [ ] Tests cover schema validation, parser normalization, malformed input, and artifact path policy.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/qc src/types src/cluster-state src/finalize/artifact-policy.test.ts\n\n## Ordering\n\nDepends on [POL-472](https://linear.app/lsctech/issue/POL-472/add-qc-config-and-provider-contracts) being Done first.\n\n## Non-goals\n\n* Do not call external providers yet.\n* Do not auto-fix findings in this child.\n* Do not change finalize delivery behavior beyond artifact classification required for QC evidence."
+    },
+    "POL-472": {
+      "id": "POL-472",
+      "title": "Add QC config and provider contracts",
+      "status": "Todo",
+      "body": "## Objective\n\nAdd typed configuration and provider contracts for the Polaris QC subsystem.\n\n## Context\n\n[POL-461](<https://linear.app/lsctech/issue/POL-461/analyze-polaris-quality-control-architecture>) requires QC to evaluate multiple provider candidates without assuming CodeRabbit is the only option. [POL-471](<https://linear.app/lsctech/issue/POL-471/document-qc-architecture-and-lifecycle-boundaries>) defines the lifecycle and policy concepts this child turns into config and TypeScript contracts.\n\n## Goal\n\nDefine backward-compatible QC config, provider registry types, trigger policies, severity thresholds, auto-fix policies, and adapter interfaces.\n\n## Scope\n\n* src/config/schema.ts\n* src/config/schema.json\n* src/config/defaults.ts\n* src/config/validator.ts\n* src/config/validator.test.ts\n* src/config/loader.test.ts\n* src/qc/**\n* src/cli/init.ts\n* src/cli/init.test.ts\n\n## Acceptance Criteria\n\n- [ ] Config supports QC enablement, providers, trigger mode, severity thresholds, auto-fix policy, repair-routing policy, and artifact retention.\n- [ ] Defaults keep QC disabled or dry-run/passive until explicitly configured.\n- [ ] Provider contracts support local diff review, PR review, result parsing, optional auto-fix, and metrics import without vendor lock-in.\n- [ ] Validator rejects unknown providers, invalid trigger modes, invalid severity levels, and unsafe auto-fix policy combinations.\n- [ ] Tests cover backward compatibility, invalid config, and CodeRabbit-style provider capabilities.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/config src/qc src/cli/init.test.ts\n\n## Ordering\n\nDepends on [POL-471](https://linear.app/lsctech/issue/POL-471/document-qc-architecture-and-lifecycle-boundaries) being Done first.\n\n## Non-goals\n\n* Do not invoke external QC providers in this child.\n* Do not add provider credentials or secrets.\n* Do not integrate QC into finalize or loop execution yet."
+    },
+    "POL-471": {
+      "id": "POL-471",
+      "title": "Document QC architecture and lifecycle boundaries",
+      "status": "Todo",
+      "body": "## Objective\n\nWrite the Polaris Quality Control architecture spec and lifecycle design before runtime code changes.\n\n## Context\n\nThis child belongs to [POL-470](<https://linear.app/lsctech/issue/POL-470/implement-polaris-quality-control-lifecycle>), created from ANALYZE source [POL-461](<https://linear.app/lsctech/issue/POL-461/analyze-polaris-quality-control-architecture>). QC must remain an external critic that evaluates completed work while Polaris owns validation, evidence, routing decisions, and final PR readiness.\n\n## Goal\n\nProduce a repo-local QC spec that defines providers, trigger timing, severity, artifacts, attribution, auto-fix limits, repair routing, and SOL feedback boundaries.\n\n## Scope\n\n* smartdocs/raw/analysis/*quality-control-analysis.md\n* smartdocs/specs/raw/**\n* smartdocs/specs/active/**\n* smartdocs/architecture/**\n* src/finalize/POLARIS.md\n* src/loop/POLARIS.md\n* src/autoresearch/POLARIS.md\n* src/cluster-state/POLARIS.md\n\n## Acceptance Criteria\n\n- [ ] Spec defines PR-level, completed-cluster-level, and child-level QC trigger policy.\n- [ ] Spec states PR/completed-cluster QC is the default and child-level QC is high-risk or explicit-policy only.\n- [ ] Spec defines QC provider responsibilities and non-responsibilities.\n- [ ] Spec documents CodeRabbit-first feasibility without making CodeRabbit mandatory.\n- [ ] Spec defines severity, artifact, attribution, auto-fix, repair-routing, and SOL feedback concepts.\n- [ ] Route docs are updated only where operational guidance materially changes.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/finalize src/loop src/autoresearch src/cluster-state\n\n## Ordering\n\nNone. This child must complete before config/provider contracts and runtime integration children.\n\n## Non-goals\n\n* Do not implement runtime QC code.\n* Do not promote draft docs to doctrine outside the existing SmartDocs promotion workflow.\n* Do not make any external QC provider required."
+    },
+    "POL-488": {
+      "id": "POL-488",
+      "title": "Normalize SOL evidence inputs for evaluation reports",
+      "status": "Todo"
+    },
+    "POL-485": {
+      "id": "POL-485",
+      "title": "IMPLEMENT: SOL Evaluation Reports and Scorecards",
+      "status": "Todo"
+    },
+    "POL-483": {
+      "id": "POL-483",
+      "title": "Generate SOL routing recommendations and self-improvement proposals",
+      "status": "Todo"
+    },
+    "POL-481": {
+      "id": "POL-481",
+      "title": "Implement SOL Foreman and worker scoring models",
+      "status": "Todo"
+    },
+    "POL-480": {
+      "id": "POL-480",
+      "title": "Define SOL evidence schema and aggregation inputs",
+      "status": "Todo"
     }
   },
   "dependencies": {
-    "POL-472": [
-      "POL-471"
-    ],
-    "POL-473": [
-      "POL-472"
-    ],
-    "POL-474": [
-      "POL-473"
+    "POL-476": [
+      "POL-475"
     ],
     "POL-475": [
       "POL-474"
     ],
-    "POL-476": [
-      "POL-475"
+    "POL-474": [
+      "POL-473"
+    ],
+    "POL-473": [
+      "POL-472"
+    ],
+    "POL-472": [
+      "POL-471"
     ]
   },
   "clusters": {
     "POL-470": {
       "id": "POL-470",
-      "title": "IMPLEMENT: Polaris Quality Control lifecycle",
+      "title": "Linear Issue: POL-470",
       "children": [
-        "POL-471",
-        "POL-472",
-        "POL-473",
-        "POL-474",
+        "POL-476",
         "POL-475",
-        "POL-476"
+        "POL-474",
+        "POL-473",
+        "POL-472",
+        "POL-471"
       ],
       "cluster_root": "POL-470"
     }

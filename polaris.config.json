@@ -55,6 +55,19 @@
           "--allow-all-tools"
         ]
       },
+      "kiro": {
+        "command": "kiro-cli",
+        "args": [
+          "chat",
+          "--no-interactive",
+          "--trust-all-tools",
+          "--agent",
+          "default",
+          "--effort",
+          "medium",
+          "{{worker_prompt}}"
+        ]
+      },
       "custom": {
         "command": "$POLARIS_AGENT",
         "args": [

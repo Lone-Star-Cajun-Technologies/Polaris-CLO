@@ -1,0 +1,59 @@
+{
+  "source_id": "POL-485",
+  "analyze_source_id": "POL-484",
+  "source_type": "linear",
+  "created_at": "2026-07-07T16:27:10Z",
+  "clusters": [
+    {
+      "cluster_id": "cluster-01",
+      "children": [
+        {
+          "id": "POL-486",
+          "title": "Document SOL evaluation report architecture and artifact taxonomy",
+          "session_type": "implement",
+          "blockedBy": []
+        },
+        {
+          "id": "POL-487",
+          "title": "Define SOL scorecard schemas and metric contracts",
+          "session_type": "implement",
+          "blockedBy": [
+            "POL-486"
+          ]
+        },
+        {
+          "id": "POL-488",
+          "title": "Normalize SOL evidence inputs for evaluation reports",
+          "session_type": "implement",
+          "blockedBy": [
+            "POL-487"
+          ]
+        },
+        {
+          "id": "POL-489",
+          "title": "Implement SOL scorecard calculators",
+          "session_type": "implement",
+          "blockedBy": [
+            "POL-488"
+          ]
+        },
+        {
+          "id": "POL-490",
+          "title": "Generate SOL evaluation reports and machine-readable artifacts",
+          "session_type": "implement",
+          "blockedBy": [
+            "POL-489"
+          ]
+        },
+        {
+          "id": "POL-491",
+          "title": "Feed SOL evaluations into review-gated routing recommendations",
+          "session_type": "implement",
+          "blockedBy": [
+            "POL-490"
+          ]
+        }
+      ]
+    }
+  ]
+}

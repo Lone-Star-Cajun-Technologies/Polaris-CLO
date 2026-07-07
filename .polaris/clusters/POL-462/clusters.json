@@ -1,0 +1,130 @@
+{
+  "schemaVersion": "v2",
+  "source": {
+    "id": "POL-462",
+    "type": "Linear",
+    "analysis": {
+      "id": "initial-sync",
+      "doc": "Synchronized from Linear issue identifier: POL-462"
+    }
+  },
+  "nodes": {
+    "POL-462": {
+      "id": "POL-462",
+      "title": "ANALYZE: Rename Auto Research Loop to Self-Optimization Loop",
+      "status": "Done",
+      "body": "## Objective\n\nAnalyze how Polaris should evolve the current Auto Research Loop concept into a broader Self-Optimization Loop (SOL).\n\nSOL should continuously improve Polaris orchestration by learning from Foreman behavior, worker performance, QC findings, validation outcomes, token efficiency, user intervention, and historical routing decisions.\n\nThis issue should not implement anything. It should produce an analysis and design recommendation.\n\n## Background\n\nThe current Auto Research Loop concept was originally framed around research and evaluation. The emerging use case is broader: Polaris should use run evidence, QC results, and historical performance telemetry as an optimization engine.\n\nThe better name for that broader system is Self-Optimization Loop (SOL).\n\nSOL should not directly mutate runtime behavior in uncontrolled ways. It should observe, evaluate, and recommend routing or runtime improvements. When Polaris is operating inside the Polaris repository, SOL may additionally generate analyze or implementation issues to improve Polaris itself.\n\n## Dependency context\n\nThis analysis should consume or be informed by the results of:\n\n* Worker Router / 9Router analysis\n* QC architecture analysis\n\nThose issues answer how work is routed and how work quality is measured. SOL answers how Polaris learns from those signals over time.\n\n## Questions to answer\n\n* What should be renamed from Auto Research Loop to SOL?\n* Which parts of Auto Research remain as a sub-capability?\n* What telemetry does SOL need from Foremen?\n* What telemetry does SOL need from workers?\n* What QC metrics should SOL consume?\n* What validation outcomes should SOL consume?\n* How should user intervention be detected and scored?\n* How should token usage and runtime cost be measured?\n* How should Foremen be scored?\n* How should workers be scored?\n* How should scores be grouped by task type, repo, route, role, risk, and model/provider?\n* How should SOL generate routing recommendations?\n* When should SOL run?\n* Should SOL run at session start, cluster closeout, PR closeout, or on demand?\n* What should SOL do differently when running inside Polaris itself versus another repo?\n\n## Foreman evaluation\n\nDesign a Foreman score that considers:\n\n* token usage\n* runtime duration\n* user intervention frequency\n* unnecessary pre-analysis or simulation\n* dependency handling\n* worker dispatch accuracy\n* evidence validation quality\n* scope control\n* successful cluster completion\n* recovery from worker failure\n\n## Worker evaluation\n\nDesign a Worker score that considers:\n\n* token usage\n* runtime duration\n* validation result\n* QC findings\n* QC severity\n* repair iterations required\n* scope adherence\n* files touched outside assignment\n* acceptance criteria success\n* first-pass success\n\nThe overall worker score should be usable for routing, but detailed sub-scores must remain visible for diagnostics.\n\n## SOL phases\n\n### Observation\n\nCollect:\n\n* run artifacts\n* Foreman telemetry\n* worker telemetry\n* QC findings\n* validation results\n* user interventions\n* token/cost/runtime metrics\n* commit and co-author metadata where useful\n\n### Evaluation\n\nEvaluate:\n\n* Foremen\n* workers\n* task types\n* routing decisions\n* regressions\n* trends\n* validation quality\n* QC quality history\n\n### Optimization\n\nGenerate recommendations for:\n\n* worker routing\n* provider/model choice\n* role assignment\n* routing policy updates\n* trust/cost thresholds\n* Polaris runtime improvements\n\n## Polaris-specific behavior\n\nWhen SOL runs inside the Polaris repository, it may recommend or generate:\n\n* analyze issues\n* implementation issues\n* runtime optimization proposals\n* router/scoring improvements\n* telemetry schema improvements\n\nWhen SOL runs inside any other repository, it should remain repo-agnostic and limit itself to:\n\n* routing recommendations\n* orchestration recommendations\n* worker/provider recommendations\n* performance summaries\n\n## Important boundaries\n\n* SOL should recommend changes, not silently mutate critical runtime behavior.\n* SOL should not replace Foreman validation.\n* SOL should not depend on one QC provider.\n* SOL should not depend on 9Router.\n* Preserve deterministic execution. Learning should inform future routing, not rewrite past evidence.\n\n## Deliverables\n\n* Rename/migration recommendation from Auto Research Loop to SOL\n* SOL architecture\n* Runtime data model\n* Foreman scoring model\n* Worker scoring model\n* QC metric ingestion model\n* Historical performance model\n* Routing recommendation model\n* Run timing recommendation\n* Polaris-only self-improvement behavior\n* Required SmartDocs/artifact changes\n* Required runtime changes\n* Implementation roadmap\n\n## Success criteria\n\nThe completed analysis should define how Polaris can become self-optimizing: learning which Foremen, workers, providers, and routing policies perform best for each type of work while preserving evidence-based orchestration and deterministic runtime behavior."
+    },
+    "POL-480": {
+      "id": "POL-480",
+      "title": "Define SOL evidence schema and aggregation inputs",
+      "status": "Todo",
+      "body": "## Objective\n\nDefine the SOL evidence schema and aggregation model across Foreman, worker, router, QC, validation, token, runtime, and intervention signals.\n\n## Context\n\nExisting artifacts include WorkerResultContract, current-state completed child results, dispatch records, telemetry JSONL, cluster state validation results, run ledgers, Worker Router telemetry planned in [POL-469](https://linear.app/lsctech/issue/POL-469/emit-router-telemetry-and-sol-scoring-inputs), and QC artifacts planned in [POL-476](https://linear.app/lsctech/issue/POL-476/feed-qc-metrics-into-sol-scoring-and-operator-reports). SOL needs a normalized read model over these sources.\n\n## Goal\n\nAdd typed SOL evidence inputs and loaders that can aggregate existing durable artifacts without changing runtime behavior or losing backward compatibility.\n\n## Scope\n\n* src/autoresearch/**\n* src/types/**\n* src/loop/dispatch-state.ts\n* src/loop/checkpoint.ts\n* src/cluster-state/types.ts\n* src/finalize/run-report.ts\n* smartdocs/specs/raw/**\n* tests covering SOL evidence loading and schema validation\n\n## Acceptance Criteria\n\n- [ ] SOL evidence types represent run, child, Foreman, worker, router, QC, validation, token, runtime, and intervention signals.\n- [ ] Evidence loading reads existing run artifacts and tolerates absent future router/QC fields by marking them unavailable.\n- [ ] Evidence model records grouping keys for repo, route, task type, role, risk, provider, and model when available.\n- [ ] No existing WorkerResultContract or result packet consumers break.\n- [ ] Tests cover legacy autoresearch runs, runs with completed_children_results, missing telemetry, and future optional QC/router evidence.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/autoresearch src/types src/loop src/cluster-state\n\n## Ordering\n\n* Depends on [POL-479](https://linear.app/lsctech/issue/POL-479/add-sol-command-surface-and-autoresearch-compatibility-aliases) being Done first.\n* Coordinate with [POL-469](https://linear.app/lsctech/issue/POL-469/emit-router-telemetry-and-sol-scoring-inputs) and [POL-476](https://linear.app/lsctech/issue/POL-476/feed-qc-metrics-into-sol-scoring-and-operator-reports) so this child consumes their eventual output shapes without owning those implementations.\n\n## Non-goals\n\n* Do not implement SOL scoring formulas in this child.\n* Do not add router or QC providers in this child.\n* Do not mutate run artifacts while loading evidence."
+    },
+    "POL-460": {
+      "id": "POL-460",
+      "title": "ANALYZE: Polaris Worker Router informed by 9Router",
+      "status": "Done"
+    },
+    "POL-461": {
+      "id": "POL-461",
+      "title": "ANALYZE: Polaris Quality Control architecture",
+      "status": "Done"
+    },
+    "EVOS1-410": {
+      "id": "EVOS1-410",
+      "title": "ANALYZE: Rename Auto Research Loop to Self-Optimization Loop",
+      "status": "Todo"
+    },
+    "POL-483": {
+      "id": "POL-483",
+      "title": "Generate SOL routing recommendations and self-improvement proposals",
+      "status": "Todo",
+      "body": "## Objective\n\nGenerate SOL routing recommendations and Polaris-specific self-improvement proposals from historical scores and evidence.\n\n## Context\n\n[POL-462](https://linear.app/lsctech/issue/POL-462/analyze-rename-auto-research-loop-to-self-optimization-loop) requires SOL to recommend worker routing, provider/model choice, role assignment, policy updates, trust/cost thresholds, and Polaris runtime improvements. In the Polaris repository, SOL may create analyze or implementation issues; in other repos it must stay advisory and repo-agnostic.\n\n## Goal\n\nAdd recommendation generation and proposal routing that remains review-gated, deterministic, and policy-controlled.\n\n## Scope\n\n* src/autoresearch/**\n* src/cli/autoresearch.ts\n* src/cli/index.test.ts\n* src/config/**\n* src/tracker/** only if issue-routing integration is needed\n* smartdocs/specs/raw/**\n* tests covering recommendation generation, policy gates, dry-run output, and Polaris-dev-only proposal routing\n\n## Acceptance Criteria\n\n- [ ] SOL generates explainable routing recommendations from score trends and grouping dimensions.\n- [ ] Recommendations include evidence references, confidence, affected route/task/provider/model, and proposed policy action.\n- [ ] Consumer repos receive advisory output only by default.\n- [ ] Polaris-dev context may file review-gated analyze or implementation proposals when explicitly configured or invoked.\n- [ ] Dry-run mode shows all proposed tracker mutations without writing to Linear.\n- [ ] Tests prove SOL does not silently mutate runtime policy, config, docs, or source files.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/autoresearch src/cli src/config\n\n## Ordering\n\n* Depends on [POL-482](https://linear.app/lsctech/issue/POL-482/add-sol-historical-performance-store-and-reports) being Done first.\n* Consumes router/QC scoring inputs from [POL-469](https://linear.app/lsctech/issue/POL-469/emit-router-telemetry-and-sol-scoring-inputs) and [POL-476](https://linear.app/lsctech/issue/POL-476/feed-qc-metrics-into-sol-scoring-and-operator-reports) when available.\n\n## Non-goals\n\n* Do not silently change provider policy, worker routing, or trust thresholds.\n* Do not create implementation issues outside the Polaris development repository.\n* Do not bypass human review for SOL-generated work.\n* Do not depend on one QC provider or on 9Router."
+    },
+    "POL-482": {
+      "id": "POL-482",
+      "title": "Add SOL historical performance store and reports",
+      "status": "Todo",
+      "body": "## Objective\n\nAdd SOL historical performance storage and operator reports for run, route, worker, provider, model, task type, and repository trends.\n\n## Context\n\nSOL recommendations need history, not just a single-run diagnosis. The store should derive from durable Polaris artifacts and stay local/reviewable by default.\n\n## Goal\n\nPersist normalized SOL score snapshots and expose reports that summarize trends and grouping dimensions without introducing remote analytics.\n\n## Scope\n\n* src/autoresearch/**\n* src/cli/autoresearch.ts\n* src/cli/index.test.ts\n* src/config/**\n* .polaris/clusters/** documentation references only as needed\n* smartdocs/specs/raw/**\n* tests covering storage, report generation, config defaults, and backward compatibility\n\n## Acceptance Criteria\n\n- [ ] SOL can persist score snapshots under a deterministic local artifact path.\n- [ ] Reports group scores by repo, route, task type, role, risk, provider, model, worker id, and time window when evidence exists.\n- [ ] Report output supports JSON and human-readable CLI modes.\n- [ ] Storage is append-only or generation-safe and does not rewrite historical run evidence.\n- [ ] Config defaults preserve current behavior and do not enable remote analytics.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/autoresearch src/cli src/config\n\n## Ordering\n\n* Depends on [POL-481](https://linear.app/lsctech/issue/POL-481/implement-sol-foreman-and-worker-scoring-models) being Done first.\n\n## Non-goals\n\n* Do not upload SOL telemetry to external services.\n* Do not replace run ledgers or cluster state as source-of-truth evidence.\n* Do not auto-apply routing changes from historical reports."
+    },
+    "POL-481": {
+      "id": "POL-481",
+      "title": "Implement SOL Foreman and worker scoring models",
+      "status": "Todo",
+      "body": "## Objective\n\nImplement SOL scoring models for Foremen and workers with visible diagnostic sub-scores.\n\n## Context\n\n[POL-462](https://linear.app/lsctech/issue/POL-462/analyze-rename-auto-research-loop-to-self-optimization-loop) asks for Foreman scoring across token usage, runtime duration, intervention frequency, dependency handling, dispatch accuracy, evidence validation, scope control, completion, and failure recovery. It also asks for worker scoring across token usage, runtime duration, validation, QC findings, repair iterations, scope adherence, acceptance criteria, and first-pass success.\n\n## Goal\n\nExtend the existing binary gate scoring foundation into SOL score reports that preserve detailed sub-scores and confidence rather than flattening everything into a single opaque number.\n\n## Scope\n\n* src/autoresearch/**\n* src/types/**\n* src/cli/autoresearch.ts\n* src/cli/index.test.ts\n* smartdocs/specs/raw/**\n* tests covering scoring formulas, missing evidence, confidence, and grouping behavior\n\n## Acceptance Criteria\n\n- [ ] Foreman score includes token, duration, intervention, pre-analysis, dependency, dispatch, evidence validation, scope, completion, and recovery dimensions where evidence exists.\n- [ ] Worker score includes token, duration, validation, QC, repair iteration, scope adherence, acceptance criteria, and first-pass dimensions where evidence exists.\n- [ ] Scores include confidence and skipped/unavailable reasons for missing evidence.\n- [ ] Existing binary gate diagnosis remains available for compatibility.\n- [ ] Tests cover high-confidence scoring, partial evidence scoring, and no-evidence fallback behavior.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/autoresearch src/cli\n\n## Ordering\n\n* Depends on [POL-480](https://linear.app/lsctech/issue/POL-480/define-sol-evidence-schema-and-aggregation-inputs) being Done first.\n\n## Non-goals\n\n* Do not use SOL scores to automatically change routing policy in this child.\n* Do not treat provider/QC raw finding counts as worker blame without attribution confidence.\n* Do not remove existing diagnosis report fields without a compatibility path."
+    },
+    "POL-479": {
+      "id": "POL-479",
+      "title": "Add SOL command surface and autoresearch compatibility aliases",
+      "status": "Todo",
+      "body": "## Objective\n\nAdd the SOL operator-facing command surface while preserving existing autoresearch command compatibility.\n\n## Context\n\nThe current CLI exposes `polaris autoresearch score` and `polaris autoresearch propose`. SOL should become the broader name, but existing scripts and docs may still use autoresearch. The migration should be additive first.\n\n## Goal\n\nExpose SOL command aliases and update naming in code/docs so SOL is the parent concept and autoresearch remains a backward-compatible sub-command surface.\n\n## Scope\n\n* src/cli/autoresearch.ts\n* src/cli/index.ts\n* src/cli/index.test.ts\n* src/cli/SUMMARY.md\n* src/autoresearch/**\n* smartdocs/specs/raw/**\n\n## Acceptance Criteria\n\n- [ ] `polaris sol score <run-id>` works with the same behavior as the current scoring command.\n- [ ] `polaris sol propose <diagnosis-file>` works with the same safety gates as the current proposal command.\n- [ ] `polaris autoresearch ...` remains available and documented as a compatibility alias.\n- [ ] Help text describes SOL as the broader subsystem without breaking existing command expectations.\n- [ ] Tests cover both SOL and autoresearch command paths.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/cli src/autoresearch\n\n## Ordering\n\n* Depends on [POL-478](https://linear.app/lsctech/issue/POL-478/document-sol-architecture-and-auto-research-boundaries) being Done first.\n\n## Non-goals\n\n* Do not remove the autoresearch command surface.\n* Do not change scoring semantics in this child.\n* Do not add historical storage or recommendation generation in this child."
+    },
+    "POL-478": {
+      "id": "POL-478",
+      "title": "Document SOL architecture and Auto Research boundaries",
+      "status": "Todo",
+      "body": "## Objective\n\nDocument the Self-Optimization Loop architecture and the boundary between SOL and the existing Auto Research sub-capability.\n\n## Context\n\n[POL-462](https://linear.app/lsctech/issue/POL-462/analyze-rename-auto-research-loop-to-self-optimization-loop) concluded that SOL should be the broader optimization engine while Auto Research remains a narrower evidence-scoring/proposal capability. This child turns that analysis into repo-local architecture guidance before runtime code changes.\n\n## Goal\n\nProduce SOL architecture documentation covering observation, evaluation, optimization, run timing, data flows, deterministic boundaries, and Polaris-repo versus consumer-repo behavior.\n\n## Scope\n\n* smartdocs/raw/analysis/**\n* smartdocs/specs/raw/**\n* smartdocs/specs/active/**\n* src/autoresearch/POLARIS.md\n* src/cli/SUMMARY.md\n\n## Acceptance Criteria\n\n- [ ] SOL architecture defines observation, evaluation, optimization, and recommendation phases.\n- [ ] Auto Research is documented as a SOL sub-capability rather than the parent concept.\n- [ ] Boundaries state that SOL recommends and routes review-gated work, not silent runtime mutation.\n- [ ] The spec names Worker Router and QC as upstream signal producers, not SOL-owned replacements.\n- [ ] Route docs reflect the intended naming and ownership without promoting draft doctrine outside the SmartDocs workflow.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/autoresearch src/cli\n\n## Ordering\n\n* None. This child runs first and informs all later SOL implementation work.\n\n## Non-goals\n\n* Do not implement SOL runtime code in this child.\n* Do not remove or rename the `polaris autoresearch` command yet.\n* Do not promote docs to active doctrine without the existing SmartDocs promotion workflow."
+    },
+    "POL-477": {
+      "id": "POL-477",
+      "title": "IMPLEMENT: Polaris Self-Optimization Loop",
+      "status": "Todo",
+      "body": "## Objective\n\nImplement the Self-Optimization Loop (SOL) roadmap produced from [POL-462](https://linear.app/lsctech/issue/POL-462/analyze-rename-auto-research-loop-to-self-optimization-loop), evolving the current dev-gated Auto Research/autoresearch scoring feature into a broader evidence-driven optimization subsystem.\n\n## Context\n\n[POL-462](https://linear.app/lsctech/issue/POL-462/analyze-rename-auto-research-loop-to-self-optimization-loop) analyzed how Polaris should rename and expand Auto Research Loop into SOL. The existing `src/autoresearch` module scores completed runs and routes human-reviewed proposals, while related Worker Router and QC analyses reserve future SOL inputs through [POL-469](https://linear.app/lsctech/issue/POL-469/emit-router-telemetry-and-sol-scoring-inputs) and [POL-476](https://linear.app/lsctech/issue/POL-476/feed-qc-metrics-into-sol-scoring-and-operator-reports).\n\nThis IMPLEMENT parent is itself a child of [POL-462](https://linear.app/lsctech/issue/POL-462/analyze-rename-auto-research-loop-to-self-optimization-loop) and should preserve the analyze-only boundary of the source issue. SOL must observe, score, report, and recommend. It must not silently mutate runtime behavior or bypass deterministic Polaris orchestration.\n\nRelated issues: [POL-460](https://linear.app/lsctech/issue/POL-460/analyze-polaris-worker-router-informed-by-9router), [POL-461](https://linear.app/lsctech/issue/POL-461/analyze-polaris-quality-control-architecture), [POL-463](https://linear.app/lsctech/issue/POL-463/implement-polaris-worker-router), [POL-470](https://linear.app/lsctech/issue/POL-470/implement-polaris-quality-control-lifecycle).\n\n## Goal\n\nDeliver a staged SOL implementation that renames the operator-facing concept, preserves Auto Research as a sub-capability, expands evidence and scoring models, persists historical performance, and generates review-gated routing/runtime recommendations.\n\n## Scope\n\n* smartdocs/raw/analysis/**\n* smartdocs/specs/raw/**\n* smartdocs/specs/active/**\n* src/autoresearch/**\n* src/cli/**\n* src/types/**\n* src/loop/**\n* src/cluster-state/**\n* src/finalize/**\n* src/config/**\n* tests covering SOL/autoresearch, CLI, loop evidence, config, and reporting behavior\n\n## Acceptance Criteria\n\n- [ ] SOL architecture is documented with boundaries against uncontrolled self-mutation.\n- [ ] Auto Research naming is migrated or aliased under SOL while preserving backward compatibility.\n- [ ] SOL consumes Foreman, worker, router, QC, validation, token, runtime, and intervention evidence from durable Polaris artifacts.\n- [ ] Foreman and worker scoring models expose overall and diagnostic sub-scores grouped by task type, repo, route, role, risk, provider, and model where evidence exists.\n- [ ] Historical performance storage and reports support routing recommendations without replacing Foreman validation.\n- [ ] Polaris-repo self-improvement behavior creates review-gated analyze/implementation proposals only when explicitly allowed.\n- [ ] All child issue validation passes.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/autoresearch src/cli src/loop src/cluster-state src/config\n\n## Ordering\n\nChildren execute in dependency order: architecture and naming first, evidence/schema next, scoring and history after schema, then recommendation routing and Polaris-specific self-improvement behavior.\n\n## Non-goals\n\n* Do not silently mutate runtime policy, provider config, skills, doctrine, or source code from SOL output.\n* Do not replace Worker Router, QC, Foreman validation, Closeout Librarian, or finalize gates.\n* Do not make SOL depend on one QC provider or on 9Router.\n* Do not remove the existing `polaris autoresearch` command until compatibility aliases and migration docs exist."
+    },
+    "POL-463": {
+      "id": "POL-463",
+      "title": "IMPLEMENT: Polaris Worker Router",
+      "status": "Todo"
+    },
+    "POL-476": {
+      "id": "POL-476",
+      "title": "Feed QC metrics into SOL scoring and operator reports",
+      "status": "Todo"
+    },
+    "POL-469": {
+      "id": "POL-469",
+      "title": "Emit router telemetry and SOL scoring inputs",
+      "status": "Todo"
+    },
+    "POL-470": {
+      "id": "POL-470",
+      "title": "IMPLEMENT: Polaris Quality Control lifecycle",
+      "status": "Todo"
+    }
+  },
+  "dependencies": {
+    "POL-483": [
+      "POL-482"
+    ],
+    "POL-482": [
+      "POL-481"
+    ],
+    "POL-481": [
+      "POL-480"
+    ],
+    "POL-480": [
+      "POL-479"
+    ],
+    "POL-479": [
+      "POL-478"
+    ]
+  },
+  "clusters": {
+    "POL-462": {
+      "id": "POL-462",
+      "title": "Linear Issue: POL-462",
+      "children": [
+        "POL-477",
+        "POL-483",
+        "POL-482",
+        "POL-481",
+        "POL-480",
+        "POL-479",
+        "POL-478"
+      ],
+      "cluster_root": "POL-462"
+    }
+  },
+  "activeCluster": "POL-462"
+}

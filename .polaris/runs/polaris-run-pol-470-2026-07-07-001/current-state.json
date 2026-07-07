@@ -20,7 +20,7 @@
     "children_completed": 6,
     "max_children_per_session": 1
   },
-  "status": "cluster-complete",
+  "status": "complete",
   "next_open_child": null,
   "artifact_dir": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run",
   "dispatch_boundary": {
@@ -34,5 +34,6 @@
     "cluster_id": "POL-470",
     "open_children_sha": "f17f6ea5f4a51d988830cc6c0c99cf19d7cb2726ece061d8666f826f08f1b728",
     "sealed_at": "2026-07-07T18:43:17.029Z"
-  }
+  },
+  "pr_url": "https://github.com/Lone-Star-Cajun-Technologies/Polaris-CLO/pull/157"
 }

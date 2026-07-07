@@ -1,0 +1,46 @@
+{
+  "schemaVersion": "v2",
+  "source": {
+    "id": "POL-460",
+    "type": "Linear",
+    "analysis": {
+      "id": "initial-sync",
+      "doc": "Synchronized from Linear issue identifier: POL-460"
+    }
+  },
+  "nodes": {
+    "POL-460": {
+      "id": "POL-460",
+      "title": "ANALYZE: Polaris Worker Router informed by 9Router",
+      "status": "Todo",
+      "body": "## Objective\n\nAnalyze 9Router and related provider-routing patterns to determine how Polaris should evolve its worker routing and scheduling capabilities.\n\nThis issue should not implement anything. It should produce an analysis and design recommendation for a Polaris-native worker router.\n\n## Background\n\nPolaris can decompose work, create implementation clusters, preserve durable state, validate evidence, and govern repository-aware execution. What it does not yet appear to have is true dynamic worker scheduling or performance-aware provider routing.\n\n9Router appears to focus on model/provider routing, quota handling, fallback, multi-account routing, request logging, and provider abstraction. Polaris should study those ideas without becoming dependent on 9Router or replacing Polaris' evidence-based orchestration model.\n\n## Questions to answer\n\n* What does 9Router actually do?\n* Is 9Router task-aware, or mostly quota/fallback based?\n* How does it register providers, accounts, models, and capabilities?\n* How does it route between providers?\n* How does it handle quota limits, failures, retries, and fallback?\n* Does it provide usage analytics or request logs that could inspire Polaris telemetry?\n* Which concepts should Polaris adopt natively?\n* Which concepts should Polaris avoid?\n* Should Polaris support a pluggable router interface?\n* How should Polaris maintain a worker pool, such as three active non-Claude workers?\n* How should Polaris assign the next unblocked child when a worker finishes?\n* How should worker trust level, cost, task type, and capability influence routing?\n\n## Polaris-specific design target\n\nDesign a Polaris-native Worker Router that can eventually support:\n\n* worker/provider registry\n* role-aware worker eligibility\n* task-type matching\n* cost-aware routing\n* trust-aware routing\n* quota-aware routing\n* fallback and retry policy\n* concurrent worker slots\n* route/domain-aware assignment\n* historical-performance inputs from future SOL scoring\n\n## Important boundaries\n\n* Do not propose replacing Polaris with 9Router.\n* Do not make 9Router a required dependency unless the analysis proves that is clearly better than native implementation.\n* Preserve Polaris as the owner of work decomposition, Linear child clusters, repo boundaries, evidence, validation, and PR finalization.\n* Treat 9Router as a reference implementation for provider-routing ideas, not as the orchestration engine.\n\n## Deliverables\n\n* Summary of 9Router capabilities\n* Comparison between 9Router and Polaris\n* Proposed Polaris Worker Router architecture\n* Provider/worker abstraction model\n* Worker scheduling model\n* Routing policy model\n* Fallback and quota model\n* Trust/cost/capability model\n* Required Polaris runtime changes\n* Risks and open questions\n* Recommended implementation roadmap\n\n## Success criteria\n\nThe completed analysis should explain how Polaris can gain dynamic, evidence-compatible worker routing without losing its repo-governed orchestration model."
+    },
+    "EVOS1-408": {
+      "id": "EVOS1-408",
+      "title": "ANALYZE: Polaris Worker Router informed by 9Router",
+      "status": "Todo"
+    },
+    "POL-462": {
+      "id": "POL-462",
+      "title": "ANALYZE: Rename Auto Research Loop to Self-Optimization Loop",
+      "status": "Todo"
+    },
+    "POL-461": {
+      "id": "POL-461",
+      "title": "ANALYZE: Polaris Quality Control architecture",
+      "status": "Todo"
+    }
+  },
+  "dependencies": {},
+  "clusters": {
+    "POL-460": {
+      "id": "POL-460",
+      "title": "Linear Issue: POL-460",
+      "children": [
+        "POL-460"
+      ],
+      "cluster_root": "POL-460"
+    }
+  },
+  "activeCluster": "POL-460"
+}
