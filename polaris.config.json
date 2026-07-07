@@ -151,6 +151,24 @@
       "projectId": "Polaris Core Runtime"
     }
   },
+  "qc": {
+    "enabled": true,
+    "defaultTrigger": "completed-cluster",
+    "providers": {
+      "coderabbit": {
+        "name": "coderabbit",
+        "mode": "local",
+        "trigger": "completed-cluster",
+        "capabilities": ["diff-review"]
+      }
+    },
+    "severityThresholds": {
+      "block": "high",
+      "repair": "medium",
+      "followUp": "low"
+    },
+    "repairRouting": "route"
+  },
   "version": "1.0",
   "providers": {
     "compactionProviders": [

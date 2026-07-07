@@ -274,11 +274,11 @@ export class CodeRabbitQcProvider implements IQcProvider {
 
   buildReviewCommand(scope: QcReviewScope): { command: string; args: string[] } {
     if (scope.prUrl) {
-      return { command: "coderabbit", args: ["review", "--pr-url", scope.prUrl] };
+      return { command: "coderabbit", args: ["review", "--agent", "--pr-url", scope.prUrl] };
     }
     return {
       command: "coderabbit",
-      args: ["review", "--branch", scope.branch ?? "HEAD"],
+      args: ["review", "--agent", "--branch", scope.branch ?? "HEAD"],
     };
   }
 
