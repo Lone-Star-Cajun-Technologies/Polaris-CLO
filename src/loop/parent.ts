@@ -1014,8 +1014,38 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
   // before the loop starts so operators don't need to run it manually.
   if (!dryRun) {
     const openChildrenNeedingScope = state.open_children.filter((childId) => {
-      const body = readBodyFromClusterSnapshot(state.cluster_id, childId, repoRoot) ?? "";
-      return body.length === 0 || !/^##\s+Scope/im.test(body);
+      // Skip analyze children — they never need scope (no impl packets)
+      if (isAnalyzeChild(childId, state)) {
+        return false;
+      }
+
+      // Resolve child body: prefer cached meta body, then fall back to snapshot
+      const cachedChildBody = state.open_children_meta?.[childId]?.body;
+      const childBody = (cachedChildBody && cachedChildBody.trim().length > 0)
+        ? cachedChildBody
+        : readBodyFromClusterSnapshot(state.cluster_id, childId, repoRoot) ?? '';
+
+      // If body is completely absent, treat as needing scope sync-in
+      if (childBody.trim().length === 0) {
+        return true;
+      }
+
+      // Parse child body for scope
+      const { scope: childScope } = parseIssueBody(childBody);
+      if (childScope.length > 0) {
+        return false; // Child has scope, no sync needed
+      }
+
+      // Fallback: check parent/cluster-root body for scope
+      const cachedParentBody = state.open_children_meta?.[state.cluster_id]?.body;
+      const parentBody = (cachedParentBody && cachedParentBody.trim().length > 0)
+        ? cachedParentBody
+        : readBodyFromClusterSnapshot(state.cluster_id, state.cluster_id, repoRoot) ?? '';
+      const { scope: parentScope } = parseIssueBody(parentBody);
+
+      // If parent has scope, child can inherit — no sync needed
+      // Otherwise, child truly needs scope sync-in
+      return parentScope.length === 0;
     });
 
     if (openChildrenNeedingScope.length > 0) {
