@@ -68,23 +68,40 @@ function hasWorkerExecutionEvidence(
     const telemetry = fs.readFileSync(packet.telemetry_file, "utf-8").trim();
     if (!telemetry) return false;
     const lines = telemetry.split("\n");
-    // Scan backwards and stop at the most recent child-dispatched event for
-    // this child so stale evidence from a previous dispatch attempt is ignored.
+    const packetDispatchId = packet.dispatch_id;
+    // Scan backwards: when both the packet and the parsed event carry a dispatch_id,
+    // use that as the primary scope gate so stale events from a previous attempt are
+    // never attributed to the current dispatch.  Fall back to the child-dispatched
+    // boundary for older telemetry that lacks dispatch_id on individual events.
     for (let i = lines.length - 1; i >= 0; i--) {
       const line = lines[i]?.trim();
       if (!line) continue;
       try {
-        const parsed = JSON.parse(line) as { event?: string; child_id?: string };
+        const parsed = JSON.parse(line) as { event?: string; child_id?: string; dispatch_id?: string };
         if (parsed.child_id !== packet.active_child) continue;
-        // Stop at the dispatch boundary — events before this belong to a prior attempt.
-        if (parsed.event === "child-dispatched") break;
+
         if (
           parsed.event === "worker-acknowledged" ||
           parsed.event === "worker-heartbeat" ||
           parsed.event === "worker-result"
         ) {
+          const eventDispatchId = parsed.dispatch_id;
+          if (packetDispatchId && eventDispatchId) {
+            // Primary gate: dispatch_id available on both sides — match determines
+            // whether this event belongs to the current dispatch.
+            if (eventDispatchId === packetDispatchId) return true;
+            // Mismatch — event belongs to a different dispatch; keep scanning.
+            continue;
+          }
+          // Fallback: dispatch_id not available on one or both sides — accept the
+          // event as evidence for the current dispatch (scoped by the
+          // child-dispatched boundary below).
           return true;
         }
+
+        // Boundary fallback: stop at the child-dispatched event so events from a
+        // prior attempt are not counted when dispatch_id matching is unavailable.
+        if (parsed.event === "child-dispatched") break;
       } catch {
         continue;
       }
@@ -391,6 +408,8 @@ export class TerminalCliAdapter implements ExecutionAdapter {
       };
       return {
         ...exhausted,
+        // All providers have been exhausted — no further fallback is possible.
+        fallback_eligible: false,
         router_evidence: exhausted.router_evidence ?? routerEvidence,
         provider_attempts: exhausted.provider_attempts ?? providerAttempts,
       };
