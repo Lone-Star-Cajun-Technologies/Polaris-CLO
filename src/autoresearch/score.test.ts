@@ -24,7 +24,7 @@ import {
   gateForemanTokenBurnOverBudget,
   gateStateRepairRequired,
 } from "./gates.js";
-import { computeScore, buildDiagnosisHints, scoreRun, loadRunArtifacts } from "./score.js";
+import { computeScore, buildDiagnosisHints, scoreRun, loadRunArtifacts, summarizeRouterOutcomes } from "./score.js";
 import type { RunArtifacts } from "./score.js";
 import type { GateResult } from "./gates.js";
 
@@ -358,6 +358,79 @@ describe("gateStateRepairRequired", () => {
     expect(gateStateRepairRequired(emptyArtifacts()).outcome).toBe("skipped");
   });
 
+  describe("summarizeRouterOutcomes", () => {
+    it("counts successful fallback without classifying it as a recurring failure", () => {
+      const artifacts = emptyArtifacts({
+        telemetryEvents: [
+          {
+            event: "provider-selected",
+            child_id: "POL-100",
+            selected_provider: "codex",
+            providers_tried: ["copilot", "codex"],
+            fallback_attempts: [
+              { provider: "copilot", attempt_index: 1, outcome: "rejected", rejection_reasons: ["quota-exhausted"] },
+              { provider: "codex", attempt_index: 2, outcome: "selected", rejection_reasons: [] },
+            ],
+          },
+          {
+            event: "provider-fallback-attempted",
+            child_id: "POL-100",
+            fallback_from: "copilot",
+            fallback_reason: "quota-exhausted",
+            fallback_to: "codex",
+          },
+          {
+            event: "child-complete",
+            child_id: "POL-100",
+            completion_status: "done",
+          },
+        ],
+      });
+
+      const summary = summarizeRouterOutcomes(artifacts);
+      expect(summary.total_decisions).toBe(1);
+      expect(summary.fallback_attempts).toBe(1);
+      expect(summary.successful_fallbacks).toBe(1);
+      expect(summary.recurring_failures).toEqual([]);
+    });
+
+    it("aggregates recurring quota/trust/capability router failures", () => {
+      const artifacts = emptyArtifacts({
+        telemetryEvents: [
+          {
+            event: "provider-exhausted",
+            child_id: "POL-101",
+            reason: "quota-exhausted",
+          },
+          {
+            event: "provider-selected",
+            child_id: "POL-102",
+            selected_provider: null,
+            router_exhausted_reason: "trust-too-low",
+            router_candidates: [
+              { provider: "copilot", eligible: false, rejection_reasons: ["trust-too-low"] },
+            ],
+          },
+          {
+            event: "provider-selected",
+            child_id: "POL-103",
+            selected_provider: null,
+            router_exhausted_reason: "capability-mismatch",
+            router_candidates: [
+              { provider: "copilot", eligible: false, rejection_reasons: ["capability-mismatch"] },
+            ],
+          },
+        ],
+      });
+
+      const summary = summarizeRouterOutcomes(artifacts);
+      expect(summary.exhausted_decisions).toBe(1);
+      expect(summary.recurring_failures.some((failure) => failure.reason === "quota-exhausted")).toBe(true);
+      expect(summary.recurring_failures.some((failure) => failure.reason === "trust-too-low")).toBe(true);
+      expect(summary.recurring_failures.some((failure) => failure.reason === "capability-mismatch")).toBe(true);
+    });
+  });
+
   it("passes when cluster dir has no medic artifacts", () => {
     const dir = join(tmpdir(), `polaris-cluster-clean-${Date.now()}`);
     mkdirSync(dir, { recursive: true });
@@ -582,6 +655,8 @@ describe("scoreRun output schema", () => {
     expect(report.score).toBeGreaterThanOrEqual(0);
     expect(report.score).toBeLessThanOrEqual(1);
     expect(Array.isArray(report.diagnosis_hints)).toBe(true);
+    expect(typeof report.router_outcomes).toBe("object");
+    expect(typeof report.router_outcomes.total_decisions).toBe("number");
   });
 
   it("gate_results contains exactly 8 entries (one per v1 gate)", () => {

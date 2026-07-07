@@ -46,6 +46,20 @@ export interface DiagnosisHint {
   hint: string;
 }
 
+export interface RouterFailureSummary {
+  reason: string;
+  occurrences: number;
+  child_ids: string[];
+}
+
+export interface RouterOutcomesSummary {
+  total_decisions: number;
+  exhausted_decisions: number;
+  fallback_attempts: number;
+  successful_fallbacks: number;
+  recurring_failures: RouterFailureSummary[];
+}
+
 export interface DiagnosisReport {
   run_id: string;
   cluster_id: string | null;
@@ -54,6 +68,7 @@ export interface DiagnosisReport {
   failed_gates: string[];
   score: number;
   diagnosis_hints: DiagnosisHint[];
+  router_outcomes: RouterOutcomesSummary;
 }
 
 // ──────────────────────────────────────────────
@@ -257,6 +272,102 @@ export function buildDiagnosisHints(failedGateNames: string[]): DiagnosisHint[] 
   });
 }
 
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : undefined;
+}
+
+function asStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((entry): entry is string => typeof entry === "string");
+}
+
+export function summarizeRouterOutcomes(artifacts: RunArtifacts): RouterOutcomesSummary {
+  const telemetry = artifacts.telemetryEvents
+    .map((event) => asRecord(event))
+    .filter((event): event is Record<string, unknown> => event !== undefined);
+
+  const childCompletionStatus = new Map<string, string>();
+  for (const event of telemetry) {
+    if (event["event"] !== "child-complete" || typeof event["child_id"] !== "string") continue;
+    const completionStatus =
+      typeof event["completion_status"] === "string"
+        ? event["completion_status"]
+        : "done";
+    childCompletionStatus.set(event["child_id"], completionStatus);
+  }
+
+  const selectedEvents = telemetry.filter((event) => event["event"] === "provider-selected");
+  const exhaustedEvents = telemetry.filter((event) => event["event"] === "provider-exhausted");
+  const fallbackEvents = telemetry.filter((event) => event["event"] === "provider-fallback-attempted");
+  const reasonCounts = new Map<string, { count: number; childIds: Set<string> }>();
+
+  const countReason = (reason: string, childId?: string): void => {
+    const current = reasonCounts.get(reason) ?? { count: 0, childIds: new Set<string>() };
+    current.count += 1;
+    if (childId) current.childIds.add(childId);
+    reasonCounts.set(reason, current);
+  };
+
+  for (const event of exhaustedEvents) {
+    const reason = typeof event["reason"] === "string" ? event["reason"] : "no-provider-selected";
+    const childId = typeof event["child_id"] === "string" ? event["child_id"] : undefined;
+    countReason(reason, childId);
+  }
+
+  for (const event of selectedEvents) {
+    const childId = typeof event["child_id"] === "string" ? event["child_id"] : undefined;
+    const selectedProvider = typeof event["selected_provider"] === "string" ? event["selected_provider"] : null;
+    if (!selectedProvider) {
+      const exhaustedReason =
+        typeof event["router_exhausted_reason"] === "string"
+          ? event["router_exhausted_reason"]
+          : "no-provider-selected";
+      countReason(exhaustedReason, childId);
+
+      const candidates = Array.isArray(event["router_candidates"]) ? event["router_candidates"] : [];
+      for (const candidateRaw of candidates) {
+        const candidate = asRecord(candidateRaw);
+        if (!candidate) continue;
+        const rejectionReasons = asStringArray(candidate["rejection_reasons"]);
+        for (const reason of rejectionReasons) {
+          countReason(reason, childId);
+        }
+      }
+    }
+  }
+
+  let successfulFallbacks = 0;
+  for (const event of selectedEvents) {
+    const selectedProvider = typeof event["selected_provider"] === "string" ? event["selected_provider"] : null;
+    const providersTried = asStringArray(event["providers_tried"]);
+    const usedFallback = selectedProvider !== null && providersTried.length > 1;
+    if (!usedFallback) continue;
+    const childId = typeof event["child_id"] === "string" ? event["child_id"] : undefined;
+    const completionStatus = childId ? childCompletionStatus.get(childId) : undefined;
+    if (completionStatus && completionStatus !== "blocked" && completionStatus !== "error") {
+      successfulFallbacks += 1;
+    }
+  }
+
+  const recurringFailures = Array.from(reasonCounts.entries())
+    .map(([reason, value]) => ({
+      reason,
+      occurrences: value.count,
+      child_ids: Array.from(value.childIds).sort(),
+    }))
+    .sort((a, b) => b.occurrences - a.occurrences || a.reason.localeCompare(b.reason));
+
+  return {
+    total_decisions: selectedEvents.length,
+    exhausted_decisions: exhaustedEvents.length,
+    fallback_attempts: fallbackEvents.length,
+    successful_fallbacks: successfulFallbacks,
+    recurring_failures: recurringFailures,
+  };
+}
+
 // ──────────────────────────────────────────────
 // Main entry point
 // ──────────────────────────────────────────────
@@ -268,6 +379,7 @@ export function scoreRun(repoRoot: string, runId: string): DiagnosisReport {
   const failedGates = gateResults.filter((g) => g.outcome === "failed").map((g) => g.gate);
   const score = computeScore(gateResults);
   const diagnosisHints = buildDiagnosisHints(failedGates);
+  const routerOutcomes = summarizeRouterOutcomes(artifacts);
 
   const clusterId =
     artifacts.currentState &&
@@ -284,5 +396,6 @@ export function scoreRun(repoRoot: string, runId: string): DiagnosisReport {
     failed_gates: failedGates,
     score,
     diagnosis_hints: diagnosisHints,
+    router_outcomes: routerOutcomes,
   };
 }

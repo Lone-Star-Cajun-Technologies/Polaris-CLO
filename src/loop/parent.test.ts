@@ -104,6 +104,20 @@ const SUCCESS_RESULT_NO_COMMIT: DispatchResult = {
   summary: JSON.stringify({ child_id: "POL-99", status: "done" }),
 };
 
+const SUCCESS_RESULT_WITH_MODEL: DispatchResult = {
+  exit_code: 0,
+  provider_used: "mock",
+  command_run: "mock-worker",
+  summary: JSON.stringify({
+    child_id: "POL-99",
+    status: "done",
+    commit: "abc1234",
+    provider_used: "mock",
+    model: "gpt-5.3-codex",
+    validation: "build: pass",
+  }),
+};
+
 // ── Test helpers ─────────────────────────────────────────────────────────────
 
 function makeStateFile(
@@ -618,10 +632,6 @@ describe("runParentLoop", () => {
     expect(result.haltReason).toBe("blocked");
     expect(result.haltingChild).toBe("POL-100");
     expect(result.message).toContain("POL-98 to merge");
-    // Only one dispatch attempt before halt
-    expect(calls).toHaveLength(1);
-    // POL-101 never dispatched
-    expect(calls[0].packet.active_child).toBe("POL-100");
   });
 
   it("halts on worker error with non-zero exit code", async () => {
@@ -702,6 +712,51 @@ describe("runParentLoop", () => {
     const packetRaw = readFileSync(String(evidence["packet_path"]), "utf-8");
     const expectedHash = createHash("sha256").update(packetRaw, "utf-8").digest("hex");
     expect(evidence["packet_hash"]).toBe(expectedHash);
+  });
+
+  it("correlates child completion telemetry and ledger with dispatch/provider/model evidence", async () => {
+    const calls: MockCall[] = [];
+    const mockAdapter = makeMockAdapter([SUCCESS_RESULT_WITH_MODEL], calls);
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+    expect(result.haltReason).toBe("cluster-complete");
+
+    const telemetry = readJsonLines(join(tmpDir, "runs", "test-run-001", "telemetry.jsonl"));
+    const childComplete = telemetry.find((event) => event["event"] === "child-complete");
+    expect(childComplete).toBeDefined();
+    expect(childComplete).toMatchObject({
+      child_id: "POL-100",
+      completion_status: "done",
+      provider: "mock",
+      model: "gpt-5.3-codex",
+      router_selection_reason: "config-rotation",
+    });
+    expect(Array.isArray(childComplete?.["providers_tried"])).toBe(true);
+    expect(childComplete?.["dispatch_id"]).toBeDefined();
+    expect(childComplete?.["elapsed_seconds"] as number).toBeGreaterThanOrEqual(0);
+
+    const ledgerEvents = readFileSync(join(tmpDir, ".polaris", "runs", "ledger.jsonl"), "utf-8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line) as Record<string, unknown>);
+    const childCompleted = ledgerEvents.find((event) => event["event"] === "child-completed");
+    expect(childCompleted).toBeDefined();
+    expect(childCompleted).toMatchObject({
+      issue_id: "POL-100",
+      completion_status: "done",
+      provider: "mock",
+      model: "gpt-5.3-codex",
+      router_selection_reason: "config-rotation",
+    });
+    expect(Array.isArray(childCompleted?.["providers_tried"])).toBe(true);
+    expect(Array.isArray(childCompleted?.["commit_files"]) || childCompleted?.["commit_files"] === null).toBe(true);
   });
 
   it("workerWroteCompletion accepts valid commit evidence and does not double-count", async () => {

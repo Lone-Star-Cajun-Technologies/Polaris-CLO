@@ -304,6 +304,16 @@ function appendChildCompletedLedgerEvent(
   completedChild: string,
   lastCommit: string | null,
   validation: unknown,
+  completion?: {
+    dispatchId?: string;
+    provider?: string | null;
+    model?: string | null;
+    elapsedSeconds?: number;
+    commitFiles?: string[] | null;
+    completionStatus?: "done" | "blocked" | "error";
+    routerSelectionReason?: string;
+    providersTried?: string[];
+  },
 ): void {
   const writer = new LedgerWriter(join(repoRoot, DEFAULT_LEDGER_PATH));
   const base = {
@@ -330,6 +340,18 @@ function appendChildCompletedLedgerEvent(
     validation: typeof validation === "object" && validation !== null
       ? { status: "complete", ...(validation as Record<string, unknown>) }
       : { status: "complete" },
+    ...(completion?.dispatchId ? { dispatch_id: completion.dispatchId } : {}),
+    provider: completion?.provider ?? null,
+    model: completion?.model ?? null,
+    ...(completion?.elapsedSeconds !== undefined ? { elapsed_seconds: completion.elapsedSeconds } : {}),
+    ...(completion?.commitFiles !== undefined ? { commit_files: completion.commitFiles } : {}),
+    ...(completion?.completionStatus ? { completion_status: completion.completionStatus } : {}),
+    ...(completion?.routerSelectionReason
+      ? { router_selection_reason: completion.routerSelectionReason }
+      : {}),
+    ...(completion?.providersTried?.length
+      ? { providers_tried: completion.providersTried }
+      : {}),
   } satisfies ChildCompletedEvent);
 }
 
@@ -543,6 +565,8 @@ function buildParentDispatchRecord(args: {
   packetPath: string;
   resultPath: string;
   provider: string;
+  providerSelectionReason?: string;
+  providersTried?: string[];
   workerId: string;
   dispatchedAt: string;
 }): ChildDispatchRecord {
@@ -554,6 +578,8 @@ function buildParentDispatchRecord(args: {
     packet_path: args.packetPath,
     expected_result_path: args.resultPath,
     provider: args.provider,
+    provider_selection_reason: args.providerSelectionReason,
+    providers_tried: args.providersTried,
     dispatched_at: args.dispatchedAt,
     status: "dispatched",
     dispatch_mode: "direct-worker",
@@ -872,8 +898,12 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
   const adapterName =
     legacyEphemeralMode ? "agent-subtask" : (options.adapter ?? config.execution?.adapter ?? "terminal-cli");
   let providerName: string;
+  let providerSelectionReason: string | undefined;
+  let providersTried: string[] | undefined;
   if (adapterName === "agent-subtask") {
     providerName = "agent-subtask";
+    providerSelectionReason = "agent-subtask-adapter";
+    providersTried = ["agent-subtask"];
   } else {
     let evidence;
     try {
@@ -891,6 +921,8 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
       };
     }
     providerName = evidence.provider ?? "default";
+    providerSelectionReason = evidence.selectionReason;
+    providersTried = evidence.providersTried;
   }
 
   const executionConfig =
@@ -1025,6 +1057,16 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
 
     if (nextChild === null) {
       if (state.open_children.length > 0) {
+        if (!dryRun) {
+          appendTelemetry(telemetryFile, {
+            event: "scheduler-no-eligible-child",
+            run_id: state.run_id,
+            open_children: state.open_children,
+            rejected_children: selection.rejected_children,
+            slot_claims: nextSlotClaims,
+            timestamp: new Date().toISOString(),
+          });
+        }
         return {
           haltReason: "blocked",
           childrenDispatched,
@@ -1321,6 +1363,8 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
         packetPath,
         resultPath: resultFile,
         provider: providerName,
+        providerSelectionReason,
+        providersTried,
         workerId,
         dispatchedAt,
       });
@@ -1384,6 +1428,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     if (!dryRun) {
       const totalChildren = state.open_children.length + state.completed_children.length;
       const childIndex = state.completed_children.length + 1;
+      const selectedSlotClaim = nextSlotClaims.find((claim) => claim.child_id === nextChild);
       logStatus(notificationFormat, `RUNNING ${nextChild} (${childIndex}/${totalChildren})`);
       appendTelemetry(telemetryFile, {
         event: "child-dispatched",
@@ -1398,6 +1443,8 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
         packet_path: packetPath,
         expected_result_path: resultFile,
         dry_run: dryRun,
+        selected_slot_claim: selectedSlotClaim ?? null,
+        slot_claims: nextSlotClaims,
         timestamp: new Date().toISOString(),
       });
 
@@ -1753,6 +1800,16 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     const validationSummary =
       (finalWorkerSummary as Record<string, unknown>)?.['validation'] ??
       (finalWorkerSummary as Record<string, unknown>)?.['validation_summary'];
+    const dispatchRecord = state.open_children_meta?.[nextChild]?.dispatch_record;
+    const providerUsed =
+      ((finalWorkerSummary as Record<string, unknown>)?.['provider'] as string | undefined) ??
+      ((finalWorkerSummary as Record<string, unknown>)?.['provider_used'] as string | undefined) ??
+      dispatchRecord?.provider ??
+      null;
+    const modelUsed =
+      ((finalWorkerSummary as Record<string, unknown>)?.['model'] as string | undefined) ??
+      ((finalWorkerSummary as Record<string, unknown>)?.['model_used'] as string | undefined) ??
+      null;
 
     if (!dryRun && workerStatus === 'done' && (!lastCommit || lastCommit.trim().length === 0)) {
       const errMsg = `Worker reported done for ${nextChild} without commit evidence`;
@@ -1977,15 +2034,30 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
         child_id: nextChild,
         children_completed: state.context_budget.children_completed,
         validation_summary: validationSummary,
+        completion_status: workerStatus,
         commit_hash: lastCommit,
         commit_files: commitFiles,
+        dispatch_id: dispatchRecord?.dispatch_id,
+        provider: providerUsed,
+        model: modelUsed,
+        router_selection_reason: dispatchRecord?.provider_selection_reason,
+        providers_tried: dispatchRecord?.providers_tried,
         timestamp: new Date().toISOString(),
       };
       if (elapsedSeconds !== undefined) {
         telemetryEvent.elapsed_seconds = elapsedSeconds;
       }
       appendTelemetry(telemetryFile, telemetryEvent);
-      appendChildCompletedLedgerEvent(repoRoot, state, nextChild, lastCommit ?? null, validationSummary);
+      appendChildCompletedLedgerEvent(repoRoot, state, nextChild, lastCommit ?? null, validationSummary, {
+        dispatchId: dispatchRecord?.dispatch_id,
+        provider: providerUsed,
+        model: modelUsed,
+        elapsedSeconds,
+        commitFiles,
+        completionStatus: workerStatus,
+        routerSelectionReason: dispatchRecord?.provider_selection_reason,
+        providersTried: dispatchRecord?.providers_tried,
+      });
     }
 
     if (orchestrationMode === 'supervised') {

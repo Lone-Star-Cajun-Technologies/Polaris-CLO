@@ -98,6 +98,14 @@ export interface ChildCompletedEvent extends LedgerBaseEvent {
   status: "running" | "paused" | "cluster-complete";
   last_commit: string | null;
   validation: LedgerValidation;
+  dispatch_id?: string;
+  provider?: string | null;
+  model?: string | null;
+  elapsed_seconds?: number;
+  commit_files?: string[] | null;
+  completion_status?: "done" | "blocked" | "error";
+  router_selection_reason?: string;
+  providers_tried?: string[];
 }
 
 export interface RunPausedEvent extends LedgerBaseEvent {

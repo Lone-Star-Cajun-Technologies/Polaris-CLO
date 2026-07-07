@@ -88,6 +88,15 @@ export interface ProviderDecisionEvidence {
   providersTried: string[];
   exhaustedReason?: string;
   routerEvidence?: WorkerRouterDecision;
+  routerContextSnapshot?: {
+    taskType: WorkerTaskType;
+    requiredCapabilities?: WorkerProviderCapability[];
+    minTrustTier?: WorkerTrustTier;
+    maxCostTier?: WorkerCostTier;
+    disallowedQuotaPolicies?: WorkerQuotaPolicy[];
+    activeSlotsByProvider?: Record<string, number>;
+    quotaAvailableByProvider?: Record<string, boolean>;
+  };
 }
 
 type ProviderPolicyByRole = Partial<Record<ExecutionRole, RoleProviderPolicy>>;
@@ -236,6 +245,15 @@ export function resolveProviderAndMode(
     providersTried: decision.providersTried,
     exhaustedReason: decision.exhaustedReason,
     routerEvidence: decision,
+    routerContextSnapshot: {
+      taskType: routerContext?.taskType ?? "impl",
+      requiredCapabilities: routerContext?.requiredCapabilities,
+      minTrustTier: routerContext?.minTrustTier,
+      maxCostTier: routerContext?.maxCostTier,
+      disallowedQuotaPolicies: routerContext?.disallowedQuotaPolicies,
+      activeSlotsByProvider: routerContext?.activeSlotsByProvider,
+      quotaAvailableByProvider: routerContext?.quotaAvailableByProvider,
+    },
   };
 }
 
@@ -549,6 +567,16 @@ function emitProviderSelected(
   childId: string,
   decision: ProviderDecisionEvidence,
 ): void {
+  const fallbackAttempts = decision.providersTried.map((provider, index) => {
+    const candidate = decision.routerEvidence?.candidates.find((entry) => entry.provider === provider);
+    return {
+      provider,
+      attempt_index: index + 1,
+      outcome: decision.provider === provider ? "selected" : "rejected",
+      rejection_reasons: candidate?.rejectionReasons ?? [],
+    } as const;
+  });
+
   appendTelemetry(telemetryFile, {
     event: "provider-selected",
     event_id: randomUUID(),
@@ -559,6 +587,26 @@ function emitProviderSelected(
     selected_provider: decision.provider ?? null,
     selected_adapter: decision.adapter,
     selection_reason: decision.selectionReason,
+    ...(decision.routerEvidence
+      ? {
+          router_mode: decision.routerEvidence.mode,
+          router_task_type: decision.routerEvidence.selectedWorker.taskType,
+          router_compatibility_mode: decision.routerEvidence.compatibilityMode,
+        }
+      : {}),
+    ...(decision.routerContextSnapshot
+      ? {
+          router_score_inputs: {
+            required_capabilities: decision.routerContextSnapshot.requiredCapabilities,
+            min_trust_tier: decision.routerContextSnapshot.minTrustTier,
+            max_cost_tier: decision.routerContextSnapshot.maxCostTier,
+            disallowed_quota_policies: decision.routerContextSnapshot.disallowedQuotaPolicies,
+            active_slots_by_provider: decision.routerContextSnapshot.activeSlotsByProvider,
+            quota_available_by_provider: decision.routerContextSnapshot.quotaAvailableByProvider,
+          },
+        }
+      : {}),
+    ...(fallbackAttempts.length > 0 ? { fallback_attempts: fallbackAttempts } : {}),
     ...(decision.overrideSource ? { override_source: decision.overrideSource } : {}),
     ...(decision.fallbackFrom ? { fallback_from: decision.fallbackFrom } : {}),
     ...(decision.fallbackReason ? { fallback_reason: decision.fallbackReason } : {}),
@@ -570,6 +618,21 @@ function emitProviderSelected(
             provider: candidate.provider,
             eligible: candidate.eligible,
             rejection_reasons: candidate.rejectionReasons,
+            score: {
+              order: candidate.score.orderScore,
+              trust: candidate.score.trustScore,
+              cost: candidate.score.costScore,
+              total: candidate.score.total,
+            },
+            inputs: {
+              order_index: candidate.evidence.orderIndex,
+              trust_tier: candidate.evidence.trustTier,
+              cost_tier: candidate.evidence.costTier,
+              quota_policy: candidate.evidence.quotaPolicy,
+              active_slots: candidate.evidence.activeSlots,
+              slot_limit: candidate.evidence.slotLimit,
+              policy_matched: candidate.evidence.policyMatched,
+            },
           })),
         }
       : {}),
@@ -594,6 +657,10 @@ function emitProviderFallbackAttempted(
     requested_role: "worker",
     fallback_from: decision.fallbackFrom,
     fallback_reason: decision.fallbackReason,
+    ...(decision.provider ? { fallback_to: decision.provider } : {}),
+    ...(decision.providersTried.length > 0
+      ? { fallback_attempt_index: decision.providersTried.length }
+      : {}),
     ...(decision.providersTried.length > 0 ? { providers_tried: decision.providersTried } : {}),
     timestamp: new Date().toISOString(),
   } satisfies ProviderFallbackAttemptedEvent);

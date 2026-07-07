@@ -950,6 +950,17 @@ describe("runLoopDispatch", () => {
     expect(providerSelected).toBeDefined();
     expect(Array.isArray(providerSelected.router_candidates)).toBe(true);
     expect(providerSelected.router_candidates.some((c: { provider: string }) => c.provider === "codex")).toBe(true);
+    expect(providerSelected.router_mode).toBe("direct-worker");
+    expect(providerSelected.router_task_type).toBe("impl");
+    expect(providerSelected.router_score_inputs).toMatchObject({
+      required_capabilities: ["implementation"],
+    });
+    const codexCandidate = providerSelected.router_candidates.find(
+      (candidate: { provider: string }) => candidate.provider === "codex",
+    );
+    expect(codexCandidate?.score).toBeDefined();
+    expect(codexCandidate?.inputs).toBeDefined();
+    expect(Array.isArray(providerSelected.fallback_attempts)).toBe(true);
   });
 
   it("refuses provider override in router mode when provider is excluded by role policy", () => {
