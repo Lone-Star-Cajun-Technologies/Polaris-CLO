@@ -43,6 +43,11 @@ The config subsystem loads, validates, and provides the resolved `PolarisConfig`
 - `src/config/defaults.ts` — current default values
 - `src/config/schema.json` — authoritative field definitions and constraints
 - `src/graph/governance.ts` — consumer of `config.graph` behavior
+- `smartdocs/specs/active/worker-router-architecture.md` — future Worker Router config types and invariants (default remains single-worker)
+
+## Architecture notes
+
+- The existing `execution` config (`providers`, `rotation`, `providerPolicy`, `roles`) remains the provider selection surface today. Future Worker Router types (`registry`, `slots`, `quota`, `routes`) will be added under a new `execution.router` object when the runtime engine is implemented.
 
 ## Related routes
 

@@ -44,6 +44,11 @@ The adapters subfolder provides execution adapter implementations for dispatchin
 - `src/skill-packet/types.ts` — `SetupBootstrapPacket`, `CheckpointGate`
 - `src/skill-packet/generator.ts` — `generateSetupBootstrapPacket()`
 - `src/config/schema.ts` — `ExecutionConfig`
+- `smartdocs/specs/active/worker-router-architecture.md` — future provider selection, fallback boundaries, and pre-dispatch failure classification
+
+## Architecture notes
+
+- Adapters remain provider-neutral and execution-only. Provider selection and fallback ordering are owned by the Worker Router; adapters report whether a dispatch failed before any worker started (`pre_dispatch_failure`) so the router can consider the next candidate.
 
 ## Related routes
 

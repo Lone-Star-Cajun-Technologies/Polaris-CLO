@@ -8,6 +8,8 @@ Current canonical SmartDocs specs.
 - Should stay aligned with active doctrine.
 - Includes active integration analysis for POL-325 in
   [pol-325-codegraph-integration-analysis.md](pol-325-codegraph-integration-analysis.md).
+- Includes the Worker Router architecture spec for POL-463 in
+  [worker-router-architecture.md](worker-router-architecture.md).
 
 ## Relationships
 - **Parent**: `smartdocs/specs/`

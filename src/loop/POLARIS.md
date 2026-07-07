@@ -49,6 +49,11 @@ The loop subsystem manages the session lifecycle for Polaris cluster runs. It ha
 - `docs/spec/polaris-architecture-spec.md` — full loop/map/finalize architecture
 - `.polaris/skills/polaris-run/chain.md` — step traversal order, continuation rules, telemetry requirements
 - `src/loop/checkpoint.ts` — state schema and read/write contract
+- `smartdocs/specs/active/worker-router-architecture.md` — future slot-aware scheduling and provider selection boundaries (default remains single-worker)
+
+## Architecture notes
+
+- Worker Router responsibilities (provider ranking, slot pool, fallback evidence) are defined in the active Worker Router spec. The current loop implementation remains single-worker and does not require those features until they are explicitly enabled.
 
 ## Related routes
 
