@@ -244,6 +244,7 @@ async function runQcGate(options: {
     clusterId: state.cluster_id,
     branch,
     telemetryFile: resolveQcTelemetryFile(state, repoRoot),
+    state,
   });
 
   if (result.action === "pass") {

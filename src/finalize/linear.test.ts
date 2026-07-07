@@ -15,6 +15,8 @@ import {
   assertNotDoneState,
   findReviewState,
   updateLinearIssueAfterFinalize,
+  buildFollowUpIssuePayload,
+  createLinearFollowUpIssue,
 } from "./linear.js";
 import type { LoopState } from "../loop/checkpoint.js";
 
@@ -418,5 +420,107 @@ describe("updateLinearIssueAfterFinalize", () => {
 
     await expect(updateLinearIssueAfterFinalize(baseOptions)).resolves.toBeUndefined();
     expect(calls).toContain("commentCreate");
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Follow-up issue creation
+// ──────────────────────────────────────────────────────────────────────────────
+
+describe("buildFollowUpIssuePayload", () => {
+  it("includes parentId, title, and description", () => {
+    const payload = buildFollowUpIssuePayload({
+      parentIssueId: "parent-1",
+      title: "Follow-up: fix style issue",
+      description: "QC finding routed to follow-up.",
+      apiKey: "key",
+    });
+    expect(payload.variables.input).toMatchObject({
+      title: "Follow-up: fix style issue",
+      description: "QC finding routed to follow-up.",
+      parentId: "parent-1",
+    });
+  });
+
+  it("omits optional fields when not provided", () => {
+    const payload = buildFollowUpIssuePayload({
+      parentIssueId: "parent-1",
+      title: "Follow-up",
+      description: "desc",
+      apiKey: "key",
+    });
+    expect(payload.variables.input).not.toHaveProperty("teamId");
+    expect(payload.variables.input).not.toHaveProperty("stateId");
+    expect(payload.variables.input).not.toHaveProperty("labelIds");
+  });
+});
+
+describe("createLinearFollowUpIssue", () => {
+  beforeEach(() => {
+    mockRequest.mockReset();
+  });
+
+  it("returns the created issue identifiers on success", async () => {
+    mockRequest.mockImplementation((_options: unknown, callback?: unknown) => {
+      const req = new EventEmitter() as ReturnType<typeof https.request>;
+      (req as unknown as { write: () => void; end: () => void }).write = vi.fn();
+      (req as unknown as { write: () => void; end: () => void }).end = vi.fn(() => {
+        const res = new EventEmitter() as IncomingMessage;
+        (res as unknown as { statusCode: number }).statusCode = 200;
+        if (typeof callback === "function") callback(res);
+        res.emit(
+          "data",
+          Buffer.from(
+            JSON.stringify({
+              data: {
+                issueCreate: {
+                  success: true,
+                  issue: { id: "issue-1", identifier: "POL-500", url: "https://linear.app/issue/POL-500" },
+                },
+              },
+            }),
+          ),
+        );
+        res.emit("end");
+      });
+      return req as ReturnType<typeof https.request>;
+    });
+
+    const result = await createLinearFollowUpIssue({
+      parentIssueId: "parent-1",
+      title: "Follow-up",
+      description: "desc",
+      apiKey: "key",
+    });
+
+    expect(result).toEqual({
+      id: "issue-1",
+      identifier: "POL-500",
+      url: "https://linear.app/issue/POL-500",
+    });
+  });
+
+  it("throws when Linear issueCreate fails", async () => {
+    mockRequest.mockImplementation((_options: unknown, callback?: unknown) => {
+      const req = new EventEmitter() as ReturnType<typeof https.request>;
+      (req as unknown as { write: () => void; end: () => void }).write = vi.fn();
+      (req as unknown as { write: () => void; end: () => void }).end = vi.fn(() => {
+        const res = new EventEmitter() as IncomingMessage;
+        (res as unknown as { statusCode: number }).statusCode = 200;
+        if (typeof callback === "function") callback(res);
+        res.emit("data", Buffer.from(JSON.stringify({ data: { issueCreate: { success: false } } })));
+        res.emit("end");
+      });
+      return req as ReturnType<typeof https.request>;
+    });
+
+    await expect(
+      createLinearFollowUpIssue({
+        parentIssueId: "parent-1",
+        title: "Follow-up",
+        description: "desc",
+        apiKey: "key",
+      }),
+    ).rejects.toThrow("Linear issueCreate failed");
   });
 });

@@ -11,13 +11,17 @@
  */
 
 import type { QcConfig } from "../config/schema.js";
-import { recordQcRun } from "../cluster-state/store.js";
+import { readClusterStateSync, recordQcRun } from "../cluster-state/store.js";
+import type { LoopState } from "../loop/checkpoint.js";
 import type { QcProviderRegistry } from "./provider.js";
 import type { QcReviewScope } from "./provider.js";
 import type { QcResult } from "./types.js";
-import { decideQcAction, type QcPolicyAction } from "./policy.js";
+import { decideQcAction, computeQcPolicyDecision, type QcPolicyAction } from "./policy.js";
 import { executeQcProvider, type QcRunnerOptions } from "./runner.js";
 import { activeProvidersForTrigger } from "./triggers.js";
+import { buildChangedFileOwnership, resolveAttributionWithOwnership, type QcAttributionContext } from "./attribution.js";
+import { isAutofixEligible } from "./autofix.js";
+import { decideRepairRouting } from "./routing.js";
 
 export interface QcOrchestratorResult {
   /** Trigger that was evaluated. */
@@ -36,6 +40,65 @@ export interface RunQcAtTriggerOptions extends QcRunnerOptions {
   trigger: "pr" | "completed-cluster" | "child";
   /** Required for the "pr" trigger. */
   prUrl?: string;
+  /** Optional loop state for attribution evidence. */
+  state?: LoopState;
+  /** Optional route name for per-route policy overrides. */
+  routeName?: string;
+}
+
+function buildAttributionContext(options: RunQcAtTriggerOptions): QcAttributionContext {
+  const { repoRoot, clusterId, branch, state } = options;
+  const dispatchRecords: Record<string, import("../loop/checkpoint.js").ChildDispatchRecord> = {};
+  if (state?.open_children_meta) {
+    for (const [childId, meta] of Object.entries(state.open_children_meta)) {
+      if (meta?.dispatch_record) {
+        dispatchRecords[childId] = meta.dispatch_record;
+      }
+    }
+  }
+
+  return {
+    repoRoot,
+    baseBranch: branch ?? state?.branch ?? "main",
+    completedResults: state?.completed_children_results,
+    dispatchRecords,
+    clusterState: repoRoot ? (readClusterStateSync(clusterId, repoRoot) ?? undefined) : undefined,
+  };
+}
+
+function applyAttributionAndRouting(
+  result: QcResult,
+  config: QcConfig,
+  context: QcAttributionContext,
+  routeName?: string,
+): QcResult {
+  const ownership = buildChangedFileOwnership(context);
+  const updatedFindings = result.findings.map((finding) => {
+    const attribution = resolveAttributionWithOwnership(finding, context, ownership);
+    const autofix = isAutofixEligible(finding, config, {
+      provider: result.provider,
+      routeName,
+    });
+    const routing = decideRepairRouting(
+      { ...finding, attribution, autofixEligible: autofix.eligible },
+      config,
+      autofix.eligible,
+      { routeName },
+    );
+    return {
+      ...finding,
+      attribution,
+      autofixEligible: autofix.eligible,
+      routingDecision: routing,
+    };
+  });
+
+  const updatedResult: QcResult = {
+    ...result,
+    findings: updatedFindings,
+    policyDecision: computeQcPolicyDecision({ ...result, findings: updatedFindings }, config),
+  };
+  return updatedResult;
 }
 
 /**
@@ -59,7 +122,11 @@ export async function runQcAtTrigger(
     branch,
     telemetryFile,
     timeoutMs,
+    state,
+    routeName,
   } = options;
+
+  const attributionContext = buildAttributionContext(options);
 
   if (!config.enabled) {
     return {
@@ -97,7 +164,7 @@ export async function runQcAtTrigger(
     };
 
     try {
-      const result = await executeQcProvider(provider, scope, {
+      const rawResult = await executeQcProvider(provider, scope, {
         repoRoot,
         runId,
         clusterId,
@@ -105,6 +172,8 @@ export async function runQcAtTrigger(
         telemetryFile,
         timeoutMs,
       });
+
+      const result = applyAttributionAndRouting(rawResult, config, attributionContext, routeName);
 
       try {
         await recordQcRun(clusterId, result, repoRoot);

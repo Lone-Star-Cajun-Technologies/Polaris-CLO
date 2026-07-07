@@ -58,6 +58,7 @@ export const qcFindingSchema: z.ZodType<QcFinding> = z.object({
   title: z.string(),
   message: z.string().optional(),
   filePath: z.string().optional(),
+  commitSha: z.string().optional(),
   range: qcCodeRangeSchema.optional(),
   confidence: z.number().min(0).max(1).optional(),
   suggestedAction: z.string().optional(),

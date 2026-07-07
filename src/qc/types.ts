@@ -67,6 +67,7 @@ export interface QcFinding {
   title: string;
   message?: string;
   filePath?: string;
+  commitSha?: string;
   range?: QcCodeRange;
   confidence?: number;
   suggestedAction?: string;
