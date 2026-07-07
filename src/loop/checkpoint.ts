@@ -147,6 +147,19 @@ export interface ChildResultSummary {
   result_data?: Record<string, unknown>;
 }
 
+export interface WorkerPoolSlotClaim {
+  child_id: string;
+  provider: string | null;
+  claimed_at: string;
+  expires_at: string;
+  selection_reason: string;
+}
+
+export interface WorkerPoolState {
+  max_concurrent: number;
+  slot_claims: WorkerPoolSlotClaim[];
+}
+
 export interface LoopState {
   schema_version: string;
   run_id: string;
@@ -195,6 +208,11 @@ export interface LoopState {
    * Takes precedence over `polaris.config.json` simplicity.mode.
    */
   simplicity_bypass?: boolean;
+  /**
+   * Durable worker-pool slot claims for slot-aware scheduling.
+   * Optional for backward compatibility with pre-pool state files.
+   */
+  worker_pool_state?: WorkerPoolState;
 }
 
 export interface CheckpointEvent {
@@ -454,6 +472,47 @@ export function validateState(state: unknown): string[] {
       }
       if (db["last_dispatched_child"] !== null && typeof db["last_dispatched_child"] !== "string") {
         errors.push("dispatch_boundary.last_dispatched_child must be a string or null");
+      }
+    }
+  }
+
+  if ("worker_pool_state" in s && s["worker_pool_state"] !== undefined) {
+    if (typeof s["worker_pool_state"] !== "object" || s["worker_pool_state"] === null || Array.isArray(s["worker_pool_state"])) {
+      errors.push("worker_pool_state must be an object");
+    } else {
+      const pool = s["worker_pool_state"] as Record<string, unknown>;
+      if (
+        typeof pool["max_concurrent"] !== "number" ||
+        !Number.isInteger(pool["max_concurrent"]) ||
+        (pool["max_concurrent"] as number) < 1
+      ) {
+        errors.push("worker_pool_state.max_concurrent must be a positive integer");
+      }
+      if (!Array.isArray(pool["slot_claims"])) {
+        errors.push("worker_pool_state.slot_claims must be an array");
+      } else {
+        for (const [index, claim] of (pool["slot_claims"] as unknown[]).entries()) {
+          if (typeof claim !== "object" || claim === null || Array.isArray(claim)) {
+            errors.push(`worker_pool_state.slot_claims[${index}] must be an object`);
+            continue;
+          }
+          const typed = claim as Record<string, unknown>;
+          if (typeof typed["child_id"] !== "string" || typed["child_id"].trim().length === 0) {
+            errors.push(`worker_pool_state.slot_claims[${index}].child_id must be a non-empty string`);
+          }
+          if (typed["provider"] !== null && typeof typed["provider"] !== "string") {
+            errors.push(`worker_pool_state.slot_claims[${index}].provider must be a string or null`);
+          }
+          if (typeof typed["claimed_at"] !== "string") {
+            errors.push(`worker_pool_state.slot_claims[${index}].claimed_at must be a string`);
+          }
+          if (typeof typed["expires_at"] !== "string") {
+            errors.push(`worker_pool_state.slot_claims[${index}].expires_at must be a string`);
+          }
+          if (typeof typed["selection_reason"] !== "string") {
+            errors.push(`worker_pool_state.slot_claims[${index}].selection_reason must be a string`);
+          }
+        }
       }
     }
   }

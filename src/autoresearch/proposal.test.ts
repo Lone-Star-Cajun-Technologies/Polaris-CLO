@@ -27,6 +27,13 @@ function makeDiagnosisReport(overrides: Partial<DiagnosisReport> = {}): Diagnosi
     failed_gates: [],
     score: 1.0,
     diagnosis_hints: [],
+    router_outcomes: {
+      total_decisions: 0,
+      exhausted_decisions: 0,
+      fallback_attempts: 0,
+      successful_fallbacks: 0,
+      recurring_failures: [],
+    },
     ...overrides,
   };
 }
@@ -123,6 +130,42 @@ describe("buildProposals", () => {
     const report = makeDiagnosisReport({ failed_gates: ["validation-failed"], score: 0.25 });
     const [p] = buildProposals(report) as [AutresearchProposal];
     expect(p.confidence).toBe(0.25);
+  });
+
+  it("adds router policy/config proposals for recurring router failures", () => {
+    const report = makeDiagnosisReport({
+      failed_gates: [],
+      router_outcomes: {
+        total_decisions: 6,
+        exhausted_decisions: 3,
+        fallback_attempts: 2,
+        successful_fallbacks: 1,
+        recurring_failures: [
+          { reason: "quota-exhausted", occurrences: 3, child_ids: ["POL-101", "POL-103"] },
+          { reason: "capability-mismatch", occurrences: 2, child_ids: ["POL-102"] },
+        ],
+      },
+    });
+
+    const proposals = buildProposals(report);
+    expect(proposals.some((proposal) => proposal.gate_id === "router-failure:quota-exhausted")).toBe(true);
+    expect(proposals.some((proposal) => proposal.gate_id === "router-failure:capability-mismatch")).toBe(true);
+  });
+
+  it("does not emit router failure proposals for successful fallback without recurring failures", () => {
+    const report = makeDiagnosisReport({
+      failed_gates: [],
+      router_outcomes: {
+        total_decisions: 1,
+        exhausted_decisions: 0,
+        fallback_attempts: 1,
+        successful_fallbacks: 1,
+        recurring_failures: [{ reason: "quota-exhausted", occurrences: 1, child_ids: ["POL-200"] }],
+      },
+    });
+
+    const proposals = buildProposals(report);
+    expect(proposals.some((proposal) => proposal.gate_id.startsWith("router-failure:"))).toBe(false);
   });
 });
 

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { promises as fs } from 'fs';
 import * as path from 'path';
-import { readClusterState, writeClusterState, initializeClusterState } from './store';
+import { readClusterState, writeClusterState, initializeClusterState, pruneExpiredClaims } from './store';
 import { ClusterState } from './types';
 import { LocalGraph } from '../tracker/local-graph';
 import v2Fixture from './fixtures/test-clusters.json';
@@ -58,6 +58,47 @@ describe('Cluster State Store', () => {
       const error = new Error('Read error');
       vi.mocked(fs.readFile).mockRejectedValue(error);
       await expect(readClusterState(MOCK_CLUSTER_ID)).rejects.toThrow('Read error');
+    });
+
+    describe('pruneExpiredClaims', () => {
+      it('removes expired claims and recovers dispatched children to ready', () => {
+        const now = new Date('2026-07-07T10:00:00.000Z');
+        const state: ClusterState = {
+          schema_version: '1.0',
+          cluster_id: MOCK_CLUSTER_ID,
+          state_generation: 7,
+          child_states: [
+            { id: 'POL-401', status: 'dispatched' },
+            { id: 'POL-402', status: 'done' },
+          ],
+          claim_metadata: {
+            'POL-401': {
+              worker_id: 'worker-401',
+              claimed_at: '2026-07-07T09:00:00.000Z',
+              expires_at: '2026-07-07T09:30:00.000Z',
+            },
+            'POL-402': {
+              worker_id: 'worker-402',
+              claimed_at: '2026-07-07T09:59:00.000Z',
+              expires_at: '2026-07-07T10:30:00.000Z',
+            },
+          },
+          packet_pointers: {},
+          result_pointers: {},
+          validation_results: {},
+          commits: {},
+          tracker_mutations: {},
+          blockers: [],
+        };
+
+        const result = pruneExpiredClaims(state, now);
+        expect(result.expiredChildIds).toEqual(['POL-401']);
+        expect(result.state.state_generation).toBe(8);
+        expect(result.state.claim_metadata['POL-401']).toBeUndefined();
+        expect(result.state.claim_metadata['POL-402']).toBeDefined();
+        expect(result.state.child_states.find((child) => child.id === 'POL-401')?.status).toBe('ready');
+        expect(result.state.child_states.find((child) => child.id === 'POL-402')?.status).toBe('done');
+      });
     });
   });
 

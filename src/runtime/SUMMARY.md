@@ -1,29 +1,28 @@
-<!-- polaris:draft -->
 # Summary: runtime
 
-> Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
-
 ## Purpose
-<!-- One-line statement of what this folder does. -->
+Cross-cutting execution support layer for the Polaris loop: context window budget tracking, execution state types, session status reporting, and slot-aware child scheduling.
 
 ## Core Concepts
-<!-- 3–7 key concepts a reader needs before diving into source. -->
+- `execution-window.ts` tracks token/budget signals without writing state or telemetry.
+- `state.ts` provides shared runtime state types used by loop, scheduling, and audit.
+- `scheduling/child-selector.ts` is a pure, side-effect-free function that enforces slot limits and router eligibility.
+- `scheduling/` is called from `src/loop/parent.ts` with an injected `decide_route` callback for testability.
 
 ## Architectural Role
-<!-- How this folder fits into the larger system. -->
+This folder is the infrastructure layer between the orchestration loop (`src/loop/`) and the lower-level persistence stores (`src/cluster-state/`). It does not own loop dispatch or cluster state writes.
 
 ## Key Constraints
-<!-- The most important non-obvious behavioral limits. -->
+- Keep scheduling logic pure and side-effect-free.
+- Do not add loop-specific business logic to shared runtime types.
 
 ## Important Relationships
-<!-- Upstream/downstream dependencies on other folders. -->
+- **Upstream**: `src/loop/parent.ts` (calls scheduling)
+- **Peer**: `src/loop/router/` (provides routing input), `src/cluster-state/` (provides slot claim management)
 
 ## Current State
-<!-- What is implemented, what is not yet, known gaps. -->
-
-## Known Drift
-<!-- Places where the summary may be stale (honesty field). -->
+`scheduling/child-selector.ts` is implemented and integrated. `execution-window.ts`, `state.ts`, `status.ts`, `checkpoint.ts` are stable. `audit/`, `continuation/`, and `verification/` subfolders are present.
 
 ## Linked Canonical Sources
 - [POLARIS.md](POLARIS.md)
-<!-- Links to spec files, doctrine, etc. -->
+- `src/runtime/scheduling/POLARIS.md`

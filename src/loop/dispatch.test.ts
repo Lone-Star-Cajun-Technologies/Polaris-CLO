@@ -901,6 +901,135 @@ describe("runLoopDispatch", () => {
     expect(packet.active_child).toBe("POL-145");
   });
 
+  it("uses deterministic router selection when provider registry metadata is configured", () => {
+    writeFileSync(
+      join(testDir, "polaris.config.json"),
+      JSON.stringify({
+        execution: {
+          adapter: "terminal-cli",
+          providers: { copilot: { command: "copilot" }, codex: { command: "codex" } },
+          rotation: ["copilot", "codex"],
+          routerPolicy: {
+            allowCrossProviderFallback: true,
+            providerRegistry: {
+              copilot: {
+                eligibleRoles: ["worker"],
+                capabilities: ["implementation"],
+                taskTypes: ["impl"],
+                trustTier: "standard",
+                costTier: "medium",
+              },
+              codex: {
+                eligibleRoles: ["worker"],
+                capabilities: ["implementation"],
+                taskTypes: ["impl"],
+                trustTier: "trusted",
+                costTier: "medium",
+              },
+            },
+          },
+        },
+      }),
+      "utf-8",
+    );
+    const stateFile = writeState(testDir, baseState());
+
+    captureStdout(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+
+    const updated = readState(stateFile);
+    const dr = updated.open_children_meta?.["POL-145"]?.dispatch_record;
+    expect(dr?.provider).toBe("codex");
+    expect(dr?.provider_selection_reason).toBe("policy-router");
+
+    const telemetryFile = join(testDir, ".taskchain_artifacts", "polaris-run", "runs", "pol-142-session-1", "telemetry.jsonl");
+    const providerSelected = readFileSync(telemetryFile, "utf-8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line))
+      .find((event) => event.event === "provider-selected");
+    expect(providerSelected).toBeDefined();
+    expect(Array.isArray(providerSelected.router_candidates)).toBe(true);
+    expect(providerSelected.router_candidates.some((c: { provider: string }) => c.provider === "codex")).toBe(true);
+    expect(providerSelected.router_mode).toBe("direct-worker");
+    expect(providerSelected.router_task_type).toBe("impl");
+    expect(providerSelected.router_score_inputs).toMatchObject({
+      required_capabilities: ["implementation"],
+    });
+    const codexCandidate = providerSelected.router_candidates.find(
+      (candidate: { provider: string }) => candidate.provider === "codex",
+    );
+    expect(codexCandidate?.score).toBeDefined();
+    expect(codexCandidate?.inputs).toBeDefined();
+    expect(Array.isArray(providerSelected.fallback_attempts)).toBe(true);
+  });
+
+  it("refuses provider override in router mode when provider is excluded by role policy", () => {
+    writeFileSync(
+      join(testDir, "polaris.config.json"),
+      JSON.stringify({
+        execution: {
+          adapter: "terminal-cli",
+          providers: { copilot: { command: "copilot" }, codex: { command: "codex" } },
+          rotation: ["copilot", "codex"],
+          providerPolicy: {
+            worker: { providers: ["copilot"] },
+          },
+          routerPolicy: {
+            providerRegistry: {
+              copilot: {
+                eligibleRoles: ["worker"],
+                capabilities: ["implementation"],
+                taskTypes: ["impl"],
+              },
+              codex: {
+                eligibleRoles: ["worker"],
+                capabilities: ["implementation"],
+                taskTypes: ["impl"],
+              },
+            },
+          },
+        },
+      }),
+      "utf-8",
+    );
+    const stateFile = writeState(testDir, baseState());
+
+    const stderr = expectDispatchError(() =>
+      runLoopDispatch({ repoRoot: testDir, stateFile, provider: "codex" })
+    );
+    expect(stderr).toContain("reason=not-in-policy");
+  });
+
+  it("emits provider probe failure telemetry with classified fallback evidence", () => {
+    const artifactDir = join(testDir, ".taskchain_artifacts", "polaris-run");
+    writeFileSync(
+      join(testDir, "polaris.config.json"),
+      JSON.stringify({
+        execution: {
+          adapter: "terminal-cli",
+          providers: { codex: { command: "definitely-missing-command-pol-468" } },
+          rotation: ["codex"],
+        },
+      }),
+      "utf-8",
+    );
+    const stateFile = writeState(testDir, baseState({ artifact_dir: artifactDir, completed_children: [] }));
+
+    captureStdout(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+
+    const telemetryFile = join(artifactDir, "runs", "pol-142-session-1", "telemetry.jsonl");
+    const probeFailed = readFileSync(telemetryFile, "utf-8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line))
+      .find((event) => event.event === "provider-probe-failed");
+    expect(probeFailed).toBeDefined();
+    expect(probeFailed.failure_origin).toBe("provider-launch");
+    expect(probeFailed.failure_category).toBe("provider-unavailable");
+    expect(probeFailed.pre_dispatch_failure).toBe(true);
+    expect(probeFailed.fallback_eligible).toBe(true);
+  });
+
   // ── Acknowledgment timeout detection (POL-228 scenario B + E) ───────────────
 
   it("checkAcknowledgmentTimeout returns null when no active child", () => {

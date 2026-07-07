@@ -80,7 +80,15 @@ describe("checkOrphans", () => {
 
   it("returns zero detections when no active child", () => {
     writeState(testDir, baseState());
-    const result = checkOrphans(opts());
+    const result = checkOrphans({
+      ...opts(),
+      timeouts: {
+        launchTimeoutMs: 60_000,
+        launchToFirstHeartbeatMs: 60_000,
+        orphanTimeoutMs: 60_000,
+        staleDispatchTimeoutMs: 60_000,
+      },
+    });
     expect(result.detected).toHaveLength(0);
   });
 
@@ -223,6 +231,109 @@ describe("checkOrphans", () => {
 
     const events = telemetryEvents(testDir);
     expect(events.some((e) => e["event"] === "child-requeued")).toBe(true);
+  });
+
+  it("auto-requeues on provider-unavailable telemetry when no result artifact exists", () => {
+    const pastTime = new Date(Date.now() - 500).toISOString();
+    writeState(testDir, baseState({
+      active_child: "POL-101",
+      open_children_meta: {
+        "POL-101": {
+          dispatch_record: {
+            dispatch_id: "d-001",
+            child_id: "POL-101",
+            run_id: "run-orphan-001",
+            cluster_id: "POL-100",
+            packet_path: "/tmp/p.json",
+            expected_result_path: join(testDir, "result-missing.json"),
+            dispatched_at: pastTime,
+            status: "dispatched",
+            runtime_state: "packet-created",
+          },
+        },
+      },
+    }));
+    const telemetryFile = join(
+      testDir,
+      ".taskchain_artifacts",
+      "polaris-run",
+      "runs",
+      "run-orphan-001",
+      "telemetry.jsonl",
+    );
+    mkdirSync(join(testDir, ".taskchain_artifacts", "polaris-run", "runs", "run-orphan-001"), { recursive: true });
+    writeFileSync(
+      telemetryFile,
+      JSON.stringify({
+        event: "provider-probe-failed",
+        child_id: "POL-101",
+        dispatch_id: "d-001",
+        failure_category: "provider-unavailable",
+      }) + "\n",
+      "utf-8",
+    );
+
+    const result = checkOrphans(opts());
+
+    expect(result.detected).toHaveLength(1);
+    expect(result.detected[0].reason).toBe("provider-unavailable");
+    expect(result.detected[0].requiresApproval).toBe(false);
+    const events = telemetryEvents(testDir);
+    expect(events.some((e) => e["event"] === "child-requeued")).toBe(true);
+  });
+
+  it("does not requeue provider-unavailable telemetry when result artifact exists", () => {
+    const pastTime = new Date(Date.now() - 500).toISOString();
+    const resultPath = join(testDir, "result-present.json");
+    writeFileSync(resultPath, JSON.stringify({ ok: true }), "utf-8");
+    writeState(testDir, baseState({
+      active_child: "POL-101",
+      open_children_meta: {
+        "POL-101": {
+          dispatch_record: {
+            dispatch_id: "d-001",
+            child_id: "POL-101",
+            run_id: "run-orphan-001",
+            cluster_id: "POL-100",
+            packet_path: "/tmp/p.json",
+            expected_result_path: resultPath,
+            dispatched_at: pastTime,
+            status: "dispatched",
+            runtime_state: "packet-created",
+          },
+        },
+      },
+    }));
+    const telemetryFile = join(
+      testDir,
+      ".taskchain_artifacts",
+      "polaris-run",
+      "runs",
+      "run-orphan-001",
+      "telemetry.jsonl",
+    );
+    mkdirSync(join(testDir, ".taskchain_artifacts", "polaris-run", "runs", "run-orphan-001"), { recursive: true });
+    writeFileSync(
+      telemetryFile,
+      JSON.stringify({
+        event: "provider-probe-failed",
+        child_id: "POL-101",
+        dispatch_id: "d-001",
+        failure_category: "provider-unavailable",
+      }) + "\n",
+      "utf-8",
+    );
+
+    const result = checkOrphans({
+      ...opts(),
+      timeouts: {
+        launchTimeoutMs: 60_000,
+        launchToFirstHeartbeatMs: 60_000,
+        orphanTimeoutMs: 60_000,
+        staleDispatchTimeoutMs: 60_000,
+      },
+    });
+    expect(result.detected).toHaveLength(0);
   });
 
   it("no detection when dispatch is fresh", () => {

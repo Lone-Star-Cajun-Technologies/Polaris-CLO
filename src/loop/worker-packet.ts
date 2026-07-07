@@ -17,6 +17,7 @@ import {
   type WorkerPromptMetrics,
 } from "./worker-prompt.js";
 import { parseIssueBody } from "./body-parser.js";
+import type { WorkerProviderCapability, WorkerTaskType } from "../config/schema.js";
 
 // ── Worker roles ─────────────────────────────────────────────────────────────
 
@@ -228,6 +229,11 @@ export interface WorkerPacket extends BootstrapPacket {
   prompt_metrics: WorkerPromptMetrics;
   /** Role context injected at compile time — identifies authority boundaries. */
   role_context: WorkerRoleContext;
+  /** Routing hints used by deterministic provider selection. */
+  routing_context?: {
+    task_type: WorkerTaskType;
+    required_capabilities: WorkerProviderCapability[];
+  };
   /** Paths workers must never stage or commit. */
   prohibited_write_paths?: string[];
 }
@@ -376,6 +382,10 @@ export function compileStartupPacket(input: CompileStartupPacketInput): WorkerPa
     prompt_mode: 'full',
     prompt_metrics: { mode: 'full', char_count: 0, estimated_tokens: 0 },
     role_context: roleContextForWorkerRole('startup'),
+    routing_context: {
+      task_type: "startup",
+      required_capabilities: ["orchestration"],
+    },
     result_file_contract: {
       result_file: input.resultFile,
       result_required_fields: Object.fromEntries([
@@ -500,6 +510,10 @@ export function compileImplPacket(input: CompileImplPacketInput): WorkerPacket {
     prompt_mode: promptMode,
     prompt_metrics: promptResult.metrics,
     role_context: roleContextForWorkerRole('impl'),
+    routing_context: {
+      task_type: "impl",
+      required_capabilities: ["implementation"],
+    },
     prohibited_write_paths: WORKER_PROHIBITED_WRITE_PATHS,
     result_file_contract: {
       result_file: input.resultFile,
@@ -571,6 +585,10 @@ export function compileFinalizePacket(input: CompileFinalizePacketInput): Worker
     prompt_mode: 'full',
     prompt_metrics: { mode: 'full', char_count: 0, estimated_tokens: 0 },
     role_context: roleContextForWorkerRole('finalize'),
+    routing_context: {
+      task_type: "finalize",
+      required_capabilities: ["finalization"],
+    },
     result_file_contract: {
       result_file: input.resultFile,
       result_required_fields: Object.fromEntries([
@@ -635,6 +653,10 @@ export function compilePreflightPacket(input: CompilePreflightPacketInput): Work
     prompt_mode: 'full',
     prompt_metrics: { mode: 'full', char_count: 0, estimated_tokens: 0 },
     role_context: roleContextForWorkerRole('preflight'),
+    routing_context: {
+      task_type: "startup",
+      required_capabilities: ["orchestration"],
+    },
     result_file_contract: {
       result_file: input.resultFile,
       result_required_fields: Object.fromEntries([

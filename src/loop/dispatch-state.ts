@@ -268,6 +268,7 @@ export interface WorkerAssignmentFailedEvent extends WorkerTelemetryEventBase {
     | "native-subagent-not-allowed-for-role"
     | "process-spawn-failed"
     | "provider-unavailable"
+    | "quota-exhausted"
     | "timeout";
 }
 
@@ -280,10 +281,48 @@ export interface ProviderSelectedEvent extends WorkerTelemetryEventBase {
   selected_provider: string | null;
   selected_adapter: string;
   selection_reason: string;
+  router_mode?: "direct-worker" | "delegated";
+  router_task_type?: string;
+  router_compatibility_mode?: boolean;
+  router_score_inputs?: {
+    required_capabilities?: string[];
+    min_trust_tier?: string;
+    max_cost_tier?: string;
+    disallowed_quota_policies?: string[];
+    active_slots_by_provider?: Record<string, number>;
+    quota_available_by_provider?: Record<string, boolean>;
+  };
+  fallback_attempts?: Array<{
+    provider: string;
+    attempt_index: number;
+    outcome: "selected" | "rejected";
+    rejection_reasons: string[];
+  }>;
   override_source?: string;
   fallback_from?: string;
   fallback_reason?: string;
   providers_tried?: string[];
+  router_exhausted_reason?: string;
+  router_candidates?: Array<{
+    provider: string;
+    eligible: boolean;
+    rejection_reasons: string[];
+    score?: {
+      order: number;
+      trust: number;
+      cost: number;
+      total: number;
+    };
+    inputs?: {
+      order_index: number;
+      trust_tier?: string;
+      cost_tier?: string;
+      quota_policy?: string;
+      active_slots: number;
+      slot_limit?: number;
+      policy_matched: boolean;
+    };
+  }>;
 }
 
 /**
@@ -294,6 +333,8 @@ export interface ProviderFallbackAttemptedEvent extends WorkerTelemetryEventBase
   requested_role: "worker";
   fallback_from: string;
   fallback_reason: string;
+  fallback_to?: string;
+  fallback_attempt_index?: number;
   providers_tried?: string[];
 }
 

@@ -162,6 +162,9 @@
             "docs": { "$ref": "#/definitions/roleProviderPolicy" },
             "finalizer": { "$ref": "#/definitions/roleProviderPolicy" }
           }
+        },
+        "routerPolicy": {
+          "$ref": "#/definitions/workerRouterPolicyConfig"
         }
       }
     },
@@ -304,6 +307,76 @@
         "noFallback": { "type": "boolean" }
       },
       "required": ["providers"]
+    },
+    "workerRouterPolicyConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "defaultWorkerPool": { "$ref": "#/definitions/workerPoolLimits" },
+        "providerRegistry": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/workerProviderRouterPolicy" }
+        },
+        "allowCrossProviderFallback": { "type": "boolean" }
+      }
+    },
+    "workerPoolLimits": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "maxActiveWorkers": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "maxActiveSlots": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "workerProviderRouterPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "eligibleRoles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["orchestrator", "startup", "worker", "foreman", "analyst", "analysis", "repair", "librarian", "docs", "finalizer"]
+          }
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["orchestration", "analysis", "implementation", "repair", "docs", "finalization"]
+          }
+        },
+        "taskTypes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["startup", "analyze", "impl", "repair", "docs", "finalize"]
+          }
+        },
+        "trustTier": {
+          "type": "string",
+          "enum": ["sandbox", "standard", "trusted"]
+        },
+        "costTier": {
+          "type": "string",
+          "enum": ["low", "medium", "high"]
+        },
+        "quotaPolicy": {
+          "type": "string",
+          "enum": ["best-effort", "rate-limited", "reserved"]
+        },
+        "fallbackEligible": { "type": "boolean" },
+        "maxActiveSlots": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
     }
   }
 }

@@ -20,6 +20,48 @@ const normalizeClusterState = (state: ClusterState): ClusterState => ({
   tracker_mutations: state.tracker_mutations ?? {},
 });
 
+export function pruneExpiredClaims(
+  state: ClusterState,
+  now: Date = new Date(),
+): { state: ClusterState; expiredChildIds: string[] } {
+  const nowMs = now.getTime();
+  const expiredChildIds: string[] = [];
+  const nextClaimMetadata: ClusterState["claim_metadata"] = {};
+
+  for (const [childId, claim] of Object.entries(state.claim_metadata ?? {})) {
+    const expiresAtMs = new Date(claim.expires_at).getTime();
+    const active = Number.isFinite(expiresAtMs) && expiresAtMs > nowMs;
+    if (active) {
+      nextClaimMetadata[childId] = claim;
+      continue;
+    }
+    expiredChildIds.push(childId);
+  }
+
+  if (expiredChildIds.length === 0) {
+    return { state, expiredChildIds };
+  }
+
+  const expiredSet = new Set(expiredChildIds);
+  const recoverableStatuses = new Set<ChildState["status"]>(["claimed", "dispatched", "running"]);
+  const child_states = state.child_states.map((child) => {
+    if (!expiredSet.has(child.id) || !recoverableStatuses.has(child.status)) {
+      return child;
+    }
+    return { ...child, status: "ready" as const };
+  });
+
+  return {
+    state: {
+      ...state,
+      state_generation: state.state_generation + 1,
+      claim_metadata: nextClaimMetadata,
+      child_states,
+    },
+    expiredChildIds,
+  };
+}
+
 export const readClusterState = async (clusterId: string, repoRoot?: string): Promise<ClusterState | null> => {
   const filePath = getClusterStatePath(clusterId, repoRoot);
   try {

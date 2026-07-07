@@ -63,6 +63,7 @@ export class AgentSubtaskAdapter implements ExecutionAdapter {
     const label = packet.active_child || (isWorkerPacket(packet) ? packet.worker_role : 'worker');
     const commandRun = `agent-subtask:${label}`;
     const provider = options.provider || "agent-subtask";
+    const routerEvidence = options.routerDecision;
 
     if (!this.dispatcher) {
       const error =
@@ -75,6 +76,10 @@ export class AgentSubtaskAdapter implements ExecutionAdapter {
         command_run: commandRun,
         summary: error,
         stderr: error,
+        failure_origin: "provider-launch",
+        failure_category: "provider-unavailable",
+        fallback_eligible: true,
+        router_evidence: routerEvidence,
       };
     }
 
@@ -94,6 +99,10 @@ export class AgentSubtaskAdapter implements ExecutionAdapter {
             warnings: ["empty-allowed-scope"],
           }),
           stderr: blockedMsg,
+          failure_origin: "provider-launch",
+          failure_category: "launch-error",
+          fallback_eligible: false,
+          router_evidence: routerEvidence,
         };
       }
     }
@@ -111,6 +120,7 @@ export class AgentSubtaskAdapter implements ExecutionAdapter {
           next_action: "resume-parent",
           warnings: ["dry-run"],
         }),
+        router_evidence: routerEvidence,
       };
     }
 
@@ -132,6 +142,10 @@ export class AgentSubtaskAdapter implements ExecutionAdapter {
           command_run: commandRun,
           summary: validationError,
           stderr: validationError,
+          failure_origin: "worker-execution",
+          failure_category: "worker-failure",
+          fallback_eligible: false,
+          router_evidence: routerEvidence,
         };
       }
       return {
@@ -139,6 +153,7 @@ export class AgentSubtaskAdapter implements ExecutionAdapter {
         provider_used: provider,
         command_run: commandRun,
         summary,
+        router_evidence: routerEvidence,
       };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -148,6 +163,10 @@ export class AgentSubtaskAdapter implements ExecutionAdapter {
         command_run: commandRun,
         summary: `Native ephemeral agent subtask dispatch failed: ${msg}`,
         stderr: msg,
+        failure_origin: "worker-execution",
+        failure_category: "worker-failure",
+        fallback_eligible: false,
+        router_evidence: routerEvidence,
       };
     }
   }

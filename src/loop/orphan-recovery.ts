@@ -50,6 +50,8 @@ export type RecoveryReason =
   | "no-worker-assignment"
   | "no-acknowledgment"
   | "no-heartbeat"
+  | "provider-unavailable"
+  | "quota-exhausted"
   | "missing-result-artifact-no-commits"
   | "missing-result-artifact-commits-found"
   | "stale-dispatch";
@@ -100,6 +102,50 @@ function hasTelemetryEvent(telemetryFile: string, eventName: string, childId: st
     }
   } catch { /* ignore */ }
   return false;
+}
+
+function latestProviderFailureReason(
+  telemetryFile: string,
+  childId: string,
+  dispatchId: string,
+): RecoveryReason | null {
+  if (!existsSync(telemetryFile)) return null;
+  try {
+    const lines = readFileSync(telemetryFile, "utf-8").trim().split("\n").filter(Boolean);
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const line = lines[i];
+      if (!line) continue;
+      try {
+        const event = JSON.parse(line) as {
+          event?: string;
+          child_id?: string;
+          dispatch_id?: string;
+          reason?: string;
+          failure_category?: string;
+        };
+        if (event.child_id !== childId) continue;
+        if (event.dispatch_id && event.dispatch_id !== dispatchId) continue;
+
+        const category = typeof event.failure_category === "string" ? event.failure_category : undefined;
+        const reason = typeof event.reason === "string" ? event.reason : undefined;
+        if (category === "quota-exhausted" || reason === "quota-exhausted") {
+          return "quota-exhausted";
+        }
+        if (
+          category === "provider-unavailable" ||
+          reason === "provider-unavailable" ||
+          event.event === "provider-probe-failed"
+        ) {
+          return "provider-unavailable";
+        }
+      } catch {
+        continue;
+      }
+    }
+  } catch {
+    return null;
+  }
+  return null;
 }
 
 // ── Emit recovery telemetry events ───────────────────────────────────────────
@@ -281,6 +327,33 @@ export function checkOrphans(options: OrphanCheckOptions): OrphanCheckResult {
     if (dr && dr.runtime_state !== "completed" && dr.runtime_state !== "failed") {
       const dispatchedAt = new Date(dr.dispatched_at).getTime();
       const elapsed = now - dispatchedAt;
+      const providerFailure = latestProviderFailureReason(
+        telemetryFile,
+        state.active_child,
+        dr.dispatch_id,
+      );
+
+      // Provider launch failure detected before worker-start evidence.
+      // Safe to requeue because no worker result artifact exists and there is
+      // no heartbeat/acknowledgment evidence that execution started.
+      if (
+        providerFailure &&
+        !safeResultExists(dr.expected_result_path) &&
+        !dr.first_heartbeat_at
+      ) {
+        const detection: RecoveryDetection = {
+          childId: state.active_child,
+          dispatchId: dr.dispatch_id,
+          reason: providerFailure,
+          requiresApproval: false,
+        };
+        detected.push(detection);
+        emitRecoveryInitiated(telemetryFile, state.active_child, dr.dispatch_id, providerFailure);
+        emitChildOrphaned(telemetryFile, state.active_child, dr.dispatch_id, null);
+        const newId = resetForRedispatch(options.stateFile, state, state.active_child);
+        emitChildRequeued(telemetryFile, state.active_child, newId, dr.dispatch_id);
+        return { detected, checked };
+      }
 
       // Scenario A: packet written, no worker_id after launch_timeout
       if (!dr.worker_id && elapsed > timeouts.launchTimeoutMs) {

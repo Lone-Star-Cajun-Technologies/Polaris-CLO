@@ -1,29 +1,23 @@
-<!-- polaris:draft -->
 # Summary: __tests__
 
-> Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
-
 ## Purpose
-<!-- One-line statement of what this folder does. -->
+Unit tests for `src/loop/adapters/` execution adapters. Validates dispatch success, pre-dispatch failure classification, fallback chain logic, quota signal detection, and router evidence propagation.
 
 ## Core Concepts
-<!-- 3–7 key concepts a reader needs before diving into source. -->
+- `terminal-cli.test.ts` tests `TerminalCliAdapter` in isolation (mocked provider process).
+- Pre-dispatch failure assertions check `pre_dispatch_failure: true` and `fallback_eligible` in returned `DispatchResult`.
+- Router evidence (`router_evidence`) is validated as attached to dispatch results for telemetry correlation.
 
 ## Architectural Role
-<!-- How this folder fits into the larger system. -->
+Provides regression coverage for adapter fallback and failure classification logic introduced by the Worker Router integration (POL-468).
 
 ## Key Constraints
-<!-- The most important non-obvious behavioral limits. -->
-
-## Important Relationships
-<!-- Upstream/downstream dependencies on other folders. -->
+- Tests must not spawn real provider processes.
+- Fallback behavior tests must inject `routerDecision` with a deterministic `providersTried` array.
 
 ## Current State
-<!-- What is implemented, what is not yet, known gaps. -->
-
-## Known Drift
-<!-- Places where the summary may be stale (honesty field. -->
+`terminal-cli.test.ts` covers dispatch success, pre-dispatch failure, quota signal detection, and `router_evidence` attachment. All tests pass under the mocked adapter harness.
 
 ## Linked Canonical Sources
 - [POLARIS.md](POLARIS.md)
-<!-- Links to spec files, doctrine, etc. -->
+- `src/loop/adapters/POLARIS.md`

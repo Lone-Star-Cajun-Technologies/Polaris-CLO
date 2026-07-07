@@ -41,6 +41,11 @@ export interface FixZoneEntry {
   hint: string;
 }
 
+interface RouterFailureFixEntry {
+  artifact_type: ArtifactType;
+  hint: string;
+}
+
 // ──────────────────────────────────────────────
 // Fix zone mapping table: gate → artifact type + hint
 // ──────────────────────────────────────────────
@@ -88,6 +93,37 @@ export const FIX_ZONE_MAP: Record<string, FixZoneEntry> = {
   },
 };
 
+const ROUTER_FAILURE_FIX_ZONE_MAP: Record<string, RouterFailureFixEntry> = {
+  "quota-exhausted": {
+    artifact_type: "runtime-config",
+    hint: "Recurring provider quota exhaustion detected. Adjust quota policy and fallback order in execution.routerPolicy, and document expected quota behavior for operators.",
+  },
+  "capability-mismatch": {
+    artifact_type: "provider-role-recommendation",
+    hint: "Recurring capability mismatch detected. Update provider capability metadata and role task-type mapping, and document role expectations.",
+  },
+  "trust-too-low": {
+    artifact_type: "provider-role-recommendation",
+    hint: "Recurring trust-tier mismatch detected. Update trust policy thresholds or provider trust metadata, and document trust requirements for worker routing.",
+  },
+  "no-slot": {
+    artifact_type: "runtime-config",
+    hint: "Recurring slot exhaustion detected. Tune worker pool slot limits and provider slot caps in router policy.",
+  },
+  "cost-policy": {
+    artifact_type: "runtime-config",
+    hint: "Recurring cost policy rejection detected. Revisit max cost tier and quota policies in router constraints.",
+  },
+  "not-in-policy": {
+    artifact_type: "provider-role-recommendation",
+    hint: "Recurring provider policy mismatch detected. Align rotation/providers with role policy allowlists and update routing docs.",
+  },
+  "role-disabled": {
+    artifact_type: "runtime-config",
+    hint: "Worker role is repeatedly disabled by policy. Update providerPolicy.worker and role routing defaults.",
+  },
+};
+
 // ──────────────────────────────────────────────
 // AutresearchProposal type
 // ──────────────────────────────────────────────
@@ -132,6 +168,23 @@ export function buildProposals(report: DiagnosisReport): AutresearchProposal[] {
       fix_zone: `${entry.artifact_type}/${gateId}`,
     });
   }
+  const recurringRouterFailures = report.router_outcomes?.recurring_failures ?? [];
+  for (const failure of recurringRouterFailures) {
+    if (failure.occurrences < 2) continue;
+    const entry = ROUTER_FAILURE_FIX_ZONE_MAP[failure.reason] ?? {
+      artifact_type: "runtime-config" as const,
+      hint: "Recurring router failure detected. Review router policy configuration and fallback behavior.",
+    };
+    proposals.push({
+      gate_id: `router-failure:${failure.reason}`,
+      artifact_type: entry.artifact_type,
+      hint: `${entry.hint} Observed ${failure.occurrences} times across children: ${failure.child_ids.join(", ") || "unknown"}.`,
+      run_id: report.run_id,
+      evidence_run_ids: [report.run_id],
+      confidence: report.score,
+      fix_zone: `${entry.artifact_type}/router-failure-${failure.reason}`,
+    });
+  }
   return proposals;
 }
 
@@ -173,5 +226,27 @@ export function validateDiagnosisReport(raw: unknown): DiagnosisReport {
   if (typeof r["score"] !== "number") throw new Error("Diagnosis report missing required number field: score");
   if (!Array.isArray(r["diagnosis_hints"])) throw new Error("Diagnosis report missing required array field: diagnosis_hints");
 
-  return raw as DiagnosisReport;
+  const routerOutcomesRaw = r["router_outcomes"] as Record<string, unknown> | undefined;
+  const normalizedRouterOutcomes = routerOutcomesRaw && typeof routerOutcomesRaw === "object"
+    ? {
+        total_decisions: typeof routerOutcomesRaw["total_decisions"] === "number" ? routerOutcomesRaw["total_decisions"] : 0,
+        exhausted_decisions: typeof routerOutcomesRaw["exhausted_decisions"] === "number" ? routerOutcomesRaw["exhausted_decisions"] : 0,
+        fallback_attempts: typeof routerOutcomesRaw["fallback_attempts"] === "number" ? routerOutcomesRaw["fallback_attempts"] : 0,
+        successful_fallbacks: typeof routerOutcomesRaw["successful_fallbacks"] === "number" ? routerOutcomesRaw["successful_fallbacks"] : 0,
+        recurring_failures: Array.isArray(routerOutcomesRaw["recurring_failures"])
+          ? routerOutcomesRaw["recurring_failures"]
+          : [],
+      }
+    : {
+        total_decisions: 0,
+        exhausted_decisions: 0,
+        fallback_attempts: 0,
+        successful_fallbacks: 0,
+        recurring_failures: [],
+      };
+
+  return {
+    ...(raw as DiagnosisReport),
+    router_outcomes: normalizedRouterOutcomes,
+  };
 }

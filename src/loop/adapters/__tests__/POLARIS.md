@@ -1,36 +1,37 @@
-<!-- polaris:draft -->
 # __tests__
-
-> Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
 
 ## Purpose
 
-<!-- One paragraph describing what this folder does. -->
+Unit tests for `src/loop/adapters/` execution adapters. Tests validate adapter dispatch behavior, fallback chain logic, quota signal handling, pre-dispatch failure classification, and router evidence propagation.
 
 **Domain:** loop
 **Route:** src/loop
-**Taskchain:** polaris-loop
 
 ## What belongs here
 
-- `terminal-cli.test.ts` — src/loop (loop)
+- `terminal-cli.test.ts` — unit tests for `TerminalCliAdapter`: covers dispatch success, pre-dispatch failure with `fallback_eligible` classification, quota signal detection, and `router_evidence` attachment in `DispatchResult`
 
 ## What does not belong here
 
-<!-- Explicit exclusions of files or responsibilities. -->
+- Integration tests that require a live adapter process
+- Tests for `AgentSubtaskAdapter` or `foreman-dispatch.ts` (those live alongside their source files)
 
 ## Editing rules
 
-<!-- Behavioral constraints for agents and humans. -->
+- Tests must not spawn real provider processes. Mock `execa` or equivalent at the module boundary.
+- When testing fallback behavior, inject a `routerDecision` option with a populated `providersTried` array so the fallback order is deterministic.
+- Pre-dispatch failure scenarios must assert `pre_dispatch_failure: true` and `fallback_eligible` in the returned `DispatchResult`.
 
 ## Architecture assumptions
 
-<!-- What the code assumes about the world. -->
+- `TerminalCliAdapter` is tested in isolation; the test file does not depend on live config or a running Polaris loop.
 
 ## Read before editing
 
 - [POLARIS.md](../../POLARIS.md)
+- `src/loop/adapters/POLARIS.md` — adapter invariants and fallback rules
+- `src/loop/adapters/terminal-cli.ts` — implementation under test
 
 ## Related routes
 
-<!-- Atlas route pointer to sibling or parent folders. -->
+- `src/loop/adapters/` — source for all tested adapters

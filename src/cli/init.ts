@@ -120,6 +120,13 @@ const PLAN_COMPLETE_STATUSES = new Set(["completed", "skipped"]);
 const ADOPTION_LOCKED_EXECUTION = {
   rotation: [],
   allowCrossAgentFallback: false,
+  routerPolicy: {
+    defaultWorkerPool: {
+      maxActiveWorkers: 1,
+      maxActiveSlots: 1,
+    },
+    allowCrossProviderFallback: false,
+  },
   adapter: "terminal-cli",
 } as const;
 const ADOPTION_LOCKED_ORCHESTRATION = {
@@ -166,11 +173,22 @@ function asRecord(value: unknown): Record<string, unknown> {
 function isAdoptionConfigLocked(existing: Record<string, unknown>): boolean {
   const execution = asRecord(existing.execution);
   const orchestration = asRecord(existing.orchestration);
+  const routerPolicy = asRecord(execution.routerPolicy);
+  const defaultWorkerPool = asRecord(routerPolicy.defaultWorkerPool);
+  const routerPolicyMatches =
+    Object.keys(routerPolicy).length === 0 ||
+    (routerPolicy.allowCrossProviderFallback ===
+      ADOPTION_LOCKED_EXECUTION.routerPolicy.allowCrossProviderFallback &&
+      defaultWorkerPool.maxActiveWorkers ===
+        ADOPTION_LOCKED_EXECUTION.routerPolicy.defaultWorkerPool.maxActiveWorkers &&
+      defaultWorkerPool.maxActiveSlots ===
+        ADOPTION_LOCKED_EXECUTION.routerPolicy.defaultWorkerPool.maxActiveSlots);
 
   return (
     Array.isArray(execution.rotation) &&
     execution.rotation.length === 0 &&
     execution.allowCrossAgentFallback === false &&
+    routerPolicyMatches &&
     execution.adapter === ADOPTION_LOCKED_EXECUTION.adapter &&
     orchestration.mode === ADOPTION_LOCKED_ORCHESTRATION.mode
   );

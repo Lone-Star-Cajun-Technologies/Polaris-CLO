@@ -14,10 +14,20 @@ import { readState, validateState, writeStateAtomic, readBodyFromClusterSnapshot
 import { compileImplPacket, type WorkerPacket, type WorkerRoleContext } from "./worker-packet.js";
 import { parseIssueBody } from "./body-parser.js";
 import { loadConfig } from "../config/loader.js";
-import type { ExecutionRole, RoleProviderPolicy, PolarisConfig } from "../config/schema.js";
+import type {
+  ExecutionRole,
+  RoleProviderPolicy,
+  PolarisConfig,
+  WorkerCostTier,
+  WorkerProviderCapability,
+  WorkerQuotaPolicy,
+  WorkerTaskType,
+  WorkerTrustTier,
+} from "../config/schema.js";
 import { readClusterStateSync, writeClusterStateSync } from "../cluster-state/store.js";
 import type { ChildState, ClusterState } from "../cluster-state/types.js";
 import { selectPromptMode } from "./worker-prompt.js";
+import { decideWorkerRoute, type WorkerRouterDecision } from "./router/index.js";
 
 type SimplicityMode = "full" | "lite" | "off";
 
@@ -77,9 +87,28 @@ export interface ProviderDecisionEvidence {
   fallbackReason?: string;
   providersTried: string[];
   exhaustedReason?: string;
+  routerEvidence?: WorkerRouterDecision;
+  routerContextSnapshot?: {
+    taskType: WorkerTaskType;
+    requiredCapabilities?: WorkerProviderCapability[];
+    minTrustTier?: WorkerTrustTier;
+    maxCostTier?: WorkerCostTier;
+    disallowedQuotaPolicies?: WorkerQuotaPolicy[];
+    activeSlotsByProvider?: Record<string, number>;
+    quotaAvailableByProvider?: Record<string, boolean>;
+  };
 }
 
 type ProviderPolicyByRole = Partial<Record<ExecutionRole, RoleProviderPolicy>>;
+interface ProviderRouterContext {
+  taskType: WorkerTaskType;
+  requiredCapabilities?: WorkerProviderCapability[];
+  minTrustTier?: WorkerTrustTier;
+  maxCostTier?: WorkerCostTier;
+  disallowedQuotaPolicies?: WorkerQuotaPolicy[];
+  activeSlotsByProvider?: Record<string, number>;
+  quotaAvailableByProvider?: Record<string, boolean>;
+}
 
 /**
  * Determine the effective provider and dispatch mode using the 4-scenario decision tree:
@@ -102,23 +131,57 @@ function roleContextToExecutionRole(role: WorkerRoleContext["role"] | undefined)
   }
 }
 
+function roleContextToTaskType(roleContext: WorkerRoleContext | undefined): WorkerTaskType {
+  switch (roleContext?.role) {
+    case "analyst":
+      return "analyze";
+    case "librarian":
+      return "docs";
+    case "foreman":
+      return "startup";
+    case "worker":
+    default:
+      return "impl";
+  }
+}
+
+function requiredCapabilitiesForTask(taskType: WorkerTaskType): WorkerProviderCapability[] {
+  switch (taskType) {
+    case "startup":
+      return ["orchestration"];
+    case "analyze":
+      return ["analysis"];
+    case "impl":
+      return ["implementation"];
+    case "repair":
+      return ["repair"];
+    case "docs":
+      return ["docs"];
+    case "finalize":
+      return ["finalization"];
+    default:
+      return [];
+  }
+}
+
+function collectActiveProviderSlots(state: LoopState): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const meta of Object.values(state.open_children_meta ?? {})) {
+    const dispatch = meta?.dispatch_record;
+    if (!dispatch?.provider) continue;
+    if (dispatch.status !== "dispatched") continue;
+    counts[dispatch.provider] = (counts[dispatch.provider] ?? 0) + 1;
+  }
+  return counts;
+}
+
 export function resolveProviderAndMode(
   options: DispatchOptions,
   role: ExecutionRole,
   config?: Required<PolarisConfig>,
+  routerContext?: ProviderRouterContext,
 ): ProviderDecisionEvidence {
   const defaultAdapter = "terminal-cli";
-
-  if (options.provider) {
-    return {
-      provider: options.provider,
-      mode: "direct-worker",
-      adapter: defaultAdapter,
-      selectionReason: "cli-provider-override",
-      overrideSource: "dispatch-flag",
-      providersTried: [options.provider],
-    };
-  }
 
   // Only catch config-load failures; policy violations must propagate to the caller.
   let loaded: Required<PolarisConfig> | undefined;
@@ -140,6 +203,73 @@ export function resolveProviderAndMode(
   }
 
   const exec = loaded.execution;
+  const providerRegistry = exec?.routerPolicy?.providerRegistry ?? {};
+  const compatibilityMode = Object.keys(providerRegistry).length === 0;
+  if (compatibilityMode) {
+    return resolveProviderAndModeLegacy(options, role, adapter, exec);
+  }
+
+  const decision = decideWorkerRoute({
+    role,
+    taskType: routerContext?.taskType ?? "impl",
+    adapter,
+    providerOverride: options.provider,
+    providers: Object.keys(exec?.providers ?? {}),
+    rotation: exec?.rotation ?? [],
+    rolePolicy: exec?.providerPolicy?.[role],
+    roleConfiguredProvider: exec?.roles?.[role]?.provider,
+    routerPolicy: exec?.routerPolicy,
+    constraints: {
+      minTrustTier: routerContext?.minTrustTier,
+      maxCostTier: routerContext?.maxCostTier,
+      disallowedQuotaPolicies: routerContext?.disallowedQuotaPolicies,
+      requiredCapabilities: routerContext?.requiredCapabilities,
+    },
+    runtime: {
+      activeSlotsByProvider: routerContext?.activeSlotsByProvider,
+      quotaAvailableByProvider: routerContext?.quotaAvailableByProvider,
+    },
+    compatibilityMode: false,
+  });
+
+  return {
+    provider: decision.selectedProvider,
+    mode: decision.mode,
+    adapter,
+    selectionReason: decision.selectionReason,
+    overrideSource: options.provider ? "dispatch-flag" : undefined,
+    providersTried: decision.providersTried,
+    exhaustedReason: decision.exhaustedReason,
+    routerEvidence: decision,
+    routerContextSnapshot: {
+      taskType: routerContext?.taskType ?? "impl",
+      requiredCapabilities: routerContext?.requiredCapabilities,
+      minTrustTier: routerContext?.minTrustTier,
+      maxCostTier: routerContext?.maxCostTier,
+      disallowedQuotaPolicies: routerContext?.disallowedQuotaPolicies,
+      activeSlotsByProvider: routerContext?.activeSlotsByProvider,
+      quotaAvailableByProvider: routerContext?.quotaAvailableByProvider,
+    },
+  };
+}
+
+function resolveProviderAndModeLegacy(
+  options: DispatchOptions,
+  role: ExecutionRole,
+  adapter: string,
+  exec: Required<PolarisConfig>["execution"],
+): ProviderDecisionEvidence {
+  if (options.provider) {
+    return {
+      provider: options.provider,
+      mode: "direct-worker",
+      adapter,
+      selectionReason: "cli-provider-override",
+      overrideSource: "dispatch-flag",
+      providersTried: [options.provider],
+    };
+  }
+
   const rolePolicy = exec?.providerPolicy?.[role];
   const roleProviders = rolePolicy?.providers ?? [];
   const rotation = exec?.rotation ?? [];
@@ -433,6 +563,16 @@ function emitProviderSelected(
   childId: string,
   decision: ProviderDecisionEvidence,
 ): void {
+  const fallbackAttempts = decision.providersTried.map((provider, index) => {
+    const candidate = decision.routerEvidence?.candidates.find((entry) => entry.provider === provider);
+    return {
+      provider,
+      attempt_index: index + 1,
+      outcome: decision.provider === provider ? "selected" : "rejected",
+      rejection_reasons: candidate?.rejectionReasons ?? [],
+    } as const;
+  });
+
   appendTelemetry(telemetryFile, {
     event: "provider-selected",
     event_id: randomUUID(),
@@ -443,10 +583,55 @@ function emitProviderSelected(
     selected_provider: decision.provider ?? null,
     selected_adapter: decision.adapter,
     selection_reason: decision.selectionReason,
+    ...(decision.routerEvidence
+      ? {
+          router_mode: decision.routerEvidence.mode,
+          router_task_type: decision.routerEvidence.selectedWorker.taskType,
+          router_compatibility_mode: decision.routerEvidence.compatibilityMode,
+        }
+      : {}),
+    ...(decision.routerContextSnapshot
+      ? {
+          router_score_inputs: {
+            required_capabilities: decision.routerContextSnapshot.requiredCapabilities,
+            min_trust_tier: decision.routerContextSnapshot.minTrustTier,
+            max_cost_tier: decision.routerContextSnapshot.maxCostTier,
+            disallowed_quota_policies: decision.routerContextSnapshot.disallowedQuotaPolicies,
+            active_slots_by_provider: decision.routerContextSnapshot.activeSlotsByProvider,
+            quota_available_by_provider: decision.routerContextSnapshot.quotaAvailableByProvider,
+          },
+        }
+      : {}),
+    ...(fallbackAttempts.length > 0 ? { fallback_attempts: fallbackAttempts } : {}),
     ...(decision.overrideSource ? { override_source: decision.overrideSource } : {}),
     ...(decision.fallbackFrom ? { fallback_from: decision.fallbackFrom } : {}),
     ...(decision.fallbackReason ? { fallback_reason: decision.fallbackReason } : {}),
     ...(decision.providersTried.length > 0 ? { providers_tried: decision.providersTried } : {}),
+    ...(decision.exhaustedReason ? { router_exhausted_reason: decision.exhaustedReason } : {}),
+    ...(decision.routerEvidence?.candidates?.length
+      ? {
+          router_candidates: decision.routerEvidence.candidates.map((candidate) => ({
+            provider: candidate.provider,
+            eligible: candidate.eligible,
+            rejection_reasons: candidate.rejectionReasons,
+            score: {
+              order: candidate.score.orderScore,
+              trust: candidate.score.trustScore,
+              cost: candidate.score.costScore,
+              total: candidate.score.total,
+            },
+            inputs: {
+              order_index: candidate.evidence.orderIndex,
+              trust_tier: candidate.evidence.trustTier,
+              cost_tier: candidate.evidence.costTier,
+              quota_policy: candidate.evidence.quotaPolicy,
+              active_slots: candidate.evidence.activeSlots,
+              slot_limit: candidate.evidence.slotLimit,
+              policy_matched: candidate.evidence.policyMatched,
+            },
+          })),
+        }
+      : {}),
     timestamp: new Date().toISOString(),
   } satisfies ProviderSelectedEvent);
 }
@@ -468,6 +653,10 @@ function emitProviderFallbackAttempted(
     requested_role: "worker",
     fallback_from: decision.fallbackFrom,
     fallback_reason: decision.fallbackReason,
+    ...(decision.provider ? { fallback_to: decision.provider } : {}),
+    ...(decision.providersTried.length > 0
+      ? { fallback_attempt_index: decision.providersTried.length }
+      : {}),
     ...(decision.providersTried.length > 0 ? { providers_tried: decision.providersTried } : {}),
     timestamp: new Date().toISOString(),
   } satisfies ProviderFallbackAttemptedEvent);
@@ -896,6 +1085,7 @@ function buildPacket(
   telemetryFile: string,
   repoRoot: string,
   resultFile: string,
+  maxConcurrentWorkers: number,
   config?: Required<PolarisConfig>,
 ): WorkerPacket {
   const childMeta = state.open_children_meta?.[childId];
@@ -933,7 +1123,7 @@ function buildPacket(
     telemetryFile,
     issueContext,
     allowedScope: resolvedScope.length > 0 ? resolvedScope : undefined,
-    maxConcurrentWorkers: 1,
+    maxConcurrentWorkers,
     promptMode: selectPromptMode(childId, state),
     simplicityMode: resolveSimplicityMode(state, config),
     resultFile: canonicalPath(absoluteResultFile(repoRoot, resultFile)),
@@ -1205,6 +1395,7 @@ export function runLoopDispatch(options: DispatchOptions): void {
     telemetryFile,
     options.repoRoot,
     canonicalResultFile,
+    loadedConfig?.execution?.routerPolicy?.defaultWorkerPool?.maxActiveWorkers ?? 1,
     loadedConfig,
   );
 
@@ -1222,29 +1413,47 @@ export function runLoopDispatch(options: DispatchOptions): void {
   }
 
   const targetRole = roleContextToExecutionRole(packet.role_context.role);
+  const taskType = roleContextToTaskType(packet.role_context);
+  const activeSlotsByProvider = collectActiveProviderSlots(state);
 
   // ── Resolve provider and dispatch mode ─────────────────────────────────────
   // loadedConfig was loaded earlier (above bootstrap seal check)
   let providerDecision: ReturnType<typeof resolveProviderAndMode>;
   try {
-    providerDecision = resolveProviderAndMode(options, targetRole, loadedConfig);
+    providerDecision = resolveProviderAndMode(options, targetRole, loadedConfig, {
+      taskType,
+      requiredCapabilities: requiredCapabilitiesForTask(taskType),
+      activeSlotsByProvider,
+    });
   } catch (err) {
     fail(err instanceof Error ? err.message : String(err));
   }
+
+  // ── Handle hard-exhaustion: emit telemetry before failing ──────────────────
+  // resolveProviderAndMode returns (not throws) when all providers are rejected so
+  // emitProviderExhausted/emitProviderSelected can record the candidate breakdown.
+  if (!providerDecision.provider && providerDecision.exhaustedReason && providerDecision.routerEvidence) {
+    emitProviderExhausted(telemetryFile, dispatchId, state.run_id, childId, providerDecision);
+    emitProviderSelected(telemetryFile, dispatchId, state.run_id, childId, providerDecision);
+    fail(`provider dispatch forbidden: router rejected all providers (reason=${providerDecision.exhaustedReason})`);
+  }
+
   const { provider: resolvedProvider } = providerDecision;
   const providerPolicy = loadedConfig?.execution.providerPolicy ?? getProviderPolicy(options.repoRoot);
-  try {
-    assertProviderAllowedForRole(
-      targetRole,
-      resolvedProvider,
-      providerPolicy,
-      telemetryFile,
-      dispatchId,
-      state.run_id,
-      childId,
-    );
-  } catch (err) {
-    fail(err instanceof Error ? err.message : String(err));
+  if (!providerDecision.routerEvidence) {
+    try {
+      assertProviderAllowedForRole(
+        targetRole,
+        resolvedProvider,
+        providerPolicy,
+        telemetryFile,
+        dispatchId,
+        state.run_id,
+        childId,
+      );
+    } catch (err) {
+      fail(err instanceof Error ? err.message : String(err));
+    }
   }
 
   // ── Provider probe on first dispatch ──────────────────────────────────────
@@ -1260,6 +1469,11 @@ export function runLoopDispatch(options: DispatchOptions): void {
           run_id: state.run_id,
           child_id: childId,
           provider: resolvedProvider,
+          failure_origin: "provider-launch",
+          failure_category: "provider-unavailable",
+          pre_dispatch_failure: true,
+          fallback_eligible: true,
+          providers_tried: providerDecision.providersTried,
           error: probeResult.error,
           timestamp: new Date().toISOString(),
         });

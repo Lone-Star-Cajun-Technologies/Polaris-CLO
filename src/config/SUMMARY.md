@@ -22,10 +22,7 @@ This folder owns the config contract consumed by the rest of the runtime.
 - Consumed by loop, map, cognition, smartdocs-engine, graph governance, finalize, and tracker code.
 
 ## Current State
-Config now includes a `graph` section with `outputPath` and `invalidationTriggers` for graph governance. Defaults point to `.polaris/graph` with repo/config invalidation enabled. Provider detection separates compaction providers from repo-analysis providers; repo analysis reports `polaris-graph` when the Polaris command is available.
-
-## Known Drift
-`polaris.config.json` remains optional; missing file still uses defaults.
+Config now includes a `graph` section with `outputPath` and `invalidationTriggers` for graph governance. Defaults point to `.polaris/graph` with repo/config invalidation enabled. Provider detection separates compaction providers from repo-analysis providers; repo analysis reports `polaris-graph` when the Polaris command is available. The `execution.routerPolicy` surface (`WorkerRouterPolicyConfig`) is now part of the schema and defaults: it declares `defaultWorkerPool.maxActiveWorkers` (default `1`), `providerRegistry` (per-provider eligibility, role, capability, quota, trust, cost, and slot declarations), and `allowCrossAgentFallback` (default `false`). With all defaults, router behavior is indistinguishable from the pre-router single-worker model.
 
 ## Linked Canonical Sources
 - [POLARIS.md](POLARIS.md)

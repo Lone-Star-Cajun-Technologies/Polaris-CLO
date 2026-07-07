@@ -18,6 +18,26 @@ export interface ProviderConfig {
   args?: string[];
 }
 
+export type WorkerProviderCapability =
+  | "orchestration"
+  | "analysis"
+  | "implementation"
+  | "repair"
+  | "docs"
+  | "finalization";
+
+export type WorkerTaskType =
+  | "startup"
+  | "analyze"
+  | "impl"
+  | "repair"
+  | "docs"
+  | "finalize";
+
+export type WorkerTrustTier = "sandbox" | "standard" | "trusted";
+export type WorkerCostTier = "low" | "medium" | "high";
+export type WorkerQuotaPolicy = "best-effort" | "rate-limited" | "reserved";
+
 export type ExecutionRole =
   | "orchestrator"
   | "startup"
@@ -71,6 +91,49 @@ export interface RoleProviderPolicy {
   noFallback?: boolean;
 }
 
+export interface WorkerProviderRouterPolicy {
+  /** Which execution roles may use this provider in the router pool. */
+  eligibleRoles?: ExecutionRole[];
+  /** Coarse provider capability tags used for router eligibility filtering. */
+  capabilities?: WorkerProviderCapability[];
+  /** Fine-grained task-type eligibility for router matching. */
+  taskTypes?: WorkerTaskType[];
+  /** Trust tier used by policy filtering. */
+  trustTier?: WorkerTrustTier;
+  /** Relative cost tier used by policy filtering. */
+  costTier?: WorkerCostTier;
+  /** Quota handling policy for this provider. */
+  quotaPolicy?: WorkerQuotaPolicy;
+  /** Whether this provider can be used as fallback target. */
+  fallbackEligible?: boolean;
+  /** Max concurrent worker slots allowed for this provider. */
+  maxActiveSlots?: number;
+}
+
+export interface WorkerPoolLimits {
+  /** Max active workers in the default worker pool. */
+  maxActiveWorkers?: number;
+  /** Max active slots across the default worker pool. */
+  maxActiveSlots?: number;
+}
+
+export interface WorkerRouterPolicyConfig {
+  /**
+   * Default worker pool limits.
+   * Defaults preserve single-worker behavior.
+   */
+  defaultWorkerPool?: WorkerPoolLimits;
+  /**
+   * Provider metadata registry keyed by execution provider name.
+   */
+  providerRegistry?: Record<string, WorkerProviderRouterPolicy>;
+  /**
+   * Explicit router fallback switch.
+   * When omitted, legacy allowCrossAgentFallback behavior applies.
+   */
+  allowCrossProviderFallback?: boolean;
+}
+
 export interface ExecutionConfig {
   /**
    * Adapter to use for external dispatch. Currently supported: "terminal-cli"
@@ -106,6 +169,10 @@ export interface ExecutionConfig {
    * Per-role provider governance policy.
    */
   providerPolicy?: Partial<Record<ExecutionRole, RoleProviderPolicy>>;
+  /**
+   * Worker router policy surface for provider eligibility and pool limits.
+   */
+  routerPolicy?: WorkerRouterPolicyConfig;
 }
 
 export interface SkillPacketConfig {
