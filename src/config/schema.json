@@ -275,6 +275,9 @@
           }
         }
       }
+    },
+    "qc": {
+      "$ref": "#/definitions/qcConfig"
     }
   },
   "definitions": {
@@ -376,6 +379,120 @@
           "type": "integer",
           "minimum": 1
         }
+      }
+    },
+    "qcConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false
+        },
+        "defaultTrigger": {
+          "type": "string",
+          "enum": ["pr", "completed-cluster", "child"],
+          "default": "completed-cluster"
+        },
+        "providers": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/qcProviderConfig" }
+        },
+        "severityThresholds": {
+          "$ref": "#/definitions/qcSeverityThresholds"
+        },
+        "autoFix": {
+          "type": "string",
+          "enum": ["disabled", "dry-run", "apply"],
+          "default": "disabled"
+        },
+        "repairRouting": {
+          "type": "string",
+          "enum": ["block", "route", "follow-up", "log"],
+          "default": "route"
+        },
+        "artifactRetention": {
+          "$ref": "#/definitions/qcArtifactRetention"
+        },
+        "routes": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/qcRoutePolicy" }
+        }
+      }
+    },
+    "qcProviderConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "mode"],
+      "properties": {
+        "name": { "type": "string" },
+        "mode": {
+          "type": "string",
+          "enum": ["local", "pr", "metrics-import"]
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["diff-review", "pr-review", "result-parsing", "auto-fix", "metrics-import"]
+          }
+        },
+        "trigger": {
+          "type": "string",
+          "enum": ["pr", "completed-cluster", "child"]
+        },
+        "autoFixEligible": { "type": "boolean" },
+        "severityMapping": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low", "info"]
+          }
+        }
+      }
+    },
+    "qcSeverityThresholds": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "block": {
+          "type": "string",
+          "enum": ["critical", "high", "medium", "low", "info"],
+          "default": "high"
+        },
+        "repair": {
+          "type": "string",
+          "enum": ["critical", "high", "medium", "low", "info"],
+          "default": "medium"
+        },
+        "followUp": {
+          "type": "string",
+          "enum": ["critical", "high", "medium", "low", "info"],
+          "default": "low"
+        }
+      }
+    },
+    "qcRoutePolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "childLevel": { "type": "boolean" },
+        "blockThreshold": {
+          "type": "string",
+          "enum": ["critical", "high", "medium", "low", "info"]
+        },
+        "autoFix": {
+          "type": "string",
+          "enum": ["disabled", "dry-run", "apply"]
+        }
+      }
+    },
+    "qcArtifactRetention": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "retainRawOutput": { "type": "boolean", "default": false },
+        "maxRuns": { "type": "integer", "minimum": 1, "default": 10 }
       }
     }
   }

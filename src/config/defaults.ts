@@ -1,6 +1,6 @@
 import type { PolarisConfig } from "./schema.js";
 
-export const DEFAULT_CONFIG: Omit<Required<PolarisConfig>, "canon" | "providers" | "orchestration" | "simplicity"> & { canon: Required<NonNullable<PolarisConfig["canon"]>>; providers: { repoAnalysis: { preferred: string | undefined; fallback: string[] } }; orchestration: Required<NonNullable<PolarisConfig["orchestration"]>> } & { compact: Required<Pick<NonNullable<PolarisConfig["compact"]>, "orchestratorMode" | "workerMode">> } = {
+export const DEFAULT_CONFIG: Omit<Required<PolarisConfig>, "canon" | "providers" | "orchestration" | "simplicity" | "qc"> & { canon: Required<NonNullable<PolarisConfig["canon"]>>; providers: { repoAnalysis: { preferred: string | undefined; fallback: string[] } }; orchestration: Required<NonNullable<PolarisConfig["orchestration"]>>; qc: Required<NonNullable<PolarisConfig["qc"]>> } & { compact: Required<Pick<NonNullable<PolarisConfig["compact"]>, "orchestratorMode" | "workerMode">> } = {
   version: "1.0",
   repo: {
     name: "",
@@ -101,5 +101,22 @@ export const DEFAULT_CONFIG: Omit<Required<PolarisConfig>, "canon" | "providers"
     analysis_confidence_threshold: 85,
     auto_deep_analysis: false,
     allow_cross_provider_delegation: false,
+  },
+  qc: {
+    enabled: false,
+    defaultTrigger: "completed-cluster",
+    providers: {},
+    severityThresholds: {
+      block: "high",
+      repair: "medium",
+      followUp: "low",
+    },
+    autoFix: "disabled",
+    repairRouting: "route",
+    artifactRetention: {
+      retainRawOutput: false,
+      maxRuns: 10,
+    },
+    routes: {},
   },
 };
