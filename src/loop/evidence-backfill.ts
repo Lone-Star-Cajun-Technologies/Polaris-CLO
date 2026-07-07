@@ -112,7 +112,14 @@ export function backfillClusterStateEvidence(options: BackfillOptions): Backfill
   const backfilled: BackfillSuccess[] = [];
   const skipped: BackfillSkip[] = [];
 
-  for (const childId of state.completed_children) {
+  // Scan both completed and open children — recovery may have committed work
+  // for children that were never checkpointed into completed_children.
+  const seen = new Set<string>();
+  const allChildren = [...state.completed_children, ...state.open_children].filter(
+    (id) => { if (seen.has(id)) return false; seen.add(id); return true; },
+  );
+
+  for (const childId of allChildren) {
     // Resolve result file — mirrors continue.ts priority:
     //   1. result_file on child meta (explicit override, e.g. --result-file flag)
     //   2. dispatch_record.expected_result_path
@@ -153,10 +160,12 @@ export function backfillClusterStateEvidence(options: BackfillOptions): Backfill
     }
 
     // Guard: result must indicate completion.
-    if (result["status"] !== undefined && result["status"] !== "done") {
+    // Accept "done" (backfill artifact) and "success" (SuccessResultPacket schema).
+    const resultStatus = result["status"];
+    if (resultStatus !== undefined && resultStatus !== "done" && resultStatus !== "success") {
       skipped.push({
         childId,
-        reason: `result status is not done: ${String(result["status"])}`,
+        reason: `result status is not done or success: ${String(resultStatus)}`,
       });
       continue;
     }
