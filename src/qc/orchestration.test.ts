@@ -253,6 +253,48 @@ describe("runQcAtTrigger", () => {
     expect(result.results[0]!.policyDecision.requiresOperatorReview).toBe(true);
   });
 
+  it("blocks when no providers run successfully", async () => {
+    const failingProvider = makeProvider({
+      status: "failed",
+      policyDecision: {
+        blocksDelivery: false,
+        requiresOperatorReview: true,
+        routedToRepair: false,
+        summary: "provider failed",
+      },
+    });
+    registry = new QcProviderRegistry();
+    registry.register(failingProvider);
+
+    const result = await runQcAtTrigger({
+      config: makeConfig({ repairRouting: "log" }),
+      registry,
+      trigger: "completed-cluster",
+      repoRoot: testDir,
+      runId: "run-1",
+      clusterId: "POL-1",
+      branch: "main",
+    });
+
+    expect(result.action).toBe("block");
+  });
+
+  it("blocks when a configured provider is missing from the registry", async () => {
+    registry = new QcProviderRegistry();
+    const result = await runQcAtTrigger({
+      config: makeConfig(),
+      registry,
+      trigger: "completed-cluster",
+      repoRoot: testDir,
+      runId: "run-1",
+      clusterId: "POL-1",
+      branch: "main",
+    });
+
+    expect(result.action).toBe("block");
+    expect(result.summary).toContain('Unknown QC provider "test"');
+  });
+
   it("runs the pr trigger with a PR URL", async () => {
     let capturedUrl: string | undefined;
     const prProvider: IQcProvider = {

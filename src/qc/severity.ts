@@ -42,7 +42,7 @@ export function normalizeSeverity(
 
   const combined: Record<string, QcSeverity> = { ...DEFAULT_SEVERITY_MAPPING, ...mapping };
 
-  if (combined[raw]) {
+  if (Object.hasOwn(combined, raw)) {
     return combined[raw];
   }
 

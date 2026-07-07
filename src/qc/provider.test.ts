@@ -181,6 +181,20 @@ describe("CodeRabbitQcProvider", () => {
     expect(result.status).toBe("passed");
   });
 
+  it("derives findings status from the highest severity across all findings", () => {
+    const provider = new CodeRabbitQcProvider();
+    const result = provider.parse({
+      provider: "coderabbit",
+      exitCode: 0,
+      stdout: [
+        JSON.stringify({ severity: "low", file: "src/a.ts", line: 1, title: "Issue A" }),
+        JSON.stringify({ severity: "high", file: "src/b.ts", line: 2, title: "Issue B" }),
+      ].join("\n"),
+    });
+
+    expect(result.status).toBe("findings");
+  });
+
   it("handles malformed stdout without throwing", () => {
     const provider = new CodeRabbitQcProvider();
     const result = provider.parse({

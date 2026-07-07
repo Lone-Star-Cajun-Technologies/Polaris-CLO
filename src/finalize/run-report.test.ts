@@ -67,7 +67,7 @@ describe("generateRunReport", () => {
   it("includes QC section when qcSummary is provided", () => {
     const report = generateRunReport(baseReportData({ qcSummary: makeQcSummary() }));
     expect(report).toContain("## QC summary");
-    expect(report).toContain("**QC runs:** 1");
+    expect(report).toContain("| **QC runs** | 1 |");
     expect(report).toContain("Not blocking delivery");
   });
 
@@ -89,7 +89,7 @@ describe("generateRunReport", () => {
       open_by_severity: { critical: 1, high: 1, medium: 0, low: 0, info: 0 },
     });
     const report = generateRunReport(baseReportData({ qcSummary }));
-    expect(report).toContain("**Total findings:** 5");
+    expect(report).toContain("| **Total findings** | 5");
     expect(report).toContain("critical=1");
     expect(report).toContain("high=1");
   });
@@ -133,6 +133,14 @@ describe("generateRunReport", () => {
   it("shows no SOL score impact when qc_penalty is zero", () => {
     const qcSummary = makeQcSummary({ weighted_open_score: 0, qc_penalty: 0 });
     const report = generateRunReport(baseReportData({ qcSummary }));
-    expect(report).toContain("SOL score impact:** none");
+    expect(report).toContain("| **SOL score impact** | none");
+  });
+
+  it("renders header and QC tables with valid markdown rows", () => {
+    const report = generateRunReport(baseReportData({ qcSummary: makeQcSummary() }));
+    expect(report).toContain("| Field | Value |");
+    expect(report).toContain("| ID | Title | Commit | Status |");
+    expect(report).toContain("| Status | Count |");
+    expect(report).toContain("| Provider | Total | Blocking | Unvalidated |");
   });
 });

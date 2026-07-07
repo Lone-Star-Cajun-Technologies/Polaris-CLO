@@ -33,8 +33,6 @@ export function writeQcArtifact(
   const tempPath = `${artifactPath}.tmp.${process.pid}.${Date.now()}.${Math.random().toString(36).slice(2, 8)}`;
 
   try {
-    const realDir = path.dirname(artifactPath);
-    mkdirSync(realDir, { recursive: true });
     writeFileSync(tempPath, JSON.stringify(result, null, 2), "utf-8");
     renameSync(tempPath, artifactPath);
   } catch (error) {
@@ -71,7 +69,7 @@ export function readQcArtifact(
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       return null;
     }
-    return null;
+    throw error;
   }
 }
 

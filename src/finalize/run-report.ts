@@ -31,8 +31,7 @@ function renderQcSection(qcSummary: QcScoreSummary | null | undefined): string {
     .map(([provider, summary]) => `| ${provider} | ${summary.total} | ${summary.blocking} | ${summary.unvalidated} |`)
     .join("\n");
 
-  const routing = `
-| original-worker | ${routing_breakdown.original_worker} |
+  const routing = `| original-worker | ${routing_breakdown.original_worker} |
 | repair-worker | ${routing_breakdown.repair_worker} |
 | follow-up | ${routing_breakdown.follow_up} |
 | operator-review | ${routing_breakdown.operator_review} |
@@ -45,20 +44,22 @@ function renderQcSection(qcSummary: QcScoreSummary | null | undefined): string {
   return `
 ## QC summary
 
-|**QC runs:** ${qc_run_count}
-|**Delivery status:** ${deliveryStatus}
-|**Total findings:** ${total_findings} (${unvalidated_findings} unvalidated/provider-noise excluded from scoring)
-|**SOL score impact:** ${solImpactValue}
+| Metric | Value |
+|---|---|
+| **QC runs** | ${qc_run_count} |
+| **Delivery status** | ${deliveryStatus} |
+| **Total findings** | ${total_findings} (${unvalidated_findings} unvalidated/provider-noise excluded from scoring) |
+| **SOL score impact** | ${solImpactValue} |
 
-|| Status | Count |
-|---|---|---|
-|| Blocking (critical/high, open) | ${blocking_findings} |
-|| Open (all severities) | ${openTotal} |
-|| Autofixed | ${autofixed_findings} |
-|| Repaired | ${repaired_findings} |
-|| Waived | ${waived_findings} |
+| Status | Count |
+|---|---|
+| Blocking (critical/high, open) | ${blocking_findings} |
+| Open (all severities) | ${openTotal} |
+| Autofixed | ${autofixed_findings} |
+| Repaired | ${repaired_findings} |
+| Waived | ${waived_findings} |
 
-|**Open by severity:** critical=${open_by_severity.critical} high=${open_by_severity.high} medium=${open_by_severity.medium} low=${open_by_severity.low} info=${open_by_severity.info}
+| **Open by severity** | critical=${open_by_severity.critical} high=${open_by_severity.high} medium=${open_by_severity.medium} low=${open_by_severity.low} info=${open_by_severity.info} |
 
 ### Providers
 
@@ -102,17 +103,19 @@ export function generateRunReport(data: RunReportData): string {
 
   return `# Run Report: ${state.run_id}
 
-|**Status:** ${state.status}
-|**Branch:** ${branch}
-|**PR:** ${prUrl ?? "TBD — set at delivery step 9"}
-|**Children completed:** ${completedCount} of ${total}
-|**Validation:** ${validationPassed ? "passed" : "failed"}
-${blockerNote}
-## Children
+  | Field | Value |
+  |---|---|
+  | **Status** | ${state.status} |
+  | **Branch** | ${branch} |
+  | **PR** | ${prUrl ?? "TBD — set at delivery step 9"} |
+  | **Children completed** | ${completedCount} of ${total} |
+  | **Validation** | ${validationPassed ? "passed" : "failed"} |
+  ${blockerNote}
+  ## Children
 
-|| ID | Title | Commit | Status |
-|---|---|---|---|
-${childRows || "_No children recorded_"}
+  | ID | Title | Commit | Status |
+  |---|---|---|---|
+  ${childRows || "_No children recorded_"}
 
 ## Artifacts produced
 

@@ -1,9 +1,7 @@
 {
   "run_id": "polaris-run-pol-470-2026-07-07-001",
   "child_id": "POL-476",
-  "cluster_id": "POL-470",
-  "status": "done",
-  "timestamp": "2026-07-07T18:44:00.000Z",
+  "status": "success",
   "validation": {
     "passed": ["npm run lint", "npm test", "npm run build"]
   },

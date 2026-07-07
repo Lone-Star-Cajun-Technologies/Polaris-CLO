@@ -10,18 +10,12 @@
 
 import type { QcConfig } from "../config/schema.js";
 import type { QcFinding, QcRoutingDecision, QcSeverity } from "./types.js";
+import { isSecurityCategory } from "./security-category.js";
 import { compareSeverity } from "./severity.js";
-
-const SECURITY_CATEGORY_PATTERN = /security|secret|vulnerability|vuln|auth|crypto|injection|xss|csrf|sql/i;
 
 export interface RepairRoutingContext {
   /** Route name for per-route block threshold overrides. */
   routeName?: string;
-}
-
-function isSecurityCategory(category: string | undefined): boolean {
-  if (!category) return false;
-  return SECURITY_CATEGORY_PATTERN.test(category);
 }
 
 function getBlockThreshold(config: QcConfig, context: RepairRoutingContext): QcSeverity {

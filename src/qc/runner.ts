@@ -63,6 +63,27 @@ function appendTelemetry(telemetryFile: string | undefined, event: Record<string
   }
 }
 
+function resolveExecutionFailure(
+  provider: IQcProvider,
+  scope: QcReviewScope,
+  options: QcRunnerOptions,
+  startedAt: string,
+  output: QcProviderOutput,
+  reason: string,
+): QcResult {
+  const result = makeSyntheticResult(provider, scope, startedAt, "failed", reason);
+  appendTelemetry(options.telemetryFile, {
+    event: "qc-provider-execution-failed",
+    run_id: scope.runId,
+    cluster_id: scope.clusterId,
+    provider: provider.name,
+    exit_code: output.exitCode,
+    reason,
+    timestamp: result.completedAt,
+  });
+  return result;
+}
+
 /**
  * Execute a provider review command for the given scope.
  *
@@ -124,35 +145,50 @@ export async function executeQcProvider(
           exitCode: error ? (typeof error.code === "number" ? error.code : 1) : 0,
         };
 
-        const parsed = provider.parse(output);
-        const completedAt = new Date().toISOString();
+        try {
+          const parsed = provider.parse(output);
+          const completedAt = new Date().toISOString();
 
-        const result: QcResult = {
-          ...parsed,
-          qcRunId: `${provider.name}-${Date.now()}`,
-          runId: scope.runId,
-          clusterId: scope.clusterId,
-          trigger: scope.prUrl ? "pr" : scope.branch ? "completed-cluster" : "child",
-          provider: provider.name,
-          providerMode: scope.prUrl ? "pr" : "local",
-          prUrl: scope.prUrl,
-          startedAt,
-          completedAt,
-        };
+          const result: QcResult = {
+            ...parsed,
+            qcRunId: `${provider.name}-${Date.now()}`,
+            runId: scope.runId,
+            clusterId: scope.clusterId,
+            trigger: scope.prUrl ? "pr" : scope.branch ? "completed-cluster" : "child",
+            provider: provider.name,
+            providerMode: scope.prUrl ? "pr" : "local",
+            prUrl: scope.prUrl,
+            startedAt,
+            completedAt,
+          };
 
-        appendTelemetry(options.telemetryFile, {
-          event: "qc-provider-executed",
-          run_id: scope.runId,
-          cluster_id: scope.clusterId,
-          provider: provider.name,
-          trigger: result.trigger,
-          status: result.status,
-          findings_count: result.findings.length,
-          exit_code: output.exitCode,
-          timestamp: completedAt,
-        });
+          appendTelemetry(options.telemetryFile, {
+            event: "qc-provider-executed",
+            run_id: scope.runId,
+            cluster_id: scope.clusterId,
+            provider: provider.name,
+            trigger: result.trigger,
+            status: result.status,
+            findings_count: result.findings.length,
+            exit_code: output.exitCode,
+            timestamp: completedAt,
+          });
 
-        resolve(result);
+          resolve(result);
+        } catch (parseError) {
+          resolve(
+            resolveExecutionFailure(
+              provider,
+              scope,
+              options,
+              startedAt,
+              output,
+              `QC provider ${provider.name} parse failed: ${
+                parseError instanceof Error ? parseError.message : String(parseError)
+              }`,
+            ),
+          );
+        }
       },
     );
   });

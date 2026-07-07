@@ -9,6 +9,7 @@
 
 import type { QcConfig, QcProviderConfig } from "../config/schema.js";
 import type { QcFinding, QcSeverity } from "./types.js";
+import { isSecurityCategory } from "./security-category.js";
 import { compareSeverity } from "./severity.js";
 
 /** Fix modes considered safe for unattended application. */
@@ -22,9 +23,6 @@ export const QC_SAFE_FIX_MODES = [
   "safe",
 ];
 
-/** Security-sensitive categories that must never auto-fix. */
-const SECURITY_CATEGORY_PATTERN = /security|secret|vulnerability|vuln|auth|crypto|injection|xss|csrf|sql/i;
-
 export interface AutofixContext {
   /** Provider that emitted the finding. */
   provider?: string;
@@ -34,18 +32,13 @@ export interface AutofixContext {
   branchDirty?: boolean;
 }
 
-function isSecurityCategory(category: string | undefined): boolean {
-  if (!category) return false;
-  return SECURITY_CATEGORY_PATTERN.test(category);
-}
-
 function providerConfig(config: QcConfig, provider: string | undefined): QcProviderConfig | undefined {
   if (!provider) return undefined;
   return config.providers?.[provider];
 }
 
 function isSafeFixMode(suggestedAction: string | undefined): boolean {
-  if (!suggestedAction) return true;
+  if (!suggestedAction?.trim()) return false;
   const normalized = suggestedAction.trim().toLowerCase();
   if (QC_SAFE_FIX_MODES.includes(normalized)) return true;
   // A provider may describe a safe fix with a sentence that starts with a safe mode keyword.

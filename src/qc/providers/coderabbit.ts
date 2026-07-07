@@ -1,6 +1,6 @@
 import type { IQcProvider, QcMetricsPayload, QcProviderOutput, QcReviewScope } from "../provider.js";
 import type { QcAttribution, QcFinding, QcResult, QcSeverity } from "../types.js";
-import { normalizeSeverity } from "../severity.js";
+import { maxSeverity, normalizeSeverity } from "../severity.js";
 
 /**
  * Loose shape for CodeRabbit-style review output. We parse defensively because
@@ -200,11 +200,14 @@ function computeResultStatus(findings: QcFinding[], providerFailed: boolean): Qc
   if (findings.length === 0) {
     return providerFailed ? "failed" : "passed";
   }
-  const max = findings.reduce((acc, f) => (f.severity === "critical" ? f : acc), findings[0]);
-  if (max.severity === "critical") {
+  const highestSeverity = findings.reduce(
+    (max, finding) => maxSeverity(max, finding.severity),
+    findings[0].severity,
+  );
+  if (highestSeverity === "critical") {
     return "blocked";
   }
-  if (max.severity === "info") {
+  if (highestSeverity === "info") {
     return "passed";
   }
   return "findings";

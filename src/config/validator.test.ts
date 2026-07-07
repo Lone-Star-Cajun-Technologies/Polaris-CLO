@@ -688,6 +688,35 @@ describe("validateConfig — qc", () => {
     );
   });
 
+  it("rejects severity threshold ordering where followUp is more severe than repair", () => {
+    const result = validateConfig({
+      qc: {
+        severityThresholds: { block: "critical", repair: "low", followUp: "high" },
+      },
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      "qc.severityThresholds.followUp must be at or below qc.severityThresholds.repair severity",
+    );
+  });
+
+  it("rejects route autoFix apply without an eligible auto-fix provider", () => {
+    const result = validateConfig({
+      qc: {
+        providers: {
+          coderabbit: { name: "coderabbit", mode: "pr" },
+        },
+        routes: {
+          finalize: { autoFix: "apply" },
+        },
+      },
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      'qc.routes.finalize.autoFix "apply" requires at least one provider with capability "auto-fix" and autoFixEligible true',
+    );
+  });
+
   it("does not warn on the qc key", () => {
     const result = validateConfig({ qc: { enabled: false } });
     expect(result.warnings).not.toContain('Unknown config field: "qc"');

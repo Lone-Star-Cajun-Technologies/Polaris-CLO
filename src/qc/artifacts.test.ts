@@ -71,6 +71,13 @@ describe("QC artifact persistence", () => {
     expect(readQcArtifact("POL-ARTIFACT", "invalid", repoRoot)).toBeNull();
   });
 
+  it("throws for malformed JSON artifacts", () => {
+    const dir = getQcArtifactDir("POL-ARTIFACT", repoRoot);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(path.join(dir, "broken.json"), "{not-json", "utf-8");
+    expect(() => readQcArtifact("POL-ARTIFACT", "broken", repoRoot)).toThrow();
+  });
+
   it("isolates clusters by path", () => {
     writeQcArtifact("POL-A", makeResult("run-a"), repoRoot);
     writeQcArtifact("POL-B", makeResult("run-b"), repoRoot);

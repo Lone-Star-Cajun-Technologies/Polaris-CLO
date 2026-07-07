@@ -105,6 +105,23 @@ describe("resolveAttribution", () => {
     const attribution = resolveAttribution(finding, context);
     expect(attribution.confidence).toBe("low");
     expect(attribution.reason).toBe("provider-uncertain");
+    expect(attribution.childId).toBe("POL-472");
+  });
+
+  it("prefers finding.commitSha over nested attribution commitSha", () => {
+    const context: QcAttributionContext = {
+      changedFilesByChild: {
+        "POL-472": ["src/qc/config.ts"],
+      },
+    };
+    const finding = makeFinding({
+      filePath: "src/qc/config.ts",
+      confidence: 0.1,
+      commitSha: "top-level",
+      attribution: { confidence: "unattributed", reason: "unattributed", commitSha: "nested" },
+    });
+    const attribution = resolveAttribution(finding, context);
+    expect(attribution.commitSha).toBe("top-level");
   });
 
   it("marks unattributed when no file path is given", () => {

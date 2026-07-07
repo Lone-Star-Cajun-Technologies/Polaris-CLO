@@ -1359,13 +1359,15 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
           },
         },
       };
-      appendTelemetry(telemetryFile, {
-        event: "qc-child-trigger-selected",
-        run_id: state.run_id,
-        child_id: nextChild,
-        qc_trigger: childQcTrigger,
-        timestamp: new Date().toISOString(),
-      });
+      if (!dryRun) {
+        appendTelemetry(telemetryFile, {
+          event: "qc-child-trigger-selected",
+          run_id: state.run_id,
+          child_id: nextChild,
+          qc_trigger: childQcTrigger,
+          timestamp: new Date().toISOString(),
+        });
+      }
     }
 
     if (!dryRun) {

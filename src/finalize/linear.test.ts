@@ -434,22 +434,41 @@ describe("buildFollowUpIssuePayload", () => {
       title: "Follow-up: fix style issue",
       description: "QC finding routed to follow-up.",
       apiKey: "key",
+      teamId: "team-1",
     });
     expect(payload.variables.input).toMatchObject({
       title: "Follow-up: fix style issue",
       description: "QC finding routed to follow-up.",
       parentId: "parent-1",
+      teamId: "team-1",
     });
   });
 
-  it("omits optional fields when not provided", () => {
+  it("includes optional fields when provided", () => {
     const payload = buildFollowUpIssuePayload({
       parentIssueId: "parent-1",
       title: "Follow-up",
       description: "desc",
       apiKey: "key",
+      teamId: "team-1",
+      stateId: "state-1",
+      labelIds: ["label-1"],
     });
-    expect(payload.variables.input).not.toHaveProperty("teamId");
+    expect(payload.variables.input).toMatchObject({
+      teamId: "team-1",
+      stateId: "state-1",
+      labelIds: ["label-1"],
+    });
+  });
+
+  it("omits optional non-team fields when not provided", () => {
+    const payload = buildFollowUpIssuePayload({
+      parentIssueId: "parent-1",
+      title: "Follow-up",
+      description: "desc",
+      apiKey: "key",
+      teamId: "team-1",
+    });
     expect(payload.variables.input).not.toHaveProperty("stateId");
     expect(payload.variables.input).not.toHaveProperty("labelIds");
   });
@@ -491,6 +510,7 @@ describe("createLinearFollowUpIssue", () => {
       title: "Follow-up",
       description: "desc",
       apiKey: "key",
+      teamId: "team-1",
     });
 
     expect(result).toEqual({
@@ -520,7 +540,52 @@ describe("createLinearFollowUpIssue", () => {
         title: "Follow-up",
         description: "desc",
         apiKey: "key",
+        teamId: "team-1",
       }),
     ).rejects.toThrow("Linear issueCreate failed");
+  });
+
+  it("falls back to the parent issue team when teamId is omitted", async () => {
+    mockRequest.mockImplementationOnce((_options: unknown, callback?: unknown) => {
+      const req = new EventEmitter() as ReturnType<typeof https.request>;
+      (req as unknown as { write: () => void; end: () => void }).write = vi.fn();
+      (req as unknown as { write: () => void; end: () => void }).end = vi.fn(() => {
+        const res = new EventEmitter() as IncomingMessage;
+        (res as unknown as { statusCode: number }).statusCode = 200;
+        if (typeof callback === "function") callback(res);
+        res.emit("data", Buffer.from(JSON.stringify({ data: { issue: { team: { id: "team-from-parent" } } } })));
+        res.emit("end");
+      });
+      return req as ReturnType<typeof https.request>;
+    });
+    mockRequest.mockImplementationOnce((_options: unknown, callback?: unknown) => {
+      const req = new EventEmitter() as ReturnType<typeof https.request>;
+      let body = "";
+      (req as unknown as { write: (chunk: string) => void; end: () => void }).write = vi.fn((chunk: string) => {
+        body += chunk;
+      });
+      (req as unknown as { write: (chunk: string) => void; end: () => void }).end = vi.fn(() => {
+        const payload = JSON.parse(body) as { variables: { input: { teamId: string } } };
+        expect(payload.variables.input.teamId).toBe("team-from-parent");
+        const res = new EventEmitter() as IncomingMessage;
+        (res as unknown as { statusCode: number }).statusCode = 200;
+        if (typeof callback === "function") callback(res);
+        res.emit(
+          "data",
+          Buffer.from(JSON.stringify({ data: { issueCreate: { success: true, issue: { id: "issue-2", identifier: "POL-501", url: "https://linear.app/issue/POL-501" } } } })),
+        );
+        res.emit("end");
+      });
+      return req as ReturnType<typeof https.request>;
+    });
+
+    const result = await createLinearFollowUpIssue({
+      parentIssueId: "parent-1",
+      title: "Follow-up",
+      description: "desc",
+      apiKey: "key",
+    });
+
+    expect(result.identifier).toBe("POL-501");
   });
 });

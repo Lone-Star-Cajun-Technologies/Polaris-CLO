@@ -36,6 +36,11 @@ describe("normalizeSeverity", () => {
     const mapping = { high: "low" as const };
     expect(normalizeSeverity("high", mapping)).toBe("low");
   });
+
+  it("ignores inherited prototype properties when normalizing severities", () => {
+    expect(normalizeSeverity("constructor")).toBe("info");
+    expect(normalizeSeverity("toString")).toBe("info");
+  });
 });
 
 describe("DEFAULT_SEVERITY_MAPPING", () => {

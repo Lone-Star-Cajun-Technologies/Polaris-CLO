@@ -328,11 +328,24 @@ export interface CreateFollowUpIssueOptions {
   labelIds?: string[];
 }
 
+interface CreateFollowUpIssuePayloadOptions extends CreateFollowUpIssueOptions {
+  teamId: string;
+}
+
+async function findIssueTeamId(issueId: string, apiKey: string): Promise<string | null> {
+  const issueData = await linearGraphQL<{ issue?: { team?: { id: string } } }>(
+    `query GetIssueTeam($id: String!) { issue(id: $id) { team { id } } }`,
+    { id: issueId },
+    apiKey,
+  );
+  return issueData.issue?.team?.id ?? null;
+}
+
 /**
  * Build the GraphQL variables for a Linear follow-up issue.
  * Exported separately so tests can inspect the payload shape.
  */
-export function buildFollowUpIssuePayload(options: CreateFollowUpIssueOptions): {
+export function buildFollowUpIssuePayload(options: CreateFollowUpIssuePayloadOptions): {
   query: string;
   variables: Record<string, unknown>;
 } {
@@ -340,8 +353,8 @@ export function buildFollowUpIssuePayload(options: CreateFollowUpIssueOptions): 
     title: options.title,
     description: options.description,
     parentId: options.parentIssueId,
+    teamId: options.teamId,
   };
-  if (options.teamId) input.teamId = options.teamId;
   if (options.stateId) input.stateId = options.stateId;
   if (options.labelIds && options.labelIds.length > 0) input.labelIds = options.labelIds;
 
@@ -361,7 +374,11 @@ export function buildFollowUpIssuePayload(options: CreateFollowUpIssueOptions): 
 export async function createLinearFollowUpIssue(
   options: CreateFollowUpIssueOptions,
 ): Promise<{ id: string; identifier: string; url: string }> {
-  const payload = buildFollowUpIssuePayload(options);
+  const teamId = options.teamId ?? await findIssueTeamId(options.parentIssueId, options.apiKey);
+  if (!teamId) {
+    throw new Error(`Unable to resolve Linear team for parent issue ${options.parentIssueId}`);
+  }
+  const payload = buildFollowUpIssuePayload({ ...options, teamId });
   const data = await linearGraphQL<{ issueCreate?: { success?: boolean; issue?: { id: string; identifier: string; url: string } } }>(
     payload.query,
     payload.variables,

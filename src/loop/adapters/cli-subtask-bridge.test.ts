@@ -185,7 +185,6 @@ describe("installCliSubtaskBridge", () => {
     const sealed = JSON.parse(readFileSync(resultFile, "utf-8")) as Record<string, unknown>;
     expect(sealed).toEqual({
       run_id: "run-001",
-      cluster_id: "POL-100",
       child_id: "POL-101",
       status: "success",
       commit: "abc123",

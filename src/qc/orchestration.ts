@@ -70,9 +70,9 @@ function applyAttributionAndRouting(
   result: QcResult,
   config: QcConfig,
   context: QcAttributionContext,
+  ownership: Record<string, string[]>,
   routeName?: string,
 ): QcResult {
-  const ownership = buildChangedFileOwnership(context);
   const updatedFindings = result.findings.map((finding) => {
     const attribution = resolveAttributionWithOwnership(finding, context, ownership);
     const autofix = isAutofixEligible(finding, config, {
@@ -126,8 +126,6 @@ export async function runQcAtTrigger(
     routeName,
   } = options;
 
-  const attributionContext = buildAttributionContext(options);
-
   if (!config.enabled) {
     return {
       trigger,
@@ -146,6 +144,9 @@ export async function runQcAtTrigger(
       summary: `No QC providers configured for trigger "${trigger}"`,
     };
   }
+
+  const attributionContext = buildAttributionContext(options);
+  const ownership = buildChangedFileOwnership(attributionContext);
 
   const results: QcResult[] = [];
   const errors: string[] = [];
@@ -173,7 +174,7 @@ export async function runQcAtTrigger(
         timeoutMs,
       });
 
-      const result = applyAttributionAndRouting(rawResult, config, attributionContext, routeName);
+      const result = applyAttributionAndRouting(rawResult, config, attributionContext, ownership, routeName);
 
       try {
         await recordQcRun(clusterId, result, repoRoot);
@@ -205,6 +206,10 @@ export async function runQcAtTrigger(
     if (a === "follow-up" && action === "pass") {
       action = "follow-up";
     }
+  }
+  const successfulRuns = results.filter((result) => result.status !== "failed");
+  if (action === "pass" && successfulRuns.length === 0 && (results.length > 0 || errors.length > 0)) {
+    action = "block";
   }
 
   const summaryParts = results.map(

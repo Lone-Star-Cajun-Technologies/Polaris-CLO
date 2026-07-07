@@ -122,6 +122,10 @@ function ownersForFile(filePath: string, ownership: Record<string, string[]>): s
   return owners;
 }
 
+function resolveCommitSha(finding: QcFinding): string | undefined {
+  return finding.commitSha ?? finding.attribution?.commitSha;
+}
+
 function isKnownChildCommit(commitSha: string | undefined, context: QcAttributionContext): boolean {
   if (!commitSha) return false;
   const commits = Object.values(context.clusterState?.commits ?? {});
@@ -154,28 +158,29 @@ function isPreExistingFile(filePath: string, context: QcAttributionContext): boo
  */
 export function resolveAttribution(finding: QcFinding, context: QcAttributionContext): QcAttribution {
   const threshold = context.providerConfidenceThreshold ?? 0.5;
+  const filePath = normalizeFilePath(finding.filePath, context.repoRoot);
+  const ownership = filePath ? collectChangedFilesByChild(context) : {};
+  const owners = filePath ? ownersForFile(filePath, ownership) : [];
+  const commitSha = resolveCommitSha(finding);
+
   if (finding.confidence !== undefined && finding.confidence < threshold) {
+    const childId = owners.length === 1 ? owners[0] : undefined;
     return {
       confidence: "low",
       reason: "provider-uncertain",
-      filePath: normalizeFilePath(finding.filePath, context.repoRoot) ?? undefined,
-      commitSha: finding.attribution?.commitSha ?? finding.commitSha,
+      ...(childId ? { childId } : {}),
+      filePath: filePath ?? undefined,
+      commitSha,
     };
   }
 
-  const filePath = normalizeFilePath(finding.filePath, context.repoRoot);
   if (!filePath) {
     return {
       confidence: "unattributed",
       reason: "provider-uncertain",
-      commitSha: finding.attribution?.commitSha ?? finding.commitSha,
+      commitSha,
     };
   }
-
-  const ownership = collectChangedFilesByChild(context);
-  const owners = ownersForFile(filePath, ownership);
-
-  const commitSha = finding.commitSha ?? finding.attribution?.commitSha;
   const commitKnown = isKnownChildCommit(commitSha, context);
   const commitMatchesOwner = commitSha && owners.some((childId) => {
     const childCommit = context.clusterState?.commits?.[childId] ?? context.completedResults?.[childId]?.commit;

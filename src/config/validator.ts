@@ -107,6 +107,16 @@ function severityIndex(severity: string): number {
   return SEVERITY_ORDER.indexOf(severity as typeof SEVERITY_ORDER[number]);
 }
 
+function hasEligibleQcAutoFixProvider(providers: unknown): boolean {
+  if (!isPlainObject(providers)) return false;
+  return Object.values(providers).some((providerConfig) => {
+    if (!isPlainObject(providerConfig)) return false;
+    const capabilities = providerConfig.capabilities;
+    const eligible = providerConfig.autoFixEligible;
+    return eligible === true && Array.isArray(capabilities) && capabilities.includes("auto-fix");
+  });
+}
+
 export function validateConfig(config: unknown): ValidationResult {
   const result: ValidationResult = { valid: true, errors: [], warnings: [] };
 
@@ -1057,6 +1067,18 @@ export function validateConfig(config: unknown): ValidationResult {
               "qc.severityThresholds.repair must be at or below qc.severityThresholds.block severity",
             );
           }
+          if (
+            isString(thresholds.repair) &&
+            SUPPORTED_QC_SEVERITIES.includes(thresholds.repair as typeof SUPPORTED_QC_SEVERITIES[number]) &&
+            isString(thresholds.followUp) &&
+            SUPPORTED_QC_SEVERITIES.includes(thresholds.followUp as typeof SUPPORTED_QC_SEVERITIES[number]) &&
+            severityIndex(thresholds.repair) < severityIndex(thresholds.followUp)
+          ) {
+            result.valid = false;
+            result.errors.push(
+              "qc.severityThresholds.followUp must be at or below qc.severityThresholds.repair severity",
+            );
+          }
         }
       }
 
@@ -1145,6 +1167,12 @@ export function validateConfig(config: unknown): ValidationResult {
                   `qc.routes.${routeName}.autoFix must be one of disabled, dry-run, apply`,
                 );
               }
+              if (routePolicy.autoFix === "apply" && !hasEligibleQcAutoFixProvider(providers)) {
+                result.valid = false;
+                result.errors.push(
+                  `qc.routes.${routeName}.autoFix "apply" requires at least one provider with capability "auto-fix" and autoFixEligible true`,
+                );
+              }
             }
           }
         }
@@ -1159,19 +1187,7 @@ export function validateConfig(config: unknown): ValidationResult {
         : undefined;
 
       if (autoFix === "apply") {
-        const hasAutoFixProvider =
-          providers !== null &&
-          Object.values(providers).some((providerConfig) => {
-            if (!isPlainObject(providerConfig)) return false;
-            const capabilities = providerConfig.capabilities;
-            const eligible = providerConfig.autoFixEligible;
-            return (
-              eligible === true &&
-              Array.isArray(capabilities) &&
-              capabilities.includes("auto-fix")
-            );
-          });
-        if (!hasAutoFixProvider) {
+        if (!hasEligibleQcAutoFixProvider(providers)) {
           result.valid = false;
           result.errors.push(
             'qc.autoFix "apply" requires at least one provider with capability "auto-fix" and autoFixEligible true',

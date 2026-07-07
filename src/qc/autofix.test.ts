@@ -71,6 +71,13 @@ describe("isAutofixEligible", () => {
     expect(result.reason).toContain("not in safe list");
   });
 
+  it("blocks auto-fix when suggestedAction is missing", () => {
+    const finding = makeFinding({ suggestedAction: undefined });
+    const result = isAutofixEligible(finding, makeConfig(), { provider: "coderabbit" });
+    expect(result.eligible).toBe(false);
+    expect(result.reason).toContain("not in safe list");
+  });
+
   it("blocks auto-fix on dirty branch", () => {
     const finding = makeFinding({ suggestedAction: "typo" });
     const result = isAutofixEligible(finding, makeConfig(), { provider: "coderabbit", branchDirty: true });
@@ -85,5 +92,3 @@ describe("isAutofixEligible", () => {
     expect(result.reason).toContain("dry-run");
   });
 });
-
-export { QC_SAFE_FIX_MODES };
