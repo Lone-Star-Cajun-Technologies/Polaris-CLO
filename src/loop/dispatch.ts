@@ -421,7 +421,10 @@ function detectPacketGenerationFailure(packet: WorkerPacket): PacketGenerationFa
   if (allowedScope.length === 0) {
     return {
       missingField: "allowed_scope",
-      message: `Packet generation failed for ${childId}: missing actionable allowed_scope.`,
+      message:
+        `Packet generation failed for ${childId}: missing actionable allowed_scope. ` +
+        `Add a '## Scope' section to the child issue body in your tracker, ` +
+        `then run 'polaris tracker sync-in <cluster-id>' to pull the update.`,
     };
   }
 

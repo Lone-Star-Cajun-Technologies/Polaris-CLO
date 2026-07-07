@@ -64,7 +64,7 @@ import {
 import { resolveProviderAndMode, assertProviderAllowedForRole } from "./dispatch.js";
 import { decideWorkerRoute } from "./router/index.js";
 import { selectChildSlotClaims, type SlotClaim } from "../runtime/scheduling/child-selector.js";
-import { loadTrackerAdapter } from "../tracker/index.js";
+import { loadTrackerAdapter, loadTrackerGraph } from "../tracker/index.js";
 import { LifecycleTransitionService } from "../tracker/lifecycle-transition.js";
 import { LocalGraph } from "../tracker/local-graph.js";
 
@@ -1007,6 +1007,32 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
   // persisted to disk, so a fresh loop start always begins clean.
   const lifecycle = new WorkerLifecycleManager(maxConcurrentWorkers);
   lifecycle.forceReleaseAll();
+
+  // ── Auto-sync pre-flight: fetch missing issue bodies from tracker ────────
+  // When child issue bodies are absent or lack a ## Scope section, dispatch
+  // hard-fails with "empty allowed_scope". Attempt a silent tracker sync-in
+  // before the loop starts so operators don't need to run it manually.
+  if (!dryRun) {
+    const openChildrenNeedingScope = state.open_children.filter((childId) => {
+      const body = readBodyFromClusterSnapshot(state.cluster_id, childId, repoRoot) ?? "";
+      return body.length === 0 || !/^##\s+Scope/im.test(body);
+    });
+
+    if (openChildrenNeedingScope.length > 0) {
+      process.stderr.write(
+        `[polaris] ${openChildrenNeedingScope.length} children missing scope — attempting tracker sync-in...\n`,
+      );
+      try {
+        await loadTrackerGraph(config, state.cluster_id);
+        process.stderr.write(`[polaris] sync-in complete.\n`);
+      } catch (syncErr) {
+        process.stderr.write(
+          `[polaris] sync-in failed (${syncErr instanceof Error ? syncErr.message : String(syncErr)}). ` +
+          `Run 'polaris tracker sync-in ${state.cluster_id}' manually and retry.\n`,
+        );
+      }
+    }
+  }
 
   // ── Main dispatch loop ───────────────────────────────────────────────────
   // eslint-disable-next-line no-constant-condition
