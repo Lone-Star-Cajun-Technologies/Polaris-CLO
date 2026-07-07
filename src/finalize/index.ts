@@ -531,28 +531,32 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
     console.warn(`[6/14] Unknown tracker adapter '${trackerType}' — skipping reconciliation.`);
   }
 
-  // Step 7: Single final commit: source changes + durable Polaris artifacts
-  console.log("[7/14] Committing durable Polaris state + map..."); // Step count updated
+  // Step 7: Closeout Librarian gate (pre-commit preflight)
+  // Must run before the finalize commit so that a missing or invalid librarian
+  // result aborts before any mutating git I/O.
+  if (!skipDelivery) {
+    if (!skipLibrarian) {
+      console.log("[7/14] Checking Closeout Librarian gate...");
+      const librarianBlocker = checkLibrarianGate(repoRoot, state.cluster_id);
+      if (librarianBlocker) {
+        process.stderr.write(`finalize aborted: Closeout Librarian gate failed.\n${librarianBlocker}\n`);
+        process.exit(1);
+      }
+      console.log("[7/14] Closeout Librarian gate passed.");
+    } else {
+      console.log("[7/14] Closeout Librarian gate skipped (--skip-librarian).");
+    }
+  }
+
+  // Step 8: Single final commit: source changes + durable Polaris artifacts
+  console.log("[8/14] Committing durable Polaris state + map..."); // Step count updated
   const resolvedStateFile = resolve(stateFile);
   stepCommit(repoRoot, state, resolvedStateFile, reportPath);
 
   if (skipDelivery) {
-    console.log("[8–14/14] Delivery skipped (--skip-delivery).");
-    console.log("polaris finalize steps 1–7 complete.");
+    console.log("[9–14/14] Delivery skipped (--skip-delivery).");
+    console.log("polaris finalize steps 1–8 complete.");
     return;
-  }
-
-  // Step 8: Closeout Librarian gate
-  if (!skipLibrarian) {
-    console.log("[8/14] Checking Closeout Librarian gate...");
-    const librarianBlocker = checkLibrarianGate(repoRoot, state.cluster_id);
-    if (librarianBlocker) {
-      process.stderr.write(`finalize aborted: Closeout Librarian gate failed.\n${librarianBlocker}\n`);
-      process.exit(1);
-    }
-    console.log("[8/14] Closeout Librarian gate passed.");
-  } else {
-    console.log("[8/14] Closeout Librarian gate skipped (--skip-librarian).");
   }
 
   // Step 9: git push
