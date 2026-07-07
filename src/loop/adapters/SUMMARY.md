@@ -24,10 +24,11 @@ This folder sits between packet generation (`src/skill-packet/`) and actual sess
 - **Peer**: `src/loop/` (checkpoint/telemetry uses adapters for dispatch)
 
 ## Current State
-All four adapter implementations are present: `TerminalCliAdapter`, `AgentSubtaskAdapter`, `ForemanDispatch` helper, and `registry.ts`. The `dispatchForeman()` function is wired into `src/cli/init.ts` and `src/cli/adopt-command.ts` as a best-effort Foreman bootstrap launch after provider setup. Checkpoint gate enforcement is tested in `foreman-dispatch.test.ts`.
+All four adapter implementations are present: `TerminalCliAdapter`, `AgentSubtaskAdapter`, `ForemanDispatch` helper, and `registry.ts`. The `dispatchForeman()` function is wired into `src/cli/init.ts` and `src/cli/adopt-command.ts` as a best-effort Foreman bootstrap launch after provider setup. Checkpoint gate enforcement is tested in `foreman-dispatch.test.ts`. Router fallback is now integrated: `TerminalCliAdapter` accepts a `routerDecision` in `DispatchOptions`, builds a fallback chain from `providersTried`, and returns `pre_dispatch_failure: true` with `fallback_eligible: true` when a provider fails before the worker starts. `AgentSubtaskAdapter` emits the same `pre_dispatch_failure` signal on invocation errors. Once `worker-acknowledged` is received, `fallback_eligible` is set to `false` for all remaining results. Router evidence (`router_evidence`) is attached to every `DispatchResult` for telemetry correlation.
 
 ## Linked Canonical Sources
 - [POLARIS.md](POLARIS.md)
 - `src/skill-packet/types.ts`
 - `src/skill-packet/generator.ts`
 - `smartdocs/specs/active/foreman-bootstrap-handoff-spec.md`
+- `smartdocs/specs/active/worker-router-architecture.md`

@@ -47,7 +47,8 @@ The config subsystem loads, validates, and provides the resolved `PolarisConfig`
 
 ## Architecture notes
 
-- The existing `execution` config (`providers`, `rotation`, `providerPolicy`, `roles`) remains the provider selection surface today. Future Worker Router types (`registry`, `slots`, `quota`, `routes`) will be added under a new `execution.router` object when the runtime engine is implemented.
+- The `execution.routerPolicy` config surface (`WorkerRouterPolicyConfig`) is the live provider eligibility and slot-pool configuration for the Worker Router. It is present in `schema.ts`, `schema.json`, and `defaults.ts`. Key sub-fields: `defaultWorkerPool.maxActiveWorkers` (default `1`), `providerRegistry` (per-provider eligibility, role, capability, quota, trust, cost, and max slot declarations), `allowCrossAgentFallback` (default `false`).
+- With `routerPolicy` absent or all defaults, behavior is identical to the pre-router single-worker loop: one active worker, first configured provider selected, no cross-agent fallback.
 
 ## Related routes
 

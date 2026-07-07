@@ -6,13 +6,19 @@ The loop subsystem manages the session lifecycle for Polaris cluster runs. It ha
 
 ## What belongs here
 
-- `parent.ts` — automated parent-loop orchestration (`polaris loop run`)
-- `dispatch.ts` — child claim and WorkerPacket emission (`polaris loop dispatch`)
+- `parent.ts` — automated parent-loop orchestration (`polaris loop run`); integrates router and telemetry emission
+- `dispatch.ts` — child claim and WorkerPacket emission (`polaris loop dispatch`); drives router decision and slot management
+- `dispatch-state.ts` — worker dispatch state machine types and transition logic
+- `worker-packet.ts` — WorkerPacket generation and immutability contract
+- `orphan-recovery.ts` — orphan detection across 5 scenarios; emits `child-orphaned` events
+- `ledger.ts` — append-only run ledger (`LedgerWriter`); emits `child-completed` and `cluster-complete` events
 - `continue.ts` — state checkpoint, telemetry, bootstrap packet, one-child boundary (`polaris loop continue`)
 - `resume.ts` — branch and state integrity verification before a new session
 - `abort.ts` — blocker record and clean halt (`polaris loop abort`)
 - `checkpoint.ts` — sole owner of `current-state.json` reads/writes
 - `bootstrap-packet.ts` — self-contained bootstrap packet generation
+- `router/` — Worker Router decision engine: eligibility, trust/cost ranking, slot management, fallback chain, and decision evidence
+- `adapters/` — execution adapters for dispatching bootstrap packets (TerminalCli, AgentSubtask, Foreman dispatch)
 - `index.ts`, `status.ts`, `*.test.ts` — command registration, status query, tests
 
 ## What does not belong here
@@ -49,11 +55,16 @@ The loop subsystem manages the session lifecycle for Polaris cluster runs. It ha
 - `docs/spec/polaris-architecture-spec.md` — full loop/map/finalize architecture
 - `.polaris/skills/polaris-run/chain.md` — step traversal order, continuation rules, telemetry requirements
 - `src/loop/checkpoint.ts` — state schema and read/write contract
-- `smartdocs/specs/active/worker-router-architecture.md` — future slot-aware scheduling and provider selection boundaries (default remains single-worker)
+- `smartdocs/specs/active/worker-router-architecture.md` — Worker Router architecture, slot-aware scheduling, and provider selection invariants
+- `src/loop/router/engine.ts` — deterministic router decision engine
+- `src/loop/router/types.ts` — WorkerRouterInput, WorkerRouterDecision, RouterRejectionReason types
 
 ## Architecture notes
 
-- Worker Router responsibilities (provider ranking, slot pool, fallback evidence) are defined in the active Worker Router spec. The current loop implementation remains single-worker and does not require those features until they are explicitly enabled.
+- The Worker Router (`src/loop/router/`) is implemented and integrated into dispatch. `dispatch.ts` calls `decideWorkerRoute()` with router context (role, taskType, constraints, runtime slot state), validates the decision, and records `routerEvidence` in the dispatch record. Telemetry events (`provider-selected`, `provider-fallback-attempted`, `provider-exhausted`) are emitted from dispatch and parent.
+- Slot-aware child scheduling lives in `src/runtime/scheduling/child-selector.ts`. It enforces `maxActiveWorkers` concurrency limits and tracks `slot_claims` per child. With `routerPolicy.defaultWorkerPool.maxActiveWorkers = 1` (the default), behavior is identical to the legacy single-worker loop.
+- Router fallback (`pre_dispatch_failure`) is handled in execution adapters: the adapter returns `fallback_eligible: true` and `router_evidence`, and the caller may retry the next provider in the fallback chain. Once a worker emits `worker-acknowledged`, the child is bound and no further fallback is attempted.
+- SOL scoring inputs are emitted from dispatch and parent as router telemetry; `src/autoresearch/score.ts` reads these events to compute `RouterOutcomesSummary`.
 
 ## Related routes
 

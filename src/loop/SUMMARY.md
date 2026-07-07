@@ -21,7 +21,11 @@ Session lifecycle manager for Polaris cluster runs — orchestrates child dispat
 - **Downstream**: `src/finalize` (delivery), `src/map` (atlas update at step 01)
 - **Peer**: `src/cognition` (called from `worker.ts` after child completes)
 
+## Current State
+The loop subsystem now includes the Worker Router (`src/loop/router/`). `dispatch.ts` calls `decideWorkerRoute()` to select a provider via deterministic eligibility, trust, and cost ranking; attaches `routerEvidence` to the dispatch record; and emits `provider-selected`, `provider-fallback-attempted`, and `provider-exhausted` telemetry events. Slot-aware child scheduling is in `src/runtime/scheduling/child-selector.ts`: it enforces `maxActiveWorkers` from `routerPolicy.defaultWorkerPool`, tracks `slot_claims`, and returns `rejected_children` with typed reasons. Adapter fallback (`pre_dispatch_failure`) is integrated in `TerminalCliAdapter` and `AgentSubtaskAdapter`; once a worker emits `worker-acknowledged` the child is bound and fallback stops. Router telemetry feeds `src/autoresearch/score.ts` via `summarizeRouterOutcomes()`. With all defaults (`max_concurrent = 1`, `allowCrossAgentFallback = false`), loop behavior is identical to the pre-router single-worker model.
+
 ## Linked Canonical Sources
 - [POLARIS.md](POLARIS.md)
 - `docs/spec/polaris-architecture-spec.md`
 - `docs/spec/ephemeral-execution-architecture.md`
+- `smartdocs/specs/active/worker-router-architecture.md`

@@ -1,29 +1,30 @@
-<!-- polaris:draft -->
 # Summary: scheduling
 
-> Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
-
 ## Purpose
-<!-- One-line statement of what this folder does. -->
+Slot-aware child selection for the Polaris parent loop. Evaluates open children against slot limits, dependency blocks, and router eligibility to return the next schedulable child.
 
 ## Core Concepts
-<!-- 3–7 key concepts a reader needs before diving into source. -->
+- `selectNextChild()` is a pure function: given open children, a `decide_route` callback, `max_concurrent`, and existing slot claims, it returns `selected_child`, updated `slot_claims`, and `rejected_children` with typed reasons.
+- Slot claims are lease records (`child_id` + `claimed_at`) that enforce concurrency limits. `pruneExpiredClaims()` from `src/cluster-state/store.ts` must run before selection to ensure accurate counts.
+- Children are rejected with `"blocked-dependency"` or `"router-ineligible"`; neither silently skips a child.
+- With `max_concurrent = 1`, behavior is identical to the legacy sequential scheduler.
 
 ## Architectural Role
-<!-- How this folder fits into the larger system. -->
+This folder sits between the parent loop (`src/loop/parent.ts`) and the router engine (`src/loop/router/`). The parent calls `selectNextChild()` with a `decide_route` callback that wraps `decideWorkerRoute()`, keeping scheduling testable without a full loop setup.
 
 ## Key Constraints
-<!-- The most important non-obvious behavioral limits. -->
+- `selectNextChild()` must be deterministic and side-effect-free. No disk I/O, no telemetry.
+- `slot_claims.length` must never exceed `max_concurrent` on return.
+- Do not replicate router logic here; call the injected `decide_route` callback instead.
 
 ## Important Relationships
-<!-- Upstream/downstream dependencies on other folders. -->
+- **Upstream**: `src/loop/parent.ts` (caller)
+- **Peer**: `src/loop/router/` (provides `decide_route` callback), `src/cluster-state/` (provides `pruneExpiredClaims`)
 
 ## Current State
-<!-- What is implemented, what is not yet, known gaps. -->
-
-## Known Drift
-<!-- Places where the summary may be stale (honesty field. -->
+`child-selector.ts` implements `selectNextChild()` with full slot-aware logic and typed rejection reasons. Integrated into the parent loop for multi-worker-ready dispatch; default `maxActiveWorkers = 1` preserves single-worker behavior.
 
 ## Linked Canonical Sources
 - [POLARIS.md](POLARIS.md)
-<!-- Links to spec files, doctrine, etc. -->
+- `smartdocs/specs/active/worker-router-architecture.md`
+- `src/loop/router/types.ts`

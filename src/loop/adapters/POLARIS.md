@@ -43,12 +43,14 @@ The adapters subfolder provides execution adapter implementations for dispatchin
 - [POLARIS.md](../POLARIS.md)
 - `src/skill-packet/types.ts` — `SetupBootstrapPacket`, `CheckpointGate`
 - `src/skill-packet/generator.ts` — `generateSetupBootstrapPacket()`
-- `src/config/schema.ts` — `ExecutionConfig`
-- `smartdocs/specs/active/worker-router-architecture.md` — future provider selection, fallback boundaries, and pre-dispatch failure classification
+- `src/config/schema.ts` — `ExecutionConfig`, `WorkerProviderRouterPolicy`, `WorkerRouterPolicyConfig`
+- `smartdocs/specs/active/worker-router-architecture.md` — provider selection, fallback boundaries, pre-dispatch failure classification, and slot invariants
 
 ## Architecture notes
 
-- Adapters remain provider-neutral and execution-only. Provider selection and fallback ordering are owned by the Worker Router; adapters report whether a dispatch failed before any worker started (`pre_dispatch_failure`) so the router can consider the next candidate.
+- Adapters remain provider-neutral and execution-only. Provider selection and fallback ordering are owned by the Worker Router (`src/loop/router/`); adapters receive a `routerDecision` option in `DispatchOptions` and report whether a dispatch failed before any worker started (`pre_dispatch_failure: true`) so the router can consider the next candidate in the fallback chain.
+- `TerminalCliAdapter` builds an explicit fallback order from `routerEvidence.providersTried` when `canFallback` is set. It iterates the fallback chain, attempts each provider, and returns `fallback_eligible: true` when a pre-dispatch failure occurs. Once a worker emits `worker-acknowledged`, fallback is no longer permitted.
+- `AgentSubtaskAdapter` emits `pre_dispatch_failure: true` on task invocation errors with `fallback_eligible: true` so the parent can retry through the router chain.
 
 ## Related routes
 
