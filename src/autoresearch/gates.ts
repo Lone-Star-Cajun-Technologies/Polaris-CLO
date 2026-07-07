@@ -16,6 +16,7 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import type { RunArtifacts } from "./score.js";
+import type { QcAttributionConfidence, QcSeverity } from "../qc/types.js";
 
 // ──────────────────────────────────────────────
 // Gate result types
@@ -414,6 +415,55 @@ function safeReaddir(dir: string): string[] {
   }
 }
 
+/**
+ * qc-blocking-findings: Are there unresolved critical/high QC findings
+ * attributed to this cluster with high or medium confidence?
+ *
+ * Evidence: qcResults loaded from .polaris/clusters/<cluster-id>/qc/.
+ * Skipped when no QC artifacts exist.
+ *
+ * Only high/medium attribution-confidence findings are counted — provider noise
+ * (low/unattributed confidence) is excluded so workers are not penalized for
+ * external reviewer uncertainty.
+ */
+export function gateQcBlockingFindings(artifacts: RunArtifacts): GateResult {
+  if (artifacts.qcResults.length === 0) {
+    return { gate: "qc-blocking-findings", outcome: "skipped", detail: "no QC artifacts found" };
+  }
+
+  let blockingCount = 0;
+  let weightedOpenScore = 0;
+  const severityWeights: Record<QcSeverity, number> = { critical: 10, high: 5, medium: 2, low: 1, info: 0.5 };
+  const confidenceWeights: Record<QcAttributionConfidence, number> = { high: 1.0, medium: 0.7, low: 0.3, unattributed: 0 };
+
+  for (const result of artifacts.qcResults) {
+    for (const finding of result.findings) {
+      const conf = finding.attribution.confidence;
+      const isOpenUnresolved = finding.status === "open" || finding.status === "follow-up";
+      if (isOpenUnresolved && conf !== "low" && conf !== "unattributed") {
+        weightedOpenScore += severityWeights[finding.severity] * confidenceWeights[conf];
+      }
+
+      if (conf === "low" || conf === "unattributed") continue;
+      if (finding.status === "autofixed" || finding.status === "repaired" || finding.status === "waived") continue;
+      if ((finding.severity === "critical" || finding.severity === "high") &&
+          (finding.status === "open" || finding.status === "follow-up")) {
+        blockingCount++;
+      }
+    }
+  }
+
+  if (blockingCount > 0) {
+    return {
+      gate: "qc-blocking-findings",
+      outcome: "failed",
+      detail: `${blockingCount} unresolved critical/high QC finding${blockingCount === 1 ? "" : "s"} with attributed confidence (weighted open score ${weightedOpenScore.toFixed(2)})`,
+    };
+  }
+
+  return { gate: "qc-blocking-findings", outcome: "passed" };
+}
+
 // ──────────────────────────────────────────────
 // Gate registry — evaluated in order
 // ──────────────────────────────────────────────
@@ -429,6 +479,7 @@ export const ALL_GATES: readonly GateEvaluator[] = [
   gateWorkerWentOutOfScope,
   gateForemanTokenBurnOverBudget,
   gateStateRepairRequired,
+  gateQcBlockingFindings,
 ] as const;
 
 export { readJsonLines };

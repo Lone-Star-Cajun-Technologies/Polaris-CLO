@@ -38,6 +38,12 @@ The cluster-state subsystem provides durable, atomic read/write access to per-cl
 - `src/runtime/scheduling/child-selector.ts` — consumer of `pruneExpiredClaims`
 - `smartdocs/specs/active/worker-router-architecture.md` — §6 scheduler boundaries and slot invariants
 
+## QC relationship
+
+- Cluster-state owns durable storage of QC result pointers and metadata in `ClusterState.qc_runs`.
+- QC result artifacts live at `.polaris/clusters/<cluster-id>/qc/<qc-run-id>.json` and are referenced by cluster-state pointers.
+- QC status is read by finalize to determine delivery readiness and by autoresearch for SOL scoring inputs.
+
 ## Related routes
 
 - `src/loop/` — primary consumer of cluster state reads/writes

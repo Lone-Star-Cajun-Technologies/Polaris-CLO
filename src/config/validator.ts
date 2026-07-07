@@ -89,6 +89,33 @@ const SUPPORTED_LIFECYCLE_STATES = [
   "cancelled",
   "no_status_change",
 ] as const;
+const SUPPORTED_QC_TRIGGERS = ["pr", "completed-cluster", "child"] as const;
+const SUPPORTED_QC_SEVERITIES = ["critical", "high", "medium", "low", "info"] as const;
+const SUPPORTED_QC_PROVIDER_MODES = ["local", "pr", "metrics-import"] as const;
+const SUPPORTED_QC_AUTO_FIX_POLICIES = ["disabled", "dry-run", "apply"] as const;
+const SUPPORTED_QC_REPAIR_ROUTING_POLICIES = ["block", "route", "follow-up", "log"] as const;
+const SUPPORTED_QC_PROVIDER_CAPABILITIES = [
+  "diff-review",
+  "pr-review",
+  "result-parsing",
+  "auto-fix",
+  "metrics-import",
+] as const;
+const SEVERITY_ORDER = ["info", "low", "medium", "high", "critical"] as const;
+
+function severityIndex(severity: string): number {
+  return SEVERITY_ORDER.indexOf(severity as typeof SEVERITY_ORDER[number]);
+}
+
+function hasEligibleQcAutoFixProvider(providers: unknown): boolean {
+  if (!isPlainObject(providers)) return false;
+  return Object.values(providers).some((providerConfig) => {
+    if (!isPlainObject(providerConfig)) return false;
+    const capabilities = providerConfig.capabilities;
+    const eligible = providerConfig.autoFixEligible;
+    return eligible === true && Array.isArray(capabilities) && capabilities.includes("auto-fix");
+  });
+}
 
 export function validateConfig(config: unknown): ValidationResult {
   const result: ValidationResult = { valid: true, errors: [], warnings: [] };
@@ -903,6 +930,283 @@ export function validateConfig(config: unknown): ValidationResult {
     }
   }
 
+  // qc
+  if ("qc" in config && config.qc !== undefined) {
+    if (!isPlainObject(config.qc)) {
+      result.valid = false;
+      result.errors.push("qc must be an object");
+    } else {
+      if ("enabled" in config.qc && config.qc.enabled !== undefined) {
+        if (!isBoolean(config.qc.enabled)) {
+          result.valid = false;
+          result.errors.push("qc.enabled must be a boolean");
+        }
+      }
+      if ("defaultTrigger" in config.qc && config.qc.defaultTrigger !== undefined) {
+        if (
+          !isString(config.qc.defaultTrigger) ||
+          !SUPPORTED_QC_TRIGGERS.includes(config.qc.defaultTrigger as typeof SUPPORTED_QC_TRIGGERS[number])
+        ) {
+          result.valid = false;
+          result.errors.push('qc.defaultTrigger must be one of "pr", "completed-cluster", "child"');
+        }
+      }
+
+      const providers = isPlainObject(config.qc.providers) ? config.qc.providers : null;
+      if ("providers" in config.qc && config.qc.providers !== undefined) {
+        if (!isPlainObject(config.qc.providers)) {
+          result.valid = false;
+          result.errors.push("qc.providers must be a plain object");
+        } else {
+          for (const [providerName, providerConfig] of Object.entries(config.qc.providers)) {
+            if (!isPlainObject(providerConfig)) {
+              result.valid = false;
+              result.errors.push(`qc.providers.${providerName} must be a plain object`);
+              continue;
+            }
+            if ("name" in providerConfig && providerConfig.name !== undefined && !isString(providerConfig.name)) {
+              result.valid = false;
+              result.errors.push(`qc.providers.${providerName}.name must be a string`);
+            }
+            if ("mode" in providerConfig && providerConfig.mode !== undefined) {
+              if (
+                !isString(providerConfig.mode) ||
+                !SUPPORTED_QC_PROVIDER_MODES.includes(providerConfig.mode as typeof SUPPORTED_QC_PROVIDER_MODES[number])
+              ) {
+                result.valid = false;
+                result.errors.push(
+                  `qc.providers.${providerName}.mode must be one of local, pr, metrics-import`,
+                );
+              }
+            } else {
+              result.valid = false;
+              result.errors.push(`qc.providers.${providerName}.mode is required`);
+            }
+            if ("capabilities" in providerConfig && providerConfig.capabilities !== undefined) {
+              if (
+                !Array.isArray(providerConfig.capabilities) ||
+                !providerConfig.capabilities.every(
+                  (capability) =>
+                    isString(capability) &&
+                    SUPPORTED_QC_PROVIDER_CAPABILITIES.includes(
+                      capability as typeof SUPPORTED_QC_PROVIDER_CAPABILITIES[number],
+                    ),
+                )
+              ) {
+                result.valid = false;
+                result.errors.push(
+                  `qc.providers.${providerName}.capabilities must contain only: diff-review, pr-review, result-parsing, auto-fix, metrics-import`,
+                );
+              }
+            }
+            if ("trigger" in providerConfig && providerConfig.trigger !== undefined) {
+              if (
+                !isString(providerConfig.trigger) ||
+                !SUPPORTED_QC_TRIGGERS.includes(providerConfig.trigger as typeof SUPPORTED_QC_TRIGGERS[number])
+              ) {
+                result.valid = false;
+                result.errors.push(
+                  `qc.providers.${providerName}.trigger must be one of pr, completed-cluster, child`,
+                );
+              }
+            }
+            if ("autoFixEligible" in providerConfig && providerConfig.autoFixEligible !== undefined) {
+              if (!isBoolean(providerConfig.autoFixEligible)) {
+                result.valid = false;
+                result.errors.push(`qc.providers.${providerName}.autoFixEligible must be a boolean`);
+              }
+            }
+            if ("severityMapping" in providerConfig && providerConfig.severityMapping !== undefined) {
+              if (!isPlainObject(providerConfig.severityMapping)) {
+                result.valid = false;
+                result.errors.push(`qc.providers.${providerName}.severityMapping must be a plain object`);
+              } else {
+                for (const [label, severity] of Object.entries(providerConfig.severityMapping)) {
+                  if (
+                    !isString(severity) ||
+                    !SUPPORTED_QC_SEVERITIES.includes(severity as typeof SUPPORTED_QC_SEVERITIES[number])
+                  ) {
+                    result.valid = false;
+                    result.errors.push(
+                      `qc.providers.${providerName}.severityMapping.${label} must be one of critical, high, medium, low, info`,
+                    );
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      if ("severityThresholds" in config.qc && config.qc.severityThresholds !== undefined) {
+        if (!isPlainObject(config.qc.severityThresholds)) {
+          result.valid = false;
+          result.errors.push("qc.severityThresholds must be a plain object");
+        } else {
+          const thresholds = config.qc.severityThresholds;
+          for (const key of ["block", "repair", "followUp"] as const) {
+            if (key in thresholds && thresholds[key] !== undefined) {
+              if (
+                !isString(thresholds[key]) ||
+                !SUPPORTED_QC_SEVERITIES.includes(thresholds[key] as typeof SUPPORTED_QC_SEVERITIES[number])
+              ) {
+                result.valid = false;
+                result.errors.push(`qc.severityThresholds.${key} must be one of critical, high, medium, low, info`);
+              }
+            }
+          }
+          if (
+            isString(thresholds.block) &&
+            SUPPORTED_QC_SEVERITIES.includes(thresholds.block as typeof SUPPORTED_QC_SEVERITIES[number]) &&
+            isString(thresholds.repair) &&
+            SUPPORTED_QC_SEVERITIES.includes(thresholds.repair as typeof SUPPORTED_QC_SEVERITIES[number]) &&
+            severityIndex(thresholds.block) < severityIndex(thresholds.repair)
+          ) {
+            result.valid = false;
+            result.errors.push(
+              "qc.severityThresholds.repair must be at or below qc.severityThresholds.block severity",
+            );
+          }
+          if (
+            isString(thresholds.repair) &&
+            SUPPORTED_QC_SEVERITIES.includes(thresholds.repair as typeof SUPPORTED_QC_SEVERITIES[number]) &&
+            isString(thresholds.followUp) &&
+            SUPPORTED_QC_SEVERITIES.includes(thresholds.followUp as typeof SUPPORTED_QC_SEVERITIES[number]) &&
+            severityIndex(thresholds.repair) < severityIndex(thresholds.followUp)
+          ) {
+            result.valid = false;
+            result.errors.push(
+              "qc.severityThresholds.followUp must be at or below qc.severityThresholds.repair severity",
+            );
+          }
+        }
+      }
+
+      if ("autoFix" in config.qc && config.qc.autoFix !== undefined) {
+        if (
+          !isString(config.qc.autoFix) ||
+          !SUPPORTED_QC_AUTO_FIX_POLICIES.includes(config.qc.autoFix as typeof SUPPORTED_QC_AUTO_FIX_POLICIES[number])
+        ) {
+          result.valid = false;
+          result.errors.push('qc.autoFix must be one of "disabled", "dry-run", "apply"');
+        }
+      }
+
+      if ("repairRouting" in config.qc && config.qc.repairRouting !== undefined) {
+        if (
+          !isString(config.qc.repairRouting) ||
+          !SUPPORTED_QC_REPAIR_ROUTING_POLICIES.includes(
+            config.qc.repairRouting as typeof SUPPORTED_QC_REPAIR_ROUTING_POLICIES[number],
+          )
+        ) {
+          result.valid = false;
+          result.errors.push('qc.repairRouting must be one of "block", "route", "follow-up", "log"');
+        }
+      }
+
+      if ("artifactRetention" in config.qc && config.qc.artifactRetention !== undefined) {
+        if (!isPlainObject(config.qc.artifactRetention)) {
+          result.valid = false;
+          result.errors.push("qc.artifactRetention must be a plain object");
+        } else {
+          const retention = config.qc.artifactRetention;
+          if ("retainRawOutput" in retention && retention.retainRawOutput !== undefined) {
+            if (!isBoolean(retention.retainRawOutput)) {
+              result.valid = false;
+              result.errors.push("qc.artifactRetention.retainRawOutput must be a boolean");
+            }
+          }
+          if ("maxRuns" in retention && retention.maxRuns !== undefined) {
+            if (!isPositiveInteger(retention.maxRuns)) {
+              result.valid = false;
+              result.errors.push("qc.artifactRetention.maxRuns must be a positive integer");
+            }
+          }
+        }
+      }
+
+      if ("routes" in config.qc && config.qc.routes !== undefined) {
+        if (!isPlainObject(config.qc.routes)) {
+          result.valid = false;
+          result.errors.push("qc.routes must be a plain object");
+        } else {
+          for (const [routeName, routePolicy] of Object.entries(config.qc.routes)) {
+            if (!isPlainObject(routePolicy)) {
+              result.valid = false;
+              result.errors.push(`qc.routes.${routeName} must be a plain object`);
+              continue;
+            }
+            if ("childLevel" in routePolicy && routePolicy.childLevel !== undefined) {
+              if (!isBoolean(routePolicy.childLevel)) {
+                result.valid = false;
+                result.errors.push(`qc.routes.${routeName}.childLevel must be a boolean`);
+              }
+            }
+            if ("blockThreshold" in routePolicy && routePolicy.blockThreshold !== undefined) {
+              if (
+                !isString(routePolicy.blockThreshold) ||
+                !SUPPORTED_QC_SEVERITIES.includes(
+                  routePolicy.blockThreshold as typeof SUPPORTED_QC_SEVERITIES[number],
+                )
+              ) {
+                result.valid = false;
+                result.errors.push(
+                  `qc.routes.${routeName}.blockThreshold must be one of critical, high, medium, low, info`,
+                );
+              }
+            }
+            if ("autoFix" in routePolicy && routePolicy.autoFix !== undefined) {
+              if (
+                !isString(routePolicy.autoFix) ||
+                !SUPPORTED_QC_AUTO_FIX_POLICIES.includes(
+                  routePolicy.autoFix as typeof SUPPORTED_QC_AUTO_FIX_POLICIES[number],
+                )
+              ) {
+                result.valid = false;
+                result.errors.push(
+                  `qc.routes.${routeName}.autoFix must be one of disabled, dry-run, apply`,
+                );
+              }
+              if (routePolicy.autoFix === "apply" && !hasEligibleQcAutoFixProvider(providers)) {
+                result.valid = false;
+                result.errors.push(
+                  `qc.routes.${routeName}.autoFix "apply" requires at least one provider with capability "auto-fix" and autoFixEligible true`,
+                );
+              }
+            }
+          }
+        }
+      }
+
+      // Unsafe auto-fix policy combinations
+      const autoFix = isString(config.qc.autoFix)
+        ? config.qc.autoFix
+        : "disabled";
+      const blockSeverity = isPlainObject(config.qc.severityThresholds)
+        ? config.qc.severityThresholds.block
+        : undefined;
+
+      if (autoFix === "apply") {
+        if (!hasEligibleQcAutoFixProvider(providers)) {
+          result.valid = false;
+          result.errors.push(
+            'qc.autoFix "apply" requires at least one provider with capability "auto-fix" and autoFixEligible true',
+          );
+        }
+        if (
+          isString(blockSeverity) &&
+          SUPPORTED_QC_SEVERITIES.includes(blockSeverity as typeof SUPPORTED_QC_SEVERITIES[number]) &&
+          severityIndex(blockSeverity) <= severityIndex("medium")
+        ) {
+          result.valid = false;
+          result.errors.push(
+            'qc.autoFix "apply" is unsafe when qc.severityThresholds.block is medium or lower',
+          );
+        }
+      }
+    }
+  }
+
   // unknown top-level fields -> warnings
   const knownKeys = new Set([
     "version",
@@ -918,6 +1222,7 @@ export function validateConfig(config: unknown): ValidationResult {
     "providers",
     "budget",
     "compact",
+    "qc",
   ]);
   for (const key of Object.keys(config)) {
     if (!knownKeys.has(key)) {

@@ -31,6 +31,8 @@
 
 import { appendFileSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
+import type { QcConfig } from "../config/schema.js";
+import { isChildQcSelected } from "../qc/triggers.js";
 import type { LoopState } from "./checkpoint.js";
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -418,4 +420,40 @@ export function advanceContinueEpoch(
     continue_epoch: current.continue_epoch + 1,
     last_dispatched_child: current.last_dispatched_child,
   };
+}
+
+/**
+ * Validate that a child-level QC trigger is only selected when permitted.
+ *
+ * Child-level QC is opt-in: high-risk scope, route policy, or explicit operator
+ * request. If a packet carries child-level QC without meeting one of those
+ * conditions, the dispatch boundary is violated.
+ */
+export function assertChildQcSelectionAllowed(
+  state: LoopState,
+  childId: string,
+  config: QcConfig | undefined,
+  allowedScope: string[],
+  labels: string[] | undefined,
+  telemetryFile: string,
+): void {
+  const meta = state.open_children_meta?.[childId];
+  if (meta?.qc_trigger !== "child") return;
+
+  const routeName = childId; // route-specific overrides are keyed by child/route identifier
+  if (isChildQcSelected(config, childId, allowedScope, labels, routeName)) {
+    return;
+  }
+
+  const reason = `Child-level QC selected for ${childId} but no opt-in condition is met (high-risk scope, route policy, or "qc-child" label)`;
+  appendDispatchViolationEvent(telemetryFile, {
+    event: "illegal-state-transition",
+    run_id: state.run_id,
+    child_id: childId,
+    from_state: getMachineState(state),
+    to_state: "dispatched",
+    reason,
+    timestamp: new Date().toISOString(),
+  });
+  throw new Error(reason);
 }

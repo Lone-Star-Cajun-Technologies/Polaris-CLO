@@ -209,8 +209,8 @@ describe("stepGenerateReport", () => {
     expect(existsSync(reportPath)).toBe(true);
     const content = readFileSync(reportPath, "utf-8");
     expect(content).toContain("# Run Report: test-finalize-001");
-    expect(content).toContain("**Branch:** test/finalize-integration");
-    expect(content).toContain("**Validation:** passed");
+    expect(content).toContain("| **Branch** | test/finalize-integration |");
+    expect(content).toContain("| **Validation** | passed |");
     expect(content).toContain("POL-9");
     expect(content).toContain("POL-10");
     expect(content).toContain("POL-11");
@@ -385,7 +385,7 @@ describe("runFinalize (steps 1–6, skip-delivery)", () => {
     expect(existsSync(reportPath)).toBe(true);
     const report = readFileSync(reportPath, "utf-8");
     expect(report).toContain("# Run Report: test-finalize-001");
-    expect(report).toContain("**Validation:** passed");
+    expect(report).toContain("| **Validation** | passed |");
 
     // Step 6 verification: commit created
     const log = execFileSync("git", ["log", "--oneline", "-1"], {

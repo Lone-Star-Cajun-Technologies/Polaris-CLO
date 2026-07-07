@@ -539,3 +539,186 @@ describe("validateConfig — execution routerPolicy", () => {
     );
   });
 });
+
+describe("validateConfig — qc", () => {
+  it("accepts config with no qc field", () => {
+    const result = validateConfig({ version: "1.0" });
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it("accepts disabled qc with default fields", () => {
+    const result = validateConfig({
+      qc: {
+        enabled: false,
+        defaultTrigger: "completed-cluster",
+        providers: {},
+        severityThresholds: { block: "high", repair: "medium", followUp: "low" },
+        autoFix: "disabled",
+        repairRouting: "route",
+        artifactRetention: { retainRawOutput: false, maxRuns: 10 },
+        routes: {},
+      },
+    });
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it("accepts a CodeRabbit-style provider configuration", () => {
+    const result = validateConfig({
+      qc: {
+        enabled: true,
+        defaultTrigger: "pr",
+        providers: {
+          coderabbit: {
+            name: "coderabbit",
+            mode: "pr",
+            capabilities: ["diff-review", "pr-review", "result-parsing", "auto-fix", "metrics-import"],
+            trigger: "pr",
+            autoFixEligible: true,
+            severityMapping: {
+              "code-quality-issue": "medium",
+              "security": "critical",
+              "style": "low",
+            },
+          },
+        },
+        severityThresholds: { block: "high", repair: "medium", followUp: "low" },
+        autoFix: "dry-run",
+        repairRouting: "route",
+      },
+    });
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it("rejects invalid qc trigger mode", () => {
+    const result = validateConfig({
+      qc: { defaultTrigger: "merge" },
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      'qc.defaultTrigger must be one of "pr", "completed-cluster", "child"',
+    );
+  });
+
+  it("rejects invalid qc severity level", () => {
+    const result = validateConfig({
+      qc: { severityThresholds: { block: "urgent" } },
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      "qc.severityThresholds.block must be one of critical, high, medium, low, info",
+    );
+  });
+
+  it("rejects invalid provider mode", () => {
+    const result = validateConfig({
+      qc: {
+        providers: {
+          bad: { name: "bad", mode: "webhook" },
+        },
+      },
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      "qc.providers.bad.mode must be one of local, pr, metrics-import",
+    );
+  });
+
+  it("rejects invalid provider capabilities", () => {
+    const result = validateConfig({
+      qc: {
+        providers: {
+          bad: { name: "bad", mode: "local", capabilities: ["magic"] },
+        },
+      },
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      "qc.providers.bad.capabilities must contain only: diff-review, pr-review, result-parsing, auto-fix, metrics-import",
+    );
+  });
+
+  it("rejects autoFix apply without an auto-fix capable provider", () => {
+    const result = validateConfig({
+      qc: {
+        providers: {
+          coderabbit: { name: "coderabbit", mode: "pr" },
+        },
+        autoFix: "apply",
+      },
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      'qc.autoFix "apply" requires at least one provider with capability "auto-fix" and autoFixEligible true',
+    );
+  });
+
+  it("rejects autoFix apply when block threshold is too permissive", () => {
+    const result = validateConfig({
+      qc: {
+        providers: {
+          coderabbit: {
+            name: "coderabbit",
+            mode: "pr",
+            capabilities: ["auto-fix"],
+            autoFixEligible: true,
+          },
+        },
+        severityThresholds: { block: "low", repair: "info" },
+        autoFix: "apply",
+      },
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      'qc.autoFix "apply" is unsafe when qc.severityThresholds.block is medium or lower',
+    );
+  });
+
+  it("rejects severity threshold ordering where repair is less severe than block", () => {
+    const result = validateConfig({
+      qc: {
+        severityThresholds: { block: "medium", repair: "high" },
+      },
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      "qc.severityThresholds.repair must be at or below qc.severityThresholds.block severity",
+    );
+  });
+
+  it("rejects severity threshold ordering where followUp is more severe than repair", () => {
+    const result = validateConfig({
+      qc: {
+        severityThresholds: { block: "critical", repair: "low", followUp: "high" },
+      },
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      "qc.severityThresholds.followUp must be at or below qc.severityThresholds.repair severity",
+    );
+  });
+
+  it("rejects route autoFix apply without an eligible auto-fix provider", () => {
+    const result = validateConfig({
+      qc: {
+        providers: {
+          coderabbit: { name: "coderabbit", mode: "pr" },
+        },
+        routes: {
+          finalize: { autoFix: "apply" },
+        },
+      },
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      'qc.routes.finalize.autoFix "apply" requires at least one provider with capability "auto-fix" and autoFixEligible true',
+    );
+  });
+
+  it("does not warn on the qc key", () => {
+    const result = validateConfig({ qc: { enabled: false } });
+    expect(result.warnings).not.toContain('Unknown config field: "qc"');
+  });
+});

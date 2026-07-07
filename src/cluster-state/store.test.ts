@@ -37,6 +37,7 @@ describe('Cluster State Store', () => {
         commits: {},
         tracker_mutations: {},
         blockers: [],
+        qc_runs: {},
       };
       vi.mocked(fs.readFile).mockResolvedValue(JSON.stringify(mockState));
 
@@ -89,6 +90,7 @@ describe('Cluster State Store', () => {
           commits: {},
           tracker_mutations: {},
           blockers: [],
+          qc_runs: {},
         };
 
         const result = pruneExpiredClaims(state, now);
@@ -116,6 +118,7 @@ describe('Cluster State Store', () => {
         commits: {},
         tracker_mutations: {},
         blockers: [],
+        qc_runs: {},
       };
 
       // Mock existing state as null (cast required — real readFile never returns null, but mock does)
@@ -146,6 +149,7 @@ describe('Cluster State Store', () => {
         commits: {},
         tracker_mutations: {},
         blockers: [],
+        qc_runs: {},
       };
       const newState: ClusterState = { ...existingState, state_generation: 2 };
       

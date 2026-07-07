@@ -1680,3 +1680,48 @@ describe("runInit — setup interview for empty/new repos", () => {
     realFs.rmSync(root, { recursive: true, force: true });
   });
 });
+
+describe("runInit — qc preservation", () => {
+  it("preserves existing qc config when providers are detected", () => {
+    mockedExistsSync.mockReturnValue(true);
+    mockedReadFileSync.mockReturnValue(
+      JSON.stringify({
+        version: "1.0",
+        qc: {
+          enabled: true,
+          defaultTrigger: "pr",
+          providers: {
+            coderabbit: {
+              name: "coderabbit",
+              mode: "pr",
+              capabilities: ["pr-review", "auto-fix"],
+              autoFixEligible: true,
+            },
+          },
+        },
+      }),
+    );
+
+    runInit({
+      repoRoot: REPO_ROOT,
+      detectRepoState: vi.fn().mockReturnValue("partial"),
+      detectProviders: vi.fn().mockReturnValue(["caveman"]),
+      detectRepoAnalysisProviders: vi.fn().mockReturnValue([]),
+    });
+
+    const [, content] = mockedWriteFileSync.mock.calls[0] as [string, string, string];
+    const written = JSON.parse(content) as Record<string, unknown>;
+    expect(written.qc).toEqual({
+      enabled: true,
+      defaultTrigger: "pr",
+      providers: {
+        coderabbit: {
+          name: "coderabbit",
+          mode: "pr",
+          capabilities: ["pr-review", "auto-fix"],
+          autoFixEligible: true,
+        },
+      },
+    });
+  });
+});

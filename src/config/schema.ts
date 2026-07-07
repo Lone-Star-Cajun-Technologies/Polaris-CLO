@@ -415,4 +415,148 @@ export interface PolarisConfig {
   simplicity?: {
     mode?: "full" | "lite" | "off";
   };
+  /**
+   * Quality Control configuration. When absent or disabled, Polaris behaves
+   * exactly as it does today — no QC providers are invoked and no QC artifacts
+   * are written.
+   */
+  qc?: QcConfig;
+}
+
+/** QC trigger timing. */
+export type QcTriggerMode = "pr" | "completed-cluster" | "child";
+
+/** Normalized QC severity level. */
+export type QcSeverity = "critical" | "high" | "medium" | "low" | "info";
+
+/** Provider review mode. */
+export type QcProviderMode = "local" | "pr" | "metrics-import";
+
+/** Auto-fix policy. */
+export type QcAutoFixPolicy = "disabled" | "dry-run" | "apply";
+
+/** Aggregate repair-routing policy for findings that remain open. */
+export type QcRepairRoutingPolicy = "block" | "route" | "follow-up" | "log";
+
+/** Capability flags advertised by a QC provider. */
+export type QcProviderCapability =
+  | "diff-review"
+  | "pr-review"
+  | "result-parsing"
+  | "auto-fix"
+  | "metrics-import";
+
+/** Severity threshold configuration. */
+export interface QcSeverityThresholds {
+  /**
+   * Severity level that blocks delivery by default.
+   * Default: "high".
+   */
+  block?: QcSeverity;
+  /**
+   * Severity level that routes to repair by default.
+   * Default: "medium".
+   */
+  repair?: QcSeverity;
+  /**
+   * Severity level that creates follow-up issues by default.
+   * Default: "low".
+   */
+  followUp?: QcSeverity;
+}
+
+/** Per-provider configuration entry. */
+export interface QcProviderConfig {
+  /** Provider name (e.g. "coderabbit", "pr-agent"). */
+  name: string;
+  /** Review mode. */
+  mode: QcProviderMode;
+  /** Advertised capabilities. */
+  capabilities?: QcProviderCapability[];
+  /**
+   * Default trigger for this provider.
+   * When omitted, Polaris picks a sensible default based on mode.
+   */
+  trigger?: QcTriggerMode;
+  /**
+   * Whether this provider is eligible for auto-fix attempts.
+   * Default: false.
+   */
+  autoFixEligible?: boolean;
+  /**
+   * Provider-specific label → normalized severity mapping.
+   * Labels that cannot be mapped land in "info" with provider-uncertain reason.
+   */
+  severityMapping?: Record<string, QcSeverity>;
+}
+
+/** Per-route QC policy override. */
+export interface QcRoutePolicy {
+  /**
+   * Enable child-level QC for this route.
+   * Default: false.
+   */
+  childLevel?: boolean;
+  /**
+   * Minimum severity required to block delivery for findings on this route.
+   */
+  blockThreshold?: QcSeverity;
+  /**
+   * Auto-fix policy override for this route.
+   */
+  autoFix?: QcAutoFixPolicy;
+}
+
+/** Artifact retention policy. */
+export interface QcArtifactRetention {
+  /**
+   * Whether to retain raw provider output when safe and non-secret.
+   * Default: false.
+   */
+  retainRawOutput?: boolean;
+  /**
+   * Maximum number of QC run artifacts to retain per cluster.
+   * Default: 10.
+   */
+  maxRuns?: number;
+}
+
+/** Quality Control subsystem configuration. */
+export interface QcConfig {
+  /**
+   * Master QC enablement switch.
+   * Default: false.
+   */
+  enabled?: boolean;
+  /**
+   * Default trigger for all configured providers.
+   * Default: "completed-cluster".
+   */
+  defaultTrigger?: QcTriggerMode;
+  /**
+   * Configured QC providers. Keys are provider names.
+   */
+  providers?: Record<string, QcProviderConfig>;
+  /**
+   * Severity thresholds applied to normalized findings.
+   */
+  severityThresholds?: QcSeverityThresholds;
+  /**
+   * Auto-fix policy.
+   * Default: "disabled".
+   */
+  autoFix?: QcAutoFixPolicy;
+  /**
+   * Aggregate repair-routing policy.
+   * Default: "route".
+   */
+  repairRouting?: QcRepairRoutingPolicy;
+  /**
+   * Artifact retention policy.
+   */
+  artifactRetention?: QcArtifactRetention;
+  /**
+   * Per-route QC policy overrides keyed by route name.
+   */
+  routes?: Record<string, QcRoutePolicy>;
 }

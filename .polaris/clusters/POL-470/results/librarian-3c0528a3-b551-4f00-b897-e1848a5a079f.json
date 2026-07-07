@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0",
+  "role": "closeout-librarian",
+  "run_id": "polaris-run-pol-470-2026-07-07-001",
+  "dispatch_id": "3c0528a3-b551-4f00-b897-e1848a5a079f",
+  "cluster_id": "POL-470",
+  "status": "success",
+  "commit_sha": "2f27a5f",
+  "commit_message": "docs(closeout): reconcile cognition for cluster POL-470",
+  "files_committed": [
+    "smartdocs/specs/active/index.md"
+  ],
+  "polaris_md_updates": [],
+  "summary_md_updates": [],
+  "docs_ingested": [],
+  "docs_archived": [],
+  "yaml_updates": [],
+  "cognition_archived": [],
+  "link_validation": {
+    "checked": 0,
+    "broken": [],
+    "warnings": []
+  },
+  "blockers": [],
+  "doctrine_candidates": [],
+  "links_repaired": 0,
+  "links_unresolved": 0,
+  "reconciled_at": "2026-07-07T18:44:00.000Z",
+  "evidence_summary": "Worker POL-471 committed all primary documentation. Librarian reconciled specs/active/index.md to include quality-control-architecture, worker-router-architecture, and autoresearch-role-evidence-contract. All cross-references in QC docs validated as present.",
+  "notes": "Worker POL-471 committed all primary documentation (quality-control-architecture.md, quality-control-lifecycle.md, POLARIS.md updates for src/finalize, src/autoresearch, src/cluster-state, src/loop, and SUMMARY.md files). Librarian reconciled specs/active/index.md to include quality-control-architecture, worker-router-architecture, and autoresearch-role-evidence-contract (three active specs that were missing from the index). All cross-references in QC docs validated as present. No raw docs related to POL-470 required promotion. src/qc/POLARIS.md write was prohibited (src/* in prohibited_write_paths)."
+}

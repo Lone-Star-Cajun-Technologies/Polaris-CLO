@@ -20,6 +20,17 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+const DEFAULT_QC = {
+  enabled: false,
+  defaultTrigger: "completed-cluster",
+  providers: {},
+  severityThresholds: { block: "high", repair: "medium", followUp: "low" },
+  autoFix: "disabled",
+  repairRouting: "route",
+  artifactRetention: { retainRawOutput: false, maxRuns: 10 },
+  routes: {},
+};
+
 describe("loadConfig", () => {
   it("deep-merges adoption lock fields without clobbering nested config", () => {
     mockedReadFileSync.mockReturnValue(
@@ -95,6 +106,55 @@ describe("loadConfig", () => {
       },
       providerRegistry: {},
       allowCrossProviderFallback: false,
+    });
+  });
+
+  it("loads default QC config when qc is absent", () => {
+    mockedReadFileSync.mockReturnValue(JSON.stringify({ version: "1.0" }));
+
+    const config = loadConfig("/fake-repo");
+
+    expect(config.qc).toEqual(DEFAULT_QC);
+  });
+
+  it("preserves user QC config while filling defaults", () => {
+    mockedReadFileSync.mockReturnValue(
+      JSON.stringify({
+        version: "1.0",
+        qc: {
+          enabled: true,
+          defaultTrigger: "pr",
+          providers: {
+            coderabbit: {
+              name: "coderabbit",
+              mode: "pr",
+              capabilities: ["pr-review", "auto-fix"],
+              autoFixEligible: true,
+            },
+          },
+          severityThresholds: { block: "critical", repair: "high" },
+        },
+      }),
+    );
+
+    const config = loadConfig("/fake-repo");
+
+    expect(config.qc).toEqual({
+      enabled: true,
+      defaultTrigger: "pr",
+      providers: {
+        coderabbit: {
+          name: "coderabbit",
+          mode: "pr",
+          capabilities: ["pr-review", "auto-fix"],
+          autoFixEligible: true,
+        },
+      },
+      severityThresholds: { block: "critical", repair: "high", followUp: "low" },
+      autoFix: "disabled",
+      repairRouting: "route",
+      artifactRetention: { retainRawOutput: false, maxRuns: 10 },
+      routes: {},
     });
   });
 });

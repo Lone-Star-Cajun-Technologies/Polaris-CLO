@@ -172,7 +172,7 @@ export interface LoopState {
   completed_children: string[];
   completed_children_results?: Record<string, WorkerResultContract>;
   open_children: string[];
-  open_children_meta?: Record<string, { type?: string; title?: string; body?: string; labels?: string[]; result_file?: string; dispatch_record?: ChildDispatchRecord }>;
+  open_children_meta?: Record<string, { type?: string; title?: string; body?: string; labels?: string[]; result_file?: string; qc_trigger?: string; dispatch_record?: ChildDispatchRecord }>;
   step_cursor: string | null;
   context_budget: {
     children_completed: number;

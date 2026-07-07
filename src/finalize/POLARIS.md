@@ -45,6 +45,13 @@ The finalize subsystem implements the atomic 13-step final delivery sequence for
 - `.polaris/skills/polaris-run/chain.md` — step 08 (final-delivery) invocation contract
 - `src/loop/checkpoint.ts` — state schema that `runFinalize` reads
 
+## QC relationship
+
+- Finalize owns PR readiness and must consult cluster QC artifacts and policy before remote delivery.
+- QC blocking findings are resolved before PR creation or delivery is aborted.
+- QC artifacts follow `artifact-policy.ts` promotion rules; raw provider scratch stays out of delivery commits.
+- PR-level QC triggers run after the PR is created; completed-cluster QC triggers run before the PR is created.
+
 ## Related routes
 
 - `polaris.finalize` — all files in this directory

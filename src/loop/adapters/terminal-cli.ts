@@ -562,9 +562,7 @@ export class TerminalCliAdapter implements ExecutionAdapter {
       const effectiveStatus = (exitCode === 0 && isValidCompactReturn) ? "success" : "failure";
 
       const sealedResult = {
-        ...normalized,
         run_id: packet.run_id,
-        cluster_id: packet.cluster_id,
         child_id: String(normalized["child_id"] ?? packet.active_child),
         status: effectiveStatus,
         commit:
@@ -582,7 +580,6 @@ export class TerminalCliAdapter implements ExecutionAdapter {
                   ? normalized["error_message"]
                   : stdout || summary)
             : undefined,
-        ...(compactReturnErrors.length > 0 ? { compact_return_errors: compactReturnErrors } : {}),
       };
       fs.mkdirSync(path.dirname(resultFile), { recursive: true });
       fs.writeFileSync(resultFile, JSON.stringify(sealedResult, null, 2), "utf-8");

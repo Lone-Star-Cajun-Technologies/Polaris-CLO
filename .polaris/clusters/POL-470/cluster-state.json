@@ -1,0 +1,85 @@
+{
+  "schema_version": "1.0",
+  "cluster_id": "POL-470",
+  "state_generation": 3,
+  "child_states": [
+    {
+      "id": "POL-471",
+      "status": "done",
+      "commit": "c2002f557eea6c8a5af87ac23ea30b0130c58849"
+    },
+    {
+      "id": "POL-472",
+      "status": "done",
+      "commit": "6d48356c24879eaeada4e45d2c2a5a29f63a7693"
+    },
+    {
+      "id": "POL-473",
+      "status": "done",
+      "commit": "bb5196f7a90d51c1a95d9a608768fbe1bdf302ce"
+    },
+    {
+      "id": "POL-474",
+      "status": "done",
+      "commit": "f4a33203a56459fa42d308128844e89d4802ea80"
+    },
+    {
+      "id": "POL-475",
+      "status": "done",
+      "commit": "25432ae3f50dfad70f0e30c2011a930c95694cc4"
+    },
+    {
+      "id": "POL-476",
+      "status": "done",
+      "commit": "49dea3edf219d235103670bd8a51868a5a5d5bef"
+    }
+  ],
+  "claim_metadata": {},
+  "packet_pointers": {},
+  "result_pointers": {
+    "POL-471": ".polaris/clusters/POL-470/results/POL-471.json",
+    "POL-472": ".polaris/clusters/POL-470/results/POL-472.json",
+    "POL-473": ".polaris/clusters/POL-470/results/POL-473.json",
+    "POL-474": ".polaris/clusters/POL-470/results/POL-474.json",
+    "POL-475": ".polaris/clusters/POL-470/results/POL-475.json",
+    "POL-476": ".polaris/clusters/POL-470/results/POL-476.json"
+  },
+  "validation_results": {
+    "POL-471": {
+      "passed": true,
+      "output": "backfilled from .polaris/clusters/POL-470/results/POL-471.json"
+    },
+    "POL-472": {
+      "passed": true,
+      "output": "backfilled from .polaris/clusters/POL-470/results/POL-472.json"
+    },
+    "POL-473": {
+      "passed": true,
+      "output": "backfilled from .polaris/clusters/POL-470/results/POL-473.json"
+    },
+    "POL-474": {
+      "passed": true,
+      "output": "backfilled from .polaris/clusters/POL-470/results/POL-474.json"
+    },
+    "POL-475": {
+      "passed": true,
+      "output": "backfilled from .polaris/clusters/POL-470/results/POL-475.json"
+    },
+    "POL-476": {
+      "passed": true,
+      "output": "backfilled from .polaris/clusters/POL-470/results/POL-476.json"
+    }
+  },
+  "commits": {
+    "POL-471": "c2002f557eea6c8a5af87ac23ea30b0130c58849",
+    "POL-472": "6d48356c24879eaeada4e45d2c2a5a29f63a7693",
+    "POL-473": "bb5196f7a90d51c1a95d9a608768fbe1bdf302ce",
+    "POL-474": "f4a33203a56459fa42d308128844e89d4802ea80",
+    "POL-475": "25432ae3f50dfad70f0e30c2011a930c95694cc4",
+    "POL-476": "49dea3edf219d235103670bd8a51868a5a5d5bef"
+  },
+  "tracker_mutations": {},
+  "blockers": [],
+  "delivery_branch": "pol-470-delivery",
+  "base_branch": "main"
+}

@@ -128,7 +128,7 @@ describe("TerminalCliAdapter", () => {
 
         expect(fs.existsSync(resultFile)).toBe(true);
         const written = JSON.parse(fs.readFileSync(resultFile, "utf-8")) as Record<string, unknown>;
-        expect(written).toMatchObject({
+        expect(written).toEqual({
           run_id: "run-test-0001",
           child_id: "POL-14",
           status: "success",

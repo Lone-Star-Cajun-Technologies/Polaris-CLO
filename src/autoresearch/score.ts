@@ -18,6 +18,8 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { WorkerResultContract } from "../types/result-packet.js";
+import { listQcArtifactIds, readQcArtifact } from "../qc/artifacts.js";
+import type { QcAttributionConfidence, QcResult, QcSeverity } from "../qc/types.js";
 import { ALL_GATES, readJsonLines } from "./gates.js";
 import type { GateResult } from "./gates.js";
 
@@ -34,6 +36,8 @@ export interface RunArtifacts {
   resultPackets: unknown[];
   workerResultContracts: WorkerResultContract[];
   telemetryEvents: unknown[];
+  /** QC results loaded from .polaris/clusters/<cluster-id>/qc/. Empty when no QC data exists. */
+  qcResults: QcResult[];
 }
 
 // ──────────────────────────────────────────────
@@ -60,6 +64,87 @@ export interface RouterOutcomesSummary {
   recurring_failures: RouterFailureSummary[];
 }
 
+/** Per-severity breakdown of QC findings for scoring. */
+export interface QcFindingCounts {
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
+  info: number;
+}
+
+/** Per-provider finding totals used to spot recurring provider noise. */
+export interface QcProviderSummary {
+  total: number;
+  blocking: number;
+  unvalidated: number;
+}
+
+/** Per-category finding totals used to propose doc/validation fixes. */
+export interface QcCategorySummary {
+  total: number;
+  blocking: number;
+}
+
+/** Repair-routing decision counts across all findings. */
+export interface QcRoutingBreakdown {
+  original_worker: number;
+  repair_worker: number;
+  follow_up: number;
+  operator_review: number;
+  unset: number;
+}
+
+/** Recurring signal for a child/worker route. */
+export interface QcChildSignal {
+  child_id: string;
+  weighted_score: number;
+  finding_count: number;
+}
+
+/** Recurring signal for a QC provider. */
+export interface QcProviderSignal {
+  provider: string;
+  weighted_score: number;
+  finding_count: number;
+}
+
+/** QC scoring summary attached to the DiagnosisReport. */
+export interface QcScoreSummary {
+  /** Total findings across all QC runs for this cluster. */
+  total_findings: number;
+  /** Findings that block delivery (critical/high, open or follow-up, attributed with high/medium confidence). */
+  blocking_findings: number;
+  /** Findings autofixed by Polaris. */
+  autofixed_findings: number;
+  /** Findings routed to a repair worker. */
+  repaired_findings: number;
+  /** Findings waived by operator policy. */
+  waived_findings: number;
+  /** Findings from unvalidated / provider-noise sources (low-attribution confidence). */
+  unvalidated_findings: number;
+  /** Breakdown of open (non-waived, non-fixed) findings by severity. */
+  open_by_severity: QcFindingCounts;
+  /** Weighted open finding score: severity × attribution confidence. Excludes provider noise. */
+  weighted_open_score: number;
+  /** Estimated SOL score penalty derived from the weighted open score (0.0–1.0). */
+  qc_penalty: number;
+  /** Whether any QC run reported policyDecision.blocksDelivery = true. */
+  blocks_delivery: boolean;
+  /** Number of QC runs included in this summary. */
+  qc_run_count: number;
+  /** Findings grouped by QC provider. */
+  provider_breakdown: Record<string, QcProviderSummary>;
+  /** Findings grouped by repair routing decision. */
+  routing_breakdown: QcRoutingBreakdown;
+  /** Findings grouped by normalized category. */
+  category_breakdown: Record<string, QcCategorySummary>;
+  /** Recurring quality signals by child/worker route. */
+  recurring_child_signals: QcChildSignal[];
+  /** Recurring quality signals by QC provider. */
+  recurring_provider_signals: QcProviderSignal[];
+}
+
 export interface DiagnosisReport {
   run_id: string;
   cluster_id: string | null;
@@ -69,6 +154,8 @@ export interface DiagnosisReport {
   score: number;
   diagnosis_hints: DiagnosisHint[];
   router_outcomes: RouterOutcomesSummary;
+  /** QC scoring summary. Present when QC artifacts exist for the cluster; null otherwise. */
+  qc_summary: QcScoreSummary | null;
 }
 
 // ──────────────────────────────────────────────
@@ -107,6 +194,10 @@ const HINTS: Record<string, { fix_zone: string; hint: string }> = {
   "state-repair-required": {
     fix_zone: "medic / cluster-state",
     hint: "Medic artifacts detected — state repair was required during this run. Review the medic chart and root cause.",
+  },
+  "qc-blocking-findings": {
+    fix_zone: "qc / findings",
+    hint: "QC produced unresolved critical/high findings attributed to this run. Review QC artifacts, triage findings, and route repairs before delivery.",
   },
 };
 
@@ -148,6 +239,17 @@ function safeReaddir(dir: string): string[] {
 }
 
 const NON_WORKER_PREFIXES = ["librarian-", "CHART-", "medic-result-"];
+
+function loadQcArtifacts(clusterId: string | null, repoRoot: string): QcResult[] {
+  if (!clusterId) return [];
+  const ids = listQcArtifactIds(clusterId, repoRoot);
+  const results: QcResult[] = [];
+  for (const id of ids) {
+    const result = readQcArtifact(clusterId, id, repoRoot);
+    if (result) results.push(result);
+  }
+  return results;
+}
 
 function readResultPackets(clusterDir: string | null): unknown[] {
   if (!clusterDir) return [];
@@ -242,6 +344,8 @@ export function loadRunArtifacts(repoRoot: string, runId: string): RunArtifacts 
     workerResultContracts = extractWorkerResultContracts(resultPackets);
   }
 
+  const qcResults = loadQcArtifacts(clusterId, repoRoot);
+
   return {
     runId,
     runDir,
@@ -251,6 +355,7 @@ export function loadRunArtifacts(repoRoot: string, runId: string): RunArtifacts 
     resultPackets,
     workerResultContracts,
     telemetryEvents,
+    qcResults,
   };
 }
 
@@ -270,6 +375,167 @@ export function buildDiagnosisHints(failedGateNames: string[]): DiagnosisHint[] 
     const h = HINTS[gate] ?? { fix_zone: "unknown", hint: `Gate ${gate} failed — no hint available.` };
     return { gate, ...h };
   });
+}
+
+const SEVERITY_WEIGHTS: Record<QcSeverity, number> = {
+  critical: 10,
+  high: 5,
+  medium: 2,
+  low: 1,
+  info: 0.5,
+};
+
+const CONFIDENCE_WEIGHTS: Record<QcAttributionConfidence, number> = {
+  high: 1.0,
+  medium: 0.7,
+  low: 0.3,
+  unattributed: 0,
+};
+
+function zeroCounts(): QcFindingCounts {
+  return { critical: 0, high: 0, medium: 0, low: 0, info: 0 };
+}
+
+function zeroRouting(): QcRoutingBreakdown {
+  return { original_worker: 0, repair_worker: 0, follow_up: 0, operator_review: 0, unset: 0 };
+}
+
+function computeQcPenalty(weightedOpenScore: number): number {
+  // Soft penalty that grows with weighted severity but does not dominate the score.
+  return weightedOpenScore === 0 ? 0 : weightedOpenScore / (weightedOpenScore + 20);
+}
+
+/**
+ * Computes a QcScoreSummary from the QC results loaded for this run.
+ * Returns null when no QC results are present.
+ *
+ * A finding is "blocking" if:
+ *   - severity is critical or high
+ *   - status is "open" or "follow-up" (not autofixed, repaired, or waived)
+ *   - attribution confidence is "high" or "medium" (not unvalidated provider noise)
+ *
+ * Worker scoring intentionally does not penalize for "unvalidated" or
+ * "low" attribution-confidence findings — these are treated as provider noise.
+ *
+ * The weighted open score multiplies severity by attribution confidence so that
+ * a critical/high-confidence finding hurts SOL scoring more than a low-severity
+ * or uncertain finding.
+ */
+export function computeQcSummary(qcResults: QcResult[]): QcScoreSummary | null {
+  if (qcResults.length === 0) return null;
+
+  let total = 0;
+  let blocking = 0;
+  let autofixed = 0;
+  let repaired = 0;
+  let waived = 0;
+  let unvalidated = 0;
+  const openBySeverity = zeroCounts();
+  let weightedOpenScore = 0;
+  let blocksDelivery = false;
+  const providerBreakdown = new Map<string, QcProviderSummary>();
+  const categoryBreakdown = new Map<string, QcCategorySummary>();
+  const routingBreakdown = zeroRouting();
+  const childScores = new Map<string, { weighted_score: number; finding_count: number }>();
+  const providerScores = new Map<string, { weighted_score: number; finding_count: number }>();
+
+  for (const result of qcResults) {
+    if (result.policyDecision.blocksDelivery) blocksDelivery = true;
+
+    for (const finding of result.findings) {
+      total++;
+
+      const provider = result.provider;
+      const providerEntry = providerBreakdown.get(provider) ?? { total: 0, blocking: 0, unvalidated: 0 };
+      providerEntry.total += 1;
+      providerBreakdown.set(provider, providerEntry);
+
+      const category = (finding.category ?? "uncategorized").toLowerCase();
+      const categoryEntry = categoryBreakdown.get(category) ?? { total: 0, blocking: 0 };
+      categoryEntry.total += 1;
+
+      const routing = finding.routingDecision ?? "unset";
+      if (routing === "original-worker") routingBreakdown.original_worker += 1;
+      else if (routing === "repair-worker") routingBreakdown.repair_worker += 1;
+      else if (routing === "follow-up") routingBreakdown.follow_up += 1;
+      else if (routing === "operator-review") routingBreakdown.operator_review += 1;
+      else routingBreakdown.unset += 1;
+
+      const conf = finding.attribution.confidence;
+      const isUnvalidated = conf === "low" || conf === "unattributed";
+      if (isUnvalidated) {
+        unvalidated++;
+        providerEntry.unvalidated += 1;
+        categoryBreakdown.set(category, categoryEntry);
+        continue; // do not count provider noise toward any negative bucket
+      }
+
+      if (finding.status === "autofixed") { autofixed++; categoryBreakdown.set(category, categoryEntry); continue; }
+      if (finding.status === "repaired") { repaired++; categoryBreakdown.set(category, categoryEntry); continue; }
+      if (finding.status === "waived") { waived++; categoryBreakdown.set(category, categoryEntry); continue; }
+
+      // "open" or "follow-up" — count toward open_by_severity and weighted score
+      const sev = finding.severity;
+      if (sev in openBySeverity) openBySeverity[sev as keyof QcFindingCounts]++;
+
+      const isBlocking =
+        (sev === "critical" || sev === "high") &&
+        (finding.status === "open" || finding.status === "follow-up");
+      if (isBlocking) {
+        blocking++;
+        categoryEntry.blocking += 1;
+        providerEntry.blocking += 1;
+      }
+
+      const findingWeight = SEVERITY_WEIGHTS[sev] * CONFIDENCE_WEIGHTS[conf];
+      weightedOpenScore += findingWeight;
+
+      const childId = finding.attribution.childId;
+      if (childId) {
+        const childEntry = childScores.get(childId) ?? { weighted_score: 0, finding_count: 0 };
+        childEntry.weighted_score += findingWeight;
+        childEntry.finding_count += 1;
+        childScores.set(childId, childEntry);
+      }
+
+      const providerScoreEntry = providerScores.get(provider) ?? { weighted_score: 0, finding_count: 0 };
+      providerScoreEntry.weighted_score += findingWeight;
+      providerScoreEntry.finding_count += 1;
+      providerScores.set(provider, providerScoreEntry);
+
+      categoryBreakdown.set(category, categoryEntry);
+      providerBreakdown.set(provider, providerEntry);
+    }
+  }
+
+  const recurringChildSignals = Array.from(childScores.entries())
+    .map(([child_id, value]) => ({ child_id, ...value }))
+    .filter((s) => s.weighted_score > 0)
+    .sort((a, b) => b.weighted_score - a.weighted_score || a.child_id.localeCompare(b.child_id));
+
+  const recurringProviderSignals = Array.from(providerScores.entries())
+    .map(([provider, value]) => ({ provider, ...value }))
+    .filter((s) => s.weighted_score > 0)
+    .sort((a, b) => b.weighted_score - a.weighted_score || a.provider.localeCompare(b.provider));
+
+  return {
+    total_findings: total,
+    blocking_findings: blocking,
+    autofixed_findings: autofixed,
+    repaired_findings: repaired,
+    waived_findings: waived,
+    unvalidated_findings: unvalidated,
+    open_by_severity: openBySeverity,
+    weighted_open_score: Number(weightedOpenScore.toFixed(3)),
+    qc_penalty: Number(computeQcPenalty(weightedOpenScore).toFixed(4)),
+    blocks_delivery: blocksDelivery,
+    qc_run_count: qcResults.length,
+    provider_breakdown: Object.fromEntries(providerBreakdown),
+    routing_breakdown: routingBreakdown,
+    category_breakdown: Object.fromEntries(categoryBreakdown),
+    recurring_child_signals: recurringChildSignals,
+    recurring_provider_signals: recurringProviderSignals,
+  };
 }
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
@@ -385,6 +651,7 @@ export function scoreRun(repoRoot: string, runId: string): DiagnosisReport {
   const score = computeScore(gateResults);
   const diagnosisHints = buildDiagnosisHints(failedGates);
   const routerOutcomes = summarizeRouterOutcomes(artifacts);
+  const qcSummary = computeQcSummary(artifacts.qcResults);
 
   const clusterId =
     artifacts.currentState &&
@@ -402,5 +669,6 @@ export function scoreRun(repoRoot: string, runId: string): DiagnosisReport {
     score,
     diagnosis_hints: diagnosisHints,
     router_outcomes: routerOutcomes,
+    qc_summary: qcSummary,
   };
 }

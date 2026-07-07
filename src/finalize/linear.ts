@@ -306,3 +306,86 @@ export async function updateLinearIssueAfterFinalize(options: PostCommentOptions
     throw new Error(`Linear commentCreate failed: ${JSON.stringify(commentData.commentCreate)}`);
   }
 }
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Follow-up issue creation
+// ──────────────────────────────────────────────────────────────────────────────
+
+export interface CreateFollowUpIssueOptions {
+  /** Parent Linear issue id (the cluster/issue that produced the finding). */
+  parentIssueId: string;
+  /** Follow-up title. */
+  title: string;
+  /** Follow-up description. */
+  description: string;
+  /** Linear API key. */
+  apiKey: string;
+  /** Optional team id; when omitted the parent issue's team is used. */
+  teamId?: string;
+  /** Optional workflow state id to assign to the follow-up. */
+  stateId?: string;
+  /** Optional label ids to assign. */
+  labelIds?: string[];
+}
+
+interface CreateFollowUpIssuePayloadOptions extends CreateFollowUpIssueOptions {
+  teamId: string;
+}
+
+async function findIssueTeamId(issueId: string, apiKey: string): Promise<string | null> {
+  const issueData = await linearGraphQL<{ issue?: { team?: { id: string } } }>(
+    `query GetIssueTeam($id: String!) { issue(id: $id) { team { id } } }`,
+    { id: issueId },
+    apiKey,
+  );
+  return issueData.issue?.team?.id ?? null;
+}
+
+/**
+ * Build the GraphQL variables for a Linear follow-up issue.
+ * Exported separately so tests can inspect the payload shape.
+ */
+export function buildFollowUpIssuePayload(options: CreateFollowUpIssuePayloadOptions): {
+  query: string;
+  variables: Record<string, unknown>;
+} {
+  const input: Record<string, unknown> = {
+    title: options.title,
+    description: options.description,
+    parentId: options.parentIssueId,
+    teamId: options.teamId,
+  };
+  if (options.stateId) input.stateId = options.stateId;
+  if (options.labelIds && options.labelIds.length > 0) input.labelIds = options.labelIds;
+
+  return {
+    query: `mutation CreateFollowUpIssue($input: IssueCreateInput!) {
+      issueCreate(input: $input) { success issue { id identifier url } }
+    }`,
+    variables: { input },
+  };
+}
+
+/**
+ * Create a Linear follow-up issue linked to a parent issue.
+ *
+ * This is the repair path for QC findings that are routed to follow-up work.
+ */
+export async function createLinearFollowUpIssue(
+  options: CreateFollowUpIssueOptions,
+): Promise<{ id: string; identifier: string; url: string }> {
+  const teamId = options.teamId ?? await findIssueTeamId(options.parentIssueId, options.apiKey);
+  if (!teamId) {
+    throw new Error(`Unable to resolve Linear team for parent issue ${options.parentIssueId}`);
+  }
+  const payload = buildFollowUpIssuePayload({ ...options, teamId });
+  const data = await linearGraphQL<{ issueCreate?: { success?: boolean; issue?: { id: string; identifier: string; url: string } } }>(
+    payload.query,
+    payload.variables,
+    options.apiKey,
+  );
+  if (data.issueCreate?.success !== true || !data.issueCreate?.issue) {
+    throw new Error(`Linear issueCreate failed: ${JSON.stringify(data.issueCreate)}`);
+  }
+  return data.issueCreate.issue;
+}

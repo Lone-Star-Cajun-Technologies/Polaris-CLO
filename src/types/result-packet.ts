@@ -142,6 +142,13 @@ export interface WorkerResultContract {
   dispatch_epoch?: number;
   session_pointer?: string | null;
 
+  /**
+   * Files this worker changed, when available.
+   * Used by QC attribution to correlate findings back to the worker that
+   * touched the relevant lines.
+   */
+  changed_files?: string[];
+
   /** Optional free-form results from the child execution. */
   result_data?: Record<string, unknown>;
 }

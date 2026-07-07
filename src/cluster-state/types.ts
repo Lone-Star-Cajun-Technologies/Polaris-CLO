@@ -62,6 +62,26 @@ export interface TrackerMutationReference {
   last_error?: string;
 }
 
+export type QcRunStatus =
+  | "passed"
+  | "findings"
+  | "blocked"
+  | "failed"
+  | "skipped";
+
+export interface QcRunPointer {
+  /** Absolute or repo-relative path to the QC result artifact. */
+  artifact_path: string;
+  /** Normalized status of the QC run. */
+  status: QcRunStatus;
+  /** QC provider name. */
+  provider: string;
+  /** ISO 8601 start timestamp. */
+  started_at: string;
+  /** ISO 8601 completion timestamp. */
+  completed_at: string;
+}
+
 export interface ClusterState {
   schema_version: string;
   cluster_id: string;
@@ -74,6 +94,8 @@ export interface ClusterState {
   commits: { [childId: string]: string };
   tracker_mutations: { [childId: string]: TrackerMutationReference };
   blockers: Blocker[];
+  /** QC result artifact pointers keyed by qcRunId. */
+  qc_runs?: { [qcRunId: string]: QcRunPointer };
   /** Base branch against which this run will deliver a PR (e.g. "main"). */
   base_branch?: string;
   /** SHA of base_branch tip at the moment delivery branch custody was established. */

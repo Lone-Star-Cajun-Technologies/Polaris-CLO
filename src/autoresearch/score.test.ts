@@ -3,10 +3,12 @@
  *
  * Covers:
  * - Dev gate: isPolarisDevContext (pass/fail)
- * - Each of the 8 binary gates: pass, fail, skip
+ * - Each of the 9 binary gates: pass, fail, skip
  * - computeScore: empty, all-pass, all-fail, mixed, all-skip
  * - buildDiagnosisHints: presence and shape of hints
  * - Output schema: DiagnosisReport has required fields
+ * - QC artifact loading and computeQcSummary
+ * - gateQcBlockingFindings
  */
 
 import { describe, expect, it } from "vitest";
@@ -23,10 +25,12 @@ import {
   gateWorkerWentOutOfScope,
   gateForemanTokenBurnOverBudget,
   gateStateRepairRequired,
+  gateQcBlockingFindings,
 } from "./gates.js";
-import { computeScore, buildDiagnosisHints, scoreRun, loadRunArtifacts, summarizeRouterOutcomes } from "./score.js";
+import { computeScore, buildDiagnosisHints, scoreRun, loadRunArtifacts, summarizeRouterOutcomes, computeQcSummary } from "./score.js";
 import type { RunArtifacts } from "./score.js";
 import type { GateResult } from "./gates.js";
+import type { QcResult } from "../qc/types.js";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -40,6 +44,32 @@ function emptyArtifacts(overrides: Partial<RunArtifacts> = {}): RunArtifacts {
     resultPackets: [],
     workerResultContracts: [],
     telemetryEvents: [],
+    qcResults: [],
+    ...overrides,
+  };
+}
+
+function makeQcResult(overrides: Partial<QcResult> & { findings?: QcResult["findings"] } = {}): QcResult {
+  return {
+    schemaVersion: "1.0",
+    qcRunId: `qc-run-${Date.now()}`,
+    runId: "test-run-001",
+    clusterId: "POL-000",
+    trigger: "completed-cluster",
+    provider: "test-provider",
+    providerMode: "local",
+    startedAt: new Date().toISOString(),
+    completedAt: new Date().toISOString(),
+    status: "findings",
+    findings: [],
+    rawArtifactPaths: [],
+    parserVersion: "1.0",
+    policyDecision: {
+      blocksDelivery: false,
+      requiresOperatorReview: false,
+      routedToRepair: false,
+      summary: "test",
+    },
     ...overrides,
   };
 }
@@ -617,7 +647,7 @@ describe("buildDiagnosisHints", () => {
     expect(hints[0].hint).toContain("unknown-gate-xyz");
   });
 
-  it("returns hints for all 8 v1 gates", () => {
+  it("returns hints for all 9 gates (8 v1 + qc-blocking-findings)", () => {
     const gates = [
       "user-intervened",
       "foreman-resent-packet",
@@ -627,9 +657,10 @@ describe("buildDiagnosisHints", () => {
       "worker-went-out-of-scope",
       "foreman-token-burn-over-budget",
       "state-repair-required",
+      "qc-blocking-findings",
     ];
     const hints = buildDiagnosisHints(gates);
-    expect(hints).toHaveLength(8);
+    expect(hints).toHaveLength(9);
     for (const hint of hints) {
       expect(hint.fix_zone).not.toBe("unknown");
     }
@@ -657,15 +688,17 @@ describe("scoreRun output schema", () => {
     expect(Array.isArray(report.diagnosis_hints)).toBe(true);
     expect(typeof report.router_outcomes).toBe("object");
     expect(typeof report.router_outcomes.total_decisions).toBe("number");
+    // qc_summary is null when no QC artifacts exist
+    expect(report.qc_summary).toBeNull();
   });
 
-  it("gate_results contains exactly 8 entries (one per v1 gate)", () => {
+  it("gate_results contains exactly 9 entries (8 v1 gates + qc-blocking-findings)", () => {
     const dir = join(tmpdir(), `polaris-score-gates-${Date.now()}`);
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, "package.json"), JSON.stringify({ name: "@lsctech/polaris" }));
 
     const report = scoreRun(dir, "test-run-nonexistent-gates");
-    expect(report.gate_results).toHaveLength(8);
+    expect(report.gate_results).toHaveLength(9);
   });
 
   it("each gate_result has gate, outcome fields", () => {
@@ -678,5 +711,370 @@ describe("scoreRun output schema", () => {
       expect(typeof gr.gate).toBe("string");
       expect(["passed", "failed", "skipped"]).toContain(gr.outcome);
     }
+  });
+});
+
+// ── computeQcSummary ──────────────────────────────────────────────────────────
+
+describe("computeQcSummary", () => {
+  it("returns null when qcResults is empty", () => {
+    expect(computeQcSummary([])).toBeNull();
+  });
+
+  it("returns zero-counts when QC result has no findings", () => {
+    const result = computeQcSummary([makeQcResult()]);
+    expect(result).not.toBeNull();
+    expect(result!.total_findings).toBe(0);
+    expect(result!.blocking_findings).toBe(0);
+    expect(result!.qc_run_count).toBe(1);
+    expect(result!.blocks_delivery).toBe(false);
+  });
+
+  it("counts blocking findings (critical/high, open, high/medium confidence)", () => {
+    const findings: QcResult["findings"] = [
+      {
+        findingId: "f1",
+        severity: "critical",
+        title: "SQL injection",
+        fixAvailable: false,
+        autofixEligible: false,
+        attribution: { confidence: "high", reason: "commit-line-match" },
+        status: "open",
+      },
+      {
+        findingId: "f2",
+        severity: "high",
+        title: "XSS",
+        fixAvailable: false,
+        autofixEligible: false,
+        attribution: { confidence: "medium", reason: "changed-file-owner" },
+        status: "follow-up",
+      },
+    ];
+    const result = computeQcSummary([makeQcResult({ findings })]);
+    expect(result!.blocking_findings).toBe(2);
+    expect(result!.total_findings).toBe(2);
+    expect(result!.open_by_severity.critical).toBe(1);
+    expect(result!.open_by_severity.high).toBe(1);
+  });
+
+  it("does not count low-attribution findings as blocking (provider noise)", () => {
+    const findings: QcResult["findings"] = [
+      {
+        findingId: "f1",
+        severity: "critical",
+        title: "Noise",
+        fixAvailable: false,
+        autofixEligible: false,
+        attribution: { confidence: "low", reason: "provider-uncertain" },
+        status: "open",
+      },
+      {
+        findingId: "f2",
+        severity: "high",
+        title: "Unattributed",
+        fixAvailable: false,
+        autofixEligible: false,
+        attribution: { confidence: "unattributed", reason: "unattributed" },
+        status: "open",
+      },
+    ];
+    const result = computeQcSummary([makeQcResult({ findings })]);
+    expect(result!.blocking_findings).toBe(0);
+    expect(result!.unvalidated_findings).toBe(2);
+    expect(result!.open_by_severity.critical).toBe(0);
+    expect(result!.open_by_severity.high).toBe(0);
+  });
+
+  it("does not count autofixed/repaired/waived as blocking", () => {
+    const findings: QcResult["findings"] = [
+      {
+        findingId: "f1",
+        severity: "critical",
+        title: "Autofixed",
+        fixAvailable: true,
+        autofixEligible: true,
+        attribution: { confidence: "high", reason: "commit-line-match" },
+        status: "autofixed",
+      },
+      {
+        findingId: "f2",
+        severity: "high",
+        title: "Repaired",
+        fixAvailable: false,
+        autofixEligible: false,
+        attribution: { confidence: "high", reason: "commit-line-match" },
+        status: "repaired",
+      },
+      {
+        findingId: "f3",
+        severity: "critical",
+        title: "Waived",
+        fixAvailable: false,
+        autofixEligible: false,
+        attribution: { confidence: "medium", reason: "changed-file-owner" },
+        status: "waived",
+      },
+    ];
+    const result = computeQcSummary([makeQcResult({ findings })]);
+    expect(result!.blocking_findings).toBe(0);
+    expect(result!.autofixed_findings).toBe(1);
+    expect(result!.repaired_findings).toBe(1);
+    expect(result!.waived_findings).toBe(1);
+  });
+
+  it("surfaces blocks_delivery from policyDecision", () => {
+    const result = computeQcSummary([
+      makeQcResult({
+        policyDecision: {
+          blocksDelivery: true,
+          requiresOperatorReview: false,
+          routedToRepair: false,
+          summary: "blocked",
+        },
+      }),
+    ]);
+    expect(result!.blocks_delivery).toBe(true);
+  });
+
+  it("aggregates findings across multiple QC runs", () => {
+    const findingA: QcResult["findings"] = [
+      {
+        findingId: "fa1",
+        severity: "medium",
+        title: "Medium finding",
+        fixAvailable: false,
+        autofixEligible: false,
+        attribution: { confidence: "high", reason: "commit-line-match" },
+        status: "open",
+      },
+    ];
+    const findingB: QcResult["findings"] = [
+      {
+        findingId: "fb1",
+        severity: "low",
+        title: "Low finding",
+        fixAvailable: false,
+        autofixEligible: false,
+        attribution: { confidence: "medium", reason: "child-scope-match" },
+        status: "open",
+      },
+    ];
+    const result = computeQcSummary([
+      makeQcResult({ findings: findingA }),
+      makeQcResult({ findings: findingB }),
+    ]);
+    expect(result!.total_findings).toBe(2);
+    expect(result!.qc_run_count).toBe(2);
+    expect(result!.open_by_severity.medium).toBe(1);
+    expect(result!.open_by_severity.low).toBe(1);
+  });
+
+  it("computes a weighted open score from severity and attribution confidence", () => {
+    const findings: QcResult["findings"] = [
+      {
+        findingId: "f1",
+        severity: "critical",
+        title: "Critical open",
+        fixAvailable: false,
+        autofixEligible: false,
+        attribution: { confidence: "high", reason: "commit-line-match" },
+        status: "open",
+      },
+      {
+        findingId: "f2",
+        severity: "high",
+        title: "High follow-up",
+        fixAvailable: false,
+        autofixEligible: false,
+        attribution: { confidence: "medium", reason: "changed-file-owner" },
+        status: "follow-up",
+      },
+      {
+        findingId: "f3",
+        severity: "low",
+        title: "Unvalidated noise",
+        fixAvailable: false,
+        autofixEligible: false,
+        attribution: { confidence: "low", reason: "provider-uncertain" },
+        status: "open",
+      },
+    ];
+    const result = computeQcSummary([makeQcResult({ findings })]);
+    expect(result!.weighted_open_score).toBeCloseTo(13.5, 2);
+    expect(result!.qc_penalty).toBeGreaterThan(0);
+  });
+
+  it("excludes unvalidated findings from weighted score", () => {
+    const findings: QcResult["findings"] = [
+      {
+        findingId: "f1",
+        severity: "critical",
+        title: "Unattributed",
+        fixAvailable: false,
+        autofixEligible: false,
+        attribution: { confidence: "unattributed", reason: "unattributed" },
+        status: "open",
+      },
+    ];
+    const result = computeQcSummary([makeQcResult({ findings })]);
+    expect(result!.weighted_open_score).toBe(0);
+    expect(result!.qc_penalty).toBe(0);
+  });
+
+  it("aggregates recurring child/worker route signals", () => {
+    const findings: QcResult["findings"] = [
+      {
+        findingId: "f1",
+        severity: "high",
+        title: "Route issue 1",
+        fixAvailable: false,
+        autofixEligible: false,
+        attribution: { confidence: "high", reason: "commit-line-match", childId: "POL-123" },
+        status: "open",
+      },
+      {
+        findingId: "f2",
+        severity: "medium",
+        title: "Route issue 2",
+        fixAvailable: false,
+        autofixEligible: false,
+        attribution: { confidence: "high", reason: "commit-line-match", childId: "POL-123" },
+        status: "open",
+      },
+    ];
+    const result = computeQcSummary([makeQcResult({ findings })]);
+    expect(result!.recurring_child_signals).toHaveLength(1);
+    expect(result!.recurring_child_signals[0]!.child_id).toBe("POL-123");
+    expect(result!.recurring_child_signals[0]!.finding_count).toBe(2);
+    expect(result!.recurring_child_signals[0]!.weighted_score).toBeCloseTo(7, 2);
+  });
+
+  it("aggregates recurring provider signals and routing breakdown", () => {
+    const findings: QcResult["findings"] = [
+      {
+        findingId: "f1",
+        severity: "high",
+        title: "Provider issue",
+        fixAvailable: false,
+        autofixEligible: false,
+        attribution: { confidence: "high", reason: "commit-line-match" },
+        routingDecision: "operator-review",
+        status: "open",
+      },
+      {
+        findingId: "f2",
+        severity: "medium",
+        title: "Routed repair",
+        fixAvailable: false,
+        autofixEligible: false,
+        attribution: { confidence: "medium", reason: "changed-file-owner" },
+        routingDecision: "repair-worker",
+        status: "open",
+      },
+    ];
+    const result = computeQcSummary([makeQcResult({ provider: "coderabbit", findings })]);
+    expect(result!.recurring_provider_signals).toHaveLength(1);
+    expect(result!.recurring_provider_signals[0]!.provider).toBe("coderabbit");
+    expect(result!.provider_breakdown["coderabbit"]!.total).toBe(2);
+    expect(result!.routing_breakdown.operator_review).toBe(1);
+    expect(result!.routing_breakdown.repair_worker).toBe(1);
+  });
+});
+
+// ── gateQcBlockingFindings ────────────────────────────────────────────────────
+
+describe("gateQcBlockingFindings", () => {
+  it("skips when no QC results exist", () => {
+    const result = gateQcBlockingFindings(emptyArtifacts());
+    expect(result.outcome).toBe("skipped");
+  });
+
+  it("passes when QC results exist but no blocking findings", () => {
+    const artifacts = emptyArtifacts({ qcResults: [makeQcResult()] });
+    const result = gateQcBlockingFindings(artifacts);
+    expect(result.outcome).toBe("passed");
+  });
+
+  it("passes when critical findings are all autofixed", () => {
+    const findings: QcResult["findings"] = [
+      {
+        findingId: "f1",
+        severity: "critical",
+        title: "Autofixed critical",
+        fixAvailable: true,
+        autofixEligible: true,
+        attribution: { confidence: "high", reason: "commit-line-match" },
+        status: "autofixed",
+      },
+    ];
+    const artifacts = emptyArtifacts({ qcResults: [makeQcResult({ findings })] });
+    expect(gateQcBlockingFindings(artifacts).outcome).toBe("passed");
+  });
+
+  it("passes when critical findings have low/unattributed confidence (provider noise)", () => {
+    const findings: QcResult["findings"] = [
+      {
+        findingId: "f1",
+        severity: "critical",
+        title: "Noisy critical",
+        fixAvailable: false,
+        autofixEligible: false,
+        attribution: { confidence: "low", reason: "provider-uncertain" },
+        status: "open",
+      },
+    ];
+    const artifacts = emptyArtifacts({ qcResults: [makeQcResult({ findings })] });
+    expect(gateQcBlockingFindings(artifacts).outcome).toBe("passed");
+  });
+
+  it("fails when unresolved critical finding with high confidence", () => {
+    const findings: QcResult["findings"] = [
+      {
+        findingId: "f1",
+        severity: "critical",
+        title: "Open critical",
+        fixAvailable: false,
+        autofixEligible: false,
+        attribution: { confidence: "high", reason: "commit-line-match" },
+        status: "open",
+      },
+    ];
+    const artifacts = emptyArtifacts({ qcResults: [makeQcResult({ findings })] });
+    const result = gateQcBlockingFindings(artifacts);
+    expect(result.outcome).toBe("failed");
+    expect(result.detail).toContain("1 unresolved critical/high");
+  });
+
+  it("fails when unresolved high finding with medium confidence", () => {
+    const findings: QcResult["findings"] = [
+      {
+        findingId: "f1",
+        severity: "high",
+        title: "Open high",
+        fixAvailable: false,
+        autofixEligible: false,
+        attribution: { confidence: "medium", reason: "changed-file-owner" },
+        status: "follow-up",
+      },
+    ];
+    const artifacts = emptyArtifacts({ qcResults: [makeQcResult({ findings })] });
+    expect(gateQcBlockingFindings(artifacts).outcome).toBe("failed");
+  });
+
+  it("passes when medium finding with high confidence (not a blocker)", () => {
+    const findings: QcResult["findings"] = [
+      {
+        findingId: "f1",
+        severity: "medium",
+        title: "Open medium",
+        fixAvailable: false,
+        autofixEligible: false,
+        attribution: { confidence: "high", reason: "commit-line-match" },
+        status: "open",
+      },
+    ];
+    const artifacts = emptyArtifacts({ qcResults: [makeQcResult({ findings })] });
+    expect(gateQcBlockingFindings(artifacts).outcome).toBe("passed");
   });
 });

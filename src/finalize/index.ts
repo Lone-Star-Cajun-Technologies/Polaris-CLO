@@ -8,7 +8,8 @@ import {
   type CloseoutLibrarianResult,
 } from "../cognition/closeout-librarian-types.js";
 import { loadConfig } from "../config/loader.js";
-import { readState } from "../loop/checkpoint.js";
+import type { QcConfig } from "../config/schema.js";
+import { readState, type LoopState } from "../loop/checkpoint.js";
 import { classifyArtifactPath } from "./artifact-policy.js";
 import { hasNonArtifactSourceChanges, verifyChildCommitCustody, patternMatchesPath } from "../loop/git-custody.js";
 import { readClusterStateSync } from "../cluster-state/store.js";
@@ -29,6 +30,7 @@ import { LocalGraph } from "../tracker/local-graph.js";
 import { TrackerSyncService } from "../tracker/sync/index.js";
 import { formatFinalizeEvidenceFailures, verifyCompletedChildFinalizeEvidence } from "../loop/finalize-evidence.js";
 import { validateDeliveryIntegrity } from "./delivery-integrity.js";
+import { runQcAtTrigger, createDefaultQcRegistry } from "../qc/index.js";
 
 export interface FinalizeOptions {
   repoRoot: string;
@@ -214,6 +216,47 @@ function checkLibrarianGate(repoRoot: string, clusterId: string): string | null 
   } catch (err) {
     return `Librarian result gate error: ${err instanceof Error ? err.message : String(err)}`;
   }
+}
+
+function resolveQcTelemetryFile(state: LoopState, repoRoot: string): string {
+  const artifactDir = state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "polaris-run");
+  return join(artifactDir, "runs", state.run_id, "telemetry.jsonl");
+}
+
+async function runQcGate(options: {
+  config: QcConfig;
+  state: LoopState;
+  repoRoot: string;
+  branch: string;
+  trigger: "pr" | "completed-cluster" | "child";
+  prUrl?: string;
+  stepLabel: string;
+}): Promise<void> {
+  const { config, state, repoRoot, branch, trigger, prUrl, stepLabel } = options;
+  const registry = createDefaultQcRegistry();
+  const result = await runQcAtTrigger({
+    config,
+    registry,
+    trigger,
+    prUrl,
+    repoRoot,
+    runId: state.run_id,
+    clusterId: state.cluster_id,
+    branch,
+    telemetryFile: resolveQcTelemetryFile(state, repoRoot),
+    state,
+  });
+
+  if (result.action === "pass") {
+    console.log(`${stepLabel} QC ${trigger} passed: ${result.summary}`);
+    return;
+  }
+  if (result.action === "follow-up") {
+    console.warn(`${stepLabel} QC ${trigger} produced follow-up work: ${result.summary}`);
+    return;
+  }
+  process.stderr.write(`${stepLabel} QC ${trigger} blocked finalize: ${result.summary}\n`);
+  process.exit(1);
 }
 
 export async function runFinalize(options: FinalizeOptions): Promise<void> {
@@ -442,6 +485,17 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
     }
   }
 
+  // Step 5.8: Completed-cluster QC trigger (when configured)
+  // Runs after all authoritative gates and before final commit/delivery.
+  await runQcGate({
+    config: config.qc,
+    state,
+    repoRoot,
+    branch,
+    trigger: "completed-cluster",
+    stepLabel: "[5.8/14]",
+  });
+
   // Step 6: Tracker Reconciliation
   // LinearAdapter is sync-in only; only McpBridgeAdapter supports full reconciliation.
   const trackerType = config.tracker?.adapter;
@@ -509,6 +563,18 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
   const prDraft = config.finalize?.prDraft ?? true;
   console.log("[10/14] Creating draft PR...");
   const prUrl = stepCreatePr(repoRoot, branch, state, prDraft);
+
+  // Step 10.5: PR-required QC trigger (when configured)
+  // Providers that require a PR URL run here after the PR is created.
+  await runQcGate({
+    config: config.qc,
+    state,
+    repoRoot,
+    branch,
+    trigger: "pr",
+    prUrl,
+    stepLabel: "[10.5/14]",
+  });
 
   // Step 11: Write PR URL to current-state.json
   console.log("[11/14] Writing PR URL to state...");
