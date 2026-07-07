@@ -54,6 +54,14 @@ describe("loadConfig", () => {
     expect(config.execution.roles).toEqual({
       worker: { provider: "codex", model: "gpt-5.5" },
     });
+    expect(config.execution.routerPolicy).toEqual({
+      defaultWorkerPool: {
+        maxActiveWorkers: 1,
+        maxActiveSlots: 1,
+      },
+      providerRegistry: {},
+      allowCrossProviderFallback: false,
+    });
     expect(config.orchestration).toMatchObject({
       mode: "supervised",
       auto_finalize: true,
@@ -79,6 +87,14 @@ describe("loadConfig", () => {
     expect(config.graph).toEqual({
       outputPath: ".polaris/graph",
       invalidationTriggers: ["repo-change", "config-change"],
+    });
+    expect(config.execution.routerPolicy).toEqual({
+      defaultWorkerPool: {
+        maxActiveWorkers: 1,
+        maxActiveSlots: 1,
+      },
+      providerRegistry: {},
+      allowCrossProviderFallback: false,
     });
   });
 });

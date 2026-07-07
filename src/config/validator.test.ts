@@ -380,3 +380,162 @@ describe("validateConfig — execution providerPolicy", () => {
     expect(result.errors).toContain("execution.providerPolicy.worker.providers contains unknown provider: claude");
   });
 });
+
+describe("validateConfig — execution routerPolicy", () => {
+  it("remains backward compatible when routerPolicy is omitted", () => {
+    const result = validateConfig({
+      execution: {
+        adapter: "terminal-cli",
+        providers: {
+          copilot: { command: "copilot" },
+        },
+        allowCrossAgentFallback: true,
+      },
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it("accepts valid router policy provider registry metadata and default pool", () => {
+    const result = validateConfig({
+      execution: {
+        providers: {
+          copilot: { command: "copilot" },
+          codex: { command: "codex" },
+        },
+        routerPolicy: {
+          allowCrossProviderFallback: false,
+          defaultWorkerPool: {
+            maxActiveWorkers: 1,
+            maxActiveSlots: 1,
+          },
+          providerRegistry: {
+            copilot: {
+              eligibleRoles: ["worker", "repair"],
+              capabilities: ["implementation", "repair"],
+              taskTypes: ["impl", "repair"],
+              trustTier: "standard",
+              costTier: "medium",
+              quotaPolicy: "rate-limited",
+              fallbackEligible: false,
+              maxActiveSlots: 1,
+            },
+            codex: {
+              eligibleRoles: ["analysis", "worker"],
+              capabilities: ["analysis", "implementation"],
+              taskTypes: ["analyze", "impl"],
+              trustTier: "trusted",
+              costTier: "high",
+              quotaPolicy: "reserved",
+              fallbackEligible: true,
+              maxActiveSlots: 2,
+            },
+          },
+        },
+      },
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it("rejects router policy entries that reference undefined providers", () => {
+    const result = validateConfig({
+      execution: {
+        providers: {
+          copilot: { command: "copilot" },
+        },
+        routerPolicy: {
+          providerRegistry: {
+            claude: {
+              trustTier: "trusted",
+            },
+          },
+        },
+      },
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      "execution.routerPolicy.providerRegistry contains unknown provider: claude",
+    );
+  });
+
+  it("rejects invalid slot counts", () => {
+    const result = validateConfig({
+      execution: {
+        providers: {
+          copilot: { command: "copilot" },
+        },
+        routerPolicy: {
+          defaultWorkerPool: {
+            maxActiveWorkers: 0,
+          },
+          providerRegistry: {
+            copilot: {
+              maxActiveSlots: -1,
+            },
+          },
+        },
+      },
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      "execution.routerPolicy.defaultWorkerPool.maxActiveWorkers must be a positive integer",
+    );
+    expect(result.errors).toContain(
+      "execution.routerPolicy.providerRegistry.copilot.maxActiveSlots must be a positive integer",
+    );
+  });
+
+  it("rejects invalid trust, cost, and capability values", () => {
+    const result = validateConfig({
+      execution: {
+        providers: {
+          copilot: { command: "copilot" },
+        },
+        routerPolicy: {
+          providerRegistry: {
+            copilot: {
+              capabilities: ["magic"],
+              trustTier: "very-trusted",
+              costTier: "free",
+            },
+          },
+        },
+      },
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      "execution.routerPolicy.providerRegistry.copilot.capabilities must contain only: orchestration, analysis, implementation, repair, docs, finalization",
+    );
+    expect(result.errors).toContain(
+      "execution.routerPolicy.providerRegistry.copilot.trustTier must be one of: sandbox, standard, trusted",
+    );
+    expect(result.errors).toContain(
+      "execution.routerPolicy.providerRegistry.copilot.costTier must be one of: low, medium, high",
+    );
+  });
+
+  it("rejects ambiguous fallback policy when legacy and router policy conflict", () => {
+    const result = validateConfig({
+      execution: {
+        providers: {
+          copilot: { command: "copilot" },
+        },
+        allowCrossAgentFallback: true,
+        routerPolicy: {
+          allowCrossProviderFallback: false,
+        },
+      },
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      "execution fallback policy is ambiguous: allowCrossAgentFallback conflicts with execution.routerPolicy.allowCrossProviderFallback",
+    );
+  });
+});

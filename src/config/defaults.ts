@@ -38,6 +38,14 @@ export const DEFAULT_CONFIG: Omit<Required<PolarisConfig>, "canon" | "providers"
     rotation: [],
     allowCrossAgentFallback: false,
     roles: {},
+    routerPolicy: {
+      defaultWorkerPool: {
+        maxActiveWorkers: 1,
+        maxActiveSlots: 1,
+      },
+      providerRegistry: {},
+      allowCrossProviderFallback: false,
+    },
   },
   finalize: {
     targetBranch: "main",

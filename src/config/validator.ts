@@ -12,6 +12,10 @@ function isNumber(value: unknown): value is number {
   return typeof value === "number" && !Number.isNaN(value);
 }
 
+function isPositiveInteger(value: unknown): value is number {
+  return Number.isInteger(value) && Number(value) > 0;
+}
+
 function isString(value: unknown): value is string {
   return typeof value === "string";
 }
@@ -52,6 +56,29 @@ const SUPPORTED_EXECUTION_ADAPTERS = [
   "ssh",
   "remote-worker",
   "cross-agent",
+] as const;
+const SUPPORTED_ROUTER_CAPABILITIES = [
+  "orchestration",
+  "analysis",
+  "implementation",
+  "repair",
+  "docs",
+  "finalization",
+] as const;
+const SUPPORTED_ROUTER_TASK_TYPES = [
+  "startup",
+  "analyze",
+  "impl",
+  "repair",
+  "docs",
+  "finalize",
+] as const;
+const SUPPORTED_ROUTER_TRUST_TIERS = ["sandbox", "standard", "trusted"] as const;
+const SUPPORTED_ROUTER_COST_TIERS = ["low", "medium", "high"] as const;
+const SUPPORTED_ROUTER_QUOTA_POLICIES = [
+  "best-effort",
+  "rate-limited",
+  "reserved",
 ] as const;
 const SUPPORTED_LIFECYCLE_STATES = [
   "backlog",
@@ -343,6 +370,194 @@ export function validateConfig(config: unknown): ValidationResult {
             if ("noFallback" in rolePolicy && rolePolicy.noFallback !== undefined && !isBoolean(rolePolicy.noFallback)) {
               result.valid = false;
               result.errors.push(`execution.providerPolicy.${roleName}.noFallback must be a boolean`);
+            }
+          }
+        }
+      }
+      if ("routerPolicy" in config.execution && config.execution.routerPolicy !== undefined) {
+        if (!isPlainObject(config.execution.routerPolicy)) {
+          result.valid = false;
+          result.errors.push("execution.routerPolicy must be a plain object");
+        } else {
+          const routerPolicy = config.execution.routerPolicy;
+          const providerKeys = isPlainObject(config.execution.providers)
+            ? new Set(Object.keys(config.execution.providers))
+            : null;
+          if (
+            "allowCrossProviderFallback" in routerPolicy &&
+            routerPolicy.allowCrossProviderFallback !== undefined &&
+            !isBoolean(routerPolicy.allowCrossProviderFallback)
+          ) {
+            result.valid = false;
+            result.errors.push("execution.routerPolicy.allowCrossProviderFallback must be a boolean");
+          }
+          if (
+            isBoolean(config.execution.allowCrossAgentFallback) &&
+            isBoolean(routerPolicy.allowCrossProviderFallback) &&
+            config.execution.allowCrossAgentFallback !== routerPolicy.allowCrossProviderFallback
+          ) {
+            result.valid = false;
+            result.errors.push(
+              "execution fallback policy is ambiguous: allowCrossAgentFallback conflicts with execution.routerPolicy.allowCrossProviderFallback",
+            );
+          }
+          if ("defaultWorkerPool" in routerPolicy && routerPolicy.defaultWorkerPool !== undefined) {
+            if (!isPlainObject(routerPolicy.defaultWorkerPool)) {
+              result.valid = false;
+              result.errors.push("execution.routerPolicy.defaultWorkerPool must be a plain object");
+            } else {
+              if (
+                "maxActiveWorkers" in routerPolicy.defaultWorkerPool &&
+                routerPolicy.defaultWorkerPool.maxActiveWorkers !== undefined &&
+                !isPositiveInteger(routerPolicy.defaultWorkerPool.maxActiveWorkers)
+              ) {
+                result.valid = false;
+                result.errors.push(
+                  "execution.routerPolicy.defaultWorkerPool.maxActiveWorkers must be a positive integer",
+                );
+              }
+              if (
+                "maxActiveSlots" in routerPolicy.defaultWorkerPool &&
+                routerPolicy.defaultWorkerPool.maxActiveSlots !== undefined &&
+                !isPositiveInteger(routerPolicy.defaultWorkerPool.maxActiveSlots)
+              ) {
+                result.valid = false;
+                result.errors.push(
+                  "execution.routerPolicy.defaultWorkerPool.maxActiveSlots must be a positive integer",
+                );
+              }
+            }
+          }
+          if ("providerRegistry" in routerPolicy && routerPolicy.providerRegistry !== undefined) {
+            if (!isPlainObject(routerPolicy.providerRegistry)) {
+              result.valid = false;
+              result.errors.push("execution.routerPolicy.providerRegistry must be a plain object");
+            } else {
+              for (const [providerName, providerPolicy] of Object.entries(routerPolicy.providerRegistry)) {
+                if (providerKeys && !providerKeys.has(providerName)) {
+                  result.valid = false;
+                  result.errors.push(
+                    `execution.routerPolicy.providerRegistry contains unknown provider: ${providerName}`,
+                  );
+                }
+                if (!isPlainObject(providerPolicy)) {
+                  result.valid = false;
+                  result.errors.push(
+                    `execution.routerPolicy.providerRegistry.${providerName} must be a plain object`,
+                  );
+                  continue;
+                }
+                if ("eligibleRoles" in providerPolicy && providerPolicy.eligibleRoles !== undefined) {
+                  if (
+                    !Array.isArray(providerPolicy.eligibleRoles) ||
+                    !providerPolicy.eligibleRoles.every(
+                      (role) =>
+                        isString(role) &&
+                        SUPPORTED_EXECUTION_ROLES.includes(
+                          role as typeof SUPPORTED_EXECUTION_ROLES[number],
+                        ),
+                    )
+                  ) {
+                    result.valid = false;
+                    result.errors.push(
+                      `execution.routerPolicy.providerRegistry.${providerName}.eligibleRoles must contain only supported execution roles`,
+                    );
+                  }
+                }
+                if ("capabilities" in providerPolicy && providerPolicy.capabilities !== undefined) {
+                  if (
+                    !Array.isArray(providerPolicy.capabilities) ||
+                    !providerPolicy.capabilities.every(
+                      (capability) =>
+                        isString(capability) &&
+                        SUPPORTED_ROUTER_CAPABILITIES.includes(
+                          capability as typeof SUPPORTED_ROUTER_CAPABILITIES[number],
+                        ),
+                    )
+                  ) {
+                    result.valid = false;
+                    result.errors.push(
+                      `execution.routerPolicy.providerRegistry.${providerName}.capabilities must contain only: orchestration, analysis, implementation, repair, docs, finalization`,
+                    );
+                  }
+                }
+                if ("taskTypes" in providerPolicy && providerPolicy.taskTypes !== undefined) {
+                  if (
+                    !Array.isArray(providerPolicy.taskTypes) ||
+                    !providerPolicy.taskTypes.every(
+                      (taskType) =>
+                        isString(taskType) &&
+                        SUPPORTED_ROUTER_TASK_TYPES.includes(
+                          taskType as typeof SUPPORTED_ROUTER_TASK_TYPES[number],
+                        ),
+                    )
+                  ) {
+                    result.valid = false;
+                    result.errors.push(
+                      `execution.routerPolicy.providerRegistry.${providerName}.taskTypes must contain only: startup, analyze, impl, repair, docs, finalize`,
+                    );
+                  }
+                }
+                if ("trustTier" in providerPolicy && providerPolicy.trustTier !== undefined) {
+                  if (
+                    !isString(providerPolicy.trustTier) ||
+                    !SUPPORTED_ROUTER_TRUST_TIERS.includes(
+                      providerPolicy.trustTier as typeof SUPPORTED_ROUTER_TRUST_TIERS[number],
+                    )
+                  ) {
+                    result.valid = false;
+                    result.errors.push(
+                      `execution.routerPolicy.providerRegistry.${providerName}.trustTier must be one of: sandbox, standard, trusted`,
+                    );
+                  }
+                }
+                if ("costTier" in providerPolicy && providerPolicy.costTier !== undefined) {
+                  if (
+                    !isString(providerPolicy.costTier) ||
+                    !SUPPORTED_ROUTER_COST_TIERS.includes(
+                      providerPolicy.costTier as typeof SUPPORTED_ROUTER_COST_TIERS[number],
+                    )
+                  ) {
+                    result.valid = false;
+                    result.errors.push(
+                      `execution.routerPolicy.providerRegistry.${providerName}.costTier must be one of: low, medium, high`,
+                    );
+                  }
+                }
+                if ("quotaPolicy" in providerPolicy && providerPolicy.quotaPolicy !== undefined) {
+                  if (
+                    !isString(providerPolicy.quotaPolicy) ||
+                    !SUPPORTED_ROUTER_QUOTA_POLICIES.includes(
+                      providerPolicy.quotaPolicy as typeof SUPPORTED_ROUTER_QUOTA_POLICIES[number],
+                    )
+                  ) {
+                    result.valid = false;
+                    result.errors.push(
+                      `execution.routerPolicy.providerRegistry.${providerName}.quotaPolicy must be one of: best-effort, rate-limited, reserved`,
+                    );
+                  }
+                }
+                if (
+                  "fallbackEligible" in providerPolicy &&
+                  providerPolicy.fallbackEligible !== undefined &&
+                  !isBoolean(providerPolicy.fallbackEligible)
+                ) {
+                  result.valid = false;
+                  result.errors.push(
+                    `execution.routerPolicy.providerRegistry.${providerName}.fallbackEligible must be a boolean`,
+                  );
+                }
+                if (
+                  "maxActiveSlots" in providerPolicy &&
+                  providerPolicy.maxActiveSlots !== undefined &&
+                  !isPositiveInteger(providerPolicy.maxActiveSlots)
+                ) {
+                  result.valid = false;
+                  result.errors.push(
+                    `execution.routerPolicy.providerRegistry.${providerName}.maxActiveSlots must be a positive integer`,
+                  );
+                }
+              }
             }
           }
         }

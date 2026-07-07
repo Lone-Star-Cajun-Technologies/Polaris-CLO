@@ -364,6 +364,13 @@ describe("runInit — repo state detection", () => {
         adapter: "terminal-cli",
         rotation: [],
         allowCrossAgentFallback: false,
+        routerPolicy: {
+          defaultWorkerPool: {
+            maxActiveWorkers: 1,
+            maxActiveSlots: 1,
+          },
+          allowCrossProviderFallback: false,
+        },
       },
       orchestration: {
         mode: "supervised",
@@ -529,6 +536,13 @@ describe("runInit — repo state detection", () => {
         roles: { worker: { provider: "codex", model: "gpt-5.5" } },
         rotation: [],
         allowCrossAgentFallback: false,
+        routerPolicy: {
+          defaultWorkerPool: {
+            maxActiveWorkers: 1,
+            maxActiveSlots: 1,
+          },
+          allowCrossProviderFallback: false,
+        },
       },
       orchestration: {
         mode: "supervised",
