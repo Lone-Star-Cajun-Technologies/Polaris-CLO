@@ -139,4 +139,40 @@ describe("selectChildSlotClaims", () => {
     expect(afterFinish.selected_child).toBe("POL-402");
     expect(afterFinish.slot_claims.map((claim) => claim.child_id)).toEqual(["POL-402"]);
   });
+
+  it("sums retained and new claims for the same provider when computing activeSlotsByProvider", () => {
+    // One retained "codex" claim exists for the active child. With two more open
+    // children and max_concurrent=3 (two available slots), decide_route is called
+    // twice. The second call must see codex count = 2 (retained + the newly claimed
+    // slot from the first call), not just 1 (overwritten by a plain spread).
+    const now = new Date("2026-07-07T10:00:00.000Z");
+    const existing: SlotClaim[] = [
+      {
+        child_id: "POL-401",
+        provider: "codex",
+        claimed_at: "2026-07-07T09:59:00.000Z",
+        expires_at: "2026-07-07T11:00:00.000Z",
+        selection_reason: "policy-router",
+      },
+    ];
+    const seenCounts: number[] = [];
+    selectChildSlotClaims({
+      open_children: ["POL-401", "POL-402", "POL-403"],
+      completed_children: [],
+      active_child: "POL-401",
+      existing_claims: existing,
+      max_concurrent: 3,
+      claim_ttl_ms: 60_000,
+      now,
+      get_dependencies: () => [],
+      decide_route: ({ activeSlotsByProvider }) => {
+        seenCounts.push(activeSlotsByProvider["codex"] ?? 0);
+        return makeDecision("codex");
+      },
+    });
+    // First call (for POL-402): sees 1 retained codex slot.
+    expect(seenCounts[0]).toBe(1);
+    // Second call (for POL-403): sees retained + first newly claimed = 2 codex slots.
+    expect(seenCounts[1]).toBe(2);
+  });
 });

@@ -73,7 +73,6 @@ export function selectChildSlotClaims(args: SelectChildSlotClaimsArgs): SelectCh
     return true;
   });
 
-  const activeSlotsByProvider = countActiveSlotsByProvider(retainedClaims);
   const rejected_children: Record<string, "blocked-dependency" | "router-ineligible"> = {};
   const claimedChildren = new Set(retainedClaims.map((claim) => claim.child_id));
   const availableSlots = Math.max(0, args.max_concurrent - retainedClaims.length);
@@ -94,10 +93,7 @@ export function selectChildSlotClaims(args: SelectChildSlotClaimsArgs): SelectCh
 
       const decision = args.decide_route({
         childId,
-        activeSlotsByProvider: {
-          ...activeSlotsByProvider,
-          ...countActiveSlotsByProvider(newClaims),
-        },
+        activeSlotsByProvider: countActiveSlotsByProvider([...retainedClaims, ...newClaims]),
       });
 
       const hardIneligibleReasons = new Set([

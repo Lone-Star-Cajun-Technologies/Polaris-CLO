@@ -232,10 +232,6 @@ export function resolveProviderAndMode(
     compatibilityMode: false,
   });
 
-  if (!decision.selectedProvider && decision.exhaustedReason) {
-    throw new Error(`provider dispatch forbidden: router rejected all providers (reason=${decision.exhaustedReason})`);
-  }
-
   return {
     provider: decision.selectedProvider,
     mode: decision.mode,
@@ -1432,6 +1428,16 @@ export function runLoopDispatch(options: DispatchOptions): void {
   } catch (err) {
     fail(err instanceof Error ? err.message : String(err));
   }
+
+  // ── Handle hard-exhaustion: emit telemetry before failing ──────────────────
+  // resolveProviderAndMode returns (not throws) when all providers are rejected so
+  // emitProviderExhausted/emitProviderSelected can record the candidate breakdown.
+  if (!providerDecision.provider && providerDecision.exhaustedReason && providerDecision.routerEvidence) {
+    emitProviderExhausted(telemetryFile, dispatchId, state.run_id, childId, providerDecision);
+    emitProviderSelected(telemetryFile, dispatchId, state.run_id, childId, providerDecision);
+    fail(`provider dispatch forbidden: router rejected all providers (reason=${providerDecision.exhaustedReason})`);
+  }
+
   const { provider: resolvedProvider } = providerDecision;
   const providerPolicy = loadedConfig?.execution.providerPolicy ?? getProviderPolicy(options.repoRoot);
   if (!providerDecision.routerEvidence) {

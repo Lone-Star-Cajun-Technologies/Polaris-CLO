@@ -68,12 +68,16 @@ function hasWorkerExecutionEvidence(
     const telemetry = fs.readFileSync(packet.telemetry_file, "utf-8").trim();
     if (!telemetry) return false;
     const lines = telemetry.split("\n");
+    // Scan backwards and stop at the most recent child-dispatched event for
+    // this child so stale evidence from a previous dispatch attempt is ignored.
     for (let i = lines.length - 1; i >= 0; i--) {
       const line = lines[i]?.trim();
       if (!line) continue;
       try {
         const parsed = JSON.parse(line) as { event?: string; child_id?: string };
         if (parsed.child_id !== packet.active_child) continue;
+        // Stop at the dispatch boundary — events before this belong to a prior attempt.
+        if (parsed.event === "child-dispatched") break;
         if (
           parsed.event === "worker-acknowledged" ||
           parsed.event === "worker-heartbeat" ||

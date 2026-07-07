@@ -187,10 +187,9 @@ export function decideWorkerRoute(input: WorkerRouterInput): WorkerRouterDecisio
 
     const activeSlots = activeSlotsByProvider[provider] ?? 0;
     const providerSlotLimit = policy?.maxActiveSlots;
-    if (providerSlotLimit !== undefined && activeSlots >= providerSlotLimit) {
-      rejectionReasons.push("no-slot");
-    }
-    if (globalSlotLimit !== undefined && activeSlots >= globalSlotLimit) {
+    // Provider-specific maxActiveSlots overrides the global default when present.
+    const effectiveSlotLimit = providerSlotLimit ?? globalSlotLimit;
+    if (effectiveSlotLimit !== undefined && activeSlots >= effectiveSlotLimit) {
       rejectionReasons.push("no-slot");
     }
 

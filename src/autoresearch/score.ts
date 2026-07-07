@@ -320,20 +320,25 @@ export function summarizeRouterOutcomes(artifacts: RunArtifacts): RouterOutcomes
     const childId = typeof event["child_id"] === "string" ? event["child_id"] : undefined;
     const selectedProvider = typeof event["selected_provider"] === "string" ? event["selected_provider"] : null;
     if (!selectedProvider) {
-      const exhaustedReason =
-        typeof event["router_exhausted_reason"] === "string"
-          ? event["router_exhausted_reason"]
-          : "no-provider-selected";
-      countReason(exhaustedReason, childId);
-
+      // Use per-candidate rejection reasons when available; fall back to the
+      // overall exhausted reason. Counting both for the same event would
+      // double-count shared reason strings (e.g. "no-slot").
       const candidates = Array.isArray(event["router_candidates"]) ? event["router_candidates"] : [];
-      for (const candidateRaw of candidates) {
-        const candidate = asRecord(candidateRaw);
-        if (!candidate) continue;
-        const rejectionReasons = asStringArray(candidate["rejection_reasons"]);
-        for (const reason of rejectionReasons) {
-          countReason(reason, childId);
+      if (candidates.length > 0) {
+        for (const candidateRaw of candidates) {
+          const candidate = asRecord(candidateRaw);
+          if (!candidate) continue;
+          const rejectionReasons = asStringArray(candidate["rejection_reasons"]);
+          for (const reason of rejectionReasons) {
+            countReason(reason, childId);
+          }
         }
+      } else {
+        const exhaustedReason =
+          typeof event["router_exhausted_reason"] === "string"
+            ? event["router_exhausted_reason"]
+            : "no-provider-selected";
+        countReason(exhaustedReason, childId);
       }
     }
   }

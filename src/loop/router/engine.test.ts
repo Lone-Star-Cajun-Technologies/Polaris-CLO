@@ -159,6 +159,44 @@ describe("decideWorkerRoute", () => {
     expect(decision.exhaustedReason).toBe("capability-mismatch");
   });
 
+  it("allows a provider whose maxActiveSlots exceeds the global default up to its own higher limit", () => {
+    // "copilot" has no provider-specific limit → global limit (1) applies → rejected (1 active slot).
+    // "codex" has maxActiveSlots=3 and 2 active slots → its own limit overrides global → eligible.
+    // Without the fix both providers would be rejected at slot count >= globalSlotLimit.
+    const decision = decideWorkerRoute(
+      baseInput({
+        runtime: {
+          activeSlotsByProvider: { copilot: 1, codex: 2 },
+        },
+        routerPolicy: {
+          defaultWorkerPool: { maxActiveSlots: 1 },
+          providerRegistry: {
+            copilot: {
+              eligibleRoles: ["worker"],
+              capabilities: ["implementation"],
+              taskTypes: ["impl"],
+              trustTier: "standard",
+              costTier: "medium",
+            },
+            codex: {
+              eligibleRoles: ["worker"],
+              capabilities: ["implementation"],
+              taskTypes: ["impl"],
+              trustTier: "standard",
+              costTier: "medium",
+              maxActiveSlots: 3,
+            },
+          },
+        },
+      }),
+    );
+    expect(decision.selectedProvider).toBe("codex");
+    const codexCandidate = decision.candidates.find((c) => c.provider === "codex");
+    expect(codexCandidate?.rejectionReasons).not.toContain("no-slot");
+    const copilotCandidate = decision.candidates.find((c) => c.provider === "copilot");
+    expect(copilotCandidate?.rejectionReasons).toContain("no-slot");
+  });
+
   it("preserves compatibility mode selection ordering", () => {
     const decision = decideWorkerRoute(
       baseInput({
