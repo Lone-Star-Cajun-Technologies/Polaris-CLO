@@ -1,0 +1,94 @@
+{
+  "schemaVersion": "v2",
+  "source": {
+    "id": "POL-463",
+    "type": "Linear",
+    "analysis": {
+      "id": "initial-sync",
+      "doc": "Synchronized from Linear issue identifier: POL-463"
+    }
+  },
+  "nodes": {
+    "POL-463": {
+      "id": "POL-463",
+      "title": "IMPLEMENT: Polaris Worker Router",
+      "status": "Todo",
+      "body": "## Objective\n\nImplement a Polaris-native Worker Router roadmap informed by 9Router concepts while preserving Polaris-owned orchestration, evidence, validation, and finalization boundaries.\n\n## Context\n\nThis IMPLEMENT parent comes from ANALYZE source issue [POL-460](https://linear.app/lsctech/issue/POL-460/analyze-polaris-worker-router-informed-by-9router). The analysis found that 9Router is useful as a reference for provider/account/model registry, quota tracking, fallback tiers, request logging, and usage analytics, but should not replace Polaris orchestration or become a required runtime dependency.\n\nPolaris already has provider policy and rotation config, provider-selection telemetry, TerminalCliAdapter pre-dispatch fallback, single-worker lifecycle contracts, ordered child selection, and autoresearch scoring foundations. It does not yet have a first-class Worker Router with worker slots, eligibility scoring, quota/cost/trust/capability policy, or router decision telemetry suitable for future SOL inputs.\n\n## Goal\n\nDeliver a staged implementation of the Worker Router architecture, config model, router decision engine, scheduler integration, adapter fallback handling, and telemetry/scoring hooks.\n\n## Scope\n\n* smartdocs/raw/analysis/*worker-router-analysis.md\n* smartdocs/specs/raw/**\n* smartdocs/specs/active/**\n* src/config/**\n* src/loop/**\n* src/autoresearch/**\n* src/cli/**\n* src/mcp/**\n* src/runtime/**\n* tests covering the changed runtime/config/router behavior\n\n## Acceptance Criteria\n\n* Worker Router architecture is documented with explicit boundaries against replacing Polaris orchestration.\n* Worker/router config supports role eligibility, provider capabilities, trust, cost, quota/fallback policy, and concurrency/slot controls.\n* Router decision logic is deterministic, tested, and emits explainable decision evidence.\n* Runtime integration preserves current single-worker behavior by default and only enables multi-slot scheduling when configured.\n* Adapter fallback distinguishes provider/pre-dispatch failure from actual worker execution failure.\n* Router telemetry and future SOL/autoresearch scoring inputs are captured without weakening existing evidence gates.\n* All child issues complete with validation passing.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/config src/loop src/autoresearch src/cli src/mcp\n\n## Ordering\n\n* Children execute in numeric dependency order. Documentation/design comes first, followed by config/types, router core, scheduler slots, adapter fallback/quota integration, and telemetry/SOL scoring.\n\n## Non-goals\n\n* Do not make 9Router a required dependency.\n* Do not replace Polaris decomposition, Linear hierarchy, sealed packets, validation, or finalization.\n* Do not enable concurrent worker dispatch by default.\n* Do not retry a child on another provider after a worker has actually started and produced a result file."
+    },
+    "POL-469": {
+      "id": "POL-469",
+      "title": "Emit router telemetry and SOL scoring inputs",
+      "status": "Todo",
+      "body": "## Objective\n\nCapture Worker Router decisions and outcomes as durable telemetry and feed them into the autoresearch/SOL scoring path.\n\n## Context\n\n[POL-460](https://linear.app/lsctech/issue/POL-460/analyze-polaris-worker-router-informed-by-9router) asks how worker trust level, cost, task type, capability, historical performance, and future SOL scoring should influence routing. Existing dispatch telemetry and autoresearch scoring can be extended instead of introducing a separate analytics system.\n\n## Goal\n\nRecord router decisions, candidate rejection reasons, slot assignment, provider fallback, quota/cost/trust/capability inputs, and post-run outcomes in a form that scoreRun/buildProposals can use.\n\n## Scope\n\n* src/loop/dispatch-state.ts\n* src/loop/ledger.ts\n* src/loop/parent.ts\n* src/loop/dispatch.ts\n* src/autoresearch/score.ts\n* src/autoresearch/gates.ts\n* src/autoresearch/proposal.ts\n* src/autoresearch/routing.ts\n* src/cli/autoresearch.ts\n* src/loop/*telemetry*.test.ts\n* src/autoresearch/*.test.ts\n* smartdocs/specs/raw/**\n\n## Acceptance Criteria\n\n* Router decision telemetry includes selected worker/provider, candidates considered, rejection reasons, score inputs, and fallback attempts.\n* Ledger or telemetry records allow correlating router decisions with child completion, validation status, elapsed time, provider/model, and commit/file evidence.\n* Autoresearch scoring can consume router outcomes without treating expected fallback as worker failure.\n* Proposal generation can recommend policy/config/docs fixes for recurring router failures.\n* Tests cover telemetry schema, scoring inputs, and proposal generation for provider exhaustion, quota exhaustion, trust/capability mismatch, and successful fallback.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/loop/dispatch-state.ts src/loop/parent.test.ts src/loop/dispatch.test.ts src/autoresearch src/cli/autoresearch.ts\n\n## Ordering\n\n* Depends on [POL-467](https://linear.app/lsctech/issue/POL-467/add-slot-aware-child-scheduling-and-worker-pool-state) and [POL-468](https://linear.app/lsctech/issue/POL-468/integrate-router-fallback-with-execution-adapters-and-quota-signals).\n\n## Non-goals\n\n* Do not auto-apply SOL proposals.\n* Do not introduce remote analytics or cloud telemetry.\n* Do not expose secrets, prompts, or provider credentials in telemetry."
+    },
+    "POL-468": {
+      "id": "POL-468",
+      "title": "Integrate router fallback with execution adapters and quota signals",
+      "status": "Todo",
+      "body": "## Objective\n\nConnect Worker Router provider decisions to execution adapters and classify quota/fallback outcomes safely.\n\n## Context\n\n`TerminalCliAdapter` already has limited fallback for providers that fail before worker execution starts. 9Router's strongest reusable concept is quota/error-aware fallback, but Polaris must not double-dispatch a child after real worker execution has begun.\n\n## Goal\n\nRoute adapter launch attempts through router decision evidence, classify provider failures, and support configured fallback only for safe pre-dispatch/provider-unavailable cases.\n\n## Scope\n\n* src/loop/adapters/**\n* src/loop/dispatch.ts\n* src/loop/dispatch-state.ts\n* src/loop/orphan-recovery.ts\n* src/loop/dispatch.test.ts\n* src/loop/provider-sealed-packet.test.ts\n* src/loop/orphan-recovery.test.ts\n\n## Acceptance Criteria\n\n* Adapter dispatch receives router-selected provider/candidate metadata and records it in dispatch results.\n* Provider launch failures are classified separately from worker failures.\n* Quota/rate-limit style failures can be marked as provider-unavailable/quota-exhausted when no worker result file exists.\n* Fallback never occurs after the worker writes a sealed result or otherwise clearly starts execution.\n* Tests cover command-not-found fallback, quota-exhausted fallback, provider policy noFallback, result-file prevents retry, and error evidence in telemetry.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/loop/adapters src/loop/dispatch.test.ts src/loop/provider-sealed-packet.test.ts src/loop/orphan-recovery.test.ts\n\n## Ordering\n\n* Depends on [POL-466](https://linear.app/lsctech/issue/POL-466/implement-deterministic-worker-router-decision-engine). May run after or alongside [POL-467](https://linear.app/lsctech/issue/POL-467/add-slot-aware-child-scheduling-and-worker-pool-state) if shared files are coordinated carefully.\n\n## Non-goals\n\n* Do not implement provider-specific live quota API clients unless a provider already exposes a simple local signal.\n* Do not proxy LLM requests or implement an OpenAI-compatible gateway.\n* Do not change worker result schema without preserving backward compatibility."
+    },
+    "POL-467": {
+      "id": "POL-467",
+      "title": "Add slot-aware child scheduling and worker pool state",
+      "status": "Todo",
+      "body": "## Objective\n\nIntegrate Worker Router decisions into child scheduling and worker-pool state while preserving current single-worker defaults.\n\n## Context\n\nThe parent loop currently selects the next open child and dispatches one worker at a time. [POL-460](https://linear.app/lsctech/issue/POL-460/analyze-polaris-worker-router-informed-by-9router) specifically asks how Polaris should maintain a worker pool, such as three active non-Claude workers, and assign the next unblocked child when a worker finishes.\n\n## Goal\n\nAdd slot-aware scheduling primitives and state transitions that can claim multiple eligible child/provider slots when configured, without changing default one-child/session behavior.\n\n## Scope\n\n* src/loop/parent.ts\n* src/loop/dispatch.ts\n* src/loop/lifecycle.ts\n* src/loop/checkpoint.ts\n* src/loop/run-preflight.ts\n* src/cluster-state/**\n* src/runtime/scheduling/**\n* src/mcp/tools/**\n* src/loop/parent.test.ts\n* src/loop/lifecycle.test.ts\n* src/loop/run-preflight.test.ts\n* src/cluster-state/*.test.ts\n\n## Acceptance Criteria\n\n* Default behavior remains `max_concurrent = 1` and existing supervised/auto run semantics continue to pass.\n* Configured worker pool limits can express multiple active non-Claude workers without violating role policy.\n* Scheduler selects the next unblocked child using cluster dependencies and router eligibility evidence, not chat reasoning.\n* Slot claims are durable in cluster/current state and expire or recover safely on orphaned workers.\n* Tests cover one-slot compatibility, multi-slot selection, blocked dependency exclusion, claim expiry, and worker-finish-next-child assignment.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/loop/parent.test.ts src/loop/lifecycle.test.ts src/loop/run-preflight.test.ts src/cluster-state src/runtime/scheduling src/mcp/tools\n\n## Ordering\n\n* Depends on [POL-466](https://linear.app/lsctech/issue/POL-466/implement-deterministic-worker-router-decision-engine).\n\n## Non-goals\n\n* Do not enable multi-worker scheduling by default.\n* Do not loosen one-child packet scope or sealed result requirements.\n* Do not bypass cluster `blockedBy` dependencies."
+    },
+    "POL-466": {
+      "id": "POL-466",
+      "title": "Implement deterministic Worker Router decision engine",
+      "status": "Todo",
+      "body": "## Objective\n\nImplement the pure Worker Router decision engine that selects eligible worker/provider candidates and returns explainable routing evidence.\n\n## Context\n\nProvider selection currently lives in dispatch code and chooses by CLI override, role policy, rotation, or first provider. The Worker Router should make this explicit and testable before runtime integration.\n\n## Goal\n\nCreate a deterministic router module that evaluates child/task inputs, role authority, route/domain metadata, provider capabilities, trust/cost/quota policy, fallback state, and slot availability.\n\n## Scope\n\n* src/loop/router/**\n* src/loop/dispatch.ts\n* src/loop/dispatch.test.ts\n* src/loop/adapters/types.ts\n* src/loop/worker-packet.ts\n* src/loop/worker-packet.test.ts\n* src/config/**\n\n## Acceptance Criteria\n\n* Router exposes typed inputs/outputs for candidate eligibility, rejection reasons, selected provider/worker, and scoring evidence.\n* Decision logic is pure and deterministic for identical inputs.\n* Router supports current behavior as compatibility mode when no router config is present.\n* Router refuses forbidden providers and reports why: role-disabled, not-in-policy, quota-exhausted, trust-too-low, capability-mismatch, cost-policy, or no-slot.\n* Unit tests cover happy paths, tie-breaking, rejection reasons, fallback ordering, and compatibility mode.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/loop/router src/loop/dispatch.test.ts src/loop/worker-packet.test.ts src/config\n\n## Ordering\n\n* Depends on [POL-465](https://linear.app/lsctech/issue/POL-465/add-worker-router-config-and-policy-types).\n\n## Non-goals\n\n* Do not change parent-loop concurrency behavior in this child.\n* Do not launch workers from the router module.\n* Do not read or write runtime state from the pure router decision function."
+    },
+    "POL-465": {
+      "id": "POL-465",
+      "title": "Add Worker Router config and policy types",
+      "status": "Todo",
+      "body": "## Objective\n\nAdd typed configuration and validation for the Worker Router policy surface.\n\n## Context\n\nThe existing config has `execution.providers`, `execution.rotation`, `allowCrossAgentFallback`, and `providerPolicy`. The Worker Router needs a first-class, backward-compatible policy model for eligibility, capabilities, trust, cost, quota, fallback, and slot controls.\n\n## Goal\n\nDefine config schema/types/defaults/validation for router policy while preserving current configs and default single-worker behavior.\n\n## Scope\n\n* src/config/schema.ts\n* src/config/schema.json\n* src/config/defaults.ts\n* src/config/validator.ts\n* src/config/validator.test.ts\n* src/config/loader.test.ts\n* src/cli/init.ts\n* src/cli/init.test.ts\n* polaris.config.json documentation references only if needed\n\n## Acceptance Criteria\n\n* Config supports worker/provider registry metadata: role eligibility, capabilities/task types, trust tier, cost tier, quota policy, fallback eligibility, max active slots, and default worker pool limits.\n* Defaults preserve existing runtime behavior: no concurrent worker expansion and no new automatic cross-provider delegation unless configured.\n* Validator rejects unknown providers, invalid slot counts, invalid trust/cost/capability values, and ambiguous fallback policy.\n* Tests cover backward compatibility and invalid config cases.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/config src/cli/init.test.ts\n\n## Ordering\n\n* Depends on [POL-464](https://linear.app/lsctech/issue/POL-464/document-worker-router-architecture-and-invariants).\n\n## Non-goals\n\n* Do not integrate router decisions into dispatch in this child.\n* Do not change runtime provider selection behavior yet.\n* Do not require live provider quota APIs."
+    },
+    "POL-464": {
+      "id": "POL-464",
+      "title": "Document Worker Router architecture and invariants",
+      "status": "Todo",
+      "body": "## Objective\n\nWrite the Worker Router architecture spec and record the 9Router-informed design boundaries before runtime code changes.\n\n## Context\n\n[POL-460](https://linear.app/lsctech/issue/POL-460/analyze-polaris-worker-router-informed-by-9router) asks Polaris to learn from 9Router without replacing Polaris orchestration. This child turns the analysis into repo-local architecture guidance for subsequent implementation children.\n\n## Goal\n\nProduce a Worker Router spec that defines responsibilities, non-responsibilities, data flow, router decision evidence, scheduler boundaries, and migration stages.\n\n## Scope\n\n* smartdocs/raw/analysis/*worker-router-analysis.md\n* smartdocs/specs/raw/**\n* smartdocs/specs/active/**\n* smartdocs/architecture/**\n* src/loop/POLARIS.md\n* src/loop/adapters/POLARIS.md\n* src/config/POLARIS.md\n\n## Acceptance Criteria\n\n* Spec compares 9Router concepts against Polaris-owned orchestration boundaries.\n* Spec defines worker/provider registry, slot pool, eligibility, trust, cost, quota, fallback, route/domain, and SOL telemetry concepts.\n* Spec states default behavior remains single-worker and no 9Router dependency is introduced.\n* Route docs are updated only where the spec materially changes operational guidance.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/loop src/config\n\n## Ordering\n\n* None. This child must run before config/types and runtime integration children.\n\n## Non-goals\n\n* Do not implement runtime router code.\n* Do not promote draft docs to doctrine without the existing SmartDocs promotion workflow.\n* Do not make 9Router a required dependency."
+    },
+    "POL-460": {
+      "id": "POL-460",
+      "title": "ANALYZE: Polaris Worker Router informed by 9Router",
+      "status": "Todo"
+    }
+  },
+  "dependencies": {
+    "POL-469": [
+      "POL-468",
+      "POL-467"
+    ],
+    "POL-468": [
+      "POL-466"
+    ],
+    "POL-467": [
+      "POL-466"
+    ],
+    "POL-466": [
+      "POL-465"
+    ],
+    "POL-465": [
+      "POL-464"
+    ]
+  },
+  "clusters": {
+    "POL-463": {
+      "id": "POL-463",
+      "title": "Linear Issue: POL-463",
+      "children": [
+        "POL-464",
+        "POL-465",
+        "POL-466",
+        "POL-467",
+        "POL-468",
+        "POL-469"
+      ],
+      "cluster_root": "POL-463"
+    }
+  },
+  "activeCluster": "POL-463"
+}

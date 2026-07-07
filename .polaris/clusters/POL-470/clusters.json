@@ -1,0 +1,87 @@
+{
+  "schemaVersion": "v2",
+  "source": {
+    "id": "POL-470",
+    "type": "Linear",
+    "analysis": {
+      "id": "POL-461",
+      "doc": "smartdocs/raw/analysis/pol-461-quality-control-analysis.md"
+    }
+  },
+  "nodes": {
+    "POL-470": {
+      "id": "POL-470",
+      "title": "IMPLEMENT: Polaris Quality Control lifecycle",
+      "status": "Todo",
+      "body": "Implementation parent created from POL-461 analysis. See Linear issue body for canonical scope, validation, acceptance criteria, and non-goals."
+    },
+    "POL-471": {
+      "id": "POL-471",
+      "title": "Document QC architecture and lifecycle boundaries",
+      "status": "Todo"
+    },
+    "POL-472": {
+      "id": "POL-472",
+      "title": "Add QC config and provider contracts",
+      "status": "Todo"
+    },
+    "POL-473": {
+      "id": "POL-473",
+      "title": "Implement QC finding artifacts and provider result parsing",
+      "status": "Todo"
+    },
+    "POL-474": {
+      "id": "POL-474",
+      "title": "Integrate QC triggers with cluster completion and PR delivery",
+      "status": "Todo"
+    },
+    "POL-475": {
+      "id": "POL-475",
+      "title": "Add QC attribution, autofix gating, and repair routing",
+      "status": "Todo"
+    },
+    "POL-476": {
+      "id": "POL-476",
+      "title": "Feed QC metrics into SOL scoring and operator reports",
+      "status": "Todo"
+    },
+    "POL-461": {
+      "id": "POL-461",
+      "title": "ANALYZE: Polaris Quality Control architecture",
+      "status": "Done"
+    }
+  },
+  "dependencies": {
+    "POL-472": [
+      "POL-471"
+    ],
+    "POL-473": [
+      "POL-472"
+    ],
+    "POL-474": [
+      "POL-473"
+    ],
+    "POL-475": [
+      "POL-474"
+    ],
+    "POL-476": [
+      "POL-475"
+    ]
+  },
+  "clusters": {
+    "POL-470": {
+      "id": "POL-470",
+      "title": "IMPLEMENT: Polaris Quality Control lifecycle",
+      "children": [
+        "POL-471",
+        "POL-472",
+        "POL-473",
+        "POL-474",
+        "POL-475",
+        "POL-476"
+      ],
+      "cluster_root": "POL-470"
+    }
+  },
+  "activeCluster": "POL-470"
+}
