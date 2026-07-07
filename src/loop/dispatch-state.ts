@@ -268,6 +268,7 @@ export interface WorkerAssignmentFailedEvent extends WorkerTelemetryEventBase {
     | "native-subagent-not-allowed-for-role"
     | "process-spawn-failed"
     | "provider-unavailable"
+    | "quota-exhausted"
     | "timeout";
 }
 
@@ -284,6 +285,12 @@ export interface ProviderSelectedEvent extends WorkerTelemetryEventBase {
   fallback_from?: string;
   fallback_reason?: string;
   providers_tried?: string[];
+  router_exhausted_reason?: string;
+  router_candidates?: Array<{
+    provider: string;
+    eligible: boolean;
+    rejection_reasons: string[];
+  }>;
 }
 
 /**

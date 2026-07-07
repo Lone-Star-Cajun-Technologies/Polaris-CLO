@@ -940,6 +940,16 @@ describe("runLoopDispatch", () => {
     const dr = updated.open_children_meta?.["POL-145"]?.dispatch_record;
     expect(dr?.provider).toBe("codex");
     expect(dr?.provider_selection_reason).toBe("policy-router");
+
+    const telemetryFile = join(testDir, ".taskchain_artifacts", "polaris-run", "runs", "pol-142-session-1", "telemetry.jsonl");
+    const providerSelected = readFileSync(telemetryFile, "utf-8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line))
+      .find((event) => event.event === "provider-selected");
+    expect(providerSelected).toBeDefined();
+    expect(Array.isArray(providerSelected.router_candidates)).toBe(true);
+    expect(providerSelected.router_candidates.some((c: { provider: string }) => c.provider === "codex")).toBe(true);
   });
 
   it("refuses provider override in router mode when provider is excluded by role policy", () => {
@@ -977,6 +987,36 @@ describe("runLoopDispatch", () => {
       runLoopDispatch({ repoRoot: testDir, stateFile, provider: "codex" })
     );
     expect(stderr).toContain("reason=not-in-policy");
+  });
+
+  it("emits provider probe failure telemetry with classified fallback evidence", () => {
+    const artifactDir = join(testDir, ".taskchain_artifacts", "polaris-run");
+    writeFileSync(
+      join(testDir, "polaris.config.json"),
+      JSON.stringify({
+        execution: {
+          adapter: "terminal-cli",
+          providers: { codex: { command: "definitely-missing-command-pol-468" } },
+          rotation: ["codex"],
+        },
+      }),
+      "utf-8",
+    );
+    const stateFile = writeState(testDir, baseState({ artifact_dir: artifactDir, completed_children: [] }));
+
+    captureStdout(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+
+    const telemetryFile = join(artifactDir, "runs", "pol-142-session-1", "telemetry.jsonl");
+    const probeFailed = readFileSync(telemetryFile, "utf-8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line))
+      .find((event) => event.event === "provider-probe-failed");
+    expect(probeFailed).toBeDefined();
+    expect(probeFailed.failure_origin).toBe("provider-launch");
+    expect(probeFailed.failure_category).toBe("provider-unavailable");
+    expect(probeFailed.pre_dispatch_failure).toBe(true);
+    expect(probeFailed.fallback_eligible).toBe(true);
   });
 
   // ── Acknowledgment timeout detection (POL-228 scenario B + E) ───────────────

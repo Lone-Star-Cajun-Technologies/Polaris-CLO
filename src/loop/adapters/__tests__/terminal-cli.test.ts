@@ -186,6 +186,173 @@ describe("TerminalCliAdapter", () => {
       expect(result.provider_used).toBe("codex");
     });
   });
+
+  describe("fallback and failure classification", () => {
+    it("falls back on command-not-found pre-dispatch failure", async () => {
+      const adapter = new TerminalCliAdapter({
+        adapter: "terminal-cli",
+        providers: {
+          codex: { command: "definitely-missing-command-pol-468" },
+          gemini: {
+            command: process.execPath,
+            args: [
+              "-e",
+              "console.log(JSON.stringify({child_id:'POL-14',status:'done',commit:'ok',validation:'passed',tracker_updated:false,state_updated:false,telemetry_updated:false,next_recommended_action:'continue'}))",
+            ],
+          },
+        },
+        providerPolicy: {
+          worker: {
+            providers: ["gemini"],
+          },
+        },
+      });
+
+      const result = await adapter.dispatch(MOCK_PACKET, {
+        provider: "codex",
+        routerDecision: {
+          selectedProvider: "codex",
+          selectionReason: "policy-router",
+          providersTried: ["codex", "gemini"],
+        },
+      });
+
+      expect(result.exit_code).toBe(0);
+      expect(result.provider_used).toBe("gemini");
+      expect(result.router_evidence?.selectionReason).toBe("policy-router");
+      expect(result.provider_attempts?.[0]).toMatchObject({
+        provider: "codex",
+        failure_origin: "provider-launch",
+        failure_category: "provider-unavailable",
+        pre_dispatch_failure: true,
+        fallback_eligible: true,
+      });
+    });
+
+    it("classifies rate-limit failures as quota-exhausted and falls back", async () => {
+      const adapter = new TerminalCliAdapter({
+        adapter: "terminal-cli",
+        providers: {
+          codex: {
+            command: process.execPath,
+            args: ["-e", "console.error('Rate limit exceeded (429)'); process.exit(1);"],
+          },
+          gemini: {
+            command: process.execPath,
+            args: [
+              "-e",
+              "console.log(JSON.stringify({child_id:'POL-14',status:'done',commit:'ok',validation:'passed',tracker_updated:false,state_updated:false,telemetry_updated:false,next_recommended_action:'continue'}))",
+            ],
+          },
+        },
+        providerPolicy: {
+          worker: {
+            providers: ["gemini"],
+          },
+        },
+      });
+
+      const result = await adapter.dispatch(MOCK_PACKET, {
+        provider: "codex",
+        routerDecision: {
+          selectedProvider: "codex",
+          selectionReason: "policy-router",
+          providersTried: ["codex", "gemini"],
+        },
+      });
+
+      expect(result.exit_code).toBe(0);
+      expect(result.provider_used).toBe("gemini");
+      expect(result.provider_attempts?.[0]).toMatchObject({
+        provider: "codex",
+        failure_origin: "provider-launch",
+        failure_category: "quota-exhausted",
+        pre_dispatch_failure: true,
+      });
+    });
+
+    it("respects provider policy noFallback and does not retry", async () => {
+      const adapter = new TerminalCliAdapter({
+        adapter: "terminal-cli",
+        providers: {
+          codex: { command: "definitely-missing-command-pol-468" },
+          gemini: { command: "echo", args: ["should-not-run"] },
+        },
+        providerPolicy: {
+          worker: {
+            noFallback: true,
+            providers: ["gemini"],
+          },
+        },
+      });
+
+      const result = await adapter.dispatch(MOCK_PACKET, {
+        provider: "codex",
+        routerDecision: {
+          selectedProvider: "codex",
+          selectionReason: "policy-router",
+          providersTried: ["codex", "gemini"],
+        },
+      });
+
+      expect(result.exit_code).toBe(1);
+      expect(result.provider_used).toBe("codex");
+      expect(result.failure_category).toBe("provider-unavailable");
+      expect(result.provider_attempts).toHaveLength(1);
+    });
+
+    it("does not retry when a sealed result file already exists", async () => {
+      const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "polaris-terminal-cli-retry-"));
+      try {
+        const packet = compileImplPacket({
+          runId: "run-test-0001",
+          clusterId: "POL-5",
+          childId: "POL-14",
+          branch: "feature/pol-14",
+          stateFile: "/tmp/polaris-test/current-state.json",
+          telemetryFile: "/tmp/polaris-test/telemetry.jsonl",
+          resultFile: path.join(tmpDir, "sealed-result.json"),
+          allowedScope: ["src/**"],
+          validationCommands: ["npm test"],
+        });
+        const adapter = new TerminalCliAdapter({
+          adapter: "terminal-cli",
+          providers: {
+            codex: {
+              command: process.execPath,
+              args: [
+                "-e",
+                [
+                  "const fs=require('node:fs');",
+                  "const p=JSON.parse(process.env.POLARIS_PACKET_JSON||'{}');",
+                  "const out=p.result_file_contract?.result_file;",
+                  "if(out){fs.mkdirSync(require('node:path').dirname(out),{recursive:true});fs.writeFileSync(out,JSON.stringify({run_id:p.run_id,child_id:p.active_child,status:'failure',error_message:'intentional'}));}",
+                  "process.exit(1);",
+                ].join(""),
+              ],
+            },
+            gemini: {
+              command: process.execPath,
+              args: ["-e", "console.log('secondary should not run'); process.exit(0);"],
+            },
+          },
+          providerPolicy: {
+            worker: {
+              providers: ["gemini"],
+            },
+          },
+        });
+
+        const result = await adapter.dispatch(packet, { provider: "codex" });
+        expect(result.exit_code).toBe(1);
+        expect(result.provider_used).toBe("codex");
+        expect(result.failure_origin).toBe("worker-execution");
+        expect(result.fallback_eligible).toBe(false);
+      } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
+  });
 });
 
 describe("registry", () => {

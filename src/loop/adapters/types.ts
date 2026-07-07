@@ -53,7 +53,26 @@ export interface DispatchOptions {
   provider: string;
   /** If true, print the exact command that would run and return without executing. */
   dryRun?: boolean;
+  /** Optional router evidence captured during provider selection. */
+  routerDecision?: {
+    selectedProvider?: string;
+    selectionReason?: string;
+    exhaustedReason?: string;
+    providersTried?: string[];
+    candidates?: Array<{
+      provider: string;
+      eligible: boolean;
+      rejectionReasons: string[];
+    }>;
+  };
 }
+
+export type DispatchFailureOrigin = "provider-launch" | "worker-execution";
+export type DispatchFailureCategory =
+  | "provider-unavailable"
+  | "quota-exhausted"
+  | "launch-error"
+  | "worker-failure";
 
 export interface DispatchResult {
   exit_code: number;
@@ -70,6 +89,23 @@ export interface DispatchResult {
    * back dispatch state to keep the run cleanly resumable.
    */
   pre_dispatch_failure?: boolean;
+  /** Whether the failure happened before worker execution or during worker execution. */
+  failure_origin?: DispatchFailureOrigin;
+  /** Classified failure category used by fallback and telemetry. */
+  failure_category?: DispatchFailureCategory;
+  /** Indicates whether this failure is safe for provider fallback retry. */
+  fallback_eligible?: boolean;
+  /** Router evidence captured at dispatch call-time. */
+  router_evidence?: DispatchOptions["routerDecision"];
+  /** Per-provider attempt evidence, including failures encountered before success. */
+  provider_attempts?: Array<{
+    provider: string;
+    failure_origin?: DispatchFailureOrigin;
+    failure_category?: DispatchFailureCategory;
+    pre_dispatch_failure?: boolean;
+    fallback_eligible?: boolean;
+    message?: string;
+  }>;
 }
 
 export interface ExecutionAdapter {

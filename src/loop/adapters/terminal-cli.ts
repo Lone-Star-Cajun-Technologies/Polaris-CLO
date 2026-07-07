@@ -46,6 +46,51 @@ function resolveCommand(cmd: string): boolean {
   }
 }
 
+function isQuotaExhaustedSignal(...parts: Array<string | undefined>): boolean {
+  const text = parts.filter((value): value is string => typeof value === "string" && value.length > 0).join("\n").toLowerCase();
+  if (!text) return false;
+  return (
+    text.includes("quota") ||
+    text.includes("rate limit") ||
+    text.includes("429") ||
+    text.includes("resource exhausted") ||
+    text.includes("insufficient_quota")
+  );
+}
+
+function hasWorkerExecutionEvidence(
+  packet: BootstrapPacket,
+  resultFilePath: string | undefined,
+): boolean {
+  if (resultFilePath && fs.existsSync(resultFilePath)) return true;
+  if (!packet.telemetry_file || !packet.active_child || !fs.existsSync(packet.telemetry_file)) return false;
+  try {
+    const telemetry = fs.readFileSync(packet.telemetry_file, "utf-8").trim();
+    if (!telemetry) return false;
+    const lines = telemetry.split("\n");
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const line = lines[i]?.trim();
+      if (!line) continue;
+      try {
+        const parsed = JSON.parse(line) as { event?: string; child_id?: string };
+        if (parsed.child_id !== packet.active_child) continue;
+        if (
+          parsed.event === "worker-acknowledged" ||
+          parsed.event === "worker-heartbeat" ||
+          parsed.event === "worker-result"
+        ) {
+          return true;
+        }
+      } catch {
+        continue;
+      }
+    }
+  } catch {
+    return false;
+  }
+  return false;
+}
+
 export class TerminalCliAdapter implements ExecutionAdapter {
   readonly name = 'terminal-cli';
 
@@ -117,6 +162,8 @@ export class TerminalCliAdapter implements ExecutionAdapter {
 
   async dispatch(packet: BootstrapPacket, options: DispatchOptions): Promise<DispatchResult> {
     const primaryProvider = options.provider || "terminal-cli";
+    const routerEvidence = options.routerDecision;
+    const providerAttempts: NonNullable<DispatchResult["provider_attempts"]> = [];
     if (isWorkerPacket(packet) && packet.worker_role === "impl") {
       const allowed = Array.isArray(packet.instructions?.allowed_scope) ? packet.instructions.allowed_scope : [];
       if (allowed.length === 0) {
@@ -134,6 +181,20 @@ export class TerminalCliAdapter implements ExecutionAdapter {
           }),
           stderr: blockedMsg,
           pre_dispatch_failure: true,
+          failure_origin: "provider-launch",
+          failure_category: "launch-error",
+          fallback_eligible: false,
+          router_evidence: routerEvidence,
+          provider_attempts: [
+            {
+              provider: primaryProvider,
+              failure_origin: "provider-launch",
+              failure_category: "launch-error",
+              pre_dispatch_failure: true,
+              fallback_eligible: false,
+              message: blockedMsg,
+            },
+          ],
         };
       }
     }
@@ -149,11 +210,16 @@ export class TerminalCliAdapter implements ExecutionAdapter {
     const policyProviders: string[] = (canFallback && Array.isArray(workerPolicy?.providers))
       ? workerPolicy.providers
       : [];
+    const routerProviders: string[] =
+      canFallback && Array.isArray(routerEvidence?.providersTried)
+        ? routerEvidence.providersTried
+        : [];
+    const fallbackOrder = routerProviders.length > 0 ? routerProviders : policyProviders;
     const providersToTry: Array<{ name: string; cfg: ProviderConfig; isPrimary: boolean }> = [
       { name: primaryProvider, cfg: primaryCfg, isPrimary: true },
     ];
     if (canFallback) {
-      for (const p of policyProviders) {
+      for (const p of fallbackOrder) {
         if (p !== primaryProvider && p in (this.config.providers ?? {})) {
           try {
             providersToTry.push({ name: p, cfg: this.getProvider(p), isPrimary: false });
@@ -184,14 +250,32 @@ export class TerminalCliAdapter implements ExecutionAdapter {
             provider_used: provider,
             command_run: provider,
             stderr: err instanceof Error ? err.message : String(err),
+            pre_dispatch_failure: true,
+            failure_origin: "provider-launch",
+            failure_category: "launch-error",
+            fallback_eligible: true,
+            router_evidence: routerEvidence,
           };
+          providerAttempts.push({
+            provider,
+            failure_origin: "provider-launch",
+            failure_category: "launch-error",
+            pre_dispatch_failure: true,
+            fallback_eligible: true,
+            message: lastResult.stderr,
+          });
           continue;
         }
 
         const commandLine = formatCommandLine(command, args);
 
         if (options.dryRun) {
-          return this.dryRun(provider, command, args, commandLine, packet, packetFile, workerPrompt);
+          const dryRun = this.dryRun(provider, command, args, commandLine, packet, packetFile, workerPrompt);
+          return {
+            ...dryRun,
+            router_evidence: routerEvidence,
+            provider_attempts: providerAttempts,
+          };
         }
 
         if (!resolveCommand(command)) {
@@ -201,33 +285,110 @@ export class TerminalCliAdapter implements ExecutionAdapter {
             command_run: commandLine,
             stderr: `Provider command "${command}" not found on PATH. ` +
               `Install it or update the "command" field for provider "${provider}" in polaris.config.json.`,
+            pre_dispatch_failure: true,
+            failure_origin: "provider-launch",
+            failure_category: "provider-unavailable",
+            fallback_eligible: true,
+            router_evidence: routerEvidence,
           };
+          providerAttempts.push({
+            provider,
+            failure_origin: "provider-launch",
+            failure_category: "provider-unavailable",
+            pre_dispatch_failure: true,
+            fallback_eligible: true,
+            message: lastResult.stderr,
+          });
           continue;
         }
 
-        const result = await this.runProcess(command, args, commandLine, packet, packetFile, provider, workerPrompt);
+        let result: DispatchResult;
+        try {
+          result = await this.runProcess(command, args, commandLine, packet, packetFile, provider, workerPrompt);
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          lastResult = {
+            exit_code: 1,
+            provider_used: provider,
+            command_run: commandLine,
+            stderr: message,
+            pre_dispatch_failure: true,
+            failure_origin: "provider-launch",
+            failure_category: "provider-unavailable",
+            fallback_eligible: true,
+            router_evidence: routerEvidence,
+          };
+          providerAttempts.push({
+            provider,
+            failure_origin: "provider-launch",
+            failure_category: "provider-unavailable",
+            pre_dispatch_failure: true,
+            fallback_eligible: true,
+            message,
+          });
+          continue;
+        }
 
         // Worker succeeded — return immediately.
         if (result.exit_code === 0) {
-          return result;
+          return {
+            ...result,
+            router_evidence: routerEvidence,
+            provider_attempts: providerAttempts,
+          };
         }
 
-        // If the worker wrote a result file it actually ran (and failed) — don't
-        // retry with another provider; that would double-dispatch the same child.
         const resultFilePath = isWorkerPacket(packet) ? packet.result_file_contract?.result_file : undefined;
-        if (resultFilePath && fs.existsSync(resultFilePath)) {
-          return result;
+        const workerStarted = hasWorkerExecutionEvidence(packet, resultFilePath);
+        if (workerStarted) {
+          return {
+            ...result,
+            failure_origin: "worker-execution",
+            failure_category: "worker-failure",
+            fallback_eligible: false,
+            router_evidence: routerEvidence,
+            provider_attempts: providerAttempts,
+          };
         }
 
-        // Worker did not start (wrong args, command not found, etc.) — try next.
-        lastResult = result;
+        const category = isQuotaExhaustedSignal(result.stderr, result.stdout, result.summary)
+          ? "quota-exhausted"
+          : "provider-unavailable";
+        const classified: DispatchResult = {
+          ...result,
+          pre_dispatch_failure: true,
+          failure_origin: "provider-launch",
+          failure_category: category,
+          fallback_eligible: true,
+          router_evidence: routerEvidence,
+        };
+        providerAttempts.push({
+          provider,
+          failure_origin: "provider-launch",
+          failure_category: category,
+          pre_dispatch_failure: true,
+          fallback_eligible: true,
+          message: result.stderr ?? result.summary,
+        });
+        lastResult = classified;
       }
 
-      return lastResult ?? {
+      const exhausted = lastResult ?? {
         exit_code: 1,
         provider_used: primaryProvider,
         command_run: '',
         stderr: 'All configured providers exhausted without starting a worker',
+        pre_dispatch_failure: true,
+        failure_origin: "provider-launch",
+        failure_category: "provider-unavailable",
+        fallback_eligible: false,
+        router_evidence: routerEvidence,
+        provider_attempts: providerAttempts,
+      };
+      return {
+        ...exhausted,
+        router_evidence: exhausted.router_evidence ?? routerEvidence,
+        provider_attempts: exhausted.provider_attempts ?? providerAttempts,
       };
     } finally {
       try {

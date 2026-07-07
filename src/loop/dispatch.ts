@@ -563,6 +563,16 @@ function emitProviderSelected(
     ...(decision.fallbackFrom ? { fallback_from: decision.fallbackFrom } : {}),
     ...(decision.fallbackReason ? { fallback_reason: decision.fallbackReason } : {}),
     ...(decision.providersTried.length > 0 ? { providers_tried: decision.providersTried } : {}),
+    ...(decision.exhaustedReason ? { router_exhausted_reason: decision.exhaustedReason } : {}),
+    ...(decision.routerEvidence?.candidates?.length
+      ? {
+          router_candidates: decision.routerEvidence.candidates.map((candidate) => ({
+            provider: candidate.provider,
+            eligible: candidate.eligible,
+            rejection_reasons: candidate.rejectionReasons,
+          })),
+        }
+      : {}),
     timestamp: new Date().toISOString(),
   } satisfies ProviderSelectedEvent);
 }
@@ -1386,6 +1396,11 @@ export function runLoopDispatch(options: DispatchOptions): void {
           run_id: state.run_id,
           child_id: childId,
           provider: resolvedProvider,
+          failure_origin: "provider-launch",
+          failure_category: "provider-unavailable",
+          pre_dispatch_failure: true,
+          fallback_eligible: true,
+          providers_tried: providerDecision.providersTried,
           error: probeResult.error,
           timestamp: new Date().toISOString(),
         });
