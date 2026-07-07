@@ -79,6 +79,10 @@ describe("compileImplPacket", () => {
     const p = compileImplPacket({ ...BASE, childId: "POL-121" });
     expect(p.schema_version).toBe("2.1");
     expect(p.worker_role).toBe("impl");
+    expect(p.routing_context).toEqual({
+      task_type: "impl",
+      required_capabilities: ["implementation"],
+    });
   });
 
   it("sets active_child to the child ID (BootstrapPacket compat)", () => {
@@ -245,6 +249,10 @@ describe("compileFinalizePacket", () => {
     const p = compileFinalizePacket(BASE);
     expect(p.worker_role).toBe("finalize");
     expect(p.active_child).toBe("");
+    expect(p.routing_context).toEqual({
+      task_type: "finalize",
+      required_capabilities: ["finalization"],
+    });
   });
 
   it("includes the target branch in steps", () => {
@@ -287,6 +295,10 @@ describe("compileStartupPacket", () => {
     const p = compileStartupPacket(BASE);
     expect(p.worker_role).toBe("startup");
     expect(p.active_child).toBe("");
+    expect(p.routing_context).toEqual({
+      task_type: "startup",
+      required_capabilities: ["orchestration"],
+    });
   });
 
   it("return_contract matches STARTUP_RETURN_CONTRACT", () => {

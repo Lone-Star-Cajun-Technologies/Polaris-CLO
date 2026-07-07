@@ -39,6 +39,12 @@ export interface WorkerSummary {
   active_child: string;
   status: 'done' | 'blocked' | 'error' | 'failed';
   message?: string;
+  routing?: {
+    selected_provider?: string;
+    selected_worker_role?: string;
+    selection_reason?: string;
+    rejected_candidates?: Array<{ provider: string; reasons: string[] }>;
+  };
   [key: string]: unknown;
 }
 

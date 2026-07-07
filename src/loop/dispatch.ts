@@ -14,10 +14,20 @@ import { readState, validateState, writeStateAtomic, readBodyFromClusterSnapshot
 import { compileImplPacket, type WorkerPacket, type WorkerRoleContext } from "./worker-packet.js";
 import { parseIssueBody } from "./body-parser.js";
 import { loadConfig } from "../config/loader.js";
-import type { ExecutionRole, RoleProviderPolicy, PolarisConfig } from "../config/schema.js";
+import type {
+  ExecutionRole,
+  RoleProviderPolicy,
+  PolarisConfig,
+  WorkerCostTier,
+  WorkerProviderCapability,
+  WorkerQuotaPolicy,
+  WorkerTaskType,
+  WorkerTrustTier,
+} from "../config/schema.js";
 import { readClusterStateSync, writeClusterStateSync } from "../cluster-state/store.js";
 import type { ChildState, ClusterState } from "../cluster-state/types.js";
 import { selectPromptMode } from "./worker-prompt.js";
+import { decideWorkerRoute, type WorkerRouterDecision } from "./router/index.js";
 
 type SimplicityMode = "full" | "lite" | "off";
 
@@ -77,9 +87,19 @@ export interface ProviderDecisionEvidence {
   fallbackReason?: string;
   providersTried: string[];
   exhaustedReason?: string;
+  routerEvidence?: WorkerRouterDecision;
 }
 
 type ProviderPolicyByRole = Partial<Record<ExecutionRole, RoleProviderPolicy>>;
+interface ProviderRouterContext {
+  taskType: WorkerTaskType;
+  requiredCapabilities?: WorkerProviderCapability[];
+  minTrustTier?: WorkerTrustTier;
+  maxCostTier?: WorkerCostTier;
+  disallowedQuotaPolicies?: WorkerQuotaPolicy[];
+  activeSlotsByProvider?: Record<string, number>;
+  quotaAvailableByProvider?: Record<string, boolean>;
+}
 
 /**
  * Determine the effective provider and dispatch mode using the 4-scenario decision tree:
@@ -102,23 +122,57 @@ function roleContextToExecutionRole(role: WorkerRoleContext["role"] | undefined)
   }
 }
 
+function roleContextToTaskType(roleContext: WorkerRoleContext | undefined): WorkerTaskType {
+  switch (roleContext?.role) {
+    case "analyst":
+      return "analyze";
+    case "librarian":
+      return "docs";
+    case "foreman":
+      return "startup";
+    case "worker":
+    default:
+      return "impl";
+  }
+}
+
+function requiredCapabilitiesForTask(taskType: WorkerTaskType): WorkerProviderCapability[] {
+  switch (taskType) {
+    case "startup":
+      return ["orchestration"];
+    case "analyze":
+      return ["analysis"];
+    case "impl":
+      return ["implementation"];
+    case "repair":
+      return ["repair"];
+    case "docs":
+      return ["docs"];
+    case "finalize":
+      return ["finalization"];
+    default:
+      return [];
+  }
+}
+
+function collectActiveProviderSlots(state: LoopState): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const meta of Object.values(state.open_children_meta ?? {})) {
+    const dispatch = meta?.dispatch_record;
+    if (!dispatch?.provider) continue;
+    if (dispatch.status !== "dispatched") continue;
+    counts[dispatch.provider] = (counts[dispatch.provider] ?? 0) + 1;
+  }
+  return counts;
+}
+
 export function resolveProviderAndMode(
   options: DispatchOptions,
   role: ExecutionRole,
   config?: Required<PolarisConfig>,
+  routerContext?: ProviderRouterContext,
 ): ProviderDecisionEvidence {
   const defaultAdapter = "terminal-cli";
-
-  if (options.provider) {
-    return {
-      provider: options.provider,
-      mode: "direct-worker",
-      adapter: defaultAdapter,
-      selectionReason: "cli-provider-override",
-      overrideSource: "dispatch-flag",
-      providersTried: [options.provider],
-    };
-  }
 
   // Only catch config-load failures; policy violations must propagate to the caller.
   let loaded: Required<PolarisConfig> | undefined;
@@ -140,6 +194,68 @@ export function resolveProviderAndMode(
   }
 
   const exec = loaded.execution;
+  const providerRegistry = exec?.routerPolicy?.providerRegistry ?? {};
+  const compatibilityMode = Object.keys(providerRegistry).length === 0;
+  if (compatibilityMode) {
+    return resolveProviderAndModeLegacy(options, role, adapter, exec);
+  }
+
+  const decision = decideWorkerRoute({
+    role,
+    taskType: routerContext?.taskType ?? "impl",
+    adapter,
+    providerOverride: options.provider,
+    providers: Object.keys(exec?.providers ?? {}),
+    rotation: exec?.rotation ?? [],
+    rolePolicy: exec?.providerPolicy?.[role],
+    roleConfiguredProvider: exec?.roles?.[role]?.provider,
+    routerPolicy: exec?.routerPolicy,
+    constraints: {
+      minTrustTier: routerContext?.minTrustTier,
+      maxCostTier: routerContext?.maxCostTier,
+      disallowedQuotaPolicies: routerContext?.disallowedQuotaPolicies,
+      requiredCapabilities: routerContext?.requiredCapabilities,
+    },
+    runtime: {
+      activeSlotsByProvider: routerContext?.activeSlotsByProvider,
+      quotaAvailableByProvider: routerContext?.quotaAvailableByProvider,
+    },
+    compatibilityMode: false,
+  });
+
+  if (!decision.selectedProvider && decision.exhaustedReason) {
+    throw new Error(`provider dispatch forbidden: router rejected all providers (reason=${decision.exhaustedReason})`);
+  }
+
+  return {
+    provider: decision.selectedProvider,
+    mode: decision.mode,
+    adapter,
+    selectionReason: decision.selectionReason,
+    overrideSource: options.provider ? "dispatch-flag" : undefined,
+    providersTried: decision.providersTried,
+    exhaustedReason: decision.exhaustedReason,
+    routerEvidence: decision,
+  };
+}
+
+function resolveProviderAndModeLegacy(
+  options: DispatchOptions,
+  role: ExecutionRole,
+  adapter: string,
+  exec: Required<PolarisConfig>["execution"],
+): ProviderDecisionEvidence {
+  if (options.provider) {
+    return {
+      provider: options.provider,
+      mode: "direct-worker",
+      adapter,
+      selectionReason: "cli-provider-override",
+      overrideSource: "dispatch-flag",
+      providersTried: [options.provider],
+    };
+  }
+
   const rolePolicy = exec?.providerPolicy?.[role];
   const roleProviders = rolePolicy?.providers ?? [];
   const rotation = exec?.rotation ?? [];
@@ -1222,29 +1338,37 @@ export function runLoopDispatch(options: DispatchOptions): void {
   }
 
   const targetRole = roleContextToExecutionRole(packet.role_context.role);
+  const taskType = roleContextToTaskType(packet.role_context);
+  const activeSlotsByProvider = collectActiveProviderSlots(state);
 
   // ── Resolve provider and dispatch mode ─────────────────────────────────────
   // loadedConfig was loaded earlier (above bootstrap seal check)
   let providerDecision: ReturnType<typeof resolveProviderAndMode>;
   try {
-    providerDecision = resolveProviderAndMode(options, targetRole, loadedConfig);
+    providerDecision = resolveProviderAndMode(options, targetRole, loadedConfig, {
+      taskType,
+      requiredCapabilities: requiredCapabilitiesForTask(taskType),
+      activeSlotsByProvider,
+    });
   } catch (err) {
     fail(err instanceof Error ? err.message : String(err));
   }
   const { provider: resolvedProvider } = providerDecision;
   const providerPolicy = loadedConfig?.execution.providerPolicy ?? getProviderPolicy(options.repoRoot);
-  try {
-    assertProviderAllowedForRole(
-      targetRole,
-      resolvedProvider,
-      providerPolicy,
-      telemetryFile,
-      dispatchId,
-      state.run_id,
-      childId,
-    );
-  } catch (err) {
-    fail(err instanceof Error ? err.message : String(err));
+  if (!providerDecision.routerEvidence) {
+    try {
+      assertProviderAllowedForRole(
+        targetRole,
+        resolvedProvider,
+        providerPolicy,
+        telemetryFile,
+        dispatchId,
+        state.run_id,
+        childId,
+      );
+    } catch (err) {
+      fail(err instanceof Error ? err.message : String(err));
+    }
   }
 
   // ── Provider probe on first dispatch ──────────────────────────────────────

@@ -901,6 +901,84 @@ describe("runLoopDispatch", () => {
     expect(packet.active_child).toBe("POL-145");
   });
 
+  it("uses deterministic router selection when provider registry metadata is configured", () => {
+    writeFileSync(
+      join(testDir, "polaris.config.json"),
+      JSON.stringify({
+        execution: {
+          adapter: "terminal-cli",
+          providers: { copilot: { command: "copilot" }, codex: { command: "codex" } },
+          rotation: ["copilot", "codex"],
+          routerPolicy: {
+            allowCrossProviderFallback: true,
+            providerRegistry: {
+              copilot: {
+                eligibleRoles: ["worker"],
+                capabilities: ["implementation"],
+                taskTypes: ["impl"],
+                trustTier: "standard",
+                costTier: "medium",
+              },
+              codex: {
+                eligibleRoles: ["worker"],
+                capabilities: ["implementation"],
+                taskTypes: ["impl"],
+                trustTier: "trusted",
+                costTier: "medium",
+              },
+            },
+          },
+        },
+      }),
+      "utf-8",
+    );
+    const stateFile = writeState(testDir, baseState());
+
+    captureStdout(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+
+    const updated = readState(stateFile);
+    const dr = updated.open_children_meta?.["POL-145"]?.dispatch_record;
+    expect(dr?.provider).toBe("codex");
+    expect(dr?.provider_selection_reason).toBe("policy-router");
+  });
+
+  it("refuses provider override in router mode when provider is excluded by role policy", () => {
+    writeFileSync(
+      join(testDir, "polaris.config.json"),
+      JSON.stringify({
+        execution: {
+          adapter: "terminal-cli",
+          providers: { copilot: { command: "copilot" }, codex: { command: "codex" } },
+          rotation: ["copilot", "codex"],
+          providerPolicy: {
+            worker: { providers: ["copilot"] },
+          },
+          routerPolicy: {
+            providerRegistry: {
+              copilot: {
+                eligibleRoles: ["worker"],
+                capabilities: ["implementation"],
+                taskTypes: ["impl"],
+              },
+              codex: {
+                eligibleRoles: ["worker"],
+                capabilities: ["implementation"],
+                taskTypes: ["impl"],
+              },
+            },
+          },
+        },
+      }),
+      "utf-8",
+    );
+    const stateFile = writeState(testDir, baseState());
+
+    const stderr = expectDispatchError(() =>
+      runLoopDispatch({ repoRoot: testDir, stateFile, provider: "codex" })
+    );
+    expect(stderr).toContain("reason=not-in-policy");
+  });
+
   // ── Acknowledgment timeout detection (POL-228 scenario B + E) ───────────────
 
   it("checkAcknowledgmentTimeout returns null when no active child", () => {
