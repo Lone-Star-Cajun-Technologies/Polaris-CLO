@@ -18,6 +18,7 @@ describe("artifact promotion policy", () => {
     expect(isPromotedArtifactPath(".polaris/clusters/POL-242/cluster-state.json", "POL-242")).toBe(true);
     expect(isPromotedArtifactPath(".polaris/clusters/POL-242/packets/worker.json", "POL-242")).toBe(true);
     expect(isPromotedArtifactPath(".polaris/clusters/POL-242/results/worker.json", "POL-242")).toBe(true);
+    expect(isPromotedArtifactPath(".polaris/clusters/POL-242/qc/qc-run-1.json", "POL-242")).toBe(true);
     expect(isPromotedArtifactPath(".polaris/runs/ledger.jsonl", "POL-242")).toBe(true);
     expect(isPromotedArtifactPath(".polaris/cognition/archive/src/loop/cognition-index.json", "POL-242")).toBe(true);
     expect(isPromotedArtifactPath(".polaris/map/file-routes.json", "POL-242")).toBe(true);
@@ -28,6 +29,7 @@ describe("artifact promotion policy", () => {
     expect(classifyArtifactPath(".taskchain_artifacts/polaris-run/runs/run-1/telemetry.jsonl", "POL-242")).toBe("workspace-scratch");
     expect(classifyArtifactPath(".polaris/runs/mutation-queue.json", "POL-242")).toBe("legacy-run-artifact");
     expect(classifyArtifactPath(".polaris/clusters/POL-240/cluster-state.json", "POL-242")).toBe("foreign-cluster-artifact");
+    expect(classifyArtifactPath(".polaris/clusters/POL-240/qc/qc-run-1.json", "POL-242")).toBe("foreign-cluster-artifact");
     expect(classifyArtifactPath("src/finalize/steps/06-commit.ts", "POL-242")).toBe("non-artifact");
   });
 
@@ -69,6 +71,7 @@ describe("artifact promotion policy", () => {
         ".polaris/clusters/POL-242/cluster-state.json",
         ".polaris/clusters/POL-242/packets/**",
         ".polaris/clusters/POL-242/results/**",
+        ".polaris/clusters/POL-242/qc/**",
         ".polaris/runs/ledger.jsonl",
         ".polaris/cognition/archive/**",
         ".polaris/map/**",
@@ -90,6 +93,7 @@ describe("artifact promotion policy", () => {
       ".polaris/clusters/POL-242/cluster-state.json",
       ".polaris/clusters/POL-242/packets",
       ".polaris/clusters/POL-242/results",
+      ".polaris/clusters/POL-242/qc",
       ".polaris/runs/ledger.jsonl",
       ".polaris/cognition/archive",
       ".polaris/map",
@@ -154,6 +158,7 @@ describe("adoption staging policy", () => {
     expect(isPathBlockedFromStaging(".polaris/clusters/POL-242/cluster-state.json")).toBe(false);
     expect(isPathBlockedFromStaging(".polaris/clusters/POL-242/packets/worker.json")).toBe(false);
     expect(isPathBlockedFromStaging(".polaris/clusters/POL-242/results/worker.json")).toBe(false);
+    expect(isPathBlockedFromStaging(".polaris/clusters/POL-242/qc/qc-run-1.json")).toBe(false);
     expect(isPathBlockedFromStaging(".polaris/runs/ledger.jsonl")).toBe(false);
     expect(isPathBlockedFromStaging(".polaris/cognition/archive/src/loop/cognition-index.json")).toBe(false);
     expect(isPathBlockedFromStaging(".polaris/map/file-routes.json")).toBe(false);

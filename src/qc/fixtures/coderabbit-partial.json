@@ -1,0 +1,12 @@
+{
+  "findings": [
+    {
+      "severity": "high",
+      "file": "src/db/connection.ts",
+      "line": 15
+    },
+    {
+      "message": "Missing test coverage for the new branch"
+    }
+  ]
+}

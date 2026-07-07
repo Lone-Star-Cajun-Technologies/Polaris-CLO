@@ -1,0 +1,10 @@
+{
+  "findings": [
+    {
+      "severity": "cosmic",
+      "file": "src/unknown.ts",
+      "line": 1,
+      "message": "Unknown provider severity label should normalize safely."
+    }
+  ]
+}

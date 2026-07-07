@@ -8,8 +8,10 @@ import {
   writeFileSync,
 } from 'fs';
 import * as path from 'path';
-import { ClusterState, ChildState } from './types';
+import { ClusterState, ChildState, QcRunPointer } from './types';
 import { LocalGraph } from '../tracker/local-graph';
+import type { QcResult } from '../qc/types.js';
+import { writeQcArtifact } from '../qc/artifacts.js';
 
 const getClusterStatePath = (clusterId: string, repoRoot?: string): string => {
   return path.join(repoRoot || process.cwd(), '.polaris', 'clusters', clusterId, 'cluster-state.json');
@@ -18,6 +20,7 @@ const getClusterStatePath = (clusterId: string, repoRoot?: string): string => {
 const normalizeClusterState = (state: ClusterState): ClusterState => ({
   ...state,
   tracker_mutations: state.tracker_mutations ?? {},
+  qc_runs: state.qc_runs ?? {},
 });
 
 export function pruneExpiredClaims(
@@ -320,8 +323,48 @@ export const initializeClusterState = async (clusterId: string, repoRoot?: strin
     commits: {},
     tracker_mutations: {},
     blockers: [],
+    qc_runs: {},
   };
 
   await writeClusterState(clusterId, initialState, repoRoot);
   return initialState;
+};
+
+/**
+ * Persist a QC result artifact under the active cluster's evidence surface and
+ * record a pointer in the cluster state. This is the only supported way to
+ * durably store QC runs; callers must not write QC artifacts directly outside
+ * `.polaris/clusters/<cluster-id>/qc/`.
+ */
+export const recordQcRun = async (
+  clusterId: string,
+  result: QcResult,
+  repoRoot?: string,
+): Promise<{ artifactPath: string; state: ClusterState }> => {
+  const artifactPath = writeQcArtifact(clusterId, result, repoRoot);
+
+  const currentState = await readClusterState(clusterId, repoRoot);
+  if (!currentState) {
+    throw new Error(`Cluster ${clusterId} state not found; cannot record QC run ${result.qcRunId}.`);
+  }
+
+  const pointer: QcRunPointer = {
+    artifact_path: artifactPath,
+    status: result.status,
+    provider: result.provider,
+    started_at: result.startedAt,
+    completed_at: result.completedAt,
+  };
+
+  const nextState: ClusterState = {
+    ...currentState,
+    state_generation: currentState.state_generation + 1,
+    qc_runs: {
+      ...currentState.qc_runs,
+      [result.qcRunId]: pointer,
+    },
+  };
+
+  await writeClusterState(clusterId, nextState, repoRoot);
+  return { artifactPath, state: nextState };
 };

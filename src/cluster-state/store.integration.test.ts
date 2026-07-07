@@ -1,7 +1,8 @@
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { initializeClusterState, readClusterState } from "./store.js";
+import { initializeClusterState, readClusterState, recordQcRun } from "./store.js";
+import type { QcResult } from "../qc/types.js";
 
 const scratchRoots: string[] = [];
 
@@ -109,5 +110,62 @@ describe("initializeClusterState", () => {
       { id: "POL-402", status: "ready" },
     ]);
     await expect(readClusterState(clusterId, repoRoot)).resolves.toEqual(state);
+  });
+});
+
+describe("recordQcRun", () => {
+  function makeResult(qcRunId: string): QcResult {
+    const now = new Date().toISOString();
+    return {
+      schemaVersion: "1.0",
+      qcRunId,
+      runId: "run-1",
+      clusterId: "POL-204-V2",
+      trigger: "completed-cluster",
+      provider: "coderabbit",
+      providerMode: "local",
+      startedAt: now,
+      completedAt: now,
+      status: "findings",
+      findings: [],
+      rawArtifactPaths: [],
+      parserVersion: "coderabbit-1.0",
+      policyDecision: {
+        blocksDelivery: false,
+        requiresOperatorReview: true,
+        routedToRepair: false,
+        summary: "2 findings",
+      },
+    };
+  }
+
+  it("persists a QC artifact and records a pointer in cluster state", async () => {
+    const clusterId = "POL-204-QC";
+    const repoRoot = makeRepoRoot("cluster-state-qc");
+    writeClustersFile(repoRoot, clusterId, {
+      schemaVersion: "v2",
+      source: { id: clusterId, type: "Linear" },
+      nodes: { [clusterId]: { id: clusterId, title: "Cluster", status: "Backlog" } },
+      dependencies: {},
+      clusters: { [clusterId]: { id: clusterId, title: "Cluster", children: [] } },
+      activeCluster: clusterId,
+    });
+
+    await initializeClusterState(clusterId, repoRoot);
+    const result = makeResult("qc-run-1");
+    const { artifactPath, state } = await recordQcRun(clusterId, result, repoRoot);
+
+    expect(artifactPath).toContain(path.join(".polaris", "clusters", clusterId, "qc", "qc-run-1.json"));
+    expect(state.qc_runs["qc-run-1"]).toEqual({
+      artifact_path: artifactPath,
+      status: "findings",
+      provider: "coderabbit",
+      started_at: result.startedAt,
+      completed_at: result.completedAt,
+    });
+
+    const reloaded = await readClusterState(clusterId, repoRoot);
+    expect(reloaded?.qc_runs["qc-run-1"]).toEqual(state.qc_runs["qc-run-1"]);
+    expect(JSON.parse(readFileSync(artifactPath, "utf-8"))).toEqual(result);
   });
 });

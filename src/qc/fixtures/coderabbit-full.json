@@ -1,0 +1,47 @@
+{
+  "provider": "coderabbit",
+  "prUrl": "https://github.com/org/repo/pull/1",
+  "summary": {
+    "total": 3,
+    "issues": 3,
+    "blockers": 1
+  },
+  "findings": [
+    {
+      "id": "cr-finding-1",
+      "severity": "critical",
+      "file": "src/auth/token.ts",
+      "startLine": 42,
+      "endLine": 48,
+      "startColumn": 10,
+      "endColumn": 35,
+      "title": "Hardcoded secret in token validation",
+      "message": "The JWT signing key is loaded from an environment variable but a fallback string is hardcoded.",
+      "category": "security",
+      "confidence": 0.95,
+      "suggestion": "Remove the fallback and require the environment variable at startup.",
+      "fixAvailable": true
+    },
+    {
+      "id": "cr-finding-2",
+      "severity": "medium",
+      "filePath": "src/loop/dispatch.ts",
+      "line": 120,
+      "title": "Race condition in claim expiry check",
+      "message": "The expiry timestamp is compared without validating it is finite.",
+      "type": "correctness",
+      "confidence": 0.72,
+      "suggestedAction": "Add Number.isFinite() guard before comparison."
+    },
+    {
+      "id": "cr-finding-3",
+      "severity": "low",
+      "path": "README.md",
+      "line": 7,
+      "title": "Stale CLI example",
+      "message": "The documented command uses a deprecated flag name.",
+      "rule": "docs",
+      "fix": "Replace --old-flag with --new-flag in the example."
+    }
+  ]
+}
