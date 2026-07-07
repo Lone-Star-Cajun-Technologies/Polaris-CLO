@@ -89,16 +89,6 @@
     "updated_by": "polaris-map-index",
     "tags": []
   },
-  "foreman-worker-architecture.md": {
-    "domain": "unknown",
-    "route": "foreman-worker-architecture.md",
-    "taskchain": "polaris-core",
-    "confidence": 0,
-    "classification": "needs-review",
-    "last_updated": "2026-07-04T02:53:23.054Z",
-    "updated_by": "polaris-map-index",
-    "tags": []
-  },
   "package-lock.json": {
     "domain": "unknown",
     "route": "package-lock.json",

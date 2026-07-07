@@ -1,0 +1,12 @@
+{
+  "child_id": "POL-467",
+  "status": "success",
+  "commit": "c6562af6b4c3294ef77ed79346e466a00e76edf4",
+  "validation": "passed",
+  "next_recommended_action": "continue",
+  "tracker_updated": false,
+  "state_updated": false,
+  "telemetry_updated": false,
+  "run_id": "polaris-run-pol-463-2026-07-07-001",
+  "cluster_id": "POL-463"
+}
