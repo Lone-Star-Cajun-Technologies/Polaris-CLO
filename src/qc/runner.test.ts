@@ -28,7 +28,7 @@ describe("executeQcProvider", () => {
         execFileImpl: ((file, args, options, callback) => {
           callback?.(null, "stdout", "");
           return {} as ReturnType<typeof import("node:child_process").execFile>;
-        }) as typeof import("node:child_process").execFile,
+        }) as unknown as typeof import("node:child_process").execFile,
       },
     );
 
