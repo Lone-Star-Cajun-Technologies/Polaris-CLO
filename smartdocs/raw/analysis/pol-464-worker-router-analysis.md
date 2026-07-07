@@ -62,6 +62,24 @@ This document records the 9Router-informed design boundaries that were establish
 
 ---
 
+## Responsibilities and non-responsibilities
+
+### Router responsibilities
+
+1. Compute provider eligibility from registry metadata, route/domain mapping, role policy, capability needs, and quota gates.
+2. Produce deterministic provider ranking and fallback order with trust/cost as tie-breakers.
+3. Coordinate slot leasing/release boundaries with scheduler state (`max_concurrent`).
+4. Emit durable `router-decision-evidence` and fallback telemetry for SOL pipelines.
+
+### Router non-responsibilities
+
+1. Reordering children or bypassing `blockedBy` / cluster sequencing constraints.
+2. Mutating `WorkerPacket` fields (scope, validation, role) after packet generation.
+3. Owning lifecycle transitions, finalize delivery, or tracker synchronization.
+4. Post-start provider switching after `worker-acknowledged` / heartbeat.
+
+---
+
 ## Default behavior commitment
 
 The default configuration must keep Polaris behaving exactly as it does today:

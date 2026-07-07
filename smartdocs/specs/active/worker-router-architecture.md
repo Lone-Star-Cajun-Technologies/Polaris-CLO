@@ -73,9 +73,33 @@ The following 9Router ideas must not enter the Polaris runtime:
 
 ---
 
-## 2. Core concepts
+## 2. Responsibilities and non-responsibilities
 
-### 2.1 Worker/provider registry
+### 2.1 Router responsibilities
+
+The Worker Router is responsible for:
+
+1. Building an eligibility set from provider registry, role policy, route/domain hints, capability requirements, and quota state.
+2. Ranking eligible providers using deterministic policy order with trust/cost tie-breakers.
+3. Leasing and releasing dispatch slots via scheduler hooks (`max_concurrent` guard).
+4. Emitting durable decision evidence and fallback telemetry for each dispatch attempt.
+5. Performing pre-dispatch fallback when the adapter reports `pre_dispatch_failure`.
+
+### 2.2 Router non-responsibilities
+
+The Worker Router must not:
+
+1. Reorder children, skip blocked children, or modify `open_children`.
+2. Change packet content, allowed scope, validation commands, or child role authority.
+3. Transition lifecycle states (`acked`, `heartbeat`, `completed`, `failed`, `blocked`) owned by Foreman state handlers.
+4. Handle finalize delivery, tracker sync, PR updates, or canon promotion workflows.
+5. Retry a child after work has started on a provider.
+
+---
+
+## 3. Core concepts
+
+### 3.1 Worker/provider registry
 
 The registry is a Polaris config surface that describes every provider the router can consider. It is separate from the command templates in `execution.providers`.
 
@@ -90,12 +114,12 @@ Registry entries include:
 | `model` | Default model identifier; used as a tie-breaker and for telemetry. |
 | `costTier` | `free`, `cheap`, `standard`, `premium`. |
 | `trust` | Configured initial trust score (0.0–1.0). |
-| `quota` | Reference to a quota profile (see §2.6). |
+| `quota` | Reference to a quota profile (see §3.6). |
 | `enabled` | Whether the router may consider this provider. |
 
 The registry is read-only at dispatch time. Runtime state (trust decay, quota consumption) is stored separately in the run state and telemetry.
 
-### 2.2 Slot pool
+### 3.2 Slot pool
 
 A **slot** is the right to hold an active worker for one child. The slot pool enforces concurrency limits per run.
 
@@ -109,7 +133,7 @@ A **slot** is the right to hold an active worker for one child. The slot pool en
 - With `max_concurrent = 1`, the scheduler behaves exactly like the current single-worker loop.
 - Multi-worker mode requires an explicit config change and is opt-in only.
 
-### 2.3 Eligibility
+### 3.3 Eligibility
 
 A provider is **eligible** for a child only when all of the following hold:
 
@@ -122,7 +146,7 @@ A provider is **eligible** for a child only when all of the following hold:
 
 Eligibility is a binary gate. A provider that is ineligible is recorded with a reason and is not scored.
 
-### 2.4 Trust
+### 3.4 Trust
 
 **Trust** is a 0.0–1.0 score that reflects how reliably a provider has executed Polaris children in the past.
 
@@ -138,7 +162,7 @@ Inputs (advisory until explicitly enabled):
 
 Trust is used as a **tie-breaker** after eligibility, not as a routing override. A high-trust provider does not bypass role policy or child ordering.
 
-### 2.5 Cost
+### 3.5 Cost
 
 **Cost** is a tiered signal:
 
@@ -151,7 +175,7 @@ Trust is used as a **tie-breaker** after eligibility, not as a routing override.
 
 Cost is considered **after** eligibility and trust. The default policy is cost-agnostic: it selects the first eligible provider by policy order. A future policy may prefer cheaper tiers among equally trustworthy candidates.
 
-### 2.6 Quota
+### 3.6 Quota
 
 A **quota** is a limit on provider usage in a time window.
 
@@ -164,7 +188,7 @@ A **quota** is a limit on provider usage in a time window.
 
 Quota data may initially be manual/configured. Live provider introspection is a future enhancement. A provider with `requests_remaining <= 0` is ineligible until reset.
 
-### 2.7 Fallback
+### 3.7 Fallback
 
 **Fallback** is only allowed before a worker has started. The router builds an ordered fallback list from the effective policy. If the adapter returns a `pre_dispatch_failure` (e.g., command not found, API error before the worker reads the packet), the router may try the next eligible provider.
 
@@ -172,7 +196,7 @@ Once a worker emits `worker-acknowledged` or `worker-heartbeat`, the child is bo
 
 Delegated-mode fallback (`subagent` → `external-process` → `human-handoff`) remains unchanged and is separate from provider-level fallback.
 
-### 2.8 Route / domain
+### 3.8 Route / domain
 
 A **route** maps a domain or child type to a role/policy. Routes are optional and are resolved after the child is selected but before the provider is chosen.
 
@@ -186,7 +210,7 @@ Examples:
 
 If no route matches, the child's default role is used. Routes do not override the cluster plan or child order.
 
-### 2.9 SOL telemetry
+### 3.9 SOL telemetry
 
 Every routing decision emits structured telemetry events that can later be used as **SOL (Second-Order Learning)** inputs for autoresearch scoring.
 
@@ -197,13 +221,13 @@ Every routing decision emits structured telemetry events that can later be used 
 | `provider-exhausted` | Records that no eligible provider could be selected. |
 | `slot-leased` | Records that a child has claimed a concurrency slot. |
 | `slot-released` | Records that a child has freed its slot. |
-| `router-decision-evidence` | Carries the full eligibility list, excluded providers, trust/cost/quoata scores, and policy rule. |
+| `router-decision-evidence` | Carries the full eligibility list, excluded providers, trust/cost/quota scores, and policy rule. |
 
 These events are durable, append-only, and queryable by `dispatch_id` and `run_id`.
 
 ---
 
-## 3. Data flow
+## 4. Data flow
 
 ```text
 Parent/Foreman requests dispatch for the next child
@@ -242,11 +266,11 @@ On terminal state: slot released; scheduler may dispatch next child
 
 ---
 
-## 4. Router decision evidence
+## 5. Router decision evidence
 
 The router must produce a `RouterDecisionEvidence` record for every dispatch attempt. This record is the audit trail for SOL scoring.
 
-### 4.1 Required evidence fields
+### 5.1 Required evidence fields
 
 | Field | Type | Description |
 |---|---|---|
@@ -261,7 +285,7 @@ The router must produce a `RouterDecisionEvidence` record for every dispatch att
 | `selection_reason` | `string` | Human-readable reason for the choice. |
 | `fallback_chain` | `string[]` | Ordered providers to try on pre-dispatch failure. |
 
-### 4.2 Candidate shape
+### 5.2 Candidate shape
 
 ```typescript
 interface RouterCandidate {
@@ -279,13 +303,13 @@ interface RouterCandidate {
 }
 ```
 
-### 4.3 Telemetry mapping
+### 5.3 Telemetry mapping
 
 The `router-decision-evidence` event is written to the same JSONL telemetry stream as worker heartbeats. The existing `provider-selected`, `provider-fallback-attempted`, and `provider-exhausted` events are populated from this evidence.
 
 ---
 
-## 5. Scheduler boundaries
+## 6. Scheduler boundaries
 
 The scheduler owns only two things:
 
@@ -304,7 +328,7 @@ When `max_concurrent = 1`, the scheduler preserves the existing `one child per s
 
 ---
 
-## 6. Migration stages
+## 7. Migration stages
 
 The router is built in incremental stages. Each stage defaults to single-worker behavior and keeps 9Router optional.
 
@@ -321,9 +345,9 @@ No stage may change the default behavior to multi-worker. Multi-worker is opt-in
 
 ---
 
-## 7. Default behavior and invariants
+## 8. Default behavior and invariants
 
-### 7.1 Default behavior
+### 8.1 Default behavior
 
 When `execution.router` is absent or unset, Polaris behaves exactly as it does today:
 
@@ -333,7 +357,7 @@ When `execution.router` is absent or unset, Polaris behaves exactly as it does t
 - One child is dispatched per `polaris loop continue` invocation.
 - No external routing service is contacted.
 
-### 7.2 Invariants
+### 8.2 Invariants
 
 | Invariant | Description |
 |---|---|
@@ -345,7 +369,7 @@ When `execution.router` is absent or unset, Polaris behaves exactly as it does t
 | **Quota/trust are advisory by default** | They do not override role policy or child ordering unless a policy explicitly says so. |
 | **9Router is never a dependency** | The router is Polaris-native and has no required external service. |
 
-### 7.3 Non-goals
+### 8.3 Non-goals
 
 - Do not implement runtime router code in this spec.
 - Do not make 9Router a required dependency.
@@ -354,7 +378,7 @@ When `execution.router` is absent or unset, Polaris behaves exactly as it does t
 
 ---
 
-## 8. Related documents
+## 9. Related documents
 
 - `smartdocs/raw/analysis/pol-460-worker-router-analysis.md` — original 9Router analysis.
 - `smartdocs/raw/analysis/pol-464-worker-router-analysis.md` — design boundaries recorded for this child.
