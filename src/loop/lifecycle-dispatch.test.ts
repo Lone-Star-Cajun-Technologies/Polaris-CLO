@@ -112,6 +112,16 @@ function baseConfig(): Required<PolarisConfig> {
       auto_deep_analysis: false,
       allow_cross_provider_delegation: false,
     },
+    qc: {
+      enabled: false,
+      defaultTrigger: "completed-cluster",
+      providers: {},
+      severityThresholds: { block: "high", repair: "medium", followUp: "low" },
+      autoFix: "disabled",
+      repairRouting: "route",
+      artifactRetention: { retainRawOutput: false, maxRuns: 10 },
+      routes: {},
+    },
   };
 }
 

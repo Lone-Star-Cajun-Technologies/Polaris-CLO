@@ -51,7 +51,9 @@ import {
   assertDispatchedBeforeCompletion,
   advanceDispatchEpoch,
   advanceContinueEpoch,
+  assertChildQcSelectionAllowed,
 } from "./dispatch-boundary.js";
+import { selectChildQcTrigger } from "../qc/triggers.js";
 import { assertBootstrapSeal } from "./run-bootstrap.js";
 import {
   DEFAULT_LEDGER_PATH,
@@ -1334,9 +1336,67 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
       maxConcurrentWorkers,
     );
 
+    // ── Child-level QC selection ─────────────────────────────────────────────
+    // Only opt-in conditions may select child-level QC. The dispatch boundary
+    // below enforces that any child-level marker on the packet is valid.
+    let packetWithQc: WorkerPacket & { qc_trigger?: string } = packet;
+    let stateWithQcMeta = state;
+    const childQcTrigger = selectChildQcTrigger(
+      config.qc,
+      nextChild,
+      packet.instructions.allowed_scope,
+      state.open_children_meta?.[nextChild]?.labels,
+    );
+    if (childQcTrigger) {
+      packetWithQc = { ...packet, qc_trigger: childQcTrigger };
+      stateWithQcMeta = {
+        ...state,
+        open_children_meta: {
+          ...state.open_children_meta,
+          [nextChild]: {
+            ...(state.open_children_meta?.[nextChild] ?? {}),
+            qc_trigger: childQcTrigger,
+          },
+        },
+      };
+      appendTelemetry(telemetryFile, {
+        event: "qc-child-trigger-selected",
+        run_id: state.run_id,
+        child_id: nextChild,
+        qc_trigger: childQcTrigger,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
     if (!dryRun) {
       try {
-        writePacketArtifact(packetPath, packet);
+        assertChildQcSelectionAllowed(
+          stateWithQcMeta,
+          nextChild,
+          config.qc,
+          packet.instructions.allowed_scope,
+          state.open_children_meta?.[nextChild]?.labels,
+          telemetryFile,
+        );
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        appendTelemetry(telemetryFile, {
+          event: "qc-child-selection-rejected",
+          run_id: state.run_id,
+          child_id: nextChild,
+          error: msg,
+          timestamp: new Date().toISOString(),
+        });
+        return {
+          haltReason: 'worker-error',
+          childrenDispatched,
+          haltingChild: nextChild,
+          message: msg,
+        };
+      }
+
+      try {
+        writePacketArtifact(packetPath, packetWithQc as WorkerPacket);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         appendTelemetry(telemetryFile, {
@@ -1370,7 +1430,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
       });
       const stateWithDispatch: LoopState = {
         ...withWorkerPoolState(
-          withChildDispatchMetadata(state, nextChild, resultFile, dispatchRecord),
+          withChildDispatchMetadata(stateWithQcMeta, nextChild, resultFile, dispatchRecord),
           maxConcurrentWorkers,
           nextSlotClaims,
         ),

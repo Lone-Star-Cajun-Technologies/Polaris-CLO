@@ -156,7 +156,8 @@ describe("recordQcRun", () => {
     const { artifactPath, state } = await recordQcRun(clusterId, result, repoRoot);
 
     expect(artifactPath).toContain(path.join(".polaris", "clusters", clusterId, "qc", "qc-run-1.json"));
-    expect(state.qc_runs["qc-run-1"]).toEqual({
+    const qcRuns = state.qc_runs ?? {};
+    expect(qcRuns["qc-run-1"]).toEqual({
       artifact_path: artifactPath,
       status: "findings",
       provider: "coderabbit",
@@ -165,7 +166,7 @@ describe("recordQcRun", () => {
     });
 
     const reloaded = await readClusterState(clusterId, repoRoot);
-    expect(reloaded?.qc_runs["qc-run-1"]).toEqual(state.qc_runs["qc-run-1"]);
+    expect((reloaded?.qc_runs ?? {})["qc-run-1"]).toEqual(qcRuns["qc-run-1"]);
     expect(JSON.parse(readFileSync(artifactPath, "utf-8"))).toEqual(result);
   });
 });
