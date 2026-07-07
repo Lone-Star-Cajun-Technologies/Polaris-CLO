@@ -26,7 +26,11 @@ describe("executeQcProvider", () => {
         runId: "run-1",
         clusterId: "POL-1",
         execFileImpl: ((file, args, options, callback) => {
-          callback?.(null, "stdout", "");
+          (
+            callback as
+              | ((error: null, stdout: string, stderr: string) => void)
+              | undefined
+          )?.(null, "stdout", "");
           return {} as ReturnType<typeof import("node:child_process").execFile>;
         }) as unknown as typeof import("node:child_process").execFile,
       },
