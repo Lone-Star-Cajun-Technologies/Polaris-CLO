@@ -4,6 +4,8 @@ import type {
   QcFinding,
   QcPolicyDecision,
   QcProviderAttempt,
+  QcRepairPacket,
+  QcRepairPacketManifest,
   QcResult,
 } from "./types.js";
 
@@ -156,6 +158,55 @@ export function validateQcFinding(value: unknown): { success: true; finding: QcF
   const parsed = qcFindingSchema.safeParse(value);
   if (parsed.success) {
     return { success: true, finding: parsed.data };
+  }
+  return { success: false, errors: parsed.error.issues.map((issue) => issue.message) };
+}
+
+export const qcRepairPacketStatusSchema = z.enum([
+  "pending",
+  "dispatched",
+  "completed",
+  "failed",
+  "escalated",
+]);
+
+export const qcRepairPacketSchema: z.ZodType<QcRepairPacket> = z.object({
+  packetId: z.string(),
+  round: z.number().int().min(0),
+  clusterId: z.string(),
+  sourceQcRunIds: z.array(z.string()),
+  findingIds: z.array(z.string()),
+  severityFloor: qcSeveritySchema,
+  rootCauseHint: z.string(),
+  allowedScope: z.array(z.string()),
+  prohibitedScope: z.array(z.string()),
+  validationCommands: z.array(z.string()),
+  routingTarget: qcRoutingDecisionSchema,
+  parallelGroup: z.string().nullable(),
+  conflicts: z.array(z.string()),
+  medic: z.boolean(),
+  status: qcRepairPacketStatusSchema,
+  createdAt: z.string().datetime(),
+});
+
+export const qcRepairPacketManifestSchema: z.ZodType<QcRepairPacketManifest> = z.object({
+  schemaVersion: z.string(),
+  clusterId: z.string(),
+  round: z.number().int().min(0),
+  compiledAt: z.string().datetime(),
+  sourceQcRunIds: z.array(z.string()),
+  packets: z.array(qcRepairPacketSchema),
+});
+
+/**
+ * Validate an unknown value as a compiled repair packet manifest.
+ */
+export function validateRepairPacketManifest(
+  value: unknown,
+): { success: true; manifest: QcRepairPacketManifest } | { success: false; errors: string[] } {
+  const parsed = qcRepairPacketManifestSchema.safeParse(value);
+  if (parsed.success) {
+    return { success: true, manifest: parsed.data };
   }
   return { success: false, errors: parsed.error.issues.map((issue) => issue.message) };
 }

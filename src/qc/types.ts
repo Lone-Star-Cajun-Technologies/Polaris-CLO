@@ -139,3 +139,41 @@ export interface QcResult {
   providerAttempt?: QcProviderAttempt;
   allProvidersFailed?: boolean;
 }
+
+/** Lifecycle status of a compiled repair packet. */
+export type QcRepairPacketStatus =
+  | "pending"
+  | "dispatched"
+  | "completed"
+  | "failed"
+  | "escalated";
+
+/** Compiled cluster-scoped repair packet manifest produced by the QC compiler. */
+export interface QcRepairPacket {
+  packetId: string;
+  round: number;
+  clusterId: string;
+  sourceQcRunIds: string[];
+  findingIds: string[];
+  severityFloor: QcSeverity;
+  rootCauseHint: string;
+  allowedScope: string[];
+  prohibitedScope: string[];
+  validationCommands: string[];
+  routingTarget: QcRoutingDecision;
+  parallelGroup: string | null;
+  conflicts: string[];
+  medic: boolean;
+  status: QcRepairPacketStatus;
+  createdAt: string;
+}
+
+/** Durable repair-round manifest persisted for Foreman discovery. */
+export interface QcRepairPacketManifest {
+  schemaVersion: string;
+  clusterId: string;
+  round: number;
+  compiledAt: string;
+  sourceQcRunIds: string[];
+  packets: QcRepairPacket[];
+}

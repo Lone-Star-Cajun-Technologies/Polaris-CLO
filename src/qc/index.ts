@@ -12,3 +12,4 @@ export * from "./registry.js";
 export * from "./attribution.js";
 export * from "./autofix.js";
 export * from "./routing.js";
+export * from "./repair-packets.js";
