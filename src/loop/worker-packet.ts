@@ -672,3 +672,107 @@ export function compilePreflightPacket(input: CompilePreflightPacketInput): Work
     },
   };
 }
+
+// ── Repair worker packet compiler ─────────────────────────────────────────────
+
+export interface CompileRepairWorkerPacketInput {
+  runId: string;
+  clusterId: string;
+  /** Repair packet ID (from QcRepairPacket.packetId). */
+  packetId: string;
+  branch: string;
+  stateFile: string;
+  telemetryFile: string;
+  /** Repair round number (1-indexed). */
+  round: number;
+  /** Files the repair worker is allowed to touch (from QcRepairPacket.allowedScope). */
+  allowedScope: string[];
+  /** Files the repair worker must not touch (from QcRepairPacket.prohibitedScope). */
+  prohibitedScope: string[];
+  /** Validation commands to run after repair. */
+  validationCommands: string[];
+  /** Human-readable root cause hint from the repair packet. */
+  rootCauseHint: string;
+  /** Sealed result file path where this worker must write its result JSON. */
+  resultFile: string;
+  maxConcurrentWorkers?: number;
+}
+
+/** Return contract for repair workers (same shape as impl). */
+export const REPAIR_RETURN_CONTRACT: string[] = [
+  'child_id',
+  'status',
+  'commit',
+  'validation',
+  'next_recommended_action',
+];
+
+/**
+ * Build a compiled repair worker packet.
+ *
+ * Repair workers use `worker_role: "repair"` and the same sealed packet/result
+ * contracts as impl workers, but with tightly scoped allowed/prohibited paths
+ * derived from the compiled repair packet manifest.
+ *
+ * The parent/orchestrator MUST use this function and MUST NOT implement
+ * repair work inline.
+ */
+export function compileRepairWorkerPacket(
+  input: CompileRepairWorkerPacketInput,
+): WorkerPacket {
+  const steps = [
+    `Confirm QC repair scope: allowed=${JSON.stringify(input.allowedScope)}, prohibited=${JSON.stringify(input.prohibitedScope)}.`,
+    `Review root-cause hint: ${input.rootCauseHint}`,
+    `Apply minimal repair to files within allowed scope only. Do NOT touch prohibited paths.`,
+    `Run validation commands and confirm all pass.`,
+    `Create exactly ONE git commit: [REPAIR] ${input.clusterId} round-${input.round} packet-${input.packetId}.`,
+    `Write compact return JSON to stdout (fields: ${REPAIR_RETURN_CONTRACT.join(', ')}). next_recommended_action MUST be "continue" on success, "stop" on unresolvable blocker.`,
+    `TERMINATE SESSION IMMEDIATELY.`,
+  ];
+
+  return {
+    schema_version: '2.1',
+    worker_role: 'repair',
+    run_id: input.runId,
+    cluster_id: input.clusterId,
+    active_child: input.packetId,
+    state_file: input.stateFile,
+    telemetry_file: input.telemetryFile,
+    instructions: {
+      primary_goal:
+        `QC repair worker for cluster ${input.clusterId}, round ${input.round}, packet ${input.packetId}. ` +
+        `Apply minimal targeted repairs to findings within the allowed scope. Root cause: ${input.rootCauseHint}`,
+      steps,
+      allowed_scope: input.allowedScope,
+      validation_commands: input.validationCommands,
+    },
+    lifecycle: defaultLifecycle(input.maxConcurrentWorkers ?? 1, 'commit-and-exit'),
+    return_contract: REPAIR_RETURN_CONTRACT,
+    prompt_mode: 'full',
+    prompt_metrics: { mode: 'full', char_count: 0, estimated_tokens: 0 },
+    role_context: roleContextForWorkerRole('repair'),
+    routing_context: {
+      task_type: "repair",
+      required_capabilities: ["repair"],
+    },
+    prohibited_write_paths: [
+      ...WORKER_PROHIBITED_WRITE_PATHS,
+      ...input.prohibitedScope,
+    ],
+    result_file_contract: {
+      result_file: input.resultFile,
+      result_required_fields: Object.fromEntries([
+        ['run_id', input.runId],
+        ['cluster_id', input.clusterId],
+        ['child_id', input.packetId],
+        ...REPAIR_RETURN_CONTRACT.map((key) => [key, `<${key}>`]),
+      ]),
+    },
+    context: {
+      branch: input.branch,
+      worker_role: 'repair',
+      repair_round: input.round,
+      repair_packet_id: input.packetId,
+    },
+  };
+}

@@ -13,3 +13,4 @@ export * from "./attribution.js";
 export * from "./autofix.js";
 export * from "./routing.js";
 export * from "./repair-packets.js";
+export * from "./repair-loop.js";

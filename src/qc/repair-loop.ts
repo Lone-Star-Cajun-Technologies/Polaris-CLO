@@ -1,0 +1,583 @@
+/**
+ * QC repair loop orchestration.
+ *
+ * The Foreman calls `runQcRepairLoop` after a completed-cluster QC run produces
+ * findings. This module:
+ *
+ *   1. Discovers a compiled repair packet manifest for the current round.
+ *   2. Converts eligible repair packets into Foreman-dispatched repair workers.
+ *   3. Awaits repair worker completion (via sealed result files / adapter).
+ *   4. Reruns QC after all repair workers in a round have completed.
+ *   5. Loops until: pass, no repairable packets, max rounds reached,
+ *      all providers failed, operator review required, or Medic referral.
+ *
+ * Dispatch boundary: the parent/orchestrator NEVER implements repair code.
+ * Each repair packet becomes a sealed WorkerPacket with worker_role: "repair".
+ */
+
+import { appendFileSync, mkdirSync } from "node:fs";
+import { dirname, join } from "node:path";
+import type { QcConfig } from "../config/schema.js";
+import type {
+  QcRepairPacket,
+  QcRepairPacketManifest,
+  QcResult,
+} from "./types.js";
+import {
+  compileAndWriteRepairPackets,
+  readRepairPacketManifest,
+} from "./repair-packets.js";
+import type { RunQcAtTriggerOptions, QcOrchestratorResult } from "./orchestration.js";
+import { runQcAtTrigger } from "./orchestration.js";
+import type { QcProviderRegistry } from "./provider.js";
+import type { QcRepairLoopState, QcRepairLoopOutcome } from "../loop/checkpoint.js";
+import { writeClusterState, readClusterStateSync } from "../cluster-state/store.js";
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+/** Default maximum repair rounds when not configured. */
+export const DEFAULT_MAX_REPAIR_ROUNDS = 2;
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+/** Dispatch result for a single repair worker. */
+export interface RepairWorkerResult {
+  packetId: string;
+  status: "success" | "failure" | "skipped";
+  commitSha?: string;
+  errorMessage?: string;
+}
+
+/** Caller-supplied function to dispatch a single repair packet as a worker. */
+export type DispatchRepairWorkerFn = (
+  packet: QcRepairPacket,
+  round: number,
+  manifest: QcRepairPacketManifest,
+) => Promise<RepairWorkerResult>;
+
+/** Options for running the bounded QC repair loop. */
+export interface RunQcRepairLoopOptions {
+  /** Cluster ID for this run. */
+  clusterId: string;
+  /** Polaris run ID. */
+  runId: string;
+  /** Git branch. */
+  branch: string;
+  /** Absolute repo root path. */
+  repoRoot: string;
+  /** Telemetry JSONL file path. */
+  telemetryFile: string;
+  /** QC config from polaris.config.json. */
+  config: QcConfig;
+  /** Registered QC providers. */
+  registry: QcProviderRegistry;
+  /** QC results that triggered this repair cycle (from completed-cluster run). */
+  initialQcResults: QcResult[];
+  /** Caller-supplied repair worker dispatcher. The Foreman wraps this around its dispatch adapter. */
+  dispatchRepairWorker: DispatchRepairWorkerFn;
+  /** Validation commands to embed in repair packets. */
+  validationCommands?: string[];
+  /** QC runner timeout in milliseconds. */
+  timeoutMs?: number;
+  /** Maximum repair rounds. Defaults to `DEFAULT_MAX_REPAIR_ROUNDS`. */
+  maxRounds?: number;
+  /** Current loop state's qc_repair_loop — resume from prior round when present. */
+  priorLoopState?: QcRepairLoopState | null;
+  /** Optional callback when loop state is mutated (for checkpoint persistence). */
+  onStateUpdate?: (state: QcRepairLoopState) => void;
+}
+
+/** Result of the QC repair loop. */
+export interface QcRepairLoopResult {
+  outcome: Exclude<QcRepairLoopOutcome, null>;
+  rounds_completed: number;
+  final_qc_results: QcResult[];
+  loop_state: QcRepairLoopState;
+  summary: string;
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+function appendTelemetry(
+  telemetryFile: string,
+  event: Record<string, unknown>,
+): void {
+  mkdirSync(dirname(telemetryFile), { recursive: true });
+  appendFileSync(telemetryFile, JSON.stringify(event) + "\n", "utf-8");
+}
+
+/** Returns true when any finding in the results routes to repair-worker. */
+function hasRepairableFindings(results: QcResult[]): boolean {
+  return results.some((r) =>
+    r.findings.some(
+      (f) =>
+        (f.routingDecision === "repair-worker" || f.routingDecision === "original-worker") &&
+        f.status !== "waived" &&
+        f.status !== "autofixed" &&
+        f.status !== "repaired",
+    ),
+  );
+}
+
+/** Returns true when all QC providers failed in every result. */
+function allProvidersFailed(results: QcResult[]): boolean {
+  return (
+    results.length > 0 &&
+    results.every((r) => r.allProvidersFailed || r.status === "failed")
+  );
+}
+
+/** Returns true when any finding requires operator review. */
+function requiresOperatorReview(results: QcResult[]): boolean {
+  return results.some((r) =>
+    r.findings.some(
+      (f) =>
+        f.routingDecision === "operator-review" &&
+        f.status !== "waived" &&
+        f.status !== "repaired",
+    ),
+  );
+}
+
+/** Returns true when the QC rerun passed (no open/blocking findings). */
+function rerunPassed(results: QcResult[]): boolean {
+  if (results.length === 0) return false;
+  return results.every((r) => r.status === "passed" || r.status === "skipped");
+}
+
+/** Partition packets into safe-to-parallel and must-serialize groups. */
+export function partitionRepairPackets(packets: QcRepairPacket[]): {
+  parallelGroups: QcRepairPacket[][];
+  serialized: QcRepairPacket[];
+} {
+  // Medic (operator-review) packets are always serialized.
+  const serialized = packets.filter((p) => p.medic || p.routingTarget === "operator-review");
+  const parallelizable = packets.filter((p) => !p.medic && p.routingTarget !== "operator-review");
+
+  // Group by parallelGroup assignment from the compiler.
+  const groups = new Map<string, QcRepairPacket[]>();
+  for (const pkt of parallelizable) {
+    const key = pkt.parallelGroup ?? `solo-${pkt.packetId}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(pkt);
+  }
+
+  return {
+    parallelGroups: Array.from(groups.values()),
+    serialized,
+  };
+}
+
+/** Initialize a fresh QcRepairLoopState. */
+export function initRepairLoopState(opts: {
+  maxRounds: number;
+  sourceQcRunIds: string[];
+}): QcRepairLoopState {
+  const now = new Date().toISOString();
+  return {
+    current_round: 0,
+    max_rounds: opts.maxRounds,
+    source_qc_run_ids: opts.sourceQcRunIds,
+    manifest_path: null,
+    pending_packet_ids: [],
+    completed_packet_ids: [],
+    rerun_requested: false,
+    rerun_qc_run_ids: {},
+    terminal_outcome: null,
+    initiated_at: now,
+    updated_at: now,
+  };
+}
+
+// ── Main repair loop ───────────────────────────────────────────────────────────
+
+/**
+ * Run the bounded QC repair loop.
+ *
+ * The loop is Foreman-owned: it coordinates dispatch, never implements repairs.
+ * Returns deterministically on pass, no-repairable, max-rounds, all-providers-failed,
+ * operator-review, or medic-referral.
+ */
+export async function runQcRepairLoop(
+  options: RunQcRepairLoopOptions,
+): Promise<QcRepairLoopResult> {
+  const {
+    clusterId,
+    runId,
+    branch,
+    repoRoot,
+    telemetryFile,
+    config,
+    registry,
+    initialQcResults,
+    dispatchRepairWorker,
+    validationCommands = [],
+    timeoutMs,
+    maxRounds = DEFAULT_MAX_REPAIR_ROUNDS,
+    priorLoopState,
+    onStateUpdate,
+  } = options;
+
+  if (!config.enabled) {
+    const state = initRepairLoopState({
+      maxRounds,
+      sourceQcRunIds: initialQcResults.map((r) => r.qcRunId),
+    });
+    state.terminal_outcome = "qc-disabled";
+    state.updated_at = new Date().toISOString();
+    return {
+      outcome: "qc-disabled",
+      rounds_completed: 0,
+      final_qc_results: initialQcResults,
+      loop_state: state,
+      summary: "QC repair loop skipped — QC disabled by configuration",
+    };
+  }
+
+  const sourceRunIds = initialQcResults.map((r) => r.qcRunId);
+  let loopState: QcRepairLoopState = priorLoopState ?? initRepairLoopState({ maxRounds, sourceQcRunIds: sourceRunIds });
+
+  let currentResults = initialQcResults;
+  let roundsCompleted = loopState.current_round;
+
+  appendTelemetry(telemetryFile, {
+    event: "qc-repair-loop-started",
+    run_id: runId,
+    cluster_id: clusterId,
+    max_rounds: maxRounds,
+    source_qc_run_ids: sourceRunIds,
+    timestamp: new Date().toISOString(),
+  });
+
+  // ── Main loop ──────────────────────────────────────────────────────────────
+
+  while (roundsCompleted < maxRounds) {
+    const round = roundsCompleted + 1;
+
+    // Check exit conditions at the top of each round.
+    if (rerunPassed(currentResults) && round > 1) {
+      // A rerun already passed in this call frame — exit.
+      break;
+    }
+
+    if (allProvidersFailed(currentResults)) {
+      loopState = { ...loopState, terminal_outcome: "all-providers-failed", updated_at: new Date().toISOString() };
+      onStateUpdate?.(loopState);
+      appendTelemetry(telemetryFile, {
+        event: "qc-repair-loop-terminal",
+        run_id: runId,
+        outcome: "all-providers-failed",
+        round,
+        timestamp: new Date().toISOString(),
+      });
+      return {
+        outcome: "all-providers-failed",
+        rounds_completed: roundsCompleted,
+        final_qc_results: currentResults,
+        loop_state: loopState,
+        summary: `QC repair loop halted: all QC providers failed at round ${round}`,
+      };
+    }
+
+    if (requiresOperatorReview(currentResults)) {
+      loopState = { ...loopState, terminal_outcome: "operator-review", updated_at: new Date().toISOString() };
+      onStateUpdate?.(loopState);
+      appendTelemetry(telemetryFile, {
+        event: "qc-repair-loop-terminal",
+        run_id: runId,
+        outcome: "operator-review",
+        round,
+        timestamp: new Date().toISOString(),
+      });
+      return {
+        outcome: "operator-review",
+        rounds_completed: roundsCompleted,
+        final_qc_results: currentResults,
+        loop_state: loopState,
+        summary: `QC repair loop halted: unresolved operator-review findings at round ${round}`,
+      };
+    }
+
+    // ── Compile / discover repair packets ──────────────────────────────────
+
+    let manifest: QcRepairPacketManifest | null = null;
+
+    // Try to read an existing manifest for this round first (idempotent re-entry).
+    manifest = readRepairPacketManifest(clusterId, round, repoRoot);
+
+    if (!manifest) {
+      // Compile fresh repair packets from current QC results.
+      const compiled = compileAndWriteRepairPackets({
+        clusterId,
+        round,
+        qcResults: currentResults,
+        config,
+        validationCommands,
+        repoRoot,
+      });
+      manifest = compiled.manifest;
+
+      // Update cluster state with manifest path.
+      try {
+        const clusterState = readClusterStateSync(clusterId, repoRoot);
+        if (clusterState) {
+          const repairManifests = {
+            ...(clusterState.qc_repair_manifests ?? {}),
+            [round]: compiled.manifestPath,
+          };
+          await writeClusterState(
+            clusterId,
+            { ...clusterState, state_generation: clusterState.state_generation + 1, qc_repair_manifests: repairManifests },
+            repoRoot,
+          );
+        }
+      } catch {
+        // Non-fatal: cluster state update is best-effort.
+      }
+
+      loopState = {
+        ...loopState,
+        current_round: round,
+        manifest_path: compiled.manifestPath,
+        pending_packet_ids: compiled.packets.map((p) => p.packetId),
+        updated_at: new Date().toISOString(),
+      };
+      onStateUpdate?.(loopState);
+
+      appendTelemetry(telemetryFile, {
+        event: "qc-repair-manifest-compiled",
+        run_id: runId,
+        cluster_id: clusterId,
+        round,
+        packet_count: compiled.packets.length,
+        manifest_path: compiled.manifestPath,
+        timestamp: new Date().toISOString(),
+      });
+    } else {
+      loopState = {
+        ...loopState,
+        current_round: round,
+        manifest_path: loopState.manifest_path ?? join(repoRoot, ".polaris", "clusters", clusterId, "qc", "repair-rounds", String(round), "repair-packets.json"),
+        updated_at: new Date().toISOString(),
+      };
+      onStateUpdate?.(loopState);
+    }
+
+    // ── Check for repairable packets ────────────────────────────────────────
+
+    const repairablePackets = manifest.packets.filter(
+      (p) =>
+        p.routingTarget === "repair-worker" &&
+        p.status === "pending" &&
+        !loopState.completed_packet_ids.includes(p.packetId),
+    );
+
+    if (repairablePackets.length === 0 && !hasRepairableFindings(currentResults)) {
+      loopState = { ...loopState, terminal_outcome: "no-repairable", updated_at: new Date().toISOString() };
+      onStateUpdate?.(loopState);
+      appendTelemetry(telemetryFile, {
+        event: "qc-repair-loop-terminal",
+        run_id: runId,
+        outcome: "no-repairable",
+        round,
+        timestamp: new Date().toISOString(),
+      });
+      return {
+        outcome: "no-repairable",
+        rounds_completed: roundsCompleted,
+        final_qc_results: currentResults,
+        loop_state: loopState,
+        summary: `QC repair loop: no repairable packets at round ${round}`,
+      };
+    }
+
+    // ── Dispatch repair workers (parallel groups, then serialized) ──────────
+
+    const { parallelGroups, serialized } = partitionRepairPackets(repairablePackets);
+    const allWorkerResults: RepairWorkerResult[] = [];
+    let hasMedicReferral = false;
+
+    // Dispatch parallel groups.
+    for (const group of parallelGroups) {
+      appendTelemetry(telemetryFile, {
+        event: "qc-repair-worker-group-start",
+        run_id: runId,
+        round,
+        parallel_group: group[0]?.parallelGroup ?? null,
+        packet_ids: group.map((p) => p.packetId),
+        timestamp: new Date().toISOString(),
+      });
+
+      // Within a group, packets are non-conflicting and can run concurrently.
+      const groupResults = await Promise.all(
+        group.map((pkt) => dispatchRepairWorker(pkt, round, manifest!)),
+      );
+      allWorkerResults.push(...groupResults);
+    }
+
+    // Dispatch serialized (medic/operator-review) packets sequentially.
+    for (const pkt of serialized) {
+      const result = await dispatchRepairWorker(pkt, round, manifest);
+      allWorkerResults.push(result);
+    }
+
+    // Record completed packet IDs.
+    const completedIds = allWorkerResults
+      .filter((r) => r.status !== "skipped")
+      .map((r) => r.packetId);
+    loopState = {
+      ...loopState,
+      completed_packet_ids: [...loopState.completed_packet_ids, ...completedIds],
+      pending_packet_ids: loopState.pending_packet_ids.filter((id) => !completedIds.includes(id)),
+      updated_at: new Date().toISOString(),
+    };
+    onStateUpdate?.(loopState);
+
+    // Check for failed repair workers → Medic referral.
+    const failedWorkers = allWorkerResults.filter((r) => r.status === "failure");
+    if (failedWorkers.length > 0) {
+      hasMedicReferral = true;
+      appendTelemetry(telemetryFile, {
+        event: "qc-repair-worker-failures",
+        run_id: runId,
+        round,
+        failed_packet_ids: failedWorkers.map((r) => r.packetId),
+        errors: failedWorkers.map((r) => r.errorMessage ?? "unknown"),
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    if (hasMedicReferral) {
+      loopState = { ...loopState, terminal_outcome: "medic-referral", updated_at: new Date().toISOString() };
+      onStateUpdate?.(loopState);
+      appendTelemetry(telemetryFile, {
+        event: "qc-repair-loop-terminal",
+        run_id: runId,
+        outcome: "medic-referral",
+        round,
+        failed_count: failedWorkers.length,
+        timestamp: new Date().toISOString(),
+      });
+      return {
+        outcome: "medic-referral",
+        rounds_completed: roundsCompleted + 1,
+        final_qc_results: currentResults,
+        loop_state: loopState,
+        summary: `QC repair loop: ${failedWorkers.length} repair worker(s) failed at round ${round} — Medic referral triggered`,
+      };
+    }
+
+    roundsCompleted += 1;
+
+    // ── QC rerun after successful repairs ───────────────────────────────────
+
+    loopState = { ...loopState, rerun_requested: true, updated_at: new Date().toISOString() };
+    onStateUpdate?.(loopState);
+
+    appendTelemetry(telemetryFile, {
+      event: "qc-repair-rerun-start",
+      run_id: runId,
+      cluster_id: clusterId,
+      round,
+      timestamp: new Date().toISOString(),
+    });
+
+    const rerunOptions: RunQcAtTriggerOptions = {
+      config,
+      registry,
+      trigger: "completed-cluster",
+      repoRoot,
+      runId,
+      clusterId,
+      branch,
+      telemetryFile,
+      timeoutMs,
+    };
+
+    let rerunResult: QcOrchestratorResult;
+    try {
+      rerunResult = await runQcAtTrigger(rerunOptions);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      appendTelemetry(telemetryFile, {
+        event: "qc-repair-rerun-error",
+        run_id: runId,
+        round,
+        error: msg,
+        timestamp: new Date().toISOString(),
+      });
+      // Treat rerun error as all-providers-failed.
+      loopState = { ...loopState, terminal_outcome: "all-providers-failed", updated_at: new Date().toISOString() };
+      onStateUpdate?.(loopState);
+      return {
+        outcome: "all-providers-failed",
+        rounds_completed: roundsCompleted,
+        final_qc_results: currentResults,
+        loop_state: loopState,
+        summary: `QC repair loop: rerun at round ${round} threw an error: ${msg}`,
+      };
+    }
+
+    // Record rerun QC run IDs.
+    const rerunIds = rerunResult.results.map((r) => r.qcRunId).filter(Boolean);
+    loopState = {
+      ...loopState,
+      rerun_requested: false,
+      rerun_qc_run_ids: { ...loopState.rerun_qc_run_ids, [round]: rerunIds },
+      updated_at: new Date().toISOString(),
+    };
+    onStateUpdate?.(loopState);
+
+    appendTelemetry(telemetryFile, {
+      event: "qc-repair-rerun-complete",
+      run_id: runId,
+      cluster_id: clusterId,
+      round,
+      action: rerunResult.action,
+      summary: rerunResult.summary,
+      rerun_qc_run_ids: rerunIds,
+      timestamp: new Date().toISOString(),
+    });
+
+    currentResults = rerunResult.results;
+
+    // Pass condition: rerun returned no blocking findings.
+    if (rerunResult.action === "pass") {
+      loopState = { ...loopState, terminal_outcome: "pass", updated_at: new Date().toISOString() };
+      onStateUpdate?.(loopState);
+      appendTelemetry(telemetryFile, {
+        event: "qc-repair-loop-terminal",
+        run_id: runId,
+        outcome: "pass",
+        round,
+        timestamp: new Date().toISOString(),
+      });
+      return {
+        outcome: "pass",
+        rounds_completed: roundsCompleted,
+        final_qc_results: currentResults,
+        loop_state: loopState,
+        summary: `QC repair loop passed after ${roundsCompleted} round(s)`,
+      };
+    }
+  }
+
+  // ── Max rounds exhausted ──────────────────────────────────────────────────
+
+  loopState = { ...loopState, terminal_outcome: "max-rounds", updated_at: new Date().toISOString() };
+  onStateUpdate?.(loopState);
+  appendTelemetry(telemetryFile, {
+    event: "qc-repair-loop-terminal",
+    run_id: runId,
+    outcome: "max-rounds",
+    rounds_completed: roundsCompleted,
+    timestamp: new Date().toISOString(),
+  });
+  return {
+    outcome: "max-rounds",
+    rounds_completed: roundsCompleted,
+    final_qc_results: currentResults,
+    loop_state: loopState,
+    summary: `QC repair loop exhausted max rounds (${maxRounds}) without passing`,
+  };
+}

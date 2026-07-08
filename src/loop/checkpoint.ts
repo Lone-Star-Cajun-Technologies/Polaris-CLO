@@ -213,6 +213,54 @@ export interface LoopState {
    * Optional for backward compatibility with pre-pool state files.
    */
   worker_pool_state?: WorkerPoolState;
+  /**
+   * QC repair loop state. Present only when the repair loop is active or has run.
+   * Governed by the parent/Foreman; workers must not mutate this field.
+   */
+  qc_repair_loop?: QcRepairLoopState;
+}
+
+/**
+ * Terminal outcome of a QC repair loop run.
+ */
+export type QcRepairLoopOutcome =
+  | "pass"              // QC rerun passed — no open findings remain
+  | "no-repairable"     // No repairable packets found in manifest
+  | "max-rounds"        // Bounded limit reached without passing
+  | "all-providers-failed" // All QC providers failed on rerun
+  | "operator-review"  // Unresolved high-risk findings require human review
+  | "medic-referral"   // One or more repair workers failed → Medic dispatched
+  | "qc-disabled"      // QC not enabled — repair loop skipped
+  | null;              // Loop not yet complete
+
+/**
+ * Runtime state for the QC repair loop.
+ *
+ * The loop is Foreman-owned. Workers never write this field.
+ */
+export interface QcRepairLoopState {
+  /** Current repair round number (1-indexed). */
+  current_round: number;
+  /** Maximum repair rounds before forcing a terminal outcome. Default: 2. */
+  max_rounds: number;
+  /** QC run IDs that triggered this repair cycle. */
+  source_qc_run_ids: string[];
+  /** Absolute path to the repair packet manifest for the current round. */
+  manifest_path: string | null;
+  /** Packet IDs whose repair workers are pending dispatch or running. */
+  pending_packet_ids: string[];
+  /** Packet IDs whose repair workers have completed (success or failure). */
+  completed_packet_ids: string[];
+  /** Whether a QC rerun has been requested after this round's repairs. */
+  rerun_requested: boolean;
+  /** QC run IDs from post-repair reruns, keyed by round number. */
+  rerun_qc_run_ids: Record<number, string[]>;
+  /** Terminal outcome of the repair loop. Null while in-flight. */
+  terminal_outcome: QcRepairLoopOutcome;
+  /** ISO 8601 timestamp when this loop state was initialized. */
+  initiated_at: string;
+  /** ISO 8601 timestamp of the last state mutation. */
+  updated_at: string;
 }
 
 export interface CheckpointEvent {

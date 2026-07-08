@@ -694,4 +694,10 @@ export interface QcConfig {
    * Per-route QC policy overrides keyed by route name.
    */
   routes?: Record<string, QcRoutePolicy>;
+  /**
+   * Maximum number of QC repair rounds the governed loop will run before
+   * escalating with terminal outcome "max-rounds".
+   * Default: 2.
+   */
+  maxRepairRounds?: number;
 }
