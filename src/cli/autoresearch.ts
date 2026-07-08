@@ -1,9 +1,11 @@
 import { resolve } from "node:path";
 import { Command } from "commander";
 import { assertPolarisDevContext } from "../autoresearch/dev-gate.js";
-import { scoreRun } from "../autoresearch/score.js";
+import { scoreRun, loadRunArtifacts } from "../autoresearch/score.js";
 import { loadDiagnosisReport, buildProposals } from "../autoresearch/proposal.js";
 import { routeProposals } from "../autoresearch/routing.js";
+import { aggregateSolEvidence } from "../autoresearch/sol-evidence-loader.js";
+import { computeSolScoreReport } from "../autoresearch/sol-scorer.js";
 
 export interface SolCommandOptions {
   repoRoot: string;
@@ -48,6 +50,38 @@ export function createSolCommand(options: SolCommandOptions): Command {
       } catch (err) {
         process.stderr.write(
           `sol score error: ${err instanceof Error ? err.message : String(err)}\n`,
+        );
+        process.exit(1);
+      }
+    });
+
+  sol
+    .command("score-report <run-id>")
+    .description(
+      "Compute a SOL score report with diagnostic sub-scores for Foreman and Workers",
+    )
+    .option("-r, --repo-root <path>", "Repository root", repoRoot)
+    .option("--json", "Output raw JSON (default: pretty-printed)")
+    .action((runId: string, cmdOptions: { repoRoot: string; json?: boolean }) => {
+      const root = resolve(cmdOptions.repoRoot ?? repoRoot);
+      try {
+        assertPolarisDevContext(root);
+      } catch (err) {
+        process.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
+        process.exit(1);
+      }
+
+      try {
+        const artifacts = loadRunArtifacts(root, runId);
+        const evidence = aggregateSolEvidence(artifacts);
+        const report = computeSolScoreReport(evidence);
+        const output = cmdOptions.json
+          ? JSON.stringify(report)
+          : JSON.stringify(report, null, 2);
+        process.stdout.write(`${output}\n`);
+      } catch (err) {
+        process.stderr.write(
+          `sol score-report error: ${err instanceof Error ? err.message : String(err)}\n`,
         );
         process.exit(1);
       }

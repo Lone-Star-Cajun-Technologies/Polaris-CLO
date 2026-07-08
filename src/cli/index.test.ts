@@ -212,6 +212,21 @@ describe("polaris public CLI", () => {
     expect(result.stderr).not.toContain("unknown command");
   });
 
+  it("exposes sol score-report subcommand", async () => {
+    const result = await runCommand(["sol", "score-report", "--help"]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("Usage: polaris sol score-report");
+    expect(result.stderr).not.toContain("unknown command");
+  });
+
+  it("sol help lists score-report alongside score and propose", async () => {
+    const result = await runCommand(["sol", "--help"]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("score-report");
+  });
+
   it("fails unknown commands with actionable help", async () => {
     const result = await runCommand(["not-a-command"]);
 
