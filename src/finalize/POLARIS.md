@@ -52,6 +52,15 @@ The finalize subsystem implements the atomic 13-step final delivery sequence for
 - QC artifacts follow `artifact-policy.ts` promotion rules; raw provider scratch stays out of delivery commits.
 - PR-level QC triggers run after the PR is created; completed-cluster QC triggers run before the PR is created.
 
+## QC repair loop relationship
+
+- Finalize must check that the repair loop has reached a terminal outcome before proceeding to remote delivery steps.
+- Acceptable terminal outcomes for delivery: `qc_passed`, `follow-up / log` (where only `low`/`info` findings remain).
+- Blocking terminal outcomes: `operator_review_required`, `max_rounds_reached` (with open `medium`+), `medic_referral_required`, `all_providers_failed` when `failurePolicy: block`.
+- Repair packet manifests (`.polaris/clusters/<cluster-id>/qc/repair-rounds/<round>/repair-packets.json`) are durable Polaris artifacts and must be promoted by `artifact-policy.ts` rules when they exist.
+- Finalize does not invoke QC providers or compile repair packets. It reads the repair loop terminal state from cluster-state QC run pointers.
+- See `smartdocs/specs/active/quality-control-architecture.md §8.7` for the full terminal outcome definitions.
+
 ## Related routes
 
 - `polaris.finalize` — all files in this directory

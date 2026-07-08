@@ -57,6 +57,35 @@ Autoresearch is the evidence-scoring and proposal-routing sub-capability inside 
 - `scoreRun()` reads QC result artifacts from `.polaris/clusters/<cluster-id>/qc/` and weights findings by severity and attribution confidence.
 - QC findings are treated as noisy observations; autoresearch aggregates patterns and proposes follow-up analysis or human review, never a unilateral block.
 
+## QC repair loop SOL evidence
+
+The repair loop emits additional JSONL telemetry events that `scoreRun()` and `summarizeRouterOutcomes()` must read when present. New SOL evidence fields introduced by POL-501:
+
+- `provider_attempt_count` — total provider invocations across fallback chain.
+- `provider_failure_class` — failure class for each failed provider attempt.
+- `repair_round_count` — number of repair rounds executed.
+- `compiled_packet_count` — total repair packets compiled this run.
+- `repair_worker_outcomes` — per-packet: `{packet_id, worker_id, status, finding_ids_resolved}`.
+- `unresolved_finding_escalation_reason` — why a finding was not resolved (`max-rounds`, `operator-review`, `medic-referral`).
+- `max_round_stop_reason` — human-readable reason the round limit was hit.
+- `medic_referral_packet_ids` — packet IDs referred to Medic.
+
+Repair loop telemetry events to aggregate (in addition to existing QC events):
+
+| Event | SOL signal |
+|---|---|
+| `qc-provider-attempted` / `qc-provider-failed` | Provider reliability; fallback chain depth. |
+| `qc-repair-round-started` / `qc-repair-round-complete` | Rounds consumed per cluster. |
+| `qc-repair-packets-compiled` | Repair packet count and severity distribution. |
+| `qc-repair-packet-complete` | Per-packet repair success/failure rate. |
+| `qc-max-rounds-reached` | Escalation rate; signal for raising `maxRepairRounds`. |
+| `qc-operator-review-required` | Operator escalation rate by finding category. |
+| `qc-medic-referral-required` | Medic referral rate from QC repair path. |
+
+These events are emitted by `src/qc/orchestration.ts`. Autoresearch reads them from the run telemetry JSONL file alongside existing `provider-selected` / `provider-fallback-attempted` / `provider-exhausted` events.
+
+Full repair loop telemetry event catalog: `smartdocs/specs/active/quality-control-architecture.md §8.9`.
+
 ## Related routes
 
 - `src/cli/autoresearch.ts` — `polaris sol` CLI command surface; `polaris autoresearch` remains a compatibility alias

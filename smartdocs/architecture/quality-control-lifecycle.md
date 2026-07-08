@@ -4,13 +4,14 @@ status: active
 source: POL-471
 cluster: POL-470
 created: 2026-07-07
+updated: 2026-07-08
 implements:
-related: smartdocs/specs/active/quality-control-architecture.md,smartdocs/raw/analysis/pol-461-quality-control-analysis.md,src/finalize/POLARIS.md,src/loop/POLARIS.md,src/cluster-state/POLARIS.md,src/autoresearch/POLARIS.md
+related: smartdocs/specs/active/quality-control-architecture.md,smartdocs/raw/analysis/pol-461-quality-control-analysis.md,smartdocs/raw/analysis/pol-500-provider-agnostic-qc-repair-loop-analysis.md,src/qc/POLARIS.md,src/finalize/POLARIS.md,src/loop/POLARIS.md,src/cluster-state/POLARIS.md,src/autoresearch/POLARIS.md
 supersedes:
 superseded_by:
 depends_on:
 validates:
-source_paths: src/finalize/,src/loop/,src/cluster-state/,src/autoresearch/
+source_paths: src/qc/,src/finalize/,src/loop/,src/cluster-state/,src/autoresearch/
 ingest-run-id: polaris-run-pol-470-2026-07-07-001
 classified-as: architecture
 ---
@@ -117,10 +118,64 @@ QC findings enter SOL scoring as advisory signals. The SOL pipeline:
 
 ---
 
+## Bounded repair-round lifecycle placement
+
+The repair loop runs as a bounded sub-lifecycle within the QC lifecycle. It is placed after `qc_results_normalized` and before `qc_passed` or a terminal escalation outcome.
+
+```text
+QC trigger fires (completed-cluster or pr)
+        │
+        ▼
+Provider(s) invoked — all attempts produce telemetry
+        │  (fallback chain if primary fails)
+        ▼
+Provider output parsed → normalized QcFinding array
+        │
+        ▼
+Policy applied: severity, attribution, auto-fix eligibility
+        │
+        ▼
+Auto-fix applied for eligible findings (opt-in, validated)
+        │
+        ▼
+Repair packet manifest compiled
+ (.polaris/clusters/<id>/qc/repair-rounds/<round>/repair-packets.json)
+        │
+        ▼
+Repair workers dispatched via Worker Router (worker_role: repair)
+  ┌─────┤  Parallel-safe packets may run concurrently (§8.8)
+  │     ▼
+  │  Repair workers return results
+  │     │
+  │     ▼
+  │  Post-repair QC rerun (back to "Provider(s) invoked")
+  │     │
+  └─────┤  if round < maxRepairRounds AND unresolved findings remain
+        │
+        ▼
+Terminal outcome reached (§8.7):
+  - qc_passed           → delivery proceeds
+  - follow-up / log     → delivery proceeds with tracker follow-up
+  - operator_review     → loop suspends; operator resolves
+  - max_rounds_reached  → escalate medium+ to operator review
+  - medic_referral      → loop suspends; Medic dispatched
+  - all_providers_failed → apply failurePolicy per provider
+```
+
+**Max repair rounds:** `2` by default. Override via `polaris.config.json → qc.maxRepairRounds`.
+
+**Foreman discovery:** Repair packets become governed dispatch children when the repair round starts. Foreman discovers them from the compiled manifest and uses the Worker Router to dispatch repair workers as it would any other governed child.
+
+**Loop invariant:** The repair loop is a sub-lifecycle of QC, not a replacement for the outer cluster lifecycle. `open_children` and `completed_children` in `current-state.json` are managed by the parent runtime; the repair loop manages round state in cluster-state and QC artifacts only.
+
+---
+
 ## Related documents
 
-- `smartdocs/specs/active/quality-control-architecture.md` — full spec with provider, trigger, severity, attribution, auto-fix, and SOL definitions.
-- `smartdocs/raw/analysis/pol-461-quality-control-analysis.md` — source analysis.
+- `smartdocs/specs/active/quality-control-architecture.md` — full spec with provider, trigger, severity, attribution, auto-fix, repair loop contract, and SOL definitions.
+- `smartdocs/raw/analysis/pol-461-quality-control-analysis.md` — source analysis for POL-461/POL-471.
+- `smartdocs/raw/analysis/pol-500-provider-agnostic-qc-repair-loop-analysis.md` — source analysis for POL-500/POL-501 repair loop.
+- `src/qc/POLARIS.md` — QC subsystem operational guidance.
 - `src/finalize/POLARIS.md` — finalize operational guidance.
 - `src/loop/POLARIS.md` — loop operational guidance.
 - `src/cluster-state/POLARIS.md` — cluster-state operational guidance.
