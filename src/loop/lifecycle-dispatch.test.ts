@@ -122,6 +122,7 @@ function baseConfig(): Required<PolarisConfig> {
       artifactRetention: { retainRawOutput: false, maxRuns: 10 },
       routes: {},
     },
+    sol: {},
   };
 }
 
