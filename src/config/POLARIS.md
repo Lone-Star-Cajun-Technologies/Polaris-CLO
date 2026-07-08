@@ -12,6 +12,7 @@ The config subsystem loads, validates, and provides the resolved `PolarisConfig`
 - `validator.ts` — schema validation logic
 - `graph` config fields — graph output path and invalidation triggers for graph governance
 - Provider detection helpers — compaction providers remain separate from repo-analysis providers; repo analysis prefers Polaris graph only.
+- `sol` config fields — `SolConfig` with `history.enabled` (default `false`) and `history.path` (default `.polaris/sol-history`) for SOL history persistence; snapshots are not written unless `history.enabled` is `true`.
 
 ## What does not belong here
 
@@ -49,6 +50,7 @@ The config subsystem loads, validates, and provides the resolved `PolarisConfig`
 
 - The `execution.routerPolicy` config surface (`WorkerRouterPolicyConfig`) is the live provider eligibility and slot-pool configuration for the Worker Router. It is present in `schema.ts`, `schema.json`, and `defaults.ts`. Key sub-fields: `defaultWorkerPool.maxActiveWorkers` (default `1`), `providerRegistry` (per-provider eligibility, role, capability, quota, trust, cost, and max slot declarations), `allowCrossAgentFallback` (default `false`).
 - With `routerPolicy` absent or all defaults, behavior is identical to the pre-router single-worker loop: one active worker, first configured provider selected, no cross-agent fallback.
+- The `sol` config surface (`SolConfig`) controls SOL history persistence. `sol.history.enabled` (default `false`) gates all snapshot writes; `sol.history.path` (default `.polaris/sol-history`) sets the storage directory relative to the repo root. Consumers must check `history.enabled` before writing snapshots.
 
 ## Related routes
 

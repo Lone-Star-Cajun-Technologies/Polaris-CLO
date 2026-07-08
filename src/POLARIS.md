@@ -11,7 +11,7 @@ The `src/` tree contains the Polaris application source: CLI entrypoints, runtim
 - `medic/` — Medic chart ID generation and chart schema validation (chart creation tooling)
 - `lint/` — Repository lint rules; currently enforces Navigation Before Retrieval doctrine on skill chain files
 - `agent-plugin/` — Host-agnostic slash-command manifest, Claude Code shim generator, argument validation, help/error generation, and shim drift detection/sync
-- `autoresearch/` — Dev-gated retroactive run scoring pipeline and artifact improvement proposal routing; provides `scoreRun` (binary gate scorecard), `buildProposals` (fix zone mapping), and `routeProposals` (Linear issue creation). Scoring reads worker result contracts from run state, filters non-worker result artifacts, and treats packet resend evidence as a per-child dispatch signal.
+- `autoresearch/` — Dev-gated retroactive run scoring pipeline and artifact improvement proposal routing; provides `scoreRun` (binary gate scorecard), `buildProposals` (fix zone mapping), and `routeProposals` (Linear issue creation). Scoring reads worker result contracts from run state, filters non-worker result artifacts, and treats packet resend evidence as a per-child dispatch signal. The SOL self-optimization pipeline extends this module with `aggregateSolEvidence` (evidence normalization), `computeSolScoreReport` (0.0–1.0 dimensional scoring), `appendSnapshot`/`loadSnapshots` (append-only JSONL history under `.polaris/sol-history/`), `generateReport` (grouped trend analysis), and `generateRecommendations` (advisory routing/provider/model recommendations). Shared SOL types live in `src/types/sol-evidence.ts` and `src/types/sol-score.ts`.
 
 ## What does not belong here
 
