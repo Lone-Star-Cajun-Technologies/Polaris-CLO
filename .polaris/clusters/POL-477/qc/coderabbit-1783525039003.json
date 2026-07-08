@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "1.0",
+  "qcRunId": "coderabbit-1783525039003",
+  "runId": "polaris-run-sol-self-optimization-2026-07-08-001",
+  "clusterId": "POL-477",
+  "trigger": "completed-cluster",
+  "provider": "coderabbit",
+  "providerMode": "local",
+  "startedAt": "2026-07-08T15:37:18.773Z",
+  "completedAt": "2026-07-08T15:37:19.003Z",
+  "status": "failed",
+  "findings": [],
+  "rawArtifactPaths": [],
+  "parserVersion": "coderabbit-1.0",
+  "policyDecision": {
+    "blocksDelivery": false,
+    "requiresOperatorReview": true,
+    "routedToRepair": false,
+    "summary": "0 findings; operator review required"
+  }
+}

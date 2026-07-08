@@ -176,6 +176,69 @@ describe("polaris public CLI", () => {
     expect(finalize.stdout).toContain("--skip-delivery");
   });
 
+  it("exposes the sol command group with score, propose, and recommend subcommands", async () => {
+    const result = await runCommand(["sol", "--help"]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("Usage: polaris sol");
+    expect(result.stdout).toContain("score");
+    expect(result.stdout).toContain("propose");
+    expect(result.stdout).toContain("recommend");
+    expect(result.stdout).toContain("autoresearch");
+  });
+
+  it("routes sol score help through the public entrypoint", async () => {
+    const result = await runCommand(["sol", "score", "--help"]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("Usage: polaris sol score");
+    expect(result.stderr).not.toContain("unknown command");
+  });
+
+  it("keeps autoresearch score as a compatibility alias", async () => {
+    const result = await runCommand(["autoresearch", "score", "--help"]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("Usage: polaris");
+    expect(result.stdout).toContain("score");
+    expect(result.stderr).not.toContain("unknown command");
+  });
+
+  it("keeps autoresearch propose as a compatibility alias", async () => {
+    const result = await runCommand(["autoresearch", "propose", "--help"]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("Usage: polaris");
+    expect(result.stdout).toContain("propose");
+    expect(result.stderr).not.toContain("unknown command");
+  });
+
+  it("exposes sol score-report subcommand", async () => {
+    const result = await runCommand(["sol", "score-report", "--help"]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("Usage: polaris sol score-report");
+    expect(result.stderr).not.toContain("unknown command");
+  });
+
+  it("exposes sol recommend subcommand with file and dry-run flags", async () => {
+    const result = await runCommand(["sol", "recommend", "--help"]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("Usage: polaris sol recommend");
+    expect(result.stdout).toContain("--file");
+    expect(result.stdout).toContain("--dry-run");
+    expect(result.stderr).not.toContain("unknown command");
+  });
+
+  it("sol help lists recommend alongside score and propose", async () => {
+    const result = await runCommand(["sol", "--help"]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("recommend");
+    expect(result.stdout).toContain("score-report");
+  });
+
   it("fails unknown commands with actionable help", async () => {
     const result = await runCommand(["not-a-command"]);
 
@@ -201,5 +264,29 @@ describe("polaris public CLI", () => {
     expect(result.stderr).toContain("unknown command 'not-a-subcommand'");
     expect(result.stderr).toContain("Usage: polaris loop");
     expect(result.stderr).toContain("Commands:");
+  });
+
+  it("exposes sol history subcommand group", async () => {
+    const result = await runCommand(["sol", "history", "--help"]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("save");
+    expect(result.stdout).toContain("report");
+  });
+
+  it("exposes sol history save help", async () => {
+    const result = await runCommand(["sol", "history", "save", "--help"]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("--history-path");
+  });
+
+  it("exposes sol history report help with grouping options", async () => {
+    const result = await runCommand(["sol", "history", "report", "--help"]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("--group-by");
+    expect(result.stdout).toContain("--window-days");
+    expect(result.stdout).toContain("--json");
   });
 });

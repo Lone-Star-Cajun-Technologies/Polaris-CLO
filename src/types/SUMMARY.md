@@ -23,7 +23,7 @@ This folder is the shared type boundary for Polaris inter-role communication. Ro
 - `src/tracker/` — consumes tracker adapter types
 
 ## Current State
-Contains `result-packet.ts` (ResultPacket, MedicPacket, MedicResult), `runtime-state.ts`, `linear.ts`, and `tool-server-linear.d.ts`. All types added by POL-326 Medic role implementation are in `result-packet.ts`.
+Contains `result-packet.ts` (ResultPacket, MedicPacket, MedicResult), `runtime-state.ts`, `linear.ts`, and `tool-server-linear.d.ts`. All types added by POL-326 Medic role implementation are in `result-packet.ts`. SOL scoring and evidence types were added by POL-477 (SOL self-optimization cluster): `sol-evidence.ts` defines the normalized read model (`SolEvidence` and its sub-types) over completed run artifacts, and `sol-score.ts` defines the SOL scoring output model (`SolDimensionScore`, `SolForemanScoreReport`, `SolWorkerScoreReport`, `SolScoreReport`) with 0.0–1.0 dimensional scores and confidence tiers.
 
 ## Linked Canonical Sources
 - [POLARIS.md](POLARIS.md)

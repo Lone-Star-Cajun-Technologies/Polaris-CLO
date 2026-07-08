@@ -1,0 +1,108 @@
+{
+  "schema_version": "2.1",
+  "worker_role": "impl",
+  "run_id": "polaris-run-sol-self-optimization-2026-07-08-001",
+  "cluster_id": "POL-477",
+  "active_child": "POL-483",
+  "state_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json",
+  "telemetry_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-sol-self-optimization-2026-07-08-001/telemetry.jsonl",
+  "instructions": {
+    "primary_goal": "Issue: POL-483 — POL-483\nWorktree: .\nBranch: pol-477-sol-delivery\n\n## Goal\n## Objective\n\nGenerate SOL routing recommendations and Polaris-specific self-improvement proposals from historical scores and evidence.\n\n## Context\n\n[POL-462](https://linear.app/lsctech/issue/POL-462/analyze-rename-auto-research-loop-to-self-optimization-loop) requires SOL to recommend worker routing, provider/model choice, role assignment, policy updates, trust/cost thresholds, and Polaris runtime improvements. In the Polaris repository, SOL may create analyze or implementation issues; in other repos it must stay advisory and repo-agnostic.\n\n## Goal\n\nAdd recommendation generation and proposal routing that remains review-gated, deterministic, and policy-controlled.\n\n## Scope\n\n* src/autoresearch/**\n* src/cli/autoresearch.ts\n* src/cli/index.test.ts\n* src/config/**\n* src/tracker/** only if issue-routing integration is needed\n* smartdocs/specs/raw/**\n* tests covering recommendation generation, policy gates, dry-run output, and Polaris-dev-only proposal routing\n\n## Acceptance Criteria\n\n- [ ] SOL generates explainable routing recommendations from score trends and grouping dimensions.\n- [ ] Recommendations include evidence references, confidence, affected route/task/provider/model, and proposed policy action.\n- [ ] Consumer repos receive advisory output only by default.\n- [ ] Polaris-dev context may file review-gated analyze or implementation proposals when explicitly configured or invoked.\n- [ ] Dry-run mode shows all proposed tracker mutations without writing to Linear.\n- [ ] Tests prove SOL does not silently mutate runtime policy, config, docs, or source files.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/autoresearch src/cli src/config\n\n## Ordering\n\n* Depends on [POL-482](https://linear.app/lsctech/issue/POL-482/add-sol-historical-performance-store-and-reports) being Done first.\n* Consumes router/QC scoring inputs from [POL-469](https://linear.app/lsctech/issue/POL-469/emit-router-telemetry-and-sol-scoring-inputs) and [POL-476](https://linear.app/lsctech/issue/POL-476/feed-qc-metrics-into-sol-scoring-and-operator-reports) when available.\n\n## Non-goals\n\n* Do not silently change provider policy, worker routing, or trust thresholds.\n* Do not create implementation issues outside the Polaris development repository.\n* Do not bypass human review for SOL-generated work.\n* Do not depend on one QC provider or on 9Router.\n\n## Implementation Discipline\nBefore writing code, stop at the first rung that holds:\n\n1. Does this need to exist?   → no: skip it (YAGNI)\n2. Stdlib does it?            → use it\n3. Native platform feature?   → use it\n4. Installed dependency?      → use it\n5. One line?                  → one line\n6. Only then: the minimum that works\n\nLazy, not negligent: validation, error handling, security, and accessibility are never on the chopping block.\n\nWhen you defer a simplification for later, mark it inline:\n  // ponytail: <what you deferred and why>\n\n## Scope\nTouch only:\n- src/autoresearch/**\n- src/cli/autoresearch.ts\n- src/cli/index.test.ts\n- src/config/**\n- src/tracker/** only if issue-routing integration is needed\n- smartdocs/specs/raw/**\n- tests covering recommendation generation, policy gates, dry-run output, and Polaris-dev-only proposal routing\n\n## Acceptance Criteria\n\n## Validation\n- npm run build\n- npm test\n- npx vitest run src/autoresearch src/cli src/config\n\n## Commit\n[POL-483] POL-483\n\n## Governance\n- Do NOT modify open_children or completed_children in /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json. The parent runtime (loop continue) owns state transitions.\n- Append a telemetry event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-sol-self-optimization-2026-07-08-001/telemetry.jsonl.\n\n## Worker Progress Telemetry (MANDATORY)\nThe parent CANNOT see your work. You MUST emit heartbeat events so the parent knows you are alive and making progress.\n\nAfter EVERY step, append a JSONL event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-sol-self-optimization-2026-07-08-001/telemetry.jsonl:\n```jsonl\n{\"event\":\"worker-heartbeat\",\"run_id\":\"<from packet>\",\"child_id\":\"POL-483\",\"step_cursor\":\"<current step>\",\"timestamp\":\"<ISO8601>\",\"progress_pct\":<0-100>,\"files_changed\":<count>,\"current_file\":\"<file being edited>\"}\n```\n\nRequired heartbeat points:\n  1. Immediately after reading this packet (step_cursor: \"start\")\n  2. After verifying state file (step_cursor: \"verify\")\n  3. After EACH file edit (step_cursor: \"implement\")\n  4. After running validation (step_cursor: \"validate\")\n  5. After creating commit (step_cursor: \"commit\")\n  6. Before terminating (step_cursor: \"complete\" or \"failed\")\n\nIf heartbeats stop, the parent will assume you crashed and may dispatch a replacement worker.\n\n## Approval Escalation (when uncertain)\nYou have a sealed packet defining your exact scope, allowed files, and validation commands. Use this to decide:\n\nRule 1 - Auto-approve WITHIN scope (normal work):\n  - If the operation touches files within `instructions.allowed_scope` → Just do it\n  - If the command is in `instructions.validation_commands` → Just run it\n  - Low risk, expected work → No need to ask, emit heartbeat with step_cursor: \"implement\"\n\nRule 2 - ESCALATE out-of-scope or high-risk:\n  - File outside allowed_scope → Emit worker-blocked with approval_type: \"out-of-scope\"\n  - Destructive operation (rm -rf, major refactor) → Emit worker-blocked with approval_type: \"destructive\"\n  - External API calls with cost → Emit worker-blocked with approval_type: \"cost\"\n  - Changing secrets/.env → Emit worker-blocked with approval_type: \"security\"\n  - Unclear requirements → Emit worker-blocked with approval_type: \"ambiguous\"\n\nTo escalate, emit IMMEDIATELY to telemetry:\n```jsonl\n{\"event\":\"worker-blocked\",\"run_id\":\"<from packet>\",\"child_id\":\"POL-483\",\"reason\":\"needs-approval\",\"approval_type\":\"<out-of-scope|destructive|cost|security|ambiguous>\",\"description\":\"<specifically what needs approval>\",\"blocker_id\":\"<unique-id>\",\"timestamp\":\"<ISO8601>\"}\n```\n\nThen: Continue heartbeats every 30s with step_cursor: \"blocked-awaiting-approval\"\nWait for parent response. If no response in 5 minutes → TERMINATE with approval-timeout.\n\nRemember: Your packet scope is your authority. Within scope = proceed. Outside scope = escalate.\n\n## Route Cognition Delta\nAfter implementation, apply route-local cognition delta — only if something materially changed.\n\n**POLARIS.md** — update only when ALL of the following are true:\n  - You touched a file in that folder (not a distant folder).\n  - The change materially affects: folder responsibilities, commands/workflows,\n    execution constraints, ownership/routing, or operational behavior.\n  - The current POLARIS.md content is actually wrong or incomplete as a result.\n  DO NOT update POLARIS.md for: formatting fixes, comment changes, tiny refactors,\n  internal implementation details, or any change that leaves the operational guidance\n  still accurate. When in doubt, do not update.\n\n**SUMMARY.md** — update only when: linked docs/specs changed, canon relationships\n  changed, architecture meaning changed, or doctrine/spec linkage changed.\n  SUMMARY.md is informational only. Do not create it if missing — that is a hint for\n  operators, not a task for workers. Keep it short. Never add operational doctrine.\n\n**Never** scan unrelated folders. **Never** regenerate all route docs.\nIf no material change occurred, skip this section entirely.\n\n## Report Back\n- files changed\n- validation results\n- commit hash\n- blockers\n\nTERMINATE SESSION IMMEDIATELY. Do not select or execute the next child.",
+    "steps": [
+      "Verify: read /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json and confirm active_child === \"POL-483\".",
+      "Implement POL-483: \"POL-483\".",
+      "Issue description:\n## Objective\n\nGenerate SOL routing recommendations and Polaris-specific self-improvement proposals from historical scores and evidence.\n\n## Context\n\n[POL-462](https://linear.app/lsctech/issue/POL-462/analyze-rename-auto-research-loop-to-self-optimization-loop) requires SOL to recommend worker routing, provider/model choice, role assignment, policy updates, trust/cost thresholds, and Polaris runtime improvements. In the Polaris repository, SOL may create analyze or implementation issues; in other repos it must stay advisory and repo-agnostic.\n\n## Goal\n\nAdd recommendation generation and proposal routing that remains review-gated, deterministic, and policy-controlled.\n\n## Scope\n\n* src/autoresearch/**\n* src/cli/autoresearch.ts\n* src/cli/index.test.ts\n* src/config/**\n* src/tracker/** only if issue-routing integration is needed\n* smartdocs/specs/raw/**\n* tests covering recommendation generation, policy gates, dry-run output, and Polaris-dev-only proposal routing\n\n## Acceptance Criteria\n\n- [ ] SOL generates explainable routing recommendations from score trends and grouping dimensions.\n- [ ] Recommendations include evidence references, confidence, affected route/task/provider/model, and proposed policy action.\n- [ ] Consumer repos receive advisory output only by default.\n- [ ] Polaris-dev context may file review-gated analyze or implementation proposals when explicitly configured or invoked.\n- [ ] Dry-run mode shows all proposed tracker mutations without writing to Linear.\n- [ ] Tests prove SOL does not silently mutate runtime policy, config, docs, or source files.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/autoresearch src/cli src/config\n\n## Ordering\n\n* Depends on [POL-482](https://linear.app/lsctech/issue/POL-482/add-sol-historical-performance-store-and-reports) being Done first.\n* Consumes router/QC scoring inputs from [POL-469](https://linear.app/lsctech/issue/POL-469/emit-router-telemetry-and-sol-scoring-inputs) and [POL-476](https://linear.app/lsctech/issue/POL-476/feed-qc-metrics-into-sol-scoring-and-operator-reports) when available.\n\n## Non-goals\n\n* Do not silently change provider policy, worker routing, or trust thresholds.\n* Do not create implementation issues outside the Polaris development repository.\n* Do not bypass human review for SOL-generated work.\n* Do not depend on one QC provider or on 9Router.",
+      "Requirements:",
+      "   1. [ ] SOL generates explainable routing recommendations from score trends and grouping dimensions.",
+      "   2. [ ] Recommendations include evidence references, confidence, affected route/task/provider/model, and proposed policy action.",
+      "   3. [ ] Consumer repos receive advisory output only by default.",
+      "   4. [ ] Polaris-dev context may file review-gated analyze or implementation proposals when explicitly configured or invoked.",
+      "   5. [ ] Dry-run mode shows all proposed tracker mutations without writing to Linear.",
+      "   6. [ ] Tests prove SOL does not silently mutate runtime policy, config, docs, or source files.",
+      "Run validation commands and confirm all pass.",
+      "Create exactly ONE git commit: [POL-483] POL-483.",
+      "Do NOT modify open_children or completed_children in /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json. The parent runtime (loop continue) owns that state transition.",
+      "Append a telemetry event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-sol-self-optimization-2026-07-08-001/telemetry.jsonl.",
+      "Write compact return JSON to stdout (fields: child_id, status, commit, validation, next_recommended_action). next_recommended_action MUST be exactly \"continue\" on success, \"stop\" on unresolvable blocker, or \"investigate\" if manual review is needed.",
+      "TERMINATE SESSION IMMEDIATELY. Do not select or execute the next child."
+    ],
+    "allowed_scope": [
+      "src/autoresearch/**",
+      "src/cli/autoresearch.ts",
+      "src/cli/index.test.ts",
+      "src/config/**",
+      "src/tracker/** only if issue-routing integration is needed",
+      "smartdocs/specs/raw/**",
+      "tests covering recommendation generation, policy gates, dry-run output, and Polaris-dev-only proposal routing"
+    ],
+    "validation_commands": [
+      "npm run build",
+      "npm test",
+      "npx vitest run src/autoresearch src/cli src/config"
+    ],
+    "issue_context": {
+      "id": "POL-483",
+      "title": "POL-483",
+      "key_requirements": [],
+      "body": "## Objective\n\nGenerate SOL routing recommendations and Polaris-specific self-improvement proposals from historical scores and evidence.\n\n## Context\n\n[POL-462](https://linear.app/lsctech/issue/POL-462/analyze-rename-auto-research-loop-to-self-optimization-loop) requires SOL to recommend worker routing, provider/model choice, role assignment, policy updates, trust/cost thresholds, and Polaris runtime improvements. In the Polaris repository, SOL may create analyze or implementation issues; in other repos it must stay advisory and repo-agnostic.\n\n## Goal\n\nAdd recommendation generation and proposal routing that remains review-gated, deterministic, and policy-controlled.\n\n## Scope\n\n* src/autoresearch/**\n* src/cli/autoresearch.ts\n* src/cli/index.test.ts\n* src/config/**\n* src/tracker/** only if issue-routing integration is needed\n* smartdocs/specs/raw/**\n* tests covering recommendation generation, policy gates, dry-run output, and Polaris-dev-only proposal routing\n\n## Acceptance Criteria\n\n- [ ] SOL generates explainable routing recommendations from score trends and grouping dimensions.\n- [ ] Recommendations include evidence references, confidence, affected route/task/provider/model, and proposed policy action.\n- [ ] Consumer repos receive advisory output only by default.\n- [ ] Polaris-dev context may file review-gated analyze or implementation proposals when explicitly configured or invoked.\n- [ ] Dry-run mode shows all proposed tracker mutations without writing to Linear.\n- [ ] Tests prove SOL does not silently mutate runtime policy, config, docs, or source files.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/autoresearch src/cli src/config\n\n## Ordering\n\n* Depends on [POL-482](https://linear.app/lsctech/issue/POL-482/add-sol-historical-performance-store-and-reports) being Done first.\n* Consumes router/QC scoring inputs from [POL-469](https://linear.app/lsctech/issue/POL-469/emit-router-telemetry-and-sol-scoring-inputs) and [POL-476](https://linear.app/lsctech/issue/POL-476/feed-qc-metrics-into-sol-scoring-and-operator-reports) when available.\n\n## Non-goals\n\n* Do not silently change provider policy, worker routing, or trust thresholds.\n* Do not create implementation issues outside the Polaris development repository.\n* Do not bypass human review for SOL-generated work.\n* Do not depend on one QC provider or on 9Router."
+    }
+  },
+  "lifecycle": {
+    "terminate_after_completion": true,
+    "max_concurrent": 1,
+    "cleanup_on_exit": "commit-and-exit"
+  },
+  "return_contract": [
+    "child_id",
+    "status",
+    "commit",
+    "validation",
+    "next_recommended_action"
+  ],
+  "prompt_mode": "compact",
+  "prompt_metrics": {
+    "mode": "compact",
+    "char_count": 7704,
+    "estimated_tokens": 1926
+  },
+  "role_context": {
+    "role": "worker",
+    "role_authority": "implementation",
+    "may_implement": true,
+    "may_assign_workers": false,
+    "prohibited_actions": [
+      "modify-cluster-plan",
+      "dispatch-children",
+      "polaris-loop-dispatch",
+      "polaris-loop-continue"
+    ]
+  },
+  "routing_context": {
+    "task_type": "impl",
+    "required_capabilities": [
+      "implementation"
+    ]
+  },
+  "prohibited_write_paths": [
+    ".taskchain_artifacts/",
+    ".polaris/clusters/",
+    ".polaris/runs/",
+    "**/telemetry.jsonl"
+  ],
+  "result_file_contract": {
+    "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-477/results/POL-483-1487ee21-2ac5-465d-b625-03aebcb9820c.json",
+    "result_required_fields": {
+      "run_id": "polaris-run-sol-self-optimization-2026-07-08-001",
+      "cluster_id": "POL-477",
+      "child_id": "<child_id>",
+      "status": "<status>",
+      "commit": "<commit>",
+      "validation": "<validation>",
+      "next_recommended_action": "<next_recommended_action>"
+    }
+  },
+  "context": {
+    "branch": "pol-477-sol-delivery",
+    "worker_role": "impl"
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "role": "closeout-librarian",
+  "status": "success",
+  "run_id": "polaris-run-sol-self-optimization-2026-07-08-001",
+  "cluster_id": "POL-477",
+  "dispatch_id": "589c6a41-9dc3-4bc7-a0d2-cb795e908b1b",
+  "commit_sha": "50ac5737e622f40967b8ec66d29dd7233c715877",
+  "commit_message": "[librarian] POL-477 closeout: reconcile docs for SOL self-optimization cluster",
+  "files_committed": [
+    "smartdocs/specs/raw/POLARIS.md",
+    "src/POLARIS.md",
+    "src/SUMMARY.md",
+    "src/config/POLARIS.md",
+    "src/config/SUMMARY.md",
+    "src/types/POLARIS.md",
+    "src/types/SUMMARY.md"
+  ],
+  "polaris_md_updates": [
+    "src/POLARIS.md",
+    "src/config/POLARIS.md",
+    "src/types/POLARIS.md",
+    "smartdocs/specs/raw/POLARIS.md"
+  ],
+  "summary_md_updates": [
+    "src/SUMMARY.md",
+    "src/config/SUMMARY.md",
+    "src/types/SUMMARY.md"
+  ],
+  "docs_ingested": [],
+  "docs_archived": [],
+  "yaml_updates": [],
+  "cognition_archived": [],
+  "link_validation": {},
+  "reconciled_at": "2026-07-08T15:36:04Z",
+  "evidence_summary": "All 6 children completed successfully. Updated POLARIS.md and SUMMARY.md for src/types, src/config, src/, and smartdocs/specs/raw/ to reflect SOL self-optimization pipeline additions. No docs promoted. No broken links detected.",
+  "blockers": []
+}

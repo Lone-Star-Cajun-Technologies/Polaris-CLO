@@ -52,7 +52,7 @@ function stageFile(dir: string, rel: string, content: string): void {
 
 afterEach(() => {
   for (const dir of createdDirs.splice(0)) {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
   }
 });
 

@@ -421,6 +421,32 @@ export interface PolarisConfig {
    * are written.
    */
   qc?: QcConfig;
+  /**
+   * SOL (Self-Optimization Loop) configuration.
+   * Controls history persistence and reporting behavior.
+   * When absent, history is disabled and no snapshots are written.
+   */
+  sol?: SolConfig;
+}
+
+/** SOL history configuration. */
+export interface SolHistoryConfig {
+  /**
+   * Enable SOL history persistence.
+   * Default: false — no snapshots are written.
+   */
+  enabled?: boolean;
+  /**
+   * Path (relative to repo root) where SOL history is stored.
+   * Default: ".polaris/sol-history".
+   */
+  path?: string;
+}
+
+/** SOL subsystem configuration. */
+export interface SolConfig {
+  /** History persistence settings. */
+  history?: SolHistoryConfig;
 }
 
 /** QC trigger timing. */

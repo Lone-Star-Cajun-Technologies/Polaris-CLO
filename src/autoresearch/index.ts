@@ -7,3 +7,29 @@ export { FIX_ZONE_MAP, buildProposals, loadDiagnosisReport, validateDiagnosisRep
 export type { ArtifactType, AutresearchProposal, FixZoneEntry } from "./proposal.js";
 export { routeProposals } from "./routing.js";
 export type { ProposalIssueResult, RouteProposalsResult, RouteProposalsOptions } from "./routing.js";
+export { aggregateSolEvidence } from "./sol-evidence-loader.js";
+export { computeForemanScore, computeWorkerScore, computeSolScoreReport } from "./sol-scorer.js";
+export { appendSnapshot, loadSnapshots, buildSnapshot, getHistoryFilePath } from "./sol-history.js";
+export type { SolScoreSnapshot } from "./sol-history.js";
+export { generateReport, formatReportCli } from "./sol-report.js";
+export type { SolReport, SolGroupSummary, SolReportGroupBy, SolReportOptions } from "./sol-report.js";
+export {
+  generateRecommendations,
+  recommendationsToProposals,
+  recommendationToProposal,
+  formatRecommendationsCli,
+} from "./sol-recommendations.js";
+export type {
+  SolRecommendation,
+  RecommendationAffected,
+  RecommendationEvidence,
+  RecommendationOptions,
+  RecommendationsReport,
+} from "./sol-recommendations.js";
+export type {
+  SolDimensionScore,
+  SolForemanScoreReport,
+  SolWorkerScoreReport,
+  SolScoreReport,
+  SolScoreConfidence,
+} from "../types/sol-score.js";
