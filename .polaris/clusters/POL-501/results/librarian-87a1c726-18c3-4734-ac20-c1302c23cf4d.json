@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0",
+  "role": "closeout-librarian",
+  "run_id": "polaris-run-provider-agnostic-qc-repair-loop-2026-07-08-001",
+  "dispatch_id": "87a1c726-18c3-4734-ac20-c1302c23cf4d",
+  "cluster_id": "POL-501",
+  "status": "success",
+  "commit_sha": "4efd5997d19c21b928cf71b2c69989c46d5ddc62",
+  "commit_message": "docs: reconcile architecture paths",
+  "files_committed": [
+    "smartdocs/architecture/POLARIS.md",
+    "smartdocs/architecture/SUMMARY.md"
+  ],
+  "polaris_md_updates": [
+    {
+      "file": "smartdocs/architecture/POLARIS.md",
+      "action": "update",
+      "change_summary": "Normalized the folder heading to smartdocs/architecture and linked the QC lifecycle note for POL-471."
+    }
+  ],
+  "summary_md_updates": [
+    {
+      "file": "smartdocs/architecture/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Corrected the parent reference from smartdocs/docs to smartdocs/."
+    }
+  ],
+  "docs_ingested": [],
+  "docs_archived": [],
+  "yaml_updates": [],
+  "cognition_archived": [],
+  "link_validation": {
+    "total_checked": 1,
+    "valid": 1,
+    "broken": 0,
+    "repaired": 0,
+    "unrepairable": []
+  },
+  "blockers": [],
+  "reconciled_at": "2026-07-08T16:01:42.824-05:00",
+  "evidence_summary": "Reconciled the SmartDocs architecture route by correcting stale smartdocs/docs path references in the folder cognition files and adding a durable link to the POL-471 Quality Control lifecycle note. The librarian commit contains only documentation updates and no implementation, state, or telemetry changes. Link validation confirmed the new architecture link target exists. No blockers remain."
+}

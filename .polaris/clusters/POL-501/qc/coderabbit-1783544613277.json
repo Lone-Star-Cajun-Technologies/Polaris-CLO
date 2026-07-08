@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "1.0",
+  "qcRunId": "coderabbit-1783544613277",
+  "runId": "polaris-run-provider-agnostic-qc-repair-loop-2026-07-08-001",
+  "clusterId": "POL-501",
+  "trigger": "completed-cluster",
+  "provider": "coderabbit",
+  "providerMode": "local",
+  "startedAt": "2026-07-08T21:03:32.943Z",
+  "completedAt": "2026-07-08T21:03:33.277Z",
+  "status": "failed",
+  "findings": [],
+  "rawArtifactPaths": [],
+  "parserVersion": "coderabbit-1.0",
+  "policyDecision": {
+    "blocksDelivery": false,
+    "requiresOperatorReview": true,
+    "routedToRepair": false,
+    "summary": "0 findings; operator review required"
+  }
+}
