@@ -10,5 +10,5 @@ Stable SmartDocs architecture context.
   [quality-control-lifecycle.md](quality-control-lifecycle.md).
 
 ## Relationships
-|- **Parent**: `smartdocs/docs`
+|- **Parent**: `smartdocs/`
 |- **Linked canonical source**: [POLARIS.md](POLARIS.md)
