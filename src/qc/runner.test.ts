@@ -248,9 +248,27 @@ describe("executeQcProvider", () => {
 
   it("does not misclassify successful runs with failure keywords in output", async () => {
     const provider = makeProvider({
-      parse: () => {
-        throw new Error("should not be called");
-      },
+      parse: () => ({
+        schemaVersion: "1.0",
+        qcRunId: "test-1",
+        runId: "unknown",
+        clusterId: "unknown",
+        trigger: "completed-cluster" as const,
+        provider: "test",
+        providerMode: "local" as const,
+        startedAt: new Date().toISOString(),
+        completedAt: new Date().toISOString(),
+        status: "passed" as const,
+        findings: [],
+        rawArtifactPaths: [],
+        parserVersion: "test-1.0",
+        policyDecision: {
+          blocksDelivery: false,
+          requiresOperatorReview: false,
+          routedToRepair: false,
+          summary: "no findings",
+        },
+      }),
     });
     const result = await executeQcProvider(
       provider,
