@@ -187,8 +187,8 @@ export interface QcScoreSummary {
   repair_loop: QcRepairLoopSummary | null;
   /** Providers whose findings are mostly unvalidated noise. */
   noisy_providers: string[];
-  /** Whether any repair worker failed (proxy for repeated repair failure). */
-  repeated_repair_failures: boolean;
+  /** Whether any repair worker failed or medic referral was triggered. */
+  has_repair_failures: boolean;
   /** Count of unresolved critical/high findings. */
   unresolved_high_severity: number;
   /** Whether the loop exhausted its configured max rounds. */
@@ -768,7 +768,7 @@ export function computeQcSummary(
     recurring_provider_signals: recurringProviderSignals,
     repair_loop: repairLoop,
     noisy_providers: noisyProviders,
-    repeated_repair_failures: repairLoop.packets_failed > 0 || repairLoop.status === "medic-referral",
+    has_repair_failures: repairLoop.packets_failed > 0 || repairLoop.status === "medic-referral",
     unresolved_high_severity: openBySeverity.critical + openBySeverity.high,
     max_round_exhausted: repairLoop.status === "max-rounds",
   };

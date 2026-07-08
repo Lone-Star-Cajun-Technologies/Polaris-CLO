@@ -765,7 +765,7 @@ export function compileRepairWorkerPacket(
         ['run_id', input.runId],
         ['cluster_id', input.clusterId],
         ['child_id', input.packetId],
-        ...REPAIR_RETURN_CONTRACT.map((key) => [key, `<${key}>`]),
+        ...REPAIR_RETURN_CONTRACT.filter((key) => key !== 'child_id').map((key) => [key, `<${key}>`]),
       ]),
     },
     context: {

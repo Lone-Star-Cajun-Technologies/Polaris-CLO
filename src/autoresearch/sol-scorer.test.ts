@@ -80,7 +80,7 @@ function baseEvidence(overrides: Partial<SolEvidence> = {}): SolEvidence {
       provider_breakdown: {},
       repair_loop: null,
       noisy_providers: [],
-      repeated_repair_failures: false,
+      has_repair_failures: false,
       unresolved_high_severity: 0,
       max_round_exhausted: false,
     },
@@ -785,7 +785,7 @@ function qcEvidence(overrides: Partial<SolQcEvidence> = {}): SolQcEvidence {
       },
     },
     noisy_providers: [],
-    repeated_repair_failures: false,
+    has_repair_failures: false,
     unresolved_high_severity: 0,
     max_round_exhausted: false,
     ...overrides,
@@ -819,7 +819,7 @@ describe("computeForemanScore: qc_repair_loop", () => {
     const ev = baseEvidence({
       qc: qcEvidence({
         repair_loop: { ...qcEvidence().repair_loop!, status: "medic-referral", packets_failed: 1 },
-        repeated_repair_failures: true,
+        has_repair_failures: true,
       }),
     });
     expect(computeForemanScore(ev).qc_repair_loop.score).toBe(0.0);

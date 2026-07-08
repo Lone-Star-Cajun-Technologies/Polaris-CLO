@@ -287,7 +287,7 @@ export function formatQcEvidence(qc: SolQcEvidence): string {
   if (qc.noisy_providers.length > 0) {
     lines.push(`Noisy providers: ${qc.noisy_providers.join(", ")}`);
   }
-  if (qc.repeated_repair_failures) {
+  if (qc.has_repair_failures) {
     lines.push("Repeated repair failures detected.");
   }
   if (qc.max_round_exhausted) {

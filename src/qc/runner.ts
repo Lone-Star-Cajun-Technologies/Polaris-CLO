@@ -120,6 +120,11 @@ function classifyTerminalFailure(
     return "command-not-found";
   }
 
+  // Only scan output for failure keywords if the command actually failed
+  if (!error && output.exitCode === 0) {
+    return undefined;
+  }
+
   const text = `${output.stdout ?? ""}\n${output.stderr ?? ""}`.toLowerCase();
 
   if (
@@ -552,19 +557,23 @@ export async function executeQcProvider(
       }
       const chainResult = await attemptChain(fallbackProvider, currentProvider.name);
       if (chainResult.success) {
-        emitFallbackSucceeded(
-          options.telemetryFile,
-          scope.runId,
-          scope.clusterId,
-          chainResult.sourceProvider,
-          currentProvider.name,
-        );
+        // Only emit telemetry and set fallbackSource if not already set by a deeper level
+        const existingFallbackSource = chainResult.result.providerAttempt?.fallbackSource;
+        if (!existingFallbackSource) {
+          emitFallbackSucceeded(
+            options.telemetryFile,
+            scope.runId,
+            scope.clusterId,
+            chainResult.sourceProvider,
+            currentProvider.name,
+          );
+        }
         const finalResult: QcResult = {
           ...chainResult.result,
           providerAttempt: chainResult.result.providerAttempt
             ? {
                 ...chainResult.result.providerAttempt,
-                fallbackSource: currentProvider.name,
+                fallbackSource: existingFallbackSource ?? currentProvider.name,
               }
             : undefined,
         };

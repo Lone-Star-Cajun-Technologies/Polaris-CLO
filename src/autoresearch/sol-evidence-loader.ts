@@ -369,7 +369,7 @@ function buildQcEvidence(artifacts: RunArtifacts): SolQcEvidence {
         },
       } as SolQcEvidence["repair_loop"],
       noisy_providers: [],
-      repeated_repair_failures: false,
+      has_repair_failures: false,
       unresolved_high_severity: 0,
       max_round_exhausted: false,
     };
@@ -401,7 +401,7 @@ function buildQcEvidence(artifacts: RunArtifacts): SolQcEvidence {
       provider_breakdown: {},
       repair_loop: null,
       noisy_providers: [],
-      repeated_repair_failures: false,
+      has_repair_failures: false,
       unresolved_high_severity: 0,
       max_round_exhausted: false,
     };
@@ -423,7 +423,7 @@ function buildQcEvidence(artifacts: RunArtifacts): SolQcEvidence {
     provider_breakdown: { ...summary.provider_breakdown },
     repair_loop: summary.repair_loop,
     noisy_providers: [...summary.noisy_providers],
-    repeated_repair_failures: summary.repeated_repair_failures,
+    has_repair_failures: summary.has_repair_failures,
     unresolved_high_severity: summary.unresolved_high_severity,
     max_round_exhausted: summary.max_round_exhausted,
   };

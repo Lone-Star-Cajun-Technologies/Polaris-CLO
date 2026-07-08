@@ -676,7 +676,7 @@ describe("qc repair loop evidence", () => {
       }),
     );
     expect(ev.qc.repair_loop?.status).toBe("medic-referral");
-    expect(ev.qc.repeated_repair_failures).toBe(true);
+    expect(ev.qc.has_repair_failures).toBe(true);
   });
 
   it("maps provider breakdown", () => {

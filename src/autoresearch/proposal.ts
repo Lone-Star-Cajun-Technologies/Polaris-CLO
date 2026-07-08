@@ -358,7 +358,7 @@ function normalizeQcScoreSummary(raw: unknown): QcScoreSummary | null {
     recurring_provider_signals: Array.isArray(q.recurring_provider_signals) ? q.recurring_provider_signals : [],
     repair_loop: q.repair_loop ?? null,
     noisy_providers: Array.isArray(q.noisy_providers) ? q.noisy_providers : [],
-    repeated_repair_failures: q.repeated_repair_failures ?? false,
+    has_repair_failures: q.has_repair_failures ?? false,
     unresolved_high_severity: q.unresolved_high_severity ?? 0,
     max_round_exhausted: q.max_round_exhausted ?? false,
   };

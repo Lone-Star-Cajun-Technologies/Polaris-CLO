@@ -321,7 +321,7 @@ function baseQcEvidence(overrides: Partial<SolQcEvidence> = {}): SolQcEvidence {
       },
     },
     noisy_providers: [],
-    repeated_repair_failures: false,
+    has_repair_failures: false,
     unresolved_high_severity: 0,
     max_round_exhausted: false,
     ...overrides,
@@ -422,7 +422,7 @@ describe("generateQcRecommendations", () => {
           status: "medic-referral",
           packets_failed: 1,
         },
-        repeated_repair_failures: true,
+        has_repair_failures: true,
       }),
     });
     const report = generateQcRecommendations(ev);

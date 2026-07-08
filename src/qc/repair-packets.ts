@@ -503,6 +503,9 @@ export function readRepairPacketManifest(
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       return null;
     }
+    if (error instanceof SyntaxError) {
+      return null;
+    }
     throw error;
   }
 }

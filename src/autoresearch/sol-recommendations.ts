@@ -479,7 +479,7 @@ export function generateQcRecommendations(evidence: SolEvidence): QcRecommendati
     );
   }
 
-  if (qc.repeated_repair_failures) {
+  if (qc.has_repair_failures) {
     const failed = qc.repair_loop?.packets_failed ?? 0;
     recommendations.push(
       makeQcRecommendation(

@@ -1051,7 +1051,7 @@ describe("computeQcSummary repair loop", () => {
     ];
     const summary = computeQcSummary([result], null, telemetry);
     expect(summary!.repair_loop!.status).toBe("medic-referral");
-    expect(summary!.repeated_repair_failures).toBe(true);
+    expect(summary!.has_repair_failures).toBe(true);
     expect(summary!.repair_loop!.packets_failed).toBe(1);
   });
 

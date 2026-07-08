@@ -60,7 +60,7 @@ function makeQcSummary(overrides: Partial<QcScoreSummary> = {}): QcScoreSummary 
     recurring_provider_signals: [],
     repair_loop: null,
     noisy_providers: [],
-    repeated_repair_failures: false,
+    has_repair_failures: false,
     unresolved_high_severity: 0,
     max_round_exhausted: false,
     ...overrides,

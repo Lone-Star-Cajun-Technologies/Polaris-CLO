@@ -504,7 +504,7 @@ Loop rules:
 |---|---|---|
 | **pass** | All findings are `repaired`, `autofixed`, `waived`, or `info`/`follow-up`. | Loop exits; delivery proceeds. |
 | **follow-up / log** | Only `low`/`info` findings remain; policy allows passive handling. | Findings logged or filed as tracker follow-up; delivery proceeds. |
-| **operator review** | `critical` or `high` findings remain unresolved, or a wavier is needed. | Loop suspends; operator must resolve or waive before delivery. |
+| **operator review** | `critical` or `high` findings remain unresolved, or a waiver is needed. | Loop suspends; operator must resolve or waive before delivery. |
 | **max rounds reached** | Repair rounds exhausted (`round > maxRepairRounds`) with open `medium`+. | Unresolved findings escalate to operator review unless all are `low`/`info`. |
 | **Medic referral** | Packet requires Medic or repair worker failed for a governed packet. | Loop suspends; Medic dispatched through standard Medic boundaries. |
 | **all providers failed** | Every configured provider failed or was unavailable. | Applies `failurePolicy` for each; loop treats aggregate as `follow-up` or `block` per config. |

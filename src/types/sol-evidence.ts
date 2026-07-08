@@ -288,8 +288,8 @@ export interface SolQcEvidence {
   repair_loop: SolQcRepairLoopEvidence | null;
   /** Providers whose findings are mostly unvalidated noise. */
   noisy_providers: string[];
-  /** Whether any repair worker failed (proxy for repeated repair failure). */
-  repeated_repair_failures: boolean;
+  /** Whether any repair worker failed or medic referral was triggered. */
+  has_repair_failures: boolean;
   /** Count of unresolved critical/high findings. */
   unresolved_high_severity: number;
   /** Whether the loop exhausted its configured max rounds. */

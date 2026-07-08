@@ -246,6 +246,28 @@ describe("executeQcProvider", () => {
     expect(result.providerAttempt?.rawOutputRetained).toBe(false);
   });
 
+  it("does not misclassify successful runs with failure keywords in output", async () => {
+    const provider = makeProvider({
+      parse: () => {
+        throw new Error("should not be called");
+      },
+    });
+    const result = await executeQcProvider(
+      provider,
+      { clusterId: "POL-1", runId: "run-1", branch: "main" },
+      {
+        repoRoot: process.cwd(),
+        runId: "run-1",
+        clusterId: "POL-1",
+        execFileImpl: makeExecFileImpl("Success! (no 401 unauthorized or 429 rate limit errors)", "", 0) as unknown as typeof import("node:child_process").execFile,
+      },
+    );
+
+    expect(result.status).toBe("passed");
+    expect(result.providerAttempt?.status).toBe("success");
+    expect(result.providerAttempt?.failureReason).toBeUndefined();
+  });
+
   it("returns normalized findings from a successful provider run", async () => {
     const provider = makeProvider({
       parse: () => ({

@@ -309,8 +309,8 @@ export class CodeRabbitQcProvider implements IQcProvider {
       }
       if (scope.prUrl) {
         args.push("--pr-url", scope.prUrl);
-      } else if (scope.branch) {
-        args.push("--branch", scope.branch);
+      } else {
+        args.push("--branch", scope.branch ?? "HEAD");
       }
       return { command: execution.command, args };
     }
