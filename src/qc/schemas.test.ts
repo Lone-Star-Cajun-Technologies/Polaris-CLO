@@ -77,6 +77,46 @@ describe("validateQcResult", () => {
     );
     expect(result.success).toBe(true);
   });
+
+  it("accepts a result with providerAttempt and allProvidersFailed", () => {
+    const result = validateQcResult(
+      makeValidResult({
+        status: "failed",
+        allProvidersFailed: true,
+        providerAttempt: {
+          provider: "test",
+          status: "failure",
+          failureReason: "parse-failed",
+          rawOutputAvailable: true,
+          rawOutputRetained: false,
+          stdoutLength: 10,
+          stderrLength: 0,
+        },
+      }),
+    );
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.result.allProvidersFailed).toBe(true);
+      expect(result.result.providerAttempt?.failureReason).toBe("parse-failed");
+    }
+  });
+
+  it("rejects an invalid providerAttempt failureReason", () => {
+    const result = validateQcResult(
+      makeValidResult({
+        providerAttempt: {
+          provider: "test",
+          status: "failure",
+          failureReason: "unknown-reason",
+          rawOutputAvailable: true,
+          rawOutputRetained: false,
+          stdoutLength: 0,
+          stderrLength: 0,
+        } as unknown as import("./types.js").QcProviderAttempt,
+      }),
+    );
+    expect(result.success).toBe(false);
+  });
 });
 
 describe("validateQcFinding", () => {

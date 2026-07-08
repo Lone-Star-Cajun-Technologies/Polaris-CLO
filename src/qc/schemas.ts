@@ -1,5 +1,11 @@
 import { z } from "zod";
-import type { QcAttribution, QcFinding, QcPolicyDecision, QcResult } from "./types.js";
+import type {
+  QcAttribution,
+  QcFinding,
+  QcPolicyDecision,
+  QcProviderAttempt,
+  QcResult,
+} from "./types.js";
 
 export const qcSeveritySchema = z.enum(["critical", "high", "medium", "low", "info"]);
 
@@ -34,6 +40,41 @@ export const qcAttributionReasonSchema = z.enum([
   "provider-uncertain",
   "unattributed",
 ]);
+
+export const qcFailureReasonSchema = z.enum([
+  "timeout",
+  "rate-limited",
+  "auth-failure",
+  "command-not-found",
+  "nonzero-exit",
+  "parse-failed",
+  "empty-output",
+  "unsupported-mode",
+  "unavailable-provider",
+]);
+
+export const qcParserResultSchema = z.enum(["success", "partial", "failed"]);
+
+export const qcProviderAttemptStatusSchema = z.enum([
+  "success",
+  "failure",
+  "fallback",
+  "skipped",
+]);
+
+export const qcProviderAttemptSchema: z.ZodType<QcProviderAttempt> = z.object({
+  provider: z.string(),
+  status: qcProviderAttemptStatusSchema,
+  failureReason: qcFailureReasonSchema.optional(),
+  fallbackSource: z.string().optional(),
+  rawOutputAvailable: z.boolean(),
+  rawOutputRetained: z.boolean(),
+  rawOutputArtifactPath: z.string().optional(),
+  parserResult: qcParserResultSchema.optional(),
+  exitCode: z.number().optional(),
+  stdoutLength: z.number().int().min(0),
+  stderrLength: z.number().int().min(0),
+});
 
 export const qcCodeRangeSchema = z.object({
   startLine: z.number().int().positive(),
@@ -92,6 +133,8 @@ export const qcResultSchema: z.ZodType<QcResult> = z.object({
   rawArtifactPaths: z.array(z.string()),
   parserVersion: z.string(),
   policyDecision: qcPolicyDecisionSchema,
+  providerAttempt: qcProviderAttemptSchema.optional(),
+  allProvidersFailed: z.boolean().optional(),
 });
 
 /**

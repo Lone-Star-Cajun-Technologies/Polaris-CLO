@@ -197,17 +197,16 @@ describe("CodeRabbitQcProvider", () => {
     expect(result.status).toBe("findings");
   });
 
-  it("handles malformed stdout without throwing", () => {
+  it("throws when stdout is malformed and cannot be parsed", () => {
     const provider = new CodeRabbitQcProvider();
-    const result = provider.parse({
-      provider: "coderabbit",
-      exitCode: 1,
-      stdout: "not-json{",
-      stderr: "provider error",
-    });
-
-    expect(result.findings).toHaveLength(0);
-    expect(result.status).toBe("failed");
+    expect(() =>
+      provider.parse({
+        provider: "coderabbit",
+        exitCode: 1,
+        stdout: "not-json{",
+        stderr: "provider error",
+      }),
+    ).toThrow("CodeRabbit output could not be parsed");
   });
 
   it("parses JSONL stdout into findings", () => {
@@ -224,6 +223,66 @@ describe("CodeRabbitQcProvider", () => {
     expect(result.findings).toHaveLength(2);
     expect(result.findings[0].severity).toBe("high");
     expect(result.findings[1].severity).toBe("low");
+  });
+
+  it("parses JSON output when configured format is json", () => {
+    const provider = new CodeRabbitQcProvider({
+      name: "coderabbit",
+      mode: "local",
+      execution: {
+        command: "coderabbit",
+        output: { format: "json", parser: "coderabbit" },
+      },
+    } as QcProviderConfig);
+
+    const result = provider.parse({
+      provider: "coderabbit",
+      exitCode: 0,
+      stdout: JSON.stringify({
+        findings: [{ severity: "high", file: "src/a.ts", line: 1, title: "Issue A" }],
+      }),
+    });
+
+    expect(result.findings).toHaveLength(1);
+    expect(result.findings[0].severity).toBe("high");
+  });
+
+  it("throws when configured parser is not supported", () => {
+    const provider = new CodeRabbitQcProvider({
+      name: "coderabbit",
+      mode: "local",
+      execution: {
+        command: "coderabbit",
+        output: { format: "json", parser: "custom" },
+      },
+    } as QcProviderConfig);
+
+    expect(() =>
+      provider.parse({
+        provider: "coderabbit",
+        exitCode: 0,
+        stdout: JSON.stringify({ findings: [] }),
+      }),
+    ).toThrow("Unsupported parser");
+  });
+
+  it("throws when configured format is sarif", () => {
+    const provider = new CodeRabbitQcProvider({
+      name: "coderabbit",
+      mode: "local",
+      execution: {
+        command: "coderabbit",
+        output: { format: "sarif", parser: "coderabbit" },
+      },
+    } as QcProviderConfig);
+
+    expect(() =>
+      provider.parse({
+        provider: "coderabbit",
+        exitCode: 0,
+        stdout: "{}",
+      }),
+    ).toThrow("SARIF output format is not supported");
   });
 
   it("uses configured execution command and args when present", () => {
