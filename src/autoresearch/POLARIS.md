@@ -2,10 +2,14 @@
 
 ## Purpose
 
-The autoresearch subsystem provides a dev-gated retroactive run scoring pipeline and artifact improvement proposal routing. It reads completed run artifacts, evaluates a set of binary quality gates, summarizes router outcomes from dispatch telemetry, and files fix-zone-mapped proposals as Linear issues for human review.
+The autoresearch subsystem is a dev-gated SOL sub-capability that provides retroactive run scoring and artifact improvement proposal routing. It reads completed run artifacts, evaluates a set of binary quality gates, summarizes router outcomes from dispatch telemetry, and files fix-zone-mapped proposals as tracker issues for human review.
 
 **Domain:** autoresearch
 **Route:** src/autoresearch
+
+## Relationship to SOL
+
+Autoresearch is the evidence-scoring and proposal-routing sub-capability inside the broader Self-Optimization Loop (SOL). SOL observes run evidence, evaluates performance, maintains historical trends, and generates review-gated recommendations. Autoresearch executes the scoring (`score.ts`), gating (`gates.ts`), proposal mapping (`proposal.ts`), and proposal routing (`routing.ts`) steps on SOL's behalf.
 
 ## What belongs here
 
@@ -28,6 +32,7 @@ The autoresearch subsystem provides a dev-gated retroactive run scoring pipeline
 - `scoreRun()` must read `completed_children_results` from run state when available; filter out librarian, Medic, and chart artifacts before scoring worker result packets.
 - `summarizeRouterOutcomes()` reads JSONL telemetry events: `provider-selected` (includes `router_mode`, `router_task_type`), `provider-fallback-attempted`, `provider-exhausted` (includes `router_exhausted_reason`, `router_candidates`). Aggregate by `router_exhausted_reason` to detect recurring failures.
 - `buildProposals()` must never auto-apply changes; proposals are filed for human review only.
+- Autoresearch is a downstream SOL consumer and recommendation producer, not a replacement for the Worker Router (`src/loop/router/`) or QC (`src/qc/`).
 - Scoring gates treat foreman packet resend as same-child redispatch (not multi-session epochs).
 
 ## Architecture assumptions
@@ -40,6 +45,7 @@ The autoresearch subsystem provides a dev-gated retroactive run scoring pipeline
 
 - `src/autoresearch/dev-gate.ts` — dev-gate logic
 - `src/autoresearch/gates.ts` — gate definitions and types
+- `smartdocs/specs/raw/pol-478-self-optimization-loop-architecture.md` — SOL architecture and boundaries
 - `smartdocs/specs/active/worker-router-architecture.md` — §3.9 SOL telemetry event catalog
 - `src/loop/dispatch.ts` — telemetry emission that feeds scoring
 
