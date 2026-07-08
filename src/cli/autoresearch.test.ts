@@ -2,12 +2,13 @@ import { describe, expect, it } from "vitest";
 import { createSolCommand, createAutoresearchCommand } from "./autoresearch.js";
 
 describe("createSolCommand", () => {
-  it("returns a 'sol' command with 'score' and 'propose' subcommands", () => {
+  it("returns a 'sol' command with 'score', 'propose', and 'recommend' subcommands", () => {
     const command = createSolCommand({ repoRoot: "/tmp/polaris-test" });
     expect(command.name()).toBe("sol");
     const subcommands = command.commands.map((c) => c.name());
     expect(subcommands).toContain("score");
     expect(subcommands).toContain("propose");
+    expect(subcommands).toContain("recommend");
   });
 
   it("exposes the configured repo root as the default", () => {

@@ -13,6 +13,19 @@ export { appendSnapshot, loadSnapshots, buildSnapshot, getHistoryFilePath } from
 export type { SolScoreSnapshot } from "./sol-history.js";
 export { generateReport, formatReportCli } from "./sol-report.js";
 export type { SolReport, SolGroupSummary, SolReportGroupBy, SolReportOptions } from "./sol-report.js";
+export {
+  generateRecommendations,
+  recommendationsToProposals,
+  recommendationToProposal,
+  formatRecommendationsCli,
+} from "./sol-recommendations.js";
+export type {
+  SolRecommendation,
+  RecommendationAffected,
+  RecommendationEvidence,
+  RecommendationOptions,
+  RecommendationsReport,
+} from "./sol-recommendations.js";
 export type {
   SolDimensionScore,
   SolForemanScoreReport,

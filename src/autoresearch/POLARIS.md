@@ -18,6 +18,7 @@ Autoresearch is the evidence-scoring and proposal-routing sub-capability inside 
 - `routing.ts` — `routeProposals()`: files proposals as Linear issues (never auto-applied)
 - `gates.ts` — `ALL_GATES` registry and `GateResult` types; `readJsonLines()` helper
 - `dev-gate.ts` — `isPolarisDevContext()` and `assertPolarisDevContext()`: all autoresearch commands must call `assertPolarisDevContext()` before any file-system or network access
+- `sol-recommendations.ts` — `generateRecommendations()`: produces explainable routing/role/provider/model recommendations from historical SOL snapshots; advisory by default; `recommendationsToProposals()` converts recommendations to tracker issues for human review
 - `index.ts` — public re-exports
 
 ## What does not belong here
@@ -32,6 +33,7 @@ Autoresearch is the evidence-scoring and proposal-routing sub-capability inside 
 - `scoreRun()` must read `completed_children_results` from run state when available; filter out librarian, Medic, and chart artifacts before scoring worker result packets.
 - `summarizeRouterOutcomes()` reads JSONL telemetry events: `provider-selected` (includes `router_mode`, `router_task_type`), `provider-fallback-attempted`, `provider-exhausted` (includes `router_exhausted_reason`, `router_candidates`). Aggregate by `router_exhausted_reason` to detect recurring failures.
 - `buildProposals()` must never auto-apply changes; proposals are filed for human review only.
+- `generateRecommendations()` is advisory by default; tracker filing requires explicit opt-in and is gated by `assertPolarisDevContext()`.
 - Autoresearch is a downstream SOL consumer and recommendation producer, not a replacement for the Worker Router (`src/loop/router/`) or QC (`src/qc/`).
 - Scoring gates treat foreman packet resend as same-child redispatch (not multi-session epochs).
 
