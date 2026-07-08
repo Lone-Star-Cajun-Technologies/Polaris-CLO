@@ -102,4 +102,8 @@ export interface ClusterState {
   base_sha?: string;
   /** Delivery branch that all workers for this cluster must run on. */
   delivery_branch?: string;
+  /** QC repair loop outcome recorded after the loop terminates. */
+  qc_repair_outcome?: string | null;
+  /** Repair-round manifest paths written by QC repair loop, keyed by round number. */
+  qc_repair_manifests?: Record<number, string>;
 }

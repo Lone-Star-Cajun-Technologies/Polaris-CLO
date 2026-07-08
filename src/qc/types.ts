@@ -86,6 +86,39 @@ export interface QcPolicyDecision {
   summary: string;
 }
 
+/** Classification of a non-finding provider failure. */
+export type QcFailureReason =
+  | "timeout"
+  | "rate-limited"
+  | "auth-failure"
+  | "command-not-found"
+  | "nonzero-exit"
+  | "parse-failed"
+  | "empty-output"
+  | "unsupported-mode"
+  | "unavailable-provider";
+
+/** Result of parsing provider output. */
+export type QcParserResult = "success" | "partial" | "failed";
+
+/** Lifecycle status of a single provider attempt. */
+export type QcProviderAttemptStatus = "success" | "failure" | "fallback" | "skipped";
+
+/** Provider-neutral record of a single QC provider attempt. */
+export interface QcProviderAttempt {
+  provider: string;
+  status: QcProviderAttemptStatus;
+  failureReason?: QcFailureReason;
+  fallbackSource?: string;
+  rawOutputAvailable: boolean;
+  rawOutputRetained: boolean;
+  rawOutputArtifactPath?: string;
+  parserResult?: QcParserResult;
+  exitCode?: number;
+  stdoutLength: number;
+  stderrLength: number;
+}
+
 /** Normalized result of a single QC run. */
 export interface QcResult {
   schemaVersion: string;
@@ -103,4 +136,44 @@ export interface QcResult {
   rawArtifactPaths: string[];
   parserVersion: string;
   policyDecision: QcPolicyDecision;
+  providerAttempt?: QcProviderAttempt;
+  allProvidersFailed?: boolean;
+}
+
+/** Lifecycle status of a compiled repair packet. */
+export type QcRepairPacketStatus =
+  | "pending"
+  | "dispatched"
+  | "completed"
+  | "failed"
+  | "escalated";
+
+/** Compiled cluster-scoped repair packet manifest produced by the QC compiler. */
+export interface QcRepairPacket {
+  packetId: string;
+  round: number;
+  clusterId: string;
+  sourceQcRunIds: string[];
+  findingIds: string[];
+  severityFloor: QcSeverity;
+  rootCauseHint: string;
+  allowedScope: string[];
+  prohibitedScope: string[];
+  validationCommands: string[];
+  routingTarget: QcRoutingDecision;
+  parallelGroup: string | null;
+  conflicts: string[];
+  medic: boolean;
+  status: QcRepairPacketStatus;
+  createdAt: string;
+}
+
+/** Durable repair-round manifest persisted for Foreman discovery. */
+export interface QcRepairPacketManifest {
+  schemaVersion: string;
+  clusterId: string;
+  round: number;
+  compiledAt: string;
+  sourceQcRunIds: string[];
+  packets: QcRepairPacket[];
 }

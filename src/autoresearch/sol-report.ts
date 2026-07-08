@@ -9,7 +9,7 @@
  */
 
 import type { SolScoreSnapshot } from "./sol-history.js";
-import type { SolGroupingKeys } from "../types/sol-evidence.js";
+import type { SolGroupingKeys, SolQcEvidence } from "../types/sol-evidence.js";
 
 // ──────────────────────────────────────────────
 // Grouping
@@ -245,4 +245,54 @@ export function formatReportCli(report: SolReport): string {
 
 function padRight(s: string, n: number): string {
   return s.length >= n ? s : s + " ".repeat(n - s.length);
+}
+
+/**
+ * Render a human-readable summary of QC evidence and repair-loop outcomes.
+ */
+export function formatQcEvidence(qc: SolQcEvidence): string {
+  const lines: string[] = [];
+  lines.push("QC Evidence Summary");
+  lines.push(`  availability: ${qc.availability}`);
+  lines.push(`  qc_run_count: ${qc.qc_run_count}`);
+  lines.push(`  total_findings: ${qc.total_findings}`);
+  lines.push(`  repaired: ${qc.repaired_findings}, open: ${qc.total_findings - qc.repaired_findings - qc.autofixed_findings - qc.waived_findings}`);
+  lines.push(`  unresolved high/critical: ${qc.unresolved_high_severity}`);
+  lines.push(`  blocks_delivery: ${qc.blocks_delivery}`);
+  lines.push("");
+
+  const providers = Object.entries(qc.provider_breakdown);
+  if (providers.length > 0) {
+    lines.push("Provider breakdown:");
+    for (const [provider, counts] of providers) {
+      lines.push(`  ${provider}: total=${counts.total}, blocking=${counts.blocking}, unvalidated=${counts.unvalidated}`);
+    }
+    lines.push("");
+  }
+
+  if (qc.repair_loop) {
+    const loop = qc.repair_loop;
+    lines.push("Repair loop:");
+    lines.push(`  status: ${loop.status}`);
+    lines.push(`  rounds: ${loop.rounds_completed}/${loop.max_rounds}`);
+    lines.push(`  packets: ${loop.packets_compiled} compiled, ${loop.packets_completed} completed, ${loop.packets_failed} failed`);
+    lines.push(`  rerun_outcome: ${loop.rerun_outcome ?? "n/a"}`);
+    lines.push(
+      `  provider_attempts: total=${loop.provider_attempts.total}, success=${loop.provider_attempts.success}, failure=${loop.provider_attempts.failure}, fallback=${loop.provider_attempts.fallback}, skipped=${loop.provider_attempts.skipped}`,
+    );
+    lines.push(`  all_providers_failed: ${loop.provider_attempts.all_providers_failed}`);
+    lines.push("");
+  }
+
+  if (qc.noisy_providers.length > 0) {
+    lines.push(`Noisy providers: ${qc.noisy_providers.join(", ")}`);
+  }
+  if (qc.has_repair_failures) {
+    lines.push("Repeated repair failures detected.");
+  }
+  if (qc.max_round_exhausted) {
+    lines.push("Max repair rounds exhausted.");
+  }
+
+  return lines.join("\n").trim() + "\n";
 }

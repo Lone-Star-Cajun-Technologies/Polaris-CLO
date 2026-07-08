@@ -1,0 +1,106 @@
+{
+  "schema_version": "2.1",
+  "worker_role": "impl",
+  "run_id": "polaris-run-provider-agnostic-qc-repair-loop-2026-07-08-001",
+  "cluster_id": "POL-501",
+  "active_child": "POL-505",
+  "state_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json",
+  "telemetry_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-provider-agnostic-qc-repair-loop-2026-07-08-001/telemetry.jsonl",
+  "instructions": {
+    "primary_goal": "Issue: POL-505 — POL-505\nWorktree: .\nBranch: pol-501-qc-repair-loop\n\n## Goal\n## Objective\n\nAdd a QC repair packet compiler that turns normalized actionable findings into durable governed repair packet manifests with safe grouping, scope, ordering, and parallelism metadata.\n\n## Context\n\n[POL-500](https://linear.app/lsctech/issue/POL-500/analyze-provider-agnostic-qc-repair-loop) requires Polaris to compile provider findings into repair work rather than letting QC providers mutate code or leaving finalize to block at the end. `src/qc/types.ts` already has findings and routing decisions, while `src/loop/worker-packet.ts` already has a `repair` worker role. The missing piece is a deterministic compiler between normalized findings and governed repair dispatch.\n\n## Goal\n\nProduce cluster-scoped repair packet manifests that Foreman can discover and route to normal repair workers, with enough metadata to avoid unsafe parallel repairs and to escalate broad or high-risk findings.\n\n## Scope\n\n* Add a QC repair packet compiler under `src/qc/` with focused types, schema validation, and artifact persistence.\n* Write manifests under `.polaris/clusters/<cluster-id>/qc/repair-rounds/<round>/repair-packets.json`.\n* Include packet id, round, source QC run ids, finding ids, severity floor, root-cause hint, allowed/prohibited scope, validation commands, routing target, parallel group, conflicts, Medic flag, and status.\n* Implement grouping by same file, overlapping/adjacent ranges, root cause/category, subsystem/route, severity, attribution confidence, and safety risk.\n* Detect overlap/conflicts so repair packets that touch the same file or shared governance/config scope are not marked parallel-safe.\n* Route broad, low-confidence, pre-existing, critical/high, or unsafe findings to follow-up/operator/Medic outcomes as policy requires.\n\n## Acceptance Criteria\n\n* Compiler consumes normalized successful QC findings and ignores provider failure artifacts except where policy requires operator review.\n* Compiler emits deterministic manifests for the same inputs.\n* Packet grouping is conservative and never merges unrelated security/auth/data-loss/migration/governance findings with normal repairs.\n* Parallel groups are assigned only when scopes are disjoint and dependency-safe.\n* Manifests are persisted as durable cluster artifacts and validate against a schema.\n\n## Validation\n\n* Add unit tests for grouping, conflict detection, severity thresholds, attribution confidence, follow-up/operator routing, and deterministic artifact output.\n* Add fixtures with same-file findings, cross-file subsystem findings, overlapping scopes, high-risk categories, and low-confidence broad findings.\n* Run QC tests and any cluster artifact validation tests.\n\n## Ordering\n\nDepends on [POL-504](https://linear.app/lsctech/issue/POL-504/normalize-qc-provider-results-and-failure-classifications). Must complete before Foreman can discover and dispatch repair packets.\n\n## Non-goals\n\n* Do not run repair workers in this child.\n* Do not rerun QC in this child.\n* Do not alter finalize gates except as needed for compiler artifacts/tests.\n\n## Implementation Discipline\nBefore writing code, stop at the first rung that holds:\n\n1. Does this need to exist?   → no: skip it (YAGNI)\n2. Stdlib does it?            → use it\n3. Native platform feature?   → use it\n4. Installed dependency?      → use it\n5. One line?                  → one line\n6. Only then: the minimum that works\n\nLazy, not negligent: validation, error handling, security, and accessibility are never on the chopping block.\n\nWhen you defer a simplification for later, mark it inline:\n  // ponytail: <what you deferred and why>\n\n## Scope\nTouch only:\n- Add a QC repair packet compiler under `src/qc/` with focused types, schema validation, and artifact persistence.\n- Write manifests under `.polaris/clusters/<cluster-id>/qc/repair-rounds/<round>/repair-packets.json`.\n- Include packet id, round, source QC run ids, finding ids, severity floor, root-cause hint, allowed/prohibited scope, validation commands, routing target, parallel group, conflicts, Medic flag, and status.\n- Implement grouping by same file, overlapping/adjacent ranges, root cause/category, subsystem/route, severity, attribution confidence, and safety risk.\n- Detect overlap/conflicts so repair packets that touch the same file or shared governance/config scope are not marked parallel-safe.\n- Route broad, low-confidence, pre-existing, critical/high, or unsafe findings to follow-up/operator/Medic outcomes as policy requires.\n\n## Acceptance Criteria\n\n## Validation\n- Add unit tests for grouping, conflict detection, severity thresholds, attribution confidence, follow-up/operator routing, and deterministic artifact output.\n- Add fixtures with same-file findings, cross-file subsystem findings, overlapping scopes, high-risk categories, and low-confidence broad findings.\n- Run QC tests and any cluster artifact validation tests.\n\n## Commit\n[POL-505] POL-505\n\n## Governance\n- Do NOT modify open_children or completed_children in /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json. The parent runtime (loop continue) owns state transitions.\n- Append a telemetry event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-provider-agnostic-qc-repair-loop-2026-07-08-001/telemetry.jsonl.\n\n## Worker Progress Telemetry (MANDATORY)\nThe parent CANNOT see your work. You MUST emit heartbeat events so the parent knows you are alive and making progress.\n\nAfter EVERY step, append a JSONL event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-provider-agnostic-qc-repair-loop-2026-07-08-001/telemetry.jsonl:\n```jsonl\n{\"event\":\"worker-heartbeat\",\"run_id\":\"<from packet>\",\"child_id\":\"POL-505\",\"step_cursor\":\"<current step>\",\"timestamp\":\"<ISO8601>\",\"progress_pct\":<0-100>,\"files_changed\":<count>,\"current_file\":\"<file being edited>\"}\n```\n\nRequired heartbeat points:\n  1. Immediately after reading this packet (step_cursor: \"start\")\n  2. After verifying state file (step_cursor: \"verify\")\n  3. After EACH file edit (step_cursor: \"implement\")\n  4. After running validation (step_cursor: \"validate\")\n  5. After creating commit (step_cursor: \"commit\")\n  6. Before terminating (step_cursor: \"complete\" or \"failed\")\n\nIf heartbeats stop, the parent will assume you crashed and may dispatch a replacement worker.\n\n## Approval Escalation (when uncertain)\nYou have a sealed packet defining your exact scope, allowed files, and validation commands. Use this to decide:\n\nRule 1 - Auto-approve WITHIN scope (normal work):\n  - If the operation touches files within `instructions.allowed_scope` → Just do it\n  - If the command is in `instructions.validation_commands` → Just run it\n  - Low risk, expected work → No need to ask, emit heartbeat with step_cursor: \"implement\"\n\nRule 2 - ESCALATE out-of-scope or high-risk:\n  - File outside allowed_scope → Emit worker-blocked with approval_type: \"out-of-scope\"\n  - Destructive operation (rm -rf, major refactor) → Emit worker-blocked with approval_type: \"destructive\"\n  - External API calls with cost → Emit worker-blocked with approval_type: \"cost\"\n  - Changing secrets/.env → Emit worker-blocked with approval_type: \"security\"\n  - Unclear requirements → Emit worker-blocked with approval_type: \"ambiguous\"\n\nTo escalate, emit IMMEDIATELY to telemetry:\n```jsonl\n{\"event\":\"worker-blocked\",\"run_id\":\"<from packet>\",\"child_id\":\"POL-505\",\"reason\":\"needs-approval\",\"approval_type\":\"<out-of-scope|destructive|cost|security|ambiguous>\",\"description\":\"<specifically what needs approval>\",\"blocker_id\":\"<unique-id>\",\"timestamp\":\"<ISO8601>\"}\n```\n\nThen: Continue heartbeats every 30s with step_cursor: \"blocked-awaiting-approval\"\nWait for parent response. If no response in 5 minutes → TERMINATE with approval-timeout.\n\nRemember: Your packet scope is your authority. Within scope = proceed. Outside scope = escalate.\n\n## Route Cognition Delta\nAfter implementation, apply route-local cognition delta — only if something materially changed.\n\n**POLARIS.md** — update only when ALL of the following are true:\n  - You touched a file in that folder (not a distant folder).\n  - The change materially affects: folder responsibilities, commands/workflows,\n    execution constraints, ownership/routing, or operational behavior.\n  - The current POLARIS.md content is actually wrong or incomplete as a result.\n  DO NOT update POLARIS.md for: formatting fixes, comment changes, tiny refactors,\n  internal implementation details, or any change that leaves the operational guidance\n  still accurate. When in doubt, do not update.\n\n**SUMMARY.md** — update only when: linked docs/specs changed, canon relationships\n  changed, architecture meaning changed, or doctrine/spec linkage changed.\n  SUMMARY.md is informational only. Do not create it if missing — that is a hint for\n  operators, not a task for workers. Keep it short. Never add operational doctrine.\n\n**Never** scan unrelated folders. **Never** regenerate all route docs.\nIf no material change occurred, skip this section entirely.\n\n## Report Back\n- files changed\n- validation results\n- commit hash\n- blockers\n\nTERMINATE SESSION IMMEDIATELY. Do not select or execute the next child.",
+    "steps": [
+      "Verify: read /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json and confirm active_child === \"POL-505\".",
+      "Implement POL-505: \"POL-505\".",
+      "Issue description:\n## Objective\n\nAdd a QC repair packet compiler that turns normalized actionable findings into durable governed repair packet manifests with safe grouping, scope, ordering, and parallelism metadata.\n\n## Context\n\n[POL-500](https://linear.app/lsctech/issue/POL-500/analyze-provider-agnostic-qc-repair-loop) requires Polaris to compile provider findings into repair work rather than letting QC providers mutate code or leaving finalize to block at the end. `src/qc/types.ts` already has findings and routing decisions, while `src/loop/worker-packet.ts` already has a `repair` worker role. The missing piece is a deterministic compiler between normalized findings and governed repair dispatch.\n\n## Goal\n\nProduce cluster-scoped repair packet manifests that Foreman can discover and route to normal repair workers, with enough metadata to avoid unsafe parallel repairs and to escalate broad or high-risk findings.\n\n## Scope\n\n* Add a QC repair packet compiler under `src/qc/` with focused types, schema validation, and artifact persistence.\n* Write manifests under `.polaris/clusters/<cluster-id>/qc/repair-rounds/<round>/repair-packets.json`.\n* Include packet id, round, source QC run ids, finding ids, severity floor, root-cause hint, allowed/prohibited scope, validation commands, routing target, parallel group, conflicts, Medic flag, and status.\n* Implement grouping by same file, overlapping/adjacent ranges, root cause/category, subsystem/route, severity, attribution confidence, and safety risk.\n* Detect overlap/conflicts so repair packets that touch the same file or shared governance/config scope are not marked parallel-safe.\n* Route broad, low-confidence, pre-existing, critical/high, or unsafe findings to follow-up/operator/Medic outcomes as policy requires.\n\n## Acceptance Criteria\n\n* Compiler consumes normalized successful QC findings and ignores provider failure artifacts except where policy requires operator review.\n* Compiler emits deterministic manifests for the same inputs.\n* Packet grouping is conservative and never merges unrelated security/auth/data-loss/migration/governance findings with normal repairs.\n* Parallel groups are assigned only when scopes are disjoint and dependency-safe.\n* Manifests are persisted as durable cluster artifacts and validate against a schema.\n\n## Validation\n\n* Add unit tests for grouping, conflict detection, severity thresholds, attribution confidence, follow-up/operator routing, and deterministic artifact output.\n* Add fixtures with same-file findings, cross-file subsystem findings, overlapping scopes, high-risk categories, and low-confidence broad findings.\n* Run QC tests and any cluster artifact validation tests.\n\n## Ordering\n\nDepends on [POL-504](https://linear.app/lsctech/issue/POL-504/normalize-qc-provider-results-and-failure-classifications). Must complete before Foreman can discover and dispatch repair packets.\n\n## Non-goals\n\n* Do not run repair workers in this child.\n* Do not rerun QC in this child.\n* Do not alter finalize gates except as needed for compiler artifacts/tests.",
+      "Requirements:",
+      "   1. Compiler consumes normalized successful QC findings and ignores provider failure artifacts except where policy requires operator review.",
+      "   2. Compiler emits deterministic manifests for the same inputs.",
+      "   3. Packet grouping is conservative and never merges unrelated security/auth/data-loss/migration/governance findings with normal repairs.",
+      "   4. Parallel groups are assigned only when scopes are disjoint and dependency-safe.",
+      "   5. Manifests are persisted as durable cluster artifacts and validate against a schema.",
+      "Run validation commands and confirm all pass.",
+      "Create exactly ONE git commit: [POL-505] POL-505.",
+      "Do NOT modify open_children or completed_children in /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json. The parent runtime (loop continue) owns that state transition.",
+      "Append a telemetry event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-provider-agnostic-qc-repair-loop-2026-07-08-001/telemetry.jsonl.",
+      "Write compact return JSON to stdout (fields: child_id, status, commit, validation, next_recommended_action). next_recommended_action MUST be exactly \"continue\" on success, \"stop\" on unresolvable blocker, or \"investigate\" if manual review is needed.",
+      "TERMINATE SESSION IMMEDIATELY. Do not select or execute the next child."
+    ],
+    "allowed_scope": [
+      "Add a QC repair packet compiler under `src/qc/` with focused types, schema validation, and artifact persistence.",
+      "Write manifests under `.polaris/clusters/<cluster-id>/qc/repair-rounds/<round>/repair-packets.json`.",
+      "Include packet id, round, source QC run ids, finding ids, severity floor, root-cause hint, allowed/prohibited scope, validation commands, routing target, parallel group, conflicts, Medic flag, and status.",
+      "Implement grouping by same file, overlapping/adjacent ranges, root cause/category, subsystem/route, severity, attribution confidence, and safety risk.",
+      "Detect overlap/conflicts so repair packets that touch the same file or shared governance/config scope are not marked parallel-safe.",
+      "Route broad, low-confidence, pre-existing, critical/high, or unsafe findings to follow-up/operator/Medic outcomes as policy requires."
+    ],
+    "validation_commands": [
+      "Add unit tests for grouping, conflict detection, severity thresholds, attribution confidence, follow-up/operator routing, and deterministic artifact output.",
+      "Add fixtures with same-file findings, cross-file subsystem findings, overlapping scopes, high-risk categories, and low-confidence broad findings.",
+      "Run QC tests and any cluster artifact validation tests."
+    ],
+    "issue_context": {
+      "id": "POL-505",
+      "title": "POL-505",
+      "key_requirements": [],
+      "body": "## Objective\n\nAdd a QC repair packet compiler that turns normalized actionable findings into durable governed repair packet manifests with safe grouping, scope, ordering, and parallelism metadata.\n\n## Context\n\n[POL-500](https://linear.app/lsctech/issue/POL-500/analyze-provider-agnostic-qc-repair-loop) requires Polaris to compile provider findings into repair work rather than letting QC providers mutate code or leaving finalize to block at the end. `src/qc/types.ts` already has findings and routing decisions, while `src/loop/worker-packet.ts` already has a `repair` worker role. The missing piece is a deterministic compiler between normalized findings and governed repair dispatch.\n\n## Goal\n\nProduce cluster-scoped repair packet manifests that Foreman can discover and route to normal repair workers, with enough metadata to avoid unsafe parallel repairs and to escalate broad or high-risk findings.\n\n## Scope\n\n* Add a QC repair packet compiler under `src/qc/` with focused types, schema validation, and artifact persistence.\n* Write manifests under `.polaris/clusters/<cluster-id>/qc/repair-rounds/<round>/repair-packets.json`.\n* Include packet id, round, source QC run ids, finding ids, severity floor, root-cause hint, allowed/prohibited scope, validation commands, routing target, parallel group, conflicts, Medic flag, and status.\n* Implement grouping by same file, overlapping/adjacent ranges, root cause/category, subsystem/route, severity, attribution confidence, and safety risk.\n* Detect overlap/conflicts so repair packets that touch the same file or shared governance/config scope are not marked parallel-safe.\n* Route broad, low-confidence, pre-existing, critical/high, or unsafe findings to follow-up/operator/Medic outcomes as policy requires.\n\n## Acceptance Criteria\n\n* Compiler consumes normalized successful QC findings and ignores provider failure artifacts except where policy requires operator review.\n* Compiler emits deterministic manifests for the same inputs.\n* Packet grouping is conservative and never merges unrelated security/auth/data-loss/migration/governance findings with normal repairs.\n* Parallel groups are assigned only when scopes are disjoint and dependency-safe.\n* Manifests are persisted as durable cluster artifacts and validate against a schema.\n\n## Validation\n\n* Add unit tests for grouping, conflict detection, severity thresholds, attribution confidence, follow-up/operator routing, and deterministic artifact output.\n* Add fixtures with same-file findings, cross-file subsystem findings, overlapping scopes, high-risk categories, and low-confidence broad findings.\n* Run QC tests and any cluster artifact validation tests.\n\n## Ordering\n\nDepends on [POL-504](https://linear.app/lsctech/issue/POL-504/normalize-qc-provider-results-and-failure-classifications). Must complete before Foreman can discover and dispatch repair packets.\n\n## Non-goals\n\n* Do not run repair workers in this child.\n* Do not rerun QC in this child.\n* Do not alter finalize gates except as needed for compiler artifacts/tests."
+    }
+  },
+  "lifecycle": {
+    "terminate_after_completion": true,
+    "max_concurrent": 1,
+    "cleanup_on_exit": "commit-and-exit"
+  },
+  "return_contract": [
+    "child_id",
+    "status",
+    "commit",
+    "validation",
+    "next_recommended_action"
+  ],
+  "prompt_mode": "compact",
+  "prompt_metrics": {
+    "mode": "compact",
+    "char_count": 9257,
+    "estimated_tokens": 2314
+  },
+  "role_context": {
+    "role": "worker",
+    "role_authority": "implementation",
+    "may_implement": true,
+    "may_assign_workers": false,
+    "prohibited_actions": [
+      "modify-cluster-plan",
+      "dispatch-children",
+      "polaris-loop-dispatch",
+      "polaris-loop-continue"
+    ]
+  },
+  "routing_context": {
+    "task_type": "impl",
+    "required_capabilities": [
+      "implementation"
+    ]
+  },
+  "prohibited_write_paths": [
+    ".taskchain_artifacts/",
+    ".polaris/clusters/",
+    ".polaris/runs/",
+    "**/telemetry.jsonl"
+  ],
+  "result_file_contract": {
+    "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-501/results/POL-505-5c7af61e-04d7-445d-b7c5-ffe27c01dcaf.json",
+    "result_required_fields": {
+      "run_id": "polaris-run-provider-agnostic-qc-repair-loop-2026-07-08-001",
+      "cluster_id": "POL-501",
+      "child_id": "<child_id>",
+      "status": "<status>",
+      "commit": "<commit>",
+      "validation": "<validation>",
+      "next_recommended_action": "<next_recommended_action>"
+    }
+  },
+  "context": {
+    "branch": "pol-501-qc-repair-loop",
+    "worker_role": "impl"
+  }
+}

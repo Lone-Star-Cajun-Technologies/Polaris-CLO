@@ -154,7 +154,35 @@
         "name": "coderabbit",
         "mode": "local",
         "trigger": "completed-cluster",
-        "capabilities": ["diff-review"]
+        "capabilities": ["diff-review", "result-parsing"],
+        "execution": {
+          "command": "coderabbit",
+          "args": ["review", "--agent"],
+          "output": {
+            "format": "jsonl",
+            "parser": "coderabbit"
+          },
+          "configPath": ".polaris/coderabbit.config.yaml"
+        },
+        "timeoutMs": 300000,
+        "primary": true,
+        "failurePolicy": {
+          "timeout": "fail",
+          "parseFailure": "fail",
+          "allProvidersFailed": "block"
+        },
+        "rateLimit": {
+          "requestsPerMinute": 10,
+          "maxConcurrent": 1
+        },
+        "retry": {
+          "maxRetries": 2,
+          "backoffMs": 1000
+        },
+        "artifactPolicy": {
+          "retainRawOutput": false,
+          "outputDir": ".polaris/qc-artifacts"
+        }
       }
     },
     "severityThresholds": {

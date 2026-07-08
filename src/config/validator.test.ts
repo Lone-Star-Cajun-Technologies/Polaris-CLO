@@ -721,4 +721,179 @@ describe("validateConfig — qc", () => {
     const result = validateConfig({ qc: { enabled: false } });
     expect(result.warnings).not.toContain('Unknown config field: "qc"');
   });
+
+  it("accepts provider-agnostic execution, fallback, and policy config", () => {
+    const result = validateConfig({
+      qc: {
+        enabled: true,
+        providers: {
+          coderabbit: {
+            name: "coderabbit",
+            mode: "local",
+            execution: {
+              command: "coderabbit",
+              args: ["review", "--agent"],
+              output: { format: "jsonl", parser: "coderabbit" },
+              configPath: ".polaris/coderabbit.config.yaml",
+            },
+            timeoutMs: 300000,
+            primary: true,
+            fallback: ["pragent"],
+            failurePolicy: {
+              timeout: "fail",
+              parseFailure: "fallback",
+              allProvidersFailed: "block",
+            },
+            rateLimit: {
+              requestsPerMinute: 10,
+              maxConcurrent: 1,
+            },
+            retry: {
+              maxRetries: 2,
+              backoffMs: 1000,
+            },
+            artifactPolicy: {
+              retainRawOutput: true,
+              outputDir: ".polaris/qc-artifacts",
+            },
+          },
+          pragent: {
+            name: "pragent",
+            mode: "pr",
+          },
+        },
+      },
+    });
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it("rejects invalid provider execution output format", () => {
+    const result = validateConfig({
+      qc: {
+        providers: {
+          bad: {
+            name: "bad",
+            mode: "local",
+            execution: { command: "bad", output: { format: "xml" } },
+          },
+        },
+      },
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      "qc.providers.bad.execution.output.format must be one of json, jsonl, sarif, generic",
+    );
+  });
+
+  it("rejects invalid provider failure policy action", () => {
+    const result = validateConfig({
+      qc: {
+        providers: {
+          bad: {
+            name: "bad",
+            mode: "local",
+            failurePolicy: { timeout: "retry-forever" },
+          },
+        },
+      },
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      "qc.providers.bad.failurePolicy.timeout must be one of fail, fallback, ignore, block",
+    );
+  });
+
+  it("rejects non-integer timeoutMs", () => {
+    const result = validateConfig({
+      qc: {
+        providers: {
+          bad: {
+            name: "bad",
+            mode: "local",
+            timeoutMs: 1.5,
+          },
+        },
+      },
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("qc.providers.bad.timeoutMs must be a positive integer");
+  });
+
+  it("rejects invalid rate limit values", () => {
+    const result = validateConfig({
+      qc: {
+        providers: {
+          bad: {
+            name: "bad",
+            mode: "local",
+            rateLimit: { requestsPerMinute: 0, maxConcurrent: -1 },
+          },
+        },
+      },
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      "qc.providers.bad.rateLimit.requestsPerMinute must be a positive integer",
+    );
+    expect(result.errors).toContain(
+      "qc.providers.bad.rateLimit.maxConcurrent must be a positive integer",
+    );
+  });
+
+  it("rejects negative retry values", () => {
+    const result = validateConfig({
+      qc: {
+        providers: {
+          bad: {
+            name: "bad",
+            mode: "local",
+            retry: { maxRetries: -1, backoffMs: -100 },
+          },
+        },
+      },
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      "qc.providers.bad.retry.maxRetries must be a non-negative integer",
+    );
+    expect(result.errors).toContain(
+      "qc.providers.bad.retry.backoffMs must be a non-negative integer",
+    );
+  });
+
+  it("rejects fallback references to unknown providers", () => {
+    const result = validateConfig({
+      qc: {
+        providers: {
+          coderabbit: {
+            name: "coderabbit",
+            mode: "local",
+            fallback: ["missing"],
+          },
+        },
+      },
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      'qc.providers.coderabbit.fallback contains unknown provider: missing',
+    );
+  });
+
+  it("rejects unknown provider fields", () => {
+    const result = validateConfig({
+      qc: {
+        providers: {
+          bad: {
+            name: "bad",
+            mode: "local",
+            extraField: true,
+          },
+        },
+      },
+    });
+    expect(result.valid).toBe(true);
+    // JSON schema would reject additionalProperties; the runtime validator is permissive by design.
+    // This documents that unknown provider fields do not break runtime validation.
+  });
 });

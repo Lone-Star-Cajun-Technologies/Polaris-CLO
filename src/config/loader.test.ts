@@ -29,6 +29,7 @@ const DEFAULT_QC = {
   repairRouting: "route",
   artifactRetention: { retainRawOutput: false, maxRuns: 10 },
   routes: {},
+  maxRepairRounds: 2,
 };
 
 describe("loadConfig", () => {
@@ -155,6 +156,7 @@ describe("loadConfig", () => {
       repairRouting: "route",
       artifactRetention: { retainRawOutput: false, maxRuns: 10 },
       routes: {},
+      maxRepairRounds: 2,
     });
   });
 });

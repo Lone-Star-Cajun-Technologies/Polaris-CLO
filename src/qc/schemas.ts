@@ -1,5 +1,13 @@
 import { z } from "zod";
-import type { QcAttribution, QcFinding, QcPolicyDecision, QcResult } from "./types.js";
+import type {
+  QcAttribution,
+  QcFinding,
+  QcPolicyDecision,
+  QcProviderAttempt,
+  QcRepairPacket,
+  QcRepairPacketManifest,
+  QcResult,
+} from "./types.js";
 
 export const qcSeveritySchema = z.enum(["critical", "high", "medium", "low", "info"]);
 
@@ -34,6 +42,41 @@ export const qcAttributionReasonSchema = z.enum([
   "provider-uncertain",
   "unattributed",
 ]);
+
+export const qcFailureReasonSchema = z.enum([
+  "timeout",
+  "rate-limited",
+  "auth-failure",
+  "command-not-found",
+  "nonzero-exit",
+  "parse-failed",
+  "empty-output",
+  "unsupported-mode",
+  "unavailable-provider",
+]);
+
+export const qcParserResultSchema = z.enum(["success", "partial", "failed"]);
+
+export const qcProviderAttemptStatusSchema = z.enum([
+  "success",
+  "failure",
+  "fallback",
+  "skipped",
+]);
+
+export const qcProviderAttemptSchema: z.ZodType<QcProviderAttempt> = z.object({
+  provider: z.string(),
+  status: qcProviderAttemptStatusSchema,
+  failureReason: qcFailureReasonSchema.optional(),
+  fallbackSource: z.string().optional(),
+  rawOutputAvailable: z.boolean(),
+  rawOutputRetained: z.boolean(),
+  rawOutputArtifactPath: z.string().optional(),
+  parserResult: qcParserResultSchema.optional(),
+  exitCode: z.number().optional(),
+  stdoutLength: z.number().int().min(0),
+  stderrLength: z.number().int().min(0),
+});
 
 export const qcCodeRangeSchema = z.object({
   startLine: z.number().int().positive(),
@@ -92,6 +135,8 @@ export const qcResultSchema: z.ZodType<QcResult> = z.object({
   rawArtifactPaths: z.array(z.string()),
   parserVersion: z.string(),
   policyDecision: qcPolicyDecisionSchema,
+  providerAttempt: qcProviderAttemptSchema.optional(),
+  allProvidersFailed: z.boolean().optional(),
 });
 
 /**
@@ -113,6 +158,55 @@ export function validateQcFinding(value: unknown): { success: true; finding: QcF
   const parsed = qcFindingSchema.safeParse(value);
   if (parsed.success) {
     return { success: true, finding: parsed.data };
+  }
+  return { success: false, errors: parsed.error.issues.map((issue) => issue.message) };
+}
+
+export const qcRepairPacketStatusSchema = z.enum([
+  "pending",
+  "dispatched",
+  "completed",
+  "failed",
+  "escalated",
+]);
+
+export const qcRepairPacketSchema: z.ZodType<QcRepairPacket> = z.object({
+  packetId: z.string(),
+  round: z.number().int().min(0),
+  clusterId: z.string(),
+  sourceQcRunIds: z.array(z.string()),
+  findingIds: z.array(z.string()),
+  severityFloor: qcSeveritySchema,
+  rootCauseHint: z.string(),
+  allowedScope: z.array(z.string()),
+  prohibitedScope: z.array(z.string()),
+  validationCommands: z.array(z.string()),
+  routingTarget: qcRoutingDecisionSchema,
+  parallelGroup: z.string().nullable(),
+  conflicts: z.array(z.string()),
+  medic: z.boolean(),
+  status: qcRepairPacketStatusSchema,
+  createdAt: z.string().datetime(),
+});
+
+export const qcRepairPacketManifestSchema: z.ZodType<QcRepairPacketManifest> = z.object({
+  schemaVersion: z.string(),
+  clusterId: z.string(),
+  round: z.number().int().min(0),
+  compiledAt: z.string().datetime(),
+  sourceQcRunIds: z.array(z.string()),
+  packets: z.array(qcRepairPacketSchema),
+});
+
+/**
+ * Validate an unknown value as a compiled repair packet manifest.
+ */
+export function validateRepairPacketManifest(
+  value: unknown,
+): { success: true; manifest: QcRepairPacketManifest } | { success: false; errors: string[] } {
+  const parsed = qcRepairPacketManifestSchema.safeParse(value);
+  if (parsed.success) {
+    return { success: true, manifest: parsed.data };
   }
   return { success: false, errors: parsed.error.issues.map((issue) => issue.message) };
 }

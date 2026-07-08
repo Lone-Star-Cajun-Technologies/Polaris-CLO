@@ -220,7 +220,7 @@
     "taskchain": "polaris-autoresearch",
     "confidence": 0.85,
     "classification": "indexed",
-    "last_updated": "2026-07-07T15:49:47.487Z",
+    "last_updated": "2026-07-08T21:01:29.848Z",
     "updated_by": "polaris-map-update",
     "tags": [
       "autoresearch",
@@ -234,7 +234,7 @@
     "taskchain": "polaris-autoresearch",
     "confidence": 0.85,
     "classification": "indexed",
-    "last_updated": "2026-07-07T15:49:47.487Z",
+    "last_updated": "2026-07-08T21:01:29.848Z",
     "updated_by": "polaris-map-update",
     "tags": [
       "autoresearch"
@@ -260,7 +260,7 @@
     "taskchain": "polaris-autoresearch",
     "confidence": 0.85,
     "classification": "indexed",
-    "last_updated": "2026-07-07T15:49:47.487Z",
+    "last_updated": "2026-07-08T21:01:29.848Z",
     "updated_by": "polaris-map-update",
     "tags": [
       "autoresearch",
@@ -274,7 +274,7 @@
     "taskchain": "polaris-autoresearch",
     "confidence": 0.85,
     "classification": "indexed",
-    "last_updated": "2026-07-07T15:49:47.487Z",
+    "last_updated": "2026-07-08T21:01:29.848Z",
     "updated_by": "polaris-map-update",
     "tags": [
       "autoresearch"
@@ -7708,5 +7708,167 @@
       "cluster-state"
     ],
     "instructionFile": "src/cluster-state/POLARIS.md"
+  },
+  "src/autoresearch/sol-evidence-loader.test.ts": {
+    "domain": "autoresearch",
+    "route": "src/autoresearch",
+    "taskchain": "polaris-autoresearch",
+    "confidence": 0.9,
+    "classification": "indexed",
+    "last_updated": "2026-07-08T21:01:29.848Z",
+    "updated_by": "polaris-map-update",
+    "tags": [
+      "autoresearch",
+      "test"
+    ],
+    "instructionFile": "src/autoresearch/POLARIS.md"
+  },
+  "src/autoresearch/sol-evidence-loader.ts": {
+    "domain": "autoresearch",
+    "route": "src/autoresearch",
+    "taskchain": "polaris-autoresearch",
+    "confidence": 0.9,
+    "classification": "indexed",
+    "last_updated": "2026-07-08T21:01:29.848Z",
+    "updated_by": "polaris-map-update",
+    "tags": [
+      "autoresearch"
+    ],
+    "instructionFile": "src/autoresearch/POLARIS.md"
+  },
+  "src/autoresearch/sol-history.test.ts": {
+    "domain": "autoresearch",
+    "route": "src/autoresearch",
+    "taskchain": "polaris-autoresearch",
+    "confidence": 0.9,
+    "classification": "indexed",
+    "last_updated": "2026-07-08T21:01:29.848Z",
+    "updated_by": "polaris-map-update",
+    "tags": [
+      "autoresearch",
+      "test"
+    ],
+    "instructionFile": "src/autoresearch/POLARIS.md"
+  },
+  "src/autoresearch/sol-recommendations.test.ts": {
+    "domain": "autoresearch",
+    "route": "src/autoresearch",
+    "taskchain": "polaris-autoresearch",
+    "confidence": 0.9,
+    "classification": "indexed",
+    "last_updated": "2026-07-08T21:01:29.848Z",
+    "updated_by": "polaris-map-update",
+    "tags": [
+      "autoresearch",
+      "test"
+    ],
+    "instructionFile": "src/autoresearch/POLARIS.md"
+  },
+  "src/autoresearch/sol-recommendations.ts": {
+    "domain": "autoresearch",
+    "route": "src/autoresearch",
+    "taskchain": "polaris-autoresearch",
+    "confidence": 0.9,
+    "classification": "indexed",
+    "last_updated": "2026-07-08T21:01:29.848Z",
+    "updated_by": "polaris-map-update",
+    "tags": [
+      "autoresearch"
+    ],
+    "instructionFile": "src/autoresearch/POLARIS.md"
+  },
+  "src/autoresearch/sol-report.test.ts": {
+    "domain": "autoresearch",
+    "route": "src/autoresearch",
+    "taskchain": "polaris-autoresearch",
+    "confidence": 0.9,
+    "classification": "indexed",
+    "last_updated": "2026-07-08T21:01:29.848Z",
+    "updated_by": "polaris-map-update",
+    "tags": [
+      "autoresearch",
+      "test"
+    ],
+    "instructionFile": "src/autoresearch/POLARIS.md"
+  },
+  "src/autoresearch/sol-report.ts": {
+    "domain": "autoresearch",
+    "route": "src/autoresearch",
+    "taskchain": "polaris-autoresearch",
+    "confidence": 0.9,
+    "classification": "indexed",
+    "last_updated": "2026-07-08T21:01:29.848Z",
+    "updated_by": "polaris-map-update",
+    "tags": [
+      "autoresearch"
+    ],
+    "instructionFile": "src/autoresearch/POLARIS.md"
+  },
+  "src/autoresearch/sol-scorer.test.ts": {
+    "domain": "autoresearch",
+    "route": "src/autoresearch",
+    "taskchain": "polaris-autoresearch",
+    "confidence": 0.9,
+    "classification": "indexed",
+    "last_updated": "2026-07-08T21:01:29.848Z",
+    "updated_by": "polaris-map-update",
+    "tags": [
+      "autoresearch",
+      "test"
+    ],
+    "instructionFile": "src/autoresearch/POLARIS.md"
+  },
+  "src/autoresearch/sol-scorer.ts": {
+    "domain": "autoresearch",
+    "route": "src/autoresearch",
+    "taskchain": "polaris-autoresearch",
+    "confidence": 0.9,
+    "classification": "indexed",
+    "last_updated": "2026-07-08T21:01:29.848Z",
+    "updated_by": "polaris-map-update",
+    "tags": [
+      "autoresearch"
+    ],
+    "instructionFile": "src/autoresearch/POLARIS.md"
+  },
+  "src/finalize/run-report.test.ts": {
+    "domain": "finalize",
+    "route": "src/finalize",
+    "taskchain": "polaris-finalize",
+    "confidence": 0.9,
+    "classification": "indexed",
+    "last_updated": "2026-07-08T21:01:29.848Z",
+    "updated_by": "polaris-map-update",
+    "tags": [
+      "finalize",
+      "test"
+    ],
+    "instructionFile": "src/finalize/POLARIS.md"
+  },
+  "src/types/sol-evidence.ts": {
+    "domain": "types",
+    "route": "src/types",
+    "taskchain": "polaris-types",
+    "confidence": 0.9,
+    "classification": "indexed",
+    "last_updated": "2026-07-08T21:01:29.848Z",
+    "updated_by": "polaris-map-update",
+    "tags": [
+      "types"
+    ],
+    "instructionFile": "src/types/POLARIS.md"
+  },
+  "src/types/sol-score.ts": {
+    "domain": "types",
+    "route": "src/types",
+    "taskchain": "polaris-types",
+    "confidence": 0.9,
+    "classification": "indexed",
+    "last_updated": "2026-07-08T21:01:29.848Z",
+    "updated_by": "polaris-map-update",
+    "tags": [
+      "types"
+    ],
+    "instructionFile": "src/types/POLARIS.md"
   }
 }

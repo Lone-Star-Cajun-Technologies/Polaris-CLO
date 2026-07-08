@@ -464,6 +464,74 @@ export type QcAutoFixPolicy = "disabled" | "dry-run" | "apply";
 /** Aggregate repair-routing policy for findings that remain open. */
 export type QcRepairRoutingPolicy = "block" | "route" | "follow-up" | "log";
 
+/** QC provider output format. */
+export type QcProviderOutputFormat = "json" | "jsonl" | "sarif" | "generic";
+
+/** Action taken when a provider failure occurs. */
+export type QcFailureAction = "fail" | "fallback" | "ignore" | "block";
+
+/** Provider-agnostic command and output parsing configuration. */
+export interface QcProviderExecutionConfig {
+  /**
+   * Executable name or absolute path. May contain $ENV_VAR references.
+   * Example: "coderabbit", "/usr/local/bin/cr", "$POLARIS_CODERABBIT"
+   */
+  command: string;
+  /**
+   * Additional CLI arguments. Supports the same template variables as
+   * execution.providers args.
+   */
+  args?: string[];
+  /**
+   * Output format and parser hint for this provider.
+   */
+  output?: {
+    /** Output encoding format. */
+    format?: QcProviderOutputFormat;
+    /** Parser identifier. "coderabbit" uses the built-in CodeRabbit parser. */
+    parser?: string;
+  };
+  /**
+   * Explicit provider configuration file path.
+   * Example: ".polaris/coderabbit.config.yaml"
+   */
+  configPath?: string;
+}
+
+/** Failure policy for a single QC provider. */
+export interface QcProviderFailurePolicy {
+  /** Action when the provider times out. Default: "fail". */
+  timeout?: QcFailureAction;
+  /** Action when provider output cannot be parsed. Default: "fail". */
+  parseFailure?: QcFailureAction;
+  /** Action when every configured provider fails. Default: "block". */
+  allProvidersFailed?: QcFailureAction;
+}
+
+/** Rate-limit policy for a QC provider. */
+export interface QcProviderRateLimit {
+  /** Maximum requests per minute. */
+  requestsPerMinute?: number;
+  /** Maximum concurrent invocations. */
+  maxConcurrent?: number;
+}
+
+/** Retry policy for a QC provider. */
+export interface QcProviderRetryPolicy {
+  /** Maximum retry attempts after a recoverable failure. */
+  maxRetries?: number;
+  /** Backoff delay in milliseconds between retries. */
+  backoffMs?: number;
+}
+
+/** Per-provider artifact handling policy. */
+export interface QcProviderArtifactPolicy {
+  /** Whether to retain raw provider output when safe and non-secret. */
+  retainRawOutput?: boolean;
+  /** Directory (relative to repo root) for provider artifacts. */
+  outputDir?: string;
+}
+
 /** Capability flags advertised by a QC provider. */
 export type QcProviderCapability =
   | "diff-review"
@@ -514,6 +582,47 @@ export interface QcProviderConfig {
    * Labels that cannot be mapped land in "info" with provider-uncertain reason.
    */
   severityMapping?: Record<string, QcSeverity>;
+  /**
+   * Whether this provider is enabled.
+   * Default: true.
+   */
+  enabled?: boolean;
+  /**
+   * Provider-agnostic command and output parsing configuration.
+   * When omitted, built-in provider behavior is used (e.g. hardcoded CodeRabbit command).
+   */
+  execution?: QcProviderExecutionConfig;
+  /**
+   * Timeout in milliseconds for a single provider invocation.
+   * When omitted, the runner default is used.
+   */
+  timeoutMs?: number;
+  /**
+   * Whether this provider is the primary provider in its trigger group.
+   * Primary providers are tried before non-primary providers.
+   */
+  primary?: boolean;
+  /**
+   * Ordered list of fallback provider names when this provider fails.
+   * References must match keys in qc.providers.
+   */
+  fallback?: string[];
+  /**
+   * Per-provider failure policy.
+   */
+  failurePolicy?: QcProviderFailurePolicy;
+  /**
+   * Rate-limit policy for this provider.
+   */
+  rateLimit?: QcProviderRateLimit;
+  /**
+   * Retry policy for this provider.
+   */
+  retry?: QcProviderRetryPolicy;
+  /**
+   * Artifact handling policy for this provider.
+   */
+  artifactPolicy?: QcProviderArtifactPolicy;
 }
 
 /** Per-route QC policy override. */
@@ -585,4 +694,10 @@ export interface QcConfig {
    * Per-route QC policy overrides keyed by route name.
    */
   routes?: Record<string, QcRoutePolicy>;
+  /**
+   * Maximum number of QC repair rounds the governed loop will run before
+   * escalating with terminal outcome "max-rounds".
+   * Default: 2.
+   */
+  maxRepairRounds?: number;
 }

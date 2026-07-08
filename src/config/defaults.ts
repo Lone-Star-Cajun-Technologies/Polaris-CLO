@@ -118,5 +118,6 @@ export const DEFAULT_CONFIG: Omit<Required<PolarisConfig>, "canon" | "providers"
       maxRuns: 10,
     },
     routes: {},
+    maxRepairRounds: 2,
   },
 };

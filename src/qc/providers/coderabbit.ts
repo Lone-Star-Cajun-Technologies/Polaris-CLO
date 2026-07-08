@@ -1,6 +1,12 @@
-import type { IQcProvider, QcMetricsPayload, QcProviderOutput, QcReviewScope } from "../provider.js";
+import type {
+  IQcProvider,
+  QcMetricsPayload,
+  QcProviderOutput,
+  QcReviewScope,
+} from "../provider.js";
 import type { QcAttribution, QcFinding, QcResult, QcSeverity } from "../types.js";
 import { maxSeverity, normalizeSeverity } from "../severity.js";
+import type { QcProviderConfig } from "../../config/schema.js";
 
 /**
  * Loose shape for CodeRabbit-style review output. We parse defensively because
@@ -112,7 +118,19 @@ function parseFindingsFromPayload(payload: unknown): CodeRabbitFindingLike[] {
   return [];
 }
 
-function parseReport(output: QcProviderOutput | QcMetricsPayload): CodeRabbitReportLike | null {
+function parseReport(
+  output: QcProviderOutput | QcMetricsPayload,
+  format?: "json" | "jsonl" | "sarif" | "generic",
+  parser?: string,
+): CodeRabbitReportLike | null {
+  if (parser && parser !== "coderabbit") {
+    throw new Error(`Unsupported parser for CodeRabbit provider: ${parser}`);
+  }
+
+  if (format === "sarif") {
+    throw new Error("SARIF output format is not supported by the CodeRabbit provider");
+  }
+
   const text = "stdout" in output && typeof output.stdout === "string" ? output.stdout : "";
   const data = "data" in output ? output.data : undefined;
 
@@ -125,7 +143,11 @@ function parseReport(output: QcProviderOutput | QcMetricsPayload): CodeRabbitRep
     };
   }
 
-  if (text.trim().startsWith("{") || text.trim().startsWith("[")) {
+  if (text.trim().length === 0) {
+    return null;
+  }
+
+  if (format === "json" || text.trim().startsWith("{") || text.trim().startsWith("[")) {
     try {
       const parsed = JSON.parse(text) as unknown;
       if (Array.isArray(parsed)) {
@@ -137,12 +159,16 @@ function parseReport(output: QcProviderOutput | QcMetricsPayload): CodeRabbitRep
           ? { prUrl: (parsed as Record<string, unknown>).prUrl as string }
           : {}),
       };
-    } catch {
-      // Fall through to line scanning.
+    } catch (jsonError) {
+      // When the format is explicitly JSON, a parse error is a real failure.
+      // Otherwise, treat the text as JSONL and fall through to line scanning.
+      if (format === "json") {
+        throw jsonError;
+      }
     }
   }
 
-  // Try JSONL: one finding per line
+  // JSONL or generic line scanning: one finding per line
   const lines = text.split("\n").filter((line) => line.trim().length > 0);
   const lineFindings: CodeRabbitFindingLike[] = [];
   for (const line of lines) {
@@ -157,7 +183,7 @@ function parseReport(output: QcProviderOutput | QcMetricsPayload): CodeRabbitRep
     return { findings: lineFindings };
   }
 
-  return null;
+  throw new Error("CodeRabbit output could not be parsed as JSON, JSONL, or metrics payload");
 }
 
 function normalizeFinding(raw: CodeRabbitFindingLike, index: number): QcFinding {
@@ -267,12 +293,28 @@ export class CodeRabbitQcProvider implements IQcProvider {
     "metrics-import",
   ] as const;
 
+  constructor(private readonly config?: QcProviderConfig) {}
+
   canReview(scope: QcReviewScope): boolean {
     if (scope.prUrl) return true;
     return Boolean(scope.branch);
   }
 
   buildReviewCommand(scope: QcReviewScope): { command: string; args: string[] } {
+    const execution = this.config?.execution;
+    if (execution) {
+      const args: string[] = execution.args ? [...execution.args] : [];
+      if (execution.configPath) {
+        args.push("--config", execution.configPath);
+      }
+      if (scope.prUrl) {
+        args.push("--pr-url", scope.prUrl);
+      } else {
+        args.push("--branch", scope.branch ?? "HEAD");
+      }
+      return { command: execution.command, args };
+    }
+
     if (scope.prUrl) {
       return { command: "coderabbit", args: ["review", "--agent", "--pr-url", scope.prUrl] };
     }
@@ -283,7 +325,12 @@ export class CodeRabbitQcProvider implements IQcProvider {
   }
 
   parse(output: QcProviderOutput): QcResult {
-    const report = parseReport(output);
+    const outputConfig = this.config?.execution?.output;
+    const report = parseReport(
+      output,
+      outputConfig?.format as "json" | "jsonl" | "sarif" | "generic" | undefined,
+      outputConfig?.parser,
+    );
     return buildResultFromReport(report, output, "local", output.exitCode !== 0);
   }
 

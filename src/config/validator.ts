@@ -16,6 +16,10 @@ function isPositiveInteger(value: unknown): value is number {
   return Number.isInteger(value) && Number(value) > 0;
 }
 
+function isNonNegativeInteger(value: unknown): value is number {
+  return Number.isInteger(value) && Number(value) >= 0;
+}
+
 function isString(value: unknown): value is string {
   return typeof value === "string";
 }
@@ -101,6 +105,8 @@ const SUPPORTED_QC_PROVIDER_CAPABILITIES = [
   "auto-fix",
   "metrics-import",
 ] as const;
+const SUPPORTED_QC_OUTPUT_FORMATS = ["json", "jsonl", "sarif", "generic"] as const;
+const SUPPORTED_QC_FAILURE_ACTIONS = ["fail", "fallback", "ignore", "block"] as const;
 const SEVERITY_ORDER = ["info", "low", "medium", "high", "critical"] as const;
 
 function severityIndex(severity: string): number {
@@ -1029,6 +1035,191 @@ export function validateConfig(config: unknown): ValidationResult {
                     result.valid = false;
                     result.errors.push(
                       `qc.providers.${providerName}.severityMapping.${label} must be one of critical, high, medium, low, info`,
+                    );
+                  }
+                }
+              }
+            }
+            if ("enabled" in providerConfig && providerConfig.enabled !== undefined && !isBoolean(providerConfig.enabled)) {
+              result.valid = false;
+              result.errors.push(`qc.providers.${providerName}.enabled must be a boolean`);
+            }
+            if ("execution" in providerConfig && providerConfig.execution !== undefined) {
+              if (!isPlainObject(providerConfig.execution)) {
+                result.valid = false;
+                result.errors.push(`qc.providers.${providerName}.execution must be a plain object`);
+              } else {
+                const execution = providerConfig.execution;
+                if ("command" in execution && execution.command !== undefined && !isString(execution.command)) {
+                  result.valid = false;
+                  result.errors.push(`qc.providers.${providerName}.execution.command must be a string`);
+                }
+                if ("args" in execution && execution.args !== undefined && !isStringArray(execution.args)) {
+                  result.valid = false;
+                  result.errors.push(`qc.providers.${providerName}.execution.args must be an array of strings`);
+                }
+                if ("output" in execution && execution.output !== undefined) {
+                  if (!isPlainObject(execution.output)) {
+                    result.valid = false;
+                    result.errors.push(`qc.providers.${providerName}.execution.output must be a plain object`);
+                  } else {
+                    if (
+                      "format" in execution.output &&
+                      execution.output.format !== undefined &&
+                      (!isString(execution.output.format) ||
+                        !SUPPORTED_QC_OUTPUT_FORMATS.includes(
+                          execution.output.format as typeof SUPPORTED_QC_OUTPUT_FORMATS[number],
+                        ))
+                    ) {
+                      result.valid = false;
+                      result.errors.push(
+                        `qc.providers.${providerName}.execution.output.format must be one of json, jsonl, sarif, generic`,
+                      );
+                    }
+                    if (
+                      "parser" in execution.output &&
+                      execution.output.parser !== undefined &&
+                      !isString(execution.output.parser)
+                    ) {
+                      result.valid = false;
+                      result.errors.push(
+                        `qc.providers.${providerName}.execution.output.parser must be a string`,
+                      );
+                    }
+                  }
+                }
+                if (
+                  "configPath" in execution &&
+                  execution.configPath !== undefined &&
+                  !isString(execution.configPath)
+                ) {
+                  result.valid = false;
+                  result.errors.push(`qc.providers.${providerName}.execution.configPath must be a string`);
+                }
+              }
+            }
+            if ("timeoutMs" in providerConfig && providerConfig.timeoutMs !== undefined && !isPositiveInteger(providerConfig.timeoutMs)) {
+              result.valid = false;
+              result.errors.push(`qc.providers.${providerName}.timeoutMs must be a positive integer`);
+            }
+            if ("primary" in providerConfig && providerConfig.primary !== undefined && !isBoolean(providerConfig.primary)) {
+              result.valid = false;
+              result.errors.push(`qc.providers.${providerName}.primary must be a boolean`);
+            }
+            if ("fallback" in providerConfig && providerConfig.fallback !== undefined && !isStringArray(providerConfig.fallback)) {
+              result.valid = false;
+              result.errors.push(`qc.providers.${providerName}.fallback must be an array of strings`);
+            }
+            if ("failurePolicy" in providerConfig && providerConfig.failurePolicy !== undefined) {
+              if (!isPlainObject(providerConfig.failurePolicy)) {
+                result.valid = false;
+                result.errors.push(`qc.providers.${providerName}.failurePolicy must be a plain object`);
+              } else {
+                for (const key of ["timeout", "parseFailure", "allProvidersFailed"] as const) {
+                  const value = providerConfig.failurePolicy[key];
+                  if (value !== undefined && (!isString(value) || !SUPPORTED_QC_FAILURE_ACTIONS.includes(value as typeof SUPPORTED_QC_FAILURE_ACTIONS[number]))) {
+                    result.valid = false;
+                    result.errors.push(
+                      `qc.providers.${providerName}.failurePolicy.${key} must be one of fail, fallback, ignore, block`,
+                    );
+                  }
+                }
+              }
+            }
+            if ("rateLimit" in providerConfig && providerConfig.rateLimit !== undefined) {
+              if (!isPlainObject(providerConfig.rateLimit)) {
+                result.valid = false;
+                result.errors.push(`qc.providers.${providerName}.rateLimit must be a plain object`);
+              } else {
+                if (
+                  "requestsPerMinute" in providerConfig.rateLimit &&
+                  providerConfig.rateLimit.requestsPerMinute !== undefined &&
+                  !isPositiveInteger(providerConfig.rateLimit.requestsPerMinute)
+                ) {
+                  result.valid = false;
+                  result.errors.push(
+                    `qc.providers.${providerName}.rateLimit.requestsPerMinute must be a positive integer`,
+                  );
+                }
+                if (
+                  "maxConcurrent" in providerConfig.rateLimit &&
+                  providerConfig.rateLimit.maxConcurrent !== undefined &&
+                  !isPositiveInteger(providerConfig.rateLimit.maxConcurrent)
+                ) {
+                  result.valid = false;
+                  result.errors.push(
+                    `qc.providers.${providerName}.rateLimit.maxConcurrent must be a positive integer`,
+                  );
+                }
+              }
+            }
+            if ("retry" in providerConfig && providerConfig.retry !== undefined) {
+              if (!isPlainObject(providerConfig.retry)) {
+                result.valid = false;
+                result.errors.push(`qc.providers.${providerName}.retry must be a plain object`);
+              } else {
+                if (
+                  "maxRetries" in providerConfig.retry &&
+                  providerConfig.retry.maxRetries !== undefined &&
+                  !isNonNegativeInteger(providerConfig.retry.maxRetries)
+                ) {
+                  result.valid = false;
+                  result.errors.push(
+                    `qc.providers.${providerName}.retry.maxRetries must be a non-negative integer`,
+                  );
+                }
+                if (
+                  "backoffMs" in providerConfig.retry &&
+                  providerConfig.retry.backoffMs !== undefined &&
+                  !isNonNegativeInteger(providerConfig.retry.backoffMs)
+                ) {
+                  result.valid = false;
+                  result.errors.push(
+                    `qc.providers.${providerName}.retry.backoffMs must be a non-negative integer`,
+                  );
+                }
+              }
+            }
+            if ("artifactPolicy" in providerConfig && providerConfig.artifactPolicy !== undefined) {
+              if (!isPlainObject(providerConfig.artifactPolicy)) {
+                result.valid = false;
+                result.errors.push(`qc.providers.${providerName}.artifactPolicy must be a plain object`);
+              } else {
+                if (
+                  "retainRawOutput" in providerConfig.artifactPolicy &&
+                  providerConfig.artifactPolicy.retainRawOutput !== undefined &&
+                  !isBoolean(providerConfig.artifactPolicy.retainRawOutput)
+                ) {
+                  result.valid = false;
+                  result.errors.push(
+                    `qc.providers.${providerName}.artifactPolicy.retainRawOutput must be a boolean`,
+                  );
+                }
+                if (
+                  "outputDir" in providerConfig.artifactPolicy &&
+                  providerConfig.artifactPolicy.outputDir !== undefined &&
+                  !isString(providerConfig.artifactPolicy.outputDir)
+                ) {
+                  result.valid = false;
+                  result.errors.push(
+                    `qc.providers.${providerName}.artifactPolicy.outputDir must be a string`,
+                  );
+                }
+              }
+            }
+          }
+          // Validate fallback references after all provider keys are known.
+          if (providers) {
+            const providerKeys = new Set(Object.keys(config.qc.providers as Record<string, unknown>));
+            for (const [providerName, providerConfig] of Object.entries(config.qc.providers as Record<string, unknown>)) {
+              if (!isPlainObject(providerConfig)) continue;
+              const fallback = providerConfig.fallback;
+              if (Array.isArray(fallback)) {
+                for (const fallbackName of fallback) {
+                  if (isString(fallbackName) && !providerKeys.has(fallbackName)) {
+                    result.valid = false;
+                    result.errors.push(
+                      `qc.providers.${providerName}.fallback contains unknown provider: ${fallbackName}`,
                     );
                   }
                 }

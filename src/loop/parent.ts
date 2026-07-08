@@ -54,6 +54,10 @@ import {
   assertChildQcSelectionAllowed,
 } from "./dispatch-boundary.js";
 import { selectChildQcTrigger } from "../qc/triggers.js";
+import { runQcAtTrigger, createQcRegistry } from "../qc/index.js";
+import { runQcRepairLoop, DEFAULT_MAX_REPAIR_ROUNDS, type DispatchRepairWorkerFn } from "../qc/repair-loop.js";
+import { compileRepairWorkerPacket } from "./worker-packet.js";
+import type { QcRepairLoopState } from "./checkpoint.js";
 import { assertBootstrapSeal } from "./run-bootstrap.js";
 import {
   DEFAULT_LEDGER_PATH,
@@ -1132,6 +1136,172 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
         };
       }
       const autoFinalizeRequested = orchestrationMode === "auto" && config.orchestration?.auto_finalize === true;
+
+      // ── QC repair loop (post-completion gate) ─────────────────────────────
+      // When QC is enabled, run the completed-cluster QC trigger and, if
+      // findings are produced, run the bounded repair loop before halting.
+      // The repair loop is Foreman-owned: it dispatches repair workers via the
+      // same adapter and NEVER implements repairs inline.
+      if (!dryRun && config.qc?.enabled) {
+        const qcRegistry = createQcRegistry(config.qc);
+        let initialQcResult;
+        try {
+          initialQcResult = await runQcAtTrigger({
+            config: config.qc,
+            registry: qcRegistry,
+            trigger: "completed-cluster",
+            repoRoot,
+            runId: state.run_id,
+            clusterId: state.cluster_id,
+            branch: state.branch ?? getCurrentBranch(repoRoot),
+            telemetryFile,
+            state,
+          });
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          appendTelemetry(telemetryFile, {
+            event: "qc-repair-loop-qc-run-error",
+            run_id: state.run_id,
+            error: msg,
+            timestamp: new Date().toISOString(),
+          });
+          // Non-fatal: proceed to cluster-complete without repair loop.
+          initialQcResult = null;
+        }
+
+        const hasFindings =
+          initialQcResult !== null &&
+          initialQcResult.results.some(
+            (r) => r.findings.length > 0 && r.status !== "passed" && r.status !== "skipped",
+          );
+
+        if (initialQcResult !== null && hasFindings) {
+          const maxRepairRounds = config.qc.maxRepairRounds ?? DEFAULT_MAX_REPAIR_ROUNDS;
+          const priorLoopState = state.qc_repair_loop ?? null;
+
+          // Build the repair worker dispatcher using the existing adapter + provider.
+          const repairDispatcher: DispatchRepairWorkerFn = async (packet, round, manifest) => {
+            const repairPacketId = packet.packetId;
+            const dispatchId = randomUUID();
+            const repairWorkerId = `${state.run_id}:repair-${repairPacketId}:${Date.now()}`;
+            const repairResultPath = join(
+              repoRoot,
+              ".polaris",
+              "clusters",
+              state.cluster_id,
+              "results",
+              `repair-${repairPacketId}-${dispatchId}.json`,
+            );
+
+            const workerPacket = compileRepairWorkerPacket({
+              runId: state.run_id,
+              clusterId: state.cluster_id,
+              packetId: repairPacketId,
+              branch: state.branch ?? getCurrentBranch(repoRoot),
+              stateFile,
+              telemetryFile,
+              round,
+              allowedScope: packet.allowedScope,
+              prohibitedScope: packet.prohibitedScope,
+              validationCommands: packet.validationCommands,
+              rootCauseHint: packet.rootCauseHint,
+              resultFile: repairResultPath,
+              maxConcurrentWorkers,
+            });
+
+            appendTelemetry(telemetryFile, {
+              event: "repair-worker-dispatched",
+              run_id: state.run_id,
+              cluster_id: state.cluster_id,
+              packet_id: repairPacketId,
+              worker_id: repairWorkerId,
+              round,
+              timestamp: new Date().toISOString(),
+            });
+
+            try {
+              const dispatchResult = await adapter.dispatch(workerPacket, { provider: providerName, dryRun });
+              const workerSummary = parseWorkerSummary(dispatchResult.summary);
+              const success = workerSummary?.status === "done";
+              appendTelemetry(telemetryFile, {
+                event: "repair-worker-completed",
+                run_id: state.run_id,
+                packet_id: repairPacketId,
+                worker_id: repairWorkerId,
+                round,
+                status: success ? "success" : "failure",
+                timestamp: new Date().toISOString(),
+              });
+              return {
+                packetId: repairPacketId,
+                status: success ? "success" : "failure",
+                commitSha: workerSummary?.commit as string | undefined,
+                errorMessage: success ? undefined : String(workerSummary?.error_message ?? "repair worker failed"),
+              };
+            } catch (err) {
+              const msg = err instanceof Error ? err.message : String(err);
+              appendTelemetry(telemetryFile, {
+                event: "repair-worker-error",
+                run_id: state.run_id,
+                packet_id: repairPacketId,
+                worker_id: repairWorkerId,
+                round,
+                error: msg,
+                timestamp: new Date().toISOString(),
+              });
+              return {
+                packetId: repairPacketId,
+                status: "failure" as const,
+                errorMessage: msg,
+              };
+            }
+          };
+
+          try {
+            const repairLoopResult = await runQcRepairLoop({
+              clusterId: state.cluster_id,
+              runId: state.run_id,
+              branch: state.branch ?? getCurrentBranch(repoRoot),
+              repoRoot,
+              telemetryFile,
+              config: config.qc,
+              registry: qcRegistry,
+              initialQcResults: initialQcResult.results,
+              dispatchRepairWorker: repairDispatcher,
+              maxRounds: maxRepairRounds,
+              priorLoopState,
+              onStateUpdate: (loopState: QcRepairLoopState) => {
+                // Persist loop state to the state file on each mutation.
+                const stateWithLoop = { ...state, qc_repair_loop: loopState };
+                writeStateAtomic(stateFile, stateWithLoop);
+              },
+            });
+
+            state = { ...state, qc_repair_loop: repairLoopResult.loop_state };
+            writeStateAtomic(stateFile, state);
+
+            appendTelemetry(telemetryFile, {
+              event: "qc-repair-loop-finished",
+              run_id: state.run_id,
+              outcome: repairLoopResult.outcome,
+              rounds_completed: repairLoopResult.rounds_completed,
+              summary: repairLoopResult.summary,
+              timestamp: new Date().toISOString(),
+            });
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            appendTelemetry(telemetryFile, {
+              event: "qc-repair-loop-error",
+              run_id: state.run_id,
+              error: msg,
+              timestamp: new Date().toISOString(),
+            });
+            // Non-fatal: proceed to cluster-complete.
+          }
+        }
+      }
+      // ── End QC repair loop ─────────────────────────────────────────────────
+
       // All children completed — write final state and halt
       if (!dryRun) {
         logStatus(notificationFormat, "COMPLETE");

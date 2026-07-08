@@ -30,7 +30,7 @@ import { LocalGraph } from "../tracker/local-graph.js";
 import { TrackerSyncService } from "../tracker/sync/index.js";
 import { formatFinalizeEvidenceFailures, verifyCompletedChildFinalizeEvidence } from "../loop/finalize-evidence.js";
 import { validateDeliveryIntegrity } from "./delivery-integrity.js";
-import { runQcAtTrigger, createDefaultQcRegistry } from "../qc/index.js";
+import { runQcAtTrigger, createQcRegistry } from "../qc/index.js";
 
 export interface FinalizeOptions {
   repoRoot: string;
@@ -233,7 +233,7 @@ async function runQcGate(options: {
   stepLabel: string;
 }): Promise<void> {
   const { config, state, repoRoot, branch, trigger, prUrl, stepLabel } = options;
-  const registry = createDefaultQcRegistry();
+  const registry = createQcRegistry(config);
   const result = await runQcAtTrigger({
     config,
     registry,

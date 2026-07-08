@@ -448,7 +448,100 @@
             "type": "string",
             "enum": ["critical", "high", "medium", "low", "info"]
           }
+        },
+        "enabled": { "type": "boolean", "default": true },
+        "execution": { "$ref": "#/definitions/qcProviderExecutionConfig" },
+        "timeoutMs": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "primary": { "type": "boolean" },
+        "fallback": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "failurePolicy": { "$ref": "#/definitions/qcProviderFailurePolicy" },
+        "rateLimit": { "$ref": "#/definitions/qcProviderRateLimit" },
+        "retry": { "$ref": "#/definitions/qcProviderRetryPolicy" },
+        "artifactPolicy": { "$ref": "#/definitions/qcProviderArtifactPolicy" }
+      }
+    },
+    "qcProviderExecutionConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command"],
+      "properties": {
+        "command": { "type": "string" },
+        "args": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "output": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "format": {
+              "type": "string",
+              "enum": ["json", "jsonl", "sarif", "generic"]
+            },
+            "parser": { "type": "string" }
+          }
+        },
+        "configPath": { "type": "string" }
+      }
+    },
+    "qcProviderFailurePolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "timeout": {
+          "type": "string",
+          "enum": ["fail", "fallback", "ignore", "block"]
+        },
+        "parseFailure": {
+          "type": "string",
+          "enum": ["fail", "fallback", "ignore", "block"]
+        },
+        "allProvidersFailed": {
+          "type": "string",
+          "enum": ["fail", "fallback", "ignore", "block"]
         }
+      }
+    },
+    "qcProviderRateLimit": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "requestsPerMinute": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "maxConcurrent": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "qcProviderRetryPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "maxRetries": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "backoffMs": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "qcProviderArtifactPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "retainRawOutput": { "type": "boolean" },
+        "outputDir": { "type": "string" }
       }
     },
     "qcSeverityThresholds": {

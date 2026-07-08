@@ -90,6 +90,12 @@ export interface SolForemanScoreReport {
   completion: SolDimensionScore;
   /** Failure recovery — state repair detection. */
   recovery: SolDimensionScore;
+  /**
+   * QC repair loop outcome — observes provider attempts, rounds, packet
+   * results, and terminal escalation without treating provider findings as
+   * ground truth.
+   */
+  qc_repair_loop: SolDimensionScore;
 }
 
 // ──────────────────────────────────────────────

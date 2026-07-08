@@ -44,6 +44,20 @@ The cluster-state subsystem provides durable, atomic read/write access to per-cl
 - QC result artifacts live at `.polaris/clusters/<cluster-id>/qc/<qc-run-id>.json` and are referenced by cluster-state pointers.
 - QC status is read by finalize to determine delivery readiness and by autoresearch for SOL scoring inputs.
 
+## QC repair loop relationship
+
+- Cluster-state must store repair round state so the repair loop survives session boundaries.
+- `ClusterState.qc_repair_rounds` (new field, implementation surface for POL-503+) tracks per-round metadata:
+  - `round` — 1-based round number.
+  - `state` — current repair round state (see `smartdocs/specs/active/quality-control-architecture.md §8.6`).
+  - `repair_packets_path` — path to the compiled repair packet manifest for this round.
+  - `repair_worker_ids` — child IDs dispatched as repair workers in this round.
+  - `qc_rerun_id` — QC run ID for the post-repair rerun, when available.
+  - `terminal_outcome` — terminal outcome for this round when reached.
+- The maximum round count is not stored in cluster-state; it is read from `polaris.config.json → qc.maxRepairRounds` at runtime.
+- Repair packet manifests at `.polaris/clusters/<cluster-id>/qc/repair-rounds/<round>/repair-packets.json` are written by `src/qc/`, not by cluster-state. Cluster-state stores the pointer.
+- See `smartdocs/specs/active/quality-control-architecture.md §8.4` for repair packet manifest field definitions.
+
 ## Related routes
 
 - `src/loop/` — primary consumer of cluster state reads/writes

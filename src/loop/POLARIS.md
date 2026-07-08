@@ -73,6 +73,16 @@ The loop subsystem manages the session lifecycle for Polaris cluster runs. It ha
 - Child-level QC is opt-in and policy-gated; it runs after a single child completes and before the next child is dispatched.
 - QC results are durable artifacts written by `src/qc/` and consumed by finalize, cluster-state, and autoresearch; the loop does not parse provider output.
 
+## QC repair loop relationship
+
+- When `src/qc/orchestration.ts` compiles a repair packet manifest, the loop dispatches repair workers as governed children using `worker_role: repair` through `dispatch.ts` and the Worker Router.
+- Repair workers are normal governed children. The loop's session boundary (one child per session), slot management, and STOP rule apply equally to repair workers.
+- `src/qc/` owns repair round state and the compiled manifest. The loop owns worker dispatch and slot claims; it does not modify QC round state directly.
+- After all repair workers in a round complete, the loop signals `src/qc/orchestration.ts` to trigger the post-repair QC rerun. The loop does not own the rerun decision.
+- The bounded round limit (`maxRepairRounds`, default `2`) is enforced by `src/qc/orchestration.ts`. The loop does not need to track repair round counts.
+- `open_children` and `completed_children` in `current-state.json` reflect repair workers just as they reflect any other child. The loop must not treat repair workers differently at the dispatch or continue boundary.
+- See `smartdocs/specs/active/quality-control-architecture.md §8` for the full repair loop implementation contract.
+
 ## Related routes
 
 - `polaris.loop` — all files in this directory

@@ -9,7 +9,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { generateReport, formatReportCli } from "./sol-report.js";
+import { generateReport, formatReportCli, formatQcEvidence } from "./sol-report.js";
 import type { SolScoreSnapshot } from "./sol-history.js";
 import type { SolScoreReport } from "../types/sol-score.js";
 
@@ -38,6 +38,7 @@ function makeReport(runId: string, compositeScore: number | null, scoredAt?: str
       scope: dim("scope"),
       completion: dim("completion"),
       recovery: dim("recovery"),
+      qc_repair_loop: dim("qc_repair_loop"),
     },
     workers: {
       "POL-001": {
@@ -224,5 +225,104 @@ describe("formatReportCli", () => {
     const output = formatReportCli(report);
 
     expect(output).toContain("No data.");
+  });
+});
+
+// ── QC evidence formatter ─────────────────────────────────────────────────────
+
+import type { SolQcEvidence } from "../types/sol-evidence.js";
+
+function baseQcEvidence(overrides: Partial<SolQcEvidence> = {}): SolQcEvidence {
+  return {
+    availability: "available",
+    qc_run_count: 1,
+    total_findings: 1,
+    blocking_findings: 0,
+    autofixed_findings: 0,
+    repaired_findings: 1,
+    waived_findings: 0,
+    unvalidated_findings: 0,
+    weighted_open_score: 0,
+    qc_penalty: 0,
+    blocks_delivery: false,
+    open_by_severity: { critical: 0, high: 0, medium: 0, low: 0, info: 0 },
+    provider_breakdown: {},
+    repair_loop: {
+      status: "passed",
+      rounds_completed: 1,
+      max_rounds: 2,
+      packets_compiled: 1,
+      packets_completed: 1,
+      packets_failed: 0,
+      rerun_outcome: "pass",
+      provider_attempts: {
+        total: 1,
+        success: 1,
+        failure: 0,
+        fallback: 0,
+        skipped: 0,
+        all_providers_failed: false,
+      },
+    },
+    noisy_providers: [],
+    has_repair_failures: false,
+    unresolved_high_severity: 0,
+    max_round_exhausted: false,
+    ...overrides,
+  };
+}
+
+describe("formatQcEvidence", () => {
+  it("renders provider breakdown and repair-loop status", () => {
+    const qc = baseQcEvidence({
+      provider_breakdown: { coderabbit: { total: 2, blocking: 1, unvalidated: 0 } },
+    });
+    const output = formatQcEvidence(qc);
+    expect(output).toContain("QC Evidence Summary");
+    expect(output).toContain("coderabbit: total=2, blocking=1, unvalidated=0");
+    expect(output).toContain("status: passed");
+    expect(output).toContain("rounds: 1/2");
+  });
+
+  it("renders max-round exhaustion", () => {
+    const qc = baseQcEvidence({
+      repair_loop: {
+        ...baseQcEvidence().repair_loop!,
+        status: "max-rounds",
+        rounds_completed: 2,
+        max_rounds: 2,
+      },
+      max_round_exhausted: true,
+    });
+    const output = formatQcEvidence(qc);
+    expect(output).toContain("status: max-rounds");
+    expect(output).toContain("Max repair rounds exhausted.");
+  });
+
+  it("renders medic referral and repeated repair failures", () => {
+    const qc = baseQcEvidence({
+      repair_loop: {
+        ...baseQcEvidence().repair_loop!,
+        status: "medic-referral",
+        packets_failed: 1,
+      },
+      has_repair_failures: true,
+    });
+    const output = formatQcEvidence(qc);
+    expect(output).toContain("status: medic-referral");
+    expect(output).toContain("Repeated repair failures detected.");
+  });
+
+  it("renders disabled QC state", () => {
+    const qc = baseQcEvidence({
+      availability: "unavailable",
+      repair_loop: {
+        ...baseQcEvidence().repair_loop!,
+        status: "not-configured",
+      },
+    });
+    const output = formatQcEvidence(qc);
+    expect(output).toContain("availability: unavailable");
+    expect(output).toContain("status: not-configured");
   });
 });

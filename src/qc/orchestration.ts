@@ -172,6 +172,8 @@ export async function runQcAtTrigger(
         branch,
         telemetryFile,
         timeoutMs,
+        config,
+        registry,
       });
 
       const result = applyAttributionAndRouting(rawResult, config, attributionContext, ownership, routeName);

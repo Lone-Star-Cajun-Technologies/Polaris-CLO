@@ -1,4 +1,4 @@
-# smartdocs/docs/architecture
+# smartdocs/architecture
 
 ## Purpose
 
@@ -9,6 +9,8 @@ Architecture docs for SmartDocs live here. Use this folder for stable system str
 - Architecture and design docs
 - Cross-cutting system explanations
 - Stable references that inform doctrine and specs
+- The Quality Control lifecycle and operational boundaries note for POL-471 in
+  [quality-control-lifecycle.md](quality-control-lifecycle.md)
 
 ## What does not belong here
 
