@@ -5,19 +5,25 @@ import { scoreRun } from "../autoresearch/score.js";
 import { loadDiagnosisReport, buildProposals } from "../autoresearch/proposal.js";
 import { routeProposals } from "../autoresearch/routing.js";
 
-export interface AutoresearchCommandOptions {
+export interface SolCommandOptions {
   repoRoot: string;
 }
 
-export function createAutoresearchCommand(options: AutoresearchCommandOptions): Command {
+/** @deprecated Use {@link SolCommandOptions}. */
+export type AutoresearchCommandOptions = SolCommandOptions;
+
+export function createSolCommand(options: SolCommandOptions): Command {
   const repoRoot = options.repoRoot;
 
-  const autoresearch = new Command("autoresearch")
-    .description("Autoresearch tools (dev-gated — Polaris development context only)")
+  const sol = new Command("sol")
+    .alias("autoresearch")
+    .description(
+      "Self-Optimization Loop (SOL) tools — autoresearch compatibility alias (dev-gated — Polaris development context only)",
+    )
     .showHelpAfterError()
     .showSuggestionAfterError();
 
-  autoresearch
+  sol
     .command("score <run-id>")
     .description(
       "Score a completed Polaris run against the binary gate scorecard and output a diagnosis report",
@@ -41,13 +47,13 @@ export function createAutoresearchCommand(options: AutoresearchCommandOptions): 
         process.stdout.write(`${output}\n`);
       } catch (err) {
         process.stderr.write(
-          `autoresearch score error: ${err instanceof Error ? err.message : String(err)}\n`,
+          `sol score error: ${err instanceof Error ? err.message : String(err)}\n`,
         );
         process.exit(1);
       }
     });
 
-  autoresearch
+  sol
     .command("propose <diagnosis-file>")
     .description(
       "File Linear improvement proposals from a diagnosis report (dev-gated — never auto-applied)",
@@ -74,7 +80,7 @@ export function createAutoresearchCommand(options: AutoresearchCommandOptions): 
           report = loadDiagnosisReport(resolve(diagnosisFile));
         } catch (err) {
           process.stderr.write(
-            `autoresearch propose: invalid diagnosis file: ${err instanceof Error ? err.message : String(err)}\n`,
+            `sol propose: invalid diagnosis file: ${err instanceof Error ? err.message : String(err)}\n`,
           );
           process.exit(1);
         }
@@ -88,7 +94,7 @@ export function createAutoresearchCommand(options: AutoresearchCommandOptions): 
         const apiKey = process.env["LINEAR_API_KEY"];
         if (!apiKey && !cmdOptions.dryRun) {
           process.stderr.write(
-            "autoresearch propose: LINEAR_API_KEY environment variable is required.\n",
+            "sol propose: LINEAR_API_KEY environment variable is required.\n",
           );
           process.exit(1);
         }
@@ -108,12 +114,15 @@ export function createAutoresearchCommand(options: AutoresearchCommandOptions): 
           }
         } catch (err) {
           process.stderr.write(
-            `autoresearch propose error: ${err instanceof Error ? err.message : String(err)}\n`,
+            `sol propose error: ${err instanceof Error ? err.message : String(err)}\n`,
           );
           process.exit(1);
         }
       },
     );
 
-  return autoresearch;
+  return sol;
 }
+
+/** @deprecated Use {@link createSolCommand}. */
+export const createAutoresearchCommand = createSolCommand;

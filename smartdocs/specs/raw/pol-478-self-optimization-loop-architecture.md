@@ -226,7 +226,7 @@ Reports summarize trends, outliers, confidence, and recommendations with links b
 
 ## Command surface intent
 
-The preferred future command surface is `polaris sol ...`. The existing `polaris autoresearch ...` command remains as a compatibility alias. No command rename is required by this document.
+The preferred command surface is `polaris sol score <run-id>` and `polaris sol propose <diagnosis-file>`. These expose the same dev-gated scoring and proposal-routing behavior as the legacy `polaris autoresearch score|propose` commands, which remain as backward-compatible aliases.
 
 ## Relationship to other specs
 

@@ -1,4 +1,4 @@
-# autoresearch
+# autoresearch (SOL sub-capability)
 
 ## Purpose
 
@@ -57,6 +57,6 @@ Autoresearch is the evidence-scoring and proposal-routing sub-capability inside 
 
 ## Related routes
 
-- `src/cli/autoresearch.ts` — CLI command surface
+- `src/cli/autoresearch.ts` — `polaris sol` CLI command surface; `polaris autoresearch` remains a compatibility alias
 - `src/loop/` — telemetry source for router outcome events
 - `src/tracker/` — issue filing for proposals
