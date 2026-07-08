@@ -77,6 +77,12 @@ function baseEvidence(overrides: Partial<SolEvidence> = {}): SolEvidence {
       qc_penalty: 0,
       blocks_delivery: false,
       open_by_severity: { critical: 0, high: 0, medium: 0, low: 0, info: 0 },
+      provider_breakdown: {},
+      repair_loop: null,
+      noisy_providers: [],
+      repeated_repair_failures: false,
+      unresolved_high_severity: 0,
+      max_round_exhausted: false,
     },
     validation: [],
     tokens: {
@@ -744,10 +750,95 @@ describe("computeSolScoreReport", () => {
   });
 });
 
+// ── Foreman QC repair-loop dimension ─────────────────────────────────────────
+
+function qcEvidence(overrides: Partial<SolQcEvidence> = {}): SolQcEvidence {
+  return {
+    availability: "available",
+    qc_run_count: 1,
+    total_findings: 1,
+    blocking_findings: 0,
+    autofixed_findings: 0,
+    repaired_findings: 1,
+    waived_findings: 0,
+    unvalidated_findings: 0,
+    weighted_open_score: 0,
+    qc_penalty: 0,
+    blocks_delivery: false,
+    open_by_severity: { critical: 0, high: 0, medium: 0, low: 0, info: 0 },
+    provider_breakdown: {},
+    repair_loop: {
+      status: "passed",
+      rounds_completed: 1,
+      max_rounds: 2,
+      packets_compiled: 1,
+      packets_completed: 1,
+      packets_failed: 0,
+      rerun_outcome: "pass",
+      provider_attempts: {
+        total: 1,
+        success: 1,
+        failure: 0,
+        fallback: 0,
+        skipped: 0,
+        all_providers_failed: false,
+      },
+    },
+    noisy_providers: [],
+    repeated_repair_failures: false,
+    unresolved_high_severity: 0,
+    max_round_exhausted: false,
+    ...overrides,
+  };
+}
+
+describe("computeForemanScore: qc_repair_loop", () => {
+  it("is skipped when QC evidence is future", () => {
+    const ev = baseEvidence({ qc: qcEvidence({ availability: "future" }) });
+    const report = computeForemanScore(ev);
+    expect(report.qc_repair_loop.score).toBeNull();
+    expect(report.qc_repair_loop.skipped_reason).toBeTruthy();
+  });
+
+  it("scores 1.0 for passed/repaired/no-repairable outcomes", () => {
+    const ev = baseEvidence({ qc: qcEvidence({ repair_loop: { ...qcEvidence().repair_loop!, status: "passed" } }) });
+    expect(computeForemanScore(ev).qc_repair_loop.score).toBe(1.0);
+  });
+
+  it("scores 0.5 for max-rounds exhaustion", () => {
+    const ev = baseEvidence({
+      qc: qcEvidence({
+        repair_loop: { ...qcEvidence().repair_loop!, status: "max-rounds" },
+        max_round_exhausted: true,
+      }),
+    });
+    expect(computeForemanScore(ev).qc_repair_loop.score).toBe(0.5);
+  });
+
+  it("scores 0.0 for medic-referral", () => {
+    const ev = baseEvidence({
+      qc: qcEvidence({
+        repair_loop: { ...qcEvidence().repair_loop!, status: "medic-referral", packets_failed: 1 },
+        repeated_repair_failures: true,
+      }),
+    });
+    expect(computeForemanScore(ev).qc_repair_loop.score).toBe(0.0);
+  });
+
+  it("scores 0.0 for all-providers-failed", () => {
+    const ev = baseEvidence({
+      qc: qcEvidence({
+        repair_loop: { ...qcEvidence().repair_loop!, status: "all-providers-failed" },
+      }),
+    });
+    expect(computeForemanScore(ev).qc_repair_loop.score).toBe(0.0);
+  });
+});
+
 // ── Dimension labels ──────────────────────────────────────────────────────────
 
 describe("dimension labels", () => {
-  it("foreman score report has all 10 dimension keys", () => {
+  it("foreman score report has all 11 dimension keys", () => {
     const report = computeForemanScore(baseEvidence());
     expect(report.token.dimension).toBe("token");
     expect(report.duration.dimension).toBe("duration");
@@ -759,6 +850,7 @@ describe("dimension labels", () => {
     expect(report.scope.dimension).toBe("scope");
     expect(report.completion.dimension).toBe("completion");
     expect(report.recovery.dimension).toBe("recovery");
+    expect(report.qc_repair_loop.dimension).toBe("qc_repair_loop");
   });
 
   it("worker score report has all 8 dimension keys", () => {

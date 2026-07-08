@@ -207,6 +207,57 @@ export interface SolRouterEvidence {
 // ──────────────────────────────────────────────
 
 /**
+ * Per-provider QC finding counts used to spot noisy providers.
+ */
+export interface SolQcProviderBreakdown {
+  total: number;
+  blocking: number;
+  unvalidated: number;
+}
+
+/**
+ * Repair-loop outcome status.
+ */
+export type SolQcRepairLoopStatus =
+  | "not-configured"
+  | "not-run"
+  | "in-progress"
+  | "passed"
+  | "repaired"
+  | "no-repairable"
+  | "max-rounds"
+  | "all-providers-failed"
+  | "operator-review"
+  | "medic-referral"
+  | "unknown";
+
+/**
+ * Aggregate QC provider-attempt counts.
+ */
+export interface SolQcProviderAttemptSummary {
+  total: number;
+  success: number;
+  failure: number;
+  fallback: number;
+  skipped: number;
+  all_providers_failed: boolean;
+}
+
+/**
+ * QC repair loop evidence.
+ */
+export interface SolQcRepairLoopEvidence {
+  status: SolQcRepairLoopStatus;
+  rounds_completed: number;
+  max_rounds: number;
+  packets_compiled: number;
+  packets_completed: number;
+  packets_failed: number;
+  rerun_outcome: "pass" | "findings" | "failed" | "skipped" | null;
+  provider_attempts: SolQcProviderAttemptSummary;
+}
+
+/**
  * Aggregate QC evidence for the run.
  *
  * availability: "unavailable" when no QC artifacts exist.
@@ -231,6 +282,18 @@ export interface SolQcEvidence {
     low: number;
     info: number;
   };
+  /** Findings grouped by QC provider. */
+  provider_breakdown: Record<string, SolQcProviderBreakdown>;
+  /** Repair-loop outcomes and provider attempt telemetry. */
+  repair_loop: SolQcRepairLoopEvidence | null;
+  /** Providers whose findings are mostly unvalidated noise. */
+  noisy_providers: string[];
+  /** Whether any repair worker failed (proxy for repeated repair failure). */
+  repeated_repair_failures: boolean;
+  /** Count of unresolved critical/high findings. */
+  unresolved_high_severity: number;
+  /** Whether the loop exhausted its configured max rounds. */
+  max_round_exhausted: boolean;
 }
 
 // ──────────────────────────────────────────────

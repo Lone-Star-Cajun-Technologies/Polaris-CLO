@@ -16,9 +16,12 @@ import {
   recommendationsToProposals,
   recommendationToProposal,
   formatRecommendationsCli,
+  generateQcRecommendations,
+  formatQcRecommendations,
 } from "./sol-recommendations.js";
 import type { SolScoreSnapshot } from "./sol-history.js";
 import type { SolScoreReport } from "../types/sol-score.js";
+import type { SolEvidence, SolQcEvidence } from "../types/sol-evidence.js";
 
 // ── Helpers ──
 
@@ -45,6 +48,7 @@ function makeReport(runId: string, compositeScore: number | null): SolScoreRepor
       scope: dim("scope"),
       completion: dim("completion"),
       recovery: dim("recovery"),
+      qc_repair_loop: dim("qc_repair_loop"),
     },
     workers: {
       "POL-001": {
@@ -279,5 +283,187 @@ describe("formatRecommendationsCli", () => {
     const report = generateRecommendations([]);
     const output = formatRecommendationsCli(report);
     expect(output).toContain("No underperforming groups detected");
+  });
+});
+
+// ── QC follow-up recommendations ───────────────────────────────────────────────
+
+function baseQcEvidence(overrides: Partial<SolQcEvidence> = {}): SolQcEvidence {
+  return {
+    availability: "available",
+    qc_run_count: 1,
+    total_findings: 1,
+    blocking_findings: 0,
+    autofixed_findings: 0,
+    repaired_findings: 1,
+    waived_findings: 0,
+    unvalidated_findings: 0,
+    weighted_open_score: 0,
+    qc_penalty: 0,
+    blocks_delivery: false,
+    open_by_severity: { critical: 0, high: 0, medium: 0, low: 0, info: 0 },
+    provider_breakdown: {},
+    repair_loop: {
+      status: "passed",
+      rounds_completed: 1,
+      max_rounds: 2,
+      packets_compiled: 1,
+      packets_completed: 1,
+      packets_failed: 0,
+      rerun_outcome: "pass",
+      provider_attempts: {
+        total: 1,
+        success: 1,
+        failure: 0,
+        fallback: 0,
+        skipped: 0,
+        all_providers_failed: false,
+      },
+    },
+    noisy_providers: [],
+    repeated_repair_failures: false,
+    unresolved_high_severity: 0,
+    max_round_exhausted: false,
+    ...overrides,
+  };
+}
+
+function baseEvidence(overrides: Partial<SolEvidence> = {}): SolEvidence {
+  return {
+    schema_version: "1.0",
+    run_id: "run-qc-001",
+    cluster_id: "POL-100",
+    observed_at: new Date().toISOString(),
+    grouping_keys: {},
+    run: {
+      run_id: "run-qc-001",
+      cluster_id: "POL-100",
+      branch: "main",
+      status: "done",
+      total_children: 0,
+      completed_children: 0,
+      dispatch_epoch: null,
+      continue_epoch: null,
+      state_observed_at: null,
+    },
+    children: [],
+    foreman: {
+      max_bootstrap_tokens: null,
+      over_token_budget: false,
+      redispatch_count: 0,
+      redispatched_children: [],
+      foreman_corrective_commit: false,
+      escalation_events: 0,
+    },
+    worker: {
+      total_heartbeats: 0,
+      total_escalations: 0,
+      workers_succeeded: 0,
+      workers_failed: 0,
+      workers_blocked: 0,
+      validation_failures: 0,
+      validation_passes: 0,
+      user_interventions: 0,
+      foreman_interventions: 0,
+    },
+    router: {
+      availability: "future",
+      total_decisions: 0,
+      exhausted_decisions: 0,
+      fallback_attempts: 0,
+      successful_fallbacks: 0,
+      decisions: [],
+      recurring_failure_reasons: [],
+    },
+    qc: baseQcEvidence(),
+    validation: [],
+    tokens: {
+      max_bootstrap_tokens: null,
+      total_worker_heartbeats: 0,
+      tokens_by_child: {},
+    },
+    intervention: {
+      user_intervened: false,
+      foreman_intervened: false,
+      blocked_event_count: 0,
+      out_of_scope_count: 0,
+      state_repair_required: false,
+    },
+    ...overrides,
+  };
+}
+
+describe("generateQcRecommendations", () => {
+  it("returns no recommendations when QC evidence is not available", () => {
+    const ev = baseEvidence({ qc: baseQcEvidence({ availability: "future" }) });
+    const report = generateQcRecommendations(ev);
+    expect(report.recommendations).toHaveLength(0);
+  });
+
+  it("emits a noisy-provider recommendation", () => {
+    const ev = baseEvidence({
+      qc: baseQcEvidence({
+        provider_breakdown: { noisy: { total: 4, blocking: 0, unvalidated: 3 } },
+        noisy_providers: ["noisy"],
+      }),
+    });
+    const report = generateQcRecommendations(ev);
+    const rec = report.recommendations.find((r) => r.id === "qc-noisy-provider:noisy");
+    expect(rec).toBeDefined();
+    expect(rec!.category).toBe("provider_policy");
+    expect(rec!.affected.provider).toBe("noisy");
+  });
+
+  it("emits a repeated-repair-failure recommendation for medic-referral", () => {
+    const ev = baseEvidence({
+      qc: baseQcEvidence({
+        repair_loop: {
+          ...baseQcEvidence().repair_loop!,
+          status: "medic-referral",
+          packets_failed: 1,
+        },
+        repeated_repair_failures: true,
+      }),
+    });
+    const report = generateQcRecommendations(ev);
+    const rec = report.recommendations.find((r) => r.id === `qc-repair-failure:${ev.run_id}`);
+    expect(rec).toBeDefined();
+    expect(rec!.category).toBe("qc_follow_up");
+  });
+
+  it("emits an unresolved high-severity recommendation", () => {
+    const ev = baseEvidence({
+      qc: baseQcEvidence({ unresolved_high_severity: 3 }),
+    });
+    const report = generateQcRecommendations(ev);
+    const rec = report.recommendations.find((r) => r.id.startsWith("qc-unresolved-high-severity"));
+    expect(rec).toBeDefined();
+    expect(rec!.category).toBe("qc_follow_up");
+  });
+
+  it("emits a max-round-exhaustion recommendation", () => {
+    const ev = baseEvidence({
+      qc: baseQcEvidence({
+        repair_loop: {
+          ...baseQcEvidence().repair_loop!,
+          status: "max-rounds",
+          rounds_completed: 2,
+          max_rounds: 2,
+        },
+        max_round_exhausted: true,
+      }),
+    });
+    const report = generateQcRecommendations(ev);
+    const rec = report.recommendations.find((r) => r.id.startsWith("qc-max-rounds"));
+    expect(rec).toBeDefined();
+    expect(rec!.category).toBe("qc_follow_up");
+  });
+
+  it("renders QC follow-up recommendations", () => {
+    const ev = baseEvidence({ qc: baseQcEvidence({ unresolved_high_severity: 1 }) });
+    const report = generateQcRecommendations(ev);
+    const output = formatQcRecommendations(report);
+    expect(output).toContain("SOL QC Follow-Up Recommendations");
+    expect(output).toContain("qc-unresolved-high-severity");
   });
 });

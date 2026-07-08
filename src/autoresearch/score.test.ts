@@ -45,6 +45,7 @@ function emptyArtifacts(overrides: Partial<RunArtifacts> = {}): RunArtifacts {
     workerResultContracts: [],
     telemetryEvents: [],
     qcResults: [],
+    clusterState: null,
     ...overrides,
   };
 }
@@ -979,6 +980,88 @@ describe("computeQcSummary", () => {
     expect(result!.provider_breakdown["coderabbit"]!.total).toBe(2);
     expect(result!.routing_breakdown.operator_review).toBe(1);
     expect(result!.routing_breakdown.repair_worker).toBe(1);
+  });
+});
+
+// ── computeQcSummary: repair-loop telemetry ───────────────────────────────────
+
+describe("computeQcSummary repair loop", () => {
+  it("counts provider attempts from result.providerAttempt", () => {
+    const result = makeQcResult({
+      providerAttempt: {
+        provider: "coderabbit",
+        status: "success",
+        rawOutputAvailable: true,
+        rawOutputRetained: true,
+        stdoutLength: 100,
+        stderrLength: 0,
+      },
+    });
+    const summary = computeQcSummary([result]);
+    expect(summary!.repair_loop!.provider_attempts.success).toBe(1);
+    expect(summary!.repair_loop!.provider_attempts.total).toBe(1);
+  });
+
+  it("flags all_providers_failed from result.allProvidersFailed", () => {
+    const result = makeQcResult({ allProvidersFailed: true, status: "failed" });
+    const summary = computeQcSummary([result]);
+    expect(summary!.repair_loop!.provider_attempts.all_providers_failed).toBe(true);
+    expect(summary!.repair_loop!.provider_attempts.failure).toBe(1);
+  });
+
+  it("detects fallback attempts from provider-fallback-attempted telemetry", () => {
+    const result = makeQcResult();
+    const telemetry = [{ event: "provider-fallback-attempted", fallback_from: "a", fallback_to: "b" }];
+    const summary = computeQcSummary([result], null, telemetry);
+    expect(summary!.repair_loop!.provider_attempts.fallback).toBe(1);
+  });
+
+  it("surfaces repair success outcome from qc-repair-loop-terminal telemetry", () => {
+    const result = makeQcResult();
+    const telemetry = [
+      { event: "qc-repair-manifest-compiled", packet_count: 1 },
+      { event: "qc-repair-rerun-complete", action: "pass" },
+      { event: "qc-repair-loop-terminal", outcome: "pass", rounds_completed: 1, max_rounds: 2 },
+    ];
+    const summary = computeQcSummary([result], null, telemetry);
+    expect(summary!.repair_loop!.status).toBe("passed");
+    expect(summary!.repair_loop!.rounds_completed).toBe(1);
+    expect(summary!.repair_loop!.packets_compiled).toBe(1);
+    expect(summary!.repair_loop!.rerun_outcome).toBe("pass");
+  });
+
+  it("surfaces max-rounds exhaustion", () => {
+    const result = makeQcResult();
+    const telemetry = [
+      { event: "qc-repair-manifest-compiled", packet_count: 2 },
+      { event: "qc-repair-loop-terminal", outcome: "max-rounds", rounds_completed: 2, max_rounds: 2 },
+    ];
+    const summary = computeQcSummary([result], null, telemetry);
+    expect(summary!.repair_loop!.status).toBe("max-rounds");
+    expect(summary!.max_round_exhausted).toBe(true);
+    expect(summary!.repair_loop!.rounds_completed).toBe(2);
+  });
+
+  it("surfaces medic-referral from failed repair workers", () => {
+    const result = makeQcResult();
+    const telemetry = [
+      { event: "qc-repair-manifest-compiled", packet_count: 1 },
+      { event: "qc-repair-worker-failures", failed_packet_ids: ["pkt-1"] },
+      { event: "qc-repair-loop-terminal", outcome: "medic-referral", rounds_completed: 1, max_rounds: 2 },
+    ];
+    const summary = computeQcSummary([result], null, telemetry);
+    expect(summary!.repair_loop!.status).toBe("medic-referral");
+    expect(summary!.repeated_repair_failures).toBe(true);
+    expect(summary!.repair_loop!.packets_failed).toBe(1);
+  });
+
+  it("surfaces operator-review terminal outcome", () => {
+    const result = makeQcResult();
+    const telemetry = [
+      { event: "qc-repair-loop-terminal", outcome: "operator-review", rounds_completed: 0, max_rounds: 2 },
+    ];
+    const summary = computeQcSummary([result], null, telemetry);
+    expect(summary!.repair_loop!.status).toBe("operator-review");
   });
 });
 

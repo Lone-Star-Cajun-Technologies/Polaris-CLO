@@ -19,7 +19,9 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { WorkerResultContract } from "../types/result-packet.js";
 import { listQcArtifactIds, readQcArtifact } from "../qc/artifacts.js";
-import type { QcAttributionConfidence, QcResult, QcSeverity } from "../qc/types.js";
+import type { QcAttributionConfidence, QcProviderAttemptStatus, QcResult, QcSeverity } from "../qc/types.js";
+import type { ClusterState } from "../cluster-state/types.js";
+import { readClusterStateSync } from "../cluster-state/store.js";
 import { ALL_GATES, readJsonLines } from "./gates.js";
 import type { GateResult } from "./gates.js";
 
@@ -38,6 +40,8 @@ export interface RunArtifacts {
   telemetryEvents: unknown[];
   /** QC results loaded from .polaris/clusters/<cluster-id>/qc/. Empty when no QC data exists. */
   qcResults: QcResult[];
+  /** Cluster state snapshot when a cluster dir exists. */
+  clusterState: ClusterState | null;
 }
 
 // ──────────────────────────────────────────────
@@ -109,6 +113,42 @@ export interface QcProviderSignal {
   finding_count: number;
 }
 
+/** Aggregate QC provider-attempt counts. */
+export interface QcProviderAttemptSummary {
+  total: number;
+  success: number;
+  failure: number;
+  fallback: number;
+  skipped: number;
+  all_providers_failed: boolean;
+}
+
+/** Repair-loop outcome status. */
+export type QcRepairLoopStatus =
+  | "not-configured"
+  | "not-run"
+  | "in-progress"
+  | "passed"
+  | "repaired"
+  | "no-repairable"
+  | "max-rounds"
+  | "all-providers-failed"
+  | "operator-review"
+  | "medic-referral"
+  | "unknown";
+
+/** QC repair loop summary. */
+export interface QcRepairLoopSummary {
+  status: QcRepairLoopStatus;
+  rounds_completed: number;
+  max_rounds: number;
+  packets_compiled: number;
+  packets_completed: number;
+  packets_failed: number;
+  rerun_outcome: "pass" | "findings" | "failed" | "skipped" | null;
+  provider_attempts: QcProviderAttemptSummary;
+}
+
 /** QC scoring summary attached to the DiagnosisReport. */
 export interface QcScoreSummary {
   /** Total findings across all QC runs for this cluster. */
@@ -143,6 +183,16 @@ export interface QcScoreSummary {
   recurring_child_signals: QcChildSignal[];
   /** Recurring quality signals by QC provider. */
   recurring_provider_signals: QcProviderSignal[];
+  /** Repair-loop outcomes and provider attempt telemetry. */
+  repair_loop: QcRepairLoopSummary | null;
+  /** Providers whose findings are mostly unvalidated noise. */
+  noisy_providers: string[];
+  /** Whether any repair worker failed (proxy for repeated repair failure). */
+  repeated_repair_failures: boolean;
+  /** Count of unresolved critical/high findings. */
+  unresolved_high_severity: number;
+  /** Whether the loop exhausted its configured max rounds. */
+  max_round_exhausted: boolean;
 }
 
 export interface DiagnosisReport {
@@ -345,6 +395,7 @@ export function loadRunArtifacts(repoRoot: string, runId: string): RunArtifacts 
   }
 
   const qcResults = loadQcArtifacts(clusterId, repoRoot);
+  const clusterState = clusterId ? readClusterStateSync(clusterId, repoRoot) : null;
 
   return {
     runId,
@@ -356,6 +407,7 @@ export function loadRunArtifacts(repoRoot: string, runId: string): RunArtifacts 
     workerResultContracts,
     telemetryEvents,
     qcResults,
+    clusterState,
   };
 }
 
@@ -405,6 +457,173 @@ function computeQcPenalty(weightedOpenScore: number): number {
   return weightedOpenScore === 0 ? 0 : weightedOpenScore / (weightedOpenScore + 20);
 }
 
+function zeroProviderAttemptSummary(): QcProviderAttemptSummary {
+  return { total: 0, success: 0, failure: 0, fallback: 0, skipped: 0, all_providers_failed: false };
+}
+
+function zeroRepairLoopSummary(): QcRepairLoopSummary {
+  return {
+    status: "not-configured",
+    rounds_completed: 0,
+    max_rounds: 0,
+    packets_compiled: 0,
+    packets_completed: 0,
+    packets_failed: 0,
+    rerun_outcome: null,
+    provider_attempts: zeroProviderAttemptSummary(),
+  };
+}
+
+function mapTerminalOutcome(outcome: string | null): QcRepairLoopStatus {
+  switch (outcome) {
+    case "pass":
+      return "passed";
+    case "no-repairable":
+      return "no-repairable";
+    case "max-rounds":
+      return "max-rounds";
+    case "all-providers-failed":
+      return "all-providers-failed";
+    case "operator-review":
+      return "operator-review";
+    case "medic-referral":
+      return "medic-referral";
+    case "qc-disabled":
+      return "not-configured";
+    default:
+      return "unknown";
+  }
+}
+
+function providerAttemptStatusFromResult(result: QcResult): QcProviderAttemptStatus | undefined {
+  if (result.providerAttempt) return result.providerAttempt.status;
+  if (result.allProvidersFailed || result.status === "failed") return "failure";
+  if (result.status === "skipped") return "skipped";
+  if (result.findings.length > 0 || result.status === "findings" || result.status === "blocked") return "success";
+  if (result.status === "passed") return "success";
+  return undefined;
+}
+
+function computeProviderAttemptSummary(
+  qcResults: QcResult[],
+  telemetryEvents: unknown[],
+): QcProviderAttemptSummary {
+  const summary = zeroProviderAttemptSummary();
+
+  for (const result of qcResults) {
+    const status = providerAttemptStatusFromResult(result);
+    if (status) {
+      summary.total += 1;
+      if (status === "success") summary.success += 1;
+      else if (status === "failure") summary.failure += 1;
+      else if (status === "fallback") summary.fallback += 1;
+      else if (status === "skipped") summary.skipped += 1;
+    }
+    if (result.allProvidersFailed) summary.all_providers_failed = true;
+  }
+
+  // Telemetry fallback events augment the fallback count when providerAttempt was not written.
+  for (const ev of telemetryEvents) {
+    const rec = asRecord(ev);
+    if (rec?.["event"] === "provider-fallback-attempted") summary.fallback += 1;
+  }
+
+  return summary;
+}
+
+function computeQcRepairLoopSummary(
+  qcResults: QcResult[],
+  clusterState: ClusterState | null,
+  telemetryEvents: unknown[],
+  currentState: unknown,
+): QcRepairLoopSummary {
+  if (qcResults.length === 0) return zeroRepairLoopSummary();
+
+  const currentStateRec = asRecord(currentState);
+  const loopState = currentStateRec?.["qc_repair_loop"] as
+    | { terminal_outcome: string | null; current_round: number; max_rounds: number }
+    | undefined;
+  const terminalOutcome =
+    clusterState?.qc_repair_outcome ??
+    (loopState?.terminal_outcome ? String(loopState.terminal_outcome) : null);
+
+  const terminalEvents = telemetryEvents
+    .map(asRecord)
+    .filter((e): e is Record<string, unknown> => e !== undefined && e["event"] === "qc-repair-loop-terminal");
+  const lastTerminal = terminalEvents[terminalEvents.length - 1];
+
+  const manifestEvents = telemetryEvents
+    .map(asRecord)
+    .filter((e): e is Record<string, unknown> => e !== undefined && e["event"] === "qc-repair-manifest-compiled");
+
+  const failureEvents = telemetryEvents
+    .map(asRecord)
+    .filter((e): e is Record<string, unknown> => e !== undefined && e["event"] === "qc-repair-worker-failures");
+  const failedPacketIds = new Set<string>();
+  for (const ev of failureEvents) {
+    const ids = ev["failed_packet_ids"];
+    if (Array.isArray(ids)) {
+      for (const id of ids) {
+        if (typeof id === "string") failedPacketIds.add(id);
+      }
+    }
+  }
+
+  const rerunEvents = telemetryEvents
+    .map(asRecord)
+    .filter((e): e is Record<string, unknown> => e !== undefined && e["event"] === "qc-repair-rerun-complete");
+  const lastRerun = rerunEvents[rerunEvents.length - 1];
+
+  let status: QcRepairLoopStatus;
+  if (terminalOutcome) {
+    status = mapTerminalOutcome(terminalOutcome);
+  } else if (lastTerminal) {
+    status = mapTerminalOutcome(asString(lastTerminal["outcome"]));
+  } else if (loopState) {
+    status = "in-progress";
+  } else {
+    status = "not-run";
+  }
+
+  const roundsCompleted =
+    asNumber(lastTerminal?.["rounds_completed"]) ??
+    (loopState?.current_round ?? 0);
+  const maxRounds =
+    asNumber(lastTerminal?.["max_rounds"]) ??
+    (loopState?.max_rounds ?? 0);
+
+  const packetsCompiled = manifestEvents.reduce((sum, e) => {
+    const n = asNumber(e["packet_count"]);
+    return sum + (n ?? 0);
+  }, 0);
+
+  const packetsFailed = failedPacketIds.size;
+  const packetsCompleted =
+    status === "not-run" || status === "not-configured"
+      ? 0
+      : Math.max(0, packetsCompiled - packetsFailed);
+
+  let rerunOutcome: QcRepairLoopSummary["rerun_outcome"] = null;
+  if (lastRerun) {
+    const action = asString(lastRerun["action"]);
+    if (action === "pass") rerunOutcome = "pass";
+    else if (action === "findings") rerunOutcome = "findings";
+    else if (action === "failure" || action === "error") rerunOutcome = "failed";
+    else if (action === "skipped") rerunOutcome = "skipped";
+  }
+
+  return {
+    status,
+    rounds_completed: roundsCompleted,
+    max_rounds: maxRounds,
+    packets_compiled: packetsCompiled,
+    packets_completed: packetsCompleted,
+    packets_failed: packetsFailed,
+    rerun_outcome: rerunOutcome,
+    provider_attempts: computeProviderAttemptSummary(qcResults, telemetryEvents),
+  };
+}
+
 /**
  * Computes a QcScoreSummary from the QC results loaded for this run.
  * Returns null when no QC results are present.
@@ -421,7 +640,12 @@ function computeQcPenalty(weightedOpenScore: number): number {
  * a critical/high-confidence finding hurts SOL scoring more than a low-severity
  * or uncertain finding.
  */
-export function computeQcSummary(qcResults: QcResult[]): QcScoreSummary | null {
+export function computeQcSummary(
+  qcResults: QcResult[],
+  clusterState: ClusterState | null = null,
+  telemetryEvents: unknown[] = [],
+  currentState: unknown = null,
+): QcScoreSummary | null {
   if (qcResults.length === 0) return null;
 
   let total = 0;
@@ -518,6 +742,13 @@ export function computeQcSummary(qcResults: QcResult[]): QcScoreSummary | null {
     .filter((s) => s.weighted_score > 0)
     .sort((a, b) => b.weighted_score - a.weighted_score || a.provider.localeCompare(b.provider));
 
+  const repairLoop = computeQcRepairLoopSummary(qcResults, clusterState, telemetryEvents, currentState);
+
+  const noisyProviders = Array.from(providerBreakdown.entries())
+    .filter(([, counts]) => counts.total >= 2 && counts.unvalidated / counts.total >= 0.5)
+    .map(([provider]) => provider)
+    .sort();
+
   return {
     total_findings: total,
     blocking_findings: blocking,
@@ -535,6 +766,11 @@ export function computeQcSummary(qcResults: QcResult[]): QcScoreSummary | null {
     category_breakdown: Object.fromEntries(categoryBreakdown),
     recurring_child_signals: recurringChildSignals,
     recurring_provider_signals: recurringProviderSignals,
+    repair_loop: repairLoop,
+    noisy_providers: noisyProviders,
+    repeated_repair_failures: repairLoop.packets_failed > 0 || repairLoop.status === "medic-referral",
+    unresolved_high_severity: openBySeverity.critical + openBySeverity.high,
+    max_round_exhausted: repairLoop.status === "max-rounds",
   };
 }
 
@@ -542,6 +778,14 @@ function asRecord(value: unknown): Record<string, unknown> | undefined {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : undefined;
+}
+
+function asString(value: unknown): string | null {
+  return typeof value === "string" ? value : null;
+}
+
+function asNumber(value: unknown): number | null {
+  return typeof value === "number" ? value : null;
 }
 
 function asStringArray(value: unknown): string[] {
@@ -651,7 +895,12 @@ export function scoreRun(repoRoot: string, runId: string): DiagnosisReport {
   const score = computeScore(gateResults);
   const diagnosisHints = buildDiagnosisHints(failedGates);
   const routerOutcomes = summarizeRouterOutcomes(artifacts);
-  const qcSummary = computeQcSummary(artifacts.qcResults);
+  const qcSummary = computeQcSummary(
+    artifacts.qcResults,
+    artifacts.clusterState,
+    artifacts.telemetryEvents,
+    artifacts.currentState,
+  );
 
   const clusterId =
     artifacts.currentState &&

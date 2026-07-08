@@ -333,9 +333,12 @@ function buildRouterEvidence(artifacts: RunArtifacts): SolRouterEvidence {
 // ──────────────────────────────────────────────
 
 function buildQcEvidence(artifacts: RunArtifacts): SolQcEvidence {
+  const disabledOutcome = artifacts.clusterState?.qc_repair_outcome;
+  const isDisabled = disabledOutcome === "qc-disabled";
+
   if (artifacts.qcResults.length === 0) {
-    return {
-      availability: "future",
+    const base = {
+      availability: isDisabled ? ("unavailable" as const) : ("future" as const),
       qc_run_count: 0,
       total_findings: 0,
       blocking_findings: 0,
@@ -347,10 +350,38 @@ function buildQcEvidence(artifacts: RunArtifacts): SolQcEvidence {
       qc_penalty: 0,
       blocks_delivery: false,
       open_by_severity: { critical: 0, high: 0, medium: 0, low: 0, info: 0 },
+      provider_breakdown: {},
+      repair_loop: {
+        status: isDisabled ? ("not-configured" as const) : ("not-run" as const),
+        rounds_completed: 0,
+        max_rounds: 0,
+        packets_compiled: 0,
+        packets_completed: 0,
+        packets_failed: 0,
+        rerun_outcome: null,
+        provider_attempts: {
+          total: 0,
+          success: 0,
+          failure: 0,
+          fallback: 0,
+          skipped: 0,
+          all_providers_failed: false,
+        },
+      } as SolQcEvidence["repair_loop"],
+      noisy_providers: [],
+      repeated_repair_failures: false,
+      unresolved_high_severity: 0,
+      max_round_exhausted: false,
     };
+    return base;
   }
 
-  const summary = computeQcSummary(artifacts.qcResults);
+  const summary = computeQcSummary(
+    artifacts.qcResults,
+    artifacts.clusterState,
+    artifacts.telemetryEvents,
+    artifacts.currentState,
+  );
   if (!summary) {
     // computeQcSummary only returns null when qcResults is empty; handled above.
     // ponytail: defensive branch to satisfy type narrowing
@@ -367,6 +398,12 @@ function buildQcEvidence(artifacts: RunArtifacts): SolQcEvidence {
       qc_penalty: 0,
       blocks_delivery: false,
       open_by_severity: { critical: 0, high: 0, medium: 0, low: 0, info: 0 },
+      provider_breakdown: {},
+      repair_loop: null,
+      noisy_providers: [],
+      repeated_repair_failures: false,
+      unresolved_high_severity: 0,
+      max_round_exhausted: false,
     };
   }
 
@@ -383,6 +420,12 @@ function buildQcEvidence(artifacts: RunArtifacts): SolQcEvidence {
     qc_penalty: summary.qc_penalty,
     blocks_delivery: summary.blocks_delivery,
     open_by_severity: { ...summary.open_by_severity },
+    provider_breakdown: { ...summary.provider_breakdown },
+    repair_loop: summary.repair_loop,
+    noisy_providers: [...summary.noisy_providers],
+    repeated_repair_failures: summary.repeated_repair_failures,
+    unresolved_high_severity: summary.unresolved_high_severity,
+    max_round_exhausted: summary.max_round_exhausted,
   };
 }
 

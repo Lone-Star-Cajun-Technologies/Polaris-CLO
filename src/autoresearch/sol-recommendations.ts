@@ -18,6 +18,7 @@ import type { SolScoreSnapshot } from "./sol-history.js";
 import { generateReport } from "./sol-report.js";
 import type { SolReportGroupBy } from "./sol-report.js";
 import type { AutresearchProposal, ArtifactType } from "./proposal.js";
+import type { SolEvidence } from "../types/sol-evidence.js";
 
 // ──────────────────────────────────────────────
 // Public types
@@ -54,7 +55,8 @@ export interface SolRecommendation {
     | "trust_threshold"
     | "cost_threshold"
     | "runtime_improvement"
-    | "scoring_rule";
+    | "scoring_rule"
+    | "qc_follow_up";
   /** Review-gated action category: analyze (study) or implement (change). */
   action_type: "analyze" | "implement";
   /** Affected routing dimensions. */
@@ -392,6 +394,161 @@ export function formatRecommendationsCli(report: RecommendationsReport): string 
     lines.push(`  Affected:    ${fmtAffected(r.affected)}`);
     lines.push(`  Confidence:  ${(r.confidence * 100).toFixed(1)}%`);
     lines.push(`  Evidence:    ${r.evidence.group_key} | mean=${fmtScore(r.evidence.mean_composite)} min=${fmtScore(r.evidence.min_composite)} max=${fmtScore(r.evidence.max_composite)} count=${r.evidence.count}`);
+    lines.push(`  Action:      ${r.proposed_action}`);
+    lines.push(`  Rationale:   ${r.rationale}`);
+    lines.push("");
+  }
+
+  return lines.join("\n");
+}
+
+// ──────────────────────────────────────────────
+// QC follow-up recommendations
+// ──────────────────────────────────────────────
+
+export interface QcRecommendationsReport {
+  generated_at: string;
+  evidence_run_id: string;
+  recommendations: SolRecommendation[];
+}
+
+function makeQcRecommendation(
+  id: string,
+  category: SolRecommendation["category"],
+  actionType: SolRecommendation["action_type"],
+  affected: RecommendationAffected,
+  proposedAction: string,
+  rationale: string,
+  confidence: number,
+  evidenceRunId: string,
+): SolRecommendation {
+  return {
+    id,
+    category,
+    action_type: actionType,
+    affected,
+    proposed_action: proposedAction,
+    confidence: clamp01(confidence),
+    evidence: {
+      group_key: `run_id=${evidenceRunId}`,
+      grouped_by: ["run_id"],
+      count: 1,
+      mean_composite: null,
+      min_composite: null,
+      max_composite: null,
+      mean_foreman_composite: null,
+      mean_worker_composite: null,
+      run_ids: [evidenceRunId],
+    },
+    rationale,
+  };
+}
+
+/**
+ * Generate QC repair-loop follow-up recommendations from a single run's
+ * SOL evidence. These are advisory signals for noisy providers, repeated
+ * repair failures, unresolved high-severity findings, and max-round exhaustion.
+ */
+export function generateQcRecommendations(evidence: SolEvidence): QcRecommendationsReport {
+  const recommendations: SolRecommendation[] = [];
+  const qc = evidence.qc;
+  const runId = evidence.run_id;
+
+  if (qc.availability !== "available") {
+    return {
+      generated_at: new Date().toISOString(),
+      evidence_run_id: runId,
+      recommendations,
+    };
+  }
+
+  for (const provider of qc.noisy_providers) {
+    const counts = qc.provider_breakdown[provider] ?? { total: 0, blocking: 0, unvalidated: 0 };
+    const confidence = counts.total > 0 ? counts.unvalidated / counts.total : 0;
+    recommendations.push(
+      makeQcRecommendation(
+        `qc-noisy-provider:${provider}`,
+        "provider_policy",
+        "analyze",
+        { provider },
+        `Review QC provider '${provider}' for noisy/unvalidated findings; consider raising attribution confidence thresholds or disabling the provider for high-risk routes.`,
+        `${counts.unvalidated}/${counts.total} findings from '${provider}' are unvalidated noise.`,
+        confidence,
+        runId,
+      ),
+    );
+  }
+
+  if (qc.repeated_repair_failures) {
+    const failed = qc.repair_loop?.packets_failed ?? 0;
+    recommendations.push(
+      makeQcRecommendation(
+        `qc-repair-failure:${runId}`,
+        "qc_follow_up",
+        "implement",
+        {},
+        "Repeated repair worker failures detected — inspect repair packet scope, validation commands, and Medic referral path.",
+        `${failed} repair packet(s) failed; consider tightening acceptance criteria or escalating to Medic.`,
+        0.9,
+        runId,
+      ),
+    );
+  }
+
+  if (qc.unresolved_high_severity > 0) {
+    recommendations.push(
+      makeQcRecommendation(
+        `qc-unresolved-high-severity:${runId}`,
+        "qc_follow_up",
+        "analyze",
+        {},
+        `${qc.unresolved_high_severity} unresolved critical/high QC findings remain — triage before delivery.`,
+        `${qc.unresolved_high_severity} critical/high findings are still open after repair loop.`,
+        Math.min(1, qc.unresolved_high_severity / 5),
+        runId,
+      ),
+    );
+  }
+
+  if (qc.max_round_exhausted) {
+    recommendations.push(
+      makeQcRecommendation(
+        `qc-max-rounds:${runId}`,
+        "qc_follow_up",
+        "analyze",
+        {},
+        "QC repair loop exhausted max rounds — review provider noise, repair packet scope, and escalation policy.",
+        `Repair loop reached round ${qc.repair_loop?.rounds_completed ?? 0}/${qc.repair_loop?.max_rounds ?? 0} without passing.`,
+        0.85,
+        runId,
+      ),
+    );
+  }
+
+  return {
+    generated_at: new Date().toISOString(),
+    evidence_run_id: runId,
+    recommendations,
+  };
+}
+
+export function formatQcRecommendations(report: QcRecommendationsReport): string {
+  const lines: string[] = [];
+  lines.push("SOL QC Follow-Up Recommendations");
+  lines.push(`Generated: ${report.generated_at}`);
+  lines.push(`Run: ${report.evidence_run_id}`);
+  lines.push("");
+
+  if (report.recommendations.length === 0) {
+    lines.push("No QC follow-up signals detected.");
+    return lines.join("\n") + "\n";
+  }
+
+  for (const r of report.recommendations) {
+    lines.push(`[${r.action_type}] ${r.id}`);
+    lines.push(`  Category:    ${r.category}`);
+    lines.push(`  Affected:    ${fmtAffected(r.affected)}`);
+    lines.push(`  Confidence:  ${(r.confidence * 100).toFixed(1)}%`);
     lines.push(`  Action:      ${r.proposed_action}`);
     lines.push(`  Rationale:   ${r.rationale}`);
     lines.push("");

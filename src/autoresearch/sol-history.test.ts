@@ -51,6 +51,7 @@ function makeReport(runId: string, compositeScore: number | null = 0.85): SolSco
       scope: dim("scope"),
       completion: dim("completion"),
       recovery: dim("recovery"),
+      qc_repair_loop: dim("qc_repair_loop"),
     },
     workers: {},
     run_composite_score: compositeScore,

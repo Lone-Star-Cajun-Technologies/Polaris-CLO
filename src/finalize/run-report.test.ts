@@ -47,6 +47,11 @@ function makeQcSummary(overrides: Partial<QcScoreSummary> = {}): QcScoreSummary 
     category_breakdown: {},
     recurring_child_signals: [],
     recurring_provider_signals: [],
+    repair_loop: null,
+    noisy_providers: [],
+    repeated_repair_failures: false,
+    unresolved_high_severity: 0,
+    max_round_exhausted: false,
     ...overrides,
   };
 }

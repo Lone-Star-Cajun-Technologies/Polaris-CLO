@@ -252,6 +252,52 @@ function scoreForemanCompletion(ev: SolEvidence): SolDimensionScore {
 }
 
 /**
+ * qc_repair_loop: Observe QC repair loop outcomes.
+ *
+ * Scores repair loop terminal states without treating provider findings as
+ * ground truth. Best outcome = loop passed or no repairable findings.
+ * Worst = all providers failed, operator review required, or Medic referral.
+ * Skipped when QC is not configured or no repair loop ran.
+ */
+function scoreForemanQcRepairLoop(ev: SolEvidence): SolDimensionScore {
+  if (ev.qc.availability === "future" || ev.qc.availability === "unavailable") {
+    return skipped("qc_repair_loop", `QC evidence availability=${ev.qc.availability}`);
+  }
+
+  const loop = ev.qc.repair_loop;
+  if (!loop) {
+    return skipped("qc_repair_loop", "no QC repair loop data available");
+  }
+
+  const { status, rounds_completed, max_rounds, packets_compiled, packets_failed, rerun_outcome } = loop;
+
+  switch (status) {
+    case "passed":
+    case "repaired":
+    case "no-repairable":
+      return dim("qc_repair_loop", 1.0, "high", {
+        detail: `status=${status}, rounds=${rounds_completed}/${max_rounds}, packets=${packets_compiled}, rerun=${rerun_outcome ?? "n/a"}`,
+      });
+    case "max-rounds":
+      return dim("qc_repair_loop", 0.5, "high", {
+        detail: `status=${status}, rounds=${rounds_completed}/${max_rounds}, packets=${packets_compiled}`,
+      });
+    case "all-providers-failed":
+    case "operator-review":
+    case "medic-referral":
+      return dim("qc_repair_loop", 0.0, "high", {
+        detail: `status=${status}, failed_packets=${packets_failed}, rerun=${rerun_outcome ?? "n/a"}`,
+      });
+    case "not-run":
+    case "not-configured":
+    case "in-progress":
+    case "unknown":
+    default:
+      return skipped("qc_repair_loop", `QC repair loop status=${status}`);
+  }
+}
+
+/**
  * recovery: State repair detection.
  * Score = 1.0 when no medic/repair artifacts detected; 0.0 when repair required.
  */
@@ -446,11 +492,12 @@ export function computeForemanScore(ev: SolEvidence): SolForemanScoreReport {
   const scopeDim = scoreForemanScope(ev);
   const completionDim = scoreForemanCompletion(ev);
   const recoveryDim = scoreForemanRecovery(ev);
+  const qcRepairLoopDim = scoreForemanQcRepairLoop(ev);
 
   const dims = [
     tokenDim, durationDim, interventionDim, preAnalysisDim,
     dependencyDim, dispatchDim, evidenceValidationDim, scopeDim,
-    completionDim, recoveryDim,
+    completionDim, recoveryDim, qcRepairLoopDim,
   ];
   const { score: composite_score, confidence: composite_confidence } = composite(dims);
 
@@ -467,6 +514,7 @@ export function computeForemanScore(ev: SolEvidence): SolForemanScoreReport {
     scope: scopeDim,
     completion: completionDim,
     recovery: recoveryDim,
+    qc_repair_loop: qcRepairLoopDim,
   };
 }
 

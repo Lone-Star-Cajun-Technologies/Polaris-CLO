@@ -25,6 +25,7 @@ import { aggregateSolEvidence } from "./sol-evidence-loader.js";
 import type { RunArtifacts } from "./score.js";
 import type { WorkerResultContract } from "../types/result-packet.js";
 import type { QcResult } from "../qc/types.js";
+import type { ClusterState } from "../cluster-state/types.js";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -39,6 +40,7 @@ function emptyArtifacts(overrides: Partial<RunArtifacts> = {}): RunArtifacts {
     workerResultContracts: [],
     telemetryEvents: [],
     qcResults: [],
+    clusterState: null,
     ...overrides,
   };
 }
@@ -578,6 +580,122 @@ describe("qc evidence", () => {
       }),
     );
     expect(ev.qc.blocks_delivery).toBe(true);
+  });
+});
+
+function makeClusterState(overrides: Partial<ClusterState> = {}): ClusterState {
+  return {
+    schema_version: "1.0",
+    cluster_id: "POL-000",
+    state_generation: 1,
+    child_states: [],
+    claim_metadata: {},
+    packet_pointers: {},
+    result_pointers: {},
+    validation_results: {},
+    commits: {},
+    tracker_mutations: {},
+    blockers: [],
+    qc_runs: {},
+    ...overrides,
+  } as ClusterState;
+}
+
+// ── QC repair-loop evidence ──────────────────────────────────────────────────
+
+describe("qc repair loop evidence", () => {
+  it("marks no QC configured when clusterState reports qc-disabled", () => {
+    const ev = aggregateSolEvidence(
+      emptyArtifacts({
+        clusterState: makeClusterState({ qc_repair_outcome: "qc-disabled" }),
+      }),
+    );
+    expect(ev.qc.availability).toBe("unavailable");
+    expect(ev.qc.repair_loop?.status).toBe("not-configured");
+  });
+
+  it("marks QC ran with no findings as not-run when no repair loop telemetry", () => {
+    const ev = aggregateSolEvidence(
+      emptyArtifacts({ qcResults: [makeQcResult({ findings: [] })] }),
+    );
+    expect(ev.qc.availability).toBe("available");
+    expect(ev.qc.repair_loop?.status).toBe("not-run");
+    expect(ev.qc.total_findings).toBe(0);
+  });
+
+  it("surfaces provider failure via allProvidersFailed", () => {
+    const ev = aggregateSolEvidence(
+      emptyArtifacts({
+        qcResults: [makeQcResult({ allProvidersFailed: true, status: "failed" })],
+      }),
+    );
+    expect(ev.qc.repair_loop?.provider_attempts.all_providers_failed).toBe(true);
+    expect(ev.qc.repair_loop?.provider_attempts.failure).toBe(1);
+  });
+
+  it("surfaces repair success from terminal telemetry", () => {
+    const ev = aggregateSolEvidence(
+      emptyArtifacts({
+        qcResults: [makeQcResult()],
+        telemetryEvents: [
+          { event: "qc-repair-manifest-compiled", packet_count: 1 },
+          { event: "qc-repair-rerun-complete", action: "pass" },
+          { event: "qc-repair-loop-terminal", outcome: "pass", rounds_completed: 1, max_rounds: 2 },
+        ],
+      }),
+    );
+    expect(ev.qc.repair_loop?.status).toBe("passed");
+    expect(ev.qc.repair_loop?.rounds_completed).toBe(1);
+    expect(ev.qc.repair_loop?.packets_compiled).toBe(1);
+    expect(ev.qc.repair_loop?.rerun_outcome).toBe("pass");
+  });
+
+  it("surfaces max-rounds exhaustion", () => {
+    const ev = aggregateSolEvidence(
+      emptyArtifacts({
+        qcResults: [makeQcResult()],
+        telemetryEvents: [
+          { event: "qc-repair-manifest-compiled", packet_count: 2 },
+          { event: "qc-repair-loop-terminal", outcome: "max-rounds", rounds_completed: 2, max_rounds: 2 },
+        ],
+      }),
+    );
+    expect(ev.qc.repair_loop?.status).toBe("max-rounds");
+    expect(ev.qc.max_round_exhausted).toBe(true);
+  });
+
+  it("surfaces medic referral", () => {
+    const ev = aggregateSolEvidence(
+      emptyArtifacts({
+        qcResults: [makeQcResult()],
+        telemetryEvents: [
+          { event: "qc-repair-manifest-compiled", packet_count: 1 },
+          { event: "qc-repair-worker-failures", failed_packet_ids: ["pkt-1"] },
+          { event: "qc-repair-loop-terminal", outcome: "medic-referral", rounds_completed: 1, max_rounds: 2 },
+        ],
+      }),
+    );
+    expect(ev.qc.repair_loop?.status).toBe("medic-referral");
+    expect(ev.qc.repeated_repair_failures).toBe(true);
+  });
+
+  it("maps provider breakdown", () => {
+    const findings: QcResult["findings"] = [
+      {
+        findingId: "f1",
+        severity: "high",
+        title: "Open high",
+        fixAvailable: false,
+        autofixEligible: false,
+        attribution: { confidence: "high", reason: "commit-line-match" },
+        status: "open",
+      },
+    ];
+    const ev = aggregateSolEvidence(
+      emptyArtifacts({ qcResults: [makeQcResult({ provider: "coderabbit", findings })] }),
+    );
+    expect(ev.qc.provider_breakdown["coderabbit"]!.total).toBe(1);
+    expect(ev.qc.provider_breakdown["coderabbit"]!.blocking).toBe(1);
   });
 });
 
