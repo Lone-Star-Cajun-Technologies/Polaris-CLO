@@ -66,7 +66,7 @@ import {
 import { resolveProviderAndMode, assertProviderAllowedForRole } from "./dispatch.js";
 import { decideWorkerRoute } from "./router/index.js";
 import { selectChildSlotClaims, type SlotClaim } from "../runtime/scheduling/child-selector.js";
-import { loadTrackerAdapter } from "../tracker/index.js";
+import { loadTrackerAdapter, loadTrackerGraph } from "../tracker/index.js";
 import { LifecycleTransitionService } from "../tracker/lifecycle-transition.js";
 import { LocalGraph } from "../tracker/local-graph.js";
 
@@ -1009,6 +1009,62 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
   // persisted to disk, so a fresh loop start always begins clean.
   const lifecycle = new WorkerLifecycleManager(maxConcurrentWorkers);
   lifecycle.forceReleaseAll();
+
+  // ── Auto-sync pre-flight: fetch missing issue bodies from tracker ────────
+  // When child issue bodies are absent or lack a ## Scope section, dispatch
+  // hard-fails with "empty allowed_scope". Attempt a silent tracker sync-in
+  // before the loop starts so operators don't need to run it manually.
+  if (!dryRun) {
+    const openChildrenNeedingScope = state.open_children.filter((childId) => {
+      // Skip analyze children — they never need scope (no impl packets)
+      if (isAnalyzeChild(childId, state)) {
+        return false;
+      }
+
+      // Resolve child body: prefer cached meta body, then fall back to snapshot
+      const cachedChildBody = state.open_children_meta?.[childId]?.body;
+      const childBody = (cachedChildBody && cachedChildBody.trim().length > 0)
+        ? cachedChildBody
+        : readBodyFromClusterSnapshot(state.cluster_id, childId, repoRoot) ?? '';
+
+      // If body is completely absent, treat as needing scope sync-in
+      if (childBody.trim().length === 0) {
+        return true;
+      }
+
+      // Parse child body for scope
+      const { scope: childScope } = parseIssueBody(childBody);
+      if (childScope.length > 0) {
+        return false; // Child has scope, no sync needed
+      }
+
+      // Fallback: check parent/cluster-root body for scope
+      const cachedParentBody = state.open_children_meta?.[state.cluster_id]?.body;
+      const parentBody = (cachedParentBody && cachedParentBody.trim().length > 0)
+        ? cachedParentBody
+        : readBodyFromClusterSnapshot(state.cluster_id, state.cluster_id, repoRoot) ?? '';
+      const { scope: parentScope } = parseIssueBody(parentBody);
+
+      // If parent has scope, child can inherit — no sync needed
+      // Otherwise, child truly needs scope sync-in
+      return parentScope.length === 0;
+    });
+
+    if (openChildrenNeedingScope.length > 0) {
+      process.stderr.write(
+        `[polaris] ${openChildrenNeedingScope.length} children missing scope — attempting tracker sync-in...\n`,
+      );
+      try {
+        await loadTrackerGraph(config, state.cluster_id);
+        process.stderr.write(`[polaris] sync-in complete.\n`);
+      } catch (syncErr) {
+        process.stderr.write(
+          `[polaris] sync-in failed (${syncErr instanceof Error ? syncErr.message : String(syncErr)}). ` +
+          `Run 'polaris tracker sync-in ${state.cluster_id}' manually and retry.\n`,
+        );
+      }
+    }
+  }
 
   // ── Main dispatch loop ───────────────────────────────────────────────────
   // eslint-disable-next-line no-constant-condition

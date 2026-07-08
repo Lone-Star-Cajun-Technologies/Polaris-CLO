@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { Command } from "commander";
 import { runAgentSetup } from "./agent-setup.js";
@@ -51,7 +51,24 @@ function resolveStateFile(repoRoot: string, explicit?: string): string {
 
   const taskchainPath = join(repoRoot, ".taskchain_artifacts", "polaris-run", "current-state.json");
   const polarisPath = join(repoRoot, ".polaris", "runs", "current-state.json");
-  if (existsSync(taskchainPath)) return taskchainPath;
+
+  // Prefer canonical cluster-scoped state.json when it exists — finalize
+  // rejects the compatibility/debug taskchain path as the sole state source.
+  // Read cluster_id from the taskchain path if available, then check the
+  // canonical path bootstrapped alongside it.
+  if (existsSync(taskchainPath)) {
+    try {
+      const raw = JSON.parse(readFileSync(taskchainPath, "utf-8")) as Record<string, unknown>;
+      const clusterId = typeof raw["cluster_id"] === "string" ? raw["cluster_id"] : undefined;
+      if (clusterId) {
+        const canonicalPath = join(repoRoot, ".polaris", "clusters", clusterId, "state.json");
+        if (existsSync(canonicalPath)) return canonicalPath;
+      }
+    } catch {
+      // Fall through to taskchain path
+    }
+    return taskchainPath;
+  }
   if (existsSync(polarisPath)) return polarisPath;
   return taskchainPath;
 }

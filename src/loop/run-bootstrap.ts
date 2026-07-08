@@ -23,7 +23,7 @@
 
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, renameSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { writeStateAtomic, type LoopState } from "./checkpoint.js";
 import {
   appendDispatchViolationEvent,
@@ -311,6 +311,21 @@ export function runLoopBootstrapInit(options: BootstrapInitOptions): Promise<voi
   mkdirSync(dirname(stateFile), { recursive: true });
 
   const sha = writeStateAtomic(stateFile, initialState);
+
+  // Also write to the canonical cluster-scoped path so `polaris finalize`
+  // can locate it without requiring --state-file. finalize rejects the
+  // .taskchain_artifacts compatibility path as the sole state source.
+  const canonicalStatePath = resolve(repoRoot, ".polaris", "clusters", clusterId, "state.json");
+  if (resolve(stateFile) !== canonicalStatePath) {
+    try {
+      mkdirSync(dirname(canonicalStatePath), { recursive: true });
+      writeStateAtomic(canonicalStatePath, initialState);
+    } catch (error) {
+      process.stderr.write(
+        `Warning: Could not write canonical state to ${canonicalStatePath}: ${error instanceof Error ? error.message : String(error)}\n`,
+      );
+    }
+  }
 
   const summary = {
     run_id: runId,
