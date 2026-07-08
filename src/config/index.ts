@@ -1,4 +1,4 @@
-export type { PolarisConfig, ExecutionConfig, ProviderConfig } from "./schema.js";
+export type { PolarisConfig, ExecutionConfig, ProviderConfig, SolConfig, SolHistoryConfig } from "./schema.js";
 export { loadConfig, PolarisConfigError } from "./loader.js";
 export { createConfigCommand, getResolvedConfigJson, runConfigShow, runConfigDoctor } from "./show.js";
 export type { ConfigShowOptions, ConfigDoctorOptions, RunConfigShow, RunConfigDoctor } from "./show.js";

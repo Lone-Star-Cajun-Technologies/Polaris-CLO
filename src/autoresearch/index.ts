@@ -9,6 +9,10 @@ export { routeProposals } from "./routing.js";
 export type { ProposalIssueResult, RouteProposalsResult, RouteProposalsOptions } from "./routing.js";
 export { aggregateSolEvidence } from "./sol-evidence-loader.js";
 export { computeForemanScore, computeWorkerScore, computeSolScoreReport } from "./sol-scorer.js";
+export { appendSnapshot, loadSnapshots, buildSnapshot, getHistoryFilePath } from "./sol-history.js";
+export type { SolScoreSnapshot } from "./sol-history.js";
+export { generateReport, formatReportCli } from "./sol-report.js";
+export type { SolReport, SolGroupSummary, SolReportGroupBy, SolReportOptions } from "./sol-report.js";
 export type {
   SolDimensionScore,
   SolForemanScoreReport,

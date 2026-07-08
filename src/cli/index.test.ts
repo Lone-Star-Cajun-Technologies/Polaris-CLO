@@ -253,4 +253,28 @@ describe("polaris public CLI", () => {
     expect(result.stderr).toContain("Usage: polaris loop");
     expect(result.stderr).toContain("Commands:");
   });
+
+  it("exposes sol history subcommand group", async () => {
+    const result = await runCommand(["sol", "history", "--help"]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("save");
+    expect(result.stdout).toContain("report");
+  });
+
+  it("exposes sol history save help", async () => {
+    const result = await runCommand(["sol", "history", "save", "--help"]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("--history-path");
+  });
+
+  it("exposes sol history report help with grouping options", async () => {
+    const result = await runCommand(["sol", "history", "report", "--help"]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("--group-by");
+    expect(result.stdout).toContain("--window-days");
+    expect(result.stdout).toContain("--json");
+  });
 });

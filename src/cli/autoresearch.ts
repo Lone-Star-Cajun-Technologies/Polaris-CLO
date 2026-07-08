@@ -6,6 +6,9 @@ import { loadDiagnosisReport, buildProposals } from "../autoresearch/proposal.js
 import { routeProposals } from "../autoresearch/routing.js";
 import { aggregateSolEvidence } from "../autoresearch/sol-evidence-loader.js";
 import { computeSolScoreReport } from "../autoresearch/sol-scorer.js";
+import { appendSnapshot, loadSnapshots, buildSnapshot } from "../autoresearch/sol-history.js";
+import { generateReport, formatReportCli } from "../autoresearch/sol-report.js";
+import type { SolReportGroupBy } from "../autoresearch/sol-report.js";
 
 export interface SolCommandOptions {
   repoRoot: string;
@@ -154,6 +157,78 @@ export function createSolCommand(options: SolCommandOptions): Command {
         }
       },
     );
+
+  // ── history subcommand group ──
+  const history = new Command("history")
+    .description("SOL historical performance storage and reports");
+
+  history
+    .command("save <run-id>")
+    .description("Score a run and persist the SOL score snapshot to local history")
+    .option("-r, --repo-root <path>", "Repository root", repoRoot)
+    .option("--history-path <path>", "Custom history directory (relative to repo root)")
+    .action((runId: string, cmdOptions: { repoRoot: string; historyPath?: string }) => {
+      const root = resolve(cmdOptions.repoRoot ?? repoRoot);
+      try {
+        assertPolarisDevContext(root);
+      } catch (err) {
+        process.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
+        process.exit(1);
+      }
+
+      try {
+        const artifacts = loadRunArtifacts(root, runId);
+        const evidence = aggregateSolEvidence(artifacts);
+        const report = computeSolScoreReport(evidence);
+        const workerIds = evidence.children.map((c) => c.worker_id);
+        const snapshot = buildSnapshot(report, evidence.grouping_keys, workerIds);
+        const path = appendSnapshot(root, snapshot, cmdOptions.historyPath);
+        process.stdout.write(`Snapshot saved to ${path}\n`);
+      } catch (err) {
+        process.stderr.write(
+          `sol history save error: ${err instanceof Error ? err.message : String(err)}\n`,
+        );
+        process.exit(1);
+      }
+    });
+
+  history
+    .command("report")
+    .description("Generate a report from SOL historical snapshots")
+    .option("-r, --repo-root <path>", "Repository root", repoRoot)
+    .option("--history-path <path>", "Custom history directory (relative to repo root)")
+    .option("--group-by <dims>", "Comma-separated grouping dimensions (repo,route,task_type,role,risk,provider,model,worker_id,run_id,time_window)", "run_id")
+    .option("--window-days <days>", "Time window size in days for time_window grouping", "7")
+    .option("--json", "Output raw JSON (default: human-readable table)")
+    .action((cmdOptions: { repoRoot: string; historyPath?: string; groupBy: string; windowDays: string; json?: boolean }) => {
+      const root = resolve(cmdOptions.repoRoot ?? repoRoot);
+      try {
+        assertPolarisDevContext(root);
+      } catch (err) {
+        process.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
+        process.exit(1);
+      }
+
+      try {
+        const snapshots = loadSnapshots(root, cmdOptions.historyPath);
+        const groupBy = cmdOptions.groupBy.split(",").filter(Boolean) as SolReportGroupBy[];
+        const windowDays = parseInt(cmdOptions.windowDays, 10) || 7;
+        const report = generateReport(snapshots, { groupBy, windowDays });
+
+        if (cmdOptions.json) {
+          process.stdout.write(JSON.stringify(report) + "\n");
+        } else {
+          process.stdout.write(formatReportCli(report));
+        }
+      } catch (err) {
+        process.stderr.write(
+          `sol history report error: ${err instanceof Error ? err.message : String(err)}\n`,
+        );
+        process.exit(1);
+      }
+    });
+
+  sol.addCommand(history);
 
   return sol;
 }
