@@ -1,6 +1,12 @@
-import type { IQcProvider, QcMetricsPayload, QcProviderOutput, QcReviewScope } from "../provider.js";
+import type {
+  IQcProvider,
+  QcMetricsPayload,
+  QcProviderOutput,
+  QcReviewScope,
+} from "../provider.js";
 import type { QcAttribution, QcFinding, QcResult, QcSeverity } from "../types.js";
 import { maxSeverity, normalizeSeverity } from "../severity.js";
+import type { QcProviderConfig } from "../../config/schema.js";
 
 /**
  * Loose shape for CodeRabbit-style review output. We parse defensively because
@@ -267,12 +273,28 @@ export class CodeRabbitQcProvider implements IQcProvider {
     "metrics-import",
   ] as const;
 
+  constructor(private readonly config?: QcProviderConfig) {}
+
   canReview(scope: QcReviewScope): boolean {
     if (scope.prUrl) return true;
     return Boolean(scope.branch);
   }
 
   buildReviewCommand(scope: QcReviewScope): { command: string; args: string[] } {
+    const execution = this.config?.execution;
+    if (execution) {
+      const args: string[] = execution.args ? [...execution.args] : [];
+      if (execution.configPath) {
+        args.push("--config", execution.configPath);
+      }
+      if (scope.prUrl) {
+        args.push("--pr-url", scope.prUrl);
+      } else if (scope.branch) {
+        args.push("--branch", scope.branch);
+      }
+      return { command: execution.command, args };
+    }
+
     if (scope.prUrl) {
       return { command: "coderabbit", args: ["review", "--agent", "--pr-url", scope.prUrl] };
     }

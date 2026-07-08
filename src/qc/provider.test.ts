@@ -1,9 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { QcProviderRegistry } from "./provider.js";
 import { CodeRabbitQcProvider } from "./providers/coderabbit.js";
+import { createDefaultQcRegistry, createQcRegistry } from "./registry.js";
 import fullFixture from "./fixtures/coderabbit-full.json";
 import partialFixture from "./fixtures/coderabbit-partial.json";
 import unknownFixture from "./fixtures/coderabbit-unknown.json";
+import type { QcConfig, QcProviderConfig } from "../config/schema.js";
 
 describe("QcProviderRegistry", () => {
   it("registers and retrieves providers by name", () => {
@@ -222,5 +224,153 @@ describe("CodeRabbitQcProvider", () => {
     expect(result.findings).toHaveLength(2);
     expect(result.findings[0].severity).toBe("high");
     expect(result.findings[1].severity).toBe("low");
+  });
+
+  it("uses configured execution command and args when present", () => {
+    const provider = new CodeRabbitQcProvider({
+      name: "coderabbit",
+      mode: "local",
+      execution: {
+        command: "cr",
+        args: ["review", "--agent"],
+        output: { format: "jsonl", parser: "coderabbit" },
+        configPath: ".polaris/coderabbit.config.yaml",
+      },
+    } as QcProviderConfig);
+
+    const command = provider.buildReviewCommand({
+      clusterId: "POL-470",
+      runId: "polaris-run-pol-470",
+      branch: "feature-branch",
+    });
+
+    expect(command.command).toBe("cr");
+    expect(command.args).toEqual([
+      "review",
+      "--agent",
+      "--config",
+      ".polaris/coderabbit.config.yaml",
+      "--branch",
+      "feature-branch",
+    ]);
+  });
+
+  it("falls back to default command when no execution config is provided", () => {
+    const provider = new CodeRabbitQcProvider();
+    const command = provider.buildReviewCommand({
+      clusterId: "POL-470",
+      runId: "polaris-run-pol-470",
+      branch: "feature-branch",
+    });
+
+    expect(command.command).toBe("coderabbit");
+    expect(command.args).toEqual(["review", "--agent", "--branch", "feature-branch"]);
+  });
+});
+
+describe("createDefaultQcRegistry", () => {
+  it("registers the built-in CodeRabbit provider", () => {
+    const registry = createDefaultQcRegistry();
+    expect(registry.has("coderabbit")).toBe(true);
+  });
+});
+
+describe("createQcRegistry", () => {
+  it("returns an empty registry when QC is disabled", () => {
+    const config: QcConfig = {
+      enabled: false,
+      defaultTrigger: "completed-cluster",
+      providers: {
+        coderabbit: { name: "coderabbit", mode: "local" } as QcProviderConfig,
+      },
+      severityThresholds: { block: "high", repair: "medium", followUp: "low" },
+      autoFix: "disabled",
+      repairRouting: "route",
+      artifactRetention: { retainRawOutput: false, maxRuns: 10 },
+      routes: {},
+    };
+    const registry = createQcRegistry(config);
+    expect(registry.list()).toHaveLength(0);
+  });
+
+  it("registers enabled providers from config", () => {
+    const config: QcConfig = {
+      enabled: true,
+      defaultTrigger: "completed-cluster",
+      providers: {
+        coderabbit: { name: "coderabbit", mode: "local" } as QcProviderConfig,
+      },
+      severityThresholds: { block: "high", repair: "medium", followUp: "low" },
+      autoFix: "disabled",
+      repairRouting: "route",
+      artifactRetention: { retainRawOutput: false, maxRuns: 10 },
+      routes: {},
+    };
+    const registry = createQcRegistry(config);
+    expect(registry.has("coderabbit")).toBe(true);
+  });
+
+  it("skips disabled providers", () => {
+    const config: QcConfig = {
+      enabled: true,
+      defaultTrigger: "completed-cluster",
+      providers: {
+        coderabbit: { name: "coderabbit", mode: "local", enabled: false } as QcProviderConfig,
+      },
+      severityThresholds: { block: "high", repair: "medium", followUp: "low" },
+      autoFix: "disabled",
+      repairRouting: "route",
+      artifactRetention: { retainRawOutput: false, maxRuns: 10 },
+      routes: {},
+    };
+    const registry = createQcRegistry(config);
+    expect(registry.has("coderabbit")).toBe(false);
+  });
+
+  it("skips unknown provider names", () => {
+    const config: QcConfig = {
+      enabled: true,
+      defaultTrigger: "completed-cluster",
+      providers: {
+        unknown: { name: "unknown", mode: "local" } as QcProviderConfig,
+      },
+      severityThresholds: { block: "high", repair: "medium", followUp: "low" },
+      autoFix: "disabled",
+      repairRouting: "route",
+      artifactRetention: { retainRawOutput: false, maxRuns: 10 },
+      routes: {},
+    };
+    const registry = createQcRegistry(config);
+    expect(registry.list()).toHaveLength(0);
+  });
+
+  it("wires provider-agnostic execution config into the registered provider", () => {
+    const config: QcConfig = {
+      enabled: true,
+      defaultTrigger: "completed-cluster",
+      providers: {
+        coderabbit: {
+          name: "coderabbit",
+          mode: "local",
+          execution: {
+            command: "custom-cr",
+            args: ["review", "--agent"],
+          },
+        } as QcProviderConfig,
+      },
+      severityThresholds: { block: "high", repair: "medium", followUp: "low" },
+      autoFix: "disabled",
+      repairRouting: "route",
+      artifactRetention: { retainRawOutput: false, maxRuns: 10 },
+      routes: {},
+    };
+    const registry = createQcRegistry(config);
+    const provider = registry.get("coderabbit")!;
+    const command = provider.buildReviewCommand({
+      clusterId: "POL-1",
+      runId: "run-1",
+      branch: "main",
+    });
+    expect(command.command).toBe("custom-cr");
   });
 });
