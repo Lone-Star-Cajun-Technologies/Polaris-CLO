@@ -6,8 +6,9 @@ export function stepCreatePr(
   branch: string,
   state: LoopState,
   draft: boolean,
+  authoritativeChildCount?: number,
 ): string {
-  const prUrl = createDraftPr({ repoRoot, branch, state, draft });
+  const prUrl = createDraftPr({ repoRoot, branch, state, draft, authoritativeChildCount });
   console.log(`PR created: ${prUrl}`);
   return prUrl;
 }

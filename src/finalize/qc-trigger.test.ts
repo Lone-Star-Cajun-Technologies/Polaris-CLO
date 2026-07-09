@@ -50,6 +50,19 @@ function writeCanonicalState(dir: string, clusterId: string): string {
       context_budget: { children_completed: 1 },
       status: "complete",
       next_open_child: null,
+      qc_repair_loop: {
+        current_round: 1,
+        max_rounds: 2,
+        source_qc_run_ids: [],
+        manifest_path: null,
+        pending_packet_ids: [],
+        completed_packet_ids: [],
+        rerun_requested: false,
+        rerun_qc_run_ids: {},
+        terminal_outcome: "pass",
+        initiated_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
     }, null, 2),
   );
   return stateFile;
@@ -159,6 +172,7 @@ describe("runFinalize QC trigger integration", () => {
     const calls = vi.mocked(runQcAtTrigger).mock.calls;
     expect(calls.length).toBeGreaterThanOrEqual(2);
     expect(calls[0]![0].trigger).toBe("completed-cluster");
+    expect(calls[0]![0].baseRef).toBe("main");
     expect(calls[1]![0].trigger).toBe("pr");
     expect(calls[1]![0].prUrl).toBe("https://github.com/org/repo/pull/42");
   });

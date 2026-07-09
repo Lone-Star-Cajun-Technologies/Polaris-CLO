@@ -1048,3 +1048,385 @@ describe("createDraftPr validation", () => {
     ).not.toThrow();
   });
 });
+
+// ---- QC repair-loop terminal state gate (unit tests) ----
+
+describe("validateQcRepairLoopGate", () => {
+  function makeState(overrides: Partial<Record<string, unknown>> = {}): import("../loop/checkpoint.js").LoopState {
+    return {
+      schema_version: "1.0",
+      run_id: "test-run-001",
+      cluster_id: "POL-6",
+      active_child: "",
+      completed_children: ["POL-9"],
+      open_children: [],
+      step_cursor: "CLUSTER-COMPLETE",
+      context_budget: { children_completed: 1 },
+      status: "complete",
+      next_open_child: null,
+      ...overrides,
+    } as import("../loop/checkpoint.js").LoopState;
+  }
+
+  it("returns null when QC is disabled", async () => {
+    const { validateQcRepairLoopGate } = await import("./index.js");
+    const result = validateQcRepairLoopGate(makeState(), { enabled: false });
+    expect(result).toBeNull();
+  });
+
+  it("returns null when repair routing is 'log'", async () => {
+    const { validateQcRepairLoopGate } = await import("./index.js");
+    const result = validateQcRepairLoopGate(makeState(), {
+      enabled: true,
+      repairRouting: "log",
+    });
+    expect(result).toBeNull();
+  });
+
+  it("returns null when repair routing is 'block'", async () => {
+    const { validateQcRepairLoopGate } = await import("./index.js");
+    const result = validateQcRepairLoopGate(makeState(), {
+      enabled: true,
+      repairRouting: "block",
+    });
+    expect(result).toBeNull();
+  });
+
+  it("blocks when no qc_repair_loop state exists", async () => {
+    const { validateQcRepairLoopGate } = await import("./index.js");
+    const result = validateQcRepairLoopGate(makeState(), {
+      enabled: true,
+      repairRouting: "route",
+    });
+    expect(result).toBeTruthy();
+    expect(result).toContain("no qc_repair_loop state");
+  });
+
+  it("blocks when terminal_outcome is null (in-flight)", async () => {
+    const { validateQcRepairLoopGate } = await import("./index.js");
+    const result = validateQcRepairLoopGate(
+      makeState({
+        qc_repair_loop: {
+          current_round: 1,
+          max_rounds: 2,
+          source_qc_run_ids: [],
+          manifest_path: null,
+          pending_packet_ids: [],
+          completed_packet_ids: [],
+          rerun_requested: false,
+          rerun_qc_run_ids: {},
+          terminal_outcome: null,
+          initiated_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      }),
+      { enabled: true, repairRouting: "route" },
+    );
+    expect(result).toBeTruthy();
+    expect(result).toContain("still in-flight");
+  });
+
+  it("blocks on 'all-providers-failed' outcome", async () => {
+    const { validateQcRepairLoopGate } = await import("./index.js");
+    const result = validateQcRepairLoopGate(
+      makeState({
+        qc_repair_loop: {
+          current_round: 1,
+          max_rounds: 2,
+          source_qc_run_ids: [],
+          manifest_path: null,
+          pending_packet_ids: [],
+          completed_packet_ids: [],
+          rerun_requested: false,
+          rerun_qc_run_ids: {},
+          terminal_outcome: "all-providers-failed",
+          initiated_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      }),
+      { enabled: true, repairRouting: "route" },
+    );
+    expect(result).toBeTruthy();
+    expect(result).toContain("all-providers-failed");
+    expect(result).toContain("untrusted outcome");
+  });
+
+  it("blocks on 'max-rounds' outcome", async () => {
+    const { validateQcRepairLoopGate } = await import("./index.js");
+    const result = validateQcRepairLoopGate(
+      makeState({
+        qc_repair_loop: {
+          current_round: 2,
+          max_rounds: 2,
+          source_qc_run_ids: [],
+          manifest_path: null,
+          pending_packet_ids: [],
+          completed_packet_ids: [],
+          rerun_requested: false,
+          rerun_qc_run_ids: {},
+          terminal_outcome: "max-rounds",
+          initiated_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      }),
+      { enabled: true, repairRouting: "route" },
+    );
+    expect(result).toBeTruthy();
+    expect(result).toContain("max-rounds");
+  });
+
+  it("returns null on 'pass' outcome", async () => {
+    const { validateQcRepairLoopGate } = await import("./index.js");
+    const result = validateQcRepairLoopGate(
+      makeState({
+        qc_repair_loop: {
+          current_round: 1,
+          max_rounds: 2,
+          source_qc_run_ids: [],
+          manifest_path: null,
+          pending_packet_ids: [],
+          completed_packet_ids: [],
+          rerun_requested: false,
+          rerun_qc_run_ids: {},
+          terminal_outcome: "pass",
+          initiated_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      }),
+      { enabled: true, repairRouting: "route" },
+    );
+    expect(result).toBeNull();
+  });
+
+  it("returns null on 'no-repairable' outcome", async () => {
+    const { validateQcRepairLoopGate } = await import("./index.js");
+    const result = validateQcRepairLoopGate(
+      makeState({
+        qc_repair_loop: {
+          current_round: 1,
+          max_rounds: 2,
+          source_qc_run_ids: [],
+          manifest_path: null,
+          pending_packet_ids: [],
+          completed_packet_ids: [],
+          rerun_requested: false,
+          rerun_qc_run_ids: {},
+          terminal_outcome: "no-repairable",
+          initiated_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      }),
+      { enabled: true, repairRouting: "follow-up" },
+    );
+    expect(result).toBeNull();
+  });
+
+  it("returns null on 'qc-disabled' outcome", async () => {
+    const { validateQcRepairLoopGate } = await import("./index.js");
+    const result = validateQcRepairLoopGate(
+      makeState({
+        qc_repair_loop: {
+          current_round: 0,
+          max_rounds: 2,
+          source_qc_run_ids: [],
+          manifest_path: null,
+          pending_packet_ids: [],
+          completed_packet_ids: [],
+          rerun_requested: false,
+          rerun_qc_run_ids: {},
+          terminal_outcome: "qc-disabled",
+          initiated_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      }),
+      { enabled: true, repairRouting: "route" },
+    );
+    expect(result).toBeNull();
+  });
+});
+
+// ---- Authoritative completed-child state cross-check (unit tests) ----
+
+describe("validateAuthoritativeChildState", () => {
+  let testDir: string;
+  beforeEach(() => { testDir = makeTestDir(); });
+  afterEach(() => { rmSync(testDir, { recursive: true, force: true }); });
+
+  function makeState(overrides: Partial<Record<string, unknown>> = {}): import("../loop/checkpoint.js").LoopState {
+    return {
+      schema_version: "1.0",
+      run_id: "test-run-001",
+      cluster_id: "POL-6",
+      active_child: "",
+      completed_children: ["POL-9", "POL-10", "POL-11"],
+      open_children: [],
+      step_cursor: "CLUSTER-COMPLETE",
+      context_budget: { children_completed: 3 },
+      status: "complete",
+      next_open_child: null,
+      ...overrides,
+    } as import("../loop/checkpoint.js").LoopState;
+  }
+
+  it("returns ok when no cluster state exists (backward-compat)", async () => {
+    const { validateAuthoritativeChildState } = await import("./index.js");
+    const state = makeState();
+    const result = validateAuthoritativeChildState(state, testDir);
+    expect(result.ok).toBe(true);
+    expect(result.authoritativeCount).toBe(3);
+    expect(result.stateCount).toBe(3);
+  });
+
+  it("returns ok when cluster-state done count matches loop state", async () => {
+    const { validateAuthoritativeChildState } = await import("./index.js");
+    const state = makeState();
+    const clusterDir = join(testDir, ".polaris", "clusters", "POL-6");
+    mkdirSync(clusterDir, { recursive: true });
+    writeFileSync(
+      join(clusterDir, "cluster-state.json"),
+      JSON.stringify({
+        schema_version: "1.0",
+        cluster_id: "POL-6",
+        state_generation: 1,
+        child_states: [
+          { id: "POL-9", status: "done" },
+          { id: "POL-10", status: "done" },
+          { id: "POL-11", status: "done" },
+        ],
+        claim_metadata: {},
+        packet_pointers: {},
+        result_pointers: {},
+        validation_results: {},
+        commits: {},
+        tracker_mutations: {},
+        blockers: [],
+      }),
+    );
+    const result = validateAuthoritativeChildState(state, testDir);
+    expect(result.ok).toBe(true);
+    expect(result.authoritativeCount).toBe(3);
+  });
+
+  it("returns ok when cluster-state has more done children than loop state", async () => {
+    const { validateAuthoritativeChildState } = await import("./index.js");
+    const state = makeState({ completed_children: ["POL-9"] });
+    const clusterDir = join(testDir, ".polaris", "clusters", "POL-6");
+    mkdirSync(clusterDir, { recursive: true });
+    writeFileSync(
+      join(clusterDir, "cluster-state.json"),
+      JSON.stringify({
+        schema_version: "1.0",
+        cluster_id: "POL-6",
+        state_generation: 1,
+        child_states: [
+          { id: "POL-9", status: "done" },
+          { id: "POL-10", status: "done" },
+        ],
+        claim_metadata: {},
+        packet_pointers: {},
+        result_pointers: {},
+        validation_results: {},
+        commits: {},
+        tracker_mutations: {},
+        blockers: [],
+      }),
+    );
+    const result = validateAuthoritativeChildState(state, testDir);
+    expect(result.ok).toBe(true);
+    expect(result.authoritativeCount).toBe(2);
+  });
+
+  it("blocks when cluster-state has 0 done children but loop state has completions (stale state)", async () => {
+    const { validateAuthoritativeChildState } = await import("./index.js");
+    const state = makeState();
+    const clusterDir = join(testDir, ".polaris", "clusters", "POL-6");
+    mkdirSync(clusterDir, { recursive: true });
+    writeFileSync(
+      join(clusterDir, "cluster-state.json"),
+      JSON.stringify({
+        schema_version: "1.0",
+        cluster_id: "POL-6",
+        state_generation: 1,
+        child_states: [
+          { id: "POL-9", status: "ready" },
+          { id: "POL-10", status: "ready" },
+          { id: "POL-11", status: "ready" },
+        ],
+        claim_metadata: {},
+        packet_pointers: {},
+        result_pointers: {},
+        validation_results: {},
+        commits: {},
+        tracker_mutations: {},
+        blockers: [],
+      }),
+    );
+    const result = validateAuthoritativeChildState(state, testDir);
+    expect(result.ok).toBe(false);
+    expect(result.authoritativeCount).toBe(0);
+    expect(result.stateCount).toBe(3);
+    expect(result.reason).toContain("Stale cluster state");
+  });
+
+  it("blocks when cluster-state has fewer done children than loop state claims", async () => {
+    const { validateAuthoritativeChildState } = await import("./index.js");
+    const state = makeState();
+    const clusterDir = join(testDir, ".polaris", "clusters", "POL-6");
+    mkdirSync(clusterDir, { recursive: true });
+    writeFileSync(
+      join(clusterDir, "cluster-state.json"),
+      JSON.stringify({
+        schema_version: "1.0",
+        cluster_id: "POL-6",
+        state_generation: 1,
+        child_states: [
+          { id: "POL-9", status: "done" },
+          { id: "POL-10", status: "running" },
+          { id: "POL-11", status: "ready" },
+        ],
+        claim_metadata: {},
+        packet_pointers: {},
+        result_pointers: {},
+        validation_results: {},
+        commits: {},
+        tracker_mutations: {},
+        blockers: [],
+      }),
+    );
+    const result = validateAuthoritativeChildState(state, testDir);
+    expect(result.ok).toBe(false);
+    expect(result.authoritativeCount).toBe(1);
+    expect(result.stateCount).toBe(3);
+    expect(result.reason).toContain("count mismatch");
+  });
+
+  it("treats 'reviewed' and 'finalized' child states as done", async () => {
+    const { validateAuthoritativeChildState } = await import("./index.js");
+    const state = makeState();
+    const clusterDir = join(testDir, ".polaris", "clusters", "POL-6");
+    mkdirSync(clusterDir, { recursive: true });
+    writeFileSync(
+      join(clusterDir, "cluster-state.json"),
+      JSON.stringify({
+        schema_version: "1.0",
+        cluster_id: "POL-6",
+        state_generation: 1,
+        child_states: [
+          { id: "POL-9", status: "done" },
+          { id: "POL-10", status: "reviewed" },
+          { id: "POL-11", status: "finalized" },
+        ],
+        claim_metadata: {},
+        packet_pointers: {},
+        result_pointers: {},
+        validation_results: {},
+        commits: {},
+        tracker_mutations: {},
+        blockers: [],
+      }),
+    );
+    const result = validateAuthoritativeChildState(state, testDir);
+    expect(result.ok).toBe(true);
+    expect(result.authoritativeCount).toBe(3);
+  });
+});
