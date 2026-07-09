@@ -46,6 +46,8 @@ export interface PostCommentOptions {
   validationPassed: boolean;
   apiKey: string;
   lifecyclePolicy?: TrackerLifecyclePolicy;
+  /** When provided, overrides state.completed_children.length in comment body. */
+  authoritativeChildCount?: number;
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -150,7 +152,9 @@ function buildCommentBody(opts: {
   prUrl: string;
   validationPassed: boolean;
   reviewStateMissing: boolean;
+  authoritativeChildCount?: number;
 }): string {
+  const childCount = opts.authoritativeChildCount ?? opts.state.completed_children.length;
   const lines = [
     `**polaris finalize complete** — run \`${opts.state.run_id}\``,
     ``,
@@ -158,7 +162,7 @@ function buildCommentBody(opts: {
     `|---|---|`,
     `| Branch | \`${opts.branch}\` |`,
     `| PR | ${opts.prUrl} |`,
-    `| Children completed | ${opts.state.completed_children.length} |`,
+    `| Children completed | ${childCount} |`,
     `| Map validation | ${opts.validationPassed ? "✓ passed" : "✗ failed"} |`,
   ];
   if (opts.reviewStateMissing) {
@@ -176,8 +180,8 @@ function buildCommentBody(opts: {
 
 /** Posts a finalize-complete comment without attempting a state transition. */
 export async function postLinearComment(options: PostCommentOptions): Promise<void> {
-  const { issueId, state, branch, prUrl, validationPassed, apiKey } = options;
-  const body = buildCommentBody({ state, branch, prUrl, validationPassed, reviewStateMissing: false });
+  const { issueId, state, branch, prUrl, validationPassed, apiKey, authoritativeChildCount } = options;
+  const body = buildCommentBody({ state, branch, prUrl, validationPassed, reviewStateMissing: false, authoritativeChildCount });
 
   const data = await linearGraphQL<{ commentCreate?: { success?: boolean } }>(
     `mutation CreateComment($issueId: String!, $body: String!) {
@@ -205,7 +209,7 @@ export async function postLinearComment(options: PostCommentOptions): Promise<vo
  * state ID. The assertNotDoneState guard enforces this at runtime.
  */
 export async function updateLinearIssueAfterFinalize(options: PostCommentOptions): Promise<void> {
-  const { issueId, state, branch, prUrl, validationPassed, apiKey, lifecyclePolicy } = options;
+  const { issueId, state, branch, prUrl, validationPassed, apiKey, lifecyclePolicy, authoritativeChildCount } = options;
 
   // Resolve lifecycle transition from policy
   const lifecycleTransition = resolveLifecycleTransition("parent-all-children-complete", lifecyclePolicy);
@@ -220,6 +224,7 @@ export async function updateLinearIssueAfterFinalize(options: PostCommentOptions
       prUrl,
       validationPassed,
       reviewStateMissing: false,
+      authoritativeChildCount,
     });
 
     const commentData = await linearGraphQL<{ commentCreate?: { success?: boolean } }>(
@@ -248,6 +253,7 @@ export async function updateLinearIssueAfterFinalize(options: PostCommentOptions
       prUrl,
       validationPassed,
       reviewStateMissing: false,
+      authoritativeChildCount,
     });
 
     const commentData = await linearGraphQL<{ commentCreate?: { success?: boolean } }>(
@@ -293,6 +299,7 @@ export async function updateLinearIssueAfterFinalize(options: PostCommentOptions
     prUrl,
     validationPassed,
     reviewStateMissing: reviewState === null,
+    authoritativeChildCount,
   });
 
   const commentData = await linearGraphQL<{ commentCreate?: { success?: boolean } }>(

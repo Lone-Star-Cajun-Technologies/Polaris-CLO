@@ -1,7 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import * as path from "node:path";
-import { getQcArtifactDir, listQcArtifactIds, readQcArtifact, writeQcArtifact } from "./artifacts.js";
+import {
+  getQcArtifactDir,
+  listQcArtifactIds,
+  readQcArtifact,
+  validateQcArtifactPointers,
+  writeQcArtifact,
+} from "./artifacts.js";
 import type { QcResult } from "./types.js";
 
 function makeResult(qcRunId: string): QcResult {
@@ -85,5 +91,71 @@ describe("QC artifact persistence", () => {
     expect(readQcArtifact("POL-A", "run-a", repoRoot)).toBeDefined();
     expect(readQcArtifact("POL-A", "run-b", repoRoot)).toBeNull();
     expect(readQcArtifact("POL-B", "run-b", repoRoot)).toBeDefined();
+  });
+});
+
+describe("validateQcArtifactPointers", () => {
+  const repoRoot = path.join(process.cwd(), ".test-scratch", `qc-pointers-${Date.now()}`);
+
+  beforeEach(() => {
+    mkdirSync(repoRoot, { recursive: true });
+  });
+
+  afterEach(() => {
+    rmSync(repoRoot, { recursive: true, force: true });
+  });
+
+  it("reports missing primary artifacts and unavailable raw audit artifacts", () => {
+    writeQcArtifact("POL-A", makeResult("run-a"), repoRoot);
+    const existingArtifactPath = path.join(
+      getQcArtifactDir("POL-A", repoRoot),
+      "run-a.json",
+    );
+
+    const result = validateQcArtifactPointers({
+      "run-a": {
+        artifact_path: existingArtifactPath,
+        status: "passed",
+        provider: "coderabbit",
+        started_at: new Date().toISOString(),
+        completed_at: new Date().toISOString(),
+        raw_artifact_paths: [path.join(repoRoot, "missing-raw.log")],
+        provider_attempt_artifact_path: path.join(repoRoot, "missing-provider.log"),
+      },
+      "run-b": {
+        artifact_path: path.join(getQcArtifactDir("POL-A", repoRoot), "run-b.json"),
+        status: "failed",
+        provider: "coderabbit",
+        started_at: new Date().toISOString(),
+        completed_at: new Date().toISOString(),
+      },
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.missing).toContain(path.join(getQcArtifactDir("POL-A", repoRoot), "run-b.json"));
+    expect(result.unavailable).toContain(path.join(repoRoot, "missing-raw.log"));
+    expect(result.unavailable).toContain(path.join(repoRoot, "missing-provider.log"));
+  });
+
+  it("returns ok when all referenced artifacts exist", () => {
+    const result = makeResult("run-c");
+    writeQcArtifact("POL-A", result, repoRoot);
+    const rawPath = path.join(repoRoot, "raw.log");
+    writeFileSync(rawPath, "raw output", "utf-8");
+
+    const validation = validateQcArtifactPointers({
+      "run-c": {
+        artifact_path: path.join(getQcArtifactDir("POL-A", repoRoot), "run-c.json"),
+        status: "passed",
+        provider: "coderabbit",
+        started_at: new Date().toISOString(),
+        completed_at: new Date().toISOString(),
+        raw_artifact_paths: [rawPath],
+      },
+    });
+
+    expect(validation.ok).toBe(true);
+    expect(validation.missing).toHaveLength(0);
+    expect(validation.unavailable).toHaveLength(0);
   });
 });

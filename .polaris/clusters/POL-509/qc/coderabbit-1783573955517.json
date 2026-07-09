@@ -1,0 +1,117 @@
+{
+  "schemaVersion": "1.0",
+  "qcRunId": "coderabbit-1783573955517",
+  "runId": "polaris-run-pol-509-2026-07-09-001",
+  "clusterId": "POL-509",
+  "trigger": "completed-cluster",
+  "provider": "coderabbit",
+  "providerMode": "local",
+  "startedAt": "2026-07-09T05:07:35.475Z",
+  "completedAt": "2026-07-09T05:12:35.517Z",
+  "status": "findings",
+  "findings": [
+    {
+      "findingId": "coderabbit-1-1783573955516",
+      "severity": "info",
+      "category": "status",
+      "title": "status",
+      "message": "Found this repository in Lone-Star-Cajun-Technologies. This review will use Lone-Star-Cajun-Technologies's CodeRabbit plan and count toward its usage.",
+      "fixAvailable": false,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "provider-uncertain"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-2-1783573955516",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "fixAvailable": false,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "provider-uncertain"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-3-1783573955516",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "fixAvailable": false,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "provider-uncertain"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-4-1783573955516",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "fixAvailable": false,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "provider-uncertain"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-5-1783573955516",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "fixAvailable": false,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "provider-uncertain"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-6-1783573955516",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "fixAvailable": false,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "provider-uncertain"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    }
+  ],
+  "rawArtifactPaths": [],
+  "parserVersion": "coderabbit-1.0",
+  "policyDecision": {
+    "blocksDelivery": true,
+    "requiresOperatorReview": true,
+    "routedToRepair": false,
+    "summary": "6 findings; operator review required"
+  },
+  "providerAttempt": {
+    "provider": "coderabbit",
+    "status": "success",
+    "rawOutputAvailable": true,
+    "rawOutputRetained": false,
+    "stdoutLength": 5074,
+    "stderrLength": 0,
+    "exitCode": 143,
+    "parserResult": "success"
+  }
+}

@@ -95,6 +95,7 @@ export type QcFailureReason =
   | "nonzero-exit"
   | "parse-failed"
   | "empty-output"
+  | "unusable-output"
   | "unsupported-mode"
   | "unavailable-provider";
 

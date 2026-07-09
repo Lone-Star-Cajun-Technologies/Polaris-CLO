@@ -444,20 +444,22 @@ async function runSingleProvider(
 
           resolve({ result, success: true });
         } catch (parseError) {
-          const result = buildFailedResult(
-            provider,
-            scope,
-            startedAt,
-            "parse-failed",
-            output,
-            { parserResult: "failed" },
-          );
+          const reason: QcFailureReason =
+            typeof parseError === "object" &&
+            parseError !== null &&
+            "qcFailureReason" in parseError &&
+            typeof (parseError as { qcFailureReason: unknown }).qcFailureReason === "string"
+              ? ((parseError as { qcFailureReason: QcFailureReason }).qcFailureReason as QcFailureReason)
+              : "parse-failed";
+          const result = buildFailedResult(provider, scope, startedAt, reason, output, {
+            parserResult: "failed",
+          });
           emitProviderFailed(
             options.telemetryFile,
             scope.runId,
             scope.clusterId,
             provider.name,
-            "parse-failed",
+            reason,
             output.exitCode,
           );
           resolve({ result, success: false });

@@ -9,10 +9,12 @@ import {
 } from "../cognition/closeout-librarian-types.js";
 import { loadConfig } from "../config/loader.js";
 import type { QcConfig } from "../config/schema.js";
-import { readState, type LoopState } from "../loop/checkpoint.js";
+import { readState, writeStateAtomic, type LoopState } from "../loop/checkpoint.js";
 import { classifyArtifactPath } from "./artifact-policy.js";
 import { hasNonArtifactSourceChanges, verifyChildCommitCustody, patternMatchesPath } from "../loop/git-custody.js";
 import { readClusterStateSync } from "../cluster-state/store.js";
+import type { ClusterState } from "../cluster-state/types.js";
+import { validateQcArtifactPointers } from "../qc/artifacts.js";
 import { runCanonCheck } from "../smartdocs-engine/canon-check.js";
 import { stepMapUpdate } from "./steps/01-map-update.js";
 import { stepMapValidate } from "./steps/02-map-validate.js";
@@ -107,6 +109,74 @@ function validateStateBranchMatchesGitBranch(stateBranch: string | undefined, br
     process.stderr.write(
       `finalize aborted: state.branch mismatch — state.branch "${stateBranch}" ` +
       `does not match current git branch "${branch}".\n`,
+    );
+    process.exit(1);
+  }
+}
+
+const CLUSTER_STATE_FILE_PATTERN = /[\\/]\.polaris[\\/]clusters[\\/][^\\/]+[\\/]state\.json$/;
+
+function isClusterStateSnapshotFile(filePath: string): boolean {
+  return CLUSTER_STATE_FILE_PATTERN.test(filePath.replace(/\\/g, "/"));
+}
+
+type LoopStateWithPrUrl = LoopState & { pr_url?: string };
+
+function computeRunStateFreshness(state: LoopState): number {
+  const s = state as LoopStateWithPrUrl;
+  let score = 0;
+  score += (s.completed_children?.length ?? 0) * 10;
+  if (s.status === "complete") score += 50;
+  if (s.pr_url) score += 30;
+  if (s.qc_repair_loop?.terminal_outcome) score += 40;
+  score += (s.dispatch_boundary?.dispatch_epoch ?? 0) * 5;
+  score += (s.context_budget?.children_completed ?? 0) * 2;
+  return score;
+}
+
+/**
+ * Refuse to use a promoted cluster state snapshot when the authoritative
+ * taskchain current-state.json is newer. Cluster snapshots under
+ * `.polaris/clusters/<id>/state.json` are secondary; the taskchain state
+ * owned by the parent loop is authoritative.
+ */
+export function validateStateFileAuthority(
+  stateFile: string,
+  state: LoopState,
+  repoRoot: string,
+): void {
+  if (!isClusterStateSnapshotFile(stateFile)) {
+    return;
+  }
+
+  const taskchainStateFile = join(repoRoot, ".taskchain_artifacts", "polaris-run", "current-state.json");
+  if (!existsSync(taskchainStateFile)) {
+    return;
+  }
+
+  let taskchainState: LoopState;
+  try {
+    taskchainState = readState(taskchainStateFile);
+  } catch {
+    return;
+  }
+
+  if (
+    taskchainState.run_id !== state.run_id ||
+    taskchainState.cluster_id !== state.cluster_id
+  ) {
+    return;
+  }
+
+  const taskchainFreshness = computeRunStateFreshness(taskchainState);
+  const snapshotFreshness = computeRunStateFreshness(state);
+  if (taskchainFreshness > snapshotFreshness) {
+    process.stderr.write(
+      `finalize aborted: cluster state snapshot is stale.\n` +
+      `  Snapshot: ${stateFile}\n` +
+      `  Authoritative taskchain state: ${taskchainStateFile}\n` +
+      `The taskchain current-state.json is newer; use it instead, or ` +
+      `update the cluster snapshot before finalizing.\n`,
     );
     process.exit(1);
   }
@@ -223,16 +293,159 @@ function resolveQcTelemetryFile(state: LoopState, repoRoot: string): string {
   return join(artifactDir, "runs", state.run_id, "telemetry.jsonl");
 }
 
+// ── QC repair-loop terminal state gate ────────────────────────────────────────
+
+/**
+ * Trusted QC repair-loop terminal outcomes that allow finalize to proceed.
+ * "pass" = QC rerun passed; "qc-disabled" = QC was off; "no-repairable" = no
+ * findings routable to repair workers (follow-up-only or already resolved).
+ */
+const TRUSTED_QC_REPAIR_OUTCOMES = new Set(["pass", "qc-disabled", "no-repairable"]);
+
+/**
+ * Validate QC repair-loop terminal state when QC is enabled and repair routing
+ * is active. Returns null when finalize may proceed; returns a human-readable
+ * blocker string otherwise.
+ */
+export function validateQcRepairLoopGate(
+  state: LoopState,
+  config: QcConfig,
+): string | null {
+  // Gate only applies when QC is enabled
+  if (!config.enabled) return null;
+
+  // Gate only applies when repair routing is active (not "log" or "block")
+  const repairRouting = config.repairRouting ?? "route";
+  if (repairRouting !== "route" && repairRouting !== "follow-up") return null;
+
+  const repairLoop = state.qc_repair_loop;
+
+  // No repair-loop state at all — the completed-cluster QC trigger ran but
+  // never entered the repair loop. This is a gap: finalize should not proceed.
+  if (!repairLoop) {
+    return (
+      "QC is enabled with repair routing active, but no qc_repair_loop state " +
+      "was found in the run state. The parent loop must run the QC repair loop " +
+      "before finalize can proceed."
+    );
+  }
+
+  const outcome = repairLoop.terminal_outcome;
+
+  if (outcome === null || outcome === undefined) {
+    return (
+      "QC repair loop is still in-flight (terminal_outcome is null). " +
+      "Finalize cannot proceed until the repair loop reaches a terminal state."
+    );
+  }
+
+  if (TRUSTED_QC_REPAIR_OUTCOMES.has(outcome)) return null;
+
+  return (
+    `QC repair loop terminated with untrusted outcome: "${outcome}". ` +
+    `Only ${Array.from(TRUSTED_QC_REPAIR_OUTCOMES).join(", ")} outcomes allow finalize to proceed. ` +
+    `Resolve the repair loop before re-running finalize.`
+  );
+}
+
+// ── Authoritative completed-child state cross-check ───────────────────────────
+
+export function warnOnMissingQcArtifacts(clusterState: ClusterState | null, repoRoot: string): void {
+  if (!clusterState) return;
+  const validation = validateQcArtifactPointers(clusterState.qc_runs);
+  if (validation.ok) return;
+  for (const missing of validation.missing) {
+    console.warn(
+      `finalize warning: cluster-state QC pointer references missing artifact: ${missing}`,
+    );
+  }
+  for (const unavailable of validation.unavailable) {
+    console.warn(
+      `finalize warning: QC audit artifact unavailable: ${unavailable}`,
+    );
+  }
+}
+
+export interface AuthoritativeChildResult {
+  ok: boolean;
+  /** Authoritative completed-child count from cluster-state child_states. */
+  authoritativeCount: number;
+  /** Count from the loop state's completed_children array. */
+  stateCount: number;
+  reason?: string;
+}
+
+/**
+ * Cross-check completed children in the loop state against the cluster-state
+ * child_states. Returns a diagnostic result — when `ok` is false, finalize
+ * should refuse PR creation.
+ */
+export function validateAuthoritativeChildState(
+  state: LoopState,
+  repoRoot: string,
+): AuthoritativeChildResult {
+  const clusterState = readClusterStateSync(state.cluster_id, repoRoot);
+  const stateCount = state.completed_children.length;
+
+  // No cluster state available — backward-compat: trust the loop state.
+  if (!clusterState) {
+    return { ok: true, authoritativeCount: stateCount, stateCount };
+  }
+
+  const childStates = clusterState.child_states;
+
+  // No child_states array in cluster state — backward-compat: trust the loop state.
+  // This covers legacy cluster-state files that don't track individual child lifecycle.
+  if (!childStates || childStates.length === 0) {
+    return { ok: true, authoritativeCount: stateCount, stateCount };
+  }
+
+  const doneChildren = childStates.filter(
+    (c) => c.status === "done" || c.status === "reviewed" || c.status === "finalized",
+  );
+  const authoritativeCount = doneChildren.length;
+
+  // When cluster-state has tracked children but zero are done while loop state
+  // claims completions, the cluster state file is stale or was never updated.
+  if (authoritativeCount === 0 && stateCount > 0) {
+    return {
+      ok: false,
+      authoritativeCount,
+      stateCount,
+      reason:
+        `Stale cluster state: cluster-state.json has 0 done children but ` +
+        `loop state claims ${stateCount} completed. ` +
+        `The cluster state file was never updated by worker completions.`,
+    };
+  }
+
+  // Significant mismatch: cluster-state has fewer done children than loop state
+  if (authoritativeCount < stateCount) {
+    return {
+      ok: false,
+      authoritativeCount,
+      stateCount,
+      reason:
+        `Completed-child count mismatch: cluster-state has ${authoritativeCount} done ` +
+        `children but loop state has ${stateCount}. ` +
+        `The cluster state may be stale or child completions were not recorded properly.`,
+    };
+  }
+
+  return { ok: true, authoritativeCount, stateCount };
+}
+
 async function runQcGate(options: {
   config: QcConfig;
   state: LoopState;
   repoRoot: string;
   branch: string;
+  baseRef?: string;
   trigger: "pr" | "completed-cluster" | "child";
   prUrl?: string;
   stepLabel: string;
 }): Promise<void> {
-  const { config, state, repoRoot, branch, trigger, prUrl, stepLabel } = options;
+  const { config, state, repoRoot, branch, baseRef, trigger, prUrl, stepLabel } = options;
   const registry = createQcRegistry(config);
   const result = await runQcAtTrigger({
     config,
@@ -243,6 +456,7 @@ async function runQcGate(options: {
     runId: state.run_id,
     clusterId: state.cluster_id,
     branch,
+    baseRef,
     telemetryFile: resolveQcTelemetryFile(state, repoRoot),
     state,
   });
@@ -290,6 +504,7 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
   validateStateFilePath(stateFile);
   validateClusterIdMatchesBranch(state.cluster_id, branch);
   validateStateBranchMatchesGitBranch(state.branch, branch);
+  validateStateFileAuthority(stateFile, state, repoRoot);
 
   // Step 4: Run configured checks
   const checks = config.finalize?.runChecks ?? [];
@@ -393,6 +608,7 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
   // loop.allowBranchDivergence is true (direct-main mode).
   {
     const clusterState = readClusterStateSync(state.cluster_id, repoRoot);
+    warnOnMissingQcArtifacts(clusterState, repoRoot);
     const baseBranch = clusterState?.base_branch;
     const deliveryBranch = clusterState?.delivery_branch;
     const directMainMode = config.loop?.allowBranchDivergence === true;
@@ -487,14 +703,44 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
 
   // Step 5.8: Completed-cluster QC trigger (when configured)
   // Runs after all authoritative gates and before final commit/delivery.
+  const clusterStateForQc = readClusterStateSync(state.cluster_id, repoRoot);
+  const qcBaseRef =
+    clusterStateForQc?.base_branch ??
+    config.finalize?.targetBranch ??
+    "main";
   await runQcGate({
     config: config.qc,
     state,
     repoRoot,
     branch,
+    baseRef: qcBaseRef,
     trigger: "completed-cluster",
     stepLabel: "[5.8/14]",
   });
+
+  // Step 5.9: QC repair-loop terminal state gate
+  // When QC is enabled and repair routing is active, require a trusted
+  // terminal outcome from the QC repair loop before allowing PR creation.
+  {
+    const repairLoopBlocker = validateQcRepairLoopGate(state, config.qc);
+    if (repairLoopBlocker) {
+      process.stderr.write(
+        `finalize aborted: QC repair-loop gate failed.\n${repairLoopBlocker}\n`,
+      );
+      process.exit(1);
+    }
+  }
+
+  // Step 5.10: Authoritative completed-child state cross-check
+  // Verify that the completed children claimed by the loop state match
+  // the cluster-state child_states. Blocks on stale or inconsistent state.
+  const authChildResult = validateAuthoritativeChildState(state, repoRoot);
+  if (!authChildResult.ok) {
+    process.stderr.write(
+      `finalize aborted: authoritative child state mismatch.\n${authChildResult.reason}\n`,
+    );
+    process.exit(1);
+  }
 
   // Step 6: Tracker Reconciliation
   // LinearAdapter is sync-in only; only McpBridgeAdapter supports full reconciliation.
@@ -566,7 +812,7 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
   // Step 10: Create draft PR
   const prDraft = config.finalize?.prDraft ?? true;
   console.log("[10/14] Creating draft PR...");
-  const prUrl = stepCreatePr(repoRoot, branch, state, prDraft);
+  const prUrl = stepCreatePr(repoRoot, branch, state, prDraft, authChildResult.authoritativeCount);
 
   // Step 10.5: PR-required QC trigger (when configured)
   // Providers that require a PR URL run here after the PR is created.
@@ -584,6 +830,21 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
   console.log("[11/14] Writing PR URL to state...");
   state = stepUpdateState(resolvedStateFile, state, prUrl);
 
+  // Promote the authoritative run state into the cluster snapshot so that
+  // `.polaris/clusters/<id>/state.json` preserves completed children, the
+  // dispatch boundary, QC repair-loop terminal state, and the PR URL.
+  try {
+    const clusterStateSnapshotPath = join(repoRoot, ".polaris", "clusters", state.cluster_id, "state.json");
+    writeStateAtomic(clusterStateSnapshotPath, state);
+  } catch (snapshotError) {
+    process.stderr.write(
+      `[11/14] WARNING: Failed to write cluster state snapshot: ${snapshotError instanceof Error ? snapshotError.message : String(snapshotError)}\n`
+    );
+    process.stderr.write(
+      `Delivery will proceed, but cluster state snapshot at .polaris/clusters/${state.cluster_id}/state.json may be incomplete.\n`
+    );
+  }
+
   // Step 12: Append JSONL events
   console.log("[12/14] Appending JSONL events...");
   const artifactDir = state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "polaris-run");
@@ -594,7 +855,7 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
   console.log("[13/14] Updating Linear...");
   const linearEnabled = config.tracker?.linear?.enabled ?? false;
   const lifecyclePolicy = config.tracker?.lifecyclePolicy;
-  await stepUpdateLinear(state, branch, prUrl, true, linearEnabled, state.cluster_id, lifecyclePolicy);
+  await stepUpdateLinear(state, branch, prUrl, true, linearEnabled, state.cluster_id, lifecyclePolicy, authChildResult.authoritativeCount);
 
   // Step 14: Archive run snapshot
   console.log("[14/14] Archiving run snapshot...");

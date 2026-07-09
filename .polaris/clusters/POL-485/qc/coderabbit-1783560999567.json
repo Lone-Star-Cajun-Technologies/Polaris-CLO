@@ -1,0 +1,187 @@
+{
+  "schemaVersion": "1.0",
+  "qcRunId": "coderabbit-1783560999567",
+  "runId": "polaris-run-pol-485-2026-07-09-001",
+  "clusterId": "POL-485",
+  "trigger": "completed-cluster",
+  "provider": "coderabbit",
+  "providerMode": "local",
+  "startedAt": "2026-07-09T01:32:51.701Z",
+  "completedAt": "2026-07-09T01:36:39.567Z",
+  "status": "findings",
+  "findings": [
+    {
+      "findingId": "coderabbit-1-1783560999566",
+      "severity": "info",
+      "category": "review_context",
+      "title": "review_context",
+      "fixAvailable": false,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "provider-uncertain"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-2-1783560999566",
+      "severity": "info",
+      "category": "status",
+      "title": "status",
+      "fixAvailable": false,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "provider-uncertain"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-3-1783560999566",
+      "severity": "info",
+      "category": "status",
+      "title": "status",
+      "message": "Found this repository in Lone-Star-Cajun-Technologies. This review will use Lone-Star-Cajun-Technologies's CodeRabbit plan and count toward its usage.",
+      "fixAvailable": false,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "provider-uncertain"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-4-1783560999566",
+      "severity": "info",
+      "category": "status",
+      "title": "status",
+      "fixAvailable": false,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "provider-uncertain"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-5-1783560999566",
+      "severity": "info",
+      "category": "status",
+      "title": "status",
+      "fixAvailable": false,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "provider-uncertain"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-6-1783560999566",
+      "severity": "info",
+      "category": "status",
+      "title": "status",
+      "fixAvailable": false,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "provider-uncertain"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-7-1783560999566",
+      "severity": "info",
+      "category": "status",
+      "title": "status",
+      "fixAvailable": false,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "provider-uncertain"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-8-1783560999566",
+      "severity": "info",
+      "category": "heartbeat",
+      "title": "heartbeat",
+      "fixAvailable": false,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "provider-uncertain"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-9-1783560999566",
+      "severity": "info",
+      "category": "status",
+      "title": "status",
+      "fixAvailable": false,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "provider-uncertain"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-10-1783560999566",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "fixAvailable": false,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "provider-uncertain"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-11-1783560999566",
+      "severity": "info",
+      "category": "complete",
+      "title": "complete",
+      "fixAvailable": false,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "provider-uncertain"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    }
+  ],
+  "rawArtifactPaths": [],
+  "parserVersion": "coderabbit-1.0",
+  "policyDecision": {
+    "blocksDelivery": false,
+    "requiresOperatorReview": false,
+    "routedToRepair": false,
+    "summary": "11 findings"
+  },
+  "providerAttempt": {
+    "provider": "coderabbit",
+    "status": "success",
+    "rawOutputAvailable": true,
+    "rawOutputRetained": false,
+    "stdoutLength": 1830,
+    "stderrLength": 0,
+    "exitCode": 0,
+    "parserResult": "success"
+  }
+}

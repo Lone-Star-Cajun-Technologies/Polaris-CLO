@@ -1,7 +1,8 @@
-import { mkdirSync, readFileSync, readdirSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
 import * as path from "node:path";
 import type { QcResult } from "./types.js";
 import { validateQcResult } from "./schemas.js";
+import type { QcRunPointer } from "../cluster-state/types.js";
 
 /**
  * Returns the cluster-scoped QC evidence directory.
@@ -88,4 +89,41 @@ export function listQcArtifactIds(clusterId: string, repoRoot?: string): string[
     }
     throw error;
   }
+}
+
+export interface QcArtifactPointerValidationResult {
+  ok: boolean;
+  /** Paths to primary QC result artifacts that no longer exist. */
+  missing: string[];
+  /** Paths to raw provider audit artifacts that are not retained. */
+  unavailable: string[];
+}
+
+/**
+ * Validate that the artifacts referenced by QC run pointers still exist.
+ * Returns a list of missing primary artifacts and unavailable raw audit
+ * artifacts so callers can warn, prune, or mark pointers consistently.
+ */
+export function validateQcArtifactPointers(
+  qcRuns: Record<string, QcRunPointer> | undefined,
+): QcArtifactPointerValidationResult {
+  const missing: string[] = [];
+  const unavailable: string[] = [];
+  if (!qcRuns) {
+    return { ok: true, missing, unavailable };
+  }
+  for (const pointer of Object.values(qcRuns)) {
+    if (!existsSync(pointer.artifact_path)) {
+      missing.push(pointer.artifact_path);
+    }
+    for (const rawPath of pointer.raw_artifact_paths ?? []) {
+      if (!existsSync(rawPath)) {
+        unavailable.push(rawPath);
+      }
+    }
+    if (pointer.provider_attempt_artifact_path && !existsSync(pointer.provider_attempt_artifact_path)) {
+      unavailable.push(pointer.provider_attempt_artifact_path);
+    }
+  }
+  return { ok: missing.length === 0 && unavailable.length === 0, missing, unavailable };
 }

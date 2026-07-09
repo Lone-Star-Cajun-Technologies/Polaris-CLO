@@ -1,0 +1,2 @@
+{"severity":"high","file":"src/a.ts","line":1,"title":"Issue A"}
+{"severity":"low","file":"src/b.ts","line":2,"title":"Issue B"}

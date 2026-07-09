@@ -54,12 +54,14 @@ The finalize subsystem implements the atomic 13-step final delivery sequence for
 
 ## QC repair loop relationship
 
-- Finalize must check that the repair loop has reached a terminal outcome before proceeding to remote delivery steps.
-- Acceptable terminal outcomes for delivery: `qc_passed`, `follow-up / log` (where only `low`/`info` findings remain).
-- Blocking terminal outcomes: `operator_review_required`, `max_rounds_reached` (with open `medium`+), `medic_referral_required`, `all_providers_failed` when `failurePolicy: block`.
+- `validateQcRepairLoopGate()` (Step 5.9, after the completed-cluster QC trigger and before the authoritative completed-child cross-check) blocks finalize unless `state.qc_repair_loop.terminal_outcome` is a trusted value. The gate is skipped entirely when `config.qc.enabled` is false, or when `config.qc.repairRouting` is not `"route"`/`"follow-up"`.
+- Trusted terminal outcomes that allow finalize to proceed (`TRUSTED_QC_REPAIR_OUTCOMES` in `index.ts`): `"pass"`, `"qc-disabled"`, `"no-repairable"`.
+- Blocking conditions: any other terminal outcome (`"all-providers-failed"`, `"operator-review"`, `"medic-referral"`, `"max-rounds"`), a `null`/in-flight `terminal_outcome`, or a missing `qc_repair_loop` state entirely (the parent loop never ran the repair loop) when the gate is active.
+- `validateAuthoritativeChildState()` (Step 5.10) cross-checks `state.completed_children.length` against cluster-state `child_states`; a stale or mismatched cluster-state aborts finalize before the final commit. Its authoritative count — not the raw loop-state count — is what `stepCreatePr` and `stepUpdateLinear` write into the PR body and Linear comment via `authoritativeChildCount`.
+- `warnOnMissingQcArtifacts()` (Step 5.6, alongside branch custody verification) is a non-blocking warning: it logs when a cluster-state QC pointer's primary artifact or raw audit artifact is missing, via `validateQcArtifactPointers()` from `src/qc/artifacts.ts`.
 - Repair packet manifests (`.polaris/clusters/<cluster-id>/qc/repair-rounds/<round>/repair-packets.json`) are durable Polaris artifacts and must be promoted by `artifact-policy.ts` rules when they exist.
-- Finalize does not invoke QC providers or compile repair packets. It reads the repair loop terminal state from cluster-state QC run pointers.
-- See `smartdocs/specs/active/quality-control-architecture.md §8.7` for the full terminal outcome definitions.
+- Finalize does not invoke QC providers or compile repair packets. It reads the repair loop terminal state from the loop checkpoint's `qc_repair_loop` and QC run pointers from cluster-state.
+- See `smartdocs/specs/active/quality-control-architecture.md §8.9` for the telemetry-aligned terminal outcome catalog that matches these string values.
 
 ## Related routes
 

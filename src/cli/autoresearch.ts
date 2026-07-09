@@ -1,4 +1,5 @@
 import { resolve } from "node:path";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { Command } from "commander";
 import { assertPolarisDevContext } from "../autoresearch/dev-gate.js";
 import { scoreRun, loadRunArtifacts } from "../autoresearch/score.js";
@@ -10,9 +11,22 @@ import { appendSnapshot, loadSnapshots, buildSnapshot } from "../autoresearch/so
 import { generateReport, formatReportCli } from "../autoresearch/sol-report.js";
 import type { SolReportGroupBy } from "../autoresearch/sol-report.js";
 import {
+  computeAllScorecards,
+} from "../autoresearch/sol-scorecard-calculator.js";
+import {
+  buildEvaluationRecord,
+  writeEvaluationRecord,
+  writeScorecardSet,
+  writeSolMarkdownReport,
+  getSolEvaluationsDir,
+  getEvaluationRecordPath,
+} from "../autoresearch/sol-evaluation-writer.js";
+import { renderSolMarkdown } from "../autoresearch/sol-report-renderer.js";
+import {
   generateRecommendations,
   recommendationsToProposals,
   formatRecommendationsCli,
+  generateQcRecommendations,
 } from "../autoresearch/sol-recommendations.js";
 
 export interface SolCommandOptions {
@@ -90,6 +104,95 @@ export function createSolCommand(options: SolCommandOptions): Command {
       } catch (err) {
         process.stderr.write(
           `sol score-report error: ${err instanceof Error ? err.message : String(err)}\n`,
+        );
+        process.exit(1);
+      }
+    });
+
+  sol
+    .command("report <run-id>")
+    .description(
+      "Generate SOL evaluation artifacts and a human-readable SmartDocs report for a run",
+    )
+    .option("-r, --repo-root <path>", "Repository root", repoRoot)
+    .option("--format <mode>", "Output format: markdown or json", "markdown")
+    .option("--json", "Output raw JSON (same as --format json)")
+    .option("--no-write", "Skip writing artifact files")
+    .action((runId: string, cmdOptions: { repoRoot: string; format: string; json?: boolean; write: boolean }) => {
+      const root = resolve(cmdOptions.repoRoot ?? repoRoot);
+      if (cmdOptions.format !== "markdown" && cmdOptions.format !== "json") {
+        process.stderr.write(
+          `sol report error: invalid --format "${cmdOptions.format}" (expected "markdown" or "json")\n`,
+        );
+        process.exit(1);
+      }
+      try {
+        assertPolarisDevContext(root);
+      } catch (err) {
+        process.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
+        process.exit(1);
+      }
+
+      let artifacts;
+      let evidence;
+      try {
+        artifacts = loadRunArtifacts(root, runId);
+        evidence = aggregateSolEvidence(artifacts);
+      } catch (err) {
+        process.stderr.write(
+          `sol report error: cannot load run artifacts: ${err instanceof Error ? err.message : String(err)}\n`,
+        );
+        process.exit(1);
+      }
+
+      try {
+        const report = computeSolScoreReport(evidence);
+        const scorecards = computeAllScorecards(evidence);
+        const qcRecommendations = generateQcRecommendations(evidence);
+
+        let evaluationPath: string | undefined;
+        let scorecardPaths: string[] | undefined;
+        let markdownPath: string | undefined;
+
+        const evaluationRecord = buildEvaluationRecord(report);
+        const rendered = renderSolMarkdown(evaluationRecord, scorecards, qcRecommendations);
+
+        if (cmdOptions.write) {
+          // Persist the same evaluationRecord object that was rendered, rather than rebuilding internally
+          const evaluationDir = getSolEvaluationsDir(root);
+          if (!existsSync(evaluationDir)) mkdirSync(evaluationDir, { recursive: true });
+          evaluationPath = getEvaluationRecordPath(root, report.run_id);
+          writeFileSync(evaluationPath, JSON.stringify(evaluationRecord, null, 2) + "\n", "utf-8");
+
+          scorecardPaths = writeScorecardSet(root, scorecards);
+          markdownPath = writeSolMarkdownReport(root, runId, rendered.markdown);
+        }
+
+        const outputFormat = cmdOptions.json || cmdOptions.format === "json" ? "json" : "markdown";
+
+        if (outputFormat === "json") {
+          const output = JSON.stringify(
+            {
+              run_id: runId,
+              evaluation: evaluationRecord,
+              scorecards,
+              qc_recommendations: qcRecommendations,
+              artifacts: {
+                evaluation: evaluationPath,
+                scorecards: scorecardPaths,
+                markdown: markdownPath,
+              },
+            },
+            null,
+            2,
+          );
+          process.stdout.write(`${output}\n`);
+        } else {
+          process.stdout.write(rendered.markdown);
+        }
+      } catch (err) {
+        process.stderr.write(
+          `sol report error: ${err instanceof Error ? err.message : String(err)}\n`,
         );
         process.exit(1);
       }

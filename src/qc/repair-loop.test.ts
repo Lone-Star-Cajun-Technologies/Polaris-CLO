@@ -12,7 +12,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { mkdirSync, rmSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync } from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
 import {
@@ -28,6 +28,7 @@ import type { QcConfig } from "../config/schema.js";
 import type { QcProviderRegistry } from "./provider.js";
 import { makeFinding, makeResult } from "./fixtures/repair-packets.js";
 import type { QcOrchestratorResult } from "./orchestration.js";
+import { readClusterStateSync } from "../cluster-state/store.js";
 
 // Mock runQcAtTrigger to control rerun results without needing real providers.
 vi.mock("./orchestration.js", async (importOriginal) => {
@@ -302,6 +303,16 @@ describe("runQcRepairLoop", () => {
 
     expect(result.outcome).toBe("all-providers-failed");
     expect(dispatch).not.toHaveBeenCalled();
+
+    // POL-485 regression: terminal outcome must be recorded in telemetry.
+    const telemetry = readFileSync(path.join(tmpDir, "telemetry.jsonl"), "utf-8")
+      .trim()
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => JSON.parse(line));
+    const terminal = telemetry.find((e) => e.event === "qc-repair-loop-terminal");
+    expect(terminal).toBeDefined();
+    expect(terminal.outcome).toBe("all-providers-failed");
   });
 
   it("exits with medic-referral when a repair worker fails", async () => {
@@ -459,5 +470,96 @@ describe("initRepairLoopState", () => {
     expect(state.terminal_outcome).toBeNull();
     expect(state.pending_packet_ids).toEqual([]);
     expect(state.completed_packet_ids).toEqual([]);
+  });
+});
+
+function writeClusterState(dir: string, clusterId: string): void {
+  const clusterStateDir = path.join(dir, ".polaris", "clusters", clusterId);
+  mkdirSync(clusterStateDir, { recursive: true });
+  const { writeFileSync } = require("node:fs");
+  writeFileSync(
+    path.join(clusterStateDir, "cluster-state.json"),
+    JSON.stringify(
+      {
+        schema_version: "1.0",
+        cluster_id: clusterId,
+        state_generation: 1,
+        child_states: [],
+        claim_metadata: {},
+        packet_pointers: {},
+        result_pointers: {},
+        validation_results: {},
+        commits: {},
+        tracker_mutations: {},
+        blockers: [],
+        qc_runs: {},
+      },
+      null,
+      2,
+    ),
+    "utf-8",
+  );
+}
+
+describe("repair loop cluster-state durability", () => {
+  let tmpDir: string;
+
+  beforeEach(() => {
+    tmpDir = path.join(os.tmpdir(), `polaris-repair-loop-durability-${Date.now()}`);
+    mkdirSync(tmpDir, { recursive: true });
+    vi.mocked(runQcAtTrigger).mockReset();
+  });
+
+  afterEach(() => {
+    try {
+      rmSync(tmpDir, { recursive: true, force: true });
+    } catch {
+      // Ignore cleanup failures.
+    }
+  });
+
+  it("records the terminal outcome and manifest path in cluster state", async () => {
+    const clusterId = "POL-DURABLE";
+    writeClusterState(tmpDir, clusterId);
+
+    const config = makeQcConfig({ maxRepairRounds: 2 });
+    vi.mocked(runQcAtTrigger).mockResolvedValue(makePassedQcResult());
+
+    const packet = makeRepairable({ packetId: "pkt-durable-r1-001" });
+    const manifestDir = path.join(tmpDir, ".polaris", "clusters", clusterId, "qc", "repair-rounds", "1");
+    mkdirSync(manifestDir, { recursive: true });
+    const { writeFileSync } = await import("node:fs");
+    writeFileSync(
+      path.join(manifestDir, "repair-packets.json"),
+      JSON.stringify(makeManifest([packet]), null, 2),
+      "utf-8",
+    );
+
+    const dispatch: DispatchRepairWorkerFn = vi.fn().mockResolvedValue({
+      packetId: "pkt-durable-r1-001",
+      status: "success",
+    } as RepairWorkerResult);
+
+    const result = await runQcRepairLoop({
+      clusterId,
+      runId: "run-durable",
+      branch: "main",
+      repoRoot: tmpDir,
+      telemetryFile: path.join(tmpDir, "telemetry.jsonl"),
+      config,
+      registry: emptyRegistry,
+      initialQcResults: [makeQcResultWithFindings()],
+      dispatchRepairWorker: dispatch,
+      maxRounds: 2,
+    });
+
+    expect(result.outcome).toBe("pass");
+
+    const clusterState = readClusterStateSync(clusterId, tmpDir);
+    expect(clusterState).not.toBeNull();
+    expect(clusterState?.qc_repair_outcome).toBe("pass");
+    expect(clusterState?.qc_repair_manifests?.[1]).toContain(
+      path.join("qc", "repair-rounds", "1", "repair-packets.json"),
+    );
   });
 });

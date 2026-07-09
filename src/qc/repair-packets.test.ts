@@ -244,6 +244,26 @@ describe("QC repair packet compiler", () => {
     expect(packet.findingIds).toEqual([]);
   });
 
+  it("produces no repair-worker packets when all providers failed", () => {
+    const failed: QcResult = makeResult({
+      qcRunId: "qc-run-all-failed",
+      status: "failed",
+      allProvidersFailed: true,
+      findings: [],
+    });
+    const output = compileRepairPackets({
+      clusterId,
+      round,
+      qcResults: [failed],
+      config: DEFAULT_TEST_CONFIG,
+      compiledAt,
+    });
+
+    const repairPackets = output.packets.filter((p) => p.routingTarget === "repair-worker");
+    expect(repairPackets).toHaveLength(0);
+    expect(output.packets.every((p) => p.routingTarget === "operator-review")).toBe(true);
+  });
+
   it("assigns disjoint packets to different parallel groups", () => {
     const findings: QcFinding[] = [
       {

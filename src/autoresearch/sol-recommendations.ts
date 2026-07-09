@@ -19,6 +19,7 @@ import { generateReport } from "./sol-report.js";
 import type { SolReportGroupBy } from "./sol-report.js";
 import type { AutresearchProposal, ArtifactType } from "./proposal.js";
 import type { SolEvidence } from "../types/sol-evidence.js";
+import type { SolScorecard, SolSubscore, SolSourceRef } from "../types/sol-scorecard.js";
 
 // ──────────────────────────────────────────────
 // Public types
@@ -555,4 +556,239 @@ export function formatQcRecommendations(report: QcRecommendationsReport): string
   }
 
   return lines.join("\n");
+}
+
+// ──────────────────────────────────────────────
+// Scorecard → recommendation input bridge
+// ──────────────────────────────────────────────
+
+/**
+ * Verdict indicating whether outcome data supports, contradicts, or is
+ * inconclusive about the current routing assignment.
+ *
+ * - "supported":    Evidence confirms the current route/provider/model choice.
+ * - "contradicted": Evidence contradicts it (failures, blocked outcomes, QC blocks).
+ * - "inconclusive": Insufficient or mixed signal; manual review advised.
+ */
+export type ScorecardVerdict = "supported" | "contradicted" | "inconclusive";
+
+/**
+ * Quality-per-token evidence extracted from a scorecard subscore.
+ */
+export interface QualityPerTokenEvidence {
+  score: number | null;
+  detail: string | null;
+}
+
+/**
+ * QC evidence extracted from a scorecard's subscores and raw metrics.
+ */
+export interface ScorecardQcEvidence {
+  qc_findings: number | null;
+  blocking_findings: number | null;
+  qc_repair_status: string | null;
+  qc_score: number | null;
+}
+
+/**
+ * Validation evidence extracted from a scorecard.
+ */
+export interface ScorecardValidationEvidence {
+  validation_outcome: string | null;
+  passed_commands: string[];
+  validation_score: number | null;
+}
+
+/**
+ * A recommendation input summary derived from a single SolScorecard.
+ *
+ * Produced by `scorecardToRecommendationSummary`. This is the bridge from
+ * durable scorecard artifacts to advisory routing recommendation inputs.
+ *
+ * Design rules:
+ *   - Read-only: does not modify the scorecard or any runtime state.
+ *   - Advisory: verdict and confidence are inputs to human review, never
+ *     applied automatically.
+ *   - The originating scorecard is referenced by scorecard_id and subject_key,
+ *     not embedded, to avoid duplication.
+ */
+export interface ScorecardRecommendationSummary {
+  /** Originating scorecard identifier. */
+  scorecard_id: string;
+  /** Subject type (foreman | worker | provider | model | routing). */
+  subject: SolScorecard["subject"];
+  /** Subject key (provider name, model name, child ID, etc.). */
+  subject_key: string;
+  /** Affected routing dimensions derived from scorecard grouping keys. */
+  affected: RecommendationAffected;
+  /** Advisory verdict based on aggregate score and confirmed_signal subscore. */
+  verdict: ScorecardVerdict;
+  /** Aggregate score (0.0–1.0) or null if all subscores skipped. */
+  aggregate_score: number | null;
+  /** Confidence (0.0–1.0) in this summary's verdict. */
+  confidence: number;
+  /** Low-scoring dimensions (score < 0.5). */
+  low_scoring_dimensions: string[];
+  /** Quality-per-token evidence. */
+  quality_per_token: QualityPerTokenEvidence;
+  /** QC evidence. */
+  qc: ScorecardQcEvidence;
+  /** Validation evidence. */
+  validation: ScorecardValidationEvidence;
+  /** Source references from the originating scorecard. */
+  source_refs: SolSourceRef[];
+  /** Whether any intervention signal was detected. */
+  intervention_detected: boolean;
+  /** Whether router exhaustion or fallback was observed. */
+  router_issue_detected: boolean;
+}
+
+// ── Internal helpers ──
+
+function extractQptEvidence(subscores: SolSubscore[]): QualityPerTokenEvidence {
+  const s = subscores.find((ss) => ss.dimension === "quality_per_token");
+  return { score: s?.score ?? null, detail: s?.detail ?? null };
+}
+
+function extractQcEvidence(
+  subscores: SolSubscore[],
+  rawMetrics: SolScorecard["raw_metrics"],
+): ScorecardQcEvidence {
+  const qcSub = subscores.find(
+    (ss) => ss.dimension === "qc" || ss.dimension === "qc_repair_loop" || ss.dimension === "qc_result",
+  );
+  return {
+    qc_findings: rawMetrics.qc_total_findings,
+    blocking_findings: rawMetrics.qc_blocking_findings,
+    qc_repair_status: rawMetrics.qc_repair_loop_status,
+    qc_score: qcSub?.score ?? null,
+  };
+}
+
+function extractValidationEvidence(
+  subscores: SolSubscore[],
+  rawMetrics: SolScorecard["raw_metrics"],
+): ScorecardValidationEvidence {
+  const valSub = subscores.find(
+    (ss) =>
+      ss.dimension === "validation" ||
+      ss.dimension === "evidence_validation" ||
+      ss.dimension === "validation_result",
+  );
+  return {
+    validation_outcome: rawMetrics.validation_outcome,
+    passed_commands: [...(rawMetrics.passed_commands ?? [])],
+    validation_score: valSub?.score ?? null,
+  };
+}
+
+function deriveVerdict(
+  scorecard: SolScorecard,
+  qcEvidence: ScorecardQcEvidence,
+): ScorecardVerdict {
+  const { subscores, aggregate_score, recommendation_inputs } = scorecard;
+
+  // Blocking QC findings always contradict.
+  if ((qcEvidence.blocking_findings ?? 0) > 0) return "contradicted";
+
+  // confirmed_signal subscore is the strongest direct verdict signal.
+  const confirmed = subscores.find((s) => s.dimension === "confirmed_signal");
+  if (confirmed !== undefined && confirmed.score !== null) {
+    if (confirmed.score >= 0.9) return "supported";
+    if (confirmed.score <= 0.1) return "contradicted";
+  }
+
+  // Aggregate score determines verdict; intervention/router issues limit to inconclusive.
+  if (aggregate_score !== null) {
+    if (aggregate_score < 0.5) return "contradicted";
+    if (
+      aggregate_score >= 0.75 &&
+      !recommendation_inputs.intervention_detected &&
+      !recommendation_inputs.router_issue_detected
+    ) {
+      return "supported";
+    }
+  }
+
+  if (recommendation_inputs.intervention_detected || recommendation_inputs.router_issue_detected) {
+    return "inconclusive";
+  }
+
+  if (aggregate_score === null) return "inconclusive";
+  if (aggregate_score >= 0.75) return "supported";
+  if (aggregate_score < 0.6) return "contradicted";
+  return "inconclusive";
+}
+
+function confidenceFromScorecard(scorecard: SolScorecard): number {
+  const { subscores, aggregate_score, recommendation_inputs } = scorecard;
+  const scoredCount = subscores.filter((s) => s.score !== null).length;
+  if (scoredCount === 0) return 0.1; // minimal confidence without evidence
+
+  // Base: proportion of subscores with data.
+  const coverage = scoredCount / Math.max(subscores.length, 1);
+  // Small penalty when below threshold (more uncertainty in the recommendation).
+  const scorePenalty = aggregate_score !== null && recommendation_inputs.below_threshold ? 0.1 : 0;
+  return clamp01(coverage - scorePenalty);
+}
+
+function affectedFromScorecard(scorecard: SolScorecard): RecommendationAffected {
+  const keys = scorecard.grouping_keys ?? {};
+  const affected: RecommendationAffected = {};
+  if (keys.route) affected.route = keys.route;
+  if (keys.task_type) affected.task_type = keys.task_type;
+  if (keys.role) affected.role = keys.role;
+  if (keys.provider) affected.provider = keys.provider;
+  if (keys.model) affected.model = keys.model;
+  // Subject-level key as fallback for provider/model scorecards.
+  if (!affected.provider && scorecard.subject === "provider") affected.provider = scorecard.subject_key;
+  if (!affected.model && scorecard.subject === "model") affected.model = scorecard.subject_key;
+  return affected;
+}
+
+/**
+ * Derive a `ScorecardRecommendationSummary` from a `SolScorecard`.
+ *
+ * This is a pure function: it does not read files, call APIs, or mutate
+ * the scorecard or any runtime state. Its output is advisory by default.
+ */
+export function scorecardToRecommendationSummary(
+  scorecard: SolScorecard,
+): ScorecardRecommendationSummary {
+  const { subscores, raw_metrics, source_refs, recommendation_inputs } = scorecard;
+
+  const qc = extractQcEvidence(subscores, raw_metrics);
+  const validation = extractValidationEvidence(subscores, raw_metrics);
+  const quality_per_token = extractQptEvidence(subscores);
+  const verdict = deriveVerdict(scorecard, qc);
+  const confidence = confidenceFromScorecard(scorecard);
+  const affected = affectedFromScorecard(scorecard);
+  const clonedSourceRefs = source_refs.map((ref) => ({ ...ref }));
+
+  return {
+    scorecard_id: scorecard.scorecard_id,
+    subject: scorecard.subject,
+    subject_key: scorecard.subject_key,
+    affected,
+    verdict,
+    aggregate_score: scorecard.aggregate_score,
+    confidence,
+    low_scoring_dimensions: [...recommendation_inputs.low_scoring_dimensions],
+    quality_per_token,
+    qc,
+    validation,
+    source_refs: clonedSourceRefs,
+    intervention_detected: recommendation_inputs.intervention_detected,
+    router_issue_detected: recommendation_inputs.router_issue_detected,
+  };
+}
+
+/**
+ * Derive recommendation summaries from a set of scorecards.
+ * Returns all summaries; callers filter by verdict as needed.
+ */
+export function scorecardsToRecommendationSummaries(
+  scorecards: SolScorecard[],
+): ScorecardRecommendationSummary[] {
+  return scorecards.map(scorecardToRecommendationSummary);
 }

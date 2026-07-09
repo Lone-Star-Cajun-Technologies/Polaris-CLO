@@ -1,7 +1,7 @@
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { initializeClusterState, readClusterState, recordQcRun } from "./store.js";
+import { initializeClusterState, pruneMissingQcRunPointers, readClusterState, recordQcRun } from "./store.js";
 import type { QcResult } from "../qc/types.js";
 
 const scratchRoots: string[] = [];
@@ -114,7 +114,7 @@ describe("initializeClusterState", () => {
 });
 
 describe("recordQcRun", () => {
-  function makeResult(qcRunId: string): QcResult {
+  function makeResult(qcRunId: string, overrides: Partial<QcResult> = {}): QcResult {
     const now = new Date().toISOString();
     return {
       schemaVersion: "1.0",
@@ -136,6 +136,7 @@ describe("recordQcRun", () => {
         routedToRepair: false,
         summary: "2 findings",
       },
+      ...overrides,
     };
   }
 
@@ -163,10 +164,86 @@ describe("recordQcRun", () => {
       provider: "coderabbit",
       started_at: result.startedAt,
       completed_at: result.completedAt,
+      availability: "available",
     });
 
     const reloaded = await readClusterState(clusterId, repoRoot);
     expect((reloaded?.qc_runs ?? {})["qc-run-1"]).toEqual(qcRuns["qc-run-1"]);
     expect(JSON.parse(readFileSync(artifactPath, "utf-8"))).toEqual(result);
+  });
+
+  it("marks failed provider pointers unavailable when audit artifacts are missing", async () => {
+    const clusterId = "POL-204-FAILED";
+    const repoRoot = makeRepoRoot("cluster-state-failed-qc");
+    writeClustersFile(repoRoot, clusterId, {
+      schemaVersion: "v2",
+      source: { id: clusterId, type: "Linear" },
+      nodes: { [clusterId]: { id: clusterId, title: "Cluster", status: "Backlog" } },
+      dependencies: {},
+      clusters: { [clusterId]: { id: clusterId, title: "Cluster", children: [] } },
+      activeCluster: clusterId,
+    });
+
+    await initializeClusterState(clusterId, repoRoot);
+    const result = makeResult("qc-run-failed", {
+      status: "failed",
+      allProvidersFailed: true,
+      rawArtifactPaths: [path.join(repoRoot, "missing-raw.log")],
+      providerAttempt: {
+        provider: "coderabbit",
+        status: "failure",
+        rawOutputAvailable: false,
+        rawOutputRetained: false,
+        stdoutLength: 0,
+        stderrLength: 0,
+      },
+    });
+    const { state } = await recordQcRun(clusterId, result, repoRoot);
+
+    const pointer = (state.qc_runs ?? {})["qc-run-failed"];
+    expect(pointer).toBeDefined();
+    expect(pointer.availability).toBe("unavailable");
+    expect(pointer.raw_artifact_paths).toContain(path.join(repoRoot, "missing-raw.log"));
+  });
+});
+
+describe("pruneMissingQcRunPointers", () => {
+  it("removes pointers to missing primary artifacts and warns", () => {
+    const state = {
+      schema_version: "1.0",
+      cluster_id: "POL-PRUNE",
+      state_generation: 3,
+      child_states: [],
+      claim_metadata: {},
+      packet_pointers: {},
+      result_pointers: {},
+      validation_results: {},
+      commits: {},
+      tracker_mutations: {},
+      blockers: [],
+      qc_runs: {
+        "existing-run": {
+          artifact_path: path.join(process.cwd(), "package.json"),
+          status: "passed" as const,
+          provider: "coderabbit",
+          started_at: new Date().toISOString(),
+          completed_at: new Date().toISOString(),
+        },
+        "missing-run": {
+          artifact_path: path.join(process.cwd(), "missing-qc-artifact.json"),
+          status: "passed" as const,
+          provider: "coderabbit",
+          started_at: new Date().toISOString(),
+          completed_at: new Date().toISOString(),
+        },
+      },
+    };
+
+    const { state: cleaned, pruned, warnings } = pruneMissingQcRunPointers(state);
+
+    expect(pruned).toEqual(["missing-run"]);
+    expect(warnings.length).toBeGreaterThan(0);
+    expect(cleaned.qc_runs).toHaveProperty("existing-run");
+    expect(cleaned.qc_runs).not.toHaveProperty("missing-run");
   });
 });

@@ -18,6 +18,12 @@ describe("createSolCommand", () => {
     expect(score!.opts().repoRoot).toBe("/custom/root");
   });
 
+  it("exposes the report subcommand", () => {
+    const command = createSolCommand({ repoRoot: "/tmp/polaris-test" });
+    const subcommands = command.commands.map((c) => c.name());
+    expect(subcommands).toContain("report");
+  });
+
   it("keeps 'autoresearch' as a compatibility alias", () => {
     const command = createSolCommand({ repoRoot: "/tmp/polaris-test" });
     expect(command.alias()).toBe("autoresearch");
@@ -29,5 +35,18 @@ describe("createAutoresearchCommand", () => {
     const command = createAutoresearchCommand({ repoRoot: "/tmp/polaris-test" });
     expect(command.name()).toBe("sol");
     expect(command.alias()).toBe("autoresearch");
+  });
+});
+
+describe("sol report command", () => {
+  it("advertises --format and --no-write flags in help", () => {
+    const command = createSolCommand({ repoRoot: "/tmp/polaris-test" });
+    const report = command.commands.find((c) => c.name() === "report");
+    expect(report).toBeDefined();
+
+    const help = report!.helpInformation();
+    expect(help).toContain("--format");
+    expect(help).toContain("--no-write");
+    expect(help).toContain("--json");
   });
 });

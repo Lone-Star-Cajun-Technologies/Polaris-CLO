@@ -1,0 +1,47 @@
+{
+  "schemaVersion": "1.0",
+  "qcRunId": "coderabbit-1783574341396",
+  "runId": "polaris-run-pol-509-2026-07-09-001",
+  "clusterId": "POL-509",
+  "trigger": "completed-cluster",
+  "provider": "coderabbit",
+  "providerMode": "local",
+  "startedAt": "2026-07-09T05:14:01.346Z",
+  "completedAt": "2026-07-09T05:19:01.396Z",
+  "status": "passed",
+  "findings": [
+    {
+      "findingId": "coderabbit-1-1783574341396",
+      "severity": "info",
+      "category": "status",
+      "title": "status",
+      "message": "Found this repository in Lone-Star-Cajun-Technologies. This review will use Lone-Star-Cajun-Technologies's CodeRabbit plan and count toward its usage.",
+      "fixAvailable": false,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "provider-uncertain"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    }
+  ],
+  "rawArtifactPaths": [],
+  "parserVersion": "coderabbit-1.0",
+  "policyDecision": {
+    "blocksDelivery": false,
+    "requiresOperatorReview": false,
+    "routedToRepair": false,
+    "summary": "1 findings"
+  },
+  "providerAttempt": {
+    "provider": "coderabbit",
+    "status": "success",
+    "rawOutputAvailable": true,
+    "rawOutputRetained": false,
+    "stdoutLength": 783,
+    "stderrLength": 0,
+    "exitCode": 143,
+    "parserResult": "success"
+  }
+}

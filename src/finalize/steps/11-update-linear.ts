@@ -10,6 +10,7 @@ export async function stepUpdateLinear(
   linearEnabled: boolean,
   parentIssueId?: string,
   lifecyclePolicy?: TrackerLifecyclePolicy,
+  authoritativeChildCount?: number,
 ): Promise<void> {
   if (!linearEnabled) {
     console.log("[11/12] Linear integration disabled — skipping.");
@@ -28,6 +29,6 @@ export async function stepUpdateLinear(
     return;
   }
 
-  await updateLinearIssueAfterFinalize({ issueId, state, branch, prUrl, validationPassed, apiKey, lifecyclePolicy });
+  await updateLinearIssueAfterFinalize({ issueId, state, branch, prUrl, validationPassed, apiKey, lifecyclePolicy, authoritativeChildCount });
   console.log(`Linear parent ${issueId} updated.`);
 }

@@ -9,15 +9,47 @@ export { routeProposals } from "./routing.js";
 export type { ProposalIssueResult, RouteProposalsResult, RouteProposalsOptions } from "./routing.js";
 export { aggregateSolEvidence } from "./sol-evidence-loader.js";
 export { computeForemanScore, computeWorkerScore, computeSolScoreReport } from "./sol-scorer.js";
+export {
+  computeForemanScorecard,
+  computeWorkerScorecard,
+  computeProviderScorecard,
+  computeModelScorecard,
+  computeRoutingScorecard,
+  computeAllScorecards,
+  buildForemanRawMetrics,
+  buildWorkerRawMetrics,
+  buildProviderRawMetrics,
+  buildModelRawMetrics,
+  buildRoutingRawMetrics,
+} from "./sol-scorecard-calculator.js";
+export type { SolScorecardSet } from "./sol-scorecard-calculator.js";
 export { appendSnapshot, loadSnapshots, buildSnapshot, getHistoryFilePath } from "./sol-history.js";
 export type { SolScoreSnapshot } from "./sol-history.js";
 export { generateReport, formatReportCli } from "./sol-report.js";
 export type { SolReport, SolGroupSummary, SolReportGroupBy, SolReportOptions } from "./sol-report.js";
 export {
+  buildEvaluationRecord,
+  writeEvaluationRecord,
+  writeScorecard,
+  writeScorecardSet,
+  writeSolMarkdownReport,
+  getSolEvaluationsDir,
+  getSolScorecardsDir,
+  getSolReportsDir,
+  getEvaluationRecordPath,
+  getScorecardPath,
+  getSolMarkdownReportPath,
+} from "./sol-evaluation-writer.js";
+export type { SolEvaluationRecord } from "./sol-evaluation-writer.js";
+export { renderSolMarkdown } from "./sol-report-renderer.js";
+export type { SolRenderedReport } from "./sol-report-renderer.js";
+export {
   generateRecommendations,
   recommendationsToProposals,
   recommendationToProposal,
   formatRecommendationsCli,
+  scorecardToRecommendationSummary,
+  scorecardsToRecommendationSummaries,
 } from "./sol-recommendations.js";
 export type {
   SolRecommendation,
@@ -25,6 +57,11 @@ export type {
   RecommendationEvidence,
   RecommendationOptions,
   RecommendationsReport,
+  ScorecardVerdict,
+  QualityPerTokenEvidence,
+  ScorecardQcEvidence,
+  ScorecardValidationEvidence,
+  ScorecardRecommendationSummary,
 } from "./sol-recommendations.js";
 export type {
   SolDimensionScore,

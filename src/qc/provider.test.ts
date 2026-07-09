@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, it, expect } from "vitest";
 import { QcProviderRegistry } from "./provider.js";
 import { CodeRabbitQcProvider } from "./providers/coderabbit.js";
@@ -5,7 +7,12 @@ import { createDefaultQcRegistry, createQcRegistry } from "./registry.js";
 import fullFixture from "./fixtures/coderabbit-full.json";
 import partialFixture from "./fixtures/coderabbit-partial.json";
 import unknownFixture from "./fixtures/coderabbit-unknown.json";
+import emptyFixture from "./fixtures/coderabbit-empty.json";
 import type { QcConfig, QcProviderConfig } from "../config/schema.js";
+
+function loadFixtureText(name: string): string {
+  return readFileSync(join("src/qc/fixtures", name), "utf-8");
+}
 
 describe("QcProviderRegistry", () => {
   it("registers and retrieves providers by name", () => {
@@ -92,7 +99,20 @@ describe("CodeRabbitQcProvider", () => {
     });
 
     expect(command.command).toBe("coderabbit");
-    expect(command.args).toEqual(["review", "--agent", "--branch", "feature-branch"]);
+    expect(command.args).toEqual(["review", "--agent", "--base", "feature-branch"]);
+  });
+
+  it("prefers baseRef for local review commands", () => {
+    const provider = new CodeRabbitQcProvider();
+    const command = provider.buildReviewCommand({
+      clusterId: "POL-470",
+      runId: "polaris-run-pol-470",
+      branch: "feature-branch",
+      baseRef: "main",
+    });
+
+    expect(command.command).toBe("coderabbit");
+    expect(command.args).toEqual(["review", "--agent", "--base", "main"]);
   });
 
   it("parses raw output into a passed result without findings", () => {
@@ -225,6 +245,62 @@ describe("CodeRabbitQcProvider", () => {
     expect(result.findings[1].severity).toBe("low");
   });
 
+  it("parses valid JSONL findings from fixture", () => {
+    const provider = new CodeRabbitQcProvider();
+    const result = provider.parse({
+      provider: "coderabbit",
+      exitCode: 0,
+      stdout: loadFixtureText("coderabbit-valid-findings.jsonl"),
+    });
+
+    expect(result.findings).toHaveLength(2);
+    expect(result.status).toBe("findings");
+  });
+
+  it("rejects progress-only JSONL output as unusable-output", () => {
+    const provider = new CodeRabbitQcProvider();
+    expect(() =>
+      provider.parse({
+        provider: "coderabbit",
+        exitCode: 0,
+        stdout: loadFixtureText("coderabbit-progress-only.jsonl"),
+      }),
+    ).toThrow("progress/status/heartbeat");
+
+    try {
+      provider.parse({
+        provider: "coderabbit",
+        exitCode: 0,
+        stdout: loadFixtureText("coderabbit-progress-only.jsonl"),
+      });
+    } catch (err) {
+      expect((err as { qcFailureReason?: string }).qcFailureReason).toBe("unusable-output");
+    }
+  });
+
+  it("returns passed for an empty metrics payload", () => {
+    const provider = new CodeRabbitQcProvider();
+    const result = provider.importMetrics({
+      provider: "coderabbit",
+      format: "coderabbit",
+      data: emptyFixture,
+    });
+
+    expect(result.status).toBe("passed");
+    expect(result.findings).toHaveLength(0);
+  });
+
+  it("throws when stdout cannot be parsed", () => {
+    const provider = new CodeRabbitQcProvider();
+    expect(() =>
+      provider.parse({
+        provider: "coderabbit",
+        exitCode: 1,
+        stdout: loadFixtureText("coderabbit-parse-failure.txt"),
+      }),
+    ).toThrow("CodeRabbit output could not be parsed");
+  });
+
   it("parses JSON output when configured format is json", () => {
     const provider = new CodeRabbitQcProvider({
       name: "coderabbit",
@@ -309,7 +385,7 @@ describe("CodeRabbitQcProvider", () => {
       "--agent",
       "--config",
       ".polaris/coderabbit.config.yaml",
-      "--branch",
+      "--base",
       "feature-branch",
     ]);
   });
@@ -323,7 +399,7 @@ describe("CodeRabbitQcProvider", () => {
     });
 
     expect(command.command).toBe("coderabbit");
-    expect(command.args).toEqual(["review", "--agent", "--branch", "feature-branch"]);
+    expect(command.args).toEqual(["review", "--agent", "--base", "feature-branch"]);
   });
 });
 

@@ -1,0 +1,75 @@
+{
+  "schemaVersion": "1.0",
+  "qcRunId": "coderabbit-1783575094570",
+  "runId": "polaris-run-pol-509-2026-07-09-001",
+  "clusterId": "POL-509",
+  "trigger": "completed-cluster",
+  "provider": "coderabbit",
+  "providerMode": "local",
+  "startedAt": "2026-07-09T05:26:34.531Z",
+  "completedAt": "2026-07-09T05:31:34.570Z",
+  "status": "findings",
+  "findings": [
+    {
+      "findingId": "coderabbit-1-1783575094570",
+      "severity": "info",
+      "category": "status",
+      "title": "status",
+      "message": "Found this repository in Lone-Star-Cajun-Technologies. This review will use Lone-Star-Cajun-Technologies's CodeRabbit plan and count toward its usage.",
+      "fixAvailable": false,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "provider-uncertain"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-2-1783575094570",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "fixAvailable": false,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "provider-uncertain"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-3-1783575094570",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "fixAvailable": false,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "provider-uncertain"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    }
+  ],
+  "rawArtifactPaths": [],
+  "parserVersion": "coderabbit-1.0",
+  "policyDecision": {
+    "blocksDelivery": true,
+    "requiresOperatorReview": true,
+    "routedToRepair": false,
+    "summary": "3 findings; operator review required"
+  },
+  "providerAttempt": {
+    "provider": "coderabbit",
+    "status": "success",
+    "rawOutputAvailable": true,
+    "rawOutputRetained": false,
+    "stdoutLength": 2556,
+    "stderrLength": 0,
+    "exitCode": 143,
+    "parserResult": "success"
+  }
+}

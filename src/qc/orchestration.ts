@@ -40,6 +40,8 @@ export interface RunQcAtTriggerOptions extends QcRunnerOptions {
   trigger: "pr" | "completed-cluster" | "child";
   /** Required for the "pr" trigger. */
   prUrl?: string;
+  /** Optional base ref for local diff review. */
+  baseRef?: string;
   /** Optional loop state for attribution evidence. */
   state?: LoopState;
   /** Optional route name for per-route policy overrides. */
@@ -47,7 +49,7 @@ export interface RunQcAtTriggerOptions extends QcRunnerOptions {
 }
 
 function buildAttributionContext(options: RunQcAtTriggerOptions): QcAttributionContext {
-  const { repoRoot, clusterId, branch, state } = options;
+  const { repoRoot, clusterId, branch, baseRef, state } = options;
   const dispatchRecords: Record<string, import("../loop/checkpoint.js").ChildDispatchRecord> = {};
   if (state?.open_children_meta) {
     for (const [childId, meta] of Object.entries(state.open_children_meta)) {
@@ -59,7 +61,7 @@ function buildAttributionContext(options: RunQcAtTriggerOptions): QcAttributionC
 
   return {
     repoRoot,
-    baseBranch: branch ?? state?.branch ?? "main",
+    baseBranch: baseRef ?? branch ?? state?.branch ?? "main",
     completedResults: state?.completed_children_results,
     dispatchRecords,
     clusterState: repoRoot ? (readClusterStateSync(clusterId, repoRoot) ?? undefined) : undefined,
@@ -162,6 +164,7 @@ export async function runQcAtTrigger(
       clusterId,
       runId,
       ...(trigger === "pr" ? { prUrl } : { branch }),
+      ...(options.baseRef ? { baseRef: options.baseRef } : {}),
     };
 
     try {

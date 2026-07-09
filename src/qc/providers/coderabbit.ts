@@ -4,7 +4,7 @@ import type {
   QcProviderOutput,
   QcReviewScope,
 } from "../provider.js";
-import type { QcAttribution, QcFinding, QcResult, QcSeverity } from "../types.js";
+import type { QcAttribution, QcFailureReason, QcFinding, QcResult, QcSeverity } from "../types.js";
 import { maxSeverity, normalizeSeverity } from "../severity.js";
 import type { QcProviderConfig } from "../../config/schema.js";
 
@@ -69,6 +69,82 @@ function pickString(...candidates: (unknown | undefined)[]): string | undefined 
   return undefined;
 }
 
+const FINDING_LOCATION_KEYS = ["file", "filePath", "path"];
+const FINDING_REVIEW_KEYS = [
+  "severity",
+  "message",
+  "title",
+  "summary",
+  "description",
+  "body",
+  "rule",
+  "category",
+  "suggestion",
+  "suggestedAction",
+  "fix",
+  "providerFindingId",
+  "id",
+  "findingId",
+];
+const PROGRESS_SHAPE_KEYS = new Set(["event", "progress", "heartbeat", "complete", "review_context"]);
+const PROGRESS_TYPE_VALUES = new Set([
+  "progress",
+  "status",
+  "heartbeat",
+  "complete",
+  "review_context",
+  "reviewcontext",
+]);
+const PROGRESS_STATUS_VALUES = new Set([
+  "in_progress",
+  "running",
+  "pending",
+  "complete",
+  "completed",
+  "done",
+  "heartbeat",
+  "ok",
+  "success",
+]);
+
+function hasFindingLocation(record: Record<string, unknown>): boolean {
+  return FINDING_LOCATION_KEYS.some((key) => record[key] !== undefined);
+}
+
+function hasFindingReviewContent(record: Record<string, unknown>): boolean {
+  return FINDING_REVIEW_KEYS.some((key) => record[key] !== undefined);
+}
+
+function isProgressRecord(record: Record<string, unknown>): boolean {
+  // Check progress/status indicators FIRST before the generic finding-content guard
+  const keys = Object.keys(record);
+  if (keys.length === 0) return false;
+  if (keys.some((key) => PROGRESS_SHAPE_KEYS.has(key))) return true;
+  if (typeof record.type === "string" && PROGRESS_TYPE_VALUES.has(record.type.toLowerCase())) return true;
+  if (typeof record.status === "string" && PROGRESS_STATUS_VALUES.has(record.status.toLowerCase())) return true;
+
+  // Status-only records with category="status" are progress records even if they have message/title fields
+  if (typeof record.category === "string" && record.category.toLowerCase() === "status") return true;
+
+  // Only reject as progress if it has both location AND review content (true finding shape)
+  if (hasFindingLocation(record) && hasFindingReviewContent(record)) {
+    return false;
+  }
+
+  return false;
+}
+
+function isActionableFinding(record: Record<string, unknown>): boolean {
+  if (isProgressRecord(record)) return false;
+  return hasFindingLocation(record) || hasFindingReviewContent(record);
+}
+
+function makeUnusableOutputError(message: string): Error {
+  const err = new Error(message);
+  (err as { qcFailureReason?: QcFailureReason }).qcFailureReason = "unusable-output";
+  return err;
+}
+
 function buildRange(raw: CodeRabbitFindingLike) {
   const startLine = coerceNumber(raw.startLine ?? raw.line) ?? 1;
   const endLine = coerceNumber(raw.endLine);
@@ -95,23 +171,28 @@ function parseFindingsFromPayload(payload: unknown): CodeRabbitFindingLike[] {
   const record = payload as Record<string, unknown>;
 
   if (Array.isArray(record.findings)) {
-    return record.findings as CodeRabbitFindingLike[];
+    return (record.findings as unknown[]).filter(
+      (item): item is CodeRabbitFindingLike =>
+        typeof item === "object" && item !== null && isActionableFinding(item as Record<string, unknown>),
+    );
   }
 
   if (Array.isArray(record.issues)) {
-    return record.issues as CodeRabbitFindingLike[];
+    return (record.issues as unknown[]).filter(
+      (item): item is CodeRabbitFindingLike =>
+        typeof item === "object" && item !== null && isActionableFinding(item as Record<string, unknown>),
+    );
   }
 
   if (Array.isArray(record.results)) {
-    return record.results as CodeRabbitFindingLike[];
+    return (record.results as unknown[]).filter(
+      (item): item is CodeRabbitFindingLike =>
+        typeof item === "object" && item !== null && isActionableFinding(item as Record<string, unknown>),
+    );
   }
 
   // Single finding wrapped in an object
-  if (
-    record.severity !== undefined ||
-    record.message !== undefined ||
-    record.title !== undefined
-  ) {
+  if (isActionableFinding(record)) {
     return [record as CodeRabbitFindingLike];
   }
 
@@ -151,10 +232,28 @@ function parseReport(
     try {
       const parsed = JSON.parse(text) as unknown;
       if (Array.isArray(parsed)) {
-        return { findings: parsed as CodeRabbitFindingLike[] };
+        const findings = (parsed as unknown[]).filter(
+          (item): item is CodeRabbitFindingLike =>
+            typeof item === "object" && item !== null && isActionableFinding(item as Record<string, unknown>),
+        );
+        if (findings.length === 0 && parsed.length > 0) {
+          const progressCount = (parsed as unknown[]).filter(
+            (item) => typeof item === "object" && item !== null && isProgressRecord(item as Record<string, unknown>),
+          ).length;
+          if (progressCount > 0) {
+            throw makeUnusableOutputError(
+              `CodeRabbit output contained only progress/status/heartbeat records (${progressCount} items)`,
+            );
+          }
+        }
+        return { findings };
+      }
+      const findings = parseFindingsFromPayload(parsed);
+      if (findings.length === 0 && isProgressRecord(parsed as Record<string, unknown>)) {
+        throw makeUnusableOutputError("CodeRabbit output was a progress/status/heartbeat record");
       }
       return {
-        findings: parseFindingsFromPayload(parsed),
+        findings,
         ...(typeof (parsed as Record<string, unknown>)?.prUrl === "string"
           ? { prUrl: (parsed as Record<string, unknown>).prUrl as string }
           : {}),
@@ -171,16 +270,37 @@ function parseReport(
   // JSONL or generic line scanning: one finding per line
   const lines = text.split("\n").filter((line) => line.trim().length > 0);
   const lineFindings: CodeRabbitFindingLike[] = [];
+  let progressLineCount = 0;
+  let parsedLineCount = 0;
   for (const line of lines) {
     try {
-      const parsed = JSON.parse(line) as CodeRabbitFindingLike;
-      lineFindings.push(parsed);
+      const parsed = JSON.parse(line) as unknown;
+      parsedLineCount++;
+      if (!parsed || typeof parsed !== "object") {
+        continue;
+      }
+      const record = parsed as Record<string, unknown>;
+      if (isProgressRecord(record)) {
+        progressLineCount++;
+        continue;
+      }
+      if (isActionableFinding(record)) {
+        lineFindings.push(parsed as CodeRabbitFindingLike);
+      }
     } catch {
       // Ignore unparseable lines.
     }
   }
   if (lineFindings.length > 0) {
     return { findings: lineFindings };
+  }
+  if (progressLineCount > 0) {
+    throw makeUnusableOutputError(
+      `CodeRabbit output contained only progress/status/heartbeat records (${progressLineCount} lines)`,
+    );
+  }
+  if (parsedLineCount > 0) {
+    throw new Error("CodeRabbit output contained no actionable findings");
   }
 
   throw new Error("CodeRabbit output could not be parsed as JSON, JSONL, or metrics payload");
@@ -307,10 +427,11 @@ export class CodeRabbitQcProvider implements IQcProvider {
       if (execution.configPath) {
         args.push("--config", execution.configPath);
       }
+      const baseRef = scope.baseRef ?? scope.branch ?? "main";
       if (scope.prUrl) {
         args.push("--pr-url", scope.prUrl);
       } else {
-        args.push("--branch", scope.branch ?? "HEAD");
+        args.push("--base", baseRef);
       }
       return { command: execution.command, args };
     }
@@ -318,9 +439,10 @@ export class CodeRabbitQcProvider implements IQcProvider {
     if (scope.prUrl) {
       return { command: "coderabbit", args: ["review", "--agent", "--pr-url", scope.prUrl] };
     }
+    const baseRef = scope.baseRef ?? scope.branch ?? "main";
     return {
       command: "coderabbit",
-      args: ["review", "--agent", "--branch", scope.branch ?? "HEAD"],
+      args: ["review", "--agent", "--base", baseRef],
     };
   }
 
