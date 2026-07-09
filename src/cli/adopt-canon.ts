@@ -165,7 +165,7 @@ function dispatchCanonAgent(options: {
     .map((d, i) => `${i + 1}. [${d.title}] path: ${d.path}`)
     .join("\n");
 
-  const prompt = `You are a Polaris librarian generating context files for an agent work area.
+  const prompt = `You are a Polaris librarian generating route cognition for an agent work area.
 
 Route folder: ${routeFolder}
 Repo root: ${repoRoot}
@@ -173,11 +173,15 @@ Repo root: ${repoRoot}
 Available doctrine documents:
 ${docList}
 
-Generate two outputs for this route area:
+Generate two outputs for this route area.
 
-1. SUMMARY.md content — a navigation index. Select relevant doctrine docs and write 2-4 lines describing what this area covers.
+1. SUMMARY.md content (current-state memory / navigation index):
+   - Include: 2-4 lines describing what this area covers, its current canonical status, and which doctrine docs are relevant.
+   - Avoid: operational procedures, step-by-step agent instructions, duplicated doctrine text, or per-run diary content.
 
-2. POLARIS.md content — operational instructions for agents entering this work area. Write 4-8 lines covering: what this area is responsible for, key patterns/conventions agents should follow, what to avoid, and which doctrine docs to consult for specific concerns. Be concise and directive — agents read this cold before starting work.
+2. POLARIS.md content (route operating guidance):
+   - Include: what this area is responsible for, key patterns/conventions agents must follow, constraints and what to avoid, and which doctrine docs to consult for specific concerns.
+   - Avoid: navigation-index content, summary-style history, per-run notes, or duplicating doctrine text instead of linking to it.
 
 Respond with ONLY valid JSON on a single line:
 {"relevant_docs":[{"path":"<doc path>","title":"<doc title>"}],"summary_lines":["line1","line2"],"polaris_lines":["line1","line2"]}

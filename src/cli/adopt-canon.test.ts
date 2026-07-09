@@ -136,4 +136,45 @@ describe("enrichCanonFiles", () => {
     setupRepo();
     await expect(enrichCanonFiles(root)).rejects.toThrow("polaris agent setup required");
   });
+
+  it("prompts the librarian with separate include/avoid lists for each artifact", async () => {
+    setupRepo();
+    const { spawnSync } = await import("node:child_process");
+    const calls: string[][] = [];
+    vi.mocked(spawnSync).mockImplementation((cmd: string, args: string[]) => {
+      calls.push(args);
+      return { stdout: JSON.stringify({ relevant_docs: [], summary_lines: [], polaris_lines: [] }), status: 0 } as ReturnType<typeof spawnSync>;
+    });
+
+    await enrichCanonFiles(root);
+
+    const promptArgs = calls.find((args) => args.some((a) => a.includes("Route folder:"))) ?? [];
+    const prompt = promptArgs.find((a) => a.includes("Route folder:")) ?? "";
+    expect(prompt).toContain("SUMMARY.md content (current-state memory / navigation index)");
+    expect(prompt).toContain("POLARIS.md content (route operating guidance)");
+    expect(prompt).toContain("Avoid: operational procedures");
+    expect(prompt).toContain("Avoid: navigation-index content");
+  });
+
+  it("places summary_lines in SUMMARY.md and polaris_lines in POLARIS.md", async () => {
+    setupRepo();
+    const { spawnSync } = await import("node:child_process");
+    vi.mocked(spawnSync).mockReturnValueOnce({
+      stdout: JSON.stringify({
+        relevant_docs: [{ path: "smartdocs/doctrine/active/AUTH.md", title: "Auth" }],
+        summary_lines: ["This is a summary-only line."],
+        polaris_lines: ["This is a polaris-only line."],
+      }),
+      status: 0,
+    } as ReturnType<typeof spawnSync>);
+
+    await enrichCanonFiles(root);
+
+    const summary = readFileSync(join(root, "src", "SUMMARY.md"), "utf-8");
+    const polaris = readFileSync(join(root, "src", "POLARIS.md"), "utf-8");
+    expect(summary).toContain("This is a summary-only line.");
+    expect(summary).not.toContain("This is a polaris-only line.");
+    expect(polaris).toContain("This is a polaris-only line.");
+    expect(polaris).not.toContain("This is a summary-only line.");
+  });
 });
