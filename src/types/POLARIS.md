@@ -8,7 +8,7 @@ worker result packets, run-health symptom contracts, Medic dispatch, and tracker
 
 ## What belongs here
 
-- `result-packet.ts` — `ResultPacket`, `SuccessResultPacket`, `FailedResultPacket`, `WorkerRunHealthSymptom`, `MedicPacket`, `MedicResult`, `MedicRunHealthPacket`, `MedicRunHealthResult`, `MedicChart`, `MedicTreatmentPacket` types and `isFailedResultPacket` type guard
+- `result-packet.ts` — `ResultPacket`, `SuccessResultPacket`, `FailedResultPacket`, `WorkerRunHealthSymptom`, `MedicPacket`, `MedicResult`, `MedicRunHealthPacket`, `MedicRunHealthResult`, `MedicChart`, `MedicChartSymptom`, `MedicChartDecision`, `MedicTreatmentPacket`, `TreatmentWorkerResult` types and `isFailedResultPacket` type guard
 - `runtime-state.ts` — runtime execution state shape used across loop and finalize
 - `linear.ts` — Linear tracker adapter types
 - `tool-server-linear.d.ts` — ambient declarations for the Linear tool-server integration

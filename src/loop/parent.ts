@@ -73,22 +73,14 @@ import { selectChildSlotClaims, type SlotClaim } from "../runtime/scheduling/chi
 import { loadTrackerAdapter, loadTrackerGraph } from "../tracker/index.js";
 import { LifecycleTransitionService } from "../tracker/lifecycle-transition.js";
 import { LocalGraph } from "../tracker/local-graph.js";
-import { upsertWorkerSymptoms, readRunHealthReport, getRunHealthReportPath } from "../run-health/index.js";
+import { upsertWorkerSymptoms, readRunHealthReport, getRunHealthReportPath, isMedicGateSatisfied } from "../run-health/index.js";
 import { appendForemanSymptom } from "../run-health/foreman-symptoms.js";
 import { appendQcEscalationSymptoms, appendRepairLoopOutcomeSymptom } from "../run-health/qc-escalation.js";
 import type { WorkerRunHealthSymptom, MedicRunHealthPacket } from "../types/result-packet.js";
-import type { RunHealthReport } from "../run-health/schema.js";
 import { runMedicRunHealthConsult } from "../medic/run-health-consult.js";
 import { dispatchTreatmentWorker } from "../medic/treatment-packets.js";
 
 const CLAIM_TTL_MS = 30 * 60 * 1000;
-
-function isMedicGateSatisfied(report: RunHealthReport): boolean {
-  const status = report.medic_consult?.status;
-  if (status === "resolved" || status === "bypassed") return true;
-  if (report.policy_bypass) return true;
-  return false;
-}
 
 /**
  * Returns the list of files touched by a git commit, or null when the commit
@@ -1439,7 +1431,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
             appendForemanSymptom({
               runId: state.run_id,
               clusterId: state.cluster_id,
-              code: "foreman-qc-runtime-failure",
+              code: "foreman-medic-runtime-failure",
               message: `Medic run-health consult threw a runtime error: ${msg}`,
               evidenceRefs: [telemetryFile],
               repoRoot,

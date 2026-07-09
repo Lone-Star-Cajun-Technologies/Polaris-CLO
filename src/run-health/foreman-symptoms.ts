@@ -41,6 +41,8 @@ export type ForemanSymptomCode =
   | "foreman-finalize-recovery"
   /** QC or finalize step threw a runtime error. */
   | "foreman-qc-runtime-failure"
+  /** Medic run-health consult threw a runtime error. */
+  | "foreman-medic-runtime-failure"
   /** Local Polaris binary does not match the global binary. */
   | "foreman-binary-mismatch"
   /** Operator manually intervened in the run. */
@@ -141,6 +143,7 @@ function foremanCodeSeverity(code: ForemanSymptomCode): RunHealthSymptom["severi
     case "foreman-cluster-repair":
     case "foreman-packet-repair":
     case "foreman-qc-runtime-failure":
+    case "foreman-medic-runtime-failure":
     case "foreman-binary-mismatch":
     case "foreman-wrong-run-telemetry":
       return "high";

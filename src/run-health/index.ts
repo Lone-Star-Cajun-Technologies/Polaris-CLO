@@ -330,9 +330,12 @@ export function upsertWorkerSymptoms(
     provider,
   };
 
+  const existing = readRunHealthReport(runId, repoRoot);
+  const offset = existing?.symptoms.length ?? 0;
+
   const toRunHealthSymptom = (s: WorkerRunHealthSymptom, index: number): RunHealthSymptom => ({
-    // Stable id: child + category + index so repeated calls don't collide
-    id: `${childId}:${s.category}:${index}`,
+    // Stable id: child + category + (offset + index) so repeated calls don't collide
+    id: `${childId}:${s.category}:${offset + index}`,
     severity: mapCategoryToSeverity(s.category),
     code: s.category,
     message: s.message,
@@ -341,7 +344,6 @@ export function upsertWorkerSymptoms(
     occurred_at: s.occurred_at,
   });
 
-  const existing = readRunHealthReport(runId, repoRoot);
   if (!existing) {
     const [first, ...rest] = symptoms.map(toRunHealthSymptom);
     const report = createRunHealthReport({
@@ -384,6 +386,19 @@ function mapCategoryToSeverity(category: WorkerRunHealthSymptom['category']): im
 // ──────────────────────────────────────────────
 // Re-export schema types and validation for consumers
 // ──────────────────────────────────────────────
+/**
+ * Returns true when a run-health report has a satisfied Medic gate:
+ * either a resolved/bypassed decision, or an explicit policy bypass.
+ * Used by both loop/parent.ts and finalize/medic-gate.ts to ensure
+ * consistent gate evaluation.
+ */
+export function isMedicGateSatisfied(report: RunHealthReport): boolean {
+  const status = report.medic_consult?.status;
+  if (status === "resolved" || status === "bypassed") return true;
+  if (report.policy_bypass) return true;
+  return false;
+}
+
 export * from "./schema.js";
 export * from "./foreman-symptoms.js";
 export * from "./qc-escalation.js";

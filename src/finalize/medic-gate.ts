@@ -2,7 +2,7 @@ import {
   getRunHealthReportPath,
   markBypassed,
   readRunHealthReport,
-  type RunHealthReport,
+  isMedicGateSatisfied,
 } from "../run-health/index.js";
 
 export interface MedicGateOptions {
@@ -14,13 +14,6 @@ export interface MedicGateOptions {
   bypassPolicy?: "none" | "cli";
   /** When true, do not mutate the run-health report (e.g. during --dry-run). */
   dryRun?: boolean;
-}
-
-function isMedicGateSatisfied(report: RunHealthReport): boolean {
-  const status = report.medic_consult?.status;
-  if (status === "resolved" || status === "bypassed") return true;
-  if (report.policy_bypass) return true;
-  return false;
 }
 
 /**

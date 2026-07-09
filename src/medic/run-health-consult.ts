@@ -395,19 +395,47 @@ export async function runMedicRunHealthConsult(
     });
 
     const results: TreatmentWorkerResult[] = [];
-    for (const treatment of treatmentPackets) {
-      if (dryRun) {
-        results.push({ packet_id: treatment.packet_id, status: "success" });
-        continue;
+    try {
+      for (const treatment of treatmentPackets) {
+        if (dryRun) {
+          results.push({ packet_id: treatment.packet_id, status: "success" });
+          continue;
+        }
+        const result = await dispatchTreatmentWorkerFn({
+          treatment,
+          stateFile,
+          telemetryFile,
+          branch,
+          maxConcurrentWorkers,
+        });
+        results.push(result);
       }
-      const result = await dispatchTreatmentWorkerFn({
-        treatment,
-        stateFile,
-        telemetryFile,
-        branch,
-        maxConcurrentWorkers,
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      appendTelemetry(telemetryFile, {
+        event: "medic-run-health-treatment-dispatch-error",
+        run_id: packet.run_id,
+        cluster_id: packet.cluster_id,
+        dispatch_id: packet.dispatch_id,
+        round,
+        error: msg,
+        timestamp: new Date().toISOString(),
       });
-      results.push(result);
+      const outcome = "dispatch-failure";
+      markResolved(report, chart.chart_id, allTreatmentRefs, outcome, repoRoot);
+      terminalEvent(outcome);
+      return {
+        run_id: packet.run_id,
+        cluster_id: packet.cluster_id,
+        dispatch_id: packet.dispatch_id,
+        status: "error",
+        chart_id: chart.chart_id,
+        decision: "terminal",
+        treatment_packet_refs: allTreatmentRefs,
+        terminal_outcome: outcome,
+        error_message: msg,
+        timestamp: new Date().toISOString(),
+      };
     }
 
     const failed = results.filter((r) => r.status === "failure");

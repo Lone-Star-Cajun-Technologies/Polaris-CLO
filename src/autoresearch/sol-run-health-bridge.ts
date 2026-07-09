@@ -97,7 +97,7 @@ function makeSolSymptom(
     // same run are idempotent — the same threshold crossing produces the
     // same id, and a caller that deduplicates by id will skip the duplicate.
     // ponytail: when run-health supports upsert-by-id, switch to that.
-    id: `sol:${crossing.code}:${randomUUID()}`,
+    id: `sol:${crossing.code}`,
     severity: solThresholdSeverity(crossing.code),
     code: crossing.code,
     message: crossing.message,
@@ -139,6 +139,10 @@ function upsertSolSymptom(
       repoRoot,
     });
   } else {
+    // Deduplicate: skip if a symptom with the same id already exists
+    if (existing.symptoms.some((s) => s.id === symptom.id)) {
+      return;
+    }
     appendSymptom(runId, symptom, repoRoot);
   }
 }
@@ -323,6 +327,7 @@ export function evaluateSolThresholds(
   }
 
   let symptomsAppended = 0;
+  let medicDecisionWritten = false;
   try {
     for (const crossing of crossings) {
       upsertSolSymptom(runId, clusterId, makeSolSymptom(crossing), repoRoot);
@@ -332,6 +337,7 @@ export function evaluateSolThresholds(
     // If requireMedic is true, set medic_consult to pending so finalize gate fires.
     if (requireMedic && crossings.length > 0) {
       markMedicDecision(runId, { status: "pending" }, repoRoot);
+      medicDecisionWritten = true;
     }
   } catch {
     // Threshold evaluation must never block the run.
@@ -341,6 +347,6 @@ export function evaluateSolThresholds(
   return {
     crossings,
     symptomsAppended,
-    medicRequired: requireMedic && crossings.length > 0,
+    medicRequired: medicDecisionWritten,
   };
 }

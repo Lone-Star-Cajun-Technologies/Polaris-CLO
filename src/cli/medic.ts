@@ -88,7 +88,23 @@ export function createMedicCommand(options: { repoRoot?: string } = {}): Command
 
       const config = loadConfig(repoRoot);
       const adapter = new TerminalCliAdapter(config.execution);
-      const provider = Object.keys(config.execution.providers ?? {})[0] ?? "terminal-cli";
+      // Use shared provider resolution logic: prefer rotation, fall back to first provider
+      const providerName =
+        (config.execution.rotation && config.execution.rotation.length > 0)
+          ? config.execution.rotation[0]
+          : Object.keys(config.execution.providers ?? {})[0] ?? "terminal-cli";
+
+      // Get current branch from git
+      let branch = "main";
+      try {
+        const { execFileSync } = require("node:child_process");
+        branch = execFileSync("git", ["rev-parse", "--abbrev-ref", "HEAD"], {
+          cwd: repoRoot,
+          encoding: "utf-8",
+        }).trim();
+      } catch {
+        // Fall back to main if git fails
+      }
 
       try {
         const result = await runMedicRunHealthConsult({
@@ -96,13 +112,13 @@ export function createMedicCommand(options: { repoRoot?: string } = {}): Command
           repoRoot,
           stateFile: packet.cluster_state_path,
           telemetryFile: packet.telemetry_path,
-          branch: "unknown",
+          branch,
           dryRun: false,
           dispatchTreatmentWorkerFn: (input) =>
             dispatchTreatmentWorker({
               ...input,
               repoRoot,
-              dispatch: (workerPacket) => adapter.dispatch(workerPacket, { provider }),
+              dispatch: (workerPacket) => adapter.dispatch(workerPacket, { provider: providerName }),
             }),
         });
         writeFileSync(packet.result_path, JSON.stringify(result, null, 2), "utf-8");

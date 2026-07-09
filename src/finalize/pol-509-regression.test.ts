@@ -47,6 +47,10 @@ beforeEach(() => {
   tmpRoot = mkdtempSync(join(tmpdir(), "polaris-pol509-regression-"));
 });
 
+afterEach(() => {
+  cleanup();
+});
+
 function cleanup() {
   try { rmSync(tmpRoot, { recursive: true, force: true }); } catch { /* no-op */ }
 }
@@ -299,7 +303,6 @@ describe("POL-509 regression: SOL thresholds produce run-health symptoms", () =>
     const report = readRunHealthReport("polaris-run-pol-509-regression", tmpRoot);
     expect(report).not.toBeNull();
     expect(report!.symptoms.length).toBeGreaterThan(0);
-    cleanup();
   });
 });
 
@@ -324,7 +327,6 @@ describe("POL-509 regression: symptom evidence integrity", () => {
       expect(symptom.source_actor.role).toBe("sol");
       expect(symptom.evidence_refs).toContain(solEvidencePath);
     }
-    cleanup();
   });
 
   it("[AC-7] SOL symptoms do not mutate raw metric artifacts (evidence file unchanged)", async () => {
@@ -347,7 +349,6 @@ describe("POL-509 regression: symptom evidence integrity", () => {
     // Verify raw artifact is untouched
     const afterContent = readFileSync(rawArtifactPath, "utf-8");
     expect(afterContent).toBe(originalContent);
-    cleanup();
   });
 });
 
@@ -373,7 +374,6 @@ describe("POL-509 regression: QC escalation from CodeRabbit failures", () => {
     const codes = report!.symptoms.map((s) => s.code);
     expect(codes).toContain("qc-parse-failure");
     expect(codes).toContain("qc-blocking-findings");
-    cleanup();
   });
 
   it("adds repeated-findings symptom when blocking findings survive repair loop", () => {
@@ -399,7 +399,6 @@ describe("POL-509 regression: QC escalation from CodeRabbit failures", () => {
     const report = readRunHealthReport(runId, tmpRoot);
     const codes = report!.symptoms.map((s) => s.code);
     expect(codes).toContain("qc-repeated-findings");
-    cleanup();
   });
 });
 
@@ -423,7 +422,6 @@ describe("POL-509 regression: wrong-run and finalize-recovery symptoms", () => {
     expect(report).not.toBeNull();
     expect(report!.symptoms[0].code).toBe("foreman-wrong-run-telemetry");
     expect(report!.symptoms[0].severity).toBe("high");
-    cleanup();
   });
 
   it("records finalize-recovery symptom (simulates finalize retry after failure)", () => {
@@ -439,7 +437,6 @@ describe("POL-509 regression: wrong-run and finalize-recovery symptoms", () => {
     const report = readRunHealthReport("polaris-run-pol-509-finalize", tmpRoot);
     expect(report!.symptoms[0].code).toBe("foreman-finalize-recovery");
     expect(report!.symptoms[0].severity).toBe("medium");
-    cleanup();
   });
 });
 
@@ -468,7 +465,6 @@ describe("POL-509 regression [AC-3]: finalize blocked by run-health Medic gate",
     const blocker = validateMedicGate({ runId, repoRoot: tmpRoot });
     expect(blocker).not.toBeNull();
     expect(blocker).toContain("Medic consultation decision");
-    cleanup();
   });
 
   it("validateMedicGate blocks even when report was created by QC escalation", () => {
@@ -482,7 +478,6 @@ describe("POL-509 regression [AC-3]: finalize blocked by run-health Medic gate",
 
     const blocker = validateMedicGate({ runId, repoRoot: tmpRoot });
     expect(blocker).not.toBeNull();
-    cleanup();
   });
 
   it("validateMedicGate passes when no run-health report exists (no symptoms)", () => {
@@ -490,7 +485,6 @@ describe("POL-509 regression [AC-3]: finalize blocked by run-health Medic gate",
     // No symptoms → no report → gate passes
     const blocker = validateMedicGate({ runId, repoRoot: tmpRoot });
     expect(blocker).toBeNull();
-    cleanup();
   });
 });
 
@@ -522,7 +516,6 @@ describe("POL-509 regression [AC-4]: finalize proceeds after Medic resolved", ()
 
     const blocker = validateMedicGate({ runId, repoRoot: tmpRoot });
     expect(blocker).toBeNull();
-    cleanup();
   });
 
   it("validateMedicGate returns null after Medic records 'resolved' (treatment-complete)", () => {
@@ -550,7 +543,6 @@ describe("POL-509 regression [AC-4]: finalize proceeds after Medic resolved", ()
 
     const blocker = validateMedicGate({ runId, repoRoot: tmpRoot });
     expect(blocker).toBeNull();
-    cleanup();
   });
 });
 
@@ -576,7 +568,6 @@ describe("POL-509 regression [AC-5]: finalize proceeds after Medic bypassed", ()
 
     const blocker = validateMedicGate({ runId, repoRoot: tmpRoot });
     expect(blocker).toBeNull();
-    cleanup();
   });
 });
 
@@ -708,6 +699,5 @@ describe("POL-509 regression: end-to-end scenario", () => {
       ".polaris/clusters/POL-509/medic/treatment-POL-509.json",
     );
 
-    cleanup();
   });
 });

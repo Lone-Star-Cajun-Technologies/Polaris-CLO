@@ -640,6 +640,19 @@ export function validateConfig(config: unknown): ValidationResult {
           result.errors.push("finalize.archiveRunSnapshot must be a boolean");
         }
       }
+      if ("medic" in config.finalize && config.finalize.medic !== undefined) {
+        if (!isPlainObject(config.finalize.medic)) {
+          result.valid = false;
+          result.errors.push("finalize.medic must be an object");
+        } else {
+          if ("bypassPolicy" in config.finalize.medic && config.finalize.medic.bypassPolicy !== undefined) {
+            if (!isString(config.finalize.medic.bypassPolicy) || !["none", "cli"].includes(config.finalize.medic.bypassPolicy)) {
+              result.valid = false;
+              result.errors.push('finalize.medic.bypassPolicy must be one of "none" or "cli"');
+            }
+          }
+        }
+      }
     }
   }
 
@@ -1398,6 +1411,124 @@ export function validateConfig(config: unknown): ValidationResult {
     }
   }
 
+  // run_health
+  if ("run_health" in config && config.run_health !== undefined) {
+    if (!isPlainObject(config.run_health)) {
+      result.valid = false;
+      result.errors.push("run_health must be an object");
+    } else {
+      if ("foreman_symptoms" in config.run_health && config.run_health.foreman_symptoms !== undefined) {
+        if (!isPlainObject(config.run_health.foreman_symptoms)) {
+          result.valid = false;
+          result.errors.push("run_health.foreman_symptoms must be an object");
+        } else {
+          if ("enabled" in config.run_health.foreman_symptoms && config.run_health.foreman_symptoms.enabled !== undefined) {
+            if (!isBoolean(config.run_health.foreman_symptoms.enabled)) {
+              result.valid = false;
+              result.errors.push("run_health.foreman_symptoms.enabled must be a boolean");
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // sol
+  if ("sol" in config && config.sol !== undefined) {
+    if (!isPlainObject(config.sol)) {
+      result.valid = false;
+      result.errors.push("sol must be an object");
+    } else {
+      if ("history" in config.sol && config.sol.history !== undefined) {
+        if (!isPlainObject(config.sol.history)) {
+          result.valid = false;
+          result.errors.push("sol.history must be an object");
+        } else {
+          if ("enabled" in config.sol.history && config.sol.history.enabled !== undefined) {
+            if (!isBoolean(config.sol.history.enabled)) {
+              result.valid = false;
+              result.errors.push("sol.history.enabled must be a boolean");
+            }
+          }
+          if ("path" in config.sol.history && config.sol.history.path !== undefined) {
+            if (!isString(config.sol.history.path)) {
+              result.valid = false;
+              result.errors.push("sol.history.path must be a string");
+            }
+          }
+        }
+      }
+      if ("thresholds" in config.sol && config.sol.thresholds !== undefined) {
+        if (!isPlainObject(config.sol.thresholds)) {
+          result.valid = false;
+          result.errors.push("sol.thresholds must be an object");
+        } else {
+          if ("enabled" in config.sol.thresholds && config.sol.thresholds.enabled !== undefined) {
+            if (!isBoolean(config.sol.thresholds.enabled)) {
+              result.valid = false;
+              result.errors.push("sol.thresholds.enabled must be a boolean");
+            }
+          }
+          if ("policy" in config.sol.thresholds && config.sol.thresholds.policy !== undefined) {
+            if (!isPlainObject(config.sol.thresholds.policy)) {
+              result.valid = false;
+              result.errors.push("sol.thresholds.policy must be an object");
+            } else {
+              if ("createRunHealthReport" in config.sol.thresholds.policy && config.sol.thresholds.policy.createRunHealthReport !== undefined) {
+                if (!isBoolean(config.sol.thresholds.policy.createRunHealthReport)) {
+                  result.valid = false;
+                  result.errors.push("sol.thresholds.policy.createRunHealthReport must be a boolean");
+                }
+              }
+              if ("requireMedic" in config.sol.thresholds.policy && config.sol.thresholds.policy.requireMedic !== undefined) {
+                if (!isBoolean(config.sol.thresholds.policy.requireMedic)) {
+                  result.valid = false;
+                  result.errors.push("sol.thresholds.policy.requireMedic must be a boolean");
+                }
+              }
+            }
+          }
+          if ("low_composite_score" in config.sol.thresholds && config.sol.thresholds.low_composite_score !== undefined) {
+            if (!isNumber(config.sol.thresholds.low_composite_score) || !inRange(config.sol.thresholds.low_composite_score, 0, 1)) {
+              result.valid = false;
+              result.errors.push("sol.thresholds.low_composite_score must be a number between 0 and 1");
+            }
+          }
+          if ("qc_repair_loop_failure_statuses" in config.sol.thresholds && config.sol.thresholds.qc_repair_loop_failure_statuses !== undefined) {
+            if (!isStringArray(config.sol.thresholds.qc_repair_loop_failure_statuses)) {
+              result.valid = false;
+              result.errors.push("sol.thresholds.qc_repair_loop_failure_statuses must be an array of strings");
+            }
+          }
+          if ("repeated_provider_failures" in config.sol.thresholds && config.sol.thresholds.repeated_provider_failures !== undefined) {
+            if (!isPositiveInteger(config.sol.thresholds.repeated_provider_failures)) {
+              result.valid = false;
+              result.errors.push("sol.thresholds.repeated_provider_failures must be a positive integer");
+            }
+          }
+          if ("foreman_intervention_count" in config.sol.thresholds && config.sol.thresholds.foreman_intervention_count !== undefined) {
+            if (!isNonNegativeInteger(config.sol.thresholds.foreman_intervention_count)) {
+              result.valid = false;
+              result.errors.push("sol.thresholds.foreman_intervention_count must be a non-negative integer");
+            }
+          }
+          if ("stale_wrong_run_telemetry" in config.sol.thresholds && config.sol.thresholds.stale_wrong_run_telemetry !== undefined) {
+            if (!isBoolean(config.sol.thresholds.stale_wrong_run_telemetry)) {
+              result.valid = false;
+              result.errors.push("sol.thresholds.stale_wrong_run_telemetry must be a boolean");
+            }
+          }
+          if ("validation_failures" in config.sol.thresholds && config.sol.thresholds.validation_failures !== undefined) {
+            if (!isNonNegativeInteger(config.sol.thresholds.validation_failures)) {
+              result.valid = false;
+              result.errors.push("sol.thresholds.validation_failures must be a non-negative integer");
+            }
+          }
+        }
+      }
+    }
+  }
+
   // unknown top-level fields -> warnings
   const knownKeys = new Set([
     "version",
@@ -1414,6 +1545,11 @@ export function validateConfig(config: unknown): ValidationResult {
     "budget",
     "compact",
     "qc",
+    "sol",
+    "run_health",
+    "orchestration",
+    "skill_packet",
+    "simplicity",
   ]);
   for (const key of Object.keys(config)) {
     if (!knownKeys.has(key)) {
