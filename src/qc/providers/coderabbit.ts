@@ -116,14 +116,21 @@ function hasFindingReviewContent(record: Record<string, unknown>): boolean {
 }
 
 function isProgressRecord(record: Record<string, unknown>): boolean {
-  if (hasFindingLocation(record) || hasFindingReviewContent(record)) {
-    return false;
-  }
+  // Check progress/status indicators FIRST before the generic finding-content guard
   const keys = Object.keys(record);
   if (keys.length === 0) return false;
   if (keys.some((key) => PROGRESS_SHAPE_KEYS.has(key))) return true;
   if (typeof record.type === "string" && PROGRESS_TYPE_VALUES.has(record.type.toLowerCase())) return true;
   if (typeof record.status === "string" && PROGRESS_STATUS_VALUES.has(record.status.toLowerCase())) return true;
+
+  // Status-only records with category="status" are progress records even if they have message/title fields
+  if (typeof record.category === "string" && record.category.toLowerCase() === "status") return true;
+
+  // Only reject as progress if it has both location AND review content (true finding shape)
+  if (hasFindingLocation(record) && hasFindingReviewContent(record)) {
+    return false;
+  }
+
   return false;
 }
 

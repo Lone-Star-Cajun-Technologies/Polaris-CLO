@@ -278,12 +278,19 @@ function aggregateForProvider(
 export function buildProviderRawMetrics(ev: SolEvidence, provider: string): SolScorecardRawMetrics {
   const agg = aggregateForProvider(ev, provider);
 
+  // For provider/model scorecards, store mean-per-child tokens so over_token_budget
+  // comparisons against WORKER_TOKEN_EFFICIENCY_SPEC.budget remain valid (POL-509).
+  const meanTokensPerChild =
+    agg.totalTokens !== null && agg.children.length > 0
+      ? Math.round(agg.totalTokens / agg.children.length)
+      : null;
+
   return {
     ...emptyRawMetrics(),
     total_children: agg.children.length,
     workers_succeeded: agg.succeeded,
     workers_failed: agg.failed,
-    worker_tokens_used: agg.totalTokens,
+    worker_tokens_used: meanTokensPerChild,
     validation_outcome: agg.validationPasses > 0 || agg.validationFailures > 0
       ? agg.validationFailures === 0
         ? "passed"
@@ -387,12 +394,19 @@ function aggregateForModel(
 export function buildModelRawMetrics(ev: SolEvidence, model: string): SolScorecardRawMetrics {
   const agg = aggregateForModel(ev, model);
 
+  // For provider/model scorecards, store mean-per-child tokens so over_token_budget
+  // comparisons against WORKER_TOKEN_EFFICIENCY_SPEC.budget remain valid (POL-509).
+  const meanTokensPerChild =
+    agg.totalTokens !== null && agg.children.length > 0
+      ? Math.round(agg.totalTokens / agg.children.length)
+      : null;
+
   return {
     ...emptyRawMetrics(),
     total_children: agg.children.length,
     workers_succeeded: agg.succeeded,
     workers_failed: agg.failed,
-    worker_tokens_used: agg.totalTokens,
+    worker_tokens_used: meanTokensPerChild,
     validation_outcome: agg.validationPasses > 0 || agg.validationFailures > 0
       ? agg.validationFailures === 0
         ? "passed"

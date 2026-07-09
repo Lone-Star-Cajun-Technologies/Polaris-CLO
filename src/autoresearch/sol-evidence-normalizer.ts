@@ -143,7 +143,11 @@ function buildSourceRefs(
 
   // Result packets (one per child with a known path)
   for (const child of evidence.children) {
-    const packetPath = paths.resultPacketPaths.find((p) => p.includes(child.child_id));
+    // Use exact match for child_id to avoid attaching the wrong path when IDs overlap (e.g., "1" vs "10")
+    const packetPath = paths.resultPacketPaths.find((p) => {
+      const filename = p.split('/').pop() ?? '';
+      return filename === `${child.child_id}.json`;
+    });
     const path = packetPath ?? `.polaris/clusters/${evidence.cluster_id ?? "unknown"}/results/${child.child_id}.json`;
     refs.push(makeSourceRef("result-packet", path, packetPath !== undefined));
   }

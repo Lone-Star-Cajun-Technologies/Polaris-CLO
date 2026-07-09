@@ -1,4 +1,5 @@
 import { resolve } from "node:path";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { Command } from "commander";
 import { assertPolarisDevContext } from "../autoresearch/dev-gate.js";
 import { scoreRun, loadRunArtifacts } from "../autoresearch/score.js";
@@ -17,6 +18,8 @@ import {
   writeEvaluationRecord,
   writeScorecardSet,
   writeSolMarkdownReport,
+  getSolEvaluationsDir,
+  getEvaluationRecordPath,
 } from "../autoresearch/sol-evaluation-writer.js";
 import { renderSolMarkdown } from "../autoresearch/sol-report-renderer.js";
 import {
@@ -119,7 +122,7 @@ export function createSolCommand(options: SolCommandOptions): Command {
       const root = resolve(cmdOptions.repoRoot ?? repoRoot);
       if (cmdOptions.format !== "markdown" && cmdOptions.format !== "json") {
         process.stderr.write(
-          `sol autoresearch error: invalid --format "${cmdOptions.format}" (expected "markdown" or "json")\n`,
+          `sol report error: invalid --format "${cmdOptions.format}" (expected "markdown" or "json")\n`,
         );
         process.exit(1);
       }
@@ -137,7 +140,7 @@ export function createSolCommand(options: SolCommandOptions): Command {
         evidence = aggregateSolEvidence(artifacts);
       } catch (err) {
         process.stderr.write(
-          `sol autoresearch error: cannot load run artifacts: ${err instanceof Error ? err.message : String(err)}\n`,
+          `sol report error: cannot load run artifacts: ${err instanceof Error ? err.message : String(err)}\n`,
         );
         process.exit(1);
       }
@@ -155,7 +158,12 @@ export function createSolCommand(options: SolCommandOptions): Command {
         const rendered = renderSolMarkdown(evaluationRecord, scorecards, qcRecommendations);
 
         if (cmdOptions.write) {
-          evaluationPath = writeEvaluationRecord(root, report).path;
+          // Persist the same evaluationRecord object that was rendered, rather than rebuilding internally
+          const evaluationDir = getSolEvaluationsDir(root);
+          if (!existsSync(evaluationDir)) mkdirSync(evaluationDir, { recursive: true });
+          evaluationPath = getEvaluationRecordPath(root, report.run_id);
+          writeFileSync(evaluationPath, JSON.stringify(evaluationRecord, null, 2) + "\n", "utf-8");
+
           scorecardPaths = writeScorecardSet(root, scorecards);
           markdownPath = writeSolMarkdownReport(root, runId, rendered.markdown);
         }
@@ -184,7 +192,7 @@ export function createSolCommand(options: SolCommandOptions): Command {
         }
       } catch (err) {
         process.stderr.write(
-          `sol autoresearch error: ${err instanceof Error ? err.message : String(err)}\n`,
+          `sol report error: ${err instanceof Error ? err.message : String(err)}\n`,
         );
         process.exit(1);
       }

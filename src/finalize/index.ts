@@ -833,8 +833,17 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
   // Promote the authoritative run state into the cluster snapshot so that
   // `.polaris/clusters/<id>/state.json` preserves completed children, the
   // dispatch boundary, QC repair-loop terminal state, and the PR URL.
-  const clusterStateSnapshotPath = join(repoRoot, ".polaris", "clusters", state.cluster_id, "state.json");
-  writeStateAtomic(clusterStateSnapshotPath, state);
+  try {
+    const clusterStateSnapshotPath = join(repoRoot, ".polaris", "clusters", state.cluster_id, "state.json");
+    writeStateAtomic(clusterStateSnapshotPath, state);
+  } catch (snapshotError) {
+    process.stderr.write(
+      `[11/14] WARNING: Failed to write cluster state snapshot: ${snapshotError instanceof Error ? snapshotError.message : String(snapshotError)}\n`
+    );
+    process.stderr.write(
+      `Delivery will proceed, but cluster state snapshot at .polaris/clusters/${state.cluster_id}/state.json may be incomplete.\n`
+    );
+  }
 
   // Step 12: Append JSONL events
   console.log("[12/14] Appending JSONL events...");
