@@ -9,6 +9,7 @@ Vault-level context for SmartDocs. This is the documentation origin for the repo
 |- SmartDocs directories may carry OKF-style `index.md` files for local concept navigation; lifecycle commands write dated `log.md` files in doctrine/spec destination directories.
 |- The `docs/` nesting layer has been removed; all paths are now canonical root-relative.
 |- `medic/charts/` stores Medic diagnostic charts in `CHART-YYYY-MM-DD-NNN.md` format, written by the Medic role.
+|- The active `specs/` set now includes the run-health artifact contract and the SOL run-health threshold integration guidance, which together explain when symptoms are recorded and when Medic is required.
 |- Generated artifacts in `runtime/` are excluded from cognition.
 
 ## Relationships
@@ -16,3 +17,4 @@ Vault-level context for SmartDocs. This is the documentation origin for the repo
 |- **Linked canonical source**: [POLARIS.md](POLARIS.md)
 |- **Active policy spec**: [specs/active/polaris-artifact-promotion-commit-hygiene-policy.md](specs/active/polaris-artifact-promotion-commit-hygiene-policy.md) defines durable Polaris artifact promotion versus workspace scratch.
 |- **Active QC spec**: [specs/active/quality-control-architecture.md](specs/active/quality-control-architecture.md) defines the Quality Control layer boundaries, trigger policy, and lifecycle.
+|- **Active run-health spec**: [specs/active/run-health-artifact-contract.md](specs/active/run-health-artifact-contract.md) defines the run-health report schema, storage policy, and Medic decision gate.
