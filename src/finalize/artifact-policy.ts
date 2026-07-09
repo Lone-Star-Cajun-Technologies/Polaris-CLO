@@ -44,6 +44,7 @@ function isPromotedClusterArtifact(relativePath: string, activeClusterId: string
   return (
     suffix === "clusters.json"
     || suffix === "cluster-state.json"
+    || suffix === "state.json"
     || suffix.startsWith("packets/")
     || suffix.startsWith("results/")
     || suffix.startsWith("qc/")
@@ -171,6 +172,7 @@ export function getArtifactPromotionPolicy(activeClusterId: string): {
     promoted: [
       `${activeClusterPrefix}clusters.json`,
       `${activeClusterPrefix}cluster-state.json`,
+      `${activeClusterPrefix}state.json`,
       `${activeClusterPrefix}packets/**`,
       `${activeClusterPrefix}results/**`,
       `${activeClusterPrefix}qc/**`,

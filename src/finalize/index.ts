@@ -9,10 +9,12 @@ import {
 } from "../cognition/closeout-librarian-types.js";
 import { loadConfig } from "../config/loader.js";
 import type { QcConfig } from "../config/schema.js";
-import { readState, type LoopState } from "../loop/checkpoint.js";
+import { readState, writeStateAtomic, type LoopState } from "../loop/checkpoint.js";
 import { classifyArtifactPath } from "./artifact-policy.js";
 import { hasNonArtifactSourceChanges, verifyChildCommitCustody, patternMatchesPath } from "../loop/git-custody.js";
 import { readClusterStateSync } from "../cluster-state/store.js";
+import type { ClusterState } from "../cluster-state/types.js";
+import { validateQcArtifactPointers } from "../qc/artifacts.js";
 import { runCanonCheck } from "../smartdocs-engine/canon-check.js";
 import { stepMapUpdate } from "./steps/01-map-update.js";
 import { stepMapValidate } from "./steps/02-map-validate.js";
@@ -107,6 +109,74 @@ function validateStateBranchMatchesGitBranch(stateBranch: string | undefined, br
     process.stderr.write(
       `finalize aborted: state.branch mismatch — state.branch "${stateBranch}" ` +
       `does not match current git branch "${branch}".\n`,
+    );
+    process.exit(1);
+  }
+}
+
+const CLUSTER_STATE_FILE_PATTERN = /[\\/]\.polaris[\\/]clusters[\\/][^\\/]+[\\/]state\.json$/;
+
+function isClusterStateSnapshotFile(filePath: string): boolean {
+  return CLUSTER_STATE_FILE_PATTERN.test(filePath.replace(/\\/g, "/"));
+}
+
+type LoopStateWithPrUrl = LoopState & { pr_url?: string };
+
+function computeRunStateFreshness(state: LoopState): number {
+  const s = state as LoopStateWithPrUrl;
+  let score = 0;
+  score += (s.completed_children?.length ?? 0) * 10;
+  if (s.status === "complete") score += 50;
+  if (s.pr_url) score += 30;
+  if (s.qc_repair_loop?.terminal_outcome) score += 40;
+  score += (s.dispatch_boundary?.dispatch_epoch ?? 0) * 5;
+  score += (s.context_budget?.children_completed ?? 0) * 2;
+  return score;
+}
+
+/**
+ * Refuse to use a promoted cluster state snapshot when the authoritative
+ * taskchain current-state.json is newer. Cluster snapshots under
+ * `.polaris/clusters/<id>/state.json` are secondary; the taskchain state
+ * owned by the parent loop is authoritative.
+ */
+export function validateStateFileAuthority(
+  stateFile: string,
+  state: LoopState,
+  repoRoot: string,
+): void {
+  if (!isClusterStateSnapshotFile(stateFile)) {
+    return;
+  }
+
+  const taskchainStateFile = join(repoRoot, ".taskchain_artifacts", "polaris-run", "current-state.json");
+  if (!existsSync(taskchainStateFile)) {
+    return;
+  }
+
+  let taskchainState: LoopState;
+  try {
+    taskchainState = readState(taskchainStateFile);
+  } catch {
+    return;
+  }
+
+  if (
+    taskchainState.run_id !== state.run_id ||
+    taskchainState.cluster_id !== state.cluster_id
+  ) {
+    return;
+  }
+
+  const taskchainFreshness = computeRunStateFreshness(taskchainState);
+  const snapshotFreshness = computeRunStateFreshness(state);
+  if (taskchainFreshness > snapshotFreshness) {
+    process.stderr.write(
+      `finalize aborted: cluster state snapshot is stale.\n` +
+      `  Snapshot: ${stateFile}\n` +
+      `  Authoritative taskchain state: ${taskchainStateFile}\n` +
+      `The taskchain current-state.json is newer; use it instead, or ` +
+      `update the cluster snapshot before finalizing.\n`,
     );
     process.exit(1);
   }
@@ -280,6 +350,22 @@ export function validateQcRepairLoopGate(
 
 // ── Authoritative completed-child state cross-check ───────────────────────────
 
+function warnOnMissingQcArtifacts(clusterState: ClusterState | null, repoRoot: string): void {
+  if (!clusterState) return;
+  const validation = validateQcArtifactPointers(clusterState.qc_runs);
+  if (validation.ok) return;
+  for (const missing of validation.missing) {
+    console.warn(
+      `finalize warning: cluster-state QC pointer references missing artifact: ${missing}`,
+    );
+  }
+  for (const unavailable of validation.unavailable) {
+    console.warn(
+      `finalize warning: QC audit artifact unavailable: ${unavailable}`,
+    );
+  }
+}
+
 export interface AuthoritativeChildResult {
   ok: boolean;
   /** Authoritative completed-child count from cluster-state child_states. */
@@ -418,6 +504,7 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
   validateStateFilePath(stateFile);
   validateClusterIdMatchesBranch(state.cluster_id, branch);
   validateStateBranchMatchesGitBranch(state.branch, branch);
+  validateStateFileAuthority(stateFile, state, repoRoot);
 
   // Step 4: Run configured checks
   const checks = config.finalize?.runChecks ?? [];
@@ -521,6 +608,7 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
   // loop.allowBranchDivergence is true (direct-main mode).
   {
     const clusterState = readClusterStateSync(state.cluster_id, repoRoot);
+    warnOnMissingQcArtifacts(clusterState, repoRoot);
     const baseBranch = clusterState?.base_branch;
     const deliveryBranch = clusterState?.delivery_branch;
     const directMainMode = config.loop?.allowBranchDivergence === true;
@@ -741,6 +829,12 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
   // Step 11: Write PR URL to current-state.json
   console.log("[11/14] Writing PR URL to state...");
   state = stepUpdateState(resolvedStateFile, state, prUrl);
+
+  // Promote the authoritative run state into the cluster snapshot so that
+  // `.polaris/clusters/<id>/state.json` preserves completed children, the
+  // dispatch boundary, QC repair-loop terminal state, and the PR URL.
+  const clusterStateSnapshotPath = join(repoRoot, ".polaris", "clusters", state.cluster_id, "state.json");
+  writeStateAtomic(clusterStateSnapshotPath, state);
 
   // Step 12: Append JSONL events
   console.log("[12/14] Appending JSONL events...");

@@ -1430,3 +1430,79 @@ describe("validateAuthoritativeChildState", () => {
     expect(result.authoritativeCount).toBe(3);
   });
 });
+
+// ---- state file authority gate ---------------------------------------------
+
+describe("validateStateFileAuthority", () => {
+  let testDir: string;
+  beforeEach(() => { testDir = makeTestDir(); });
+  afterEach(() => { rmSync(testDir, { recursive: true, force: true }); });
+
+  function writeTaskchainState(dir: string, extra: object = {}): void {
+    const taskchainDir = join(dir, ".taskchain_artifacts", "polaris-run");
+    mkdirSync(taskchainDir, { recursive: true });
+    writeFileSync(
+      join(taskchainDir, "current-state.json"),
+      JSON.stringify({
+        schema_version: "1.0",
+        run_id: "test-finalize-001",
+        cluster_id: "POL-6",
+        active_child: "",
+        completed_children: ["POL-9", "POL-10", "POL-11"],
+        open_children: [],
+        step_cursor: "CLUSTER-COMPLETE",
+        context_budget: { children_completed: 3 },
+        status: "complete",
+        next_open_child: null,
+        pr_url: "https://github.com/test/repo/pull/42",
+        qc_repair_loop: { terminal_outcome: "pass" },
+        ...extra,
+      }, null, 2),
+      "utf-8",
+    );
+  }
+
+  function makeStaleClusterSnapshot(dir: string): { stateFile: string; state: object } {
+    const clusterDir = join(dir, ".polaris", "clusters", "POL-6");
+    mkdirSync(clusterDir, { recursive: true });
+    const stateFile = join(clusterDir, "state.json");
+    const state = {
+      schema_version: "1.0",
+      run_id: "test-finalize-001",
+      cluster_id: "POL-6",
+      active_child: "",
+      completed_children: ["POL-9"],
+      open_children: [],
+      step_cursor: "CLUSTER-COMPLETE",
+      context_budget: { children_completed: 1 },
+      status: "running",
+      next_open_child: null,
+    };
+    writeFileSync(stateFile, JSON.stringify(state, null, 2), "utf-8");
+    return { stateFile, state };
+  }
+
+  it("aborts when a cluster state snapshot is stale relative to taskchain state", async () => {
+    const { validateStateFileAuthority } = await import("./index.js");
+    writeTaskchainState(testDir);
+    const { stateFile, state } = makeStaleClusterSnapshot(testDir);
+
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation((() => {
+      throw new Error("process.exit called");
+    }) as never);
+    const stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+
+    expect(() => validateStateFileAuthority(stateFile, state as any, testDir)).toThrow("process.exit called");
+    expect(stderrSpy).toHaveBeenCalledWith(expect.stringContaining("cluster state snapshot is stale"));
+
+    exitSpy.mockRestore();
+    stderrSpy.mockRestore();
+  });
+
+  it("allows a cluster state snapshot when taskchain state does not exist", async () => {
+    const { validateStateFileAuthority } = await import("./index.js");
+    const { stateFile, state } = makeStaleClusterSnapshot(testDir);
+
+    expect(() => validateStateFileAuthority(stateFile, state as any, testDir)).not.toThrow();
+  });
+});

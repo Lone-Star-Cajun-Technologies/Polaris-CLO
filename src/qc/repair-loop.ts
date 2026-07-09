@@ -106,6 +106,60 @@ function appendTelemetry(
   appendFileSync(telemetryFile, JSON.stringify(event) + "\n", "utf-8");
 }
 
+async function persistQcRepairOutcome(
+  clusterId: string,
+  repoRoot: string,
+  outcome: Exclude<QcRepairLoopOutcome, null>,
+): Promise<void> {
+  try {
+    const clusterState = readClusterStateSync(clusterId, repoRoot);
+    if (!clusterState) return;
+    await writeClusterState(
+      clusterId,
+      {
+        ...clusterState,
+        state_generation: clusterState.state_generation + 1,
+        qc_repair_outcome: outcome,
+      },
+      repoRoot,
+    );
+  } catch {
+    // Best-effort: the loop outcome is already returned to the caller and
+    // recorded in the loop checkpoint. Do not block finalization on a
+    // cluster-state write race.
+  }
+}
+
+async function persistQcRepairManifest(
+  clusterId: string,
+  repoRoot: string,
+  round: number,
+  manifestPath: string,
+): Promise<void> {
+  try {
+    const clusterState = readClusterStateSync(clusterId, repoRoot);
+    if (!clusterState) return;
+    const manifests = { ...(clusterState.qc_repair_manifests ?? {}), [round]: manifestPath };
+    if (
+      clusterState.qc_repair_manifests &&
+      clusterState.qc_repair_manifests[round] === manifestPath
+    ) {
+      return;
+    }
+    await writeClusterState(
+      clusterId,
+      {
+        ...clusterState,
+        state_generation: clusterState.state_generation + 1,
+        qc_repair_manifests: manifests,
+      },
+      repoRoot,
+    );
+  } catch {
+    // Best-effort durability for repair-round manifest pointer.
+  }
+}
+
 /** Returns true when any finding in the results routes to repair-worker. */
 function hasRepairableFindings(results: QcResult[]): boolean {
   return results.some((r) =>
@@ -225,6 +279,7 @@ export async function runQcRepairLoop(
     });
     state.terminal_outcome = "qc-disabled";
     state.updated_at = new Date().toISOString();
+    await persistQcRepairOutcome(clusterId, repoRoot, "qc-disabled");
     return {
       outcome: "qc-disabled",
       rounds_completed: 0,
@@ -270,6 +325,7 @@ export async function runQcRepairLoop(
         round,
         timestamp: new Date().toISOString(),
       });
+      await persistQcRepairOutcome(clusterId, repoRoot, "all-providers-failed");
       return {
         outcome: "all-providers-failed",
         rounds_completed: roundsCompleted,
@@ -289,6 +345,7 @@ export async function runQcRepairLoop(
         round,
         timestamp: new Date().toISOString(),
       });
+      await persistQcRepairOutcome(clusterId, repoRoot, "operator-review");
       return {
         outcome: "operator-review",
         rounds_completed: roundsCompleted,
@@ -318,22 +375,7 @@ export async function runQcRepairLoop(
       manifest = compiled.manifest;
 
       // Update cluster state with manifest path.
-      try {
-        const clusterState = readClusterStateSync(clusterId, repoRoot);
-        if (clusterState) {
-          const repairManifests = {
-            ...(clusterState.qc_repair_manifests ?? {}),
-            [round]: compiled.manifestPath,
-          };
-          await writeClusterState(
-            clusterId,
-            { ...clusterState, state_generation: clusterState.state_generation + 1, qc_repair_manifests: repairManifests },
-            repoRoot,
-          );
-        }
-      } catch {
-        // Non-fatal: cluster state update is best-effort.
-      }
+      await persistQcRepairManifest(clusterId, repoRoot, round, compiled.manifestPath);
 
       loopState = {
         ...loopState,
@@ -354,13 +396,17 @@ export async function runQcRepairLoop(
         timestamp: new Date().toISOString(),
       });
     } else {
+      const existingManifestPath =
+        loopState.manifest_path ??
+        join(repoRoot, ".polaris", "clusters", clusterId, "qc", "repair-rounds", String(round), "repair-packets.json");
       loopState = {
         ...loopState,
         current_round: round,
-        manifest_path: loopState.manifest_path ?? join(repoRoot, ".polaris", "clusters", clusterId, "qc", "repair-rounds", String(round), "repair-packets.json"),
+        manifest_path: existingManifestPath,
         updated_at: new Date().toISOString(),
       };
       onStateUpdate?.(loopState);
+      await persistQcRepairManifest(clusterId, repoRoot, round, existingManifestPath);
     }
 
     // ── Check for repairable packets ────────────────────────────────────────
@@ -382,6 +428,7 @@ export async function runQcRepairLoop(
         round,
         timestamp: new Date().toISOString(),
       });
+      await persistQcRepairOutcome(clusterId, repoRoot, "no-repairable");
       return {
         outcome: "no-repairable",
         rounds_completed: roundsCompleted,
@@ -458,6 +505,7 @@ export async function runQcRepairLoop(
         failed_count: failedWorkers.length,
         timestamp: new Date().toISOString(),
       });
+      await persistQcRepairOutcome(clusterId, repoRoot, "medic-referral");
       return {
         outcome: "medic-referral",
         rounds_completed: roundsCompleted + 1,
@@ -552,6 +600,7 @@ export async function runQcRepairLoop(
         round,
         timestamp: new Date().toISOString(),
       });
+      await persistQcRepairOutcome(clusterId, repoRoot, "pass");
       return {
         outcome: "pass",
         rounds_completed: roundsCompleted,
@@ -573,6 +622,7 @@ export async function runQcRepairLoop(
     rounds_completed: roundsCompleted,
     timestamp: new Date().toISOString(),
   });
+  await persistQcRepairOutcome(clusterId, repoRoot, "max-rounds");
   return {
     outcome: "max-rounds",
     rounds_completed: roundsCompleted,

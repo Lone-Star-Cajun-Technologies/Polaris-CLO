@@ -16,9 +16,11 @@ describe("artifact promotion policy", () => {
   it("promotes only durable evidence for the active cluster", () => {
     expect(isPromotedArtifactPath(".polaris/clusters/POL-242/clusters.json", "POL-242")).toBe(true);
     expect(isPromotedArtifactPath(".polaris/clusters/POL-242/cluster-state.json", "POL-242")).toBe(true);
+    expect(isPromotedArtifactPath(".polaris/clusters/POL-242/state.json", "POL-242")).toBe(true);
     expect(isPromotedArtifactPath(".polaris/clusters/POL-242/packets/worker.json", "POL-242")).toBe(true);
     expect(isPromotedArtifactPath(".polaris/clusters/POL-242/results/worker.json", "POL-242")).toBe(true);
     expect(isPromotedArtifactPath(".polaris/clusters/POL-242/qc/qc-run-1.json", "POL-242")).toBe(true);
+    expect(isPromotedArtifactPath(".polaris/clusters/POL-242/qc/repair-rounds/1/repair-packets.json", "POL-242")).toBe(true);
     expect(isPromotedArtifactPath(".polaris/runs/ledger.jsonl", "POL-242")).toBe(true);
     expect(isPromotedArtifactPath(".polaris/cognition/archive/src/loop/cognition-index.json", "POL-242")).toBe(true);
     expect(isPromotedArtifactPath(".polaris/map/file-routes.json", "POL-242")).toBe(true);
@@ -69,6 +71,7 @@ describe("artifact promotion policy", () => {
       promoted: [
         ".polaris/clusters/POL-242/clusters.json",
         ".polaris/clusters/POL-242/cluster-state.json",
+        ".polaris/clusters/POL-242/state.json",
         ".polaris/clusters/POL-242/packets/**",
         ".polaris/clusters/POL-242/results/**",
         ".polaris/clusters/POL-242/qc/**",
@@ -91,6 +94,7 @@ describe("artifact promotion policy", () => {
     expect(getArtifactPromotionStageTargets("POL-242")).toEqual([
       ".polaris/clusters/POL-242/clusters.json",
       ".polaris/clusters/POL-242/cluster-state.json",
+      ".polaris/clusters/POL-242/state.json",
       ".polaris/clusters/POL-242/packets",
       ".polaris/clusters/POL-242/results",
       ".polaris/clusters/POL-242/qc",

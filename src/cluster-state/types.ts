@@ -69,6 +69,11 @@ export type QcRunStatus =
   | "failed"
   | "skipped";
 
+export type QcArtifactAvailability =
+  | "available"
+  | "missing"
+  | "unavailable";
+
 export interface QcRunPointer {
   /** Absolute or repo-relative path to the QC result artifact. */
   artifact_path: string;
@@ -80,6 +85,16 @@ export interface QcRunPointer {
   started_at: string;
   /** ISO 8601 completion timestamp. */
   completed_at: string;
+  /**
+   * Availability of the primary QC result artifact. Defaults to "available"
+   * when recorded. "missing" means the artifact was deleted; "unavailable"
+   * means audit artifacts for a failed provider run are not retained.
+   */
+  availability?: QcArtifactAvailability;
+  /** Optional paths to raw provider output artifacts retained for audit. */
+  raw_artifact_paths?: string[];
+  /** Optional path to the provider-attempt raw output artifact, if recorded. */
+  provider_attempt_artifact_path?: string;
 }
 
 export interface ClusterState {

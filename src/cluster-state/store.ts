@@ -1,5 +1,6 @@
 import {
   promises as fs,
+  existsSync,
   mkdirSync,
   readFileSync,
   renameSync,
@@ -9,9 +10,10 @@ import {
 } from 'fs';
 import * as path from 'path';
 import { ClusterState, ChildState, QcRunPointer } from './types';
+import type { QcArtifactAvailability } from './types';
 import { LocalGraph } from '../tracker/local-graph';
 import type { QcResult } from '../qc/types.js';
-import { writeQcArtifact } from '../qc/artifacts.js';
+import { writeQcArtifact, validateQcArtifactPointers } from '../qc/artifacts.js';
 
 const getClusterStatePath = (clusterId: string, repoRoot?: string): string => {
   return path.join(repoRoot || process.cwd(), '.polaris', 'clusters', clusterId, 'cluster-state.json');
@@ -348,12 +350,28 @@ export const recordQcRun = async (
     throw new Error(`Cluster ${clusterId} state not found; cannot record QC run ${result.qcRunId}.`);
   }
 
+  const rawArtifactPaths = result.rawArtifactPaths ?? [];
+  const providerAttemptPath = result.providerAttempt?.rawOutputArtifactPath;
+  const auditArtifactPaths = providerAttemptPath
+    ? [...rawArtifactPaths, providerAttemptPath]
+    : rawArtifactPaths;
+
+  const failedRun =
+    result.status === "failed" || result.status === "blocked" || result.allProvidersFailed === true;
+  let availability: QcArtifactAvailability = "available";
+  if (failedRun && auditArtifactPaths.some((p) => !existsSync(p))) {
+    availability = "unavailable";
+  }
+
   const pointer: QcRunPointer = {
     artifact_path: artifactPath,
     status: result.status,
     provider: result.provider,
     started_at: result.startedAt,
     completed_at: result.completedAt,
+    availability,
+    raw_artifact_paths: rawArtifactPaths.length > 0 ? rawArtifactPaths : undefined,
+    provider_attempt_artifact_path: providerAttemptPath,
   };
 
   const nextState: ClusterState = {
@@ -368,3 +386,63 @@ export const recordQcRun = async (
   await writeClusterState(clusterId, nextState, repoRoot);
   return { artifactPath, state: nextState };
 };
+
+export interface PruneQcRunPointersResult {
+  state: ClusterState;
+  pruned: string[];
+  warnings: string[];
+}
+
+/**
+ * Remove QC run pointers whose primary artifacts are missing and mark
+ * pointers with missing raw audit artifacts as unavailable. Returns a new
+ * state object; callers must persist the result if they want the cleanup to
+ * be durable.
+ */
+export function pruneMissingQcRunPointers(
+  state: ClusterState,
+): PruneQcRunPointersResult {
+  const warnings: string[] = [];
+  const pruned: string[] = [];
+  if (!state.qc_runs) {
+    return { state, pruned, warnings };
+  }
+
+  const validation = validateQcArtifactPointers(state.qc_runs);
+  if (validation.ok && validation.unavailable.length === 0) {
+    return { state, pruned, warnings };
+  }
+
+  const nextQcRuns: Record<string, QcRunPointer> = {};
+  for (const [runId, pointer] of Object.entries(state.qc_runs)) {
+    if (validation.missing.includes(pointer.artifact_path)) {
+      pruned.push(runId);
+      warnings.push(
+        `QC run ${runId} pointer pruned: artifact missing ${pointer.artifact_path}`,
+      );
+      continue;
+    }
+
+    const updated: QcRunPointer = { ...pointer };
+    const hasMissingRaw =
+      (pointer.raw_artifact_paths ?? []).some((p) => validation.unavailable.includes(p)) ||
+      (pointer.provider_attempt_artifact_path &&
+        validation.unavailable.includes(pointer.provider_attempt_artifact_path));
+    if (hasMissingRaw && updated.availability === "available") {
+      updated.availability = "unavailable";
+      warnings.push(
+        `QC run ${runId} raw audit artifacts missing; marked unavailable`,
+      );
+    }
+    nextQcRuns[runId] = updated;
+  }
+
+  return {
+    state: {
+      ...state,
+      qc_runs: nextQcRuns,
+    },
+    pruned,
+    warnings,
+  };
+}
