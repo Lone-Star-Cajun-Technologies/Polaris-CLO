@@ -206,13 +206,13 @@
     "taskchain": "polaris-autoresearch",
     "confidence": 0.85,
     "classification": "indexed",
-    "last_updated": "2026-07-04T02:53:23.054Z",
-    "updated_by": "polaris-map-index",
+    "last_updated": "2026-07-09T01:36:55.711Z",
+    "updated_by": "polaris-map-update",
     "tags": [
       "autoresearch",
       "entry-point"
     ],
-    "instructionFile": "src/POLARIS.md"
+    "instructionFile": "src/autoresearch/POLARIS.md"
   },
   "src/autoresearch/proposal.test.ts": {
     "domain": "autoresearch",
@@ -7756,7 +7756,7 @@
     "taskchain": "polaris-autoresearch",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-07-08T21:01:29.848Z",
+    "last_updated": "2026-07-09T01:36:55.711Z",
     "updated_by": "polaris-map-update",
     "tags": [
       "autoresearch",
@@ -7770,7 +7770,7 @@
     "taskchain": "polaris-autoresearch",
     "confidence": 0.9,
     "classification": "indexed",
-    "last_updated": "2026-07-08T21:01:29.848Z",
+    "last_updated": "2026-07-09T01:36:55.711Z",
     "updated_by": "polaris-map-update",
     "tags": [
       "autoresearch"

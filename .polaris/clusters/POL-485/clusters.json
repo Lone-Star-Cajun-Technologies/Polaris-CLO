@@ -1,59 +1,139 @@
 {
-  "source_id": "POL-485",
-  "analyze_source_id": "POL-484",
-  "source_type": "linear",
-  "created_at": "2026-07-07T16:27:10Z",
-  "clusters": [
-    {
-      "cluster_id": "cluster-01",
-      "children": [
-        {
-          "id": "POL-486",
-          "title": "Document SOL evaluation report architecture and artifact taxonomy",
-          "session_type": "implement",
-          "blockedBy": []
-        },
-        {
-          "id": "POL-487",
-          "title": "Define SOL scorecard schemas and metric contracts",
-          "session_type": "implement",
-          "blockedBy": [
-            "POL-486"
-          ]
-        },
-        {
-          "id": "POL-488",
-          "title": "Normalize SOL evidence inputs for evaluation reports",
-          "session_type": "implement",
-          "blockedBy": [
-            "POL-487"
-          ]
-        },
-        {
-          "id": "POL-489",
-          "title": "Implement SOL scorecard calculators",
-          "session_type": "implement",
-          "blockedBy": [
-            "POL-488"
-          ]
-        },
-        {
-          "id": "POL-490",
-          "title": "Generate SOL evaluation reports and machine-readable artifacts",
-          "session_type": "implement",
-          "blockedBy": [
-            "POL-489"
-          ]
-        },
-        {
-          "id": "POL-491",
-          "title": "Feed SOL evaluations into review-gated routing recommendations",
-          "session_type": "implement",
-          "blockedBy": [
-            "POL-490"
-          ]
-        }
-      ]
+  "schemaVersion": "v2",
+  "source": {
+    "id": "POL-485",
+    "type": "Linear",
+    "analysis": {
+      "id": "initial-sync",
+      "doc": "Synchronized from Linear issue identifier: POL-485"
     }
-  ]
+  },
+  "nodes": {
+    "POL-485": {
+      "id": "POL-485",
+      "title": "IMPLEMENT: SOL Evaluation Reports and Scorecards",
+      "status": "Todo",
+      "body": "## Objective\n\nImplement the SOL evaluation report and scorecard output layer designed by [POL-484](https://linear.app/lsctech/issue/POL-484/analyze-sol-evaluation-reports-and-scorecards).\n\n## Context\n\n[POL-484](https://linear.app/lsctech/issue/POL-484/analyze-sol-evaluation-reports-and-scorecards) analyzes how SOL should turn raw Polaris telemetry, QC findings, validation outcomes, token burn, fallback behavior, provider/model behavior, and user intervention into durable evaluation reports and scorecards. This IMPLEMENT parent is the execution container for that focused reporting layer.\n\nThis work refines the broader SOL roadmap under [POL-477](https://linear.app/lsctech/issue/POL-477/implement-polaris-self-optimization-loop). It should coordinate with [POL-480](https://linear.app/lsctech/issue/POL-480/define-sol-evidence-schema-and-aggregation-inputs) for evidence schema, [POL-481](https://linear.app/lsctech/issue/POL-481/implement-sol-foreman-and-worker-scoring-models) for role scoring, [POL-482](https://linear.app/lsctech/issue/POL-482/add-sol-historical-performance-store-and-reports) for historical storage and reports, [POL-483](https://linear.app/lsctech/issue/POL-483/generate-sol-routing-recommendations-and-self-improvement-proposals) for recommendations, [POL-469](https://linear.app/lsctech/issue/POL-469/emit-router-telemetry-and-sol-scoring-inputs) for router telemetry, and [POL-476](https://linear.app/lsctech/issue/POL-476/feed-qc-metrics-into-sol-scoring-and-operator-reports) for QC metrics.\n\n## Goal\n\nDeliver machine-readable `.polaris/sol` evaluation artifacts and human-readable SmartDocs SOL reports that preserve raw evidence, expose scorecard formulas, and feed review-gated routing recommendations without mutating runtime behavior directly.\n\n## Scope\n\n* smartdocs/raw/analysis/**\n* smartdocs/specs/raw/**\n* smartdocs/reports/sol/**\n* .polaris/sol/evaluations/**\n* .polaris/sol/scorecards/**\n* .polaris/sol/recommendations/**\n* src/autoresearch/**\n* src/cli/autoresearch.ts\n* src/cli/index.ts\n* src/cli/index.test.ts\n* src/types/**\n* src/loop/**\n* src/cluster-state/**\n* src/finalize/**\n* src/config/**\n* tests covering SOL evaluation reports, scorecards, schemas, evidence loading, and recommendation feeding\n\n## Acceptance Criteria\n\n- [ ] SOL has a documented evaluation report architecture and artifact taxonomy.\n- [ ] Scorecard schemas preserve raw metrics, aggregate scores, formula versions, confidence, grouping keys, and source references.\n- [ ] Foreman, worker, provider, model, and routing scorecards are generated from durable Polaris evidence.\n- [ ] Human-readable SmartDocs reports summarize trends and recommendations without replacing source evidence.\n- [ ] Machine-readable artifacts are written under deterministic `.polaris/sol` paths.\n- [ ] Evaluation summaries can feed review-gated routing recommendations without silently mutating provider policy or runtime state.\n- [ ] All child issue validation passes.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/autoresearch src/cli src/types src/loop src/cluster-state src/finalize src/config\n\n## Ordering\n\nChildren execute in dependency order: architecture first, schemas second, evidence normalization third, calculators fourth, report generation fifth, and recommendation feeding last. Coordinate with [POL-480](https://linear.app/lsctech/issue/POL-480/define-sol-evidence-schema-and-aggregation-inputs), [POL-481](https://linear.app/lsctech/issue/POL-481/implement-sol-foreman-and-worker-scoring-models), [POL-482](https://linear.app/lsctech/issue/POL-482/add-sol-historical-performance-store-and-reports), [POL-469](https://linear.app/lsctech/issue/POL-469/emit-router-telemetry-and-sol-scoring-inputs), and [POL-476](https://linear.app/lsctech/issue/POL-476/feed-qc-metrics-into-sol-scoring-and-operator-reports) as upstream sources land.\n\n## Non-goals\n\n* Do not implement Worker Router itself.\n* Do not implement QC providers.\n* Do not silently mutate routing policy, provider config, runtime state, skills, doctrine, or source code from SOL reports.\n* Do not remove the existing autoresearch command surface.\n* Do not upload evaluation telemetry to remote analytics services."
+    },
+    "POL-469": {
+      "id": "POL-469",
+      "title": "Emit router telemetry and SOL scoring inputs",
+      "status": "Done"
+    },
+    "POL-481": {
+      "id": "POL-481",
+      "title": "Implement SOL Foreman and worker scoring models",
+      "status": "Todo"
+    },
+    "POL-477": {
+      "id": "POL-477",
+      "title": "IMPLEMENT: Polaris Self-Optimization Loop",
+      "status": "Done"
+    },
+    "POL-476": {
+      "id": "POL-476",
+      "title": "Feed QC metrics into SOL scoring and operator reports",
+      "status": "Done"
+    },
+    "POL-480": {
+      "id": "POL-480",
+      "title": "Define SOL evidence schema and aggregation inputs",
+      "status": "Todo"
+    },
+    "POL-483": {
+      "id": "POL-483",
+      "title": "Generate SOL routing recommendations and self-improvement proposals",
+      "status": "Todo"
+    },
+    "POL-482": {
+      "id": "POL-482",
+      "title": "Add SOL historical performance store and reports",
+      "status": "Todo"
+    },
+    "POL-492": {
+      "id": "POL-492",
+      "title": "Capture transcript pointers and user intervention metrics",
+      "status": "Todo",
+      "body": "## Objective\n\nCapture transcript/session pointers and user intervention metrics as first-class SOL evaluation inputs.\n\n## Context\n\n[POL-484](https://linear.app/lsctech/issue/POL-484/analyze-sol-evaluation-reports-and-scorecards) requires SOL evaluations to measure not only output quality and token efficiency, but also the human steering cost required to complete a run. Foreman and worker quality cannot be scored reliably from repository artifacts alone because user corrections, scope redirections, manual recovery, and approval-only messages usually live in provider transcripts rather than Polaris result files.\n\n[POL-485](https://linear.app/lsctech/issue/POL-485/implement-sol-evaluation-reports-and-scorecards) scorecards therefore need a durable way to reference provider transcripts or session logs and normalize user interaction signals into evaluation-ready metrics.\n\n## Goal\n\nImplement transcript/session pointer capture and user intervention metric extraction so SOL can distinguish normal operator communication from corrective intervention and include interaction cost in Foreman, worker, provider, model, and routing evaluations.\n\n## Scope\n\n* src/autoresearch/**\n* src/types/**\n* src/loop/**\n* src/cluster-state/**\n* src/finalize/**\n* src/config/**\n* .polaris/sol/evaluations/** fixtures only as needed\n* .polaris/sol/scorecards/** fixtures only as needed\n* tests covering transcript pointer capture, missing transcript behavior, and intervention metric normalization\n\n## Acceptance Criteria\n\n- [ ] Result/evaluation contracts can preserve transcript or session pointers for Foreman and worker runs.\n- [ ] Transcript/session pointers include provider, model, role, run id, child id where applicable, start/end metadata where available, and source reference confidence.\n- [ ] Missing transcript pointers reduce evaluation confidence but do not fail the SOL report pipeline.\n- [ ] User messages are counted separately from user interventions.\n- [ ] Intervention metrics distinguish approval-only messages, clarification messages, corrective messages, scope redirections, stop/retry instructions, and manual recovery where detectable.\n- [ ] Foreman, worker, provider, model, and routing evaluations can consume interaction-cost metrics without requiring raw transcript content to be copied into SmartDocs reports.\n- [ ] Transcript-derived metrics preserve source references back to the original transcript/session pointer.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/autoresearch src/types src/loop src/cluster-state src/finalize src/config\n\n## Ordering\n\nDepends on [POL-487](https://linear.app/lsctech/issue/POL-487/define-sol-scorecard-schemas-and-metric-contracts) being Done first. Must complete before [POL-488](https://linear.app/lsctech/issue/POL-488/normalize-sol-evidence-inputs-for-evaluation-reports) so evidence normalization includes transcript pointers and interaction-cost metrics.\n\n## Non-goals\n\n* Do not require every provider to expose transcripts before SOL can run.\n* Do not copy full raw transcripts into SmartDocs reports.\n* Do not treat every user message as a negative intervention.\n* Do not implement final scorecard aggregation in this child.\n* Do not implement provider-specific transcript scraping beyond the minimum pointer/metadata contracts needed for SOL evidence normalization."
+    },
+    "POL-491": {
+      "id": "POL-491",
+      "title": "Feed SOL evaluations into review-gated routing recommendations",
+      "status": "Todo",
+      "body": "## Objective\n\nFeed SOL evaluation summaries into review-gated routing recommendations without directly mutating runtime policy.\n\n## Context\n\n[POL-484](https://linear.app/lsctech/issue/POL-484/analyze-sol-evaluation-reports-and-scorecards) requires reports to support evidence-based Worker Router recommendations. [POL-483](https://linear.app/lsctech/issue/POL-483/generate-sol-routing-recommendations-and-self-improvement-proposals) owns broader SOL routing recommendations and self-improvement proposals, so this child should provide the evaluation-to-recommendation bridge while preserving review gates and deterministic runtime behavior.\n\n## Goal\n\nExpose recommendation input summaries from scorecards, define when a routing recommendation is supported or contradicted by outcome data, and route proposed changes through existing review-gated proposal paths only.\n\n## Scope\n\n* src/autoresearch/**\n* src/autoresearch/routing.ts\n* src/autoresearch/proposal.ts\n* src/cli/autoresearch.ts\n* src/config/**\n* src/tracker/** only if review-gated issue routing integration is required\n* .polaris/sol/recommendations/** fixtures only as needed\n* tests covering recommendation input generation, policy gates, dry-run output, and no-auto-apply behavior\n\n## Acceptance Criteria\n\n- [ ] SOL scorecards produce recommendation input summaries with evidence references and confidence.\n- [ ] Routing recommendation logic can identify provider/model/role/task combinations that are supported, contradicted, or inconclusive based on outcomes.\n- [ ] Recommendations include affected route, task type, provider, model, quality-per-token evidence, QC evidence, validation evidence, and confidence.\n- [ ] Recommendation output is advisory by default and review-gated before tracker or policy changes.\n- [ ] Tests prove SOL reports do not silently mutate provider policy, routing thresholds, runtime state, or source files.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/autoresearch src/cli src/config src/tracker\n\n## Ordering\n\nDepends on [POL-490](https://linear.app/lsctech/issue/POL-490/generate-sol-evaluation-reports-and-machine-readable-artifacts) being Done first. Coordinate with [POL-483](https://linear.app/lsctech/issue/POL-483/generate-sol-routing-recommendations-and-self-improvement-proposals) so this child feeds the recommendation system rather than duplicating it.\n\n## Non-goals\n\n* Do not auto-apply provider, model, trust, cost, or routing policy changes.\n* Do not create implementation issues outside the Polaris development repository.\n* Do not bypass operator review for SOL-generated proposals."
+    },
+    "POL-490": {
+      "id": "POL-490",
+      "title": "Generate SOL evaluation reports and machine-readable artifacts",
+      "status": "Todo",
+      "body": "## Objective\n\nGenerate human-readable SOL evaluation reports and machine-readable `.polaris/sol` artifacts from computed scorecards.\n\n## Context\n\n[POL-484](https://linear.app/lsctech/issue/POL-484/analyze-sol-evaluation-reports-and-scorecards) requires durable reports that operators can inspect and machine-readable artifacts that future routing recommendations can consume. The report layer must preserve raw evidence references alongside aggregate scores and avoid rewriting historical run evidence.\n\n## Goal\n\nAdd report generation for Foreman, worker, provider, model, routing, token efficiency, QC outcome, and recommendation-input summaries, with deterministic artifact paths and stable rendering.\n\n## Scope\n\n* src/autoresearch/**\n* src/cli/autoresearch.ts\n* src/cli/index.ts\n* src/cli/index.test.ts\n* src/finalize/**\n* smartdocs/reports/sol/**\n* .polaris/sol/evaluations/** fixtures only as needed\n* .polaris/sol/scorecards/** fixtures only as needed\n* tests covering JSON artifact writing and Markdown report rendering\n\n## Acceptance Criteria\n\n- [ ] SOL writes machine-readable evaluation records under `.polaris/sol/evaluations/`.\n- [ ] SOL writes scorecard snapshots under `.polaris/sol/scorecards/` with deterministic grouping paths or metadata.\n- [ ] SOL can render SmartDocs reports for Foreman, worker, provider, model, routing, and recommendations.\n- [ ] Reports include source references, confidence, skipped evidence, trends or grouping windows, and recommendation inputs.\n- [ ] Report generation is append-only or generation-safe and does not rewrite source run evidence.\n- [ ] CLI or report command output supports JSON and Markdown modes without breaking autoresearch compatibility.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/autoresearch src/cli src/finalize\n\n## Ordering\n\nDepends on [POL-489](https://linear.app/lsctech/issue/POL-489/implement-sol-scorecard-calculators) being Done first. Coordinate with [POL-482](https://linear.app/lsctech/issue/POL-482/add-sol-historical-performance-store-and-reports) historical performance storage and reports.\n\n## Non-goals\n\n* Do not create remote analytics uploads.\n* Do not auto-apply recommendations from reports.\n* Do not require all optional QC or router evidence to exist before generating reports."
+    },
+    "POL-489": {
+      "id": "POL-489",
+      "title": "Implement SOL scorecard calculators",
+      "status": "Todo",
+      "body": "## Objective\n\nImplement SOL scorecard calculators for Foreman, worker, provider, model, and routing evaluations.\n\n## Context\n\n[POL-484](https://linear.app/lsctech/issue/POL-484/analyze-sol-evaluation-reports-and-scorecards) asks for scorecards that answer which Foremen, workers, providers, models, and routing policies perform well or poorly by task type, route, repo, risk, provider, model, quality, and token efficiency. Existing binary gates are useful diagnostics, but report-grade scorecards need subject-specific subscores and confidence.\n\n## Goal\n\nCompute versioned scorecards from normalized SOL evidence, preserving raw metrics and producing explainable subscores for quality, efficiency, reliability, scope fidelity, recovery, and routing suitability.\n\n## Scope\n\n* src/autoresearch/**\n* src/types/**\n* .polaris/sol/scorecards/** fixtures only as needed\n* tests covering Foreman, worker, provider, model, routing, token efficiency, quality-per-token, QC severity, fallback, and intervention scoring\n\n## Acceptance Criteria\n\n- [ ] Foreman scorecards include token usage, duration, intervention, dependency handling, dispatch accuracy, validation quality, scope control, recovery, and completion dimensions where evidence exists.\n- [ ] Worker scorecards include token usage, duration, validation, QC severity, repair iterations, scope adherence, first-pass success, and quality-per-token dimensions where evidence exists.\n- [ ] Provider and model scorecards distinguish startup failure, quota exhaustion, fallback frequency, role suitability, runtime, token efficiency, and quality outcomes.\n- [ ] Routing scorecards include selected route, candidates, fallback path, outcome quality, token burn, QC result, validation result, and confirmed/contradicted outcome signals.\n- [ ] Scores include confidence and skipped-evidence reasons.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/autoresearch src/types\n\n## Ordering\n\nDepends on [POL-488](https://linear.app/lsctech/issue/POL-488/normalize-sol-evidence-inputs-for-evaluation-reports) being Done first. Consume [POL-481](https://linear.app/lsctech/issue/POL-481/implement-sol-foreman-and-worker-scoring-models) role scoring work where available and avoid conflicting formulas.\n\n## Non-goals\n\n* Do not generate SmartDocs reports in this child.\n* Do not change provider policy or router selection behavior.\n* Do not blame workers for QC findings without attribution confidence."
+    },
+    "POL-488": {
+      "id": "POL-488",
+      "title": "Normalize SOL evidence inputs for evaluation reports",
+      "status": "Todo",
+      "body": "## Objective\n\nNormalize durable Polaris evidence into SOL evaluation inputs for reports and scorecards.\n\n## Context\n\n[POL-484](https://linear.app/lsctech/issue/POL-484/analyze-sol-evaluation-reports-and-scorecards) needs reports that combine run state, result contracts, telemetry, router decisions, QC outcomes, validation results, token burn, runtime duration, provider/model behavior, and user intervention. Existing evidence is spread across run state, cluster state, result packets, telemetry JSONL, router decision events, and future QC artifacts.\n\n## Goal\n\nImplement SOL evidence normalization that reads existing durable artifacts, preserves source references, tolerates absent optional router/QC fields, and produces evaluation-ready raw metric records.\n\n## Scope\n\n* src/autoresearch/**\n* src/types/**\n* src/loop/checkpoint.ts\n* src/loop/dispatch-state.ts\n* src/loop/router/**\n* src/cluster-state/types.ts\n* src/finalize/**\n* .polaris/sol/evaluations/** fixtures only as needed\n* tests covering evidence loading and missing-evidence behavior\n\n## Acceptance Criteria\n\n- [ ] Evidence loading captures run, child, Foreman, worker, provider, model, route, task type, validation, token, runtime, router, QC, and intervention signals where present.\n- [ ] Source references point back to telemetry, result packets, cluster state, run state, QC artifacts, and run reports.\n- [ ] Provider startup failures are distinguished from worker execution failures.\n- [ ] Router fallback and provider exhaustion events are preserved with candidate/rejection context when present.\n- [ ] Missing optional router or QC inputs reduce confidence but do not fail the report pipeline.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/autoresearch src/types src/loop src/cluster-state src/finalize\n\n## Ordering\n\nDepends on [POL-487](https://linear.app/lsctech/issue/POL-487/define-sol-scorecard-schemas-and-metric-contracts) being Done first. Coordinate with [POL-469](https://linear.app/lsctech/issue/POL-469/emit-router-telemetry-and-sol-scoring-inputs) for router telemetry and [POL-476](https://linear.app/lsctech/issue/POL-476/feed-qc-metrics-into-sol-scoring-and-operator-reports) for QC metrics when those outputs are available.\n\n## Non-goals\n\n* Do not compute aggregate scorecards in this child.\n* Do not mutate run artifacts while loading evidence.\n* Do not require one QC provider or one router implementation."
+    },
+    "POL-487": {
+      "id": "POL-487",
+      "title": "Define SOL scorecard schemas and metric contracts",
+      "status": "Todo",
+      "body": "## Objective\n\nDefine typed SOL scorecard schemas, raw metric contracts, grouping keys, and formula versioning.\n\n## Context\n\n[POL-484](https://linear.app/lsctech/issue/POL-484/analyze-sol-evaluation-reports-and-scorecards) requires durable scorecards for Foremen, workers, providers, models, routing decisions, token efficiency, QC outcomes, and user intervention. Existing `DiagnosisReport` and binary gates are not enough for report-grade scorecards because they do not preserve formula versions, grouping windows, confidence, or raw metric references across all subjects.\n\n## Goal\n\nAdd or document schema contracts that represent SOL evaluation records, scorecards, metric dimensions, confidence, source references, and formula versions without breaking existing autoresearch diagnosis compatibility.\n\n## Scope\n\n* src/autoresearch/**\n* src/types/**\n* smartdocs/specs/raw/**\n* smartdocs/reports/sol/**\n* .polaris/sol/evaluations/** documentation or fixtures only as needed\n* .polaris/sol/scorecards/** documentation or fixtures only as needed\n* tests covering schema validation and compatibility\n\n## Acceptance Criteria\n\n- [ ] Scorecard schemas include subject, window, grouping keys, raw metrics, subscores, aggregate score, confidence, source references, and recommendation inputs.\n- [ ] Metric contracts distinguish provider startup failure, router fallback, worker execution failure, validation failure, QC findings, and user/Foreman intervention.\n- [ ] Token efficiency and quality-per-token formulas are versioned and documented.\n- [ ] Missing optional router or QC evidence produces skipped/unavailable reasons rather than invalid scorecards.\n- [ ] Existing autoresearch diagnosis report consumers remain compatible.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/autoresearch src/types\n\n## Ordering\n\nDepends on [POL-486](https://linear.app/lsctech/issue/POL-486/document-sol-evaluation-report-architecture-and-artifact-taxonomy) being Done first. Coordinate with [POL-480](https://linear.app/lsctech/issue/POL-480/define-sol-evidence-schema-and-aggregation-inputs) because SOL evidence schema and aggregation inputs are upstream to this child.\n\n## Non-goals\n\n* Do not implement full report rendering in this child.\n* Do not implement Worker Router telemetry production.\n* Do not implement QC provider adapters."
+    },
+    "POL-486": {
+      "id": "POL-486",
+      "title": "Document SOL evaluation report architecture and artifact taxonomy",
+      "status": "Todo",
+      "body": "## Objective\n\nDocument the SOL evaluation report architecture and artifact taxonomy before implementing scorecard code.\n\n## Context\n\n[POL-484](https://linear.app/lsctech/issue/POL-484/analyze-sol-evaluation-reports-and-scorecards) identified evaluation reports as a distinct SOL layer above raw telemetry and below routing recommendations. This child records the human-readable and machine-readable artifact model, report boundaries, source evidence references, and non-mutating behavior before runtime code changes.\n\n## Goal\n\nCreate architecture documentation that defines SOL evaluation report types, `.polaris/sol` artifact paths, SmartDocs report locations, raw metric retention rules, aggregate scorecard responsibilities, and boundaries against silent runtime mutation.\n\n## Scope\n\n* smartdocs/raw/analysis/**\n* smartdocs/specs/raw/**\n* smartdocs/reports/sol/**\n* src/autoresearch/POLARIS.md\n* src/cli/SUMMARY.md\n\n## Acceptance Criteria\n\n- [ ] SOL evaluation output architecture is documented with machine-readable and human-readable artifact classes.\n- [ ] The taxonomy names Foreman, worker, provider, model, routing, token efficiency, QC, intervention, and recommendation reports.\n- [ ] Documentation explains raw metric preservation versus aggregate scorecards.\n- [ ] Documentation states that reports inform review-gated recommendations but do not mutate runtime behavior directly.\n- [ ] Report locations under `smartdocs/reports/sol/` and `.polaris/sol/` are defined.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/autoresearch src/cli\n\n## Ordering\n\nNone. This child runs first and informs schema and implementation children.\n\n## Non-goals\n\n* Do not implement report generators in this child.\n* Do not change routing policy or provider configuration.\n* Do not promote docs to active doctrine outside the SmartDocs workflow."
+    },
+    "POL-484": {
+      "id": "POL-484",
+      "title": "ANALYZE: SOL Evaluation Reports and Scorecards",
+      "status": "Done"
+    }
+  },
+  "dependencies": {
+    "POL-488": [
+      "POL-492",
+      "POL-487"
+    ],
+    "POL-492": [
+      "POL-487"
+    ],
+    "POL-491": [
+      "POL-490"
+    ],
+    "POL-490": [
+      "POL-489"
+    ],
+    "POL-489": [
+      "POL-488"
+    ],
+    "POL-487": [
+      "POL-486"
+    ]
+  },
+  "clusters": {
+    "POL-485": {
+      "id": "POL-485",
+      "title": "Linear Issue: POL-485",
+      "children": [
+        "POL-492",
+        "POL-491",
+        "POL-490",
+        "POL-489",
+        "POL-488",
+        "POL-487",
+        "POL-486"
+      ],
+      "cluster_root": "POL-485"
+    }
+  },
+  "activeCluster": "POL-485"
 }
