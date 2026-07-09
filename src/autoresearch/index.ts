@@ -9,6 +9,20 @@ export { routeProposals } from "./routing.js";
 export type { ProposalIssueResult, RouteProposalsResult, RouteProposalsOptions } from "./routing.js";
 export { aggregateSolEvidence } from "./sol-evidence-loader.js";
 export { computeForemanScore, computeWorkerScore, computeSolScoreReport } from "./sol-scorer.js";
+export {
+  computeForemanScorecard,
+  computeWorkerScorecard,
+  computeProviderScorecard,
+  computeModelScorecard,
+  computeRoutingScorecard,
+  computeAllScorecards,
+  buildForemanRawMetrics,
+  buildWorkerRawMetrics,
+  buildProviderRawMetrics,
+  buildModelRawMetrics,
+  buildRoutingRawMetrics,
+} from "./sol-scorecard-calculator.js";
+export type { SolScorecardSet } from "./sol-scorecard-calculator.js";
 export { appendSnapshot, loadSnapshots, buildSnapshot, getHistoryFilePath } from "./sol-history.js";
 export type { SolScoreSnapshot } from "./sol-history.js";
 export { generateReport, formatReportCli } from "./sol-report.js";

@@ -100,6 +100,23 @@ function emptyRawMetrics(): SolScorecardRawMetrics {
     router_fallback_used: null,
     router_exhausted: null,
     router_exhausted_reason: null,
+
+    provider_decisions: null,
+    provider_startup_failures: null,
+    provider_exhausted_decisions: null,
+    provider_fallback_attempts: null,
+    provider_successful_fallbacks: null,
+
+    model_decisions: null,
+    model_startup_failures: null,
+    model_exhausted_decisions: null,
+    model_fallback_attempts: null,
+    model_successful_fallbacks: null,
+
+    router_candidates_count: null,
+    router_child_status: null,
+    router_child_validation: null,
+
     heartbeat_count: null,
   };
 }

@@ -196,6 +196,38 @@ export interface SolScorecardRawMetrics {
   /** Router exhaustion reason. */
   router_exhausted_reason: string | null;
 
+  // ── Provider aggregates (for provider scorecards) ──
+  /** Number of routing decisions involving this provider. */
+  provider_decisions: number | null;
+  /** Provider startup failures (exhaustion events) for this provider. */
+  provider_startup_failures: number | null;
+  /** Exhausted decisions where this provider was the final attempt. */
+  provider_exhausted_decisions: number | null;
+  /** Fallback attempts where this provider was tried. */
+  provider_fallback_attempts: number | null;
+  /** Successful fallbacks involving this provider. */
+  provider_successful_fallbacks: number | null;
+
+  // ── Model aggregates (for model scorecards) ──
+  /** Number of children assigned to this model. */
+  model_decisions: number | null;
+  /** Startup failures attributed to this model. */
+  model_startup_failures: number | null;
+  /** Exhausted decisions attributed to this model. */
+  model_exhausted_decisions: number | null;
+  /** Fallback attempts where this model was tried. */
+  model_fallback_attempts: number | null;
+  /** Successful fallbacks involving this model. */
+  model_successful_fallbacks: number | null;
+
+  // ── Routing decision (for routing scorecards) ──
+  /** Number of candidates considered for this routing decision. */
+  router_candidates_count: number | null;
+  /** Status of the child routed by this decision. */
+  router_child_status: string | null;
+  /** Validation outcome of the child routed by this decision. */
+  router_child_validation: string | null;
+
   // ── Heartbeats ──
   /** Heartbeat count for this subject. */
   heartbeat_count: number | null;
@@ -363,6 +395,20 @@ export const SOL_FORMULA_VERSIONS = {
   INTERVENTION_BINARY_V1: "intervention-binary/1.0" as SolFormulaVersion,
   QC_REPAIR_LOOP_V1: "qc-repair-loop/1.0" as SolFormulaVersion,
   SCOPE_ADHERENCE_V1: "scope-adherence/1.0" as SolFormulaVersion,
+  STARTUP_FAILURE_RATE_V1: "startup-failure-rate/1.0" as SolFormulaVersion,
+  QUOTA_EXHAUSTION_RATE_V1: "quota-exhaustion-rate/1.0" as SolFormulaVersion,
+  FALLBACK_FREQUENCY_V1: "fallback-frequency/1.0" as SolFormulaVersion,
+  ROLE_SUITABILITY_V1: "role-suitability/1.0" as SolFormulaVersion,
+  RUNTIME_PROXY_V1: "runtime-proxy/1.0" as SolFormulaVersion,
+  QUALITY_OUTCOMES_V1: "quality-outcomes/1.0" as SolFormulaVersion,
+  ROUTE_SELECTED_V1: "route-selected/1.0" as SolFormulaVersion,
+  ROUTE_CANDIDATES_V1: "route-candidates/1.0" as SolFormulaVersion,
+  ROUTE_FALLBACK_PATH_V1: "route-fallback-path/1.0" as SolFormulaVersion,
+  ROUTE_OUTCOME_QUALITY_V1: "route-outcome-quality/1.0" as SolFormulaVersion,
+  ROUTE_TOKEN_BURN_V1: "route-token-burn/1.0" as SolFormulaVersion,
+  ROUTE_QC_RESULT_V1: "route-qc-result/1.0" as SolFormulaVersion,
+  ROUTE_VALIDATION_RESULT_V1: "route-validation-result/1.0" as SolFormulaVersion,
+  ROUTE_CONFIRMED_SIGNAL_V1: "route-confirmed-signal/1.0" as SolFormulaVersion,
 } as const;
 
 /**
