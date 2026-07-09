@@ -2,11 +2,11 @@
 
 ## Purpose
 
-The loop subsystem manages the session lifecycle for Polaris cluster runs. It handles checkpointing state between child executions, generating bootstrap packets for session resume, enforcing session boundaries (one child per session), and providing `run`, `dispatch`, `continue`, `resume`, `status`, and `abort` commands.
+The loop subsystem manages the session lifecycle for Polaris cluster runs. It handles checkpointing state between child executions, generating bootstrap packets for session resume, enforcing session boundaries (one child per session), and providing `run`, `dispatch`, `continue`, `resume`, `status`, and `abort` commands. It also ingests worker run-health symptoms and hands off to Medic when a run-health report requires diagnosis.
 
 ## What belongs here
 
-- `parent.ts` — automated parent-loop orchestration (`polaris loop run`); integrates router and telemetry emission
+- `parent.ts` — automated parent-loop orchestration (`polaris loop run`); integrates router, telemetry emission, run-health symptom ingestion, and Medic consult dispatch
 - `dispatch.ts` — child claim and WorkerPacket emission (`polaris loop dispatch`); drives router decision and slot management
 - `dispatch-state.ts` — worker dispatch state machine types and transition logic
 - `worker-packet.ts` — WorkerPacket generation and immutability contract
@@ -72,6 +72,7 @@ The loop subsystem manages the session lifecycle for Polaris cluster runs. It ha
 - The loop owns child dispatch ordering and is not responsible for QC execution.
 - Completed-cluster QC triggers after all children are complete and Closeout Librarian has produced documentation evidence.
 - Child-level QC is opt-in and policy-gated; it runs after a single child completes and before the next child is dispatched.
+- Run-health symptom ingestion happens after worker completion and before finalize/closeout: the parent loop appends worker symptoms into the run-health report, and if a report already requires Medic input it dispatches Medic for consult.
 - QC results are durable artifacts written by `src/qc/` and consumed by finalize, cluster-state, and autoresearch; the loop does not parse provider output.
 
 ## QC repair loop relationship

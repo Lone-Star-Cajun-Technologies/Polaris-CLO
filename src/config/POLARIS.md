@@ -12,7 +12,9 @@ The config subsystem loads, validates, and provides the resolved `PolarisConfig`
 - `validator.ts` — schema validation logic
 - `graph` config fields — graph output path and invalidation triggers for graph governance
 - Provider detection helpers — compaction providers remain separate from repo-analysis providers; repo analysis prefers Polaris graph only.
-- `sol` config fields — `SolConfig` with `history.enabled` (default `false`) and `history.path` (default `.polaris/sol-history`) for SOL history persistence; snapshots are not written unless `history.enabled` is `true`.
+- `sol` config fields — `SolConfig` with `history.enabled` (default `false`), `history.path` (default `.polaris/sol-history`), and threshold policy controls for SOL → run-health symptom triggers.
+- `run_health` config fields — `RunHealthConfig` and `ForemanSymptomsConfig` for foreman-side symptom emission.
+- `finalize.medic` config fields — `bypassPolicy` for the run-health Medic gate.
 
 ## What does not belong here
 
@@ -36,6 +38,8 @@ The config subsystem loads, validates, and provides the resolved `PolarisConfig`
 - Deep merge means nested objects are combined key-by-key; a user config that sets `map.autoWriteAbove` does not clobber other `map.*` keys.
 - Schema validation runs on the user-supplied partial config, before merging with defaults. Defaults are trusted and not re-validated.
 - Graph settings are optional; if omitted, graph governance writes to `.polaris/graph` and watches both repo and config changes.
+- Run-health and SOL threshold config are advisory by default: `run_health.foreman_symptoms.enabled` is off unless explicitly set, and `sol.thresholds` must be enabled before threshold crossings create run-health symptoms or set Medic pending.
+- `finalize.medic.bypassPolicy` must stay explicit; without `cli`, the finalize Medic gate only accepts a resolved or bypassed run-health report.
 - `detectRepoAnalysisProviders()` returns `polaris-graph` when the `polaris` command is available; GitNexus detection is limited to compaction-provider compatibility.
 
 ## Read before editing
@@ -50,7 +54,9 @@ The config subsystem loads, validates, and provides the resolved `PolarisConfig`
 
 - The `execution.routerPolicy` config surface (`WorkerRouterPolicyConfig`) is the live provider eligibility and slot-pool configuration for the Worker Router. It is present in `schema.ts`, `schema.json`, and `defaults.ts`. Key sub-fields: `defaultWorkerPool.maxActiveWorkers` (default `1`), `providerRegistry` (per-provider eligibility, role, capability, quota, trust, cost, and max slot declarations), `allowCrossAgentFallback` (default `false`).
 - With `routerPolicy` absent or all defaults, behavior is identical to the pre-router single-worker loop: one active worker, first configured provider selected, no cross-agent fallback.
-- The `sol` config surface (`SolConfig`) controls SOL history persistence. `sol.history.enabled` (default `false`) gates all snapshot writes; `sol.history.path` (default `.polaris/sol-history`) sets the storage directory relative to the repo root. Consumers must check `history.enabled` before writing snapshots.
+- The `sol` config surface (`SolConfig`) controls SOL history persistence and threshold-based symptom emission. `sol.history.enabled` (default `false`) gates all snapshot writes; `sol.history.path` (default `.polaris/sol-history`) sets the storage directory relative to the repo root. `sol.thresholds.enabled` must be true before any thresholds can create run-health symptoms, and `sol.thresholds.policy.requireMedic` promotes critical threshold crossings into a pending Medic decision.
+- `run_health.foreman_symptoms.enabled` governs foreman-side symptom emission from runtime intervention events; it is disabled by default and only affects repositories that opt in.
+- `finalize.medic.bypassPolicy` defaults to `none`; set it to `cli` only when operators should be able to bypass the run-health Medic gate with `--bypass-medic`.
 
 ## Related routes
 

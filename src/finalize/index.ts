@@ -32,6 +32,7 @@ import { LocalGraph } from "../tracker/local-graph.js";
 import { TrackerSyncService } from "../tracker/sync/index.js";
 import { formatFinalizeEvidenceFailures, verifyCompletedChildFinalizeEvidence } from "../loop/finalize-evidence.js";
 import { validateDeliveryIntegrity } from "./delivery-integrity.js";
+import { validateMedicGate } from "./medic-gate.js";
 import { runQcAtTrigger, createQcRegistry } from "../qc/index.js";
 
 export interface FinalizeOptions {
@@ -40,6 +41,8 @@ export interface FinalizeOptions {
   dryRun?: boolean;
   skipDelivery?: boolean;
   skipLibrarian?: boolean;
+  /** Reason supplied with --bypass-medic to request an explicit Medic gate bypass. */
+  bypassMedicReason?: string;
 }
 
 function getBranch(repoRoot: string): string {
@@ -474,7 +477,7 @@ async function runQcGate(options: {
 }
 
 export async function runFinalize(options: FinalizeOptions): Promise<void> {
-  const { repoRoot, stateFile, dryRun, skipDelivery, skipLibrarian } = options;
+  const { repoRoot, stateFile, dryRun, skipDelivery, skipLibrarian, bypassMedicReason } = options;
   const config = loadConfig(repoRoot);
 
   // Step 1: polaris map update --changed
@@ -742,6 +745,32 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
     process.exit(1);
   }
 
+  // Step 5.11: Run-health Medic gate
+  // After all worker/QC evidence is available and before any final commit, push,
+  // PR creation, or tracker update, require a Medic consultation decision for any
+  // run that recorded health symptoms.
+  {
+    console.log("[5.11/14] Checking run-health Medic gate...");
+    const bypassPolicy = config.finalize?.medic?.bypassPolicy ?? "none";
+    if (dryRun && bypassMedicReason && bypassPolicy === "cli") {
+      console.warn(
+        `Dry run: would write Medic bypass to run-health report for run "${state.run_id}" (reason: ${bypassMedicReason}).`,
+      );
+    }
+    const medicBlocker = validateMedicGate({
+      runId: state.run_id,
+      repoRoot,
+      bypassReason: bypassMedicReason,
+      bypassPolicy,
+      dryRun,
+    });
+    if (medicBlocker) {
+      process.stderr.write(`finalize aborted: run-health Medic gate failed.\n${medicBlocker}\n`);
+      process.exit(1);
+    }
+    console.log("[5.11/14] Run-health Medic gate passed.");
+  }
+
   // Step 6: Tracker Reconciliation
   // LinearAdapter is sync-in only; only McpBridgeAdapter supports full reconciliation.
   const trackerType = config.tracker?.adapter;
@@ -899,12 +928,20 @@ export function createFinalizeCommand(handlers: FinalizeCommandHandlers = {}): C
     .option("--dry-run", "non-mutating preview: validate and generate report without committing or pushing")
     .option("--skip-delivery", "perform local finalize steps only; skip push/PR/Linear/archive")
     .option("--skip-librarian", "skip the Closeout Librarian gate (backward compatibility only)")
-    .action((options: { repoRoot: string; stateFile?: string; dryRun?: boolean; skipDelivery?: boolean; skipLibrarian?: boolean }) => {
+    .option("--bypass-medic <reason>", "bypass the run-health Medic gate (requires finalize.medic.bypassPolicy=cli)")
+    .action((options: { repoRoot: string; stateFile?: string; dryRun?: boolean; skipDelivery?: boolean; skipLibrarian?: boolean; bypassMedic?: string }) => {
       const repoRoot = options.repoRoot;
       const stateFile =
         options.stateFile ??
         join(repoRoot, ".taskchain_artifacts", "polaris-run", "current-state.json");
-      finalizeHandler({ repoRoot, stateFile, dryRun: options.dryRun, skipDelivery: options.skipDelivery, skipLibrarian: options.skipLibrarian })
+      finalizeHandler({
+        repoRoot,
+        stateFile,
+        dryRun: options.dryRun,
+        skipDelivery: options.skipDelivery,
+        skipLibrarian: options.skipLibrarian,
+        bypassMedicReason: options.bypassMedic,
+      })
         .catch((err: unknown) => {
           process.stderr.write(`finalize error: ${err instanceof Error ? err.message : String(err)}\n`);
           process.exit(1);

@@ -123,6 +123,7 @@ function baseConfig(): Required<PolarisConfig> {
       routes: {},
     },
     sol: {},
+    run_health: {},
   };
 }
 

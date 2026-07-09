@@ -299,6 +299,15 @@ export interface PolarisConfig {
     requireMapValidation?: boolean;
     requireSchemaValidation?: boolean;
     archiveRunSnapshot?: boolean;
+    /** Run-health Medic gate configuration. */
+    medic?: {
+      /**
+       * Explicit bypass policy for the Medic gate.
+       * - "none" (default): bypass is not allowed; the report must have a Medic decision.
+       * - "cli": an operator may bypass with --bypass-medic "<reason>".
+       */
+      bypassPolicy?: "none" | "cli";
+    };
   };
   tracker?: {
     /** Which remote tracker adapter to use. Omit to disable remote reconciliation. */
@@ -427,6 +436,36 @@ export interface PolarisConfig {
    * When absent, history is disabled and no snapshots are written.
    */
   sol?: SolConfig;
+  /**
+   * Run-health reporting configuration.
+   * Controls whether Foreman-side runtime symptoms are appended to the
+   * run-health report and under what conditions.
+   */
+  run_health?: RunHealthConfig;
+}
+
+/** Foreman symptom emission policy. */
+export interface ForemanSymptomsConfig {
+  /**
+   * Enable Foreman-side runtime symptom reporting.
+   *
+   * When true, the Foreman appends symptoms for Polaris-runtime intervention
+   * events (state repair, cluster repair, dispatch boundary repair, QC/finalize
+   * runtime failure, and similar events).
+   *
+   * Default: false — Foreman symptoms are not emitted for non-Polaris target
+   * repositories unless this is explicitly set to true.
+   */
+  enabled?: boolean;
+}
+
+/** Run-health subsystem configuration. */
+export interface RunHealthConfig {
+  /**
+   * Controls Foreman-side symptom emission policy.
+   * When absent, Foreman symptoms are disabled.
+   */
+  foreman_symptoms?: ForemanSymptomsConfig;
 }
 
 /** SOL history configuration. */
@@ -443,10 +482,81 @@ export interface SolHistoryConfig {
   path?: string;
 }
 
+/**
+ * SOL threshold configuration for run-health symptom triggers.
+ *
+ * Thresholds are only active when `sol.thresholds.enabled` is true
+ * AND `sol.thresholds.policy.createRunHealthReport` or
+ * `sol.thresholds.policy.requireMedic` is true.
+ * SOL remains advisory by default.
+ */
+export interface SolThresholdPolicy {
+  /**
+   * When true, SOL will create or append to the run-health report when a
+   * threshold is crossed. Default: false (advisory only).
+   */
+  createRunHealthReport?: boolean;
+  /**
+   * When true, SOL will set the run-health report's medic_consult to
+   * "pending" status when a critical threshold is crossed. Implies
+   * createRunHealthReport. Default: false.
+   */
+  requireMedic?: boolean;
+}
+
+export interface SolThresholdsConfig {
+  /**
+   * Enable threshold evaluation. When false (default), no symptoms are
+   * appended even if thresholds are configured.
+   */
+  enabled?: boolean;
+  /**
+   * Policy controlling whether SOL threshold crossings produce run-health
+   * reports or merely log advisory messages.
+   */
+  policy?: SolThresholdPolicy;
+  /**
+   * Composite score below which a run-level symptom is appended.
+   * Range 0.0–1.0. Default: 0.4
+   */
+  low_composite_score?: number;
+  /**
+   * QC repair loop terminal statuses that trigger a run-health symptom.
+   * Default: ["max-rounds", "medic-referral", "all-providers-failed"]
+   */
+  qc_repair_loop_failure_statuses?: string[];
+  /**
+   * Number of provider failures in a single run above which a run-health
+   * symptom is appended. Default: 3
+   */
+  repeated_provider_failures?: number;
+  /**
+   * Number of Foreman interventions (escalation events) above which a
+   * run-health symptom is appended. Default: 2
+   */
+  foreman_intervention_count?: number;
+  /**
+   * When true, trigger a run-health symptom when stale or wrong-run
+   * telemetry is detected (foreman-wrong-run-telemetry events > 0).
+   * Default: true
+   */
+  stale_wrong_run_telemetry?: boolean;
+  /**
+   * Number of validation failures (across workers) above which a
+   * run-health symptom is appended. Default: 2
+   */
+  validation_failures?: number;
+}
+
 /** SOL subsystem configuration. */
 export interface SolConfig {
   /** History persistence settings. */
   history?: SolHistoryConfig;
+  /**
+   * Threshold configuration for SOL → run-health symptom triggers.
+   * When absent, no threshold-based symptoms are appended.
+   */
+  thresholds?: SolThresholdsConfig;
 }
 
 /** QC trigger timing. */

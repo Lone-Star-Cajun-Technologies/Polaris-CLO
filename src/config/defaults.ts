@@ -1,6 +1,6 @@
 import type { PolarisConfig } from "./schema.js";
 
-export const DEFAULT_CONFIG: Omit<Required<PolarisConfig>, "canon" | "providers" | "orchestration" | "simplicity" | "qc" | "sol"> & { canon: Required<NonNullable<PolarisConfig["canon"]>>; providers: { repoAnalysis: { preferred: string | undefined; fallback: string[] } }; orchestration: Required<NonNullable<PolarisConfig["orchestration"]>>; qc: Required<NonNullable<PolarisConfig["qc"]>> } & { compact: Required<Pick<NonNullable<PolarisConfig["compact"]>, "orchestratorMode" | "workerMode">> } = {
+export const DEFAULT_CONFIG: Omit<Required<PolarisConfig>, "canon" | "providers" | "orchestration" | "simplicity" | "qc" | "sol" | "run_health"> & { canon: Required<NonNullable<PolarisConfig["canon"]>>; providers: { repoAnalysis: { preferred: string | undefined; fallback: string[] } }; orchestration: Required<NonNullable<PolarisConfig["orchestration"]>>; qc: Required<NonNullable<PolarisConfig["qc"]>> } & { compact: Required<Pick<NonNullable<PolarisConfig["compact"]>, "orchestratorMode" | "workerMode">> } = {
   version: "1.0",
   repo: {
     name: "",
@@ -54,6 +54,9 @@ export const DEFAULT_CONFIG: Omit<Required<PolarisConfig>, "canon" | "providers"
     requireMapValidation: true,
     requireSchemaValidation: true,
     archiveRunSnapshot: true,
+    medic: {
+      bypassPolicy: "none",
+    },
   },
   tracker: {
     lifecyclePolicy: {

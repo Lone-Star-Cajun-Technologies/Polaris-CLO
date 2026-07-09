@@ -558,3 +558,139 @@ describe("SealedResultFileContract", () => {
     expect(contract.result_required_fields!["status"]).toBe("done");
   });
 });
+
+// ── Worker symptom categories ─────────────────────────────────────────────────
+
+import { WORKER_SYMPTOM_CATEGORIES, type WorkerSymptomCategory } from "./worker-packet.js";
+import type { WorkerRunHealthSymptom } from "../types/result-packet.js";
+
+describe("WORKER_SYMPTOM_CATEGORIES", () => {
+  it("contains the five canonical categories", () => {
+    expect(WORKER_SYMPTOM_CATEGORIES).toContain("worker-blocked");
+    expect(WORKER_SYMPTOM_CATEGORIES).toContain("validation-failed");
+    expect(WORKER_SYMPTOM_CATEGORIES).toContain("repeated-rework");
+    expect(WORKER_SYMPTOM_CATEGORIES).toContain("unclear-requirements");
+    expect(WORKER_SYMPTOM_CATEGORIES).toContain("unusual-assumption");
+    expect(WORKER_SYMPTOM_CATEGORIES).toHaveLength(5);
+  });
+
+  it("is referenced in compileImplPacket steps", () => {
+    const p = compileImplPacket({ ...BASE, childId: "POL-121" });
+    const stepsText = p.instructions.steps.join(" ");
+    expect(stepsText).toContain("worker-blocked");
+    expect(stepsText).toContain("validation-failed");
+    expect(stepsText).toContain("run_health_symptoms");
+  });
+});
+
+describe("SealedWorkerResult with run_health_symptoms", () => {
+  it("accepts worker-blocked symptom in sealed result", () => {
+    const result: SealedWorkerResult = {
+      run_id: "run-1",
+      child_id: "POL-314",
+      status: "done",
+      commit: "abc1234",
+      run_health_symptoms: [
+        {
+          category: "worker-blocked",
+          message: "Missing API key to complete the task",
+          occurred_at: "2026-07-09T15:00:00.000Z",
+        },
+      ],
+    };
+    expect(result.run_health_symptoms).toHaveLength(1);
+    expect(result.run_health_symptoms![0].category).toBe("worker-blocked");
+  });
+
+  it("accepts validation-failed symptom in sealed result", () => {
+    const result: SealedWorkerResult = {
+      run_id: "run-1",
+      child_id: "POL-314",
+      status: "done",
+      commit: "abc1234",
+      run_health_symptoms: [
+        {
+          category: "validation-failed",
+          message: "npm test exited with code 1 after 3 retries",
+          evidence_refs: ["logs/test-run-3.txt"],
+          occurred_at: "2026-07-09T15:00:00.000Z",
+        },
+      ],
+    };
+    expect(result.run_health_symptoms![0].category).toBe("validation-failed");
+    expect(result.run_health_symptoms![0].evidence_refs).toContain("logs/test-run-3.txt");
+  });
+
+  it("accepts repeated-rework symptom in sealed result", () => {
+    const result: SealedWorkerResult = {
+      run_id: "run-1",
+      child_id: "POL-314",
+      status: "done",
+      commit: "abc1234",
+      run_health_symptoms: [
+        {
+          category: "repeated-rework",
+          message: "Attempted the same type narrowing fix 3 times without test progression",
+          occurred_at: "2026-07-09T15:05:00.000Z",
+        },
+      ],
+    };
+    expect(result.run_health_symptoms![0].category).toBe("repeated-rework");
+  });
+
+  it("accepts unclear-requirements symptom in sealed result", () => {
+    const result: SealedWorkerResult = {
+      run_id: "run-1",
+      child_id: "POL-314",
+      status: "done",
+      commit: "abc1234",
+      run_health_symptoms: [
+        {
+          category: "unclear-requirements",
+          message: "AC says both append-only and idempotent overwrite, which are contradictory",
+          occurred_at: "2026-07-09T15:10:00.000Z",
+        },
+      ],
+    };
+    expect(result.run_health_symptoms![0].category).toBe("unclear-requirements");
+  });
+
+  it("accepts unusual-assumption symptom in sealed result", () => {
+    const result: SealedWorkerResult = {
+      run_id: "run-1",
+      child_id: "POL-314",
+      status: "done",
+      commit: "abc1234",
+      run_health_symptoms: [
+        {
+          category: "unusual-assumption",
+          message: "Assumed zod was available because it was used in adjacent files; not in package.json",
+          occurred_at: "2026-07-09T15:12:00.000Z",
+        },
+      ],
+    };
+    expect(result.run_health_symptoms![0].category).toBe("unusual-assumption");
+  });
+
+  it("allows omitting run_health_symptoms when no symptoms occurred", () => {
+    const result: SealedWorkerResult = {
+      run_id: "run-1",
+      child_id: "POL-314",
+      status: "done",
+      commit: "abc1234",
+    };
+    expect(result.run_health_symptoms).toBeUndefined();
+  });
+
+  it("allows multiple symptoms from a single worker", () => {
+    const symptoms: WorkerRunHealthSymptom[] = [
+      { category: "validation-failed", message: "Build failed", occurred_at: "2026-07-09T15:00:00.000Z" },
+      { category: "repeated-rework", message: "Fixed same import 4 times", occurred_at: "2026-07-09T15:01:00.000Z" },
+    ];
+    const result: SealedWorkerResult = {
+      run_id: "run-1", child_id: "POL-314", status: "done", commit: "abc1234",
+      run_health_symptoms: symptoms,
+    };
+    expect(result.run_health_symptoms).toHaveLength(2);
+  });
+});

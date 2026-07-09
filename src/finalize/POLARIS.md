@@ -52,6 +52,13 @@ The finalize subsystem implements the atomic 13-step final delivery sequence for
 - QC artifacts follow `artifact-policy.ts` promotion rules; raw provider scratch stays out of delivery commits.
 - PR-level QC triggers run after the PR is created; completed-cluster QC triggers run before the PR is created.
 
+## Run-health Medic gate
+
+- `validateMedicGate()` (Step 5.11, after the authoritative completed-child cross-check and before tracker reconciliation) blocks finalize when `.polaris/runs/<run-id>/run-health-report.json` exists and has no Medic decision (`medic_consult.status "resolved"` or `"bypassed"`) and no explicit `policy_bypass`.
+- The gate runs before the final commit, push, PR creation, and tracker update. It does not replace or weaken the QC repair-loop or Closeout Librarian gates.
+- A policy bypass requires `finalize.medic.bypassPolicy: "cli"` in `polaris.config.json` and the operator to pass `--bypass-medic "<reason>"`. The bypass writes auditable `policy_bypass` metadata into the run-health report.
+- Absence of a run-health report means no symptoms were recorded; the gate passes without action.
+
 ## QC repair loop relationship
 
 - `validateQcRepairLoopGate()` (Step 5.9, after the completed-cluster QC trigger and before the authoritative completed-child cross-check) blocks finalize unless `state.qc_repair_loop.terminal_outcome` is a trusted value. The gate is skipped entirely when `config.qc.enabled` is false, or when `config.qc.repairRouting` is not `"route"`/`"follow-up"`.

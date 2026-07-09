@@ -178,6 +178,14 @@ export interface SealedWorkerResult {
   /** If status is 'failure', a descriptive error message. */
   error_message?: string;
 
+  /**
+   * Structured run-health symptoms observed during worker execution.
+   * Present only when at least one symptom occurred. Workers report symptoms
+   * without diagnosing root cause — diagnosis is Medic's responsibility.
+   * Omit entirely (or set to empty array) when no symptoms occurred.
+   */
+  run_health_symptoms?: import('../types/result-packet.js').WorkerRunHealthSymptom[];
+
   /** Any other fields from the return_contract. */
   [key: string]: unknown;
 }
@@ -288,6 +296,25 @@ export const WORKER_PROHIBITED_WRITE_PATHS: string[] = [
   ".polaris/runs/",
   "**/telemetry.jsonl",
 ];
+
+// ── Worker symptom reporting ──────────────────────────────────────────────────
+
+/**
+ * Canonical symptom categories workers may use in their sealed result.
+ * Workers observe and report — they do NOT diagnose root cause.
+ *
+ * Include run_health_symptoms in the sealed result only when at least one
+ * symptom occurred. When no symptoms occurred, omit the field entirely.
+ */
+export const WORKER_SYMPTOM_CATEGORIES = [
+  "worker-blocked",       // Could not proceed (missing info, approval needed, out-of-scope)
+  "validation-failed",    // Build / test / lint validation commands failed
+  "repeated-rework",      // Same fix attempted multiple times without success
+  "unclear-requirements", // Requirements are contradictory or too ambiguous to act on
+  "unusual-assumption",   // Had to assume something outside normal scope to proceed
+] as const;
+
+export type WorkerSymptomCategory = typeof WORKER_SYMPTOM_CATEGORIES[number];
 
 export interface WorkerCommitPolicy {
   allowedScope: string[];
@@ -471,6 +498,9 @@ export function compileImplPacket(input: CompileImplPacketInput): WorkerPacket {
     `Create exactly ONE git commit: [${input.childId}] ${childTitle}.`,
     `Do NOT modify open_children or completed_children in ${input.stateFile}. The parent runtime (loop continue) owns that state transition.`,
     `Append a telemetry event to ${input.telemetryFile}.`,
+    `If you encountered any struggle signals during execution, include a "run_health_symptoms" array in your sealed result. ` +
+      `Use one of these categories: ${WORKER_SYMPTOM_CATEGORIES.join(', ')}. ` +
+      `Report what you observed — do NOT diagnose root cause. Omit the field if no symptoms occurred.`,
     `Write compact return JSON to stdout (fields: ${IMPL_RETURN_CONTRACT.join(', ')}). next_recommended_action MUST be exactly "continue" on success, "stop" on unresolvable blocker, or "investigate" if manual review is needed.`,
     `TERMINATE SESSION IMMEDIATELY. Do not select or execute the next child.`,
   ];

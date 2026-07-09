@@ -1,7 +1,7 @@
 # Summary: loop
 
 ## Purpose
-Session lifecycle manager for Polaris cluster runs — orchestrates child dispatch, checkpointing, resume, and abort.
+Session lifecycle manager for Polaris cluster runs — orchestrates child dispatch, checkpointing, resume, abort, and run-health symptom ingestion.
 
 ## Key behaviors
 - One child per session (STOP rule); enforced by `context_budget.children_completed >= 1` in `current-state.json`.
@@ -23,7 +23,7 @@ Session lifecycle manager for Polaris cluster runs — orchestrates child dispat
 - **Peer**: `src/cognition` (called from `worker.ts` after child completes)
 
 ## Current State
-The loop subsystem now includes the Worker Router (`src/loop/router/`). `dispatch.ts` calls `decideWorkerRoute()` to select a provider via deterministic eligibility, trust, and cost ranking; attaches `routerEvidence` to the dispatch record; and emits `provider-selected`, `provider-fallback-attempted`, and `provider-exhausted` telemetry events. Slot-aware child scheduling is in `src/runtime/scheduling/child-selector.ts`: it enforces `maxActiveWorkers` from `routerPolicy.defaultWorkerPool`, tracks `slot_claims`, and returns `rejected_children` with typed reasons. Adapter fallback (`pre_dispatch_failure`) is integrated in `TerminalCliAdapter` and `AgentSubtaskAdapter`; once a worker emits `worker-acknowledged` the child is bound and fallback stops. Router telemetry feeds `src/autoresearch/score.ts` via `summarizeRouterOutcomes()`. With all defaults (`max_concurrent = 1`, `allowCrossAgentFallback = false`), loop behavior is identical to the pre-router single-worker model.
+The loop subsystem now includes the Worker Router (`src/loop/router/`). `dispatch.ts` calls `decideWorkerRoute()` to select a provider via deterministic eligibility, trust, and cost ranking; attaches `routerEvidence` to the dispatch record; and emits `provider-selected`, `provider-fallback-attempted`, and `provider-exhausted` telemetry events. Slot-aware child scheduling is in `src/runtime/scheduling/child-selector.ts`: it enforces `maxActiveWorkers` from `routerPolicy.defaultWorkerPool`, tracks `slot_claims`, and returns `rejected_children` with typed reasons. Adapter fallback (`pre_dispatch_failure`) is integrated in `TerminalCliAdapter` and `AgentSubtaskAdapter`; once a worker emits `worker-acknowledged` the child is bound and fallback stops. Router telemetry feeds `src/autoresearch/score.ts` via `summarizeRouterOutcomes()`. The loop now also ingests worker run-health symptoms into `.polaris/runs/<run-id>/run-health-report.json` and, when the report needs diagnosis, dispatches Medic consult before delivery. With all defaults (`max_concurrent = 1`, `allowCrossAgentFallback = false`), loop behavior is identical to the pre-router single-worker model.
 
 ## Linked Canonical Sources
 - [POLARIS.md](POLARIS.md)

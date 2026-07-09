@@ -1,39 +1,45 @@
-<!-- polaris:draft -->
-# medic
-
-> Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
+# src/medic
 
 ## Purpose
 
-<!-- One paragraph describing what this folder does. -->
-
-**Domain:** medic
-**Route:** src/medic
-**Taskchain:** polaris-medic
+The Medic route creates diagnostic charts, run-health consult results, and treatment-packet handoffs for Polaris runs that require diagnosis after symptoms are recorded.
 
 ## What belongs here
 
-- `chart-id.test.ts` — src/medic (medic)
-- `chart-id.ts` — src/medic (medic)
-- `chart-schema.test.ts` — src/medic (medic)
-- `chart-schema.ts` — src/medic (medic)
+- `chart-id.ts` — deterministic CHART-YYYY-MM-DD-NNN generation
+- `chart-schema.ts` — Medic chart validation and schema helpers
+- `run-health-consult.ts` — run-health consult workflow, chart creation, consult result writing, and telemetry emission
+- `treatment-packets.ts` — treatment-packet compilation and dispatch helpers for consult follow-up work
+- `chart-id.test.ts`, `chart-schema.test.ts`, `run-health-consult.test.ts` — Medic route tests
 
 ## What does not belong here
 
-<!-- Explicit exclusions of files or responsibilities. -->
+- Worker dispatch orchestration — belongs in `src/loop/`
+- Final delivery logic — belongs in `src/finalize/`
+- Raw run-health report storage — belongs in `src/run-health/`
 
 ## Editing rules
 
-<!-- Behavioral constraints for agents and humans. -->
+- Keep chart IDs deterministic and monotonic within a day.
+- Run-health consults must consume the report produced by `src/run-health/`; Medic does not infer symptoms from telemetry.
+- Treatment packets are follow-up artifacts only; the consult result must record the chart and packet refs used to resolve the report.
+- Avoid coupling consult logic to finalize or loop internals beyond the packet contract.
 
 ## Architecture assumptions
 
-<!-- What the code assumes about the world. -->
+- Medic is the only route that diagnoses run-health symptoms and records the consult outcome.
+- A consult may resolve immediately (no treatment needed) or produce treatment packets for follow-up work.
+- Charts and treatment packets are durable documentation artifacts; they are not runtime state.
 
 ## Read before editing
 
-<!-- Links to canonical sources (doctrine, specs). -->
+- `src/types/result-packet.ts` — Medic packet/result and run-health symptom contracts
+- `src/run-health/schema.ts` — run-health report schema
+- `src/run-health/index.ts` — run-health persistence helpers
+- `src/finalize/medic-gate.ts` — delivery gate that consumes Medic consult state
 
 ## Related routes
 
-<!-- Atlas route pointer to sibling or parent folders. -->
+- `src/loop/` — dispatches Medic consults when run-health reports require diagnosis
+- `src/finalize/` — checks the run-health Medic gate before delivery
+- `smartdocs/medic/` — chart documentation and related SmartDocs output

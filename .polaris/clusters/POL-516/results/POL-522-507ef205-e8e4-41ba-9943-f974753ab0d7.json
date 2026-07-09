@@ -1,0 +1,1 @@
+{"run_id":"polaris-run-pol-516-2026-07-09-001","child_id":"POL-522","status":"success","commit":"87db39778dbb46ca9a1363d107e82994e7e5a0fc","validation":{"passed":["npm run build","npm test","npx vitest run src/autoresearch src/finalize src/loop src/qc src/run-health"]}}

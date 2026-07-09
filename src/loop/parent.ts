@@ -73,6 +73,12 @@ import { selectChildSlotClaims, type SlotClaim } from "../runtime/scheduling/chi
 import { loadTrackerAdapter, loadTrackerGraph } from "../tracker/index.js";
 import { LifecycleTransitionService } from "../tracker/lifecycle-transition.js";
 import { LocalGraph } from "../tracker/local-graph.js";
+import { upsertWorkerSymptoms, readRunHealthReport, getRunHealthReportPath, isMedicGateSatisfied } from "../run-health/index.js";
+import { appendForemanSymptom } from "../run-health/foreman-symptoms.js";
+import { appendQcEscalationSymptoms, appendRepairLoopOutcomeSymptom } from "../run-health/qc-escalation.js";
+import type { WorkerRunHealthSymptom, MedicRunHealthPacket } from "../types/result-packet.js";
+import { runMedicRunHealthConsult } from "../medic/run-health-consult.js";
+import { dispatchTreatmentWorker } from "../medic/treatment-packets.js";
 
 const CLAIM_TTL_MS = 30 * 60 * 1000;
 
@@ -1165,6 +1171,15 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
             error: msg,
             timestamp: new Date().toISOString(),
           });
+          appendForemanSymptom({
+            runId: state.run_id,
+            clusterId: state.cluster_id,
+            code: "foreman-qc-runtime-failure",
+            message: `QC run at completed-cluster trigger threw a runtime error: ${msg}`,
+            evidenceRefs: [telemetryFile],
+            repoRoot,
+            config,
+          });
           // Non-fatal: proceed to cluster-complete without repair loop.
           initialQcResult = null;
         }
@@ -1174,6 +1189,17 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
           initialQcResult.results.some(
             (r) => r.findings.length > 0 && r.status !== "passed" && r.status !== "skipped",
           );
+
+        // Append QC escalation symptoms for initial findings (blocking / parse failures / etc.)
+        if (initialQcResult !== null && initialQcResult.results.length > 0) {
+          appendQcEscalationSymptoms({
+            runId: state.run_id,
+            clusterId: state.cluster_id,
+            qcResults: initialQcResult.results,
+            afterRepair: false,
+            repoRoot,
+          });
+        }
 
         if (initialQcResult !== null && hasFindings) {
           const maxRepairRounds = config.qc.maxRepairRounds ?? DEFAULT_MAX_REPAIR_ROUNDS;
@@ -1288,6 +1314,23 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
               summary: repairLoopResult.summary,
               timestamp: new Date().toISOString(),
             });
+
+            // Append QC escalation symptoms for non-passing outcomes and post-repair findings.
+            appendRepairLoopOutcomeSymptom({
+              runId: state.run_id,
+              clusterId: state.cluster_id,
+              repairResult: repairLoopResult,
+              repoRoot,
+            });
+            if (repairLoopResult.final_qc_results.length > 0 && repairLoopResult.rounds_completed > 0) {
+              appendQcEscalationSymptoms({
+                runId: state.run_id,
+                clusterId: state.cluster_id,
+                qcResults: repairLoopResult.final_qc_results,
+                afterRepair: true,
+                repoRoot,
+              });
+            }
           } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
             appendTelemetry(telemetryFile, {
@@ -1296,11 +1339,108 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
               error: msg,
               timestamp: new Date().toISOString(),
             });
+            appendForemanSymptom({
+              runId: state.run_id,
+              clusterId: state.cluster_id,
+              code: "foreman-qc-runtime-failure",
+              message: `QC repair loop threw a runtime error: ${msg}`,
+              evidenceRefs: [telemetryFile],
+              repoRoot,
+              config,
+            });
             // Non-fatal: proceed to cluster-complete.
           }
         }
       }
       // ── End QC repair loop ─────────────────────────────────────────────────
+
+      // ── Run-health Medic consult ────────────────────────────────────────────
+      // If the run recorded health symptoms and no Medic decision exists yet,
+      // dispatch Medic to diagnose and optionally emit bounded treatment packets.
+      if (!dryRun) {
+        const runHealthReport = readRunHealthReport(state.run_id, repoRoot);
+        if (runHealthReport && !isMedicGateSatisfied(runHealthReport)) {
+          const maxTreatmentRounds = config.qc?.maxRepairRounds ?? DEFAULT_MAX_REPAIR_ROUNDS;
+          const medicDispatchId = randomUUID();
+          const medicResultPath = join(
+            repoRoot,
+            ".polaris",
+            "clusters",
+            state.cluster_id,
+            "results",
+            `medic-run-health-${medicDispatchId}.json`,
+          );
+          const medicPacket: MedicRunHealthPacket = {
+            role: "medic-run-health",
+            run_id: state.run_id,
+            dispatch_id: medicDispatchId,
+            cluster_id: state.cluster_id,
+            run_health_report_path: getRunHealthReportPath(state.run_id, repoRoot),
+            qc_artifact_refs: Array.from(
+              new Set([
+                ...runHealthReport.evidence_refs,
+                ...runHealthReport.symptoms.flatMap((s) => s.evidence_refs),
+              ]),
+            ),
+            telemetry_path: telemetryFile,
+            cluster_state_path: join(
+              repoRoot,
+              ".polaris",
+              "clusters",
+              state.cluster_id,
+              "state.json",
+            ),
+            policy_limits: { max_treatment_rounds: maxTreatmentRounds },
+            result_path: medicResultPath,
+            allowed_write_paths: [
+              "smartdocs/medic/charts",
+              ".polaris/runs",
+              ".polaris/clusters",
+              ".taskchain_artifacts",
+            ],
+            prohibited_write_paths: [],
+          };
+
+          try {
+            await runMedicRunHealthConsult({
+              packet: medicPacket,
+              repoRoot,
+              stateFile,
+              telemetryFile,
+              branch: state.branch ?? getCurrentBranch(repoRoot),
+              validationCommands: ["npm run build", "npm test"],
+              maxConcurrentWorkers,
+              dryRun,
+              dispatchTreatmentWorkerFn: (input) =>
+                dispatchTreatmentWorker({
+                  ...input,
+                  repoRoot,
+                  dispatch: (workerPacket) =>
+                    adapter.dispatch(workerPacket, { provider: providerName }),
+                }),
+            });
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            appendTelemetry(telemetryFile, {
+              event: "medic-run-health-consult-error",
+              run_id: state.run_id,
+              cluster_id: state.cluster_id,
+              error: msg,
+              timestamp: new Date().toISOString(),
+            });
+            appendForemanSymptom({
+              runId: state.run_id,
+              clusterId: state.cluster_id,
+              code: "foreman-medic-runtime-failure",
+              message: `Medic run-health consult threw a runtime error: ${msg}`,
+              evidenceRefs: [telemetryFile],
+              repoRoot,
+              config,
+            });
+          }
+        }
+      }
+      // ── End run-health Medic consult ───────────────────────────────────────
 
       // All children completed — write final state and halt
       if (!dryRun) {
@@ -1411,6 +1551,15 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
           child_id: nextChild,
           reason: msg,
           timestamp: new Date().toISOString(),
+        });
+        appendForemanSymptom({
+          runId: state.run_id,
+          clusterId: state.cluster_id,
+          code: "foreman-dispatch-boundary-repair",
+          message: `Dispatch boundary violation: ${msg}`,
+          evidenceRefs: [telemetryFile],
+          repoRoot,
+          config,
         });
       }
       return {
@@ -1810,6 +1959,43 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
           sealedResult['status'] = 'failed';
         }
         finalWorkerSummary = sealedResult as WorkerSummary;
+
+        // ── Ingest worker-reported run-health symptoms ────────────────────────
+        // Only process when worker reports at least one symptom. Errors are
+        // logged to telemetry but never block the run — symptom reporting is
+        // advisory, not a gate.
+        const rawSymptoms = sealedResult['run_health_symptoms'];
+        if (!dryRun && Array.isArray(rawSymptoms) && rawSymptoms.length > 0) {
+          const dispatchRecord = state.open_children_meta?.[nextChild]?.dispatch_record;
+          try {
+            upsertWorkerSymptoms({
+              runId: state.run_id,
+              clusterId: state.cluster_id,
+              childId: nextChild,
+              workerId: dispatchRecord?.worker_id,
+              provider: dispatchRecord?.provider,
+              symptoms: rawSymptoms as WorkerRunHealthSymptom[],
+              repoRoot,
+            });
+            appendTelemetry(telemetryFile, {
+              event: "run-health-symptoms-ingested",
+              run_id: state.run_id,
+              child_id: nextChild,
+              symptom_count: rawSymptoms.length,
+              timestamp: new Date().toISOString(),
+            });
+          } catch (symptomErr) {
+            const symptomMsg = symptomErr instanceof Error ? symptomErr.message : String(symptomErr);
+            appendTelemetry(telemetryFile, {
+              event: "run-health-ingest-error",
+              run_id: state.run_id,
+              child_id: nextChild,
+              error: symptomMsg,
+              timestamp: new Date().toISOString(),
+            });
+            // ponytail: consider surfacing ingest errors to operator via logStatus in a future pass
+          }
+        }
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
         if (!dryRun) {
@@ -1820,6 +2006,15 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
             error: msg,
             result_file: packet.result_file_contract.result_file,
             timestamp: new Date().toISOString(),
+          });
+          appendForemanSymptom({
+            runId: state.run_id,
+            clusterId: state.cluster_id,
+            code: "foreman-packet-repair",
+            message: `Failed to read sealed result file for ${nextChild}: ${msg}`,
+            evidenceRefs: [telemetryFile],
+            repoRoot,
+            config,
           });
         }
         return {
@@ -1847,6 +2042,15 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
           child_id: nextChild,
           error: errMsg,
           timestamp: new Date().toISOString(),
+        });
+        appendForemanSymptom({
+          runId: state.run_id,
+          clusterId: state.cluster_id,
+          code: "foreman-wrong-run-telemetry",
+          message: errMsg,
+          evidenceRefs: [telemetryFile],
+          repoRoot,
+          config,
         });
       }
       return {
@@ -2023,6 +2227,15 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
             error: errMsg,
             timestamp: new Date().toISOString(),
           });
+          appendForemanSymptom({
+            runId: state.run_id,
+            clusterId: state.cluster_id,
+            code: "foreman-state-repair",
+            message: `State file validation failed after worker execution; using pre-dispatch fallback: ${errMsg}`,
+            evidenceRefs: [telemetryFile],
+            repoRoot,
+            config,
+          });
           state = stateBeforeDispatch;
         } else if (!dryRun) {
           appendTelemetry(telemetryFile, {
@@ -2057,6 +2270,15 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
           child_id: nextChild,
           error: errMsg,
           timestamp: new Date().toISOString(),
+        });
+        appendForemanSymptom({
+          runId: state.run_id,
+          clusterId: state.cluster_id,
+          code: "foreman-state-repair",
+          message: `State reload threw after worker execution; using pre-dispatch fallback: ${errMsg}`,
+          evidenceRefs: [telemetryFile],
+          repoRoot,
+          config,
         });
         state = stateBeforeDispatch;
       } else if (!dryRun) {

@@ -4,11 +4,11 @@
 
 Shared TypeScript type definitions for Polaris runtime contracts. This folder contains
 interfaces, union types, and type guards that cross route boundaries — primarily for
-worker result packets, Medic dispatch, and tracker/tool adapter surfaces.
+worker result packets, run-health symptom contracts, Medic dispatch, and tracker/tool adapter surfaces.
 
 ## What belongs here
 
-- `result-packet.ts` — `ResultPacket`, `SuccessResultPacket`, `FailedResultPacket`, `MedicPacket`, `MedicResult` types and `isFailedResultPacket` type guard
+- `result-packet.ts` — `ResultPacket`, `SuccessResultPacket`, `FailedResultPacket`, `WorkerRunHealthSymptom`, `MedicPacket`, `MedicResult`, `MedicRunHealthPacket`, `MedicRunHealthResult`, `MedicChart`, `MedicChartSymptom`, `MedicChartDecision`, `MedicTreatmentPacket`, `TreatmentWorkerResult` types and `isFailedResultPacket` type guard
 - `runtime-state.ts` — runtime execution state shape used across loop and finalize
 - `linear.ts` — Linear tracker adapter types
 - `tool-server-linear.d.ts` — ambient declarations for the Linear tool-server integration
@@ -23,7 +23,7 @@ worker result packets, Medic dispatch, and tracker/tool adapter surfaces.
 ## Editing rules
 
 - `ResultPacket` discriminated union is authoritative for worker→Foreman→Medic communication. Do not widen it without updating all consumers.
-- `MedicPacket` and `MedicResult` are the dispatch and return contracts for the Medic role. Keep aligned with `.polaris/skills/polaris-medic/SKILL.md`.
+- `MedicPacket`, `MedicRunHealthPacket`, `MedicResult`, and `MedicRunHealthResult` are the dispatch and return contracts for the Medic role. Keep aligned with `.polaris/skills/polaris-medic/SKILL.md`.
 - Type guards belong here only when the type lives here.
 - SOL types (`sol-evidence.ts`, `sol-score.ts`) are the authoritative schema for the Self-Optimization Loop evidence and scoring contracts. Do not add SOL-specific runtime logic here; keep these files types-only.
 - `EvidenceAvailability` sentinel (`"available" | "unavailable" | "future"`) marks optional SOL evidence fields as present, explicitly absent, or pending a future upstream source.
@@ -31,5 +31,5 @@ worker result packets, Medic dispatch, and tracker/tool adapter surfaces.
 ## Related routes
 
 - `src/loop/` — consumes `ResultPacket` for child result handling
-- `src/medic/` — consumes `MedicPacket`/`MedicResult` for chart creation
+- `src/medic/` — consumes `MedicPacket`/`MedicResult` and run-health consult types for chart creation
 - `src/autoresearch/` — consumes `SolEvidence` and `SolScoreReport` types for scoring pipeline

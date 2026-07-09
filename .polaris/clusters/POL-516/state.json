@@ -1,0 +1,113 @@
+{
+  "schema_version": "1.0",
+  "run_id": "polaris-run-pol-516-2026-07-09-001",
+  "cluster_id": "POL-516",
+  "skill": "polaris-run",
+  "branch": "pol-516-run-health-symptom-intake-and-medic-handoff",
+  "session_type": "implement",
+  "active_child": "",
+  "completed_children": [
+    "POL-517",
+    "POL-518",
+    "POL-519",
+    "POL-520",
+    "POL-521",
+    "POL-522"
+  ],
+  "open_children": [],
+  "step_cursor": "checkpoint",
+  "context_budget": {
+    "children_completed": 6,
+    "max_children_per_session": 1
+  },
+  "status": "cluster-complete",
+  "next_open_child": null,
+  "artifact_dir": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run",
+  "dispatch_boundary": {
+    "dispatch_epoch": 1,
+    "continue_epoch": 1,
+    "last_dispatched_child": "POL-522"
+  },
+  "run_bootstrap_seal": {
+    "sealer": "polaris-loop-bootstrap",
+    "run_id": "polaris-run-pol-516-2026-07-09-001",
+    "cluster_id": "POL-516",
+    "open_children_sha": "a9d474366bb9f7c86816c5f59e8308295acf389927ea04aca4915d40d2c72481",
+    "sealed_at": "2026-07-09T15:37:54.419Z"
+  },
+  "open_children_meta": {
+    "POL-522": {
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-516/results/POL-522-507ef205-e8e4-41ba-9943-f974753ab0d7.json",
+      "dispatch_record": {
+        "dispatch_id": "507ef205-e8e4-41ba-9943-f974753ab0d7",
+        "child_id": "POL-522",
+        "run_id": "polaris-run-pol-516-2026-07-09-001",
+        "cluster_id": "POL-516",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-516/packets/POL-522-507ef205-e8e4-41ba-9943-f974753ab0d7.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-516/results/POL-522-507ef205-e8e4-41ba-9943-f974753ab0d7.json",
+        "provider": "devin",
+        "provider_selection_reason": "role-policy",
+        "providers_tried": [
+          "devin"
+        ],
+        "dispatched_at": "2026-07-09T15:38:52.384Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-pol-516-2026-07-09-001:POL-522:1783611532384",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    }
+  },
+  "worker_pool_state": {
+    "max_concurrent": 1,
+    "slot_claims": []
+  },
+  "last_commit": "87db39778dbb46ca9a1363d107e82994e7e5a0fc",
+  "completed_children_results": {
+    "POL-522": {
+      "child_id": "POL-522",
+      "status": "done",
+      "validation": "passed",
+      "commit": "87db39778dbb46ca9a1363d107e82994e7e5a0fc",
+      "next_recommended_action": "continue",
+      "run_id": "polaris-run-pol-516-2026-07-09-001",
+      "cluster_id": "POL-516",
+      "skill_name": "polaris-run",
+      "role": "worker",
+      "provider": "devin",
+      "packet_hash": "e8cbc4314d75d9d961ece0058fc66471f5a358a832f5f4679bf2d144c79539ec",
+      "worker_id": "polaris-run-pol-516-2026-07-09-001:POL-522:1783611532384",
+      "escalation_count": 0,
+      "heartbeat_count": 9,
+      "result_artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-516/results/POL-522-507ef205-e8e4-41ba-9943-f974753ab0d7.json",
+      "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-516/packets/POL-522-507ef205-e8e4-41ba-9943-f974753ab0d7.json",
+      "telemetry_path": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-516-2026-07-09-001/telemetry.jsonl",
+      "user_intervened": null,
+      "foreman_intervened": null,
+      "dispatch_epoch": 1,
+      "session_pointer": null
+    }
+  },
+  "qc_repair_loop": {
+    "current_round": 1,
+    "max_rounds": 2,
+    "source_qc_run_ids": [
+      "coderabbit-1783612485787"
+    ],
+    "manifest_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-516/qc/repair-rounds/1/repair-packets.json",
+    "pending_packet_ids": [],
+    "completed_packet_ids": [],
+    "rerun_requested": false,
+    "rerun_qc_run_ids": {},
+    "terminal_outcome": "no-repairable",
+    "initiated_at": "2026-07-09T15:54:45.795Z",
+    "updated_at": "2026-07-09T17:07:07.855Z"
+  },
+  "updated_at": "2026-07-09T17:07:07.855Z"
+}

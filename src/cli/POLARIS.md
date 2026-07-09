@@ -16,7 +16,7 @@ The CLI entry point for Polaris. It wires the `polaris` binary, registers all to
 - `adopt-assets.ts` — workspace asset installation; step 6 of `installWorkspaceAssets()` calls `syncShims()` from `src/agent-plugin/sync.ts` to generate/update Claude Code slash-command shims under `.claude/commands/` as part of every adopt/init run
 - `autoresearch.ts` — `polaris autoresearch score <run-id>` (retroactive binary gate scoring) and `polaris autoresearch propose <diagnosis-file>` (fix-zone-mapped Linear issue filing); dev-gated via `assertPolarisDevContext()`
 - `librarian.ts` — closeout librarian packet/result command surface
-- `medic.ts` — `polaris medic chart create` command; scaffolds Medic diagnostic charts
+- `medic.ts` — `polaris medic chart create` and `polaris medic run-health-consult`; scaffolds Medic diagnostic charts and run-health consult artifacts
 - `worker.ts` — worker-owned commit enforcement command factory
 - `version.ts`, `version.test.ts` — version helper and test
 

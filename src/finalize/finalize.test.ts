@@ -104,6 +104,37 @@ function commitFile(dir: string, relativePath: string, content: string, message:
   return execFileSync("git", ["rev-parse", "HEAD"], { cwd: dir, encoding: "utf-8" }).trim();
 }
 
+function writeConfig(dir: string, extra: object = {}): void {
+  writeFileSync(join(dir, "polaris.config.json"), JSON.stringify(extra, null, 2));
+}
+
+function writeRunHealthReport(dir: string, runId: string, overrides: object = {}): void {
+  const reportPath = join(dir, ".polaris", "runs", runId, "run-health-report.json");
+  mkdirSync(dirname(reportPath), { recursive: true });
+  const report = {
+    schema_version: "1",
+    run_id: runId,
+    cluster_id: "POL-6",
+    symptoms: [],
+    evidence_refs: [],
+    source_actor: { role: "foreman" },
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    ...overrides,
+  };
+  writeFileSync(reportPath, JSON.stringify(report, null, 2));
+}
+
+function setupMedicGateTest(clusterId = "POL-6"): { testDir: string; stateFile: string } {
+  const testDir = makeTestDir();
+  const stateFile = writeCanonicalState(testDir, clusterId);
+  writeEmptyAtlas(testDir);
+  writeDurableClusterArtifacts(testDir, clusterId);
+  execFileSync("git", ["checkout", "-b", `${clusterId.toLowerCase()}-delivery`], { cwd: testDir, stdio: "pipe" });
+  stageFile(testDir, "src/impl.ts", "export const impl = true;\n");
+  return { testDir, stateFile };
+}
+
 // ---- step 03: schema validate -----------------------------------------------
 
 describe("stepSchemaValidate", () => {
@@ -1665,6 +1696,283 @@ describe("runFinalize QC repair-loop gate integration", () => {
     const stderr = stderrSpy.mock.calls.map((c) => String(c[0])).join("");
     expect(stderr).toContain("QC repair-loop gate failed");
     expect(stderr).toContain("all-providers-failed");
+
+    exitSpy.mockRestore();
+    stderrSpy.mockRestore();
+  });
+});
+
+// ---- runFinalize run-health Medic gate --------------------------------------
+
+describe("runFinalize run-health Medic gate", () => {
+  const runId = "test-finalize-001";
+  let testDir: string;
+
+  beforeEach(() => {
+    testDir = ""; // assigned per-test via setupMedicGateTest
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    if (testDir) {
+      rmSync(testDir, { recursive: true, force: true });
+    }
+  });
+
+  it("proceeds when no run-health report exists", async () => {
+    const setup = setupMedicGateTest();
+    testDir = setup.testDir;
+    const { stateFile } = setup;
+
+    const { runFinalize } = await import("./index.js");
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    await expect(
+      runFinalize({ repoRoot: testDir, stateFile, skipDelivery: true, skipLibrarian: true }),
+    ).resolves.toBeUndefined();
+
+    const logs = logSpy.mock.calls.map(([line]) => String(line));
+    expect(logs.some((line) => line.includes("Run-health Medic gate passed"))).toBe(true);
+
+    logSpy.mockRestore();
+  });
+
+  it("blocks when a run-health report exists with symptoms but no Medic decision", async () => {
+    const setup = setupMedicGateTest();
+    testDir = setup.testDir;
+    const { stateFile } = setup;
+    writeRunHealthReport(testDir, runId, {
+      symptoms: [
+        {
+          id: "POL-9:repeated-rework:0",
+          severity: "medium",
+          code: "repeated-rework",
+          message: "repeated rework detected",
+          source_actor: { role: "worker", child_id: "POL-9" },
+          evidence_refs: [],
+          occurred_at: new Date().toISOString(),
+        },
+      ],
+    });
+
+    const { runFinalize } = await import("./index.js");
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation((() => {
+      throw new Error("process.exit called");
+    }) as never);
+    let stderr = "";
+    const stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(((chunk: string | Uint8Array) => {
+      stderr += String(chunk);
+      return true;
+    }) as never);
+
+    await expect(
+      runFinalize({ repoRoot: testDir, stateFile, skipDelivery: true, skipLibrarian: true }),
+    ).rejects.toThrow("process.exit called");
+
+    expect(stderr).toContain("run-health-report.json");
+    expect(stderr).toContain("Medic consultation decision");
+    expect(stderr).toContain("Bypass is not enabled by finalize.medic.bypassPolicy");
+
+    exitSpy.mockRestore();
+    stderrSpy.mockRestore();
+  });
+
+  it("proceeds when medic_consult.status is bypassed (no treatment needed)", async () => {
+    const setup = setupMedicGateTest();
+    testDir = setup.testDir;
+    const { stateFile } = setup;
+    writeRunHealthReport(testDir, runId, {
+      symptoms: [
+        {
+          id: "POL-9:unclear-requirements:0",
+          severity: "medium",
+          code: "unclear-requirements",
+          message: "requirements clarified during run",
+          source_actor: { role: "foreman" },
+          evidence_refs: [],
+          occurred_at: new Date().toISOString(),
+        },
+      ],
+      medic_consult: {
+        status: "bypassed",
+        chart_refs: [],
+        treatment_packet_refs: [],
+      },
+    });
+
+    const { runFinalize } = await import("./index.js");
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    await expect(
+      runFinalize({ repoRoot: testDir, stateFile, skipDelivery: true, skipLibrarian: true }),
+    ).resolves.toBeUndefined();
+
+    const logs = logSpy.mock.calls.map(([line]) => String(line));
+    expect(logs.some((line) => line.includes("Run-health Medic gate passed"))).toBe(true);
+
+    logSpy.mockRestore();
+  });
+
+  it("proceeds when medic_consult.status is resolved (treatment completed)", async () => {
+    const setup = setupMedicGateTest();
+    testDir = setup.testDir;
+    const { stateFile } = setup;
+    writeRunHealthReport(testDir, runId, {
+      symptoms: [
+        {
+          id: "POL-9:validation-failed:0",
+          severity: "high",
+          code: "validation-failed",
+          message: "validation failed early in run",
+          source_actor: { role: "worker", child_id: "POL-9" },
+          evidence_refs: [],
+          occurred_at: new Date().toISOString(),
+        },
+      ],
+      medic_consult: {
+        status: "resolved",
+        chart_refs: [".polaris/charts/CHART-2026-07-09-001.md"],
+        treatment_packet_refs: [".polaris/clusters/POL-6/medic/treatment-001.json"],
+        resolved_at: new Date().toISOString(),
+      },
+    });
+
+    const { runFinalize } = await import("./index.js");
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    await expect(
+      runFinalize({ repoRoot: testDir, stateFile, skipDelivery: true, skipLibrarian: true }),
+    ).resolves.toBeUndefined();
+
+    const logs = logSpy.mock.calls.map(([line]) => String(line));
+    expect(logs.some((line) => line.includes("Run-health Medic gate passed"))).toBe(true);
+
+    logSpy.mockRestore();
+  });
+
+  it("proceeds when the report has an explicit policy_bypass", async () => {
+    const setup = setupMedicGateTest();
+    testDir = setup.testDir;
+    const { stateFile } = setup;
+    writeRunHealthReport(testDir, runId, {
+      symptoms: [
+        {
+          id: "POL-9:worker-blocked:0",
+          severity: "high",
+          code: "worker-blocked",
+          message: "worker blocked by ambiguous requirements",
+          source_actor: { role: "worker", child_id: "POL-9" },
+          evidence_refs: [],
+          occurred_at: new Date().toISOString(),
+        },
+      ],
+      policy_bypass: {
+        reason: "SOL reviewed symptoms and approved closeout",
+        bypassed_by: "operator",
+        bypassed_at: new Date().toISOString(),
+      },
+    });
+
+    const { runFinalize } = await import("./index.js");
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    await expect(
+      runFinalize({ repoRoot: testDir, stateFile, skipDelivery: true, skipLibrarian: true }),
+    ).resolves.toBeUndefined();
+
+    const logs = logSpy.mock.calls.map(([line]) => String(line));
+    expect(logs.some((line) => line.includes("Run-health Medic gate passed"))).toBe(true);
+
+    logSpy.mockRestore();
+  });
+
+  it("writes bypass metadata and proceeds when CLI bypass is allowed by config", async () => {
+    const setup = setupMedicGateTest();
+    testDir = setup.testDir;
+    const { stateFile } = setup;
+    writeConfig(testDir, { finalize: { medic: { bypassPolicy: "cli" } } });
+    writeRunHealthReport(testDir, runId, {
+      symptoms: [
+        {
+          id: "POL-9:repeated-rework:0",
+          severity: "medium",
+          code: "repeated-rework",
+          message: "repeated rework detected",
+          source_actor: { role: "worker", child_id: "POL-9" },
+          evidence_refs: [],
+          occurred_at: new Date().toISOString(),
+        },
+      ],
+    });
+
+    const { runFinalize } = await import("./index.js");
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    await expect(
+      runFinalize({
+        repoRoot: testDir,
+        stateFile,
+        skipDelivery: true,
+        skipLibrarian: true,
+        bypassMedicReason: "operator approved: symptoms do not affect delivery",
+      }),
+    ).resolves.toBeUndefined();
+
+    const logs = logSpy.mock.calls.map(([line]) => String(line));
+    expect(logs.some((line) => line.includes("Run-health Medic gate passed"))).toBe(true);
+
+    const report = JSON.parse(
+      readFileSync(join(testDir, ".polaris", "runs", runId, "run-health-report.json"), "utf-8"),
+    ) as Record<string, unknown>;
+    expect(report["policy_bypass"]).toBeDefined();
+    expect((report["policy_bypass"] as Record<string, string>)["reason"]).toBe(
+      "operator approved: symptoms do not affect delivery",
+    );
+
+    logSpy.mockRestore();
+  });
+
+  it("blocks CLI bypass when config policy does not allow it", async () => {
+    const setup = setupMedicGateTest();
+    testDir = setup.testDir;
+    const { stateFile } = setup;
+    // Default finalize.medic.bypassPolicy is "none".
+    writeRunHealthReport(testDir, runId, {
+      symptoms: [
+        {
+          id: "POL-9:validation-failed:0",
+          severity: "high",
+          code: "validation-failed",
+          message: "validation failed",
+          source_actor: { role: "worker", child_id: "POL-9" },
+          evidence_refs: [],
+          occurred_at: new Date().toISOString(),
+        },
+      ],
+    });
+
+    const { runFinalize } = await import("./index.js");
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation((() => {
+      throw new Error("process.exit called");
+    }) as never);
+    let stderr = "";
+    const stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(((chunk: string | Uint8Array) => {
+      stderr += String(chunk);
+      return true;
+    }) as never);
+
+    await expect(
+      runFinalize({
+        repoRoot: testDir,
+        stateFile,
+        skipDelivery: true,
+        skipLibrarian: true,
+        bypassMedicReason: "should not be allowed",
+      }),
+    ).rejects.toThrow("process.exit called");
+
+    expect(stderr).toContain("bypassPolicy");
+    expect(stderr).toContain("none");
 
     exitSpy.mockRestore();
     stderrSpy.mockRestore();
