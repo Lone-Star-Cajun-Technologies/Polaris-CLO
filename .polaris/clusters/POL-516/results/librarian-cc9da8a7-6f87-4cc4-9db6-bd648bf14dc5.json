@@ -1,0 +1,188 @@
+{
+  "schema_version": "1.0",
+  "role": "closeout-librarian",
+  "run_id": "polaris-run-pol-516-2026-07-09-001",
+  "dispatch_id": "cc9da8a7-6f87-4cc4-9db6-bd648bf14dc5",
+  "cluster_id": "POL-516",
+  "status": "success",
+  "commit_sha": "a612d56bb4f12ef70383f94ab87080ad032d39a9",
+  "commit_message": "docs(closeout): reconcile cognition for cluster POL-516\n\nRun: polaris-run-pol-516-2026-07-09-001\nCluster: POL-516\nChildren: POL-517, POL-518, POL-519, POL-520, POL-521, POL-522\nFiles updated:\n- POLARIS.md: 6 files\n- SUMMARY.md: 7 files\n- docs ingested: 0\n- links repaired: 0",
+  "files_committed": [
+    "smartdocs/SUMMARY.md",
+    "src/POLARIS.md",
+    "src/SUMMARY.md",
+    "src/cli/POLARIS.md",
+    "src/cli/SUMMARY.md",
+    "src/config/POLARIS.md",
+    "src/config/SUMMARY.md",
+    "src/finalize/SUMMARY.md",
+    "src/loop/POLARIS.md",
+    "src/loop/SUMMARY.md",
+    "src/medic/POLARIS.md",
+    "src/types/POLARIS.md",
+    "src/types/SUMMARY.md"
+  ],
+  "drift_reconciliation": {
+    "medic_ran": false,
+    "charts_created": [],
+    "drift_observations": [
+      {
+        "type": "canon_mismatch",
+        "target": "src/POLARIS.md",
+        "severity": "medium"
+      },
+      {
+        "type": "summary_outdated",
+        "target": "src/SUMMARY.md",
+        "severity": "medium"
+      },
+      {
+        "type": "route_guidance_outdated",
+        "target": "src/cli/POLARIS.md",
+        "severity": "medium"
+      },
+      {
+        "type": "summary_outdated",
+        "target": "src/cli/SUMMARY.md",
+        "severity": "medium"
+      },
+      {
+        "type": "route_guidance_outdated",
+        "target": "src/config/POLARIS.md",
+        "severity": "medium"
+      },
+      {
+        "type": "summary_outdated",
+        "target": "src/config/SUMMARY.md",
+        "severity": "medium"
+      },
+      {
+        "type": "summary_outdated",
+        "target": "src/finalize/SUMMARY.md",
+        "severity": "medium"
+      },
+      {
+        "type": "route_guidance_outdated",
+        "target": "src/loop/POLARIS.md",
+        "severity": "high"
+      },
+      {
+        "type": "summary_outdated",
+        "target": "src/loop/SUMMARY.md",
+        "severity": "medium"
+      },
+      {
+        "type": "route_guidance_outdated",
+        "target": "src/medic/POLARIS.md",
+        "severity": "high"
+      },
+      {
+        "type": "route_guidance_outdated",
+        "target": "src/types/POLARIS.md",
+        "severity": "medium"
+      },
+      {
+        "type": "summary_outdated",
+        "target": "src/types/SUMMARY.md",
+        "severity": "medium"
+      },
+      {
+        "type": "summary_outdated",
+        "target": "smartdocs/SUMMARY.md",
+        "severity": "low"
+      }
+    ],
+    "chart_links_required": false,
+    "charts_linked": []
+  },
+  "polaris_md_updates": [
+    {
+      "file": "src/POLARIS.md",
+      "action": "update",
+      "change_summary": "Added run-health and Medic route ownership plus shared symptom-report architecture notes."
+    },
+    {
+      "file": "src/cli/POLARIS.md",
+      "action": "update",
+      "change_summary": "Documented the new Medic run-health consult command alongside chart creation."
+    },
+    {
+      "file": "src/config/POLARIS.md",
+      "action": "update",
+      "change_summary": "Added run_health, SOL threshold, and Medic bypass config surfaces."
+    },
+    {
+      "file": "src/loop/POLARIS.md",
+      "action": "update",
+      "change_summary": "Documented worker symptom ingestion and Medic consult dispatch in the loop route."
+    },
+    {
+      "file": "src/medic/POLARIS.md",
+      "action": "update",
+      "change_summary": "Replaced draft content with the current Medic run-health consult route contract."
+    },
+    {
+      "file": "src/types/POLARIS.md",
+      "action": "update",
+      "change_summary": "Added run-health symptom and Medic run-health packet/result types to the shared contract."
+    }
+  ],
+  "summary_md_updates": [
+    {
+      "file": "src/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Added run-health and Medic coordination to the source-root current-state snapshot."
+    },
+    {
+      "file": "src/cli/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Updated command-surface summary for Medic run-health consult support."
+    },
+    {
+      "file": "src/config/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Added run_health and finalize.medic config surfaces to the current-state snapshot."
+    },
+    {
+      "file": "src/finalize/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Added the run-health Medic gate to the finalize current-state snapshot."
+    },
+    {
+      "file": "src/loop/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Added run-health symptom ingestion and Medic consult handling to loop state."
+    },
+    {
+      "file": "src/types/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Added run-health symptom and Medic run-health consult contracts to the shared-type snapshot."
+    },
+    {
+      "file": "smartdocs/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Added run-health spec references to the vault-level SmartDocs snapshot."
+    }
+  ],
+  "docs_ingested": [],
+  "docs_archived": [
+    {
+      "source_path": "smartdocs/raw/analysis/pol-515-run-health-symptoms-medic-handoff-analysis.md",
+      "target_path": null,
+      "action": "archive",
+      "reason": "One-time implementation analysis with no ongoing authority; kept in raw and recorded as completed work."
+    }
+  ],
+  "yaml_updates": [],
+  "cognition_archived": [],
+  "link_validation": {
+    "total_checked": 10,
+    "valid": 10,
+    "broken": 0,
+    "repaired": 0,
+    "unrepairable": []
+  },
+  "blockers": [],
+  "reconciled_at": "2026-07-09T17:30:45Z",
+  "evidence_summary": "Reconciled source, config, loop, Medic, types, finalize, and SmartDocs cognition for POL-516. Updated folder guidance and summaries to reflect run-health symptom reporting, Medic consult handling, SOL threshold-driven symptoms, and the finalize Medic gate. No docs were promoted or ingested, and link validation on all touched docs passed. The POL-515 analysis was archived as a completed one-time analysis with no ongoing authority."
+}

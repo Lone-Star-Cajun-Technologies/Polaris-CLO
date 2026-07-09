@@ -1,0 +1,103 @@
+{
+  "schemaVersion": "v2",
+  "source": {
+    "id": "POL-516",
+    "type": "Linear",
+    "analysis": {
+      "id": "initial-sync",
+      "doc": "Synchronized from Linear issue identifier: POL-516"
+    }
+  },
+  "nodes": {
+    "POL-516": {
+      "id": "POL-516",
+      "title": "IMPLEMENT: Run Health Symptom Intake and Medic Handoff",
+      "status": "Todo",
+      "body": "## Objective\n\nImplement deterministic run-health symptom intake and Medic handoff so symptomatic runs consult Medic before final closeout or PR creation.\n\n## Context\n\nCreated from [POL-515](https://linear.app/lsctech/issue/POL-515/analyze-run-health-symptoms-and-medic-handoff). [POL-509](https://linear.app/lsctech/issue/POL-509/implement-fix-qc-repair-loop-finalize-handoff) / PR 163 showed repeated manual recovery, corrupted run evidence, QC provider failures, and finalize retries, but the runtime still had no mechanical run-health report gate. Existing Medic behavior is tied to failed worker packets and QC repair-loop outcomes; it does not cover broader run-health symptoms.\n\n## Goal\n\nA governed implementation cluster that introduces one run-level symptom report, worker and Polaris-Foreman symptom producers, QC/SOL symptom evidence references, a closeout Medic handoff gate, and bounded Medic treatment re-entry through normal Foreman dispatch.\n\n## Scope\n\n* src/run-health/**\n* src/loop/**\n* src/finalize/**\n* src/qc/**\n* src/autoresearch/**\n* src/medic/**\n* src/cli/**\n* src/types/**\n* smartdocs/specs/**\n* smartdocs/medic/**\n* .polaris/skills/polaris-medic/**\n* .polaris/skills/polaris-run/**\n* tests/**\n\n## Acceptance Criteria\n\n- [ ] Runs with symptoms create or append one run-health report artifact.\n- [ ] Workers report symptoms without diagnosing root cause.\n- [ ] Foreman records Polaris-runtime symptoms only when running inside the Polaris repository.\n- [ ] QC artifacts are referenced as evidence without making QC write symptoms.\n- [ ] SOL can trigger Medic consultation from configured score thresholds.\n- [ ] Closeout blocks before final commit/PR creation when a non-bypassed run-health report exists without a Medic chart decision.\n- [ ] Medic chart and treatment packets re-enter Foreman dispatch through normal packet handling.\n- [ ] [POL-509](https://linear.app/lsctech/issue/POL-509/implement-fix-qc-repair-loop-finalize-handoff)-like regression coverage proves the gate fires before PR creation.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/loop src/finalize src/qc src/autoresearch src/medic src/types\n\n## Ordering\n\nChildren execute in dependency order: artifact/schema first, then producers, then closeout/Medic integration, then SOL and regression coverage.\n\n## Non-goals\n\n* Do not make QC responsible for writing symptom reports.\n* Do not make Foreman diagnose run health subjectively.\n* Do not trigger Medic for every hard worker failure by default.\n* Do not assume non-Polaris repositories expose Polaris-runtime repair internals.\n* Do not bypass existing QC repair-loop or Closeout Librarian gates."
+    },
+    "POL-509": {
+      "id": "POL-509",
+      "title": "IMPLEMENT: Fix QC Repair Loop Finalize Handoff",
+      "status": "Done"
+    },
+    "POL-522": {
+      "id": "POL-522",
+      "title": "Add SOL thresholds and POL-509 run-health regression coverage",
+      "status": "Todo",
+      "body": "## Objective\n\nConnect SOL health scoring to run-health Medic triggers and add end-to-end regression coverage for [POL-509](https://linear.app/lsctech/issue/POL-509/implement-fix-qc-repair-loop-finalize-handoff)-like failures.\n\n## Context\n\n[POL-515](https://linear.app/lsctech/issue/POL-515/analyze-run-health-symptoms-and-medic-handoff) asks which SOL score thresholds should trigger Medic even when no worker wrote symptoms. Existing SOL code scores QC repair-loop and intervention evidence but does not currently create run-health reports or enforce Medic consults from thresholds.\n\n## Goal\n\nSOL can append run-health symptoms or request Medic consultation from configured thresholds, and regression tests prove [POL-509](https://linear.app/lsctech/issue/POL-509/implement-fix-qc-repair-loop-finalize-handoff)-like health symptoms block PR creation until Medic decides.\n\n## Scope\n\n* src/autoresearch/**\n* src/types/**\n* src/run-health/**\n* src/finalize/**\n* src/loop/**\n* src/qc/**\n* smartdocs/reports/sol/**\n* smartdocs/specs/**\n* src/autoresearch/**/*.test.ts\n* src/finalize/**/*.test.ts\n* src/loop/**/*.test.ts\n\n## Acceptance Criteria\n\n- [ ] Define configurable SOL trigger thresholds for low composite score, QC repair-loop failure states, repeated provider failures, Foreman intervention count, stale/wrong-run telemetry, and validation failures.\n- [ ] SOL remains advisory by default unless policy enables run-health report creation or Medic-required status.\n- [ ] SOL-created entries reference source evidence and do not mutate raw metric artifacts.\n- [ ] Regression fixture based on [POL-509](https://linear.app/lsctech/issue/POL-509/implement-fix-qc-repair-loop-finalize-handoff) includes repeated CodeRabbit failures, wrong-run/budget-exhausted telemetry, finalize retries, and eventual QC pass.\n- [ ] Regression proves a run-health report exists and finalize blocks before final commit/PR creation without a Medic decision.\n- [ ] Regression proves finalize proceeds after Medic records either no-treatment-needed or treatment-complete.\n- [ ] Documentation explains threshold defaults and how operators tune/bypass them.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/autoresearch src/finalize src/loop src/qc src/run-health\n\n## Ordering\n\nDepends on [POL-518](https://linear.app/lsctech/issue/POL-518/add-worker-symptom-reporting-contract-and-result-integration), [POL-519](https://linear.app/lsctech/issue/POL-519/record-polaris-foreman-symptoms-and-qc-evidence-references), [POL-520](https://linear.app/lsctech/issue/POL-520/gate-closeout-on-run-health-report-medic-consultation), and [POL-521](https://linear.app/lsctech/issue/POL-521/extend-medic-chart-and-treatment-packet-handoff-for-run-health-reports).\n\n## Non-goals\n\n* Do not make SOL auto-apply routing/provider policy changes.\n* Do not treat QC findings as ground truth.\n* Do not require live CodeRabbit, GitHub, or Linear calls in regression tests."
+    },
+    "POL-521": {
+      "id": "POL-521",
+      "title": "Extend Medic chart and treatment packet handoff for run-health reports",
+      "status": "Todo",
+      "body": "## Objective\n\nAllow Medic to consume run-health reports and produce either a no-treatment-needed decision or bounded treatment packets that re-enter normal Foreman dispatch.\n\n## Context\n\nExisting Medic is invoked for failed worker result packets and creates charts after direct repair. [POL-515](https://linear.app/lsctech/issue/POL-515/analyze-run-health-symptoms-and-medic-handoff) requires Medic to diagnose run-health symptoms using the report, QC artifacts, telemetry, and cluster state, then create a chart and optional treatment packets without making Foreman diagnose.\n\n## Goal\n\nA run-health Medic packet/consult path that writes a chart decision and emits treatment packets compatible with normal Foreman worker dispatch.\n\n## Scope\n\n* .polaris/skills/polaris-medic/**\n* src/medic/**\n* src/loop/**\n* src/run-health/**\n* src/types/**\n* smartdocs/medic/**\n* src/cli/**\n* src/medic/**/*.test.ts\n* src/loop/**/*.test.ts\n\n## Acceptance Criteria\n\n- [ ] Define a Medic run-health packet containing run-health report path, QC artifact refs, telemetry path, cluster state path, and policy limits.\n- [ ] Medic chart format records symptoms, diagnosis, evidence refs, decision, treatment plan, no-treatment-needed rationale, and follow-up conditions.\n- [ ] Treatment packets include allowed scope, validation commands, source symptom ids, round number, and dispatch metadata.\n- [ ] Foreman dispatches treatment packets through normal worker/repair packet mechanisms without special implementation behavior.\n- [ ] Treatment rounds are bounded by configurable max rounds and emit telemetry for consult, chart, treatment packet creation, treatment completion, and terminal outcome.\n- [ ] The run-health report is updated with Medic chart refs and terminal decision.\n- [ ] Tests cover no-treatment-needed, treatment-packet creation, treatment worker success, treatment worker failure, and max-rounds behavior.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/medic src/loop src/run-health src/types\n\n## Ordering\n\nDepends on [POL-517](https://linear.app/lsctech/issue/POL-517/define-run-health-report-artifact-schema-and-storage-policy) and [POL-520](https://linear.app/lsctech/issue/POL-520/gate-closeout-on-run-health-report-medic-consultation). It may require small coordination with [POL-520](https://linear.app/lsctech/issue/POL-520/gate-closeout-on-run-health-report-medic-consultation) so the closeout gate recognizes Medic decisions.\n\n## Non-goals\n\n* Do not bypass normal worker routing for treatment packets.\n* Do not make Medic a QC provider.\n* Do not let treatment loop run unbounded."
+    },
+    "POL-520": {
+      "id": "POL-520",
+      "title": "Gate closeout on run-health report Medic consultation",
+      "status": "Todo",
+      "body": "## Objective\n\nBlock final closeout and PR creation whenever a non-bypassed run-health report exists without a completed Medic consultation decision.\n\n## Context\n\n[POL-509](https://linear.app/lsctech/issue/POL-509/implement-fix-qc-repair-loop-finalize-handoff) reached PR creation after later QC passes even though the run had repeated health symptoms. [POL-515](https://linear.app/lsctech/issue/POL-515/analyze-run-health-symptoms-and-medic-handoff) requires closeout to use a mechanical rule: if a run-health symptom report exists, Medic must be consulted before final closeout/PR creation unless explicitly bypassed by policy.\n\n## Goal\n\nFinalize/closeout checks the run-health report after worker and QC evidence is complete and before final commit, push, PR creation, and Linear closeout.\n\n## Scope\n\n* src/finalize/**\n* src/run-health/**\n* src/config/**\n* src/cli/**\n* .polaris/skills/polaris-run/**\n* src/finalize/**/*.test.ts\n\n## Acceptance Criteria\n\n- [ ] Finalize fails closed when `.polaris/runs/<run-id>/run-health-report.json` exists and has no Medic decision or allowed bypass.\n- [ ] The gate runs after completed-cluster QC/SOL-relevant evidence is available and before the final commit, push, PR creation, and Linear update.\n- [ ] Bypass requires explicit config/CLI policy and writes auditable bypass metadata to the report.\n- [ ] Error messages name the run-health report path, required Medic action, and bypass mechanism when allowed.\n- [ ] Existing QC repair-loop and Closeout Librarian gates still run and keep their current authority.\n- [ ] Tests cover no report, report requiring Medic, report with no-treatment-needed decision, report with treatment completed, and report with policy bypass.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/finalize src/run-health src/cli\n\n## Ordering\n\nDepends on [POL-518](https://linear.app/lsctech/issue/POL-518/add-worker-symptom-reporting-contract-and-result-integration) and [POL-519](https://linear.app/lsctech/issue/POL-519/record-polaris-foreman-symptoms-and-qc-evidence-references).\n\n## Non-goals\n\n* Do not implement Medic diagnosis or treatment dispatch in this child.\n* Do not move or weaken QC repair-loop, delivery integrity, or Librarian gates.\n* Do not create PRs from tests."
+    },
+    "POL-519": {
+      "id": "POL-519",
+      "title": "Record Polaris Foreman symptoms and QC evidence references",
+      "status": "Todo",
+      "body": "## Objective\n\nAppend deterministic Foreman-side runtime symptoms in Polaris runs and reference QC evidence without requiring QC to write symptoms.\n\n## Context\n\n[POL-515](https://linear.app/lsctech/issue/POL-515/analyze-run-health-symptoms-and-medic-handoff) says Foreman intervention inside the Polaris repository is usually a Polaris runtime symptom, while Foreman activity outside Polaris should not automatically mark the target app sick. QC providers should emit artifacts only; the run-health layer references those artifacts when escalation criteria are met.\n\n## Goal\n\nForeman writes symptoms only for Polaris-runtime intervention events, and QC escalation criteria append evidence refs to the run-health report without changing provider responsibilities.\n\n## Scope\n\n* src/loop/parent.ts\n* src/loop/checkpoint.ts\n* src/qc/**\n* src/run-health/**\n* src/config/**\n* src/cluster-state/**\n* src/loop/**/*.test.ts\n* src/qc/**/*.test.ts\n\n## Acceptance Criteria\n\n- [ ] Foreman appends symptoms for Polaris-repo state repair, cluster repair, missing packet/result repair, dispatch boundary repair, finalize recovery, QC/finalize runtime failure, local/global binary mismatch, and manual intervention events.\n- [ ] Foreman does not automatically append those symptoms for non-Polaris target repositories unless policy explicitly enables it.\n- [ ] QC escalation references include blocking findings, repeated findings after repair, unusable output, parse failure, all providers failed, noisy provider output, max repair rounds, and repair-loop dispatch failures.\n- [ ] QC providers remain unchanged as artifact producers; the run-health layer reads or receives artifact refs from orchestration/runner code.\n- [ ] [POL-509](https://linear.app/lsctech/issue/POL-509/implement-fix-qc-repair-loop-finalize-handoff) telemetry patterns append symptoms for wrong-run telemetry, repeated CodeRabbit provider failures, and finalize recovery attempts.\n- [ ] Tests prove no run-health report is created for clean Foreman/QC paths.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/loop src/qc src/run-health src/cluster-state\n\n## Ordering\n\nDepends on [POL-517](https://linear.app/lsctech/issue/POL-517/define-run-health-report-artifact-schema-and-storage-policy). Can run in parallel with [POL-518](https://linear.app/lsctech/issue/POL-518/add-worker-symptom-reporting-contract-and-result-integration) after schema lands.\n\n## Non-goals\n\n* Do not dispatch Medic or block closeout in this child.\n* Do not make QC providers mutate the run-health report directly.\n* Do not change QC severity policy semantics beyond evidence classification."
+    },
+    "POL-518": {
+      "id": "POL-518",
+      "title": "Add worker symptom reporting contract and result integration",
+      "status": "Todo",
+      "body": "## Objective\n\nLet workers report run-health symptoms without diagnosing root cause.\n\n## Context\n\n[POL-515](https://linear.app/lsctech/issue/POL-515/analyze-run-health-symptoms-and-medic-handoff) explicitly separates symptom intake from diagnosis. Workers should report struggle signals such as repeated failed tests, contradictory requirements, validation failure, repeated rework, or unusual assumptions. Those symptoms must append to the run-health report through governed result/telemetry paths.\n\n## Goal\n\nWorker packets and result handling support structured symptom reporting that creates or appends the run-health report when symptoms are present.\n\n## Scope\n\n* src/loop/worker-packet.ts\n* src/loop/dispatch.ts\n* src/loop/parent.ts\n* src/loop/checkpoint.ts\n* src/types/**\n* src/run-health/**\n* src/loop/**/*.test.ts\n\n## Acceptance Criteria\n\n- [ ] Worker instructions define symptom reporting categories without asking workers to diagnose.\n- [ ] Worker result packet typing accepts structured run-health symptoms and evidence refs.\n- [ ] Parent/continue result ingestion appends worker-reported symptoms to the run-health report.\n- [ ] Worker-blocked, validation-failed, repeated-rework, unclear-requirements, and unusual-assumption examples are covered by tests.\n- [ ] No report is created when a worker reports no symptoms.\n- [ ] Existing sealed result and bootstrap packet behavior remains backward compatible.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/loop src/run-health src/types\n\n## Ordering\n\nDepends on [POL-517](https://linear.app/lsctech/issue/POL-517/define-run-health-report-artifact-schema-and-storage-policy).\n\n## Non-goals\n\n* Do not implement Foreman, QC, SOL, closeout, or Medic decision logic here.\n* Do not make worker symptom reporting block dispatch by itself.\n* Do not alter the one-child session boundary."
+    },
+    "POL-517": {
+      "id": "POL-517",
+      "title": "Define run-health report artifact schema and storage policy",
+      "status": "Todo",
+      "body": "## Objective\n\nDefine the canonical run-health symptom report artifact and helper API used by workers, Foreman, closeout, SOL, and Medic.\n\n## Context\n\n[POL-515](https://linear.app/lsctech/issue/POL-515/analyze-run-health-symptoms-and-medic-handoff) requires one run-level report that exists only when symptoms occur. Closeout should not infer severity; it should check for the artifact and its Medic decision state. This child establishes the schema/location before any producer or gate is implemented.\n\n## Goal\n\nA typed run-health artifact contract with deterministic read/write helpers, Markdown/JSON policy, retention rules, and explicit bypass metadata.\n\n## Scope\n\n* src/run-health/**\n* src/types/**\n* src/config/**\n* smartdocs/specs/**\n* src/**/POLARIS.md\n* src/**/SUMMARY.md\n\n## Acceptance Criteria\n\n- [ ] Define a versioned run-health report schema with run id, cluster id, symptoms, evidence refs, policy bypass, Medic consult status, chart refs, treatment packet refs, timestamps, and source actor metadata.\n- [ ] Choose JSON as the machine-readable source of truth plus optional Markdown rendering for operator review.\n- [ ] Store active reports under `.polaris/runs/<run-id>/run-health-report.json` with an optional `.md` sibling, avoiding creation when no symptoms occur.\n- [ ] Provide atomic helper APIs for create, append, read, mark bypassed, and mark Medic decision.\n- [ ] Document that QC artifacts are referenced by path/id and QC never writes symptoms.\n- [ ] Unit tests cover immutability, schema validation, atomic writes, missing report reads, and bypass metadata.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/run-health src/types src/config\n\n## Ordering\n\nNone. This must land before all producer and closeout children.\n\n## Non-goals\n\n* Do not wire worker, Foreman, QC, SOL, closeout, or Medic behavior in this child.\n* Do not create reports for historical runs.\n* Do not modify QC provider execution."
+    },
+    "POL-515": {
+      "id": "POL-515",
+      "title": "Analyze run health symptoms and Medic handoff",
+      "status": "Done"
+    }
+  },
+  "dependencies": {
+    "POL-522": [
+      "POL-519",
+      "POL-518",
+      "POL-520",
+      "POL-521"
+    ],
+    "POL-521": [
+      "POL-520",
+      "POL-517"
+    ],
+    "POL-520": [
+      "POL-519",
+      "POL-518"
+    ],
+    "POL-519": [
+      "POL-517"
+    ],
+    "POL-518": [
+      "POL-517"
+    ]
+  },
+  "clusters": {
+    "POL-516": {
+      "id": "POL-516",
+      "title": "Linear Issue: POL-516",
+      "children": [
+        "POL-522",
+        "POL-521",
+        "POL-520",
+        "POL-519",
+        "POL-518",
+        "POL-517"
+      ],
+      "cluster_root": "POL-516"
+    }
+  },
+  "activeCluster": "POL-516"
+}
