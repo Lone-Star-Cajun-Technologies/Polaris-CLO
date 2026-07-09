@@ -1,7 +1,12 @@
 import { Command } from "commander";
 import { resolve } from "node:path";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { generateNextChartId } from "../medic/chart-id.js";
+import { loadConfig } from "../config/loader.js";
+import { TerminalCliAdapter } from "../loop/adapters/terminal-cli.js";
+import { runMedicRunHealthConsult } from "../medic/run-health-consult.js";
+import { dispatchTreatmentWorker } from "../medic/treatment-packets.js";
+import type { MedicRunHealthPacket } from "../types/result-packet.js";
 
 export function createMedicCommand(options: { repoRoot?: string } = {}): Command {
   const repoRootDefault = options.repoRoot ?? resolve(process.cwd());
@@ -54,6 +59,61 @@ export function createMedicCommand(options: { repoRoot?: string } = {}): Command
           }
         }),
     );
+
+  medic
+    .command("run-health-consult")
+    .description("Run a Medic run-health consult from a packet file")
+    .requiredOption("--packet-file <path>", "Path to MedicRunHealthPacket JSON")
+    .option("-r, --repo-root <path>", "Repository root", repoRootDefault)
+    .action(async (cmdOptions: { packetFile: string; repoRoot: string }) => {
+      const repoRoot = cmdOptions.repoRoot;
+      let packet: MedicRunHealthPacket;
+      try {
+        packet = JSON.parse(readFileSync(cmdOptions.packetFile, "utf-8")) as MedicRunHealthPacket;
+      } catch (err) {
+        process.stderr.write(
+          `medic run-health-consult error: cannot read packet: ${err instanceof Error ? err.message : String(err)}\n`,
+        );
+        process.exit(1);
+        return;
+      }
+
+      if (packet.role !== "medic-run-health") {
+        process.stderr.write(
+          `medic run-health-consult error: packet role must be \"medic-run-health\", got \"${packet.role}\"\n`,
+        );
+        process.exit(1);
+        return;
+      }
+
+      const config = loadConfig(repoRoot);
+      const adapter = new TerminalCliAdapter(config.execution);
+      const provider = Object.keys(config.execution.providers ?? {})[0] ?? "terminal-cli";
+
+      try {
+        const result = await runMedicRunHealthConsult({
+          packet,
+          repoRoot,
+          stateFile: packet.cluster_state_path,
+          telemetryFile: packet.telemetry_path,
+          branch: "unknown",
+          dryRun: false,
+          dispatchTreatmentWorkerFn: (input) =>
+            dispatchTreatmentWorker({
+              ...input,
+              repoRoot,
+              dispatch: (workerPacket) => adapter.dispatch(workerPacket, { provider }),
+            }),
+        });
+        writeFileSync(packet.result_path, JSON.stringify(result, null, 2), "utf-8");
+        process.stdout.write(`Medic run-health consult result written to ${packet.result_path}\n`);
+      } catch (err) {
+        process.stderr.write(
+          `medic run-health-consult error: ${err instanceof Error ? err.message : String(err)}\n`,
+        );
+        process.exit(1);
+      }
+    });
 
   return medic;
 }

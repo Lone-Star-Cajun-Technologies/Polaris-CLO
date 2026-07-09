@@ -73,12 +73,22 @@ import { selectChildSlotClaims, type SlotClaim } from "../runtime/scheduling/chi
 import { loadTrackerAdapter, loadTrackerGraph } from "../tracker/index.js";
 import { LifecycleTransitionService } from "../tracker/lifecycle-transition.js";
 import { LocalGraph } from "../tracker/local-graph.js";
-import { upsertWorkerSymptoms } from "../run-health/index.js";
+import { upsertWorkerSymptoms, readRunHealthReport, getRunHealthReportPath } from "../run-health/index.js";
 import { appendForemanSymptom } from "../run-health/foreman-symptoms.js";
 import { appendQcEscalationSymptoms, appendRepairLoopOutcomeSymptom } from "../run-health/qc-escalation.js";
-import type { WorkerRunHealthSymptom } from "../types/result-packet.js";
+import type { WorkerRunHealthSymptom, MedicRunHealthPacket } from "../types/result-packet.js";
+import type { RunHealthReport } from "../run-health/schema.js";
+import { runMedicRunHealthConsult } from "../medic/run-health-consult.js";
+import { dispatchTreatmentWorker } from "../medic/treatment-packets.js";
 
 const CLAIM_TTL_MS = 30 * 60 * 1000;
+
+function isMedicGateSatisfied(report: RunHealthReport): boolean {
+  const status = report.medic_consult?.status;
+  if (status === "resolved" || status === "bypassed") return true;
+  if (report.policy_bypass) return true;
+  return false;
+}
 
 /**
  * Returns the list of files touched by a git commit, or null when the commit
@@ -1351,6 +1361,94 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
         }
       }
       // ── End QC repair loop ─────────────────────────────────────────────────
+
+      // ── Run-health Medic consult ────────────────────────────────────────────
+      // If the run recorded health symptoms and no Medic decision exists yet,
+      // dispatch Medic to diagnose and optionally emit bounded treatment packets.
+      if (!dryRun) {
+        const runHealthReport = readRunHealthReport(state.run_id, repoRoot);
+        if (runHealthReport && !isMedicGateSatisfied(runHealthReport)) {
+          const maxTreatmentRounds = config.qc?.maxRepairRounds ?? DEFAULT_MAX_REPAIR_ROUNDS;
+          const medicDispatchId = randomUUID();
+          const medicResultPath = join(
+            repoRoot,
+            ".polaris",
+            "clusters",
+            state.cluster_id,
+            "results",
+            `medic-run-health-${medicDispatchId}.json`,
+          );
+          const medicPacket: MedicRunHealthPacket = {
+            role: "medic-run-health",
+            run_id: state.run_id,
+            dispatch_id: medicDispatchId,
+            cluster_id: state.cluster_id,
+            run_health_report_path: getRunHealthReportPath(state.run_id, repoRoot),
+            qc_artifact_refs: Array.from(
+              new Set([
+                ...runHealthReport.evidence_refs,
+                ...runHealthReport.symptoms.flatMap((s) => s.evidence_refs),
+              ]),
+            ),
+            telemetry_path: telemetryFile,
+            cluster_state_path: join(
+              repoRoot,
+              ".polaris",
+              "clusters",
+              state.cluster_id,
+              "state.json",
+            ),
+            policy_limits: { max_treatment_rounds: maxTreatmentRounds },
+            result_path: medicResultPath,
+            allowed_write_paths: [
+              "smartdocs/medic/charts",
+              ".polaris/runs",
+              ".polaris/clusters",
+              ".taskchain_artifacts",
+            ],
+            prohibited_write_paths: [],
+          };
+
+          try {
+            await runMedicRunHealthConsult({
+              packet: medicPacket,
+              repoRoot,
+              stateFile,
+              telemetryFile,
+              branch: state.branch ?? getCurrentBranch(repoRoot),
+              validationCommands: ["npm run build", "npm test"],
+              maxConcurrentWorkers,
+              dryRun,
+              dispatchTreatmentWorkerFn: (input) =>
+                dispatchTreatmentWorker({
+                  ...input,
+                  repoRoot,
+                  dispatch: (workerPacket) =>
+                    adapter.dispatch(workerPacket, { provider: providerName }),
+                }),
+            });
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            appendTelemetry(telemetryFile, {
+              event: "medic-run-health-consult-error",
+              run_id: state.run_id,
+              cluster_id: state.cluster_id,
+              error: msg,
+              timestamp: new Date().toISOString(),
+            });
+            appendForemanSymptom({
+              runId: state.run_id,
+              clusterId: state.cluster_id,
+              code: "foreman-qc-runtime-failure",
+              message: `Medic run-health consult threw a runtime error: ${msg}`,
+              evidenceRefs: [telemetryFile],
+              repoRoot,
+              config,
+            });
+          }
+        }
+      }
+      // ── End run-health Medic consult ───────────────────────────────────────
 
       // All children completed — write final state and halt
       if (!dryRun) {
