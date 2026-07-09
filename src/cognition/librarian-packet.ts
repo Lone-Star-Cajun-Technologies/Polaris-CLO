@@ -98,6 +98,26 @@ export function generateLibrarianPacket(options: GenerateLibrarianPacketOptions)
       cognition_index: fs.existsSync(cognitionIndexAbs)
         ? path.relative(repoRoot, cognitionIndexAbs)
         : null,
+      artifact_contract: {
+        polaris_md: {
+          path: path.join(folder, "POLARIS.md"),
+          intent: "must-reconcile",
+          reason: "Affected folders must reconcile POLARIS.md to keep operational doctrine current.",
+        },
+        summary_md: fs.existsSync(summaryAbs)
+          ? {
+              path: path.join(folder, "SUMMARY.md"),
+              intent: "reconcile-if-present",
+              reason:
+                "SUMMARY.md exists for this folder and may be reconciled independently when informational canon changed.",
+            }
+          : {
+              path: null,
+              intent: "not-present",
+              reason:
+                "SUMMARY.md is missing for this folder; skip SUMMARY reconciliation and evaluate POLARIS.md independently.",
+            },
+      },
     };
   });
 
