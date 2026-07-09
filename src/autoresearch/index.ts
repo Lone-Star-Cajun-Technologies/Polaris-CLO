@@ -28,6 +28,22 @@ export type { SolScoreSnapshot } from "./sol-history.js";
 export { generateReport, formatReportCli } from "./sol-report.js";
 export type { SolReport, SolGroupSummary, SolReportGroupBy, SolReportOptions } from "./sol-report.js";
 export {
+  buildEvaluationRecord,
+  writeEvaluationRecord,
+  writeScorecard,
+  writeScorecardSet,
+  writeSolMarkdownReport,
+  getSolEvaluationsDir,
+  getSolScorecardsDir,
+  getSolReportsDir,
+  getEvaluationRecordPath,
+  getScorecardPath,
+  getSolMarkdownReportPath,
+} from "./sol-evaluation-writer.js";
+export type { SolEvaluationRecord } from "./sol-evaluation-writer.js";
+export { renderSolMarkdown } from "./sol-report-renderer.js";
+export type { SolRenderedReport } from "./sol-report-renderer.js";
+export {
   generateRecommendations,
   recommendationsToProposals,
   recommendationToProposal,

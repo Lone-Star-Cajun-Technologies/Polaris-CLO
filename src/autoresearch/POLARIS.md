@@ -20,6 +20,8 @@ Autoresearch is the evidence-scoring and proposal-routing sub-capability inside 
 - `dev-gate.ts` — `isPolarisDevContext()` and `assertPolarisDevContext()`: all autoresearch commands must call `assertPolarisDevContext()` before any file-system or network access
 - `sol-scorer.ts` — `computeSolScoreReport()`: computes per-run Foreman and worker dimension scores, composite scores, and confidence from aggregated `SolEvidence`
 - `sol-report.ts` — `generateReport()` / `formatReportCli()`: groups historical `SolScoreSnapshot`s into aggregate `SolReport` summaries and renders QC evidence
+- `sol-evaluation-writer.ts` — `writeEvaluationRecord()` / `writeScorecardSet()` / `writeSolMarkdownReport()`: persists machine-readable SOL evaluation records under `.polaris/sol/evaluations/`, scorecard snapshots under `.polaris/sol/scorecards/<subject>/`, and human-readable SmartDocs reports under `smartdocs/reports/sol/`
+- `sol-report-renderer.ts` — `renderSolMarkdown()`: renders human-readable SOL evaluation reports with source references, confidence, skipped evidence, grouping windows, recommendation inputs, QC outcome, and token-efficiency summaries
 - `sol-history.ts` — `appendSnapshot()` / `loadSnapshots()`: persists and reads `SolScoreSnapshot` JSONL history
 - `sol-recommendations.ts` — `generateRecommendations()`: produces explainable routing/role/provider/model recommendations from historical SOL snapshots; advisory by default; `recommendationsToProposals()` converts recommendations to tracker issues for human review
 - `index.ts` — public re-exports

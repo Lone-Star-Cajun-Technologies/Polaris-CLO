@@ -10,9 +10,20 @@ import { appendSnapshot, loadSnapshots, buildSnapshot } from "../autoresearch/so
 import { generateReport, formatReportCli } from "../autoresearch/sol-report.js";
 import type { SolReportGroupBy } from "../autoresearch/sol-report.js";
 import {
+  computeAllScorecards,
+} from "../autoresearch/sol-scorecard-calculator.js";
+import {
+  buildEvaluationRecord,
+  writeEvaluationRecord,
+  writeScorecardSet,
+  writeSolMarkdownReport,
+} from "../autoresearch/sol-evaluation-writer.js";
+import { renderSolMarkdown } from "../autoresearch/sol-report-renderer.js";
+import {
   generateRecommendations,
   recommendationsToProposals,
   formatRecommendationsCli,
+  generateQcRecommendations,
 } from "../autoresearch/sol-recommendations.js";
 
 export interface SolCommandOptions {
@@ -92,6 +103,78 @@ export function createSolCommand(options: SolCommandOptions): Command {
           `sol score-report error: ${err instanceof Error ? err.message : String(err)}\n`,
         );
         process.exit(1);
+      }
+    });
+
+  sol
+    .command("report <run-id>")
+    .description(
+      "Generate SOL evaluation artifacts and a human-readable SmartDocs report for a run",
+    )
+    .option("-r, --repo-root <path>", "Repository root", repoRoot)
+    .option("--format <mode>", "Output format: markdown or json", "markdown")
+    .option("--json", "Output raw JSON (same as --format json)")
+    .option("--no-write", "Skip writing artifact files")
+    .action((runId: string, cmdOptions: { repoRoot: string; format: string; json?: boolean; write: boolean }) => {
+      const root = resolve(cmdOptions.repoRoot ?? repoRoot);
+      try {
+        assertPolarisDevContext(root);
+      } catch (err) {
+        process.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
+        process.exit(1);
+      }
+
+      let artifacts;
+      let evidence;
+      try {
+        artifacts = loadRunArtifacts(root, runId);
+        evidence = aggregateSolEvidence(artifacts);
+      } catch (err) {
+        process.stderr.write(
+          `sol report error: cannot load run artifacts: ${err instanceof Error ? err.message : String(err)}\n`,
+        );
+        process.exit(1);
+      }
+
+      const report = computeSolScoreReport(evidence);
+      const scorecards = computeAllScorecards(evidence);
+      const qcRecommendations = generateQcRecommendations(evidence);
+
+      let evaluationPath: string | undefined;
+      let scorecardPaths: string[] | undefined;
+      let markdownPath: string | undefined;
+
+      const evaluationRecord = buildEvaluationRecord(report);
+
+      if (cmdOptions.write) {
+        evaluationPath = writeEvaluationRecord(root, report).path;
+        scorecardPaths = writeScorecardSet(root, scorecards);
+        const rendered = renderSolMarkdown(evaluationRecord, scorecards, qcRecommendations);
+        markdownPath = writeSolMarkdownReport(root, runId, rendered.markdown);
+      }
+
+      const outputFormat = cmdOptions.json || cmdOptions.format === "json" ? "json" : "markdown";
+
+      if (outputFormat === "json") {
+        const output = JSON.stringify(
+          {
+            run_id: runId,
+            evaluation: evaluationRecord,
+            scorecards,
+            qc_recommendations: qcRecommendations,
+            artifacts: {
+              evaluation: evaluationPath,
+              scorecards: scorecardPaths,
+              markdown: markdownPath,
+            },
+          },
+          null,
+          2,
+        );
+        process.stdout.write(`${output}\n`);
+      } else {
+        const rendered = renderSolMarkdown(evaluationRecord, scorecards, qcRecommendations);
+        process.stdout.write(rendered.markdown);
       }
     });
 
