@@ -1,0 +1,73 @@
+{
+  "schema_version": "1.0",
+  "role": "closeout-librarian",
+  "run_id": "polaris-run-pol-509-2026-07-09-001",
+  "dispatch_id": "36b7676f-7805-4cd1-9288-2d67901f759c",
+  "cluster_id": "POL-509",
+  "status": "success",
+  "commit_sha": "0238824a4af6f0683f7d1100f3a2803798029293",
+  "commit_message": "[POL-509][librarian] Reconcile POLARIS.md/SUMMARY.md for QC repair-loop finalize handoff",
+  "files_committed": [
+    "src/cluster-state/POLARIS.md",
+    "src/finalize/POLARIS.md",
+    "src/finalize/SUMMARY.md",
+    "src/loop/POLARIS.md",
+    "src/loop/SUMMARY.md",
+    "src/qc/POLARIS.md"
+  ],
+  "polaris_md_updates": [
+    {
+      "file": "src/qc/POLARIS.md",
+      "action": "update",
+      "change_summary": "Added unusable-output to the provider failure-reason list (POL-512) and fixed auth-failure/unavailable-provider naming; corrected repair-loop terminal state names to match QcRepairLoopOutcome literals in src/loop/checkpoint.ts."
+    },
+    {
+      "file": "src/finalize/POLARIS.md",
+      "action": "update",
+      "change_summary": "Rewrote QC repair loop relationship section to document validateQcRepairLoopGate() (Step 5.9), validateAuthoritativeChildState() (Step 5.10), and warnOnMissingQcArtifacts(), replacing stale aspirational terminal-outcome naming (POL-511)."
+    },
+    {
+      "file": "src/cluster-state/POLARIS.md",
+      "action": "update",
+      "change_summary": "Replaced speculative qc_repair_rounds field description with the actually-implemented qc_repair_outcome/qc_repair_manifests fields and documented QcRunPointer.availability + pruneMissingQcRunPointers() (POL-513)."
+    },
+    {
+      "file": "src/loop/POLARIS.md",
+      "action": "update",
+      "change_summary": "Documented the post-dispatch budget-exhausted guard fix (POL-510): the check is skipped once open_children is empty so a fully completed cluster always reaches cluster-complete/QC repair-loop handling."
+    }
+  ],
+  "summary_md_updates": [
+    {
+      "file": "src/finalize/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Added key-behavior bullets for the new QC repair-loop gate and authoritative completed-child cross-check introduced by POL-511/POL-514."
+    },
+    {
+      "file": "src/loop/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Added key-behavior bullet noting the post-dispatch budget-exhausted check is skipped once open_children is empty (POL-510)."
+    }
+  ],
+  "docs_ingested": [],
+  "docs_archived": [],
+  "yaml_updates": [],
+  "cognition_archived": [],
+  "link_validation": {
+    "total_checked": 10,
+    "valid": 10,
+    "broken": 0,
+    "repaired": 0,
+    "unrepairable": []
+  },
+  "blockers": [
+    {
+      "type": "conflict-detected",
+      "description": "smartdocs/specs/active/quality-control-architecture.md §8.6-8.7 use verbose terminal-outcome names (qc_passed, max_rounds_reached, operator_review_required, medic_referral_required) that do not match the hyphenated string literals actually implemented in src/loop/checkpoint.ts's QcRepairLoopOutcome (pass, max-rounds, operator-review, medic-referral) and used by src/finalize/index.ts's validateQcRepairLoopGate(). §8.9 of the same spec already uses the correct hyphenated forms. Per Librarian authority precedence, spec/doctrine content was not edited; POLARIS.md files were reconciled to point to §8.9 instead. Recommend an operator-approved edit to align §8.6-8.7 naming with §8.9 and the implementation.",
+      "affected_file": "smartdocs/specs/active/quality-control-architecture.md",
+      "resolution_required": false
+    }
+  ],
+  "reconciled_at": "2026-07-09T11:44:18Z",
+  "evidence_summary": "Reconciled 4 POLARIS.md and 2 SUMMARY.md files across src/qc, src/finalize, src/cluster-state, and src/loop to match behavior actually implemented by POL-510 through POL-514: the unusable-output QC failure classification, the new QC repair-loop finalize gate and authoritative child-count cross-check, the real qc_repair_outcome/qc_repair_manifests cluster-state fields and QC artifact availability tracking, and the post-dispatch budget-exhausted guard fix. No smartdocs/raw candidates in the packet were relevant to this cluster's technical content, so no ingestion/archival/YAML actions were needed. No links were broken. One non-blocking spec/implementation terminal-outcome naming conflict was surfaced for operator review; POLARIS.md files were pointed at the correct spec section (§8.9) instead of editing spec content. All changes committed in a single librarian commit; no implementation, runtime state, or telemetry files were touched."
+}
