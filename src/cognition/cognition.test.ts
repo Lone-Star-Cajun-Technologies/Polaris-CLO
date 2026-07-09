@@ -644,6 +644,85 @@ describe("validateSummaryFile", () => {
 
 // ── looksLikePolarisChurn ─────────────────────────────────────────────────────
 
+// ── pairwise POLARIS.md / SUMMARY.md drift ────────────────────────────────────
+
+describe("validateCognitionSurfaces - polaris-summary drift", () => {
+  let tmp: string;
+  beforeEach(() => { tmp = makeTmp(); });
+  afterEach(() => cleanup(tmp));
+
+  it("reports an error when POLARIS.md and SUMMARY.md are exact duplicates", () => {
+    mkdirSync(join(tmp, "src", "loop"), { recursive: true });
+    const content = "# Loop\n\nHandles session lifecycle.";
+    writeFileSync(join(tmp, "src", "loop", "POLARIS.md"), content, "utf-8");
+    writeFileSync(join(tmp, "src", "loop", "SUMMARY.md"), content, "utf-8");
+
+    const result = validateCognitionSurfaces(tmp);
+    const drift = result.violations.find((v) => v.type === "polaris-summary-drift");
+    expect(drift).toBeDefined();
+    expect(drift!.severity).toBe("error");
+    expect(drift!.file).toBe("src/loop");
+    expect(drift!.detail).toContain("POLARIS.md");
+    expect(drift!.detail).toContain("SUMMARY.md");
+    expect(result.valid).toBe(false);
+  });
+
+  it("reports a warning when normalized similarity exceeds the threshold", () => {
+    mkdirSync(join(tmp, "src", "loop"), { recursive: true });
+    writeFileSync(
+      join(tmp, "src", "loop", "POLARIS.md"),
+      "# Loop\n\nThe loop module manages session lifecycle for worker dispatch.",
+      "utf-8",
+    );
+    writeFileSync(
+      join(tmp, "src", "loop", "SUMMARY.md"),
+      "# Loop\n\nThe loop module manages session lifecycle. This route handles worker dispatch.",
+      "utf-8",
+    );
+
+    const result = validateCognitionSurfaces(tmp, { similarityThreshold: 0.3 });
+    const drift = result.warnings.find((v) => v.type === "polaris-summary-drift");
+    expect(drift).toBeDefined();
+    expect(drift!.severity).toBe("warn");
+    expect(drift!.file).toBe("src/loop");
+    expect(drift!.detail).toContain("normalized similarity");
+    expect(result.valid).toBe(true);
+  });
+
+  it("does not report drift when similarity is below the threshold", () => {
+    mkdirSync(join(tmp, "src", "loop"), { recursive: true });
+    writeFileSync(
+      join(tmp, "src", "loop", "POLARIS.md"),
+      "# Loop\n\nHandles session lifecycle with strict dispatch ordering.",
+      "utf-8",
+    );
+    writeFileSync(
+      join(tmp, "src", "loop", "SUMMARY.md"),
+      "# Loop\n\nInformational context about unrelated helper utilities.",
+      "utf-8",
+    );
+
+    const result = validateCognitionSurfaces(tmp, { similarityThreshold: 0.9 });
+    expect(result.warnings.filter((v) => v.type === "polaris-summary-drift")).toHaveLength(0);
+    expect(result.violations.filter((v) => v.type === "polaris-summary-drift")).toHaveLength(0);
+    expect(result.valid).toBe(true);
+  });
+
+  it("does not report drift when the pair is incomplete", () => {
+    mkdirSync(join(tmp, "src", "loop"), { recursive: true });
+    writeFileSync(
+      join(tmp, "src", "loop", "POLARIS.md"),
+      "# Loop\n\nHandles session lifecycle.",
+      "utf-8",
+    );
+
+    const result = validateCognitionSurfaces(tmp);
+    expect(result.warnings.filter((v) => v.type === "polaris-summary-drift")).toHaveLength(0);
+    expect(result.violations.filter((v) => v.type === "polaris-summary-drift")).toHaveLength(0);
+    expect(result.valid).toBe(true);
+  });
+});
+
 describe("looksLikePolarisChurn", () => {
   it("detects identical content as churn", () => {
     const content = "# Loop\n\nHandles session lifecycle.";

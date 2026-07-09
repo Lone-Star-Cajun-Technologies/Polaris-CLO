@@ -193,6 +193,83 @@ describe("validateDir - SUMMARY.md", () => {
 });
 
 // ---------------------------------------------------------------------------
+// validateDir — pairwise POLARIS.md / SUMMARY.md drift
+// ---------------------------------------------------------------------------
+
+describe("validateDir - pairwise drift", () => {
+  beforeEach(setup);
+  afterEach(teardown);
+
+  it("reports ERROR when POLARIS.md and SUMMARY.md are exact duplicates", () => {
+    const content = validPolarisContent();
+    writeFileSync(join(TMP, "src/map/POLARIS.md"), content);
+    writeFileSync(join(TMP, "src/map/SUMMARY.md"), content);
+
+    const result = validateDir("src/map", TMP, {});
+    expect(result.status).toBe("ERROR");
+    const finding = result.findings.find((f) =>
+      f.message.includes("exact duplicates"),
+    );
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe("ERROR");
+    expect(finding!.message).toContain("src/map/POLARIS.md");
+    expect(finding!.message).toContain("src/map/SUMMARY.md");
+  });
+
+  it("reports WARN when normalized similarity exceeds the threshold", () => {
+    const polaris = validPolarisContent(
+      "Additional shared context about the map module and dispatch behavior.",
+    );
+    const summary = [
+      "# Summary",
+      "",
+      "The map module manages dispatch behavior and routing context for this route.",
+      "",
+      "## Context",
+      "",
+      "- [Design spec](../docs/spec.md)",
+    ].join("\n");
+    writeFileSync(join(TMP, "src/map/POLARIS.md"), polaris);
+    writeFileSync(join(TMP, "src/map/SUMMARY.md"), summary);
+
+    const result = validateDir("src/map", TMP, {}, 0.3);
+    const finding = result.findings.find((f) =>
+      f.message.includes("normalized similarity"),
+    );
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe("WARN");
+    expect(finding!.message).toContain("src/map/POLARIS.md");
+    expect(finding!.message).toContain("src/map/SUMMARY.md");
+    expect(result.status).not.toBe("ERROR");
+  });
+
+  it("does not report drift when similarity is below the threshold", () => {
+    writeFileSync(join(TMP, "src/map/POLARIS.md"), validPolarisContent());
+    writeFileSync(
+      join(TMP, "src/map/SUMMARY.md"),
+      "# Summary\n\nUnrelated informational context with no shared keywords.",
+    );
+
+    const result = validateDir("src/map", TMP, {}, 0.9);
+    const driftFinding = result.findings.find((f) =>
+      f.message.includes("similarity"),
+    );
+    expect(driftFinding).toBeUndefined();
+    expect(result.status).toBe("OK");
+  });
+
+  it("does not report drift when SUMMARY.md is missing", () => {
+    writeFileSync(join(TMP, "src/map/POLARIS.md"), validPolarisContent());
+
+    const result = validateDir("src/map", TMP, {});
+    const driftFinding = result.findings.find((f) =>
+      f.message.includes("similarity") || f.message.includes("exact duplicates"),
+    );
+    expect(driftFinding).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // validateDir — broken links (ERROR)
 // ---------------------------------------------------------------------------
 
