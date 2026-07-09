@@ -10,7 +10,12 @@ import { describe, expect, it } from "vitest";
 import type { IQcProvider, QcReviewScope } from "./provider.js";
 import { QcProviderRegistry } from "./provider.js";
 import { executeQcProvider } from "./runner.js";
+import { CodeRabbitQcProvider } from "./providers/coderabbit.js";
 import type { QcConfig, QcProviderConfig } from "../config/schema.js";
+
+function loadFixtureText(name: string): string {
+  return readFileSync(new URL(`./fixtures/${name}`, import.meta.url), "utf-8");
+}
 
 const FIXTURES = {
   rateLimited: "Rate limit exceeded: 429 Too Many Requests",
@@ -469,5 +474,63 @@ describe("executeQcProvider", () => {
     const events = lines.map((line) => JSON.parse(line));
     expect(events.some((e) => e.event === "qc-fallback-attempted")).toBe(true);
     expect(events.some((e) => e.event === "qc-all-providers-failed")).toBe(true);
+  });
+
+  it("classifies progress-only CodeRabbit output as unusable-output", async () => {
+    const provider = new CodeRabbitQcProvider();
+    const result = await executeQcProvider(
+      provider,
+      { clusterId: "POL-1", runId: "run-1", branch: "main" },
+      {
+        repoRoot: process.cwd(),
+        runId: "run-1",
+        clusterId: "POL-1",
+        execFileImpl: makeExecFileImpl(loadFixtureText("coderabbit-progress-only.jsonl"), "", 0) as unknown as typeof import("node:child_process").execFile,
+      },
+    );
+
+    expect(result.status).toBe("failed");
+    expect(result.providerAttempt?.failureReason).toBe("unusable-output");
+    expect(result.providerAttempt?.parserResult).toBe("failed");
+  });
+
+  it("classifies nonzero exit with empty findings as nonzero-exit", async () => {
+    const provider = new CodeRabbitQcProvider();
+    const result = await executeQcProvider(
+      provider,
+      { clusterId: "POL-1", runId: "run-1", branch: "main" },
+      {
+        repoRoot: process.cwd(),
+        runId: "run-1",
+        clusterId: "POL-1",
+        execFileImpl: makeExecFileImpl(loadFixtureText("coderabbit-empty-findings.json"), "", 1) as unknown as typeof import("node:child_process").execFile,
+      },
+    );
+
+    expect(result.status).toBe("failed");
+    expect(result.providerAttempt?.failureReason).toBe("nonzero-exit");
+  });
+
+  it("emits unusable-output telemetry for progress-only CodeRabbit output", async () => {
+    const telemetryDir = mkdtempSync(join(tmpdir(), "polaris-qc-runner-"));
+    const telemetryFile = join(telemetryDir, "telemetry.jsonl");
+    const provider = new CodeRabbitQcProvider();
+
+    await executeQcProvider(
+      provider,
+      { clusterId: "POL-1", runId: "run-1", branch: "main" },
+      {
+        repoRoot: process.cwd(),
+        runId: "run-1",
+        clusterId: "POL-1",
+        telemetryFile,
+        execFileImpl: makeExecFileImpl(loadFixtureText("coderabbit-progress-only.jsonl"), "", 0) as unknown as typeof import("node:child_process").execFile,
+      },
+    );
+
+    const lines = readFileSync(telemetryFile, "utf-8").trim().split("\n");
+    const events = lines.map((line) => JSON.parse(line));
+    expect(events.some((e) => e.event === "qc-provider-attempted")).toBe(true);
+    expect(events.some((e) => e.event === "qc-provider-failed" && e.reason === "unusable-output")).toBe(true);
   });
 });

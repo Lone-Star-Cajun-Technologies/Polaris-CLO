@@ -51,6 +51,7 @@ export const qcFailureReasonSchema = z.enum([
   "nonzero-exit",
   "parse-failed",
   "empty-output",
+  "unusable-output",
   "unsupported-mode",
   "unavailable-provider",
 ]);
