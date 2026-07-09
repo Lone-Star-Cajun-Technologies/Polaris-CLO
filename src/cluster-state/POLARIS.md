@@ -43,20 +43,17 @@ The cluster-state subsystem provides durable, atomic read/write access to per-cl
 - Cluster-state owns durable storage of QC result pointers and metadata in `ClusterState.qc_runs`.
 - QC result artifacts live at `.polaris/clusters/<cluster-id>/qc/<qc-run-id>.json` and are referenced by cluster-state pointers.
 - QC status is read by finalize to determine delivery readiness and by autoresearch for SOL scoring inputs.
+- `QcRunPointer.availability` (`"available" | "missing" | "unavailable"`) tracks whether the primary QC artifact and its raw provider audit artifacts (`raw_artifact_paths`, `provider_attempt_artifact_path`) still exist on disk. `validateQcArtifactPointers()` (in `src/qc/artifacts.ts`) checks existence; `pruneMissingQcRunPointers()` (in `store.ts`) removes pointers whose primary artifact is missing and marks pointers with missing raw audit artifacts as `unavailable`. Callers must persist the returned state to make pruning durable.
 
 ## QC repair loop relationship
 
-- Cluster-state must store repair round state so the repair loop survives session boundaries.
-- `ClusterState.qc_repair_rounds` (new field, implementation surface for POL-503+) tracks per-round metadata:
-  - `round` — 1-based round number.
-  - `state` — current repair round state (see `smartdocs/specs/active/quality-control-architecture.md §8.6`).
-  - `repair_packets_path` — path to the compiled repair packet manifest for this round.
-  - `repair_worker_ids` — child IDs dispatched as repair workers in this round.
-  - `qc_rerun_id` — QC run ID for the post-repair rerun, when available.
-  - `terminal_outcome` — terminal outcome for this round when reached.
+- Cluster-state stores repair-loop outcome and manifest pointers so the repair loop survives session boundaries.
+- `ClusterState.qc_repair_outcome` (`string | null`) records the QC repair loop's terminal outcome once it completes (see `QcRepairLoopOutcome` in `src/loop/checkpoint.ts` for the full value set: `pass`, `no-repairable`, `max-rounds`, `all-providers-failed`, `operator-review`, `medic-referral`, `qc-disabled`). This is a best-effort mirror of the loop checkpoint's `qc_repair_loop.terminal_outcome`, written by `src/qc/repair-loop.ts`; writes are wrapped in try/catch and must never block finalization on a cluster-state write race.
+- `ClusterState.qc_repair_manifests` (`Record<number, string>`) maps repair round number to its compiled repair packet manifest path, mirroring the manifest written under `.polaris/clusters/<cluster-id>/qc/repair-rounds/<round>/repair-packets.json`.
 - The maximum round count is not stored in cluster-state; it is read from `polaris.config.json → qc.maxRepairRounds` at runtime.
-- Repair packet manifests at `.polaris/clusters/<cluster-id>/qc/repair-rounds/<round>/repair-packets.json` are written by `src/qc/`, not by cluster-state. Cluster-state stores the pointer.
-- See `smartdocs/specs/active/quality-control-architecture.md §8.4` for repair packet manifest field definitions.
+- Repair packet manifests are written by `src/qc/`, not by cluster-state. Cluster-state stores the pointer only.
+- Finalize's `validateQcRepairLoopGate()` reads the repair-loop terminal state from the loop checkpoint (`state.qc_repair_loop`), not from `ClusterState.qc_repair_outcome`; the cluster-state field is a durability mirror for cross-session/autoresearch consumers.
+- See `smartdocs/specs/active/quality-control-architecture.md §8.9` for the telemetry-aligned terminal outcome catalog that matches these string values.
 
 ## Related routes
 

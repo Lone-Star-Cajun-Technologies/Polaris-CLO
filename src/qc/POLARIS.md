@@ -38,7 +38,7 @@ The QC subsystem is the provider-agnostic Quality Control layer for Polaris. It 
 ## Editing rules
 
 - QC providers are external critics, not worker providers. Providers must never be dispatched through the Worker Router; they are invoked directly by `runner.ts`.
-- Provider execution failures (`timeout`, `rate-limited`, `auth-failed`, `command-not-found`, `nonzero-exit`, `parse-failed`, `empty-output`, `unsupported-mode`, `provider-unavailable`) are classified as `QcProviderFailure`, not as findings. All failures must produce telemetry.
+- Provider execution failures (`timeout`, `rate-limited`, `auth-failure`, `command-not-found`, `nonzero-exit`, `parse-failed`, `empty-output`, `unusable-output`, `unsupported-mode`, `unavailable-provider`) are classified as `QcProviderFailure`, not as findings. `unusable-output` covers provider payloads (e.g. progress/status/heartbeat/complete records) that parse successfully but contain no actionable finding — no `file`/`path` plus `message`/`title` fields. All failures must produce telemetry.
 - Repair workers that address QC findings are dispatched by `src/loop/dispatch.ts` with `worker_role: repair`. `src/qc/` compiles the repair packet manifest; it does not dispatch workers.
 - Repair packet manifests are written to `.polaris/clusters/<cluster-id>/qc/repair-rounds/<round>/repair-packets.json`.
 - Max repair rounds is `2` by default, overridable by `polaris.config.json → qc.maxRepairRounds`. The loop must stop when `round > maxRepairRounds`.
@@ -78,9 +78,9 @@ States (managed by `orchestration.ts`):
 
 `qc_review_requested` → `qc_provider_attempted` → `qc_results_normalized` → `repair_packets_compiled` → `repair_packets_dispatched` → `repair_results_collected` → `qc_rerun_requested` → (loop) or terminal state
 
-Terminal states: `qc_passed`, `max_rounds_reached`, `operator_review_required`, `medic_referral_required`
+Terminal states (`QcRepairLoopOutcome` in `src/loop/checkpoint.ts`): `pass`, `no-repairable`, `max-rounds`, `all-providers-failed`, `operator-review`, `medic-referral`, `qc-disabled`. These are the exact string literals stored in `state.qc_repair_loop.terminal_outcome` and `ClusterState.qc_repair_outcome`; finalize's repair-loop gate (`src/finalize/index.ts`) matches against them directly.
 
-See `smartdocs/specs/active/quality-control-architecture.md §8.6–8.7` for full state machine and terminal outcome definitions.
+See `smartdocs/specs/active/quality-control-architecture.md §8.9` for the telemetry-aligned terminal outcome catalog that matches these values (§8.6–8.7 predate the implemented naming).
 
 ## Artifact paths
 
