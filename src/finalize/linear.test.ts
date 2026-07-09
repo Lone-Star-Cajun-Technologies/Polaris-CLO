@@ -388,6 +388,52 @@ describe("updateLinearIssueAfterFinalize", () => {
     expect(commentBody).toContain("polaris finalize complete");
   });
 
+  it("uses authoritative child count in comment body when provided", async () => {
+    let commentBody = "";
+    const calls: string[] = [];
+
+    mockRequest.mockImplementation((_options: unknown, callback?: unknown) => {
+      const req = new EventEmitter() as ReturnType<typeof https.request>;
+      (req as unknown as { write: (data: string) => void }).write = vi.fn((data: string) => {
+        const parsed = JSON.parse(data) as { query?: string; variables?: Record<string, unknown> };
+        const query = parsed.query ?? "";
+        if (query.includes("GetIssueTeam")) calls.push("getIssueTeam");
+        else if (query.includes("GetWorkflowStates")) calls.push("getWorkflowStates");
+        else if (query.includes("UpdateIssueState")) calls.push("issueUpdate");
+        else if (query.includes("CreateComment")) {
+          calls.push("commentCreate");
+          commentBody = (parsed.variables?.["body"] as string) ?? "";
+        }
+      });
+
+      (req as unknown as { end: () => void }).end = vi.fn(() => {
+        const res = new EventEmitter() as IncomingMessage;
+        (res as unknown as { statusCode: number }).statusCode = 200;
+        if (typeof callback === "function") callback(res);
+
+        let body: unknown;
+        const callName = calls[calls.length - 1];
+        if (callName === "getIssueTeam") {
+          body = { data: { issue: { team: { id: "team-x" } } } };
+        } else if (callName === "getWorkflowStates") {
+          body = { data: { workflowStates: { nodes: [{ id: "rev-id", name: "In Review", type: "review" }] } } };
+        } else if (callName === "issueUpdate") {
+          body = { data: { issueUpdate: { success: true } } };
+        } else {
+          body = { data: { commentCreate: { success: true } } };
+        }
+        res.emit("data", Buffer.from(JSON.stringify(body)));
+        res.emit("end");
+      });
+
+      return req as ReturnType<typeof https.request>;
+    });
+
+    await updateLinearIssueAfterFinalize({ ...baseOptions, authoritativeChildCount: 5 });
+
+    expect(commentBody).toContain("Children completed | 5");
+  });
+
   it("falls back to comment-only when state query fails (network error)", async () => {
     let callCount = 0;
     const calls: string[] = [];

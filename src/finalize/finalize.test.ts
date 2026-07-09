@@ -9,6 +9,9 @@ import {
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { execFileSync } from "node:child_process";
+import type { ClusterState } from "../cluster-state/types.js";
+import type { QcConfig } from "../config/schema.js";
+import type { LoopState } from "../loop/checkpoint.js";
 
 // ---- helpers ----------------------------------------------------------------
 
@@ -1046,6 +1049,7 @@ describe("createDraftPr validation", () => {
     expect(() =>
       createDraftPr({ repoRoot: "/tmp", branch: "pol-29-delivery", state, draft: true })
     ).not.toThrow();
+    vi.doUnmock("node:child_process");
   });
 });
 
@@ -1504,5 +1508,165 @@ describe("validateStateFileAuthority", () => {
     const { stateFile, state } = makeStaleClusterSnapshot(testDir);
 
     expect(() => validateStateFileAuthority(stateFile, state as any, testDir)).not.toThrow();
+  });
+});
+
+// ---- QC repair-loop terminal state gate ------------------------------------
+
+describe("validateQcRepairLoopGate", () => {
+  it("blocks finalize when QC repair loop terminated with all-providers-failed", async () => {
+    const { validateQcRepairLoopGate } = await import("./index.js");
+    const state = {
+      qc_repair_loop: { terminal_outcome: "all-providers-failed" },
+    } as unknown as LoopState;
+    const config = { enabled: true, repairRouting: "route" } as unknown as QcConfig;
+    const blocker = validateQcRepairLoopGate(state, config);
+    expect(blocker).toContain("untrusted outcome");
+    expect(blocker).toContain("all-providers-failed");
+  });
+
+  it("allows finalize when QC repair loop passed", async () => {
+    const { validateQcRepairLoopGate } = await import("./index.js");
+    const state = {
+      qc_repair_loop: { terminal_outcome: "pass" },
+    } as unknown as LoopState;
+    const config = { enabled: true, repairRouting: "route" } as unknown as QcConfig;
+    expect(validateQcRepairLoopGate(state, config)).toBeNull();
+  });
+
+  it("waives the gate when repairRouting is not active (log mode)", async () => {
+    const { validateQcRepairLoopGate } = await import("./index.js");
+    const state = {} as LoopState;
+    const config = { enabled: true, repairRouting: "log" } as unknown as QcConfig;
+    expect(validateQcRepairLoopGate(state, config)).toBeNull();
+  });
+
+  it("waives the gate when QC is disabled", async () => {
+    const { validateQcRepairLoopGate } = await import("./index.js");
+    const state = {} as LoopState;
+    const config = { enabled: false, repairRouting: "route" } as unknown as QcConfig;
+    expect(validateQcRepairLoopGate(state, config)).toBeNull();
+  });
+});
+
+// ---- Missing QC artifact pointer warnings ----------------------------------
+
+describe("warnOnMissingQcArtifacts", () => {
+  let testDir: string;
+
+  beforeEach(() => {
+    testDir = makeTestDir();
+  });
+
+  afterEach(() => {
+    rmSync(testDir, { recursive: true, force: true });
+  });
+
+  it("warns when cluster-state QC pointers reference missing artifacts", async () => {
+    const { warnOnMissingQcArtifacts } = await import("./index.js");
+    const clusterDir = join(testDir, ".polaris", "clusters", "POL-6");
+    mkdirSync(clusterDir, { recursive: true });
+    const missingArtifactPath = join(clusterDir, "qc", "run-a.json");
+    const missingRawPath = join(testDir, "missing-raw.log");
+
+    const clusterState: ClusterState = {
+      schema_version: "1.0",
+      cluster_id: "POL-6",
+      state_generation: 1,
+      child_states: [],
+      claim_metadata: {},
+      packet_pointers: {},
+      result_pointers: {},
+      validation_results: {},
+      commits: {},
+      tracker_mutations: {},
+      blockers: [],
+      qc_runs: {
+        "run-a": {
+          artifact_path: missingArtifactPath,
+          status: "passed",
+          provider: "coderabbit",
+          started_at: new Date().toISOString(),
+          completed_at: new Date().toISOString(),
+          raw_artifact_paths: [missingRawPath],
+        },
+      },
+    };
+
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    warnOnMissingQcArtifacts(clusterState, testDir);
+
+    expect(warnSpy).toHaveBeenCalledTimes(2);
+    const messages = warnSpy.mock.calls.map((c) => String(c[0]));
+    expect(messages.some((m) => m.includes(missingArtifactPath))).toBe(true);
+    expect(messages.some((m) => m.includes(missingRawPath))).toBe(true);
+
+    warnSpy.mockRestore();
+  });
+});
+
+// ---- runFinalize QC repair-loop gate integration ---------------------------
+
+describe("runFinalize QC repair-loop gate integration", () => {
+  let testDir: string;
+
+  beforeEach(() => {
+    testDir = makeTestDir();
+  });
+
+  afterEach(() => {
+    rmSync(testDir, { recursive: true, force: true });
+  });
+
+  it("blocks before commit when QC repair loop ended with all-providers-failed", async () => {
+    const { runFinalize } = await import("./index.js");
+    const stateFile = writeCanonicalState(testDir, "POL-6", {
+      qc_repair_loop: { terminal_outcome: "all-providers-failed" },
+    });
+    writeEmptyAtlas(testDir);
+    writeDurableClusterArtifacts(testDir, "POL-6");
+
+    // Non-artifact implementation evidence required by the evidence gate.
+    stageFile(testDir, "src/impl.ts", "export const impl = true;\n");
+
+    // QC enabled with active repair routing but no providers configured; the
+    // completed-cluster QC gate returns "pass" (no providers), then the
+    // repair-loop gate must block because terminal_outcome is all-providers-failed.
+    writeFileSync(
+      join(testDir, "polaris.config.json"),
+      JSON.stringify(
+        {
+          version: "1.0",
+          canon: { checkOnFinalize: false },
+          qc: {
+            enabled: true,
+            repairRouting: "route",
+            maxRepairRounds: 2,
+            providers: {},
+          },
+        },
+        null,
+        2,
+      ),
+      "utf-8",
+    );
+
+    execFileSync("git", ["checkout", "-b", "pol-6-delivery"], { cwd: testDir, stdio: "pipe" });
+
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation((() => {
+      throw new Error("process.exit called");
+    }) as never);
+    const stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+
+    await expect(
+      runFinalize({ repoRoot: testDir, stateFile, skipDelivery: true }),
+    ).rejects.toThrow("process.exit called");
+
+    const stderr = stderrSpy.mock.calls.map((c) => String(c[0])).join("");
+    expect(stderr).toContain("QC repair-loop gate failed");
+    expect(stderr).toContain("all-providers-failed");
+
+    exitSpy.mockRestore();
+    stderrSpy.mockRestore();
   });
 });

@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, it, expect } from "vitest";
 import { QcProviderRegistry } from "./provider.js";
 import { CodeRabbitQcProvider } from "./providers/coderabbit.js";
@@ -10,7 +11,7 @@ import emptyFixture from "./fixtures/coderabbit-empty.json";
 import type { QcConfig, QcProviderConfig } from "../config/schema.js";
 
 function loadFixtureText(name: string): string {
-  return readFileSync(new URL(`./fixtures/${name}`, import.meta.url), "utf-8");
+  return readFileSync(join("src/qc/fixtures", name), "utf-8");
 }
 
 describe("QcProviderRegistry", () => {

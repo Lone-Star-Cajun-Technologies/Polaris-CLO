@@ -280,8 +280,8 @@ describe("evidence confidence", () => {
       qcDir: null,
       runReportPath: null,
     });
-    // 3 available out of 3 refs (run-state, telemetry, cluster-state) → high
-    expect(result.evidence_confidence).toBe("high");
+    // Run-report is now counted as an expected ref, so 3/4 lands at medium.
+    expect(result.evidence_confidence).toBe("medium");
   });
 
   it("returns medium when some refs are unavailable (e.g. qc future)", () => {

@@ -12,7 +12,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { mkdirSync, rmSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync } from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
 import {
@@ -303,6 +303,16 @@ describe("runQcRepairLoop", () => {
 
     expect(result.outcome).toBe("all-providers-failed");
     expect(dispatch).not.toHaveBeenCalled();
+
+    // POL-485 regression: terminal outcome must be recorded in telemetry.
+    const telemetry = readFileSync(path.join(tmpDir, "telemetry.jsonl"), "utf-8")
+      .trim()
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => JSON.parse(line));
+    const terminal = telemetry.find((e) => e.event === "qc-repair-loop-terminal");
+    expect(terminal).toBeDefined();
+    expect(terminal.outcome).toBe("all-providers-failed");
   });
 
   it("exits with medic-referral when a repair worker fails", async () => {

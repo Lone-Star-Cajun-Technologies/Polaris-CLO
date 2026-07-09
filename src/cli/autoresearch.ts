@@ -117,6 +117,12 @@ export function createSolCommand(options: SolCommandOptions): Command {
     .option("--no-write", "Skip writing artifact files")
     .action((runId: string, cmdOptions: { repoRoot: string; format: string; json?: boolean; write: boolean }) => {
       const root = resolve(cmdOptions.repoRoot ?? repoRoot);
+      if (cmdOptions.format !== "markdown" && cmdOptions.format !== "json") {
+        process.stderr.write(
+          `sol autoresearch error: invalid --format "${cmdOptions.format}" (expected "markdown" or "json")\n`,
+        );
+        process.exit(1);
+      }
       try {
         assertPolarisDevContext(root);
       } catch (err) {
@@ -131,50 +137,56 @@ export function createSolCommand(options: SolCommandOptions): Command {
         evidence = aggregateSolEvidence(artifacts);
       } catch (err) {
         process.stderr.write(
-          `sol report error: cannot load run artifacts: ${err instanceof Error ? err.message : String(err)}\n`,
+          `sol autoresearch error: cannot load run artifacts: ${err instanceof Error ? err.message : String(err)}\n`,
         );
         process.exit(1);
       }
 
-      const report = computeSolScoreReport(evidence);
-      const scorecards = computeAllScorecards(evidence);
-      const qcRecommendations = generateQcRecommendations(evidence);
+      try {
+        const report = computeSolScoreReport(evidence);
+        const scorecards = computeAllScorecards(evidence);
+        const qcRecommendations = generateQcRecommendations(evidence);
 
-      let evaluationPath: string | undefined;
-      let scorecardPaths: string[] | undefined;
-      let markdownPath: string | undefined;
+        let evaluationPath: string | undefined;
+        let scorecardPaths: string[] | undefined;
+        let markdownPath: string | undefined;
 
-      const evaluationRecord = buildEvaluationRecord(report);
-
-      if (cmdOptions.write) {
-        evaluationPath = writeEvaluationRecord(root, report).path;
-        scorecardPaths = writeScorecardSet(root, scorecards);
+        const evaluationRecord = buildEvaluationRecord(report);
         const rendered = renderSolMarkdown(evaluationRecord, scorecards, qcRecommendations);
-        markdownPath = writeSolMarkdownReport(root, runId, rendered.markdown);
-      }
 
-      const outputFormat = cmdOptions.json || cmdOptions.format === "json" ? "json" : "markdown";
+        if (cmdOptions.write) {
+          evaluationPath = writeEvaluationRecord(root, report).path;
+          scorecardPaths = writeScorecardSet(root, scorecards);
+          markdownPath = writeSolMarkdownReport(root, runId, rendered.markdown);
+        }
 
-      if (outputFormat === "json") {
-        const output = JSON.stringify(
-          {
-            run_id: runId,
-            evaluation: evaluationRecord,
-            scorecards,
-            qc_recommendations: qcRecommendations,
-            artifacts: {
-              evaluation: evaluationPath,
-              scorecards: scorecardPaths,
-              markdown: markdownPath,
+        const outputFormat = cmdOptions.json || cmdOptions.format === "json" ? "json" : "markdown";
+
+        if (outputFormat === "json") {
+          const output = JSON.stringify(
+            {
+              run_id: runId,
+              evaluation: evaluationRecord,
+              scorecards,
+              qc_recommendations: qcRecommendations,
+              artifacts: {
+                evaluation: evaluationPath,
+                scorecards: scorecardPaths,
+                markdown: markdownPath,
+              },
             },
-          },
-          null,
-          2,
+            null,
+            2,
+          );
+          process.stdout.write(`${output}\n`);
+        } else {
+          process.stdout.write(rendered.markdown);
+        }
+      } catch (err) {
+        process.stderr.write(
+          `sol autoresearch error: ${err instanceof Error ? err.message : String(err)}\n`,
         );
-        process.stdout.write(`${output}\n`);
-      } else {
-        const rendered = renderSolMarkdown(evaluationRecord, scorecards, qcRecommendations);
-        process.stdout.write(rendered.markdown);
+        process.exit(1);
       }
     });
 

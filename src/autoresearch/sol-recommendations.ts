@@ -677,7 +677,7 @@ function extractValidationEvidence(
   );
   return {
     validation_outcome: rawMetrics.validation_outcome,
-    passed_commands: rawMetrics.passed_commands ?? [],
+    passed_commands: [...(rawMetrics.passed_commands ?? [])],
     validation_score: valSub?.score ?? null,
   };
 }
@@ -688,15 +688,15 @@ function deriveVerdict(
 ): ScorecardVerdict {
   const { subscores, aggregate_score, recommendation_inputs } = scorecard;
 
+  // Blocking QC findings always contradict.
+  if ((qcEvidence.blocking_findings ?? 0) > 0) return "contradicted";
+
   // confirmed_signal subscore is the strongest direct verdict signal.
   const confirmed = subscores.find((s) => s.dimension === "confirmed_signal");
   if (confirmed !== undefined && confirmed.score !== null) {
     if (confirmed.score >= 0.9) return "supported";
     if (confirmed.score <= 0.1) return "contradicted";
   }
-
-  // Blocking QC findings always contradict.
-  if ((qcEvidence.blocking_findings ?? 0) > 0) return "contradicted";
 
   // Aggregate score determines verdict; intervention/router issues limit to inconclusive.
   if (aggregate_score !== null) {
@@ -763,6 +763,7 @@ export function scorecardToRecommendationSummary(
   const verdict = deriveVerdict(scorecard, qc);
   const confidence = confidenceFromScorecard(scorecard);
   const affected = affectedFromScorecard(scorecard);
+  const clonedSourceRefs = source_refs.map((ref) => ({ ...ref }));
 
   return {
     scorecard_id: scorecard.scorecard_id,
@@ -772,11 +773,11 @@ export function scorecardToRecommendationSummary(
     verdict,
     aggregate_score: scorecard.aggregate_score,
     confidence,
-    low_scoring_dimensions: recommendation_inputs.low_scoring_dimensions,
+    low_scoring_dimensions: [...recommendation_inputs.low_scoring_dimensions],
     quality_per_token,
     qc,
     validation,
-    source_refs,
+    source_refs: clonedSourceRefs,
     intervention_detected: recommendation_inputs.intervention_detected,
     router_issue_detected: recommendation_inputs.router_issue_detected,
   };

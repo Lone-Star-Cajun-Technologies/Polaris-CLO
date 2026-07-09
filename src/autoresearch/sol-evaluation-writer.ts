@@ -43,12 +43,13 @@ export function getSolReportsDir(repoRoot: string): string {
 
 function safeFilename(value: string): string {
   // Prevent path traversal and reserved characters while keeping readability.
-  return value
+  const sanitized = value
     .replace(/[\\/]+/g, "-")
     .replace(/[:\?*"<>|]+/g, "-")
     .replace(/\.{2,}/g, "-")
     .replace(/^[.]+/, "")
     .trim();
+  return sanitized.length > 0 ? sanitized : "unnamed";
 }
 
 // ──────────────────────────────────────────────

@@ -350,7 +350,7 @@ export function validateQcRepairLoopGate(
 
 // ── Authoritative completed-child state cross-check ───────────────────────────
 
-function warnOnMissingQcArtifacts(clusterState: ClusterState | null, repoRoot: string): void {
+export function warnOnMissingQcArtifacts(clusterState: ClusterState | null, repoRoot: string): void {
   if (!clusterState) return;
   const validation = validateQcArtifactPointers(clusterState.qc_runs);
   if (validation.ok) return;

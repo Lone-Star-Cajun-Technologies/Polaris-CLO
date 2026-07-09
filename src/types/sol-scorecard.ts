@@ -107,7 +107,7 @@ export type SolScorecardSubject =
  * The observation window a scorecard covers.
  *
  * For run-scoped scorecards: run_id and cluster_id are set.
- * For aggregate scorecards: time_window, route, or task_type may be set instead.
+ * For aggregate scorecards: window_start/window_end and sample_count may be set.
  */
 export interface SolScorecardWindow {
   /** Run identifier, when this scorecard is scoped to a single run. */
@@ -361,7 +361,7 @@ export interface SolScorecard {
   /** Per-dimension subscores with formula versions. */
   subscores: SolSubscore[];
   /**
-   * Aggregate score (weighted mean of non-null subscores).
+   * Aggregate score (simple mean of non-null subscores).
    * Null when availability is "unavailable" or all subscores are skipped.
    */
   aggregate_score: number | null;
@@ -477,8 +477,10 @@ export function buildRecommendationInputs(
     low_scoring_dimensions: lowScoringDimensions,
     skipped_dimensions: skippedDimensions,
     over_token_budget:
-      (rawMetrics.max_bootstrap_tokens !== null && rawMetrics.max_bootstrap_tokens > 150_000) ||
-      (rawMetrics.worker_tokens_used !== null && rawMetrics.worker_tokens_used > 200_000),
+      (rawMetrics.max_bootstrap_tokens !== null &&
+        rawMetrics.max_bootstrap_tokens > FOREMAN_TOKEN_EFFICIENCY_SPEC.budget) ||
+      (rawMetrics.worker_tokens_used !== null &&
+        rawMetrics.worker_tokens_used > WORKER_TOKEN_EFFICIENCY_SPEC.budget),
     intervention_detected:
       rawMetrics.user_intervened === true || rawMetrics.foreman_intervened === true,
     router_issue_detected:

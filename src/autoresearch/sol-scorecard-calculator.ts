@@ -205,7 +205,7 @@ function aggregateForProvider(
   failed: number;
   blocked: number;
   totalHeartbeats: number;
-  totalTokens: number;
+  totalTokens: number | null;
   validationPasses: number;
   validationFailures: number;
 } {
@@ -238,6 +238,7 @@ function aggregateForProvider(
   let blocked = 0;
   let totalHeartbeats = 0;
   let totalTokens = 0;
+  let tokenEvidenceMissing = false;
   let validationPasses = 0;
   let validationFailures = 0;
 
@@ -246,7 +247,11 @@ function aggregateForProvider(
     else if (c.status === "failed" || c.status === "error") failed++;
     else if (c.status === "blocked") blocked++;
     totalHeartbeats += c.heartbeat_count;
-    totalTokens += ev.tokens.tokens_by_child[c.child_id] ?? 0;
+    if (!Object.prototype.hasOwnProperty.call(ev.tokens.tokens_by_child, c.child_id)) {
+      tokenEvidenceMissing = true;
+    } else {
+      totalTokens += ev.tokens.tokens_by_child[c.child_id] ?? 0;
+    }
     const v = ev.validation.find((val) => val.child_id === c.child_id);
     const outcome = v?.outcome ?? c.validation;
     if (outcome === "passed") validationPasses++;
@@ -264,7 +269,7 @@ function aggregateForProvider(
     failed,
     blocked,
     totalHeartbeats,
-    totalTokens,
+    totalTokens: children.length > 0 && !tokenEvidenceMissing ? totalTokens : null,
     validationPasses,
     validationFailures,
   };
@@ -278,7 +283,7 @@ export function buildProviderRawMetrics(ev: SolEvidence, provider: string): SolS
     total_children: agg.children.length,
     workers_succeeded: agg.succeeded,
     workers_failed: agg.failed,
-    worker_tokens_used: agg.totalTokens > 0 ? agg.totalTokens : null,
+    worker_tokens_used: agg.totalTokens,
     validation_outcome: agg.validationPasses > 0 || agg.validationFailures > 0
       ? agg.validationFailures === 0
         ? "passed"
@@ -311,7 +316,7 @@ function aggregateForModel(
   failed: number;
   blocked: number;
   totalHeartbeats: number;
-  totalTokens: number;
+  totalTokens: number | null;
   validationPasses: number;
   validationFailures: number;
 } {
@@ -342,6 +347,7 @@ function aggregateForModel(
   let blocked = 0;
   let totalHeartbeats = 0;
   let totalTokens = 0;
+  let tokenEvidenceMissing = false;
   let validationPasses = 0;
   let validationFailures = 0;
 
@@ -350,7 +356,11 @@ function aggregateForModel(
     else if (c.status === "failed" || c.status === "error") failed++;
     else if (c.status === "blocked") blocked++;
     totalHeartbeats += c.heartbeat_count;
-    totalTokens += ev.tokens.tokens_by_child[c.child_id] ?? 0;
+    if (!Object.prototype.hasOwnProperty.call(ev.tokens.tokens_by_child, c.child_id)) {
+      tokenEvidenceMissing = true;
+    } else {
+      totalTokens += ev.tokens.tokens_by_child[c.child_id] ?? 0;
+    }
     const v = ev.validation.find((val) => val.child_id === c.child_id);
     const outcome = v?.outcome ?? c.validation;
     if (outcome === "passed") validationPasses++;
@@ -368,7 +378,7 @@ function aggregateForModel(
     failed,
     blocked,
     totalHeartbeats,
-    totalTokens,
+    totalTokens: children.length > 0 && !tokenEvidenceMissing ? totalTokens : null,
     validationPasses,
     validationFailures,
   };
@@ -382,7 +392,7 @@ export function buildModelRawMetrics(ev: SolEvidence, model: string): SolScoreca
     total_children: agg.children.length,
     workers_succeeded: agg.succeeded,
     workers_failed: agg.failed,
-    worker_tokens_used: agg.totalTokens > 0 ? agg.totalTokens : null,
+    worker_tokens_used: agg.totalTokens,
     validation_outcome: agg.validationPasses > 0 || agg.validationFailures > 0
       ? agg.validationFailures === 0
         ? "passed"
@@ -554,7 +564,7 @@ export function computeWorkerScorecard(
 
   return buildScorecard(
     "worker",
-    `${childId}-${ev.run_id}`,
+    childId,
     ev,
     rawMetrics,
     subscores,
@@ -829,6 +839,11 @@ function scoreRouteSelected(metrics: SolScorecardRawMetrics): SolSubscore {
 function scoreRouteCandidates(metrics: SolScorecardRawMetrics): SolSubscore {
   const count = metrics.router_candidates_count;
   if (count === null) return skippedSubscore("candidates", SOL_FORMULA_VERSIONS.ROUTE_CANDIDATES_V1, "no candidate count");
+  if (count === 0) {
+    return subscore("candidates", SOL_FORMULA_VERSIONS.ROUTE_CANDIDATES_V1, 0.0, "low", {
+      detail: "candidates=0",
+    });
+  }
   // 1 candidate = 0.5; 2 = 0.75; 3+ = 1.0
   const score = count >= 3 ? 1.0 : count === 2 ? 0.75 : 0.5;
   return subscore("candidates", SOL_FORMULA_VERSIONS.ROUTE_CANDIDATES_V1, score, count > 0 ? "high" : "low", {
@@ -837,14 +852,14 @@ function scoreRouteCandidates(metrics: SolScorecardRawMetrics): SolSubscore {
 }
 
 function scoreRouteFallbackPath(metrics: SolScorecardRawMetrics): SolSubscore {
-  if (!metrics.router_fallback_used) {
-    return subscore("fallback_path", SOL_FORMULA_VERSIONS.ROUTE_FALLBACK_PATH_V1, 1.0, "high", {
-      detail: "no fallback used",
-    });
-  }
   if (metrics.router_exhausted) {
     return subscore("fallback_path", SOL_FORMULA_VERSIONS.ROUTE_FALLBACK_PATH_V1, 0.0, "high", {
       detail: "fallback exhausted",
+    });
+  }
+  if (!metrics.router_fallback_used) {
+    return subscore("fallback_path", SOL_FORMULA_VERSIONS.ROUTE_FALLBACK_PATH_V1, 1.0, "high", {
+      detail: "no fallback used",
     });
   }
   const status = metrics.router_child_status;
@@ -977,8 +992,17 @@ export function computeAllScorecards(
     .map((c) => computeWorkerScorecard(ev, c.child_id, refs))
     .filter((s): s is SolScorecard => s !== null);
 
-  const providers = Array.from(new Set(ev.children.map((c) => c.provider).filter((p) => p)))
-    .map((provider) => computeProviderScorecard(ev, provider, refs));
+  const providerKeys = new Set<string>();
+  for (const child of ev.children) {
+    if (child.provider) providerKeys.add(child.provider);
+  }
+  for (const decision of ev.router.decisions) {
+    if (decision.selected_provider) providerKeys.add(decision.selected_provider);
+    for (const provider of decision.providers_tried) {
+      if (provider) providerKeys.add(provider);
+    }
+  }
+  const providers = Array.from(providerKeys).map((provider) => computeProviderScorecard(ev, provider, refs));
 
   const models = Array.from(new Set(ev.children.map((c) => c.grouping_keys.model).filter((m): m is string => !!m)))
     .map((model) => computeModelScorecard(ev, model, refs));

@@ -697,6 +697,37 @@ describe("qc repair loop evidence", () => {
     expect(ev.qc.provider_breakdown["coderabbit"]!.total).toBe(1);
     expect(ev.qc.provider_breakdown["coderabbit"]!.blocking).toBe(1);
   });
+
+  it("reports repair loop in-progress when qc_repair_loop state exists without terminal outcome", () => {
+    const ev = aggregateSolEvidence(
+      emptyArtifacts({
+        qcResults: [makeQcResult()],
+        currentState: {
+          qc_repair_loop: {
+            terminal_outcome: null,
+            current_round: 1,
+            max_rounds: 2,
+          },
+        },
+        telemetryEvents: [
+          { event: "qc-repair-manifest-compiled", packet_count: 1 },
+        ],
+      }),
+    );
+    expect(ev.qc.repair_loop?.status).toBe("in-progress");
+    expect(ev.qc.repair_loop?.rounds_completed).toBe(1);
+  });
+
+  it("maps clusterState qc_repair_outcome when repair-loop telemetry is absent", () => {
+    const ev = aggregateSolEvidence(
+      emptyArtifacts({
+        qcResults: [makeQcResult({ allProvidersFailed: true, status: "failed" })],
+        clusterState: makeClusterState({ qc_repair_outcome: "all-providers-failed" }),
+      }),
+    );
+    expect(ev.qc.repair_loop?.status).toBe("all-providers-failed");
+    expect(ev.qc.repair_loop?.provider_attempts.all_providers_failed).toBe(true);
+  });
 });
 
 // ── Run evidence ──────────────────────────────────────────────────────────────

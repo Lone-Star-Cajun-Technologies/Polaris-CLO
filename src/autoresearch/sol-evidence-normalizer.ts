@@ -122,7 +122,7 @@ function buildSourceRefs(
   // Telemetry
   if (paths.telemetryPath) {
     const hasTelemetry = evidence.tokens.total_worker_heartbeats > 0 || evidence.foreman.escalation_events > 0;
-    refs.push(makeSourceRef("telemetry", paths.telemetryPath, hasTelemetry || evidence.run.status !== null));
+    refs.push(makeSourceRef("telemetry", paths.telemetryPath, hasTelemetry));
   } else {
     refs.push(makeSourceRef("telemetry", ".taskchain_artifacts/polaris-run/runs/<run-id>/telemetry.jsonl", false, "path not resolved"));
   }
@@ -130,8 +130,15 @@ function buildSourceRefs(
   // Cluster state — available when the path was resolved (regardless of QC status)
   if (paths.clusterStatePath) {
     refs.push(makeSourceRef("cluster-state", paths.clusterStatePath, true));
-  } else if (evidence.cluster_id) {
-    refs.push(makeSourceRef("cluster-state", `.polaris/clusters/${evidence.cluster_id}/cluster-state.json`, false, "not found"));
+  } else {
+    refs.push(
+      makeSourceRef(
+        "cluster-state",
+        `.polaris/clusters/${evidence.cluster_id ?? "unknown"}/cluster-state.json`,
+        false,
+        evidence.cluster_id ? "not found" : "cluster id not resolved",
+      ),
+    );
   }
 
   // Result packets (one per child with a known path)
@@ -152,6 +159,8 @@ function buildSourceRefs(
   // Run report
   if (paths.runReportPath) {
     refs.push(makeSourceRef("run-report", paths.runReportPath, true));
+  } else {
+    refs.push(makeSourceRef("run-report", `smartdocs/reports/sol/${evidence.run_id}-evaluation-report.md`, false, "path not resolved"));
   }
 
   return refs;
@@ -345,7 +354,7 @@ function materializeInterventions(evidence: SolEvidence): SolInterventionEvent[]
         category: "foreman-intervention",
         run_id: evidence.run_id,
         actor: "foreman",
-        intervention_type: "commit",
+        intervention_type: "unspecified",
         resolved: true,
       });
     }

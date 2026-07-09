@@ -1914,6 +1914,116 @@ describe("runParentLoop", () => {
     const budgetEvents = events.filter((e) => e.event === "budget-exhausted");
     expect(budgetEvents).toHaveLength(0);
   });
+
+  // Regression: POL-485 — final child completion must reach cluster-complete and
+  // enter the QC repair loop when findings are present, not emit budget-exhausted
+  // with next_child: null or skip repair-loop processing.
+  it("reaches cluster-complete and QC repair loop when final child completes (POL-485)", async () => {
+    const calls: MockCall[] = [];
+    vi.mocked(createAdapter).mockReturnValue(makeMockAdapter([SUCCESS_RESULT], calls));
+
+    // Budget equals cluster size and only one child remains. The buggy POL-485 path
+    // would halt with budget-exhausted after the final child; the fixed path must
+    // detect that open_children is empty and proceed to cluster-complete/QC handling.
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-485"],
+      completed_children: ["POL-485-a", "POL-485-b", "POL-485-c"],
+      children_completed: 3,
+      max_children_per_session: 4,
+    });
+
+    const { loadConfig } = await import("../config/loader.js");
+    vi.mocked(loadConfig).mockReturnValueOnce({
+      orchestration: { mode: "auto", notification_format: "verbose", auto_finalize: false },
+      execution: {
+        adapter: "mock",
+        providers: { mock: { command: "mock-worker" } },
+        rotation: ["mock"],
+      },
+      qc: { enabled: true, repairRouting: "route", maxRepairRounds: 2, providers: {} },
+    } as unknown as Required<import("../config/schema.js").PolarisConfig>);
+
+    // Completed-cluster QC returns one actionable finding → repair loop must run.
+    vi.mocked(runQcAtTrigger).mockResolvedValueOnce({
+      trigger: "completed-cluster",
+      results: [
+        {
+          schemaVersion: "1.0",
+          qcRunId: "qc-485",
+          runId: "test-run-001",
+          clusterId: "POL-99",
+          trigger: "completed-cluster",
+          provider: "coderabbit",
+          providerMode: "local",
+          startedAt: new Date().toISOString(),
+          completedAt: new Date().toISOString(),
+          status: "findings",
+          findings: [
+            {
+              findingId: "f-485",
+              severity: "medium",
+              category: "style",
+              title: "POL-485 finding",
+              fixAvailable: true,
+              autofixEligible: false,
+              attribution: { confidence: "high", reason: "changed-file-owner", childId: "POL-485" },
+              status: "open",
+              filePath: "src/foo.ts",
+            },
+          ],
+          rawArtifactPaths: [],
+          parserVersion: "coderabbit-1.0",
+          policyDecision: {
+            blocksDelivery: false,
+            requiresOperatorReview: false,
+            routedToRepair: true,
+            summary: "findings",
+          },
+        },
+      ],
+      action: "follow-up",
+      summary: "findings",
+    } as unknown as Awaited<ReturnType<typeof runQcAtTrigger>>);
+
+    vi.mocked(runQcRepairLoop).mockResolvedValueOnce({
+      outcome: "pass",
+      rounds_completed: 1,
+      final_qc_results: [],
+      loop_state: {
+        current_round: 1,
+        max_rounds: 2,
+        source_qc_run_ids: ["qc-485"],
+        manifest_path: null,
+        pending_packet_ids: [],
+        completed_packet_ids: [],
+        rerun_requested: false,
+        rerun_qc_run_ids: {},
+        terminal_outcome: "pass",
+        initiated_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      summary: "QC repair loop passed",
+    } as unknown as Awaited<ReturnType<typeof runQcRepairLoop>>);
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(result.haltReason).toBe("cluster-complete");
+    expect(result.childrenDispatched).toBe(1);
+    expect(result.message).not.toContain("budget-exhausted");
+    expect(calls).toHaveLength(1);
+    expect(calls[0].packet.active_child).toBe("POL-485");
+
+    // QC completed-cluster trigger was reached and repair loop was entered.
+    expect(vi.mocked(runQcAtTrigger)).toHaveBeenCalledWith(
+      expect.objectContaining({ trigger: "completed-cluster" }),
+    );
+    expect(vi.mocked(runQcRepairLoop)).toHaveBeenCalled();
+
+    // No budget-exhausted telemetry was emitted.
+    const telemetryFile = join(tmpDir, "runs", "test-run-001", "telemetry.jsonl");
+    const events = readJsonLines(telemetryFile);
+    expect(events.some((e) => e.event === "budget-exhausted")).toBe(false);
+  });
 });
 
 // ── Provider policy enforcement ──────────────────────────────────────────────

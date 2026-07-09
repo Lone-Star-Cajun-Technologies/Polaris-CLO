@@ -14,7 +14,7 @@ import { CodeRabbitQcProvider } from "./providers/coderabbit.js";
 import type { QcConfig, QcProviderConfig } from "../config/schema.js";
 
 function loadFixtureText(name: string): string {
-  return readFileSync(new URL(`./fixtures/${name}`, import.meta.url), "utf-8");
+  return readFileSync(join("src/qc/fixtures", name), "utf-8");
 }
 
 const FIXTURES = {
@@ -492,6 +492,24 @@ describe("executeQcProvider", () => {
     expect(result.status).toBe("failed");
     expect(result.providerAttempt?.failureReason).toBe("unusable-output");
     expect(result.providerAttempt?.parserResult).toBe("failed");
+  });
+
+  it("classifies status-only CodeRabbit JSONL as unusable-output", async () => {
+    const provider = new CodeRabbitQcProvider();
+    const result = await executeQcProvider(
+      provider,
+      { clusterId: "POL-1", runId: "run-1", branch: "main" },
+      {
+        repoRoot: process.cwd(),
+        runId: "run-1",
+        clusterId: "POL-1",
+        execFileImpl: makeExecFileImpl(loadFixtureText("coderabbit-status-only.jsonl"), "", 0) as unknown as typeof import("node:child_process").execFile,
+      },
+    );
+
+    expect(result.status).toBe("failed");
+    expect(result.providerAttempt?.failureReason).toBe("unusable-output");
+    expect(result.findings).toHaveLength(0);
   });
 
   it("classifies nonzero exit with empty findings as nonzero-exit", async () => {
