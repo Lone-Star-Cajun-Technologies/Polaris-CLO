@@ -39,7 +39,7 @@ describe("compileTreatmentWorkerPacket", () => {
     expect(packet.instructions.allowed_scope).toContain("src/foo.ts");
     expect(packet.instructions.validation_commands).toContain("npm run build");
     expect(packet.result_file_contract.result_file).toBe("/tmp/result.json");
-    expect(packet.context.branch).toBe("main");
-    expect(packet.context.repair_round).toBe(1);
+    expect(packet.context?.branch).toBe("main");
+    expect(packet.context?.repair_round).toBe(1);
   });
 });
