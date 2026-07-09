@@ -33,6 +33,12 @@ const BASE = {
   resultFile: "/repo/.polaris/clusters/POL-120/results/POL-121-test-uuid.json",
 };
 
+const PORTABLE_BASE = {
+  stateFile: ".taskchain_artifacts/polaris-run/current-state.json",
+  telemetryFile: ".taskchain_artifacts/polaris-run/runs/run-001/telemetry.jsonl",
+  resultFile: ".polaris/clusters/POL-120/results/POL-121-test-uuid.json",
+};
+
 // ── isWorkerPacket type guard ─────────────────────────────────────────────────
 
 describe("isWorkerPacket", () => {
@@ -56,7 +62,7 @@ describe("isWorkerPacket", () => {
   it("returns true for a compiled WorkerPacket (always has result_file_contract)", () => {
     const packet = compileImplPacket({ ...BASE, childId: "POL-121" });
     expect(isWorkerPacket(packet)).toBe(true);
-    expect(packet.result_file_contract.result_file).toBe(BASE.resultFile);
+    expect(packet.result_file_contract.result_file).toBe(PORTABLE_BASE.resultFile);
   });
 
   it("returns false if result_file_contract is missing", () => {
@@ -204,7 +210,7 @@ describe("compileImplPacket", () => {
 
   it("always populates result_file_contract from resultFile", () => {
     const p = compileImplPacket({ ...BASE, childId: "POL-121" });
-    expect(p.result_file_contract.result_file).toBe(BASE.resultFile);
+    expect(p.result_file_contract.result_file).toBe(PORTABLE_BASE.resultFile);
   });
 
   it("uses the provided resultFile in result_file_contract", () => {
@@ -261,6 +267,19 @@ describe("compileFinalizePacket", () => {
     expect(stepsText).toContain("main");
   });
 
+  it("normalizes repo-local finalize packet paths to repo-relative paths", () => {
+    const repoRoot = process.cwd();
+    const p = compileFinalizePacket({
+      ...BASE,
+      stateFile: `${repoRoot}/.taskchain_artifacts/polaris-run/current-state.json`,
+      telemetryFile: `${repoRoot}/.taskchain_artifacts/polaris-run/runs/run-001/telemetry.jsonl`,
+      resultFile: `${repoRoot}/.polaris/clusters/POL-120/results/POL-120-finalize.json`,
+    });
+    expect(p.state_file).toBe(".taskchain_artifacts/polaris-run/current-state.json");
+    expect(p.telemetry_file).toBe(".taskchain_artifacts/polaris-run/runs/run-001/telemetry.jsonl");
+    expect(p.result_file_contract.result_file).toBe(".polaris/clusters/POL-120/results/POL-120-finalize.json");
+  });
+
   it("defaults targetBranch to main", () => {
     const p = compileFinalizePacket(BASE);
     expect(p.instructions.primary_goal).toContain("main");
@@ -278,7 +297,7 @@ describe("compileFinalizePacket", () => {
 
   it("always populates result_file_contract from resultFile", () => {
     const p = compileFinalizePacket(BASE);
-    expect(p.result_file_contract.result_file).toBe(BASE.resultFile);
+    expect(p.result_file_contract.result_file).toBe(PORTABLE_BASE.resultFile);
   });
 
   it("does not reference skill files", () => {
@@ -308,7 +327,7 @@ describe("compileStartupPacket", () => {
 
   it("always populates result_file_contract from resultFile", () => {
     const p = compileStartupPacket(BASE);
-    expect(p.result_file_contract.result_file).toBe(BASE.resultFile);
+    expect(p.result_file_contract.result_file).toBe(PORTABLE_BASE.resultFile);
   });
 });
 
@@ -342,7 +361,7 @@ describe("compilePreflightPacket", () => {
 
   it("always populates result_file_contract from resultFile", () => {
     const p = compilePreflightPacket(BASE);
-    expect(p.result_file_contract.result_file).toBe(BASE.resultFile);
+    expect(p.result_file_contract.result_file).toBe(PORTABLE_BASE.resultFile);
   });
 });
 
@@ -436,6 +455,20 @@ describe("allowed_scope derivation from issue body", () => {
     expect(p.instructions.primary_goal).toContain("src/loop");
   });
 
+  it("normalizes repo-local absolute packet paths to repo-relative paths", () => {
+    const repoRoot = process.cwd();
+    const p = compileImplPacket({
+      ...BASE,
+      childId: "POL-277",
+      stateFile: `${repoRoot}/.taskchain_artifacts/polaris-run/current-state.json`,
+      telemetryFile: `${repoRoot}/.taskchain_artifacts/polaris-run/runs/run-001/telemetry.jsonl`,
+      resultFile: `${repoRoot}/.polaris/clusters/POL-120/results/POL-277-test-uuid.json`,
+    });
+    expect(p.state_file).toBe(".taskchain_artifacts/polaris-run/current-state.json");
+    expect(p.telemetry_file).toBe(".taskchain_artifacts/polaris-run/runs/run-001/telemetry.jsonl");
+    expect(p.result_file_contract.result_file).toBe(".polaris/clusters/POL-120/results/POL-277-test-uuid.json");
+  });
+
   it("explicit allowedScope overrides body-derived scope", () => {
     const p = compileImplPacket({
       ...BASE,
@@ -491,7 +524,7 @@ describe("result_file_contract — prompt consistency", () => {
     const p = compileImplPacket({ ...BASE, childId: "POL-121" });
     const prompt = buildWorkerInstructions(p);
     expect(prompt).toContain(`SEALED RESULT FILE: ${p.result_file_contract.result_file}`);
-    expect(p.result_file_contract.result_file).toBe(BASE.resultFile);
+    expect(p.result_file_contract.result_file).toBe(PORTABLE_BASE.resultFile);
   });
 
   it("every packet type includes SEALED RESULT FILE in its rendered prompt", () => {
@@ -503,7 +536,7 @@ describe("result_file_contract — prompt consistency", () => {
     for (const packet of [implPacket, startupPacket, finalizePacket, preflightPacket]) {
       const prompt = buildWorkerInstructions(packet);
       expect(prompt).toContain("SEALED RESULT FILE:");
-      expect(prompt).toContain(BASE.resultFile);
+      expect(prompt).toContain(PORTABLE_BASE.resultFile);
     }
   });
 
@@ -519,7 +552,7 @@ describe("result_file_contract — prompt consistency", () => {
     const serialized = JSON.parse(JSON.stringify(p)) as Record<string, unknown>;
     const rfc = serialized.result_file_contract as Record<string, unknown>;
     expect(rfc).toBeDefined();
-    expect(rfc.result_file).toBe(BASE.resultFile);
+    expect(rfc.result_file).toBe(PORTABLE_BASE.resultFile);
     expect(rfc.result_required_fields).toBeDefined();
   });
 });

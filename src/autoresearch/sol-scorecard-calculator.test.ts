@@ -241,6 +241,24 @@ describe("computeForemanScorecard", () => {
     expect(qc?.formula_version).toBe(SOL_FORMULA_VERSIONS.QC_REPAIR_LOOP_V1);
   });
 
+  it("uses distinct formula versions for dependency, dispatch, and recovery", () => {
+    const ev = baseEvidence({
+      run: { ...baseEvidence().run, total_children: 1 },
+      children: [makeChild()],
+      worker: { ...baseEvidence().worker, workers_succeeded: 1 },
+    });
+    const scorecard = computeForemanScorecard(ev);
+    expect(scorecard.subscores.find((s) => s.dimension === "dependency")?.formula_version).toBe(
+      SOL_FORMULA_VERSIONS.DEPENDENCY_RATE_V1,
+    );
+    expect(scorecard.subscores.find((s) => s.dimension === "dispatch")?.formula_version).toBe(
+      SOL_FORMULA_VERSIONS.DISPATCH_RATE_V1,
+    );
+    expect(scorecard.subscores.find((s) => s.dimension === "recovery")?.formula_version).toBe(
+      SOL_FORMULA_VERSIONS.RECOVERY_BINARY_V1,
+    );
+  });
+
   it("adds quality_per_token when token and composite evidence exist", () => {
     const ev = baseEvidence({
       foreman: { ...baseEvidence().foreman, max_bootstrap_tokens: 75_000 },
@@ -298,6 +316,18 @@ describe("computeWorkerScorecard", () => {
     const qc = scorecard!.subscores.find((s) => s.dimension === "qc");
     expect(qc?.score).toBeNull();
     expect(qc?.skipped_reason).toBeTruthy();
+  });
+
+  it("uses distinct formula versions for qc and repair_iterations", () => {
+    const child = makeChild();
+    const ev = baseEvidence({ children: [child], qc: qcEvidence() });
+    const scorecard = computeWorkerScorecard(ev, "POL-001");
+    expect(scorecard?.subscores.find((s) => s.dimension === "qc")?.formula_version).toBe(
+      SOL_FORMULA_VERSIONS.QC_OUTCOME_V1,
+    );
+    expect(scorecard?.subscores.find((s) => s.dimension === "repair_iterations")?.formula_version).toBe(
+      SOL_FORMULA_VERSIONS.QC_REPAIR_LOOP_V1,
+    );
   });
 
   it("computes quality_per_token from worker composite and tokens", () => {

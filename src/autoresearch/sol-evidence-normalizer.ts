@@ -18,6 +18,7 @@
  *     "medium" when some are absent, "low" when most are absent.
  */
 
+import { basename } from "node:path";
 import type { SolEvidence } from "../types/sol-evidence.js";
 import type {
   SolMetricEvent,
@@ -102,6 +103,25 @@ function computeConfidence(refs: SolSourceRef[]): SolScoreConfidence {
   return "none";
 }
 
+export function hasTelemetryEvidence(evidence: SolEvidence): boolean {
+  return evidence.tokens.total_worker_heartbeats > 0 || evidence.foreman.escalation_events > 0;
+}
+
+export function buildDefaultEvidenceSourceRefs(evidence: SolEvidence): SolSourceRef[] {
+  const refs: SolSourceRef[] = [
+    makeSourceRef("run-state", ".taskchain_artifacts/polaris-run/current-state.json", evidence.run.status !== null),
+    makeSourceRef(
+      "telemetry",
+      `.taskchain_artifacts/polaris-run/runs/${evidence.run_id}/telemetry.jsonl`,
+      hasTelemetryEvidence(evidence),
+    ),
+  ];
+  if (evidence.cluster_id) {
+    refs.push(makeSourceRef("cluster-state", `.polaris/clusters/${evidence.cluster_id}/cluster-state.json`, true));
+  }
+  return refs;
+}
+
 // ──────────────────────────────────────────────
 // Source ref builders
 // ──────────────────────────────────────────────
@@ -121,8 +141,7 @@ function buildSourceRefs(
 
   // Telemetry
   if (paths.telemetryPath) {
-    const hasTelemetry = evidence.tokens.total_worker_heartbeats > 0 || evidence.foreman.escalation_events > 0;
-    refs.push(makeSourceRef("telemetry", paths.telemetryPath, hasTelemetry || evidence.run.status !== null));
+    refs.push(makeSourceRef("telemetry", paths.telemetryPath, hasTelemetryEvidence(evidence)));
   } else {
     refs.push(makeSourceRef("telemetry", ".taskchain_artifacts/polaris-run/runs/<run-id>/telemetry.jsonl", false, "path not resolved"));
   }
@@ -136,7 +155,10 @@ function buildSourceRefs(
 
   // Result packets (one per child with a known path)
   for (const child of evidence.children) {
-    const packetPath = paths.resultPacketPaths.find((p) => p.includes(child.child_id));
+    const packetPath = paths.resultPacketPaths.find((p) => {
+      const fileName = basename(p);
+      return fileName === `${child.child_id}.json` || fileName.startsWith(`${child.child_id}-`);
+    });
     const path = packetPath ?? `.polaris/clusters/${evidence.cluster_id ?? "unknown"}/results/${child.child_id}.json`;
     refs.push(makeSourceRef("result-packet", path, packetPath !== undefined));
   }
@@ -255,6 +277,11 @@ function materializeQcFindings(evidence: SolEvidence): SolQcFindingEvent[] {
   if (evidence.qc.availability !== "available") return [];
 
   const events: SolQcFindingEvent[] = [];
+  const stableProvider = (providers: string[]): string => {
+    const unique = Array.from(new Set(providers.filter((provider) => provider.length > 0)));
+    return unique.length === 1 ? unique[0]! : "unknown";
+  };
+  const aggregateProvider = stableProvider(Object.keys(evidence.qc.provider_breakdown));
 
   // Blocking open findings by severity
   const severities = ["critical", "high", "medium", "low", "info"] as const;
@@ -265,7 +292,7 @@ function materializeQcFindings(evidence: SolEvidence): SolQcFindingEvent[] {
       events.push({
         category: "qc-finding",
         run_id: evidence.run_id,
-        qc_provider: Object.keys(evidence.qc.provider_breakdown)[0] ?? "unknown",
+        qc_provider: aggregateProvider,
         severity: sev,
         blocking: isHighSeverity && evidence.qc.blocks_delivery,
         autofixed: false,
@@ -280,7 +307,7 @@ function materializeQcFindings(evidence: SolEvidence): SolQcFindingEvent[] {
 
   // Emit a single unvalidated aggregate event when unvalidated_findings > 0
   if (evidence.qc.unvalidated_findings > 0) {
-    const noisyProvider = evidence.qc.noisy_providers[0] ?? "unknown";
+    const noisyProvider = stableProvider(evidence.qc.noisy_providers);
     events.push({
       category: "qc-finding",
       run_id: evidence.run_id,
@@ -291,7 +318,10 @@ function materializeQcFindings(evidence: SolEvidence): SolQcFindingEvent[] {
       repaired: false,
       waived: false,
       unvalidated: true,
-      summary: `${evidence.qc.unvalidated_findings} unvalidated finding(s) from provider ${noisyProvider}`,
+      summary:
+        noisyProvider === "unknown"
+          ? `${evidence.qc.unvalidated_findings} unvalidated finding(s)`
+          : `${evidence.qc.unvalidated_findings} unvalidated finding(s) from provider ${noisyProvider}`,
       attribution_confidence: "none",
     });
   }
@@ -345,7 +375,7 @@ function materializeInterventions(evidence: SolEvidence): SolInterventionEvent[]
         category: "foreman-intervention",
         run_id: evidence.run_id,
         actor: "foreman",
-        intervention_type: "commit",
+        intervention_type: "unspecified",
         resolved: true,
       });
     }
@@ -367,7 +397,7 @@ function materializeInterventions(evidence: SolEvidence): SolInterventionEvent[]
       run_id: evidence.run_id,
       actor: "user",
       intervention_type: "out-of-scope",
-      resolved: evidence.intervention.blocked_event_count > 0,
+      resolved: evidence.intervention.blocked_event_count === 0,
     });
   }
 

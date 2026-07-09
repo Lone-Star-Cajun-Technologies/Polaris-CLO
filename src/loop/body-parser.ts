@@ -170,6 +170,43 @@ function stripTrailingParenthetical(s: string): string {
   return s.replace(/\s*\([^)]*\)\s*$/, '').trim();
 }
 
+const DIRECTORY_SCOPE_TOKENS = new Set([
+  "src",
+  "test",
+  "tests",
+  "smartdocs",
+  "docs",
+  ".polaris",
+  ".taskchain_artifacts",
+]);
+
+function normalizeScopeToken(token: string, hadTrailingProse: boolean): string | null {
+  if (!token) return null;
+  if (token.endsWith("/")) {
+    return `${token}**`;
+  }
+  if (/[?*[\]{}]/.test(token) || token.includes("/") || /\.[A-Za-z0-9]+$/.test(token)) {
+    return token;
+  }
+  if (hadTrailingProse && DIRECTORY_SCOPE_TOKENS.has(token)) {
+    return `${token}/**`;
+  }
+  return null;
+}
+
+function normalizeScopeEntry(s: string): string | null {
+  const withoutCodeQuotes = s.replace(/`([^`]+)`/g, "$1").trim();
+  const withoutParenthetical = stripTrailingParenthetical(withoutCodeQuotes)
+    .replace(/\s+[—-]\s+.*$/u, "")
+    .trim();
+  if (!withoutParenthetical) return null;
+  const tokenMatch = withoutParenthetical.match(/^([^\s]+)/);
+  if (!tokenMatch) return null;
+  const token = tokenMatch[1]!.trim();
+  const hadTrailingProse = withoutParenthetical.length > token.length;
+  return normalizeScopeToken(token, hadTrailingProse);
+}
+
 /**
  * Extracts list items from the first section whose header matches a provided set.
  *
@@ -181,6 +218,15 @@ function stripTrailingParenthetical(s: string): string {
  * @returns An array of parsed list-item strings from the first matching section, or an empty array if no match is found
  */
 function findSection(sections: Map<string, string>, headers: Set<string>): string[] {
+  for (const [header, content] of sections) {
+    if (headers.has(header)) {
+      return parseListItems(content);
+    }
+  }
+  return [];
+}
+
+function findRawScopeSection(sections: Map<string, string>, headers: Set<string>): string[] {
   for (const [header, content] of sections) {
     if (headers.has(header)) {
       return parseListItems(content);
@@ -203,7 +249,9 @@ function findSection(sections: Map<string, string>, headers: Set<string>): strin
 function findScopeSection(sections: Map<string, string>, headers: Set<string>): string[] {
   for (const [header, content] of sections) {
     if (headers.has(header)) {
-      return parseListItems(content).map(stripTrailingParenthetical).filter((s) => s.length > 0);
+      return parseListItems(content)
+        .map(normalizeScopeEntry)
+        .filter((s): s is string => typeof s === "string" && s.length > 0);
     }
   }
   return [];
@@ -252,9 +300,12 @@ export function parseIssueBody(body: string): ParsedIssueBody {
   }
   const sections = parseSections(body);
 
-  const rawScope = findScopeSection(sections, SCOPE_HEADERS);
-  const scopeBlocked = rawScope.length > 0 && rawScope.every((item) => TBD_BLOCKED_RE.test(item));
-  const filteredScope = rawScope.filter((item) => !TBD_BLOCKED_RE.test(item));
+  const rawScopeItems = findRawScopeSection(sections, SCOPE_HEADERS);
+  const scopeBlocked = rawScopeItems.length > 0 && rawScopeItems.every((item) => TBD_BLOCKED_RE.test(item));
+  const filteredScope = rawScopeItems
+    .filter((item) => !TBD_BLOCKED_RE.test(item))
+    .map(normalizeScopeEntry)
+    .filter((item): item is string => typeof item === "string" && item.length > 0);
 
   return {
     scope: scopeBlocked ? [] : filteredScope,

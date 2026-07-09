@@ -159,6 +159,15 @@ describe("source refs", () => {
     expect(ref!.available).toBe(true);
   });
 
+  it("does not mark telemetry ref available from run status alone", () => {
+    const result = normalizeSolEvidence(
+      makeEvidence({ run: { ...makeEvidence().run, status: "done" } }),
+      { ...emptyPaths(), telemetryPath: ".taskchain_artifacts/polaris-run/runs/test-run-001/telemetry.jsonl" },
+    );
+    const ref = result.source_refs.find((r) => r.kind === "telemetry");
+    expect(ref!.available).toBe(false);
+  });
+
   it("emits a result-packet ref for each child", () => {
     const evidence = makeEvidence({
       cluster_id: "POL-000",
@@ -191,7 +200,7 @@ describe("source refs", () => {
     expect(packetRefs).toHaveLength(1);
   });
 
-  it("marks a result-packet ref available when path contains the child_id", () => {
+  it("marks a result-packet ref available when basename matches the child_id", () => {
     const evidence = makeEvidence({
       children: [
         {
@@ -223,6 +232,40 @@ describe("source refs", () => {
     });
     const ref = result.source_refs.find((r) => r.kind === "result-packet");
     expect(ref!.available).toBe(true);
+  });
+
+  it("does not match prefix-overlapping child ids with a loose substring check", () => {
+    const evidence = makeEvidence({
+      children: [
+        {
+          child_id: "POL-001",
+          run_id: "test-run-001",
+          cluster_id: "POL-000",
+          status: "done",
+          validation: "passed",
+          commit: "abc",
+          next_recommended_action: "continue",
+          role: "worker",
+          provider: "devin",
+          skill_name: null,
+          packet_hash: "h",
+          worker_id: "w",
+          escalation_count: 0,
+          heartbeat_count: 1,
+          user_intervened: null,
+          foreman_intervened: null,
+          changed_files: [],
+          dispatch_epoch: null,
+          grouping_keys: {},
+        },
+      ],
+    });
+    const result = normalizeSolEvidence(evidence, {
+      ...emptyPaths(),
+      resultPacketPaths: [".polaris/clusters/POL-000/results/POL-0010-abc.json"],
+    });
+    const ref = result.source_refs.find((r) => r.kind === "result-packet");
+    expect(ref?.available).toBe(false);
   });
 
   it("emits a qc-finding ref when QC is available", () => {
@@ -698,6 +741,29 @@ describe("qc findings", () => {
     expect(ev.attribution_confidence).toBe("none");
     expect(ev.qc_provider).toBe("coderabbit");
   });
+
+  it("uses a stable unknown provider label for aggregate multi-provider findings", () => {
+    const evidence = makeEvidence({
+      qc: {
+        ...makeEvidence().qc,
+        availability: "available",
+        qc_run_count: 2,
+        total_findings: 2,
+        blocking_findings: 1,
+        open_by_severity: { critical: 0, high: 1, medium: 1, low: 0, info: 0 },
+        provider_breakdown: {
+          coderabbit: { total: 1, blocking: 1, unvalidated: 0 },
+          second: { total: 1, blocking: 0, unvalidated: 0 },
+        },
+        noisy_providers: ["coderabbit", "second"],
+        unvalidated_findings: 2,
+        blocks_delivery: true,
+      },
+    });
+    const result = normalizeSolEvidence(evidence);
+    const qcEvents = result.events.filter((e) => e.category === "qc-finding") as Array<{ qc_provider: string }>;
+    expect(qcEvents.every((event) => event.qc_provider === "unknown")).toBe(true);
+  });
 });
 
 // ── Intervention events ───────────────────────────────────────────────────────
@@ -786,6 +852,24 @@ describe("intervention events", () => {
     expect(ev.actor).toBe("foreman");
   });
 
+  it("uses unspecified foreman intervention type when no child attribution exists", () => {
+    const evidence = makeEvidence({
+      intervention: {
+        user_intervened: false,
+        foreman_intervened: true,
+        blocked_event_count: 0,
+        out_of_scope_count: 0,
+        state_repair_required: false,
+      },
+      children: [],
+    });
+    const result = normalizeSolEvidence(evidence);
+    const intervention = result.events.find((e) => e.category === "foreman-intervention") as
+      | { intervention_type: string }
+      | undefined;
+    expect(intervention?.intervention_type).toBe("unspecified");
+  });
+
   it("emits state-repair foreman-intervention when state_repair_required=true", () => {
     const evidence = makeEvidence({
       intervention: {
@@ -818,6 +902,7 @@ describe("intervention events", () => {
       (e) => e.category === "user-intervention" && (e as { intervention_type: string }).intervention_type === "out-of-scope",
     );
     expect(outOfScope).toHaveLength(1);
+    expect((outOfScope[0] as { resolved: boolean }).resolved).toBe(false);
   });
 
   it("emits no intervention events when all flags are false/zero", () => {

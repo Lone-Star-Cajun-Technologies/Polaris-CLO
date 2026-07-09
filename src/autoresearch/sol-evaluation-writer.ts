@@ -11,6 +11,7 @@
  *   - Reports:       smartdocs/reports/sol/<run-id>-evaluation-report.md
  */
 
+import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { SolScoreReport } from "../types/sol-score.js";
@@ -43,12 +44,18 @@ export function getSolReportsDir(repoRoot: string): string {
 
 function safeFilename(value: string): string {
   // Prevent path traversal and reserved characters while keeping readability.
-  return value
+  const sanitized = value
     .replace(/[\\/]+/g, "-")
     .replace(/[:\?*"<>|]+/g, "-")
     .replace(/\.{2,}/g, "-")
     .replace(/^[.]+/, "")
     .trim();
+  const base = sanitized.length > 0 ? sanitized : "artifact";
+  if (sanitized === value) {
+    return base;
+  }
+  const suffix = createHash("sha1").update(value).digest("hex").slice(0, 8);
+  return `${base}-${suffix}`;
 }
 
 // ──────────────────────────────────────────────
