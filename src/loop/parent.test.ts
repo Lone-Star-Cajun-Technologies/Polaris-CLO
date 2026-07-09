@@ -330,8 +330,25 @@ vi.mock("../config/loader.js", () => ({
     },
   })),
 }));
+vi.mock("../qc/index.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../qc/index.js")>();
+  return {
+    ...actual,
+    runQcAtTrigger: vi.fn(),
+    createQcRegistry: vi.fn(() => ({})),
+  };
+});
+vi.mock("../qc/repair-loop.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../qc/repair-loop.js")>();
+  return {
+    ...actual,
+    runQcRepairLoop: vi.fn(),
+  };
+});
 
 import { createAdapter } from "./adapters/registry.js";
+import { runQcAtTrigger } from "../qc/index.js";
+import { runQcRepairLoop } from "../qc/repair-loop.js";
 
 // ── Tests ────────────────────────────────────────────────────────────────────
 
@@ -1840,6 +1857,62 @@ describe("runParentLoop", () => {
       expect(packet.instructions.issue_context?.body).toContain("## Goal");
       expect(packet.instructions.allowed_scope).toContain("src/loop/**");
     }
+  });
+
+  // Regression: POL-510 — six-of-six children complete with budget exhausted at cluster size
+  // When open_children empties after the final child, the loop must proceed to cluster-complete
+  // and the QC repair-loop gate, not halt with budget-exhausted.
+  it("reaches cluster-complete when all six children complete and budget equals cluster size (POL-510)", async () => {
+    const calls: MockCall[] = [];
+    const sixChildren = ["POL-101", "POL-102", "POL-103", "POL-104", "POL-105", "POL-106"];
+    const mockAdapter = makeMockAdapter(
+      sixChildren.map(() => SUCCESS_RESULT),
+      calls,
+    );
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    // Budget == cluster size: max_children_per_session === 6, open children === 6
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: sixChildren,
+      children_completed: 0,
+      max_children_per_session: 6,
+    });
+
+    // QC enabled but no findings — repair loop should not be invoked
+    const { loadConfig } = await import("../config/loader.js");
+    vi.mocked(loadConfig).mockReturnValueOnce({
+      orchestration: { mode: "auto", notification_format: "verbose", auto_finalize: false },
+      execution: {
+        adapter: "mock",
+        providers: { mock: { command: "mock-worker" } },
+        rotation: ["mock"],
+      },
+      qc: { enabled: true, providers: [] },
+    } as unknown as Required<import("../config/schema.js").PolarisConfig>);
+
+    vi.mocked(runQcAtTrigger).mockResolvedValueOnce({
+      results: [],
+      trigger: "completed-cluster",
+    } as unknown as Awaited<ReturnType<typeof runQcAtTrigger>>);
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    // Must reach cluster-complete, not budget-exhausted
+    expect(result.haltReason).toBe("cluster-complete");
+    expect(result.childrenDispatched).toBe(6);
+    expect(calls).toHaveLength(6);
+    // QC was triggered (completed-cluster gate was reached)
+    expect(vi.mocked(runQcAtTrigger)).toHaveBeenCalledWith(
+      expect.objectContaining({ trigger: "completed-cluster" }),
+    );
+    // Repair loop was not invoked (no findings)
+    expect(vi.mocked(runQcRepairLoop)).not.toHaveBeenCalled();
+
+    // Verify no budget-exhausted event in telemetry
+    const telemetryFile = join(tmpDir, "runs", "test-run-001", "telemetry.jsonl");
+    const events = readJsonLines(telemetryFile);
+    const budgetEvents = events.filter((e) => e.event === "budget-exhausted");
+    expect(budgetEvents).toHaveLength(0);
   });
 });
 

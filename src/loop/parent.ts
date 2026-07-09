@@ -2357,35 +2357,40 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     }
 
     // ── Step 05 (post-dispatch): Re-check budget before next iteration ───
-    const postBudgetCheck = checkBudget({
-      childrenCompleted: state.context_budget.children_completed,
-      lastChildStatus: workerStatus,
-      policy: budgetPolicy,
-    });
-    if (postBudgetCheck.status === 'exhausted') {
-      const nextPending = state.open_children[0] ?? null;
-      if (!dryRun) {
-        writeStateAtomic(stateFile, {
-          ...state,
-          status: "budget-exhausted",
-          step_cursor: "budget-check",
-          next_open_child: nextPending,
-        });
-        appendTelemetry(telemetryFile, {
-          event: "budget-exhausted",
-          run_id: state.run_id,
-          children_completed: state.context_budget.children_completed,
-          next_child: nextPending,
-          reason: postBudgetCheck.reason,
-          timestamp: new Date().toISOString(),
-        });
+    // Skip when open_children is empty: the cluster is complete and the
+    // top-of-loop nextChild === null path handles cluster-complete and QC
+    // repair-loop. Halting here would bypass QC repair on final-child completion.
+    if (state.open_children.length > 0) {
+      const postBudgetCheck = checkBudget({
+        childrenCompleted: state.context_budget.children_completed,
+        lastChildStatus: workerStatus,
+        policy: budgetPolicy,
+      });
+      if (postBudgetCheck.status === 'exhausted') {
+        const nextPending = state.open_children[0] ?? null;
+        if (!dryRun) {
+          writeStateAtomic(stateFile, {
+            ...state,
+            status: "budget-exhausted",
+            step_cursor: "budget-check",
+            next_open_child: nextPending,
+          });
+          appendTelemetry(telemetryFile, {
+            event: "budget-exhausted",
+            run_id: state.run_id,
+            children_completed: state.context_budget.children_completed,
+            next_child: nextPending,
+            reason: postBudgetCheck.reason,
+            timestamp: new Date().toISOString(),
+          });
+        }
+        return {
+          haltReason: 'budget-exhausted',
+          childrenDispatched,
+          haltingChild: nextPending ?? undefined,
+          message: postBudgetCheck.reason,
+        };
       }
-      return {
-        haltReason: 'budget-exhausted',
-        childrenDispatched,
-        haltingChild: nextPending ?? undefined,
-        message: postBudgetCheck.reason,
-      };
     }
 
     // ── Step 06: CONTINUE (back to step 02) ─────────────────────────────
