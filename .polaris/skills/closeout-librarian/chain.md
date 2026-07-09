@@ -21,6 +21,20 @@ cognition archive, YAML frontmatter in doc files, sealed result JSON, librarian 
 **Prohibited writes:** Source code, runtime state files, telemetry JSONL, cluster plan,
 Linear issue status, PR creation.
 
+## Route Artifact Contract (POLARIS.md vs SUMMARY.md)
+
+- `POLARIS.md` is route-local operating doctrine. It captures folder responsibilities,
+  boundaries, invariants, commands/workflows, safety rules, and links to related canon.
+- `SUMMARY.md` is informational current-state memory. It captures current behavior,
+  recent changes synthesized into current state, known gaps, current caveats, and linked
+  canonical sources.
+- Evidence decides write scope. The librarian may update only `POLARIS.md`, only
+  `SUMMARY.md`, both files, or neither file when both remain accurate.
+- Recent-run/changelog material belongs in `SUMMARY.md` only when distilled into current
+  state. Do not append diary-style run logs.
+- Stable operating rules belong in `POLARIS.md`; do not duplicate them verbatim into
+  `SUMMARY.md`. Summaries should reference doctrine instead.
+
 ---
 
 ## Step Traversal Order
