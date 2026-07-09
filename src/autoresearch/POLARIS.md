@@ -18,6 +18,9 @@ Autoresearch is the evidence-scoring and proposal-routing sub-capability inside 
 - `routing.ts` — `routeProposals()`: files proposals as Linear issues (never auto-applied)
 - `gates.ts` — `ALL_GATES` registry and `GateResult` types; `readJsonLines()` helper
 - `dev-gate.ts` — `isPolarisDevContext()` and `assertPolarisDevContext()`: all autoresearch commands must call `assertPolarisDevContext()` before any file-system or network access
+- `sol-scorer.ts` — `computeSolScoreReport()`: computes per-run Foreman and worker dimension scores, composite scores, and confidence from aggregated `SolEvidence`
+- `sol-report.ts` — `generateReport()` / `formatReportCli()`: groups historical `SolScoreSnapshot`s into aggregate `SolReport` summaries and renders QC evidence
+- `sol-history.ts` — `appendSnapshot()` / `loadSnapshots()`: persists and reads `SolScoreSnapshot` JSONL history
 - `sol-recommendations.ts` — `generateRecommendations()`: produces explainable routing/role/provider/model recommendations from historical SOL snapshots; advisory by default; `recommendationsToProposals()` converts recommendations to tracker issues for human review
 - `index.ts` — public re-exports
 
@@ -50,6 +53,17 @@ Autoresearch is the evidence-scoring and proposal-routing sub-capability inside 
 - `smartdocs/specs/raw/pol-478-self-optimization-loop-architecture.md` — SOL architecture and boundaries
 - `smartdocs/specs/active/worker-router-architecture.md` — §3.9 SOL telemetry event catalog
 - `src/loop/dispatch.ts` — telemetry emission that feeds scoring
+
+## SOL evaluation reports
+
+Autoresearch emits machine-readable SOL evaluation artifacts and renders them into human-readable reports. The report taxonomy, artifact boundaries, and canonical locations are defined in `smartdocs/reports/sol/sol-evaluation-report-architecture.md`.
+
+| Layer | Responsibility | Location |
+|---|---|---|
+| Machine-readable evaluations | `SolScoreReport`, `SolReport`, `RecommendationsReport` | `.polaris/sol/evaluations/`, `.polaris/sol/scorecards/`, `.polaris/sol/history/`, `.polaris/sol/recommendations/` |
+| Human-readable reports | Markdown renderings of evaluations, scorecards, history, and recommendations | `smartdocs/reports/sol/` |
+
+Reports are read-only summaries. They may inform review-gated recommendations but do not mutate runtime state, provider policy, or historical evidence.
 
 ## QC relationship
 

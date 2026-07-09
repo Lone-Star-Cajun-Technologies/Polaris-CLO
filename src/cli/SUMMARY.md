@@ -42,3 +42,4 @@ Older references that describe only the legacy command subset are stale and shou
 - `src/cli/librarian.ts`
 - `src/cli/setup-interview/runner.ts`
 - `src/cli/setup-interview/generate.ts`
+- `smartdocs/reports/sol/sol-evaluation-report-architecture.md` — SOL evaluation report taxonomy and artifact locations
