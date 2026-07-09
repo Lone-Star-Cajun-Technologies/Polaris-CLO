@@ -299,6 +299,15 @@ export interface PolarisConfig {
     requireMapValidation?: boolean;
     requireSchemaValidation?: boolean;
     archiveRunSnapshot?: boolean;
+    /** Run-health Medic gate configuration. */
+    medic?: {
+      /**
+       * Explicit bypass policy for the Medic gate.
+       * - "none" (default): bypass is not allowed; the report must have a Medic decision.
+       * - "cli": an operator may bypass with --bypass-medic "<reason>".
+       */
+      bypassPolicy?: "none" | "cli";
+    };
   };
   tracker?: {
     /** Which remote tracker adapter to use. Omit to disable remote reconciliation. */

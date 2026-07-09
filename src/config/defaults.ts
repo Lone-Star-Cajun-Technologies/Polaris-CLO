@@ -54,6 +54,9 @@ export const DEFAULT_CONFIG: Omit<Required<PolarisConfig>, "canon" | "providers"
     requireMapValidation: true,
     requireSchemaValidation: true,
     archiveRunSnapshot: true,
+    medic: {
+      bypassPolicy: "none",
+    },
   },
   tracker: {
     lifecyclePolicy: {
