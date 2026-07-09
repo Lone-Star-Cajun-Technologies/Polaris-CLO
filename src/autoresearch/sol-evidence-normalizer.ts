@@ -143,10 +143,12 @@ function buildSourceRefs(
 
   // Result packets (one per child with a known path)
   for (const child of evidence.children) {
-    // Use exact match for child_id to avoid attaching the wrong path when IDs overlap (e.g., "1" vs "10")
+    // Match filenames that are exactly "{child_id}.json" or start with "{child_id}-"
+    // to handle commit-suffixed names (e.g. "POL-001-abc.json") while avoiding
+    // false positives when IDs share a prefix (e.g. "1" vs "10").
     const packetPath = paths.resultPacketPaths.find((p) => {
       const filename = p.split('/').pop() ?? '';
-      return filename === `${child.child_id}.json`;
+      return filename === `${child.child_id}.json` || filename.startsWith(`${child.child_id}-`);
     });
     const path = packetPath ?? `.polaris/clusters/${evidence.cluster_id ?? "unknown"}/results/${child.child_id}.json`;
     refs.push(makeSourceRef("result-packet", path, packetPath !== undefined));
