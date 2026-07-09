@@ -385,3 +385,5 @@ function mapCategoryToSeverity(category: WorkerRunHealthSymptom['category']): im
 // Re-export schema types and validation for consumers
 // ──────────────────────────────────────────────
 export * from "./schema.js";
+export * from "./foreman-symptoms.js";
+export * from "./qc-escalation.js";

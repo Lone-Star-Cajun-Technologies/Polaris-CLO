@@ -427,6 +427,36 @@ export interface PolarisConfig {
    * When absent, history is disabled and no snapshots are written.
    */
   sol?: SolConfig;
+  /**
+   * Run-health reporting configuration.
+   * Controls whether Foreman-side runtime symptoms are appended to the
+   * run-health report and under what conditions.
+   */
+  run_health?: RunHealthConfig;
+}
+
+/** Foreman symptom emission policy. */
+export interface ForemanSymptomsConfig {
+  /**
+   * Enable Foreman-side runtime symptom reporting.
+   *
+   * When true, the Foreman appends symptoms for Polaris-runtime intervention
+   * events (state repair, cluster repair, dispatch boundary repair, QC/finalize
+   * runtime failure, and similar events).
+   *
+   * Default: false — Foreman symptoms are not emitted for non-Polaris target
+   * repositories unless this is explicitly set to true.
+   */
+  enabled?: boolean;
+}
+
+/** Run-health subsystem configuration. */
+export interface RunHealthConfig {
+  /**
+   * Controls Foreman-side symptom emission policy.
+   * When absent, Foreman symptoms are disabled.
+   */
+  foreman_symptoms?: ForemanSymptomsConfig;
 }
 
 /** SOL history configuration. */
