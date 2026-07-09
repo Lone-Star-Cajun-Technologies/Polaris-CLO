@@ -4,7 +4,7 @@ status: raw
 source: POL-486
 implements: POL-484
 related: smartdocs/specs/raw/pol-478-self-optimization-loop-architecture.md,smartdocs/specs/active/quality-control-architecture.md,smartdocs/specs/active/worker-router-architecture.md
-source_paths: src/autoresearch/sol-report.ts,src/autoresearch/sol-scorer.ts,src/autoresearch/sol-recommendations.ts,src/autoresearch/sol-history.ts,src/cli/autoresearch.ts
+source_paths: src/autoresearch/sol-evaluation-writer.ts,src/autoresearch/sol-report-renderer.ts,src/autoresearch/sol-report.ts,src/autoresearch/sol-scorecard-calculator.ts,src/autoresearch/sol-scorer.ts,src/autoresearch/sol-recommendations.ts,src/autoresearch/sol-history.ts,src/cli/autoresearch.ts
 ---
 
 # SOL Evaluation Report Architecture
@@ -21,7 +21,7 @@ This document defines the Self-Optimization Loop (SOL) evaluation report layer: 
 - Artifact locations under `.polaris/sol/` and `smartdocs/reports/sol/`.
 - Boundaries that prevent reports from silently mutating runtime behavior.
 
-Report generators are out of scope for this document; implementation children will build them.
+Report generators are in scope for this document because the evaluation writer, scorecard calculator, and Markdown renderer are now implemented.
 
 ## Artifact classes
 
@@ -30,7 +30,7 @@ Report generators are out of scope for this document; implementation children wi
 | Artifact | Producer | Contents |
 |---|---|---|
 | `RunEvaluation` | `src/autoresearch/sol-scorer.ts` (`computeSolScoreReport`) | Per-run Foreman and worker dimension scores, composite scores, confidence, and `source_refs`. |
-| `Scorecard` | SOL scorecard generator (future) | Per-scope normalized scorecards for a single subject (provider, model, route, task type, role, risk tier). |
+| `Scorecard` | `src/autoresearch/sol-scorecard-calculator.ts` (`computeAllScorecards`) | Per-scope normalized scorecards for a single subject (provider, model, route, task type, role, risk tier). |
 | `HistorySnapshot` | `src/autoresearch/sol-history.ts` (`appendSnapshot`) | Append-only JSONL line containing a full `SolScoreReport`, grouping keys, and worker IDs. |
 | `AggregateReport` | `src/autoresearch/sol-report.ts` (`generateReport`) | Grouped summaries (`SolGroupSummary`) across history snapshots by repo, route, task type, role, risk, provider, model, worker, run, or time window. |
 | `RecommendationsReport` | `src/autoresearch/sol-recommendations.ts` (`generateRecommendations`) | Advisory recommendations with evidence references, affected routing dimensions, and proposed policy actions. |
@@ -39,8 +39,8 @@ Report generators are out of scope for this document; implementation children wi
 
 | Artifact | Producer | Contents |
 |---|---|---|
-| `EvaluationReport` | Report renderer (future) | Markdown narrative of a single run evaluation, with tables for Foreman/worker dimension scores and links to source evidence. |
-| `ScorecardReport` | Report renderer (future) | Markdown summary of a per-scope scorecard, including confidence, skipped-evidence reasons, and trend context. |
+| `EvaluationReport` | `src/autoresearch/sol-report-renderer.ts` (`renderSolMarkdown`) + `src/autoresearch/sol-evaluation-writer.ts` | Markdown narrative of a single run evaluation, with tables for Foreman/worker dimension scores and links to source evidence. |
+| `ScorecardReport` | `src/autoresearch/sol-report-renderer.ts` (`renderSolMarkdown`) | Markdown summary of a per-scope scorecard, including confidence, skipped-evidence reasons, and trend context. |
 | `HistoryReport` | `src/autoresearch/sol-report.ts` (`formatReportCli`) | CLI table or Markdown table of aggregate snapshot groups. |
 | `RecommendationsReport` | `src/autoresearch/sol-recommendations.ts` (`formatRecommendationsCli`) | Human-readable rationale for each advisory recommendation. |
 
@@ -126,7 +126,10 @@ Missing evidence reduces confidence and is recorded in `skipped_reason`; it does
 
 ## Current implementation notes
 
-- `src/autoresearch/sol-scorer.ts` currently emits `SolScoreReport` to stdout via `polaris sol score-report`.
+- `src/autoresearch/sol-scorer.ts` emits `SolScoreReport` to stdout via `polaris sol score-report`.
+- `src/autoresearch/sol-scorecard-calculator.ts` computes the current provider/model/worker/foreman/routing scorecard set via `computeAllScorecards`.
+- `src/autoresearch/sol-evaluation-writer.ts` persists evaluation records and scorecards under `.polaris/sol/`.
+- `src/autoresearch/sol-report-renderer.ts` renders the Markdown evaluation report used by `polaris sol report`.
 - `src/autoresearch/sol-history.ts` currently persists snapshots to `.polaris/sol-history/scores.jsonl` (transitional path); the canonical target is `.polaris/sol/history/<window>.jsonl`.
-- `src/autoresearch/sol-report.ts` generates `SolReport` aggregates and CLI formatting; Markdown renderers will be added in implementation children.
+- `src/autoresearch/sol-report.ts` generates `SolReport` aggregates and CLI formatting.
 - `src/autoresearch/sol-recommendations.ts` produces advisory `RecommendationsReport`; filing is gated by `assertPolarisDevContext()`.

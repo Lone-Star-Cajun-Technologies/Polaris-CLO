@@ -1796,7 +1796,8 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     // attempting readFileSync would cause ENOENT.
     if (dispatchResult.exit_code === 0 && !dryRun) {
       try {
-        const sealedFileContent = readFileSync(packet.result_file_contract.result_file, 'utf-8');
+        const sealedResultFile = absoluteResultFile(repoRoot, packet.result_file_contract.result_file);
+        const sealedFileContent = readFileSync(sealedResultFile, 'utf-8');
         const parsed = JSON.parse(sealedFileContent) as unknown;
         if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
           throw new Error(`Sealed result file has unexpected shape (expected object, got ${Array.isArray(parsed) ? 'array' : typeof parsed})`);
@@ -1818,7 +1819,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
             run_id: state.run_id,
             child_id: nextChild,
             error: msg,
-            result_file: packet.result_file_contract.result_file,
+            result_file: absoluteResultFile(repoRoot, packet.result_file_contract.result_file),
             timestamp: new Date().toISOString(),
           });
         }

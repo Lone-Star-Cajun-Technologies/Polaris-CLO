@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { execFileSync } from "node:child_process";
+import { dirname, isAbsolute, join } from "node:path";
 import { tmpdir } from "node:os";
 import { runParentLoop } from "./parent.js";
 import { createBootstrapSeal } from "./run-bootstrap.js";
@@ -76,7 +77,11 @@ function readJsonLines(path: string): Array<Record<string, unknown>> {
     .map((line) => JSON.parse(line) as Record<string, unknown>);
 }
 
-function makeSealedPacketAdapter(calls: AdapterCall[], resultFilePath: string): ExecutionAdapter {
+function resolveRepoPath(repoRoot: string, filePath: string): string {
+  return isAbsolute(filePath) ? filePath : join(repoRoot, filePath);
+}
+
+function makeSealedPacketAdapter(calls: AdapterCall[], repoRoot: string, commit: string): ExecutionAdapter {
   return {
     name: "agent-subtask",
     async dispatch(packet, options) {
@@ -89,10 +94,12 @@ function makeSealedPacketAdapter(calls: AdapterCall[], resultFilePath: string): 
           run_id: workerPacket.run_id,
           child_id: workerPacket.active_child,
           status: "success",
-          commit: "sealed-commit-123",
+          commit,
           validation: { message: "sealed packet validation passed" },
         };
-        writeFileSync(workerPacket.result_file_contract.result_file, JSON.stringify(sealedResult, null, 2), "utf-8");
+        const resultFilePath = resolveRepoPath(repoRoot, workerPacket.result_file_contract.result_file);
+        mkdirSync(dirname(resultFilePath), { recursive: true });
+        writeFileSync(resultFilePath, JSON.stringify(sealedResult, null, 2), "utf-8");
       }
 
       const dispatchResult: DispatchResult = {
@@ -113,6 +120,12 @@ describe("provider smoke tests for sealed local packets", () => {
   beforeEach(() => {
     tmpDir = mkdtempSync(join(tmpdir(), "polaris-sealed-packet-smoke-"));
     mkdirSync(join(tmpDir, "runs", "sealed-packet-smoke-run"), { recursive: true });
+    execFileSync("git", ["init", "-q"], { cwd: tmpDir });
+    execFileSync("git", ["config", "user.email", "copilot@example.com"], { cwd: tmpDir });
+    execFileSync("git", ["config", "user.name", "Copilot"], { cwd: tmpDir });
+    writeFileSync(join(tmpDir, "README.md"), "test\n", "utf-8");
+    execFileSync("git", ["add", "README.md"], { cwd: tmpDir });
+    execFileSync("git", ["commit", "-m", "init"], { cwd: tmpDir, stdio: "ignore" });
     vi.clearAllMocks();
   });
 
@@ -123,8 +136,8 @@ describe("provider smoke tests for sealed local packets", () => {
   it("dispatches a child with a sealed packet contract and processes its result file", async () => {
     const calls: AdapterCall[] = [];
     const childId = "POL-200";
-    const resultFilePath = join(tmpDir, "runs", "sealed-packet-smoke-run", `${childId}-result.json`);
-    vi.mocked(createAdapter).mockReturnValue(makeSealedPacketAdapter(calls, resultFilePath));
+    const commit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: tmpDir, encoding: "utf-8" }).trim();
+    vi.mocked(createAdapter).mockReturnValue(makeSealedPacketAdapter(calls, tmpDir, commit));
 
     const stateFile = writeState(tmpDir, {
       orchestration_mode: "ephemeral",
@@ -154,13 +167,13 @@ describe("provider smoke tests for sealed local packets", () => {
     );
 
     // Verify the mock worker wrote the sealed result file
-    expect(readFileSync(dispatchedPacket.result_file_contract!.result_file, "utf-8")).toBe(
+    expect(readFileSync(resolveRepoPath(tmpDir, dispatchedPacket.result_file_contract!.result_file), "utf-8")).toBe(
       JSON.stringify(
         {
           run_id: "sealed-packet-smoke-run",
           child_id: childId,
           status: "success",
-          commit: "sealed-commit-123",
+          commit,
           validation: { message: "sealed packet validation passed" },
         },
         null,
@@ -174,7 +187,7 @@ describe("provider smoke tests for sealed local packets", () => {
     expect(updatedState.completed_children).toEqual([childId]);
     expect(updatedState.open_children).toEqual([]);
     expect(updatedState.next_open_child).toBeNull();
-    expect(updatedState.last_commit).toBe("sealed-commit-123");
+    expect(updatedState.last_commit).toBe(commit);
     expect(updatedState.context_budget).toMatchObject({ children_completed: 1 });
 
     const telemetry = readJsonLines(join(tmpDir, "runs", "sealed-packet-smoke-run", "telemetry.jsonl"));
@@ -192,7 +205,7 @@ describe("provider smoke tests for sealed local packets", () => {
           child_id: childId,
           children_completed: 1,
           validation_summary: { message: "sealed packet validation passed" },
-          commit_hash: "sealed-commit-123",
+          commit_hash: commit,
         }),
       ]),
     );

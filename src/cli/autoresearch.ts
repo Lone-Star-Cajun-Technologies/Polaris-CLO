@@ -124,57 +124,57 @@ export function createSolCommand(options: SolCommandOptions): Command {
         process.exit(1);
       }
 
-      let artifacts;
-      let evidence;
       try {
-        artifacts = loadRunArtifacts(root, runId);
-        evidence = aggregateSolEvidence(artifacts);
+        const artifacts = loadRunArtifacts(root, runId);
+        const evidence = aggregateSolEvidence(artifacts);
+        const report = computeSolScoreReport(evidence);
+        const scorecards = computeAllScorecards(evidence);
+        const qcRecommendations = generateQcRecommendations(evidence);
+        const outputFormat = cmdOptions.json || cmdOptions.format === "json" ? "json" : "markdown";
+
+        let evaluationPath: string | undefined;
+        let scorecardPaths: string[] | undefined;
+        let markdownPath: string | undefined;
+
+        const persistedEvaluation = cmdOptions.write ? writeEvaluationRecord(root, report) : undefined;
+        const evaluationRecord = persistedEvaluation?.record ?? buildEvaluationRecord(report);
+
+        let renderedMarkdown: ReturnType<typeof renderSolMarkdown> | undefined;
+        if (cmdOptions.write || outputFormat !== "json") {
+          renderedMarkdown = renderSolMarkdown(evaluationRecord, scorecards, qcRecommendations);
+        }
+
+        if (persistedEvaluation) {
+          evaluationPath = persistedEvaluation.path;
+          scorecardPaths = writeScorecardSet(root, scorecards);
+          markdownPath = writeSolMarkdownReport(root, runId, renderedMarkdown!.markdown);
+        }
+
+        if (outputFormat === "json") {
+          const output = JSON.stringify(
+            {
+              run_id: runId,
+              evaluation: evaluationRecord,
+              scorecards,
+              qc_recommendations: qcRecommendations,
+              artifacts: {
+                evaluation: evaluationPath,
+                scorecards: scorecardPaths,
+                markdown: markdownPath,
+              },
+            },
+            null,
+            2,
+          );
+          process.stdout.write(`${output}\n`);
+        } else {
+          process.stdout.write(renderedMarkdown!.markdown);
+        }
       } catch (err) {
         process.stderr.write(
           `sol report error: cannot load run artifacts: ${err instanceof Error ? err.message : String(err)}\n`,
         );
         process.exit(1);
-      }
-
-      const report = computeSolScoreReport(evidence);
-      const scorecards = computeAllScorecards(evidence);
-      const qcRecommendations = generateQcRecommendations(evidence);
-
-      let evaluationPath: string | undefined;
-      let scorecardPaths: string[] | undefined;
-      let markdownPath: string | undefined;
-
-      const evaluationRecord = buildEvaluationRecord(report);
-
-      if (cmdOptions.write) {
-        evaluationPath = writeEvaluationRecord(root, report).path;
-        scorecardPaths = writeScorecardSet(root, scorecards);
-        const rendered = renderSolMarkdown(evaluationRecord, scorecards, qcRecommendations);
-        markdownPath = writeSolMarkdownReport(root, runId, rendered.markdown);
-      }
-
-      const outputFormat = cmdOptions.json || cmdOptions.format === "json" ? "json" : "markdown";
-
-      if (outputFormat === "json") {
-        const output = JSON.stringify(
-          {
-            run_id: runId,
-            evaluation: evaluationRecord,
-            scorecards,
-            qc_recommendations: qcRecommendations,
-            artifacts: {
-              evaluation: evaluationPath,
-              scorecards: scorecardPaths,
-              markdown: markdownPath,
-            },
-          },
-          null,
-          2,
-        );
-        process.stdout.write(`${output}\n`);
-      } else {
-        const rendered = renderSolMarkdown(evaluationRecord, scorecards, qcRecommendations);
-        process.stdout.write(rendered.markdown);
       }
     });
 

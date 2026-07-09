@@ -167,14 +167,20 @@ describe("path helpers", () => {
     const path = getScorecardPath(tempRoot, scorecard);
     expect(path).not.toContain("../");
     expect(path).not.toContain("/bar");
-    expect(path.endsWith("foreman-foo---bar.json")).toBe(true);
+    expect(path).toMatch(/foreman-foo---bar-[0-9a-f]{8}\.json$/);
   });
 
   it("sanitizes unsafe characters in evaluation run ids", () => {
     const report = makeReport("run/../evil");
     const path = getEvaluationRecordPath(tempRoot, report.run_id);
     expect(path).not.toContain("../");
-    expect(path.endsWith("run---evil.json")).toBe(true);
+    expect(path).toMatch(/run---evil-[0-9a-f]{8}\.json$/);
+  });
+
+  it("keeps colliding sanitized ids unique", () => {
+    const left = getEvaluationRecordPath(tempRoot, "run/a");
+    const right = getEvaluationRecordPath(tempRoot, "run:a");
+    expect(left).not.toBe(right);
   });
 });
 

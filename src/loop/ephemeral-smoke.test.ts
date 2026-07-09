@@ -120,14 +120,18 @@ function makeAdapter(calls: AdapterCall[]): ExecutionAdapter {
 
 describe("ephemeral execution smoke", () => {
   let tmpDir: string;
+  let previousCwd: string;
 
   beforeEach(() => {
+    previousCwd = process.cwd();
     tmpDir = mkdtempSync(join(tmpdir(), "polaris-ephemeral-smoke-"));
     mkdirSync(join(tmpDir, "runs", "ephemeral-smoke-run"), { recursive: true });
     vi.clearAllMocks();
+    process.chdir(tmpDir);
   });
 
   afterEach(() => {
+    process.chdir(previousCwd);
     rmSync(tmpDir, { recursive: true, force: true });
   });
 

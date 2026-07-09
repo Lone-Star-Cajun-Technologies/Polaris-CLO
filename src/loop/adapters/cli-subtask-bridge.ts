@@ -18,6 +18,19 @@ type PacketWithResultContract = BootstrapPacket & {
   result_file_contract?: { result_file?: string };
 };
 
+function deriveNextRecommendedAction(
+  parsedSummary: Record<string, unknown>,
+  status: "success" | "failure" | "blocked",
+): "continue" | "stop" | "investigate" {
+  const nextAction = parsedSummary["next_recommended_action"];
+  if (nextAction === "continue" || nextAction === "stop" || nextAction === "investigate") {
+    return nextAction;
+  }
+  if (status === "blocked") return "stop";
+  if (status === "failure") return "investigate";
+  return "continue";
+}
+
 function selectBridgeProvider(providers: Record<string, unknown>): string | null {
   const preferred = process.env.POLARIS_NATIVE_SUBTASK_PROVIDER?.trim();
   if (preferred && preferred.length > 0 && Object.prototype.hasOwnProperty.call(providers, preferred)) {
@@ -82,11 +95,14 @@ function writeSealedResultFromSummary(
     (typeof parsedSummary["commit_hash"] === "string" && parsedSummary["commit_hash"]) ||
     undefined;
   const validation = parsedSummary["validation"] ?? parsedSummary["validation_summary"];
+  const status = normalizeSealedStatus(parsedSummary["status"]);
 
   const sealedResult: Record<string, unknown> = {
     run_id: packet.run_id,
+    cluster_id: packet.cluster_id,
     child_id: packet.active_child,
-    status: normalizeSealedStatus(parsedSummary["status"]),
+    status,
+    next_recommended_action: deriveNextRecommendedAction(parsedSummary, status),
   };
   if (commit) {
     sealedResult["commit"] = commit;

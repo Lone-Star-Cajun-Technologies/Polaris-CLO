@@ -700,6 +700,7 @@ function deriveVerdict(
 
   // Aggregate score determines verdict; intervention/router issues limit to inconclusive.
   if (aggregate_score !== null) {
+    // Severe score regressions win even when interventions/router issues are present.
     if (aggregate_score < 0.5) return "contradicted";
     if (
       aggregate_score >= 0.75 &&

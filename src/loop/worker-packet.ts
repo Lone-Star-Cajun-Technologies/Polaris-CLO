@@ -11,6 +11,7 @@
  */
 
 import type { BootstrapPacket } from "./adapters/types.js";
+import { isAbsolute, relative } from "node:path";
 import {
   buildPromptFromPacketInput,
   type WorkerPromptMode,
@@ -289,6 +290,27 @@ export const WORKER_PROHIBITED_WRITE_PATHS: string[] = [
   "**/telemetry.jsonl",
 ];
 
+function toPortablePacketPath(path: string): string {
+  if (!isAbsolute(path)) return path;
+  const normalizedPath = path.replace(/\\/g, "/");
+  let bestMarkerIndex = -1;
+  for (const marker of ["/.taskchain_artifacts/", "/.polaris/"]) {
+    const markerIndex = normalizedPath.lastIndexOf(marker);
+    if (markerIndex > bestMarkerIndex) {
+      bestMarkerIndex = markerIndex;
+    }
+  }
+  if (bestMarkerIndex >= 0) {
+    return normalizedPath.slice(bestMarkerIndex + 1);
+  }
+  const repoRoot = process.cwd();
+  const relPath = relative(repoRoot, path);
+  if (!relPath || relPath.startsWith("..")) {
+    return path;
+  }
+  return relPath;
+}
+
 export interface WorkerCommitPolicy {
   allowedScope: string[];
   prohibitedWritePaths: string[];
@@ -363,8 +385,8 @@ export function compileStartupPacket(input: CompileStartupPacketInput): WorkerPa
     run_id: input.runId,
     cluster_id: input.clusterId,
     active_child: '',
-    state_file: input.stateFile,
-    telemetry_file: input.telemetryFile,
+    state_file: toPortablePacketPath(input.stateFile),
+    telemetry_file: toPortablePacketPath(input.telemetryFile),
     instructions: {
       primary_goal:
         `Startup cluster ${input.clusterId} for run ${input.runId}: sync tracker data, refresh graph, ` +
@@ -387,7 +409,7 @@ export function compileStartupPacket(input: CompileStartupPacketInput): WorkerPa
       required_capabilities: ["orchestration"],
     },
     result_file_contract: {
-      result_file: input.resultFile,
+      result_file: toPortablePacketPath(input.resultFile),
       result_required_fields: Object.fromEntries([
         ['run_id', input.runId],
         ['cluster_id', input.clusterId],
@@ -496,8 +518,8 @@ export function compileImplPacket(input: CompileImplPacketInput): WorkerPacket {
     run_id: input.runId,
     cluster_id: input.clusterId,
     active_child: input.childId,
-    state_file: input.stateFile,
-    telemetry_file: input.telemetryFile,
+    state_file: toPortablePacketPath(input.stateFile),
+    telemetry_file: toPortablePacketPath(input.telemetryFile),
     instructions: {
       primary_goal: promptResult.prompt,
       steps,
@@ -516,7 +538,7 @@ export function compileImplPacket(input: CompileImplPacketInput): WorkerPacket {
     },
     prohibited_write_paths: WORKER_PROHIBITED_WRITE_PATHS,
     result_file_contract: {
-      result_file: input.resultFile,
+      result_file: toPortablePacketPath(input.resultFile),
       result_required_fields: Object.fromEntries([
         ['run_id', input.runId],
         ['cluster_id', input.clusterId],
@@ -550,16 +572,19 @@ export interface CompileFinalizePacketInput {
  */
 export function compileFinalizePacket(input: CompileFinalizePacketInput): WorkerPacket {
   const targetBranch = input.targetBranch ?? 'main';
+  const stateFile = toPortablePacketPath(input.stateFile);
+  const telemetryFile = toPortablePacketPath(input.telemetryFile);
+  const resultFile = toPortablePacketPath(input.resultFile);
 
   const steps = [
-    `Read ${input.stateFile} — confirm status is "cluster-complete" (open_children is empty).`,
+    `Read ${stateFile} — confirm status is "cluster-complete" (open_children is empty).`,
     `Run polaris map validate.`,
-    `Run polaris finalize run --state-file ${input.stateFile} --skip-delivery (local validation only).`,
+    `Run polaris finalize run --state-file ${stateFile} --skip-delivery (local validation only).`,
     `Push branch "${input.branch}" to origin.`,
     `Create PR targeting "${targetBranch}".`,
-    `Write PR URL to ${input.stateFile}.`,
+    `Write PR URL to ${stateFile}.`,
     `Update Linear parent issue ${input.clusterId} to Done.`,
-    `Append finalize telemetry events to ${input.telemetryFile}.`,
+    `Append finalize telemetry events to ${telemetryFile}.`,
     `Write compact finalize JSON to stdout (fields: ${FINALIZE_RETURN_CONTRACT.join(', ')}).`,
     `TERMINATE SESSION IMMEDIATELY.`,
   ];
@@ -570,8 +595,8 @@ export function compileFinalizePacket(input: CompileFinalizePacketInput): Worker
     run_id: input.runId,
     cluster_id: input.clusterId,
     active_child: '',
-    state_file: input.stateFile,
-    telemetry_file: input.telemetryFile,
+    state_file: stateFile,
+    telemetry_file: telemetryFile,
     instructions: {
       primary_goal:
         `Finalize cluster ${input.clusterId} on branch "${input.branch}" and create PR targeting "${targetBranch}". ` +
@@ -590,7 +615,7 @@ export function compileFinalizePacket(input: CompileFinalizePacketInput): Worker
       required_capabilities: ["finalization"],
     },
     result_file_contract: {
-      result_file: input.resultFile,
+      result_file: resultFile,
       result_required_fields: Object.fromEntries([
         ['run_id', input.runId],
         ['cluster_id', input.clusterId],
@@ -623,8 +648,11 @@ export interface CompilePreflightPacketInput {
  * Preflight validates state, branch, and map integrity before the first impl dispatch.
  */
 export function compilePreflightPacket(input: CompilePreflightPacketInput): WorkerPacket {
+  const stateFile = toPortablePacketPath(input.stateFile);
+  const telemetryFile = toPortablePacketPath(input.telemetryFile);
+  const resultFile = toPortablePacketPath(input.resultFile);
   const steps = [
-    `Read ${input.stateFile} and validate schema (required fields, correct types).`,
+    `Read ${stateFile} and validate schema (required fields, correct types).`,
     `Confirm current git branch is "${input.branch}".`,
     `Confirm working tree has no unexpected dirty files.`,
     `Confirm active_child is empty (no orphaned worker claims in state).`,
@@ -639,8 +667,8 @@ export function compilePreflightPacket(input: CompilePreflightPacketInput): Work
     run_id: input.runId,
     cluster_id: input.clusterId,
     active_child: '',
-    state_file: input.stateFile,
-    telemetry_file: input.telemetryFile,
+    state_file: stateFile,
+    telemetry_file: telemetryFile,
     instructions: {
       primary_goal:
         `Preflight check for cluster ${input.clusterId}: validate state integrity, branch, and map before impl dispatch.`,
@@ -658,7 +686,7 @@ export function compilePreflightPacket(input: CompilePreflightPacketInput): Work
       required_capabilities: ["orchestration"],
     },
     result_file_contract: {
-      result_file: input.resultFile,
+      result_file: resultFile,
       result_required_fields: Object.fromEntries([
         ['run_id', input.runId],
         ['cluster_id', input.clusterId],
@@ -720,6 +748,9 @@ export const REPAIR_RETURN_CONTRACT: string[] = [
 export function compileRepairWorkerPacket(
   input: CompileRepairWorkerPacketInput,
 ): WorkerPacket {
+  const stateFile = toPortablePacketPath(input.stateFile);
+  const telemetryFile = toPortablePacketPath(input.telemetryFile);
+  const resultFile = toPortablePacketPath(input.resultFile);
   const steps = [
     `Confirm QC repair scope: allowed=${JSON.stringify(input.allowedScope)}, prohibited=${JSON.stringify(input.prohibitedScope)}.`,
     `Review root-cause hint: ${input.rootCauseHint}`,
@@ -736,8 +767,8 @@ export function compileRepairWorkerPacket(
     run_id: input.runId,
     cluster_id: input.clusterId,
     active_child: input.packetId,
-    state_file: input.stateFile,
-    telemetry_file: input.telemetryFile,
+    state_file: stateFile,
+    telemetry_file: telemetryFile,
     instructions: {
       primary_goal:
         `QC repair worker for cluster ${input.clusterId}, round ${input.round}, packet ${input.packetId}. ` +
@@ -760,7 +791,7 @@ export function compileRepairWorkerPacket(
       ...input.prohibitedScope,
     ],
     result_file_contract: {
-      result_file: input.resultFile,
+      result_file: resultFile,
       result_required_fields: Object.fromEntries([
         ['run_id', input.runId],
         ['cluster_id', input.clusterId],

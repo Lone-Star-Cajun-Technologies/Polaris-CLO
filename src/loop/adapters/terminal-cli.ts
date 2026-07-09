@@ -560,11 +560,21 @@ export class TerminalCliAdapter implements ExecutionAdapter {
       // regardless of exit code — this prevents phantom successes from workers
       // that return minimal status objects instead of proper CompactReturn structs.
       const effectiveStatus = (exitCode === 0 && isValidCompactReturn) ? "success" : "failure";
+      const nextRecommendedAction =
+        normalized["next_recommended_action"] === "continue" ||
+        normalized["next_recommended_action"] === "stop" ||
+        normalized["next_recommended_action"] === "investigate"
+          ? normalized["next_recommended_action"]
+          : effectiveStatus === "success"
+            ? "continue"
+            : "investigate";
 
       const sealedResult = {
         run_id: packet.run_id,
+        cluster_id: packet.cluster_id,
         child_id: String(normalized["child_id"] ?? packet.active_child),
         status: effectiveStatus,
+        next_recommended_action: nextRecommendedAction,
         commit:
           typeof normalized["commit"] === "string"
             ? normalized["commit"]

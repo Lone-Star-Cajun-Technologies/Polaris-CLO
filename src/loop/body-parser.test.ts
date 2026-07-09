@@ -42,15 +42,23 @@ describe("parseIssueBody — scope", () => {
   it("extracts list items from ## Scope section", () => {
     const { scope } = parseIssueBody(BODY_WITH_SCOPE);
     expect(scope).toHaveLength(2);
-    expect(scope[0]).toContain("src/loop/");
-    expect(scope[1]).toContain("src/cli/");
+    expect(scope[0]).toBe("src/loop/**");
+    expect(scope[1]).toBe("src/cli/**");
   });
 
   it("extracts list items from ## Expected code areas section", () => {
     const { scope } = parseIssueBody(BODY_WITH_EXPECTED_CODE_AREAS);
     expect(scope).toHaveLength(2);
-    expect(scope[0]).toContain("src/loop/worker-packet.ts");
-    expect(scope[1]).toContain("src/loop/dispatch.ts");
+    expect(scope[0]).toBe("src/loop/worker-packet.ts");
+    expect(scope[1]).toBe("src/loop/dispatch.ts");
+  });
+
+  it("strips trailing prose and preserves top-level test scope", () => {
+    const { scope } = parseIssueBody(`## Scope
+- .polaris/sol/evaluations/** documentation or fixtures only as needed
+- tests covering schema validation and compatibility
+`);
+    expect(scope).toEqual([".polaris/sol/evaluations/**", "tests/**"]);
   });
 
   it("returns empty scope when no scope section is present", () => {

@@ -361,7 +361,7 @@ export interface SolScorecard {
   /** Per-dimension subscores with formula versions. */
   subscores: SolSubscore[];
   /**
-   * Aggregate score (weighted mean of non-null subscores).
+   * Aggregate score (simple arithmetic mean of non-null subscores).
    * Null when availability is "unavailable" or all subscores are skipped.
    */
   aggregate_score: number | null;
@@ -392,8 +392,11 @@ export const SOL_FORMULA_VERSIONS = {
   COMPOSITE_MEAN_V1: "composite-mean/1.0" as SolFormulaVersion,
   VALIDATION_BINARY_V1: "validation-binary/1.0" as SolFormulaVersion,
   DISPATCH_RATE_V1: "dispatch-rate/1.0" as SolFormulaVersion,
+  DEPENDENCY_RATE_V1: "dependency-rate/1.0" as SolFormulaVersion,
   INTERVENTION_BINARY_V1: "intervention-binary/1.0" as SolFormulaVersion,
+  RECOVERY_BINARY_V1: "recovery-binary/1.0" as SolFormulaVersion,
   QC_REPAIR_LOOP_V1: "qc-repair-loop/1.0" as SolFormulaVersion,
+  QC_OUTCOME_V1: "qc-outcome/1.0" as SolFormulaVersion,
   SCOPE_ADHERENCE_V1: "scope-adherence/1.0" as SolFormulaVersion,
   STARTUP_FAILURE_RATE_V1: "startup-failure-rate/1.0" as SolFormulaVersion,
   QUOTA_EXHAUSTION_RATE_V1: "quota-exhaustion-rate/1.0" as SolFormulaVersion,
@@ -477,8 +480,8 @@ export function buildRecommendationInputs(
     low_scoring_dimensions: lowScoringDimensions,
     skipped_dimensions: skippedDimensions,
     over_token_budget:
-      (rawMetrics.max_bootstrap_tokens !== null && rawMetrics.max_bootstrap_tokens > 150_000) ||
-      (rawMetrics.worker_tokens_used !== null && rawMetrics.worker_tokens_used > 200_000),
+      (rawMetrics.max_bootstrap_tokens !== null && rawMetrics.max_bootstrap_tokens > FOREMAN_TOKEN_EFFICIENCY_SPEC.budget) ||
+      (rawMetrics.worker_tokens_used !== null && rawMetrics.worker_tokens_used > WORKER_TOKEN_EFFICIENCY_SPEC.budget),
     intervention_detected:
       rawMetrics.user_intervened === true || rawMetrics.foreman_intervened === true,
     router_issue_detected:

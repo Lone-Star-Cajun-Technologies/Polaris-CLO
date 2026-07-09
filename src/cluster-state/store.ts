@@ -20,6 +20,7 @@ const getClusterStatePath = (clusterId: string, repoRoot?: string): string => {
 const normalizeClusterState = (state: ClusterState): ClusterState => ({
   ...state,
   tracker_mutations: state.tracker_mutations ?? {},
+  blockers: state.blockers ?? [],
   qc_runs: state.qc_runs ?? {},
 });
 

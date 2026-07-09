@@ -3,5 +3,7 @@
   "child_id": "POL-488",
   "status": "success",
   "commit": "6da4e8a61c34878b8ad1457afc16bc93ced40aea",
-  "validation": "passed"
+  "validation": "passed",
+  "cluster_id": "POL-485",
+  "next_recommended_action": "continue"
 }

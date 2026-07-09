@@ -337,14 +337,18 @@ import { createAdapter } from "./adapters/registry.js";
 
 describe("runParentLoop", () => {
   let tmpDir: string;
+  let previousCwd: string;
 
   beforeEach(() => {
+    previousCwd = process.cwd();
     tmpDir = join(tmpdir(), `polaris-parent-test-${Date.now()}`);
     mkdirSync(join(tmpDir, "runs", "test-run-001"), { recursive: true });
     vi.clearAllMocks();
+    process.chdir(tmpDir);
   });
 
   afterEach(() => {
+    process.chdir(previousCwd);
     try {
       rmSync(tmpDir, { recursive: true, force: true });
     } catch {
@@ -911,8 +915,7 @@ describe("runParentLoop", () => {
       run_id: "test-run-001",
       cluster_id: "POL-99",
       active_child: "POL-100",
-      // parent.ts normalizes via realpathSync to resolve macOS /var → /private/var symlinks
-      state_file: realpathSync(stateFile),
+      state_file: "current-state.json",
     });
   });
 
@@ -1847,14 +1850,18 @@ describe("runParentLoop", () => {
 
 describe("runParentLoop — provider policy enforcement", () => {
   let tmpDir: string;
+  let previousCwd: string;
 
   beforeEach(() => {
+    previousCwd = process.cwd();
     tmpDir = join(tmpdir(), `polaris-parent-policy-test-${Date.now()}`);
     mkdirSync(join(tmpDir, "runs", "test-run-001"), { recursive: true });
     vi.clearAllMocks();
+    process.chdir(tmpDir);
   });
 
   afterEach(() => {
+    process.chdir(previousCwd);
     try {
       rmSync(tmpDir, { recursive: true, force: true });
     } catch {

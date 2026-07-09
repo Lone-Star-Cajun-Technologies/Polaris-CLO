@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Command } from "commander";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
-import { dirname, join } from "node:path";
+import { dirname, isAbsolute, join } from "node:path";
 import { createPolarisCommand } from "./index.js";
 import { compileImplPacket } from "../loop/worker-packet.js";
 
@@ -51,12 +51,14 @@ async function runPolarisCommand(repoRoot: string, argv: string[], packetPath: s
   });
 
   const previousPacket = process.env.POLARIS_BOOTSTRAP_PACKET;
+  const previousCwd = process.cwd();
   process.env.POLARIS_BOOTSTRAP_PACKET = packetPath;
 
   const program = createPolarisCommand({ repoRoot });
   configureForTest(program, output);
 
   try {
+    process.chdir(repoRoot);
     await program.parseAsync(["node", "polaris", ...argv], { from: "node" });
   } catch (error) {
     if (error instanceof Error && "exitCode" in error) {
@@ -67,6 +69,7 @@ async function runPolarisCommand(repoRoot: string, argv: string[], packetPath: s
       throw error;
     }
   } finally {
+    process.chdir(previousCwd);
     stdoutSpy.mockRestore();
     stderrSpy.mockRestore();
     exitSpy.mockRestore();
@@ -78,6 +81,10 @@ async function runPolarisCommand(repoRoot: string, argv: string[], packetPath: s
   }
 
   return { ...output, exitCode };
+}
+
+function resolveRepoPath(repoRoot: string, filePath: string): string {
+  return isAbsolute(filePath) ? filePath : join(repoRoot, filePath);
 }
 
 function makePacket(repoRoot: string, overrides?: { allowedScope?: string[]; prohibitedWritePaths?: string[] }) {
@@ -202,7 +209,11 @@ describe("polaris worker commit", () => {
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain("worker commit rejected");
     expect(result.stderr).toContain("out-of-scope:docs/note.md");
-    const telemetry = readFileSync(packet.telemetry_file, "utf-8").trim().split("\n").filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>);
+    const telemetry = readFileSync(resolveRepoPath(repoRoot, packet.telemetry_file), "utf-8")
+      .trim()
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => JSON.parse(line) as Record<string, unknown>);
     expect(telemetry.some((event) => event.event === "worker-commit-rejected")).toBe(true);
   });
 
@@ -220,7 +231,11 @@ describe("polaris worker commit", () => {
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain("worker commit rejected");
     expect(result.stderr).toContain("prohibited:.taskchain_artifacts/polaris-run/current-state.json");
-    const telemetry = readFileSync(packet.telemetry_file, "utf-8").trim().split("\n").filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>);
+    const telemetry = readFileSync(resolveRepoPath(repoRoot, packet.telemetry_file), "utf-8")
+      .trim()
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => JSON.parse(line) as Record<string, unknown>);
     expect(telemetry.some((event) => event.event === "worker-commit-rejected")).toBe(true);
   });
 });
@@ -244,7 +259,7 @@ describe("polaris worker complete", () => {
     const childId = "POL-294";
     const stateFile = makeCompletionState(repoRoot, childId);
     const packet = makePacket(repoRoot);
-    const resultFile = packet.result_file_contract.result_file;
+    const resultFile = resolveRepoPath(repoRoot, packet.result_file_contract.result_file);
     const commit = makeCommittedResult(repoRoot, resultFile, childId);
     const packetPath = join(repoRoot, "packet.json");
     writeFileSync(packetPath, JSON.stringify(packet), "utf-8");
@@ -266,7 +281,7 @@ describe("polaris worker complete", () => {
     });
     expect(savedState["last_commit"]).toBe(commit);
 
-    const telemetryFile = packet.telemetry_file;
+    const telemetryFile = resolveRepoPath(repoRoot, packet.telemetry_file);
     const events = readFileSync(telemetryFile, "utf-8")
       .trim()
       .split("\n")
@@ -279,7 +294,7 @@ describe("polaris worker complete", () => {
     const childId = "POL-294";
     const stateFile = makeCompletionState(repoRoot, childId);
     const packet = makePacket(repoRoot);
-    const resultFile = packet.result_file_contract.result_file;
+    const resultFile = resolveRepoPath(repoRoot, packet.result_file_contract.result_file);
     const packetPath = join(repoRoot, "packet.json");
     writeFileSync(packetPath, JSON.stringify(packet), "utf-8");
     mkdirSync(dirname(resultFile), { recursive: true });
@@ -305,7 +320,7 @@ describe("polaris worker complete", () => {
     expect(result.stderr).toContain("worker complete rejected");
     expect(readFileSync(stateFile, "utf-8")).toBe(beforeState);
 
-    const telemetryFile = packet.telemetry_file;
+    const telemetryFile = resolveRepoPath(repoRoot, packet.telemetry_file);
     const events = readFileSync(telemetryFile, "utf-8")
       .trim()
       .split("\n")

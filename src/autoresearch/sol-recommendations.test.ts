@@ -614,6 +614,11 @@ describe("scorecardToRecommendationSummary: verdict logic", () => {
     expect(scorecardToRecommendationSummary(sc).verdict).toBe("contradicted");
   });
 
+  it("keeps low aggregate score as 'contradicted' even when intervention or router flags are set", () => {
+    const sc = makeScorecard({ aggregate_score: 0.3, intervention: true, router_issue: true });
+    expect(scorecardToRecommendationSummary(sc).verdict).toBe("contradicted");
+  });
+
   it("returns 'contradicted' when blocking QC findings are present", () => {
     const sc = makeScorecard({ aggregate_score: 0.9, blocking_findings: 2 });
     expect(scorecardToRecommendationSummary(sc).verdict).toBe("contradicted");

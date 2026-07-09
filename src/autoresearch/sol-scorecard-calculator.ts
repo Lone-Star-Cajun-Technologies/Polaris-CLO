@@ -35,6 +35,7 @@ import {
 } from "../types/sol-scorecard.js";
 import type { SolScoreConfidence, SolDimensionScore } from "../types/sol-score.js";
 import { computeForemanScore, computeWorkerScore } from "./sol-scorer.js";
+import { buildDefaultEvidenceSourceRefs } from "./sol-evidence-normalizer.js";
 
 // ──────────────────────────────────────────────
 // Helpers
@@ -81,17 +82,6 @@ function makeWindow(ev: SolEvidence): SolScorecardWindow {
     cluster_id: ev.cluster_id ?? undefined,
     sample_count: ev.run.total_children > 0 ? ev.run.total_children : undefined,
   };
-}
-
-function defaultSourceRefs(ev: SolEvidence): SolSourceRef[] {
-  const refs: SolSourceRef[] = [
-    { kind: "run-state", path: ".taskchain_artifacts/polaris-run/current-state.json", available: ev.run.status !== null },
-    { kind: "telemetry", path: `.taskchain_artifacts/polaris-run/runs/${ev.run_id}/telemetry.jsonl`, available: ev.tokens.total_worker_heartbeats > 0 },
-  ];
-  if (ev.cluster_id) {
-    refs.push({ kind: "cluster-state", path: `.polaris/clusters/${ev.cluster_id}/cluster-state.json`, available: true });
-  }
-  return refs;
 }
 
 // ──────────────────────────────────────────────
@@ -191,10 +181,9 @@ export function buildWorkerRawMetrics(ev: SolEvidence, child: SolChildEvidence):
   };
 }
 
-function aggregateForProvider(
-  ev: SolEvidence,
-  provider: string,
-): {
+type AggregateSubject = "provider" | "model";
+
+interface AggregateSubjectStats {
   children: SolChildEvidence[];
   decisions: SolRouterDecisionEvidence[];
   startupFailures: number;
@@ -208,196 +197,148 @@ function aggregateForProvider(
   totalTokens: number;
   validationPasses: number;
   validationFailures: number;
-} {
+}
+
+function aggregateForSubject(
+  ev: SolEvidence,
+  children: SolChildEvidence[],
+  decisions: SolRouterDecisionEvidence[],
+  classifyDecision: (
+    decision: SolRouterDecisionEvidence,
+    child: SolChildEvidence | undefined,
+  ) => { startupFailure: boolean; exhaustedDecision: boolean; fallbackAttempt: boolean },
+): AggregateSubjectStats {
+  let startupFailures = 0;
+  let exhaustedDecisions = 0;
+  let fallbackAttempts = 0;
+  let successfulFallbacks = 0;
+
+  for (const decision of decisions) {
+    const child = ev.children.find((candidate) => candidate.child_id === decision.child_id);
+    const classification = classifyDecision(decision, child);
+    if (classification.startupFailure) startupFailures++;
+    if (classification.exhaustedDecision) exhaustedDecisions++;
+    if (classification.fallbackAttempt) {
+      fallbackAttempts++;
+      if (child && child.status === "done") successfulFallbacks++;
+    }
+  }
+
+  let succeeded = 0;
+  let failed = 0;
+  let blocked = 0;
+  let totalHeartbeats = 0;
+  let totalTokens = 0;
+  let validationPasses = 0;
+  let validationFailures = 0;
+
+  for (const child of children) {
+    if (child.status === "done") succeeded++;
+    else if (child.status === "failed" || child.status === "error") failed++;
+    else if (child.status === "blocked") blocked++;
+    totalHeartbeats += child.heartbeat_count;
+    totalTokens += ev.tokens.tokens_by_child[child.child_id] ?? 0;
+    const validation = ev.validation.find((val) => val.child_id === child.child_id);
+    const outcome = validation?.outcome ?? child.validation;
+    if (outcome === "passed") validationPasses++;
+    else if (outcome === "failed") validationFailures++;
+  }
+
+  return {
+    children,
+    decisions,
+    startupFailures,
+    exhaustedDecisions,
+    fallbackAttempts,
+    successfulFallbacks,
+    succeeded,
+    failed,
+    blocked,
+    totalHeartbeats,
+    totalTokens,
+    validationPasses,
+    validationFailures,
+  };
+}
+
+function buildAggregateRawMetrics(
+  ev: SolEvidence,
+  subject: AggregateSubject,
+  subjectKey: string,
+  agg: AggregateSubjectStats,
+): SolScorecardRawMetrics {
+  const decisionField = subject === "provider" ? "provider_decisions" : "model_decisions";
+  const startupField = subject === "provider" ? "provider_startup_failures" : "model_startup_failures";
+  const exhaustedField = subject === "provider" ? "provider_exhausted_decisions" : "model_exhausted_decisions";
+  const fallbackField = subject === "provider" ? "provider_fallback_attempts" : "model_fallback_attempts";
+  const successfulFallbackField =
+    subject === "provider" ? "provider_successful_fallbacks" : "model_successful_fallbacks";
+
+  return {
+    ...emptyRawMetrics(),
+    total_children: agg.children.length,
+    workers_succeeded: agg.succeeded,
+    workers_failed: agg.failed,
+    worker_tokens_used: agg.totalTokens > 0 ? agg.totalTokens : null,
+    validation_outcome: agg.validationPasses > 0 || agg.validationFailures > 0
+      ? agg.validationFailures === 0
+        ? "passed"
+        : "failed"
+      : null,
+    passed_commands: agg.validationFailures === 0 && agg.validationPasses > 0 ? ["aggregate"] : [],
+    qc_total_findings: ev.qc.total_findings,
+    qc_blocking_findings: ev.qc.blocking_findings,
+    provider_selected: subject === "provider" ? subjectKey : null,
+    [decisionField]: agg.decisions.length,
+    [startupField]: agg.startupFailures,
+    [exhaustedField]: agg.exhaustedDecisions,
+    [fallbackField]: agg.fallbackAttempts,
+    [successfulFallbackField]: agg.successfulFallbacks,
+    heartbeat_count: agg.totalHeartbeats > 0 ? agg.totalHeartbeats : null,
+  };
+}
+
+function aggregateForProvider(
+  ev: SolEvidence,
+  provider: string,
+): AggregateSubjectStats {
   const children = ev.children.filter((c) => c.provider === provider);
   const decisions = ev.router.decisions.filter(
     (d) => d.selected_provider === provider || d.providers_tried.includes(provider),
   );
 
-  let startupFailures = 0;
-  let exhaustedDecisions = 0;
-  let fallbackAttempts = 0;
-  let successfulFallbacks = 0;
-
-  for (const d of decisions) {
-    if (d.exhausted && (d.selected_provider ?? d.providers_tried[d.providers_tried.length - 1]) === provider) {
-      startupFailures++;
-      exhaustedDecisions++;
-    } else if (d.exhausted && d.providers_tried.includes(provider)) {
-      exhaustedDecisions++;
-    }
-    if (d.fallback_used && d.providers_tried.includes(provider)) {
-      fallbackAttempts++;
-      const child = ev.children.find((c) => c.child_id === d.child_id);
-      if (child && child.status === "done") successfulFallbacks++;
-    }
-  }
-
-  let succeeded = 0;
-  let failed = 0;
-  let blocked = 0;
-  let totalHeartbeats = 0;
-  let totalTokens = 0;
-  let validationPasses = 0;
-  let validationFailures = 0;
-
-  for (const c of children) {
-    if (c.status === "done") succeeded++;
-    else if (c.status === "failed" || c.status === "error") failed++;
-    else if (c.status === "blocked") blocked++;
-    totalHeartbeats += c.heartbeat_count;
-    totalTokens += ev.tokens.tokens_by_child[c.child_id] ?? 0;
-    const v = ev.validation.find((val) => val.child_id === c.child_id);
-    const outcome = v?.outcome ?? c.validation;
-    if (outcome === "passed") validationPasses++;
-    else if (outcome === "failed") validationFailures++;
-  }
-
-  return {
-    children,
-    decisions,
-    startupFailures,
-    exhaustedDecisions,
-    fallbackAttempts,
-    successfulFallbacks,
-    succeeded,
-    failed,
-    blocked,
-    totalHeartbeats,
-    totalTokens,
-    validationPasses,
-    validationFailures,
-  };
+  return aggregateForSubject(ev, children, decisions, (decision) => {
+    const finalProvider = decision.selected_provider ?? decision.providers_tried[decision.providers_tried.length - 1];
+    return {
+      startupFailure: decision.exhausted && finalProvider === provider,
+      exhaustedDecision: decision.exhausted && decision.providers_tried.includes(provider),
+      fallbackAttempt: decision.fallback_used && decision.providers_tried.includes(provider),
+    };
+  });
 }
 
 export function buildProviderRawMetrics(ev: SolEvidence, provider: string): SolScorecardRawMetrics {
-  const agg = aggregateForProvider(ev, provider);
-
-  return {
-    ...emptyRawMetrics(),
-    total_children: agg.children.length,
-    workers_succeeded: agg.succeeded,
-    workers_failed: agg.failed,
-    worker_tokens_used: agg.totalTokens > 0 ? agg.totalTokens : null,
-    validation_outcome: agg.validationPasses > 0 || agg.validationFailures > 0
-      ? agg.validationFailures === 0
-        ? "passed"
-        : "failed"
-      : null,
-    passed_commands: agg.validationFailures === 0 && agg.validationPasses > 0 ? ["aggregate"] : [],
-    qc_total_findings: ev.qc.total_findings,
-    qc_blocking_findings: ev.qc.blocking_findings,
-    provider_selected: provider,
-    provider_decisions: agg.decisions.length,
-    provider_startup_failures: agg.startupFailures,
-    provider_exhausted_decisions: agg.exhaustedDecisions,
-    provider_fallback_attempts: agg.fallbackAttempts,
-    provider_successful_fallbacks: agg.successfulFallbacks,
-    heartbeat_count: agg.totalHeartbeats > 0 ? agg.totalHeartbeats : null,
-  };
+  return buildAggregateRawMetrics(ev, "provider", provider, aggregateForProvider(ev, provider));
 }
 
 function aggregateForModel(
   ev: SolEvidence,
   model: string,
-): {
-  children: SolChildEvidence[];
-  decisions: SolRouterDecisionEvidence[];
-  startupFailures: number;
-  exhaustedDecisions: number;
-  fallbackAttempts: number;
-  successfulFallbacks: number;
-  succeeded: number;
-  failed: number;
-  blocked: number;
-  totalHeartbeats: number;
-  totalTokens: number;
-  validationPasses: number;
-  validationFailures: number;
-} {
+): AggregateSubjectStats {
   const children = ev.children.filter((c) => c.grouping_keys.model === model);
   // Model attribution on router decisions is best-effort via child grouping keys.
   const childIds = new Set(children.map((c) => c.child_id));
   const decisions = ev.router.decisions.filter((d) => childIds.has(d.child_id));
 
-  let startupFailures = 0;
-  let exhaustedDecisions = 0;
-  let fallbackAttempts = 0;
-  let successfulFallbacks = 0;
-
-  for (const d of decisions) {
-    if (d.exhausted) {
-      startupFailures++;
-      exhaustedDecisions++;
-    }
-    if (d.fallback_used) {
-      fallbackAttempts++;
-      const child = ev.children.find((c) => c.child_id === d.child_id);
-      if (child && child.status === "done") successfulFallbacks++;
-    }
-  }
-
-  let succeeded = 0;
-  let failed = 0;
-  let blocked = 0;
-  let totalHeartbeats = 0;
-  let totalTokens = 0;
-  let validationPasses = 0;
-  let validationFailures = 0;
-
-  for (const c of children) {
-    if (c.status === "done") succeeded++;
-    else if (c.status === "failed" || c.status === "error") failed++;
-    else if (c.status === "blocked") blocked++;
-    totalHeartbeats += c.heartbeat_count;
-    totalTokens += ev.tokens.tokens_by_child[c.child_id] ?? 0;
-    const v = ev.validation.find((val) => val.child_id === c.child_id);
-    const outcome = v?.outcome ?? c.validation;
-    if (outcome === "passed") validationPasses++;
-    else if (outcome === "failed") validationFailures++;
-  }
-
-  return {
-    children,
-    decisions,
-    startupFailures,
-    exhaustedDecisions,
-    fallbackAttempts,
-    successfulFallbacks,
-    succeeded,
-    failed,
-    blocked,
-    totalHeartbeats,
-    totalTokens,
-    validationPasses,
-    validationFailures,
-  };
+  return aggregateForSubject(ev, children, decisions, (decision) => ({
+    startupFailure: decision.exhausted,
+    exhaustedDecision: decision.exhausted,
+    fallbackAttempt: decision.fallback_used,
+  }));
 }
 
 export function buildModelRawMetrics(ev: SolEvidence, model: string): SolScorecardRawMetrics {
-  const agg = aggregateForModel(ev, model);
-
-  return {
-    ...emptyRawMetrics(),
-    total_children: agg.children.length,
-    workers_succeeded: agg.succeeded,
-    workers_failed: agg.failed,
-    worker_tokens_used: agg.totalTokens > 0 ? agg.totalTokens : null,
-    validation_outcome: agg.validationPasses > 0 || agg.validationFailures > 0
-      ? agg.validationFailures === 0
-        ? "passed"
-        : "failed"
-      : null,
-    passed_commands: agg.validationFailures === 0 && agg.validationPasses > 0 ? ["aggregate"] : [],
-    qc_total_findings: ev.qc.total_findings,
-    qc_blocking_findings: ev.qc.blocking_findings,
-    model_decisions: agg.decisions.length,
-    model_startup_failures: agg.startupFailures,
-    model_exhausted_decisions: agg.exhaustedDecisions,
-    model_fallback_attempts: agg.fallbackAttempts,
-    model_successful_fallbacks: agg.successfulFallbacks,
-    heartbeat_count: agg.totalHeartbeats > 0 ? agg.totalHeartbeats : null,
-  };
+  return buildAggregateRawMetrics(ev, "model", model, aggregateForModel(ev, model));
 }
 
 export function buildRoutingRawMetrics(
@@ -500,12 +441,12 @@ export function computeForemanScorecard(
     toSolSubscore(report.token, SOL_FORMULA_VERSIONS.TOKEN_EFFICIENCY_V1),
     toSolSubscore(report.duration, SOL_FORMULA_VERSIONS.RUNTIME_PROXY_V1),
     toSolSubscore(report.intervention, SOL_FORMULA_VERSIONS.INTERVENTION_BINARY_V1),
-    toSolSubscore(report.dependency, SOL_FORMULA_VERSIONS.DISPATCH_RATE_V1),
+    toSolSubscore(report.dependency, SOL_FORMULA_VERSIONS.DEPENDENCY_RATE_V1),
     toSolSubscore(report.dispatch, SOL_FORMULA_VERSIONS.DISPATCH_RATE_V1),
     toSolSubscore(report.evidence_validation, SOL_FORMULA_VERSIONS.VALIDATION_BINARY_V1),
     toSolSubscore(report.scope, SOL_FORMULA_VERSIONS.SCOPE_ADHERENCE_V1),
     toSolSubscore(report.completion, SOL_FORMULA_VERSIONS.QUALITY_OUTCOMES_V1),
-    toSolSubscore(report.recovery, SOL_FORMULA_VERSIONS.INTERVENTION_BINARY_V1),
+    toSolSubscore(report.recovery, SOL_FORMULA_VERSIONS.RECOVERY_BINARY_V1),
     toSolSubscore(report.qc_repair_loop, SOL_FORMULA_VERSIONS.QC_REPAIR_LOOP_V1),
   ];
 
@@ -513,7 +454,7 @@ export function computeForemanScorecard(
   const qpt = computeQualityPerToken(rawMetrics, report.composite_score, FOREMAN_QUALITY_PER_TOKEN_SPEC.budget_denominator);
   if (qpt) subscores.push(qpt);
 
-  return buildScorecard("foreman", ev.run_id, ev, rawMetrics, subscores, sourceRefs ?? defaultSourceRefs(ev), groupingKeys);
+  return buildScorecard("foreman", ev.run_id, ev, rawMetrics, subscores, sourceRefs ?? buildDefaultEvidenceSourceRefs(ev), groupingKeys);
 }
 
 // ──────────────────────────────────────────────
@@ -542,7 +483,7 @@ export function computeWorkerScorecard(
     toSolSubscore(report.token, SOL_FORMULA_VERSIONS.TOKEN_EFFICIENCY_V1),
     toSolSubscore(report.duration, SOL_FORMULA_VERSIONS.RUNTIME_PROXY_V1),
     toSolSubscore(report.validation, SOL_FORMULA_VERSIONS.VALIDATION_BINARY_V1),
-    toSolSubscore(report.qc, SOL_FORMULA_VERSIONS.QC_REPAIR_LOOP_V1),
+    toSolSubscore(report.qc, SOL_FORMULA_VERSIONS.QC_OUTCOME_V1),
     toSolSubscore(report.repair_iterations, SOL_FORMULA_VERSIONS.QC_REPAIR_LOOP_V1),
     toSolSubscore(report.scope_adherence, SOL_FORMULA_VERSIONS.SCOPE_ADHERENCE_V1),
     toSolSubscore(report.acceptance_criteria, SOL_FORMULA_VERSIONS.VALIDATION_BINARY_V1),
@@ -558,7 +499,7 @@ export function computeWorkerScorecard(
     ev,
     rawMetrics,
     subscores,
-    sourceRefs ?? defaultSourceRefs(ev),
+    sourceRefs ?? buildDefaultEvidenceSourceRefs(ev),
     groupingKeys ?? child.grouping_keys,
   );
 }
@@ -588,10 +529,30 @@ function computeQualityPerToken(
 // Provider scorecard
 // ──────────────────────────────────────────────
 
-function scoreProviderStartupFailure(metrics: SolScorecardRawMetrics): SolSubscore {
-  const total = metrics.provider_decisions ?? 0;
-  if (total === 0) return skippedSubscore("startup_failure", SOL_FORMULA_VERSIONS.STARTUP_FAILURE_RATE_V1, "no routing decisions for provider");
-  const failures = metrics.provider_startup_failures ?? 0;
+function subjectDecisions(metrics: SolScorecardRawMetrics, subject: AggregateSubject): number {
+  return subject === "provider" ? metrics.provider_decisions ?? 0 : metrics.model_decisions ?? 0;
+}
+
+function subjectStartupFailures(metrics: SolScorecardRawMetrics, subject: AggregateSubject): number {
+  return subject === "provider" ? metrics.provider_startup_failures ?? 0 : metrics.model_startup_failures ?? 0;
+}
+
+function subjectExhaustedDecisions(metrics: SolScorecardRawMetrics, subject: AggregateSubject): number {
+  return subject === "provider" ? metrics.provider_exhausted_decisions ?? 0 : metrics.model_exhausted_decisions ?? 0;
+}
+
+function subjectFallbackAttempts(metrics: SolScorecardRawMetrics, subject: AggregateSubject): number {
+  return subject === "provider" ? metrics.provider_fallback_attempts ?? 0 : metrics.model_fallback_attempts ?? 0;
+}
+
+function subjectSuccessfulFallbacks(metrics: SolScorecardRawMetrics, subject: AggregateSubject): number {
+  return subject === "provider" ? metrics.provider_successful_fallbacks ?? 0 : metrics.model_successful_fallbacks ?? 0;
+}
+
+function scoreAggregateStartupFailure(metrics: SolScorecardRawMetrics, subject: AggregateSubject): SolSubscore {
+  const total = subjectDecisions(metrics, subject);
+  if (total === 0) return skippedSubscore("startup_failure", SOL_FORMULA_VERSIONS.STARTUP_FAILURE_RATE_V1, `no routing decisions for ${subject}`);
+  const failures = subjectStartupFailures(metrics, subject);
   const rate = failures / total;
   const score = clamp01(1.0 - rate);
   return subscore("startup_failure", SOL_FORMULA_VERSIONS.STARTUP_FAILURE_RATE_V1, Number(score.toFixed(4)), confidenceFromCount(total), {
@@ -599,10 +560,10 @@ function scoreProviderStartupFailure(metrics: SolScorecardRawMetrics): SolSubsco
   });
 }
 
-function scoreProviderQuotaExhaustion(metrics: SolScorecardRawMetrics): SolSubscore {
-  const total = metrics.provider_decisions ?? 0;
-  if (total === 0) return skippedSubscore("quota_exhaustion", SOL_FORMULA_VERSIONS.QUOTA_EXHAUSTION_RATE_V1, "no routing decisions for provider");
-  const exhausted = metrics.provider_exhausted_decisions ?? 0;
+function scoreAggregateQuotaExhaustion(metrics: SolScorecardRawMetrics, subject: AggregateSubject): SolSubscore {
+  const total = subjectDecisions(metrics, subject);
+  if (total === 0) return skippedSubscore("quota_exhaustion", SOL_FORMULA_VERSIONS.QUOTA_EXHAUSTION_RATE_V1, `no routing decisions for ${subject}`);
+  const exhausted = subjectExhaustedDecisions(metrics, subject);
   const rate = exhausted / total;
   const score = clamp01(1.0 - rate);
   return subscore("quota_exhaustion", SOL_FORMULA_VERSIONS.QUOTA_EXHAUSTION_RATE_V1, Number(score.toFixed(4)), confidenceFromCount(total), {
@@ -610,21 +571,21 @@ function scoreProviderQuotaExhaustion(metrics: SolScorecardRawMetrics): SolSubsc
   });
 }
 
-function scoreProviderFallbackFrequency(metrics: SolScorecardRawMetrics): SolSubscore {
-  const total = metrics.provider_decisions ?? 0;
-  if (total === 0) return skippedSubscore("fallback_frequency", SOL_FORMULA_VERSIONS.FALLBACK_FREQUENCY_V1, "no routing decisions for provider");
-  const fallbacks = metrics.provider_fallback_attempts ?? 0;
+function scoreAggregateFallbackFrequency(metrics: SolScorecardRawMetrics, subject: AggregateSubject): SolSubscore {
+  const total = subjectDecisions(metrics, subject);
+  if (total === 0) return skippedSubscore("fallback_frequency", SOL_FORMULA_VERSIONS.FALLBACK_FREQUENCY_V1, `no routing decisions for ${subject}`);
+  const fallbacks = subjectFallbackAttempts(metrics, subject);
   const rate = fallbacks / total;
   // More fallbacks = lower score (provider needed help)
   const score = clamp01(1.0 - rate);
   return subscore("fallback_frequency", SOL_FORMULA_VERSIONS.FALLBACK_FREQUENCY_V1, Number(score.toFixed(4)), confidenceFromCount(total), {
-    detail: `fallback_attempts=${fallbacks}, successful_fallbacks=${metrics.provider_successful_fallbacks ?? 0}, decisions=${total}`,
+    detail: `fallback_attempts=${fallbacks}, successful_fallbacks=${subjectSuccessfulFallbacks(metrics, subject)}, decisions=${total}`,
   });
 }
 
-function scoreProviderRoleSuitability(metrics: SolScorecardRawMetrics): SolSubscore {
+function scoreAggregateRoleSuitability(metrics: SolScorecardRawMetrics, subject: AggregateSubject): SolSubscore {
   const total = metrics.total_children ?? 0;
-  if (total === 0) return skippedSubscore("role_suitability", SOL_FORMULA_VERSIONS.ROLE_SUITABILITY_V1, "no children assigned to provider");
+  if (total === 0) return skippedSubscore("role_suitability", SOL_FORMULA_VERSIONS.ROLE_SUITABILITY_V1, `no children assigned to ${subject}`);
   const succeeded = metrics.workers_succeeded ?? 0;
   const score = clamp01(succeeded / total);
   return subscore("role_suitability", SOL_FORMULA_VERSIONS.ROLE_SUITABILITY_V1, Number(score.toFixed(4)), confidenceFromCount(total), {
@@ -632,11 +593,11 @@ function scoreProviderRoleSuitability(metrics: SolScorecardRawMetrics): SolSubsc
   });
 }
 
-function scoreProviderRuntime(metrics: SolScorecardRawMetrics): SolSubscore {
+function scoreAggregateRuntime(metrics: SolScorecardRawMetrics, subject: AggregateSubject): SolSubscore {
   const hb = metrics.heartbeat_count;
   const total = metrics.total_children ?? 0;
   if (hb === null || total === 0) {
-    return skippedSubscore("runtime", SOL_FORMULA_VERSIONS.RUNTIME_PROXY_V1, "no heartbeat evidence for provider");
+    return skippedSubscore("runtime", SOL_FORMULA_VERSIONS.RUNTIME_PROXY_V1, `no heartbeat evidence for ${subject}`);
   }
   const mean = hb / total;
   // Same proxy as worker duration: 1–10 heartbeats per child ideal
@@ -647,11 +608,11 @@ function scoreProviderRuntime(metrics: SolScorecardRawMetrics): SolSubscore {
   });
 }
 
-function scoreProviderTokenEfficiency(metrics: SolScorecardRawMetrics): SolSubscore {
+function scoreAggregateTokenEfficiency(metrics: SolScorecardRawMetrics, subject: AggregateSubject): SolSubscore {
   const tokens = metrics.worker_tokens_used;
   const total = metrics.total_children ?? 0;
   if (tokens === null || total === 0) {
-    return skippedSubscore("token_efficiency", SOL_FORMULA_VERSIONS.TOKEN_EFFICIENCY_V1, "no token evidence for provider");
+    return skippedSubscore("token_efficiency", SOL_FORMULA_VERSIONS.TOKEN_EFFICIENCY_V1, `no token evidence for ${subject}`);
   }
   const mean = tokens / total;
   const BUDGET = WORKER_TOKEN_EFFICIENCY_SPEC.budget;
@@ -662,9 +623,9 @@ function scoreProviderTokenEfficiency(metrics: SolScorecardRawMetrics): SolSubsc
   });
 }
 
-function scoreProviderQualityOutcomes(metrics: SolScorecardRawMetrics): SolSubscore {
+function scoreAggregateQualityOutcomes(metrics: SolScorecardRawMetrics, subject: AggregateSubject): SolSubscore {
   const total = metrics.total_children ?? 0;
-  if (total === 0) return skippedSubscore("quality_outcomes", SOL_FORMULA_VERSIONS.QUALITY_OUTCOMES_V1, "no children assigned to provider");
+  if (total === 0) return skippedSubscore("quality_outcomes", SOL_FORMULA_VERSIONS.QUALITY_OUTCOMES_V1, `no children assigned to ${subject}`);
   const succeeded = metrics.workers_succeeded ?? 0;
   const validationOutcome = metrics.validation_outcome;
   const score = validationOutcome === "passed" ? clamp01(succeeded / total) : clamp01(succeeded / total) * 0.8;
@@ -684,104 +645,21 @@ export function computeProviderScorecard(
 ): SolScorecard {
   const rawMetrics = buildProviderRawMetrics(ev, provider);
   const subscores: SolSubscore[] = [
-    scoreProviderStartupFailure(rawMetrics),
-    scoreProviderQuotaExhaustion(rawMetrics),
-    scoreProviderFallbackFrequency(rawMetrics),
-    scoreProviderRoleSuitability(rawMetrics),
-    scoreProviderRuntime(rawMetrics),
-    scoreProviderTokenEfficiency(rawMetrics),
-    scoreProviderQualityOutcomes(rawMetrics),
+    scoreAggregateStartupFailure(rawMetrics, "provider"),
+    scoreAggregateQuotaExhaustion(rawMetrics, "provider"),
+    scoreAggregateFallbackFrequency(rawMetrics, "provider"),
+    scoreAggregateRoleSuitability(rawMetrics, "provider"),
+    scoreAggregateRuntime(rawMetrics, "provider"),
+    scoreAggregateTokenEfficiency(rawMetrics, "provider"),
+    scoreAggregateQualityOutcomes(rawMetrics, "provider"),
   ];
 
-  return buildScorecard("provider", provider, ev, rawMetrics, subscores, sourceRefs ?? defaultSourceRefs(ev), groupingKeys);
+  return buildScorecard("provider", provider, ev, rawMetrics, subscores, sourceRefs ?? buildDefaultEvidenceSourceRefs(ev), groupingKeys);
 }
 
 // ──────────────────────────────────────────────
 // Model scorecard
 // ──────────────────────────────────────────────
-
-function scoreModelStartupFailure(metrics: SolScorecardRawMetrics): SolSubscore {
-  const total = metrics.model_decisions ?? 0;
-  if (total === 0) return skippedSubscore("startup_failure", SOL_FORMULA_VERSIONS.STARTUP_FAILURE_RATE_V1, "no routing decisions for model");
-  const failures = metrics.model_startup_failures ?? 0;
-  const rate = failures / total;
-  const score = clamp01(1.0 - rate);
-  return subscore("startup_failure", SOL_FORMULA_VERSIONS.STARTUP_FAILURE_RATE_V1, Number(score.toFixed(4)), confidenceFromCount(total), {
-    detail: `startup_failures=${failures}, decisions=${total}`,
-  });
-}
-
-function scoreModelQuotaExhaustion(metrics: SolScorecardRawMetrics): SolSubscore {
-  const total = metrics.model_decisions ?? 0;
-  if (total === 0) return skippedSubscore("quota_exhaustion", SOL_FORMULA_VERSIONS.QUOTA_EXHAUSTION_RATE_V1, "no routing decisions for model");
-  const exhausted = metrics.model_exhausted_decisions ?? 0;
-  const rate = exhausted / total;
-  const score = clamp01(1.0 - rate);
-  return subscore("quota_exhaustion", SOL_FORMULA_VERSIONS.QUOTA_EXHAUSTION_RATE_V1, Number(score.toFixed(4)), confidenceFromCount(total), {
-    detail: `exhausted_decisions=${exhausted}, decisions=${total}`,
-  });
-}
-
-function scoreModelFallbackFrequency(metrics: SolScorecardRawMetrics): SolSubscore {
-  const total = metrics.model_decisions ?? 0;
-  if (total === 0) return skippedSubscore("fallback_frequency", SOL_FORMULA_VERSIONS.FALLBACK_FREQUENCY_V1, "no routing decisions for model");
-  const fallbacks = metrics.model_fallback_attempts ?? 0;
-  const rate = fallbacks / total;
-  const score = clamp01(1.0 - rate);
-  return subscore("fallback_frequency", SOL_FORMULA_VERSIONS.FALLBACK_FREQUENCY_V1, Number(score.toFixed(4)), confidenceFromCount(total), {
-    detail: `fallback_attempts=${fallbacks}, successful_fallbacks=${metrics.model_successful_fallbacks ?? 0}, decisions=${total}`,
-  });
-}
-
-function scoreModelRoleSuitability(metrics: SolScorecardRawMetrics): SolSubscore {
-  const total = metrics.total_children ?? 0;
-  if (total === 0) return skippedSubscore("role_suitability", SOL_FORMULA_VERSIONS.ROLE_SUITABILITY_V1, "no children assigned to model");
-  const succeeded = metrics.workers_succeeded ?? 0;
-  const score = clamp01(succeeded / total);
-  return subscore("role_suitability", SOL_FORMULA_VERSIONS.ROLE_SUITABILITY_V1, Number(score.toFixed(4)), confidenceFromCount(total), {
-    detail: `succeeded=${succeeded}, total=${total}`,
-  });
-}
-
-function scoreModelRuntime(metrics: SolScorecardRawMetrics): SolSubscore {
-  const hb = metrics.heartbeat_count;
-  const total = metrics.total_children ?? 0;
-  if (hb === null || total === 0) {
-    return skippedSubscore("runtime", SOL_FORMULA_VERSIONS.RUNTIME_PROXY_V1, "no heartbeat evidence for model");
-  }
-  const mean = hb / total;
-  const EXPECTED_MAX = 10;
-  const score = clamp01(mean <= EXPECTED_MAX ? 1.0 : 1.0 - (mean - EXPECTED_MAX) * 0.05);
-  return subscore("runtime", SOL_FORMULA_VERSIONS.RUNTIME_PROXY_V1, Number(score.toFixed(4)), confidenceFromCount(total), {
-    detail: `mean_heartbeats_per_child=${mean.toFixed(1)}`,
-  });
-}
-
-function scoreModelTokenEfficiency(metrics: SolScorecardRawMetrics): SolSubscore {
-  const tokens = metrics.worker_tokens_used;
-  const total = metrics.total_children ?? 0;
-  if (tokens === null || total === 0) {
-    return skippedSubscore("token_efficiency", SOL_FORMULA_VERSIONS.TOKEN_EFFICIENCY_V1, "no token evidence for model");
-  }
-  const mean = tokens / total;
-  const BUDGET = WORKER_TOKEN_EFFICIENCY_SPEC.budget;
-  const MAX_PENALIZED = WORKER_TOKEN_EFFICIENCY_SPEC.max_penalized;
-  const score = mean <= BUDGET ? 1.0 : clamp01(1.0 - (mean - BUDGET) / (MAX_PENALIZED - BUDGET));
-  return subscore("token_efficiency", SOL_FORMULA_VERSIONS.TOKEN_EFFICIENCY_V1, Number(score.toFixed(4)), "high", {
-    detail: `mean_tokens_per_child=${Math.round(mean)}`,
-  });
-}
-
-function scoreModelQualityOutcomes(metrics: SolScorecardRawMetrics): SolSubscore {
-  const total = metrics.total_children ?? 0;
-  if (total === 0) return skippedSubscore("quality_outcomes", SOL_FORMULA_VERSIONS.QUALITY_OUTCOMES_V1, "no children assigned to model");
-  const succeeded = metrics.workers_succeeded ?? 0;
-  const validationOutcome = metrics.validation_outcome;
-  const score = validationOutcome === "passed" ? clamp01(succeeded / total) : clamp01(succeeded / total) * 0.8;
-  return subscore("quality_outcomes", SOL_FORMULA_VERSIONS.QUALITY_OUTCOMES_V1, Number(score.toFixed(4)), confidenceFromCount(total), {
-    detail: `succeeded=${succeeded}, total=${total}, validation_outcome=${validationOutcome ?? "unknown"}`,
-  });
-}
 
 /**
  * Compute a scorecard for a model.
@@ -794,16 +672,16 @@ export function computeModelScorecard(
 ): SolScorecard {
   const rawMetrics = buildModelRawMetrics(ev, model);
   const subscores: SolSubscore[] = [
-    scoreModelStartupFailure(rawMetrics),
-    scoreModelQuotaExhaustion(rawMetrics),
-    scoreModelFallbackFrequency(rawMetrics),
-    scoreModelRoleSuitability(rawMetrics),
-    scoreModelRuntime(rawMetrics),
-    scoreModelTokenEfficiency(rawMetrics),
-    scoreModelQualityOutcomes(rawMetrics),
+    scoreAggregateStartupFailure(rawMetrics, "model"),
+    scoreAggregateQuotaExhaustion(rawMetrics, "model"),
+    scoreAggregateFallbackFrequency(rawMetrics, "model"),
+    scoreAggregateRoleSuitability(rawMetrics, "model"),
+    scoreAggregateRuntime(rawMetrics, "model"),
+    scoreAggregateTokenEfficiency(rawMetrics, "model"),
+    scoreAggregateQualityOutcomes(rawMetrics, "model"),
   ];
 
-  return buildScorecard("model", model, ev, rawMetrics, subscores, sourceRefs ?? defaultSourceRefs(ev), groupingKeys);
+  return buildScorecard("model", model, ev, rawMetrics, subscores, sourceRefs ?? buildDefaultEvidenceSourceRefs(ev), groupingKeys);
 }
 
 // ──────────────────────────────────────────────
@@ -947,7 +825,7 @@ export function computeRoutingScorecard(
   ];
 
   const key = decision.child_id || `${decision.selected_provider ?? "unknown"}-${decision.providers_tried.join(",")}`;
-  return buildScorecard("routing", key, ev, rawMetrics, subscores, sourceRefs ?? defaultSourceRefs(ev), groupingKeys);
+  return buildScorecard("routing", key, ev, rawMetrics, subscores, sourceRefs ?? buildDefaultEvidenceSourceRefs(ev), groupingKeys);
 }
 
 // ──────────────────────────────────────────────
@@ -969,7 +847,7 @@ export function computeAllScorecards(
   ev: SolEvidence,
   sourceRefs?: SolSourceRef[],
 ): SolScorecardSet {
-  const refs = sourceRefs ?? defaultSourceRefs(ev);
+  const refs = sourceRefs ?? buildDefaultEvidenceSourceRefs(ev);
 
   const foreman = computeForemanScorecard(ev, refs);
 
