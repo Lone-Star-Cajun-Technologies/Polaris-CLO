@@ -48,6 +48,8 @@ export {
   recommendationsToProposals,
   recommendationToProposal,
   formatRecommendationsCli,
+  scorecardToRecommendationSummary,
+  scorecardsToRecommendationSummaries,
 } from "./sol-recommendations.js";
 export type {
   SolRecommendation,
@@ -55,6 +57,11 @@ export type {
   RecommendationEvidence,
   RecommendationOptions,
   RecommendationsReport,
+  ScorecardVerdict,
+  QualityPerTokenEvidence,
+  ScorecardQcEvidence,
+  ScorecardValidationEvidence,
+  ScorecardRecommendationSummary,
 } from "./sol-recommendations.js";
 export type {
   SolDimensionScore,

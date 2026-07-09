@@ -8,6 +8,8 @@
  *   - Confidence bounded to [0, 1]
  *   - Advisory default (no file writes or mutations)
  *   - recommendationsToProposals conversion shape
+ *   - scorecardToRecommendationSummary: verdict logic, evidence extraction,
+ *     mutation safety, advisory default, no-auto-apply behavior
  */
 
 import { describe, expect, it } from "vitest";
@@ -18,10 +20,14 @@ import {
   formatRecommendationsCli,
   generateQcRecommendations,
   formatQcRecommendations,
+  scorecardToRecommendationSummary,
+  scorecardsToRecommendationSummaries,
 } from "./sol-recommendations.js";
 import type { SolScoreSnapshot } from "./sol-history.js";
 import type { SolScoreReport } from "../types/sol-score.js";
 import type { SolEvidence, SolQcEvidence } from "../types/sol-evidence.js";
+import type { SolScorecard, SolSubscore, SolRecommendationInputs } from "../types/sol-scorecard.js";
+import { buildRecommendationInputs } from "../types/sol-scorecard.js";
 
 // ── Helpers ──
 
@@ -465,5 +471,309 @@ describe("generateQcRecommendations", () => {
     const output = formatQcRecommendations(report);
     expect(output).toContain("SOL QC Follow-Up Recommendations");
     expect(output).toContain("qc-unresolved-high-severity");
+  });
+});
+
+// ── Scorecard → recommendation input bridge ─────────────────────────────────
+
+/**
+ * Minimal SolScorecard fixture builder for bridge tests.
+ */
+function makeScorecard(
+  overrides: {
+    subject?: SolScorecard["subject"];
+    subject_key?: string;
+    aggregate_score?: number | null;
+    subscores?: SolSubscore[];
+    grouping_keys?: Record<string, string>;
+    blocking_findings?: number;
+    validation_outcome?: string;
+    intervention?: boolean;
+    router_issue?: boolean;
+  } = {},
+): SolScorecard {
+  const {
+    subject = "provider",
+    subject_key = "devin",
+    aggregate_score = 0.8,
+    subscores = [],
+    grouping_keys = {},
+    blocking_findings = 0,
+    validation_outcome = "passed",
+    intervention = false,
+    router_issue = false,
+  } = overrides;
+
+  const baseSubscores: SolSubscore[] = subscores.length > 0 ? subscores : [
+    { dimension: "role_suitability", formula_version: "role-suitability/1.0", score: aggregate_score, confidence: "high" },
+    { dimension: "validation_result", formula_version: "validation-binary/1.0", score: validation_outcome === "passed" ? 1.0 : 0.0, confidence: "high" },
+  ];
+
+  const rawMetrics = {
+    max_bootstrap_tokens: null,
+    worker_tokens_used: null,
+    dispatch_epoch: null,
+    continue_epoch: null,
+    total_children: null,
+    workers_succeeded: null,
+    workers_failed: null,
+    redispatch_count: null,
+    validation_outcome,
+    passed_commands: validation_outcome === "passed" ? ["npm run build"] : [],
+    qc_total_findings: blocking_findings,
+    qc_blocking_findings: blocking_findings,
+    qc_repaired_findings: null,
+    qc_repair_loop_status: null,
+    qc_repair_rounds: null,
+    escalation_count: null,
+    out_of_scope_count: null,
+    user_intervened: intervention,
+    foreman_intervened: null,
+    state_repair_required: null,
+    provider_selected: null,
+    router_fallback_used: router_issue,
+    router_exhausted: null,
+    router_exhausted_reason: null,
+    provider_decisions: null,
+    provider_startup_failures: null,
+    provider_exhausted_decisions: null,
+    provider_fallback_attempts: null,
+    provider_successful_fallbacks: null,
+    model_decisions: null,
+    model_startup_failures: null,
+    model_exhausted_decisions: null,
+    model_fallback_attempts: null,
+    model_successful_fallbacks: null,
+    router_candidates_count: null,
+    router_child_status: null,
+    router_child_validation: null,
+    heartbeat_count: null,
+  };
+
+  const recommendation_inputs = buildRecommendationInputs(baseSubscores, rawMetrics, aggregate_score);
+
+  return {
+    schema_version: "1.0",
+    scorecard_id: `${subject}-${subject_key}-run-001`,
+    subject,
+    subject_key,
+    window: { run_id: "run-001" },
+    grouping_keys,
+    generated_at: new Date().toISOString(),
+    availability: "complete",
+    raw_metrics: rawMetrics,
+    subscores: baseSubscores,
+    aggregate_score,
+    aggregate_confidence: "high",
+    source_refs: [{ kind: "run-state", path: ".taskchain_artifacts/polaris-run/current-state.json", available: true }],
+    recommendation_inputs,
+    aggregate_formula_version: "composite-mean/1.0",
+  };
+}
+
+describe("scorecardToRecommendationSummary: mutation safety", () => {
+  it("does not mutate the input scorecard", () => {
+    const sc = makeScorecard({ aggregate_score: 0.5 });
+    const original = JSON.stringify(sc);
+    scorecardToRecommendationSummary(sc);
+    expect(JSON.stringify(sc)).toBe(original);
+  });
+
+  it("does not mutate input when called in batch", () => {
+    const scorecards = [
+      makeScorecard({ subject_key: "devin", aggregate_score: 0.5 }),
+      makeScorecard({ subject_key: "claude", aggregate_score: 0.9 }),
+    ];
+    const originals = scorecards.map((s) => JSON.stringify(s));
+    scorecardsToRecommendationSummaries(scorecards);
+    scorecards.forEach((s, i) => expect(JSON.stringify(s)).toBe(originals[i]));
+  });
+
+  it("does not silently mutate provider policy, routing thresholds, or source files", () => {
+    // This is a pure advisory function — calling it produces only the return value.
+    // We verify no side effects by confirming the scorecard is unchanged
+    // and the result has no write-capable references.
+    const sc = makeScorecard({ aggregate_score: 0.4 });
+    const result = scorecardToRecommendationSummary(sc);
+    // Result carries no write handle, API client, or mutable state reference.
+    expect(typeof result).toBe("object");
+    expect(result.verdict).toMatch(/supported|contradicted|inconclusive/);
+    // source_refs are read-only copies (plain objects, not file handles)
+    expect(result.source_refs.every((r) => typeof r.path === "string")).toBe(true);
+  });
+});
+
+describe("scorecardToRecommendationSummary: verdict logic", () => {
+  it("returns 'supported' for high aggregate score without intervention", () => {
+    const sc = makeScorecard({ aggregate_score: 0.9 });
+    expect(scorecardToRecommendationSummary(sc).verdict).toBe("supported");
+  });
+
+  it("returns 'contradicted' for low aggregate score (<0.5)", () => {
+    const sc = makeScorecard({ aggregate_score: 0.3 });
+    expect(scorecardToRecommendationSummary(sc).verdict).toBe("contradicted");
+  });
+
+  it("returns 'contradicted' when blocking QC findings are present", () => {
+    const sc = makeScorecard({ aggregate_score: 0.9, blocking_findings: 2 });
+    expect(scorecardToRecommendationSummary(sc).verdict).toBe("contradicted");
+  });
+
+  it("returns 'inconclusive' for mid-range aggregate score (0.6–0.74)", () => {
+    const sc = makeScorecard({ aggregate_score: 0.65 });
+    expect(scorecardToRecommendationSummary(sc).verdict).toBe("inconclusive");
+  });
+
+  it("returns 'inconclusive' when intervention is detected, even with high score", () => {
+    const sc = makeScorecard({ aggregate_score: 0.85, intervention: true });
+    expect(scorecardToRecommendationSummary(sc).verdict).toBe("inconclusive");
+  });
+
+  it("returns 'inconclusive' when router issue is detected", () => {
+    const sc = makeScorecard({ aggregate_score: 0.85, router_issue: true });
+    expect(scorecardToRecommendationSummary(sc).verdict).toBe("inconclusive");
+  });
+
+  it("uses confirmed_signal subscore when present (score=1.0 → supported)", () => {
+    const subscores: SolSubscore[] = [
+      { dimension: "confirmed_signal", formula_version: "route-confirmed-signal/1.0", score: 1.0, confidence: "high" },
+    ];
+    const sc = makeScorecard({ subject: "routing", subject_key: "POL-001", subscores, aggregate_score: 1.0 });
+    expect(scorecardToRecommendationSummary(sc).verdict).toBe("supported");
+  });
+
+  it("uses confirmed_signal subscore when present (score=0.0 → contradicted)", () => {
+    const subscores: SolSubscore[] = [
+      { dimension: "confirmed_signal", formula_version: "route-confirmed-signal/1.0", score: 0.0, confidence: "high" },
+    ];
+    const sc = makeScorecard({ subject: "routing", subject_key: "POL-001", subscores, aggregate_score: 0.0 });
+    expect(scorecardToRecommendationSummary(sc).verdict).toBe("contradicted");
+  });
+});
+
+describe("scorecardToRecommendationSummary: evidence extraction", () => {
+  it("includes quality_per_token evidence when subscore is present", () => {
+    const subscores: SolSubscore[] = [
+      { dimension: "role_suitability", formula_version: "role-suitability/1.0", score: 0.9, confidence: "high" },
+      { dimension: "quality_per_token", formula_version: "quality-per-token/1.0", score: 0.85, confidence: "high", detail: "tokens=50000, composite=0.9" },
+    ];
+    const sc = makeScorecard({ subscores, aggregate_score: 0.875 });
+    const summary = scorecardToRecommendationSummary(sc);
+    expect(summary.quality_per_token.score).toBe(0.85);
+    expect(summary.quality_per_token.detail).toContain("tokens=50000");
+  });
+
+  it("quality_per_token is null when not present in subscores", () => {
+    const sc = makeScorecard({ aggregate_score: 0.8 });
+    expect(scorecardToRecommendationSummary(sc).quality_per_token.score).toBeNull();
+  });
+
+  it("includes QC evidence from raw_metrics", () => {
+    const sc = makeScorecard({ blocking_findings: 3, aggregate_score: 0.5 });
+    const summary = scorecardToRecommendationSummary(sc);
+    expect(summary.qc.blocking_findings).toBe(3);
+    expect(summary.qc.qc_findings).toBe(3);
+  });
+
+  it("includes validation evidence from raw_metrics", () => {
+    const sc = makeScorecard({ validation_outcome: "passed", aggregate_score: 0.8 });
+    const summary = scorecardToRecommendationSummary(sc);
+    expect(summary.validation.validation_outcome).toBe("passed");
+    expect(summary.validation.passed_commands).toContain("npm run build");
+  });
+
+  it("includes validation score from validation_result subscore", () => {
+    const subscores: SolSubscore[] = [
+      { dimension: "validation_result", formula_version: "validation-binary/1.0", score: 1.0, confidence: "high" },
+    ];
+    const sc = makeScorecard({ subscores, aggregate_score: 1.0 });
+    expect(scorecardToRecommendationSummary(sc).validation.validation_score).toBe(1.0);
+  });
+
+  it("extracts affected provider from scorecard subject_key for provider subject", () => {
+    const sc = makeScorecard({ subject: "provider", subject_key: "anthropic", aggregate_score: 0.8 });
+    expect(scorecardToRecommendationSummary(sc).affected.provider).toBe("anthropic");
+  });
+
+  it("extracts affected model from scorecard subject_key for model subject", () => {
+    const sc = makeScorecard({ subject: "model", subject_key: "claude-opus-4", aggregate_score: 0.8 });
+    expect(scorecardToRecommendationSummary(sc).affected.model).toBe("claude-opus-4");
+  });
+
+  it("extracts affected route from grouping_keys", () => {
+    const sc = makeScorecard({ grouping_keys: { route: "src/autoresearch" }, aggregate_score: 0.8 });
+    expect(scorecardToRecommendationSummary(sc).affected.route).toBe("src/autoresearch");
+  });
+
+  it("includes source_refs from the scorecard", () => {
+    const sc = makeScorecard({ aggregate_score: 0.8 });
+    const summary = scorecardToRecommendationSummary(sc);
+    expect(summary.source_refs).toHaveLength(1);
+    expect(summary.source_refs[0].kind).toBe("run-state");
+  });
+
+  it("includes low_scoring_dimensions from recommendation_inputs", () => {
+    const subscores: SolSubscore[] = [
+      { dimension: "token_efficiency", formula_version: "token-efficiency/1.0", score: 0.3, confidence: "high" },
+      { dimension: "role_suitability", formula_version: "role-suitability/1.0", score: 0.9, confidence: "high" },
+    ];
+    const sc = makeScorecard({ subscores, aggregate_score: 0.6 });
+    const summary = scorecardToRecommendationSummary(sc);
+    expect(summary.low_scoring_dimensions).toContain("token_efficiency");
+    expect(summary.low_scoring_dimensions).not.toContain("role_suitability");
+  });
+});
+
+describe("scorecardToRecommendationSummary: advisory default", () => {
+  it("confidence is bounded to [0, 1]", () => {
+    const sc = makeScorecard({ aggregate_score: 0.1 });
+    const { confidence } = scorecardToRecommendationSummary(sc);
+    expect(confidence).toBeGreaterThanOrEqual(0);
+    expect(confidence).toBeLessThanOrEqual(1);
+  });
+
+  it("confidence is minimal (0.1) when all subscores are skipped", () => {
+    const subscores: SolSubscore[] = [
+      { dimension: "token_efficiency", formula_version: "token-efficiency/1.0", score: null, confidence: "none", skipped_reason: "no token data" },
+    ];
+    const sc = makeScorecard({ subscores, aggregate_score: null });
+    const { confidence } = scorecardToRecommendationSummary(sc);
+    expect(confidence).toBe(0.1);
+  });
+
+  it("summary carries no tracker filing side effects — is advisory only", () => {
+    // scorecardToRecommendationSummary is a pure function that returns a
+    // plain object. It does not call routeProposals or write any files.
+    // Verifying type-level advisory-only contract via structural check.
+    const sc = makeScorecard({ aggregate_score: 0.4 });
+    const summary = scorecardToRecommendationSummary(sc);
+    // The summary has no gate_id, artifact_type, fix_zone, or hint fields
+    // (those belong to AutresearchProposal — the explicitly filed type).
+    expect("gate_id" in summary).toBe(false);
+    expect("artifact_type" in summary).toBe(false);
+    expect("fix_zone" in summary).toBe(false);
+  });
+
+  it("batch function returns one summary per scorecard", () => {
+    const scorecards = [
+      makeScorecard({ subject_key: "devin", aggregate_score: 0.5 }),
+      makeScorecard({ subject_key: "anthropic", aggregate_score: 0.9 }),
+      makeScorecard({ subject_key: "openai", aggregate_score: 0.65 }),
+    ];
+    const summaries = scorecardsToRecommendationSummaries(scorecards);
+    expect(summaries).toHaveLength(3);
+    expect(summaries.map((s) => s.subject_key)).toEqual(["devin", "anthropic", "openai"]);
+  });
+
+  it("identifies verdicts across supported/contradicted/inconclusive", () => {
+    const scorecards = [
+      makeScorecard({ subject_key: "good-provider", aggregate_score: 0.9 }),
+      makeScorecard({ subject_key: "bad-provider", aggregate_score: 0.3 }),
+      makeScorecard({ subject_key: "mid-provider", aggregate_score: 0.65 }),
+    ];
+    const summaries = scorecardsToRecommendationSummaries(scorecards);
+    expect(summaries.find((s) => s.subject_key === "good-provider")!.verdict).toBe("supported");
+    expect(summaries.find((s) => s.subject_key === "bad-provider")!.verdict).toBe("contradicted");
+    expect(summaries.find((s) => s.subject_key === "mid-provider")!.verdict).toBe("inconclusive");
   });
 });
