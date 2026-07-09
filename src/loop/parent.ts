@@ -73,6 +73,8 @@ import { selectChildSlotClaims, type SlotClaim } from "../runtime/scheduling/chi
 import { loadTrackerAdapter, loadTrackerGraph } from "../tracker/index.js";
 import { LifecycleTransitionService } from "../tracker/lifecycle-transition.js";
 import { LocalGraph } from "../tracker/local-graph.js";
+import { upsertWorkerSymptoms } from "../run-health/index.js";
+import type { WorkerRunHealthSymptom } from "../types/result-packet.js";
 
 const CLAIM_TTL_MS = 30 * 60 * 1000;
 
@@ -1810,6 +1812,43 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
           sealedResult['status'] = 'failed';
         }
         finalWorkerSummary = sealedResult as WorkerSummary;
+
+        // ── Ingest worker-reported run-health symptoms ────────────────────────
+        // Only process when worker reports at least one symptom. Errors are
+        // logged to telemetry but never block the run — symptom reporting is
+        // advisory, not a gate.
+        const rawSymptoms = sealedResult['run_health_symptoms'];
+        if (!dryRun && Array.isArray(rawSymptoms) && rawSymptoms.length > 0) {
+          const dispatchRecord = state.open_children_meta?.[nextChild]?.dispatch_record;
+          try {
+            upsertWorkerSymptoms({
+              runId: state.run_id,
+              clusterId: state.cluster_id,
+              childId: nextChild,
+              workerId: dispatchRecord?.worker_id,
+              provider: dispatchRecord?.provider,
+              symptoms: rawSymptoms as WorkerRunHealthSymptom[],
+              repoRoot,
+            });
+            appendTelemetry(telemetryFile, {
+              event: "run-health-symptoms-ingested",
+              run_id: state.run_id,
+              child_id: nextChild,
+              symptom_count: rawSymptoms.length,
+              timestamp: new Date().toISOString(),
+            });
+          } catch (symptomErr) {
+            const symptomMsg = symptomErr instanceof Error ? symptomErr.message : String(symptomErr);
+            appendTelemetry(telemetryFile, {
+              event: "run-health-ingest-error",
+              run_id: state.run_id,
+              child_id: nextChild,
+              error: symptomMsg,
+              timestamp: new Date().toISOString(),
+            });
+            // ponytail: consider surfacing ingest errors to operator via logStatus in a future pass
+          }
+        }
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
         if (!dryRun) {

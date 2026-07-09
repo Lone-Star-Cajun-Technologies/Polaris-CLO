@@ -2,6 +2,35 @@
  * Result packet types for Polaris worker execution and Medic dispatch.
  */
 
+// ── Worker run-health symptom types ──────────────────────────────────────────
+
+/**
+ * Structured symptom a worker can emit in its sealed result.
+ *
+ * Workers observe and report; they do NOT diagnose root cause.
+ * Use one of the five canonical categories.
+ */
+export type WorkerSymptomCategory =
+  | "worker-blocked"          // Worker could not proceed (missing info, approval needed)
+  | "validation-failed"       // Build/test/lint validation commands failed
+  | "repeated-rework"         // Worker attempted the same fix multiple times without success
+  | "unclear-requirements"    // Requirements are contradictory or too ambiguous to act on
+  | "unusual-assumption"      // Worker had to make an assumption outside normal scope
+
+export interface WorkerRunHealthSymptom {
+  /** One of the five canonical symptom categories. */
+  category: WorkerSymptomCategory;
+  /** Human-readable description of what was observed. Keep to one sentence. */
+  message: string;
+  /**
+   * Paths or ids of evidence artifacts (log excerpts, file paths, telemetry ids).
+   * Optional — include when evidence is easily referenceable.
+   */
+  evidence_refs?: string[];
+  /** ISO-8601 timestamp when the symptom was first observed. */
+  occurred_at: string;
+}
+
 /**
  * Base result packet interface
  */
@@ -151,4 +180,11 @@ export interface WorkerResultContract {
 
   /** Optional free-form results from the child execution. */
   result_data?: Record<string, unknown>;
+
+  /**
+   * Structured run-health symptoms observed during worker execution.
+   * Present only when at least one symptom occurred. Workers report symptoms
+   * without diagnosing root cause — diagnosis is Medic's responsibility.
+   */
+  run_health_symptoms?: WorkerRunHealthSymptom[];
 }

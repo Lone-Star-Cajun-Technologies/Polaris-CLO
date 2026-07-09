@@ -2154,3 +2154,265 @@ describe("runParentLoop — provider policy enforcement", () => {
     expect(calls[0].options.provider).toBe("codex");
   });
 });
+
+// ── run-health symptom ingestion ──────────────────────────────────────────────
+
+import { readRunHealthReport } from "../run-health/index.js";
+import type { WorkerRunHealthSymptom } from "../types/result-packet.js";
+
+describe("run-health symptom ingestion", () => {
+  let tmpDir: string;
+  let stateFile: string;
+
+  beforeEach(() => {
+    tmpDir = realpathSync(mkdtempDir());
+    vi.mocked(createAdapter).mockReset();
+  });
+
+  afterEach(() => {
+    if (tmpDir) rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  function mkdtempDir(): string {
+    const { mkdtempSync } = require("node:fs") as typeof import("node:fs");
+    const { tmpdir } = require("node:os") as typeof import("node:os");
+    return mkdtempSync(join(tmpdir(), "polaris-parent-rh-"));
+  }
+
+  /**
+   * Build a mock adapter that writes a sealed result containing symptoms.
+   */
+  function makeSymptomAdapter(symptoms: WorkerRunHealthSymptom[]): ExecutionAdapter {
+    return {
+      name: "mock",
+      async dispatch(packet, _options) {
+        const resultSummary = {
+          child_id: packet.active_child,
+          status: "done",
+          commit: "a".repeat(40),
+          validation: { passed: ["npm run build"] },
+          next_recommended_action: "continue",
+          run_health_symptoms: symptoms,
+        };
+        if (isWorkerPacket(packet)) {
+          mkdirSync(dirname(packet.result_file_contract.result_file), { recursive: true });
+          writeFileSync(
+            packet.result_file_contract.result_file,
+            JSON.stringify(resultSummary),
+            "utf-8",
+          );
+        }
+        return {
+          exit_code: 0,
+          provider_used: "mock",
+          command_run: "mock",
+          summary: JSON.stringify(resultSummary),
+        };
+      },
+    };
+  }
+
+  it("creates a run-health report when worker reports validation-failed symptom", async () => {
+    vi.mocked(createAdapter).mockReturnValue(
+      makeSymptomAdapter([
+        {
+          category: "validation-failed",
+          message: "tsc exited with code 1 after 2 attempts",
+          occurred_at: new Date().toISOString(),
+        },
+      ]),
+    );
+
+    stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+    expect(result.haltReason).toBe("cluster-complete");
+
+    const report = readRunHealthReport("test-run-001", tmpDir);
+    expect(report).not.toBeNull();
+    expect(report?.symptoms).toHaveLength(1);
+    expect(report?.symptoms[0].code).toBe("validation-failed");
+  });
+
+  it("creates a run-health report when worker reports worker-blocked symptom", async () => {
+    vi.mocked(createAdapter).mockReturnValue(
+      makeSymptomAdapter([
+        {
+          category: "worker-blocked",
+          message: "Cannot proceed without approval for out-of-scope file",
+          occurred_at: new Date().toISOString(),
+        },
+      ]),
+    );
+
+    stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+    expect(result.haltReason).toBe("cluster-complete");
+
+    const report = readRunHealthReport("test-run-001", tmpDir);
+    expect(report?.symptoms[0].code).toBe("worker-blocked");
+    expect(report?.symptoms[0].severity).toBe("high");
+  });
+
+  it("creates a run-health report when worker reports repeated-rework symptom", async () => {
+    vi.mocked(createAdapter).mockReturnValue(
+      makeSymptomAdapter([
+        {
+          category: "repeated-rework",
+          message: "Attempted the same type fix 4 times without progression",
+          occurred_at: new Date().toISOString(),
+        },
+      ]),
+    );
+
+    stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+
+    await runParentLoop({ stateFile, repoRoot: tmpDir });
+    const report = readRunHealthReport("test-run-001", tmpDir);
+    expect(report?.symptoms[0].code).toBe("repeated-rework");
+  });
+
+  it("creates a run-health report when worker reports unclear-requirements symptom", async () => {
+    vi.mocked(createAdapter).mockReturnValue(
+      makeSymptomAdapter([
+        {
+          category: "unclear-requirements",
+          message: "AC says append-only and overwrite — contradictory",
+          occurred_at: new Date().toISOString(),
+        },
+      ]),
+    );
+
+    stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+
+    await runParentLoop({ stateFile, repoRoot: tmpDir });
+    const report = readRunHealthReport("test-run-001", tmpDir);
+    expect(report?.symptoms[0].code).toBe("unclear-requirements");
+  });
+
+  it("creates a run-health report when worker reports unusual-assumption symptom", async () => {
+    vi.mocked(createAdapter).mockReturnValue(
+      makeSymptomAdapter([
+        {
+          category: "unusual-assumption",
+          message: "Assumed zod is available; not in package.json",
+          occurred_at: new Date().toISOString(),
+        },
+      ]),
+    );
+
+    stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+
+    await runParentLoop({ stateFile, repoRoot: tmpDir });
+    const report = readRunHealthReport("test-run-001", tmpDir);
+    expect(report?.symptoms[0].code).toBe("unusual-assumption");
+    expect(report?.symptoms[0].severity).toBe("low");
+  });
+
+  it("does NOT create a run-health report when worker reports no symptoms", async () => {
+    const calls: MockCall[] = [];
+    vi.mocked(createAdapter).mockReturnValue(makeMockAdapter([SUCCESS_RESULT], calls));
+
+    stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+
+    await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    const report = readRunHealthReport("test-run-001", tmpDir);
+    expect(report).toBeNull();
+  });
+
+  it("appends symptoms from multiple workers to the same report", async () => {
+    let callCount = 0;
+    const twoWorkerAdapter: ExecutionAdapter = {
+      name: "mock",
+      async dispatch(packet, _options) {
+        callCount += 1;
+        const category: WorkerRunHealthSymptom['category'] =
+          callCount === 1 ? "validation-failed" : "unusual-assumption";
+        const resultSummary = {
+          child_id: packet.active_child,
+          status: "done",
+          commit: "a".repeat(40),
+          validation: { passed: ["npm run build"] },
+          next_recommended_action: "continue",
+          run_health_symptoms: [
+            { category, message: `symptom from child ${callCount}`, occurred_at: new Date().toISOString() },
+          ],
+        };
+        if (isWorkerPacket(packet)) {
+          mkdirSync(dirname(packet.result_file_contract.result_file), { recursive: true });
+          writeFileSync(packet.result_file_contract.result_file, JSON.stringify(resultSummary), "utf-8");
+        }
+        return { exit_code: 0, provider_used: "mock", command_run: "mock", summary: JSON.stringify(resultSummary) };
+      },
+    };
+
+    vi.mocked(createAdapter).mockReturnValue(twoWorkerAdapter);
+
+    stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100", "POL-101"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+
+    await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    const report = readRunHealthReport("test-run-001", tmpDir);
+    expect(report?.symptoms).toHaveLength(2);
+    expect(report?.symptoms.map((s) => s.code)).toContain("validation-failed");
+    expect(report?.symptoms.map((s) => s.code)).toContain("unusual-assumption");
+  });
+
+  it("appends run-health-symptoms-ingested to telemetry when symptoms reported", async () => {
+    vi.mocked(createAdapter).mockReturnValue(
+      makeSymptomAdapter([
+        { category: "validation-failed", message: "build failed", occurred_at: new Date().toISOString() },
+      ]),
+    );
+
+    stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+
+    await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    const telemetryPath = join(tmpDir, "runs", "test-run-001", "telemetry.jsonl");
+    const events = readFileSync(telemetryPath, "utf-8")
+      .trim()
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => JSON.parse(line) as Record<string, unknown>);
+
+    const ingestEvent = events.find((e) => e["event"] === "run-health-symptoms-ingested");
+    expect(ingestEvent).toBeDefined();
+    expect(ingestEvent?.["symptom_count"]).toBe(1);
+    expect(ingestEvent?.["child_id"]).toBe("POL-100");
+  });
+});

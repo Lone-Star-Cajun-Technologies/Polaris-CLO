@@ -447,8 +447,191 @@ describe("markMedicDecision", () => {
 });
 
 // ──────────────────────────────────────────────
-// Atomic write safety
+// upsertWorkerSymptoms
 // ──────────────────────────────────────────────
+
+import { upsertWorkerSymptoms } from "./index.js";
+import type { WorkerRunHealthSymptom } from "../types/result-packet.js";
+
+function makeWorkerSymptom(
+  category: WorkerRunHealthSymptom['category'],
+  message?: string,
+): WorkerRunHealthSymptom {
+  return {
+    category,
+    message: message ?? `observed ${category}`,
+    occurred_at: "2026-07-09T15:00:00.000Z",
+  };
+}
+
+describe("upsertWorkerSymptoms", () => {
+  it("returns null when symptoms array is empty — no report created", () => {
+    const result = upsertWorkerSymptoms({
+      runId: "run-upsert-noop-001",
+      clusterId: "POL-516",
+      childId: "POL-518",
+      symptoms: [],
+      repoRoot: tmpRoot,
+    });
+    expect(result).toBeNull();
+    // No file should have been created
+    const report = readRunHealthReport("run-upsert-noop-001", tmpRoot);
+    expect(report).toBeNull();
+  });
+
+  it("creates a new report when symptoms are present and no report exists", () => {
+    const result = upsertWorkerSymptoms({
+      runId: "run-upsert-create-001",
+      clusterId: "POL-516",
+      childId: "POL-518",
+      symptoms: [makeWorkerSymptom("validation-failed", "tsc exited with code 1")],
+      repoRoot: tmpRoot,
+    });
+    expect(result).not.toBeNull();
+    expect(result?.symptoms).toHaveLength(1);
+    expect(result?.symptoms[0].code).toBe("validation-failed");
+    expect(result?.symptoms[0].source_actor.child_id).toBe("POL-518");
+    expect(result?.run_id).toBe("run-upsert-create-001");
+  });
+
+  it("appends to an existing report when one already exists", () => {
+    const runId = "run-upsert-append-001";
+    // Create initial report
+    upsertWorkerSymptoms({
+      runId,
+      clusterId: "POL-516",
+      childId: "POL-517",
+      symptoms: [makeWorkerSymptom("worker-blocked", "Missing API key")],
+      repoRoot: tmpRoot,
+    });
+    // Append from second worker
+    const updated = upsertWorkerSymptoms({
+      runId,
+      clusterId: "POL-516",
+      childId: "POL-518",
+      symptoms: [makeWorkerSymptom("validation-failed", "Build failed")],
+      repoRoot: tmpRoot,
+    });
+    expect(updated?.symptoms).toHaveLength(2);
+    expect(updated?.symptoms[0].code).toBe("worker-blocked");
+    expect(updated?.symptoms[1].code).toBe("validation-failed");
+  });
+
+  it("handles multiple symptoms from a single worker", () => {
+    const result = upsertWorkerSymptoms({
+      runId: "run-upsert-multi-001",
+      clusterId: "POL-516",
+      childId: "POL-518",
+      symptoms: [
+        makeWorkerSymptom("validation-failed"),
+        makeWorkerSymptom("repeated-rework"),
+      ],
+      repoRoot: tmpRoot,
+    });
+    expect(result?.symptoms).toHaveLength(2);
+  });
+
+  it("maps worker-blocked to severity high", () => {
+    const result = upsertWorkerSymptoms({
+      runId: "run-upsert-sev-blocked-001",
+      clusterId: "POL-516",
+      childId: "POL-518",
+      symptoms: [makeWorkerSymptom("worker-blocked")],
+      repoRoot: tmpRoot,
+    });
+    expect(result?.symptoms[0].severity).toBe("high");
+  });
+
+  it("maps validation-failed to severity high", () => {
+    const result = upsertWorkerSymptoms({
+      runId: "run-upsert-sev-val-001",
+      clusterId: "POL-516",
+      childId: "POL-518",
+      symptoms: [makeWorkerSymptom("validation-failed")],
+      repoRoot: tmpRoot,
+    });
+    expect(result?.symptoms[0].severity).toBe("high");
+  });
+
+  it("maps repeated-rework to severity medium", () => {
+    const result = upsertWorkerSymptoms({
+      runId: "run-upsert-sev-rework-001",
+      clusterId: "POL-516",
+      childId: "POL-518",
+      symptoms: [makeWorkerSymptom("repeated-rework")],
+      repoRoot: tmpRoot,
+    });
+    expect(result?.symptoms[0].severity).toBe("medium");
+  });
+
+  it("maps unclear-requirements to severity medium", () => {
+    const result = upsertWorkerSymptoms({
+      runId: "run-upsert-sev-unclear-001",
+      clusterId: "POL-516",
+      childId: "POL-518",
+      symptoms: [makeWorkerSymptom("unclear-requirements")],
+      repoRoot: tmpRoot,
+    });
+    expect(result?.symptoms[0].severity).toBe("medium");
+  });
+
+  it("maps unusual-assumption to severity low", () => {
+    const result = upsertWorkerSymptoms({
+      runId: "run-upsert-sev-assumption-001",
+      clusterId: "POL-516",
+      childId: "POL-518",
+      symptoms: [makeWorkerSymptom("unusual-assumption")],
+      repoRoot: tmpRoot,
+    });
+    expect(result?.symptoms[0].severity).toBe("low");
+  });
+
+  it("persists symptoms to disk with correct schema", () => {
+    upsertWorkerSymptoms({
+      runId: "run-upsert-persist-001",
+      clusterId: "POL-516",
+      childId: "POL-518",
+      symptoms: [makeWorkerSymptom("validation-failed")],
+      repoRoot: tmpRoot,
+    });
+    const report = readRunHealthReport("run-upsert-persist-001", tmpRoot);
+    expect(report).not.toBeNull();
+    const validation = validateRunHealthReport(report);
+    expect(validation.valid).toBe(true);
+  });
+
+  it("includes workerId and provider in source_actor when provided", () => {
+    const result = upsertWorkerSymptoms({
+      runId: "run-upsert-actor-001",
+      clusterId: "POL-516",
+      childId: "POL-518",
+      workerId: "w-worker-123",
+      provider: "claude",
+      symptoms: [makeWorkerSymptom("unusual-assumption")],
+      repoRoot: tmpRoot,
+    });
+    expect(result?.symptoms[0].source_actor.worker_id).toBe("w-worker-123");
+    expect(result?.symptoms[0].source_actor.provider).toBe("claude");
+  });
+
+  it("forwards evidence_refs from worker symptom to run-health symptom", () => {
+    const result = upsertWorkerSymptoms({
+      runId: "run-upsert-evidence-001",
+      clusterId: "POL-516",
+      childId: "POL-518",
+      symptoms: [
+        {
+          category: "validation-failed",
+          message: "build failed",
+          evidence_refs: ["logs/build.txt"],
+          occurred_at: "2026-07-09T15:00:00.000Z",
+        },
+      ],
+      repoRoot: tmpRoot,
+    });
+    expect(result?.symptoms[0].evidence_refs).toContain("logs/build.txt");
+  });
+});
 
 describe("atomic write safety", () => {
   it("report file is valid after create + append + markBypassed", () => {

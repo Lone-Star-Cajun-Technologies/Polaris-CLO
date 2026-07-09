@@ -295,6 +295,93 @@ export function markMedicDecision(
 }
 
 // ──────────────────────────────────────────────
+// Upsert — create or append worker symptoms
+// ──────────────────────────────────────────────
+
+import type { WorkerRunHealthSymptom } from "../types/result-packet.js";
+
+export interface UpsertWorkerSymptomsParams {
+  runId: string;
+  clusterId: string;
+  childId: string;
+  workerId?: string;
+  provider?: string;
+  symptoms: WorkerRunHealthSymptom[];
+  repoRoot?: string;
+}
+
+/**
+ * Ingest worker-reported symptoms into the run-health report.
+ *
+ * Creates the report when one does not yet exist; appends to it when one does.
+ * No-ops when `symptoms` is empty — no report is created or modified.
+ * Returns the updated report, or null when no symptoms were provided.
+ */
+export function upsertWorkerSymptoms(
+  params: UpsertWorkerSymptomsParams,
+): RunHealthReport | null {
+  const { runId, clusterId, childId, workerId, provider, symptoms, repoRoot } = params;
+  if (!symptoms || symptoms.length === 0) return null;
+
+  const sourceActor: SourceActor = {
+    role: "worker",
+    child_id: childId,
+    worker_id: workerId,
+    provider,
+  };
+
+  const toRunHealthSymptom = (s: WorkerRunHealthSymptom, index: number): RunHealthSymptom => ({
+    // Stable id: child + category + index so repeated calls don't collide
+    id: `${childId}:${s.category}:${index}`,
+    severity: mapCategoryToSeverity(s.category),
+    code: s.category,
+    message: s.message,
+    source_actor: sourceActor,
+    evidence_refs: s.evidence_refs ?? [],
+    occurred_at: s.occurred_at,
+  });
+
+  const existing = readRunHealthReport(runId, repoRoot);
+  if (!existing) {
+    const [first, ...rest] = symptoms.map(toRunHealthSymptom);
+    const report = createRunHealthReport({
+      runId,
+      clusterId,
+      firstSymptom: first,
+      sourceActor,
+      repoRoot,
+    });
+    return rest.reduce(
+      (acc, sym) => appendSymptom(runId, sym, repoRoot),
+      report,
+    );
+  }
+
+  return symptoms
+    .map(toRunHealthSymptom)
+    .reduce(
+      (acc: RunHealthReport, sym) => appendSymptom(runId, sym, repoRoot),
+      existing,
+    );
+}
+
+/**
+ * Maps a worker symptom category to a run-health severity level.
+ * Category-to-severity is intentionally opinionated but not final —
+ * Medic may re-classify during triage.
+ */
+function mapCategoryToSeverity(category: WorkerRunHealthSymptom['category']): import('./schema.js').SymptomSeverity {
+  switch (category) {
+    case 'worker-blocked':    return 'high';
+    case 'validation-failed': return 'high';
+    case 'repeated-rework':   return 'medium';
+    case 'unclear-requirements': return 'medium';
+    case 'unusual-assumption':   return 'low';
+    default: return 'medium';
+  }
+}
+
+// ──────────────────────────────────────────────
 // Re-export schema types and validation for consumers
 // ──────────────────────────────────────────────
 export * from "./schema.js";
