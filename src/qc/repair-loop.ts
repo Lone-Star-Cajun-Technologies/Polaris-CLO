@@ -136,14 +136,15 @@ async function dispatchRepairWorkerWithTimeout(
   });
 
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let timedOut = false;
   try {
     const result = await Promise.race<RepairWorkerResult>([
       dispatch(packet, round, manifest),
       new Promise<never>((_, reject) => {
-        timer = setTimeout(
-          () => reject(new Error(`Repair worker dispatch timed out after ${timeoutMs}ms`)),
-          timeoutMs,
-        );
+        timer = setTimeout(() => {
+          timedOut = true;
+          reject(new Error(`Repair worker dispatch timed out after ${timeoutMs}ms`));
+        }, timeoutMs);
       }),
     ]);
     if (timer) clearTimeout(timer);
@@ -151,7 +152,7 @@ async function dispatchRepairWorkerWithTimeout(
   } catch (err) {
     if (timer) clearTimeout(timer);
     const msg = err instanceof Error ? err.message : String(err);
-    if (msg.includes("timed out")) {
+    if (timedOut) {
       appendTelemetry(telemetryFile, {
         event: "qc-repair-worker-dispatch-timeout",
         run_id: runId,

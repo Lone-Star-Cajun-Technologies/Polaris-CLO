@@ -526,21 +526,25 @@ async function runCompletedClusterQcWithRepair(options: {
   });
 
   if (qcResult.action === "pass") {
-    if (!state.qc_repair_loop) {
-      const maxRounds = config.qc.maxRepairRounds ?? DEFAULT_MAX_REPAIR_ROUNDS;
-      const sourceQcRunIds = qcResult.results.map((r) => r.qcRunId).filter(Boolean);
-      const passLoopState: QcRepairLoopState = {
-        ...initRepairLoopState({ maxRounds, sourceQcRunIds }),
-        terminal_outcome: "pass",
-        updated_at: new Date().toISOString(),
-      };
-      const passedState = { ...state, qc_repair_loop: passLoopState };
-      writeStateAtomic(stateFile, passedState);
-      console.log(`${stepLabel} QC completed-cluster passed: ${qcResult.summary}`);
-      return passedState;
-    }
+    const maxRounds = config.qc.maxRepairRounds ?? DEFAULT_MAX_REPAIR_ROUNDS;
+    const sourceQcRunIds = qcResult.results.map((r) => r.qcRunId).filter(Boolean);
+    const existingLoop = state.qc_repair_loop;
+    const now = new Date().toISOString();
+    const passLoopState: QcRepairLoopState = existingLoop
+      ? {
+          ...existingLoop,
+          terminal_outcome: existingLoop.terminal_outcome ?? "pass",
+          updated_at: existingLoop.terminal_outcome == null ? now : (existingLoop.updated_at ?? now),
+        }
+      : {
+          ...initRepairLoopState({ maxRounds, sourceQcRunIds }),
+          terminal_outcome: "pass",
+          updated_at: now,
+        };
+    const passedState = { ...state, qc_repair_loop: passLoopState };
+    writeStateAtomic(stateFile, passedState);
     console.log(`${stepLabel} QC completed-cluster passed: ${qcResult.summary}`);
-    return state;
+    return passedState;
   }
 
   const repairRouting = config.qc.repairRouting ?? "route";
