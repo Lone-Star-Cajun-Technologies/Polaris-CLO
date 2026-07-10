@@ -290,8 +290,8 @@ async function runSingleProvider(
   const startedAt = new Date().toISOString();
   const command = provider.buildReviewCommand(scope);
   const execFn = options.execFileImpl ?? execFile;
-  const timeoutMs = options.timeoutMs ?? 300_000; // 5 minutes default
   const providerConfig = getProviderConfig(provider.name, options.config);
+  const timeoutMs = options.timeoutMs ?? providerConfig?.timeoutMs ?? 300_000; // 5 minutes default
 
   emitProviderAttempted(options.telemetryFile, scope.runId, scope.clusterId, provider.name, fallbackSource);
 
