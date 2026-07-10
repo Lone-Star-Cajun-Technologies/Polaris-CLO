@@ -335,26 +335,6 @@ export async function runQcRepairLoop(
       };
     }
 
-    if (requiresOperatorReview(currentResults)) {
-      loopState = { ...loopState, terminal_outcome: "operator-review", updated_at: new Date().toISOString() };
-      onStateUpdate?.(loopState);
-      appendTelemetry(telemetryFile, {
-        event: "qc-repair-loop-terminal",
-        run_id: runId,
-        outcome: "operator-review",
-        round,
-        timestamp: new Date().toISOString(),
-      });
-      await persistQcRepairOutcome(clusterId, repoRoot, "operator-review");
-      return {
-        outcome: "operator-review",
-        rounds_completed: roundsCompleted,
-        final_qc_results: currentResults,
-        loop_state: loopState,
-        summary: `QC repair loop halted: unresolved operator-review findings at round ${round}`,
-      };
-    }
-
     // ── Compile / discover repair packets ──────────────────────────────────
 
     let manifest: QcRepairPacketManifest | null = null;
@@ -411,14 +391,34 @@ export async function runQcRepairLoop(
 
     // ── Check for repairable packets ────────────────────────────────────────
 
-    const repairablePackets = manifest.packets.filter(
+    const dispatchablePackets = manifest.packets.filter(
       (p) =>
-        p.routingTarget === "repair-worker" &&
+        (p.routingTarget === "repair-worker" || p.routingTarget === "operator-review") &&
         p.status === "pending" &&
         !loopState.completed_packet_ids.includes(p.packetId),
     );
 
-    if (repairablePackets.length === 0 && !hasRepairableFindings(currentResults)) {
+    if (dispatchablePackets.length === 0 && requiresOperatorReview(currentResults)) {
+      loopState = { ...loopState, terminal_outcome: "operator-review", updated_at: new Date().toISOString() };
+      onStateUpdate?.(loopState);
+      appendTelemetry(telemetryFile, {
+        event: "qc-repair-loop-terminal",
+        run_id: runId,
+        outcome: "operator-review",
+        round,
+        timestamp: new Date().toISOString(),
+      });
+      await persistQcRepairOutcome(clusterId, repoRoot, "operator-review");
+      return {
+        outcome: "operator-review",
+        rounds_completed: roundsCompleted,
+        final_qc_results: currentResults,
+        loop_state: loopState,
+        summary: `QC repair loop halted: unresolved operator-review findings at round ${round}`,
+      };
+    }
+
+    if (dispatchablePackets.length === 0 && !hasRepairableFindings(currentResults)) {
       loopState = { ...loopState, terminal_outcome: "no-repairable", updated_at: new Date().toISOString() };
       onStateUpdate?.(loopState);
       appendTelemetry(telemetryFile, {
@@ -440,7 +440,7 @@ export async function runQcRepairLoop(
 
     // ── Dispatch repair workers (parallel groups, then serialized) ──────────
 
-    const { parallelGroups, serialized } = partitionRepairPackets(repairablePackets);
+    const { parallelGroups, serialized } = partitionRepairPackets(dispatchablePackets);
     const allWorkerResults: RepairWorkerResult[] = [];
     let hasMedicReferral = false;
 
@@ -612,6 +612,26 @@ export async function runQcRepairLoop(
   }
 
   // ── Max rounds exhausted ──────────────────────────────────────────────────
+
+  if (requiresOperatorReview(currentResults)) {
+    loopState = { ...loopState, terminal_outcome: "operator-review", updated_at: new Date().toISOString() };
+    onStateUpdate?.(loopState);
+    appendTelemetry(telemetryFile, {
+      event: "qc-repair-loop-terminal",
+      run_id: runId,
+      outcome: "operator-review",
+      rounds_completed: roundsCompleted,
+      timestamp: new Date().toISOString(),
+    });
+    await persistQcRepairOutcome(clusterId, repoRoot, "operator-review");
+    return {
+      outcome: "operator-review",
+      rounds_completed: roundsCompleted,
+      final_qc_results: currentResults,
+      loop_state: loopState,
+      summary: `QC repair loop halted: unresolved operator-review findings after ${roundsCompleted} round(s)`,
+    };
+  }
 
   loopState = { ...loopState, terminal_outcome: "max-rounds", updated_at: new Date().toISOString() };
   onStateUpdate?.(loopState);

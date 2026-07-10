@@ -354,7 +354,10 @@ describe("runQcRepairLoop", () => {
 
   it("exits with operator-review when findings require human review", async () => {
     const config = makeQcConfig();
-    const dispatch: DispatchRepairWorkerFn = vi.fn();
+    const dispatch: DispatchRepairWorkerFn = vi.fn().mockImplementation(async (packet) => ({
+      packetId: packet.packetId,
+      status: "success",
+    }));
 
     const operatorReviewResult = makeResult({
       status: "findings",
@@ -369,6 +372,14 @@ describe("runQcRepairLoop", () => {
       ],
     });
 
+    // Keep operator-review findings open after rerun so the loop terminates as operator-review.
+    vi.mocked(runQcAtTrigger).mockResolvedValue({
+      trigger: "completed-cluster",
+      results: [operatorReviewResult],
+      action: "block",
+      summary: "operator review still required",
+    });
+
     const result = await runQcRepairLoop({
       clusterId: "POL-TEST",
       runId: "run-1",
@@ -379,11 +390,17 @@ describe("runQcRepairLoop", () => {
       registry: emptyRegistry,
       initialQcResults: [operatorReviewResult],
       dispatchRepairWorker: dispatch,
-      maxRounds: 2,
+      maxRounds: 1,
     });
 
     expect(result.outcome).toBe("operator-review");
-    expect(dispatch).not.toHaveBeenCalled();
+    expect(dispatch).toHaveBeenCalledTimes(1);
+    expect(
+      readFileSync(
+        path.join(tmpDir, ".polaris", "clusters", "POL-TEST", "qc", "repair-rounds", "1", "repair-packets.json"),
+        "utf-8",
+      ),
+    ).toContain("\"routingTarget\": \"operator-review\"");
   });
 
   it("calls onStateUpdate on each mutation", async () => {

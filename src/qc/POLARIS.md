@@ -80,6 +80,8 @@ States (managed by `orchestration.ts`):
 
 Terminal states (`QcRepairLoopOutcome` in `src/loop/checkpoint.ts`): `pass`, `no-repairable`, `max-rounds`, `all-providers-failed`, `operator-review`, `medic-referral`, `qc-disabled`. These are the exact string literals stored in `state.qc_repair_loop.terminal_outcome` and `ClusterState.qc_repair_outcome`; finalize's repair-loop gate (`src/finalize/index.ts`) matches against them directly.
 
+Operator-review findings do not bypass packet compilation: the loop still compiles a repair manifest for the round and dispatches any eligible `repair-worker`/`operator-review` packets before settling on an `operator-review` terminal outcome.
+
 See `smartdocs/specs/active/quality-control-architecture.md §8.9` for the telemetry-aligned terminal outcome catalog that matches these values (§8.6–8.7 predate the implemented naming).
 
 ## Artifact paths
