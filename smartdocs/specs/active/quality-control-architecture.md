@@ -534,12 +534,12 @@ The following JSONL events must be emitted to the run telemetry file. Each event
 | `qc-findings-normalized` | After all providers' output is parsed into `QcFinding` array. |
 | `qc-repair-round-started` | At the start of each repair round. |
 | `qc-repair-packets-compiled` | After repair packet manifest is written. |
-| `qc-repair-packet-dispatched` | When a repair worker is dispatched for a packet. |
-| `qc-repair-packet-complete` | When a repair worker returns a result for a packet. |
+| `qc-repair-packet-dispatched` | When a `repair-worker` packet is dispatched; `operator-review` packets are not dispatched and settle the terminal `operator-review` outcome directly. |
+| `qc-repair-packet-complete` | When a `repair-worker` packet returns a result. |
 | `qc-rerun-started` | When post-repair QC rerun is triggered. |
 | `qc-repair-round-complete` | At the end of each repair round (before rerun). |
 | `qc-max-rounds-reached` | When `round > maxRepairRounds` with open findings. |
-| `qc-operator-review-required` | When a finding escalates to operator review. |
+| `qc-operator-review-required` | When a finding or packet escalates to operator review; `operator-review` packets are not dispatched and settle the terminal `operator-review` outcome directly. |
 | `qc-medic-referral-required` | When a packet escalates to Medic. |
 
 SOL evidence fields added by the repair loop (not present in pre-POL-501 artifacts):

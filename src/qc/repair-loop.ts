@@ -204,9 +204,11 @@ export function partitionRepairPackets(packets: QcRepairPacket[]): {
   parallelGroups: QcRepairPacket[][];
   serialized: QcRepairPacket[];
 } {
-  // Medic (operator-review) packets are always serialized.
-  const serialized = packets.filter((p) => p.medic || p.routingTarget === "operator-review");
-  const parallelizable = packets.filter((p) => !p.medic && p.routingTarget !== "operator-review");
+  // Medic packets are always serialized; operator-review packets are never dispatched.
+  const serialized = packets.filter((p) => p.medic);
+  const parallelizable = packets.filter(
+    (p) => !p.medic && p.routingTarget !== "operator-review",
+  );
 
   // Group by parallelGroup assignment from the compiler.
   const groups = new Map<string, QcRepairPacket[]>();
@@ -393,7 +395,7 @@ export async function runQcRepairLoop(
 
     const dispatchablePackets = manifest.packets.filter(
       (p) =>
-        (p.routingTarget === "repair-worker" || p.routingTarget === "operator-review") &&
+        p.routingTarget === "repair-worker" &&
         p.status === "pending" &&
         !loopState.completed_packet_ids.includes(p.packetId),
     );
@@ -462,7 +464,7 @@ export async function runQcRepairLoop(
       allWorkerResults.push(...groupResults);
     }
 
-    // Dispatch serialized (medic/operator-review) packets sequentially.
+    // Dispatch serialized (medic) packets sequentially.
     for (const pkt of serialized) {
       const result = await dispatchRepairWorker(pkt, round, manifest);
       allWorkerResults.push(result);
