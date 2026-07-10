@@ -141,12 +141,8 @@ describe("enrichCanonFiles", () => {
     setupRepo();
     const { spawnSync } = await import("node:child_process");
     const calls: string[][] = [];
-    vi.mocked(spawnSync).mockImplementation(((_cmd: unknown, args: unknown, _options?: unknown) => {
-      if (args !== undefined && (!Array.isArray(args) || !args.every((value) => typeof value === "string"))) {
-        throw new Error("Expected spawnSync args to be string[]");
-      }
-      const normalizedArgs = args ?? [];
-      calls.push(normalizedArgs);
+    vi.mocked(spawnSync).mockImplementation(((_: string, args: readonly string[] = []) => {
+      calls.push([...args]);
       return { stdout: JSON.stringify({ relevant_docs: [], summary_lines: [], polaris_lines: [] }), status: 0 } as ReturnType<typeof spawnSync>;
     }) as typeof spawnSync);
 
