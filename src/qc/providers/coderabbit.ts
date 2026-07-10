@@ -70,18 +70,20 @@ function pickString(...candidates: (unknown | undefined)[]): string | undefined 
 }
 
 const FINDING_LOCATION_KEYS = ["file", "filePath", "path"];
-const FINDING_REVIEW_KEYS = [
-  "severity",
+const FINDING_CONTENT_KEYS = [
   "message",
   "title",
   "summary",
   "description",
   "body",
-  "rule",
-  "category",
   "suggestion",
   "suggestedAction",
   "fix",
+];
+const FINDING_BOOKKEEPING_KEYS = [
+  "severity",
+  "category",
+  "rule",
   "providerFindingId",
   "id",
   "findingId",
@@ -111,8 +113,16 @@ function hasFindingLocation(record: Record<string, unknown>): boolean {
   return FINDING_LOCATION_KEYS.some((key) => record[key] !== undefined);
 }
 
-function hasFindingReviewContent(record: Record<string, unknown>): boolean {
-  return FINDING_REVIEW_KEYS.some((key) => record[key] !== undefined);
+function hasFindingContent(record: Record<string, unknown>): boolean {
+  return FINDING_CONTENT_KEYS.some((key) => record[key] !== undefined);
+}
+
+function hasFindingBookkeeping(record: Record<string, unknown>): boolean {
+  return FINDING_BOOKKEEPING_KEYS.some((key) => record[key] !== undefined);
+}
+
+function hasFindingShape(record: Record<string, unknown>): boolean {
+  return hasFindingLocation(record) || hasFindingContent(record) || hasFindingBookkeeping(record);
 }
 
 function isProgressRecord(record: Record<string, unknown>): boolean {
@@ -126,8 +136,8 @@ function isProgressRecord(record: Record<string, unknown>): boolean {
   // Status-only records with category="status" are progress records even if they have message/title fields
   if (typeof record.category === "string" && record.category.toLowerCase() === "status") return true;
 
-  // Only reject as progress if it has both location AND review content (true finding shape)
-  if (hasFindingLocation(record) && hasFindingReviewContent(record)) {
+  // Only reject as progress if it has both location AND content (true finding shape)
+  if (hasFindingLocation(record) && hasFindingContent(record)) {
     return false;
   }
 
@@ -136,7 +146,11 @@ function isProgressRecord(record: Record<string, unknown>): boolean {
 
 function isActionableFinding(record: Record<string, unknown>): boolean {
   if (isProgressRecord(record)) return false;
-  return hasFindingLocation(record) || hasFindingReviewContent(record);
+  return hasFindingLocation(record) || hasFindingContent(record);
+}
+
+function isUnusableFindingRecord(record: Record<string, unknown>): boolean {
+  return !isActionableFinding(record) && (isProgressRecord(record) || hasFindingShape(record));
 }
 
 function makeUnusableOutputError(message: string): Error {
@@ -218,6 +232,29 @@ function parseReport(
   if (data !== undefined && typeof data === "object" && data !== null) {
     const findings = parseFindingsFromPayload(data);
     const record = data as Record<string, unknown>;
+
+    if (findings.length === 0) {
+      if (isProgressRecord(record)) {
+        throw makeUnusableOutputError("CodeRabbit output was a progress/status/heartbeat record");
+      }
+
+      if (isUnusableFindingRecord(record)) {
+        throw makeUnusableOutputError("CodeRabbit output contained only bookkeeping records");
+      }
+
+      const rawFindings = record.findings ?? record.issues ?? record.results;
+      if (Array.isArray(rawFindings) && rawFindings.length > 0) {
+        const unusableCount = rawFindings.filter(
+          (item) => typeof item === "object" && item !== null && isUnusableFindingRecord(item as Record<string, unknown>),
+        ).length;
+        if (unusableCount > 0) {
+          throw makeUnusableOutputError(
+            `CodeRabbit output contained only bookkeeping/progress records (${unusableCount} items)`,
+          );
+        }
+      }
+    }
+
     return {
       findings,
       ...(typeof record.prUrl === "string" ? { prUrl: record.prUrl } : {}),
@@ -237,20 +274,38 @@ function parseReport(
             typeof item === "object" && item !== null && isActionableFinding(item as Record<string, unknown>),
         );
         if (findings.length === 0 && parsed.length > 0) {
-          const progressCount = (parsed as unknown[]).filter(
-            (item) => typeof item === "object" && item !== null && isProgressRecord(item as Record<string, unknown>),
+          const unusableCount = (parsed as unknown[]).filter(
+            (item) => typeof item === "object" && item !== null && isUnusableFindingRecord(item as Record<string, unknown>),
           ).length;
-          if (progressCount > 0) {
+          if (unusableCount > 0) {
             throw makeUnusableOutputError(
-              `CodeRabbit output contained only progress/status/heartbeat records (${progressCount} items)`,
+              `CodeRabbit output contained only progress/status/heartbeat and bookkeeping records (${unusableCount} items)`,
             );
           }
         }
         return { findings };
       }
       const findings = parseFindingsFromPayload(parsed);
-      if (findings.length === 0 && isProgressRecord(parsed as Record<string, unknown>)) {
-        throw makeUnusableOutputError("CodeRabbit output was a progress/status/heartbeat record");
+      if (findings.length === 0) {
+        const parsedRecord = parsed as Record<string, unknown>;
+        if (isProgressRecord(parsedRecord)) {
+          throw makeUnusableOutputError("CodeRabbit output was a progress/status/heartbeat record");
+        }
+        if (isUnusableFindingRecord(parsedRecord)) {
+          throw makeUnusableOutputError("CodeRabbit output contained only bookkeeping records");
+        }
+
+        const rawFindings = parsedRecord.findings ?? parsedRecord.issues ?? parsedRecord.results;
+        if (Array.isArray(rawFindings) && rawFindings.length > 0) {
+          const unusableCount = rawFindings.filter(
+            (item) => typeof item === "object" && item !== null && isUnusableFindingRecord(item as Record<string, unknown>),
+          ).length;
+          if (unusableCount > 0) {
+            throw makeUnusableOutputError(
+              `CodeRabbit output contained only bookkeeping/progress records (${unusableCount} items)`,
+            );
+          }
+        }
       }
       return {
         findings,
@@ -259,8 +314,16 @@ function parseReport(
           : {}),
       };
     } catch (jsonError) {
-      // When the format is explicitly JSON, a parse error is a real failure.
-      // Otherwise, treat the text as JSONL and fall through to line scanning.
+      // Semantic failures (e.g. unusable-output) surfaced during JSON object/array
+      // parsing must not be swallowed; only true JSON parse errors fall through to
+      // JSONL line scanning when the format is not explicitly JSON.
+      if (
+        typeof jsonError === "object" &&
+        jsonError !== null &&
+        "qcFailureReason" in jsonError
+      ) {
+        throw jsonError;
+      }
       if (format === "json") {
         throw jsonError;
       }
@@ -271,6 +334,7 @@ function parseReport(
   const lines = text.split("\n").filter((line) => line.trim().length > 0);
   const lineFindings: CodeRabbitFindingLike[] = [];
   let progressLineCount = 0;
+  let unusableLineCount = 0;
   let parsedLineCount = 0;
   for (const line of lines) {
     try {
@@ -286,6 +350,8 @@ function parseReport(
       }
       if (isActionableFinding(record)) {
         lineFindings.push(parsed as CodeRabbitFindingLike);
+      } else if (isUnusableFindingRecord(record)) {
+        unusableLineCount++;
       }
     } catch {
       // Ignore unparseable lines.
@@ -294,9 +360,9 @@ function parseReport(
   if (lineFindings.length > 0) {
     return { findings: lineFindings };
   }
-  if (progressLineCount > 0) {
+  if (progressLineCount > 0 || unusableLineCount > 0) {
     throw makeUnusableOutputError(
-      `CodeRabbit output contained only progress/status/heartbeat records (${progressLineCount} lines)`,
+      `CodeRabbit output contained only progress/status/heartbeat and bookkeeping records (${progressLineCount + unusableLineCount} lines)`,
     );
   }
   if (parsedLineCount > 0) {

@@ -116,6 +116,13 @@ function classifyTerminalFailure(
     return "timeout";
   }
 
+  // Exit code 143 is the standard shell convention for a process killed by SIGTERM
+  // (128 + SIGTERM). Some provider CLI wrappers report this directly instead of
+  // allowing Node's execFile to surface the signal, so treat it as a timeout.
+  if (output.exitCode === 143) {
+    return "timeout";
+  }
+
   if (execError?.code === "ENOENT") {
     return "command-not-found";
   }
