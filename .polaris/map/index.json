@@ -1,10 +1,10 @@
 {
-  "scan_date": "2026-07-09T17:31:20.968Z",
-  "file_count": 658,
+  "scan_date": "2026-07-10T17:45:31.174Z",
+  "file_count": 660,
   "coverage_pct": 92,
   "instructionCoverage": {
-    "routesCovered": 641,
-    "routesTotal": 658,
+    "routesCovered": 643,
+    "routesTotal": 660,
     "coveragePercent": 97
   },
   "entries": {
@@ -1247,8 +1247,8 @@
       "taskchain": "polaris-cognition",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-07-04T02:53:23.054Z",
-      "updated_by": "polaris-map-index",
+      "last_updated": "2026-07-10T04:27:46.027Z",
+      "updated_by": "polaris-map-update",
       "tags": [
         "cognition"
       ],
@@ -1315,8 +1315,8 @@
       "taskchain": "polaris-cognition",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-07-04T02:53:23.054Z",
-      "updated_by": "polaris-map-index",
+      "last_updated": "2026-07-10T04:27:46.027Z",
+      "updated_by": "polaris-map-update",
       "tags": [
         "cognition"
       ],
@@ -1407,7 +1407,7 @@
       "taskchain": "polaris-config",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-07-09T17:31:20.968Z",
+      "last_updated": "2026-07-10T10:27:48.690Z",
       "updated_by": "polaris-map-update",
       "tags": [
         "config"
@@ -1420,7 +1420,7 @@
       "taskchain": "polaris-config",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-07-09T17:31:20.968Z",
+      "last_updated": "2026-07-10T10:27:48.690Z",
       "updated_by": "polaris-map-update",
       "tags": [
         "config"
@@ -1634,7 +1634,7 @@
       "taskchain": "polaris-finalize",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-07-09T12:06:37.717Z",
+      "last_updated": "2026-07-10T10:27:48.690Z",
       "updated_by": "polaris-map-update",
       "tags": [
         "finalize"
@@ -1647,7 +1647,7 @@
       "taskchain": "polaris-finalize",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-07-09T17:31:20.968Z",
+      "last_updated": "2026-07-10T17:45:31.174Z",
       "updated_by": "polaris-map-update",
       "tags": [
         "finalize"
@@ -3443,7 +3443,7 @@
       "taskchain": "polaris-loop",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-07-09T17:31:20.968Z",
+      "last_updated": "2026-07-10T10:27:48.690Z",
       "updated_by": "polaris-map-update",
       "tags": [
         "loop"
@@ -3456,7 +3456,7 @@
       "taskchain": "polaris-loop",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-07-09T17:31:20.968Z",
+      "last_updated": "2026-07-10T10:27:48.690Z",
       "updated_by": "polaris-map-update",
       "tags": [
         "loop"
@@ -3496,7 +3496,7 @@
       "taskchain": "polaris-loop",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-07-07T16:00:26.895Z",
+      "last_updated": "2026-07-10T10:27:48.690Z",
       "updated_by": "polaris-map-update",
       "tags": [
         "loop"
@@ -3509,7 +3509,7 @@
       "taskchain": "polaris-loop",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-07-07T16:00:26.895Z",
+      "last_updated": "2026-07-10T10:27:48.690Z",
       "updated_by": "polaris-map-update",
       "tags": [
         "loop"
@@ -3522,7 +3522,7 @@
       "taskchain": "polaris-loop",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-07-07T16:00:26.895Z",
+      "last_updated": "2026-07-10T10:27:48.690Z",
       "updated_by": "polaris-map-update",
       "tags": [
         "loop"
@@ -3535,7 +3535,7 @@
       "taskchain": "polaris-loop",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-07-07T16:00:26.895Z",
+      "last_updated": "2026-07-10T10:27:48.690Z",
       "updated_by": "polaris-map-update",
       "tags": [
         "loop"
@@ -7980,7 +7980,7 @@
       "taskchain": "polaris-qc",
       "confidence": 0.9500000000000001,
       "classification": "indexed",
-      "last_updated": "2026-07-09T05:39:28.199Z",
+      "last_updated": "2026-07-10T04:58:59.422Z",
       "updated_by": "polaris-map-update",
       "tags": [
         "qc",
@@ -8035,7 +8035,7 @@
       "taskchain": "polaris-qc",
       "confidence": 0.9500000000000001,
       "classification": "indexed",
-      "last_updated": "2026-07-09T12:06:37.717Z",
+      "last_updated": "2026-07-10T14:47:24.559Z",
       "updated_by": "polaris-map-update",
       "tags": [
         "qc"
@@ -8095,6 +8095,33 @@
         "medic"
       ],
       "instructionFile": "src/medic/POLARIS.md"
+    },
+    "src/cognition/librarian-packet.test.ts": {
+      "domain": "cognition",
+      "route": "src/cognition",
+      "taskchain": "polaris-cognition",
+      "confidence": 0.9,
+      "classification": "indexed",
+      "last_updated": "2026-07-10T04:27:46.027Z",
+      "updated_by": "polaris-map-update",
+      "tags": [
+        "cognition",
+        "test"
+      ],
+      "instructionFile": "src/cognition/POLARIS.md"
+    },
+    "src/qc/repair-loop.ts": {
+      "domain": "qc",
+      "route": "src/qc",
+      "taskchain": "polaris-qc",
+      "confidence": 0.9,
+      "classification": "indexed",
+      "last_updated": "2026-07-10T04:58:59.422Z",
+      "updated_by": "polaris-map-update",
+      "tags": [
+        "qc"
+      ],
+      "instructionFile": "src/qc/POLARIS.md"
     },
     ".eslintrc.json": {
       "domain": "unknown",

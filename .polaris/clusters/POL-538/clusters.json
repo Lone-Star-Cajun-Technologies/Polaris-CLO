@@ -1,0 +1,40 @@
+{
+  "schemaVersion": "v2",
+  "source": {
+    "id": "POL-538",
+    "type": "Linear",
+    "analysis": {
+      "id": "POL-537",
+      "doc": "smartdocs/raw/analysis/pol-537-finalize-medic-escalation-gap-analysis.md"
+    }
+  },
+  "nodes": {
+    "POL-538": {
+      "id": "POL-538",
+      "title": "IMPLEMENT: Wire finalize QC repair-loop gate to Medic escalation",
+      "status": "Todo",
+      "body": "## Objective\n\nFix the gap identified in [POL-537](https://linear.app/lsctech/issue/POL-537/analyze-finalize-qc-repair-loop-gate-never-escalates-to): `runFinalize()`'s QC repair-loop gate hard-blocks on an untrusted terminal outcome instead of escalating to the existing, already-working Medic run-health mechanism.\n\n## Context\n\n`src/loop/parent.ts` already calls `appendRepairLoopOutcomeSymptom()` (from `src/run-health/qc-escalation.ts`) immediately after `runQcRepairLoop()` returns, converting untrusted outcomes (`max-rounds`, `medic-referral`, `all-providers-failed`) into run-health symptoms that a subsequent Medic consult can resolve. `src/finalize/index.ts`'s `runCompletedClusterQcWithRepair()` calls the same `runQcRepairLoop()` and gets the identical result shape, but goes straight to `validateQcRepairLoopGate()` and a hard `process.exit(1)` — it never calls the escalation function, so there is no automated recourse when finalize's own QC repair loop can't reach a trusted outcome.\n\nAnalysis doc: `smartdocs/raw/analysis/pol-537-finalize-medic-escalation-gap-analysis.md`\n\n## Goal\n\n`runCompletedClusterQcWithRepair()` calls `appendRepairLoopOutcomeSymptom()` (and, for full parity, `appendQcEscalationSymptoms()` on the initial pre-repair QC result) so untrusted outcomes land in `.polaris/runs/<run-id>/run-health-report.json`, exactly mirroring `src/loop/parent.ts`'s established pattern.\n\n## Scope\n\n* `src/finalize/index.ts`\n* `src/finalize/qc-trigger.test.ts`\n* `src/finalize/POLARIS.md`\n\n## Acceptance Criteria\n\n- [ ] `runCompletedClusterQcWithRepair()` calls `appendRepairLoopOutcomeSymptom({runId, clusterId, repairResult, repoRoot})` immediately after `runQcRepairLoop()` returns, before `validateQcRepairLoopGate()`\n- [ ] The initial (pre-repair) `runQcAtTrigger()` result is escalated via `appendQcEscalationSymptoms()` for parity with `parent.ts`\n- [ ] A test reproduces an `all-providers-failed` repair-loop outcome and confirms a `qc-all-providers-failed` symptom is appended to the run-health report before finalize blocks\n- [ ] Existing finalize QC gate tests continue to pass\n- [ ] `src/finalize/POLARIS.md`'s \"QC repair loop relationship\" section documents the escalation call\n- [ ] `npm run build` and `npm test` pass\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/finalize src/run-health\n\n## Ordering\n\nSingle child. No dependencies — small, precisely-scoped wiring fix.\n\n## Non-goals\n\n* Do not change `src/run-health/qc-escalation.ts` — the needed functions already exist and are correct\n* Do not add automatic inline Medic dispatch inside finalize (escalating the symptom for a subsequent operator-triggered retry is sufficient, per finalize's manual/operator-triggered model)\n* Do not change the QC repair-loop dispatch/timeout behavior from POL-530/531/532/533 or the finding-classification fix from POL-536"
+    },
+    "POL-537": {
+      "id": "POL-537",
+      "title": "ANALYZE: finalize QC repair-loop gate never escalates to Medic on untrusted outcome",
+      "status": "Done"
+    },
+    "POL-539": {
+      "id": "POL-539",
+      "title": "Call appendRepairLoopOutcomeSymptom before finalize's repair-loop gate blocks",
+      "status": "Todo",
+      "body": "## Objective\n\nAdd the missing `appendRepairLoopOutcomeSymptom()`/`appendQcEscalationSymptoms()` calls in `runCompletedClusterQcWithRepair()` (`src/finalize/index.ts`) so untrusted QC repair-loop outcomes escalate to the run-health report before finalize blocks.\n\n## Context\n\n`src/loop/parent.ts` (lines ~1318-1332) calls both escalation functions immediately after `runQcRepairLoop()` returns:\n\n```ts\nappendRepairLoopOutcomeSymptom({ runId: state.run_id, clusterId: state.cluster_id, repairResult: repairLoopResult, repoRoot });\nif (repairLoopResult.final_qc_results.length > 0 && repairLoopResult.rounds_completed > 0) {\n  appendQcEscalationSymptoms({ runId: state.run_id, clusterId: state.cluster_id, qcResults: repairLoopResult.final_qc_results, afterRepair: true, repoRoot });\n}\n```\n\n`src/finalize/index.ts`'s `runCompletedClusterQcWithRepair()` calls `runQcRepairLoop()` and gets the identical `QcRepairLoopResult` shape into `repairLoopResult`, but goes straight to `validateQcRepairLoopGate(nextState, config.qc)` and blocks — never calling either function. This means an `all-providers-failed` (or `max-rounds`/`medic-referral`) outcome hit during finalize has no automated Medic recourse, unlike the identical scenario during the normal run loop.\n\nAnalysis doc: `smartdocs/raw/analysis/pol-537-finalize-medic-escalation-gap-analysis.md`\n\n## Goal\n\n`runCompletedClusterQcWithRepair()` escalates repair-loop outcomes and post-repair QC results the same way `parent.ts` does, before enforcing the terminal-state gate.\n\n## Scope\n\n* `src/finalize/index.ts`\n* `src/finalize/qc-trigger.test.ts`\n* `src/finalize/POLARIS.md`\n\n## Acceptance Criteria\n\n- [ ] Import `appendRepairLoopOutcomeSymptom` and `appendQcEscalationSymptoms` from `../run-health/qc-escalation.js` in `src/finalize/index.ts`\n- [ ] `appendRepairLoopOutcomeSymptom({runId: nextState.run_id, clusterId: nextState.cluster_id, repairResult: repairLoopResult, repoRoot})` is called immediately after `runQcRepairLoop()` returns, before `validateQcRepairLoopGate()`\n- [ ] `appendQcEscalationSymptoms()` is called for the initial pre-repair `runQcAtTrigger()` result when it doesn't pass, and for `repairLoopResult.final_qc_results` when `rounds_completed > 0`, mirroring `parent.ts`'s condition\n- [ ] Test: an `all-providers-failed` repair-loop outcome produces a `qc-all-providers-failed` symptom in `.polaris/runs/<run-id>/run-health-report.json` before finalize exits\n- [ ] Test: a `max-rounds` outcome produces a `qc-max-repair-rounds` symptom\n- [ ] Existing `validateQcRepairLoopGate` blocking-behavior tests still pass unmodified in outcome\n- [ ] `src/finalize/POLARIS.md`'s \"QC repair loop relationship\" section mentions the escalation call\n- [ ] `npm run build` and `npm test` pass\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/finalize src/run-health\n\n## Ordering\n\nFirst and only child. No dependencies.\n\n## Non-goals\n\n* Do not modify `src/run-health/qc-escalation.ts`\n* Do not add automatic inline Medic dispatch inside finalize\n* Do not touch the repair-loop dispatch/timeout logic from POL-531/532/533 or the coderabbit classification fix from POL-536"
+    }
+  },
+  "dependencies": {},
+  "clusters": {
+    "POL-538": {
+      "id": "POL-538",
+      "title": "Linear Issue: POL-538",
+      "children": ["POL-539"],
+      "cluster_root": "POL-538"
+    }
+  },
+  "activeCluster": "POL-538"
+}
