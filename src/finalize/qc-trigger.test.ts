@@ -122,9 +122,6 @@ function makeFinding(
   overrides: Partial<QcFinding> & { findingId: string; severity: QcFinding["severity"]; title: string },
 ): QcFinding {
   return {
-    findingId: overrides.findingId,
-    severity: overrides.severity,
-    title: overrides.title,
     category: "style",
     filePath: "src/impl.ts",
     fixAvailable: false,
@@ -138,10 +135,34 @@ function makeFinding(
 
 function makeCompletedClusterResult(
   clusterId: string,
+  action: "pass",
+  findings?: QcFinding[],
+): {
+  result: { trigger: "completed-cluster"; results: QcResult[]; action: "pass"; summary: string };
+  repairLoopResult: QcRepairLoopResult;
+};
+function makeCompletedClusterResult(
+  clusterId: string,
+  action: "block",
+  findings?: QcFinding[],
+): {
+  result: { trigger: "completed-cluster"; results: QcResult[]; action: "block"; summary: string };
+  repairLoopResult: QcRepairLoopResult;
+};
+function makeCompletedClusterResult(
+  clusterId: string,
+  action: "follow-up",
+  findings?: QcFinding[],
+): {
+  result: { trigger: "completed-cluster"; results: QcResult[]; action: "follow-up"; summary: string };
+  repairLoopResult: QcRepairLoopResult;
+};
+function makeCompletedClusterResult(
+  clusterId: string,
   action: "pass" | "block" | "follow-up",
   findings: QcFinding[] = [],
 ): {
-  result: { trigger: "completed-cluster"; results: QcResult[]; action: typeof action; summary: string };
+  result: { trigger: "completed-cluster"; results: QcResult[]; action: "pass" | "block" | "follow-up"; summary: string };
   repairLoopResult: QcRepairLoopResult;
 } {
   const status = action === "pass" ? "passed" : "findings";
@@ -190,8 +211,6 @@ function makeCompletedClusterResult(
   const roundsCompleted = (() => {
     switch (terminalOutcome) {
       case "pass":
-      case "medic-referral":
-      case "max-rounds":
         return 1;
       default:
         return 0;

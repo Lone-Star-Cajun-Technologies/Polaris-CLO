@@ -141,10 +141,11 @@ describe("enrichCanonFiles", () => {
     setupRepo();
     const { spawnSync } = await import("node:child_process");
     const calls: string[][] = [];
-    vi.mocked(spawnSync).mockImplementation((cmd: string, args: string[]) => {
+    vi.mocked(spawnSync).mockImplementation(((...spawnArgs: unknown[]) => {
+      const args = Array.isArray(spawnArgs[1]) ? spawnArgs[1].map((value) => String(value)) : [];
       calls.push(args);
       return { stdout: JSON.stringify({ relevant_docs: [], summary_lines: [], polaris_lines: [] }), status: 0 } as ReturnType<typeof spawnSync>;
-    });
+    }) as typeof spawnSync);
 
     await enrichCanonFiles(root);
 
