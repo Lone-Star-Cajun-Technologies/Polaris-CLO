@@ -11,6 +11,7 @@ Atomic 13-step delivery sequence — the only subsystem that pushes branches, op
 - `validateMedicGate()` blocks finalize when a run-health report exists without a Medic decision or explicit bypass.
 - Only `polaris finalize` may call `git push`.
 - Completed-cluster QC blocks now trigger the QC repair loop during finalize when repair routing is active, so repair packets can be compiled/dispatched in-band before the terminal-state gate.
+- `runCompletedClusterQcWithRepair()` escalates untrusted completed-cluster and repair-loop QC outcomes to the run-health report as symptoms before the terminal gate.
 - `validateQcRepairLoopGate()` blocks finalize unless the QC repair loop's `terminal_outcome` is `"pass"`, `"qc-disabled"`, or `"no-repairable"` (when QC + repair routing are active).
 - `validateAuthoritativeChildState()` cross-checks completed-child counts against cluster-state before PR creation; its authoritative count is used in the PR body and Linear comment instead of the raw loop-state count.
 
@@ -19,7 +20,7 @@ Atomic 13-step delivery sequence — the only subsystem that pushes branches, op
 - **Downstream**: GitHub (PR creation), Linear (issue update)
 
 ## Current State
-The finalize subsystem owns the atomic delivery sequence, QC gating, and the run-health Medic gate. It commits state, map, and run-report artifacts only, then optionally proceeds to PR creation and tracker updates when the QC and Medic gates pass. Run-health reports now block delivery until Medic resolves or bypasses them, and the QC repair loop continues to gate finalize independently of the Medic check. `runCompletedClusterQcWithRepair()` now delegates directly to `runQcRepairLoop()`, which filters `operator-review` packets, bounds repair-worker dispatch with `qc.repairDispatchTimeoutMs`, and emits telemetry checkpoints before finalizing. Finalize still remains the only subsystem that pushes branches and opens PRs.
+The finalize subsystem owns the atomic delivery sequence, QC gating, and the run-health Medic gate. It commits state, map, and run-report artifacts only, then optionally proceeds to PR creation and tracker updates when the QC and Medic gates pass. Run-health reports now block delivery until Medic resolves or bypasses them, and the QC repair loop continues to gate finalize independently of the Medic check. `runCompletedClusterQcWithRepair()` now delegates directly to `runQcRepairLoop()` and escalates untrusted completed-cluster and repair-loop QC outcomes to the run-health report as symptoms before the terminal gate. Finalize still remains the only subsystem that pushes branches and opens PRs.
 
 ## Linked Canonical Sources
 - [POLARIS.md](POLARIS.md)

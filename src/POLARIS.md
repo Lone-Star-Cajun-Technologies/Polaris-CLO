@@ -30,7 +30,7 @@ The `src/` tree contains the Polaris application source: CLI entrypoints, runtim
 
 - `src/` is the checked-in source root for the Polaris runtime.
 - Cognition, map, Smart Docs, graph, run-health, and Medic subsystems are separate and documented with folder-level contracts.
-- Run-health reports are the machine-readable source of truth for symptoms; workers and SOL append symptoms, Medic resolves them, and finalize blocks until the report has a Medic decision or explicit bypass.
+- Run-health reports are the machine-readable source of truth for symptoms; workers, SOL, and finalize append symptoms (finalize escalates QC outcomes to the report), Medic resolves them, and finalize blocks until the report has a Medic decision or explicit bypass.
 - Route health and identity checks span `src/map/`, `src/cognition/`, `src/run-health/`, and CLI command wiring; keep their public terms aligned.
 - New config or governance surfaces must be reflected in the relevant subfolder docs.
 
