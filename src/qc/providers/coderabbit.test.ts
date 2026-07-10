@@ -102,6 +102,26 @@ describe("CodeRabbitQcProvider", () => {
     expect((thrown as { qcFailureReason?: string }).qcFailureReason).toBe("unusable-output");
   });
 
+  it("classifies title-fallback records as unusable-output", () => {
+    const provider = new CodeRabbitQcProvider();
+    const stdout = [
+      { severity: "high", title: "finding", category: "finding", id: "1" },
+      { severity: "high", title: "Issue", category: "Issue", id: "2" },
+    ]
+      .map((record) => JSON.stringify(record))
+      .join("\n");
+
+    let thrown: unknown;
+    try {
+      provider.parse(makeOutput(stdout));
+    } catch (err) {
+      thrown = err;
+    }
+
+    expect(thrown).toBeInstanceOf(Error);
+    expect((thrown as { qcFailureReason?: string }).qcFailureReason).toBe("unusable-output");
+  });
+
   it("classifies a JSON findings array of only bookkeeping records as unusable-output", () => {
     const provider = new CodeRabbitQcProvider();
     const output = makeOutput(

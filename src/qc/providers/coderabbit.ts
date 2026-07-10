@@ -113,8 +113,30 @@ function hasFindingLocation(record: Record<string, unknown>): boolean {
   return FINDING_LOCATION_KEYS.some((key) => record[key] !== undefined);
 }
 
+function isGenuineTitle(record: Record<string, unknown>): boolean {
+  const title = record.title;
+  if (typeof title !== "string" || title.trim().length === 0) {
+    return false;
+  }
+  const trimmedTitle = title.trim().toLowerCase();
+  const fallbackSources = [record.category, record.type, record.rule];
+  for (const source of fallbackSources) {
+    if (typeof source === "string" && source.trim().toLowerCase() === trimmedTitle) {
+      return false;
+    }
+  }
+  return true;
+}
+
 function hasFindingContent(record: Record<string, unknown>): boolean {
-  return FINDING_CONTENT_KEYS.some((key) => record[key] !== undefined);
+  for (const key of FINDING_CONTENT_KEYS) {
+    if (key === "title") {
+      if (isGenuineTitle(record)) return true;
+    } else if (record[key] !== undefined) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function hasFindingBookkeeping(record: Record<string, unknown>): boolean {
