@@ -29,8 +29,8 @@ ingested-at: 2026-05-28T06:23:01.681Z
 
 | File | Role | Authority | Scope |
 |------|------|-----------|-------|
-| `POLARIS.md` | Folder front door: navigation, local rules, structure | Authoritative for routing and editing constraints | Folder-level |
-| `SUMMARY.md` | Compressed doctrine snapshot for this folder/domain | **Informational only** — never authoritative | Folder-level |
+| `POLARIS.md` | Route-local operating doctrine: responsibilities, boundaries, invariants, commands/workflows, safety rules, related canon | Authoritative for route operating guidance | Folder-level |
+| `SUMMARY.md` | Informational current-state memory: current behavior, synthesized recent changes, known gaps, current caveats, linked canonical sources | **Informational only** — never authoritative | Folder-level |
 | `smartdocs/doctrine/active/*.md` | Behavioral canon | Authoritative | Repo-wide |
 | Implementation notes | In-code comments, ADRs | Authoritative at point of origin | File-level |
 
@@ -41,11 +41,11 @@ ingested-at: 2026-05-28T06:23:01.681Z
 ### POLARIS.md MUST contain
 
 - **Purpose** — one paragraph describing what this folder does
-- **What belongs here** — bulleted file list of contents
-- **What does not belong here** — explicit exclusions
-- **Editing rules** — behavioral constraints for agents and humans
-- **Architecture assumptions** — what the code assumes about the world
-- **Read before editing** — links to canonical sources (doctrine, specs)
+- **Responsibilities and boundaries** — what this route owns and where handoffs begin
+- **Invariants and safety rules** — non-negotiable operating constraints
+- **Commands/workflows** — route-local operational commands and runbook behaviors
+- **What belongs here / does not belong here** — explicit scope boundaries
+- **Read before editing / related canon** — links to authoritative doctrine/spec sources
 - **Related routes** — atlas route pointer to sibling or parent folders
 
 ### POLARIS.md MUST NOT contain
@@ -71,6 +71,8 @@ ingested-at: 2026-05-28T06:23:01.681Z
 | **Key Constraints** | The most important non-obvious behavioral limits |
 | **Important Relationships** | Upstream/downstream dependencies on other folders |
 | **Current State** | What is implemented, what is not yet, known gaps |
+| **Recent Changes (Synthesized)** | Recent run/changelog facts distilled into current state (not diary entries) |
+| **Current Caveats** | Active caveats and temporary constraints that affect current understanding |
 | **Known Drift** | Places where the summary may be stale (honesty field) |
 | **Linked Canonical Sources** | Links to spec files, doctrine, POLARIS.md |
 
@@ -79,6 +81,8 @@ ingested-at: 2026-05-28T06:23:01.681Z
 - Rules (belongs in POLARIS.md)
 - Behavioral assertions using `must`/`never`/`always` (risks doctrine bleed)
 - File inventories (belongs in POLARIS.md "What belongs here")
+- Diary-style run logs or append-only changelog history
+- Verbatim copies of stable operating doctrine from POLARIS.md
 
 **Governance:** SUMMARY.md that contains modal verbs (`must`/`never`/`always`) referencing implementation behavior must be flagged as a **doctrine bleed risk** by the validation tool.
 
@@ -125,6 +129,9 @@ Agents must not short-circuit this traversal by treating SUMMARY.md as a substit
 4. **Authorship** — SUMMARY.md is human-curated by default. Partially-generated drafts are acceptable if clearly marked with `<!-- polaris:draft -->`.
 5. **No promotion lifecycle** — Promotion governance does not apply to SUMMARY.md. It has no promotion lifecycle; it does not graduate to canon.
 6. **Canon-check handling** — SUMMARY.md must be treated as informational-only by the canon-check tool. It must not be evaluated for authoritative content.
+7. **Evidence-driven update scope** — reconciliation may update only `POLARIS.md`, only `SUMMARY.md`, both, or neither based on evidence.
+8. **Summary synthesis rule** — recent-run/changelog material may appear in `SUMMARY.md` only when synthesized into current state.
+9. **No doctrine duplication** — stable operating rules belong in `POLARIS.md` and should be referenced, not duplicated verbatim, in `SUMMARY.md`.
 
 ---
 

@@ -185,10 +185,13 @@ export class TerminalCliAdapter implements ExecutionAdapter {
     const primaryProvider = options.provider || "terminal-cli";
     const routerEvidence = options.routerDecision;
     const providerAttempts: NonNullable<DispatchResult["provider_attempts"]> = [];
-    if (isWorkerPacket(packet) && packet.worker_role === "impl") {
+    if (
+      isWorkerPacket(packet) &&
+      (packet.worker_role === "impl" || packet.worker_role === "repair")
+    ) {
       const allowed = Array.isArray(packet.instructions?.allowed_scope) ? packet.instructions.allowed_scope : [];
       if (allowed.length === 0) {
-        const blockedMsg = `Worker blocked: impl packet for ${packet.active_child} has empty allowed_scope. Foreman must provide scope or approve override.`;
+        const blockedMsg = `Worker blocked: ${packet.worker_role} packet for ${packet.active_child} has empty allowed_scope. Foreman must provide scope or approve override.`;
         return {
           exit_code: 1,
           provider_used: primaryProvider,

@@ -77,6 +77,7 @@ function makeQcConfig(overrides: Partial<QcConfig> = {}): QcConfig {
     enabled: true,
     severityThresholds: { block: "high", repair: "medium", followUp: "low" },
     maxRepairRounds: 2,
+    repairDispatchTimeoutMs: 1_800_000,
     providers: {
       mock: { enabled: true, mode: "local", trigger: "completed-cluster" } as import("../config/schema.js").QcProviderConfig,
     },
@@ -187,6 +188,122 @@ describe("runQcRepairLoop", () => {
     expect(result.outcome).toBe("pass");
     expect(result.rounds_completed).toBe(1);
     expect(dispatch).toHaveBeenCalledTimes(1);
+  });
+
+  it("emits telemetry immediately before serialized (medic) dispatch", async () => {
+    const config = makeQcConfig();
+    vi.mocked(runQcAtTrigger).mockResolvedValue(makePassedQcResult());
+
+    const dispatch: DispatchRepairWorkerFn = vi.fn().mockResolvedValue({
+      packetId: "pkt-medic-r1-001",
+      status: "success",
+    } as RepairWorkerResult);
+
+    const medicPacket = makeRepairable({
+      packetId: "pkt-medic-r1-001",
+      medic: true,
+    });
+
+    const manifestDir = path.join(tmpDir, ".polaris", "clusters", "POL-TEST", "qc", "repair-rounds", "1");
+    mkdirSync(manifestDir, { recursive: true });
+    const { writeFileSync } = await import("node:fs");
+    writeFileSync(
+      path.join(manifestDir, "repair-packets.json"),
+      JSON.stringify(makeManifest([medicPacket]), null, 2),
+      "utf-8",
+    );
+
+    const telemetryFile = path.join(tmpDir, "telemetry.jsonl");
+    const result = await runQcRepairLoop({
+      clusterId: "POL-TEST",
+      runId: "run-1",
+      branch: "main",
+      repoRoot: tmpDir,
+      telemetryFile,
+      config,
+      registry: emptyRegistry,
+      initialQcResults: [makeQcResultWithFindings()],
+      dispatchRepairWorker: dispatch,
+      maxRounds: 2,
+    });
+
+    expect(result.outcome).toBe("pass");
+    expect(dispatch).toHaveBeenCalledTimes(1);
+
+    const telemetry = readFileSync(telemetryFile, "utf-8")
+      .trim()
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => JSON.parse(line));
+    const dispatchStart = telemetry.find(
+      (e) => e.event === "qc-repair-worker-dispatch-start" && e.packet_id === "pkt-medic-r1-001",
+    );
+    expect(dispatchStart).toBeDefined();
+    expect(dispatchStart.medic).toBe(true);
+  });
+
+  it("records a timeout failure when a repair dispatch exceeds the configured timeout", async () => {
+    const config = makeQcConfig({ repairDispatchTimeoutMs: 10 });
+
+    // Mock dispatch that checks for AbortSignal cancellation
+    let receivedSignal: AbortSignal | undefined;
+    const dispatch: DispatchRepairWorkerFn = vi.fn().mockImplementation(
+      (packet, round, manifest, signal) => {
+        receivedSignal = signal;
+        return new Promise<RepairWorkerResult>(() => {
+          // Never resolves - will timeout
+        });
+      },
+    );
+
+    const packet = makeRepairable({ packetId: "pkt-timeout-r1-001" });
+
+    const manifestDir = path.join(tmpDir, ".polaris", "clusters", "POL-TEST", "qc", "repair-rounds", "1");
+    mkdirSync(manifestDir, { recursive: true });
+    const { writeFileSync } = await import("node:fs");
+    writeFileSync(
+      path.join(manifestDir, "repair-packets.json"),
+      JSON.stringify(makeManifest([packet]), null, 2),
+      "utf-8",
+    );
+
+    const telemetryFile = path.join(tmpDir, "telemetry.jsonl");
+    const result = await runQcRepairLoop({
+      clusterId: "POL-TEST",
+      runId: "run-1",
+      branch: "main",
+      repoRoot: tmpDir,
+      telemetryFile,
+      config,
+      registry: emptyRegistry,
+      initialQcResults: [makeQcResultWithFindings()],
+      dispatchRepairWorker: dispatch,
+      maxRounds: 1,
+    });
+
+    expect(dispatch).toHaveBeenCalledTimes(1);
+    expect(result.outcome).toBe("medic-referral");
+
+    // Verify AbortSignal was provided and was aborted on timeout
+    expect(receivedSignal).toBeDefined();
+    expect(receivedSignal?.aborted).toBe(true);
+
+    const telemetry = readFileSync(telemetryFile, "utf-8")
+      .trim()
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => JSON.parse(line));
+    const timeoutEvent = telemetry.find(
+      (e) =>
+        e.event === "qc-repair-worker-dispatch-timeout" &&
+        e.packet_id === "pkt-timeout-r1-001",
+    );
+    expect(timeoutEvent).toBeDefined();
+    expect(timeoutEvent.timeout_ms).toBe(10);
+
+    // NOTE: Full worker process termination requires ExecutionAdapter-level support for
+    // AbortSignal propagation to spawned child processes. This test verifies the signal
+    // is provided and aborted; actual process cleanup is a future enhancement.
   });
 
   it("exits with no-repairable when manifest has no repair-worker packets and findings are follow-up only", async () => {
@@ -379,11 +496,99 @@ describe("runQcRepairLoop", () => {
       registry: emptyRegistry,
       initialQcResults: [operatorReviewResult],
       dispatchRepairWorker: dispatch,
-      maxRounds: 2,
+      maxRounds: 1,
     });
 
     expect(result.outcome).toBe("operator-review");
     expect(dispatch).not.toHaveBeenCalled();
+    expect(
+      readFileSync(
+        path.join(tmpDir, ".polaris", "clusters", "POL-TEST", "qc", "repair-rounds", "1", "repair-packets.json"),
+        "utf-8",
+      ),
+    ).toContain("\"routingTarget\": \"operator-review\"");
+  });
+
+  it("dispatches only repair-worker packets when mixed with operator-review", async () => {
+    const config = makeQcConfig({ maxRepairRounds: 2 });
+
+    // Keep operator-review findings open after rerun so the loop terminates as operator-review.
+    vi.mocked(runQcAtTrigger).mockResolvedValue({
+      trigger: "completed-cluster",
+      results: [
+        makeResult({
+          status: "findings",
+          findings: [
+            makeFinding({
+              findingId: "f-op",
+              severity: "high",
+              routingDecision: "operator-review",
+              status: "open",
+              attribution: { confidence: "high", reason: "changed-file-owner" },
+            }),
+          ],
+        }),
+      ],
+      action: "block",
+      summary: "operator review still required",
+    });
+
+    const dispatch: DispatchRepairWorkerFn = vi.fn().mockResolvedValue({
+      packetId: "pkt-test-r1-001",
+      status: "success",
+    } as RepairWorkerResult);
+
+    const repairPacket = makeRepairable({ packetId: "pkt-test-r1-001", routingTarget: "repair-worker" });
+    const opPacket = makeRepairable({ packetId: "pkt-test-r1-002", routingTarget: "operator-review" });
+    const manifestDir = path.join(tmpDir, ".polaris", "clusters", "POL-TEST", "qc", "repair-rounds", "1");
+    mkdirSync(manifestDir, { recursive: true });
+    const manifestPath = path.join(manifestDir, "repair-packets.json");
+    const { writeFileSync } = await import("node:fs");
+    writeFileSync(manifestPath, JSON.stringify(makeManifest([opPacket, repairPacket]), null, 2), "utf-8");
+
+    const qcResult = makeResult({
+      qcRunId: "qc-run-1",
+      status: "findings",
+      findings: [
+        makeFinding({
+          findingId: "f-1",
+          severity: "medium",
+          filePath: "src/foo.ts",
+          attribution: { confidence: "high", reason: "changed-file-owner", childId: "POL-123" },
+          routingDecision: "repair-worker",
+          status: "open",
+        }),
+        makeFinding({
+          findingId: "f-op",
+          severity: "high",
+          routingDecision: "operator-review",
+          status: "open",
+          attribution: { confidence: "high", reason: "changed-file-owner" },
+        }),
+      ],
+    });
+
+    const result = await runQcRepairLoop({
+      clusterId: "POL-TEST",
+      runId: "run-1",
+      branch: "main",
+      repoRoot: tmpDir,
+      telemetryFile: path.join(tmpDir, "telemetry.jsonl"),
+      config,
+      registry: emptyRegistry,
+      initialQcResults: [qcResult],
+      dispatchRepairWorker: dispatch,
+      maxRounds: 2,
+    });
+
+    expect(result.outcome).toBe("operator-review");
+    expect(dispatch).toHaveBeenCalledTimes(1);
+    expect(dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({ packetId: "pkt-test-r1-001" }),
+      1,
+      expect.any(Object),
+      expect.any(AbortSignal),
+    );
   });
 
   it("calls onStateUpdate on each mutation", async () => {
@@ -447,17 +652,22 @@ describe("partitionRepairPackets", () => {
   });
 
   it("puts medic packets in serialized queue", () => {
-    const medicPkt = makeRepairable({ packetId: "p-medic", medic: true, routingTarget: "operator-review" });
+    const medicPkt = makeRepairable({
+      packetId: "p-medic",
+      medic: true,
+      routingTarget: "repair-worker",
+    });
     const normalPkt = makeRepairable({ packetId: "p-normal" });
     const { parallelGroups, serialized } = partitionRepairPackets([medicPkt, normalPkt]);
     expect(serialized).toContainEqual(expect.objectContaining({ packetId: "p-medic" }));
     expect(parallelGroups.flat()).toContainEqual(expect.objectContaining({ packetId: "p-normal" }));
   });
 
-  it("puts operator-review packets in serialized queue", () => {
+  it("excludes operator-review packets from dispatch buckets", () => {
     const opPkt = makeRepairable({ packetId: "p-op", routingTarget: "operator-review", medic: false });
-    const { serialized } = partitionRepairPackets([opPkt]);
-    expect(serialized).toContainEqual(expect.objectContaining({ packetId: "p-op" }));
+    const { parallelGroups, serialized } = partitionRepairPackets([opPkt]);
+    expect(serialized).toHaveLength(0);
+    expect(parallelGroups).toHaveLength(0);
   });
 });
 

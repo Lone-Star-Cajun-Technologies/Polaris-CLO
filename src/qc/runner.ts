@@ -116,6 +116,13 @@ function classifyTerminalFailure(
     return "timeout";
   }
 
+  // Exit code 143 is the standard shell convention for a process killed by SIGTERM
+  // (128 + SIGTERM). Some provider CLI wrappers report this directly instead of
+  // allowing Node's execFile to surface the signal, so treat it as a timeout.
+  if (output.exitCode === 143) {
+    return "timeout";
+  }
+
   if (execError?.code === "ENOENT") {
     return "command-not-found";
   }
@@ -283,8 +290,8 @@ async function runSingleProvider(
   const startedAt = new Date().toISOString();
   const command = provider.buildReviewCommand(scope);
   const execFn = options.execFileImpl ?? execFile;
-  const timeoutMs = options.timeoutMs ?? 300_000; // 5 minutes default
   const providerConfig = getProviderConfig(provider.name, options.config);
+  const timeoutMs = options.timeoutMs ?? providerConfig?.timeoutMs ?? 300_000; // 5 minutes default
 
   emitProviderAttempted(options.telemetryFile, scope.runId, scope.clusterId, provider.name, fallbackSource);
 

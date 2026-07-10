@@ -9,7 +9,7 @@
  */
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { join, relative, resolve } from "node:path";
+import { basename, dirname, join, relative, resolve } from "node:path";
 import { isCognitionSkippedFolder } from "./route-cognition-delta.js";
 import { isSummaryOversized, hasDoctrineBled, SUMMARY_MAX_BYTES } from "./summary-delta.js";
 
@@ -19,7 +19,63 @@ export type CognitionViolationType =
   | "summary-oversized"
   | "summary-doctrine-bleed"
   | "polaris-churn-suspected"
-  | "locality-violation";
+  | "locality-violation"
+  | "polaris-summary-drift";
+
+export interface CognitionValidationOptions {
+  /** Normalized similarity threshold above which sibling drift is warned. */
+  similarityThreshold?: number;
+}
+
+const DEFAULT_PAIRWISE_DRIFT_THRESHOLD = 0.5;
+
+// ── Pairwise POLARIS.md / SUMMARY.md drift detection ───────────────────────────
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Normalize route artifact text so shared boilerplate (headings, links, route
+ * names) does not dominate similarity scores.
+ */
+function normalizeRouteArtifact(content: string, routeName?: string): string {
+  let s = content.toLowerCase();
+  // Strip markdown headings
+  s = s.replace(/^#+\s+.*$/gm, " ");
+  // Remove link URLs but keep link text
+  s = s.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+  // Remove bare URLs
+  s = s.replace(/https?:\/\/\S+/g, " ");
+  // Remove route name tokens
+  if (routeName) {
+    for (const token of routeName.split(/[-_\s]+/).filter(Boolean)) {
+      s = s.replace(new RegExp(`\\b${escapeRegExp(token)}\\b`, "g"), " ");
+    }
+  }
+  // Drop non-alphanumeric characters
+  s = s.replace(/[^\p{L}\p{N}\s]+/gu, " ");
+  // Collapse whitespace
+  s = s.replace(/\s+/g, " ").trim();
+  return s;
+}
+
+/**
+ * Compute a normalized Jaccard similarity between two route artifacts.
+ * Returns a value between 0 and 1.
+ */
+export function computeNormalizedSimilarity(
+  a: string,
+  b: string,
+  routeName?: string,
+): number {
+  const tokensA = new Set(normalizeRouteArtifact(a, routeName).split(" ").filter(Boolean));
+  const tokensB = new Set(normalizeRouteArtifact(b, routeName).split(" ").filter(Boolean));
+  if (tokensA.size === 0 && tokensB.size === 0) return 0;
+  const intersection = new Set([...tokensA].filter((t) => tokensB.has(t)));
+  const union = new Set([...tokensA, ...tokensB]);
+  return union.size === 0 ? 0 : intersection.size / union.size;
+}
 
 export interface CognitionViolation {
   type: CognitionViolationType;
@@ -92,17 +148,32 @@ function* walkForCognitionFiles(
 
 // ── Main validation entry point ───────────────────────────────────────────────
 
+interface RouteArtifactPair {
+  dirRel: string;
+  polarisRel?: string;
+  summaryRel?: string;
+  polaris?: string;
+  summary?: string;
+}
+
 /**
  * Validate all route-local cognition surfaces under repoRoot.
  *
  * Checks:
  * 1. SUMMARY.md size guard (≤ SUMMARY_MAX_BYTES)
  * 2. SUMMARY.md doctrine bleed
- * 3. Locality: POLARIS.md at root is not flagged (root is special)
+ * 3. Pairwise POLARIS.md / SUMMARY.md drift (exact duplicate → error,
+ *    high normalized similarity → warn)
+ * 4. Locality: POLARIS.md at root is not flagged (root is special)
  */
-export function validateCognitionSurfaces(repoRoot: string): CognitionValidationResult {
+export function validateCognitionSurfaces(
+  repoRoot: string,
+  options: CognitionValidationOptions = {},
+): CognitionValidationResult {
   const violations: CognitionViolation[] = [];
   const warnings: CognitionViolation[] = [];
+  const threshold = options.similarityThreshold ?? DEFAULT_PAIRWISE_DRIFT_THRESHOLD;
+  const pairs = new Map<string, RouteArtifactPair>();
 
   for (const { rel, name } of walkForCognitionFiles(resolve(repoRoot), repoRoot)) {
     // Skip root-level files — root cognition is special (AGENTS.md / CLAUDE.md)
@@ -115,7 +186,17 @@ export function validateCognitionSurfaces(repoRoot: string): CognitionValidation
       continue;
     }
 
+    const absDir = dirname(resolve(repoRoot, rel));
+    const dirRel = relative(repoRoot, absDir).replace(/\\/g, "/");
+    let entry = pairs.get(absDir);
+    if (!entry) {
+      entry = { dirRel };
+      pairs.set(absDir, entry);
+    }
+
     if (name === "SUMMARY.md") {
+      entry.summary = content;
+      entry.summaryRel = rel;
       if (isSummaryOversized(content)) {
         const bytes = Buffer.byteLength(content, "utf-8");
         violations.push({
@@ -135,6 +216,34 @@ export function validateCognitionSurfaces(repoRoot: string): CognitionValidation
           severity: "warn",
         });
       }
+    } else if (name === "POLARIS.md") {
+      entry.polaris = content;
+      entry.polarisRel = rel;
+    }
+  }
+
+  for (const entry of pairs.values()) {
+    if (!entry.polaris || !entry.summary || !entry.polarisRel || !entry.summaryRel) continue;
+
+    if (entry.polaris === entry.summary) {
+      violations.push({
+        type: "polaris-summary-drift",
+        file: entry.dirRel,
+        detail: `Route ${entry.dirRel}: POLARIS.md and SUMMARY.md are exact duplicates (${entry.polarisRel}, ${entry.summaryRel})`,
+        severity: "error",
+      });
+      continue;
+    }
+
+    const routeName = entry.dirRel === "." ? undefined : basename(entry.dirRel);
+    const similarity = computeNormalizedSimilarity(entry.polaris, entry.summary, routeName);
+    if (similarity >= threshold) {
+      warnings.push({
+        type: "polaris-summary-drift",
+        file: entry.dirRel,
+        detail: `Route ${entry.dirRel}: POLARIS.md and SUMMARY.md normalized similarity ${similarity.toFixed(2)} exceeds threshold ${threshold} (${entry.polarisRel}, ${entry.summaryRel})`,
+        severity: "warn",
+      });
     }
   }
 

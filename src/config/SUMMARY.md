@@ -4,10 +4,10 @@
 Config loading and validation root. This folder merges `polaris.config.json` with defaults and validates the result before other subsystems consume `PolarisConfig`.
 
 ## Core Concepts
-- Defaults are the trusted baseline and must remain schema-valid.
+- Defaults are the trusted baseline and are kept schema-valid.
 - Validation is strict for user-supplied partial config.
 - Deep merge semantics apply for nested objects; arrays replace.
-- New config fields must be reflected in schema, types, defaults, and validator together.
+- New config fields are reflected in schema, types, defaults, and validator together.
 - Repo-analysis provider detection is Polaris-native: graph/map are preferred and external providers are not selected as the default analysis path.
 
 ## Architectural Role
@@ -15,14 +15,14 @@ This folder owns the config contract consumed by the rest of the runtime.
 
 ## Key Constraints
 - Do not bypass `loadConfig(repoRoot)`.
-- `DEFAULT_CONFIG` must remain valid on its own.
+- `DEFAULT_CONFIG` remains valid on its own.
 - Validation errors are returned as the full error array so callers can surface them directly.
 
 ## Important Relationships
 - Consumed by loop, map, cognition, smartdocs-engine, graph governance, finalize, Medic, and tracker code.
 
 ## Current State
-Config now includes a `graph` section with `outputPath` and `invalidationTriggers` for graph governance. Defaults point to `.polaris/graph` with repo/config invalidation enabled. Provider detection separates compaction providers from repo-analysis providers; repo analysis reports `polaris-graph` when the Polaris command is available. The `execution.routerPolicy` surface (`WorkerRouterPolicyConfig`) is now part of the schema and defaults: it declares `defaultWorkerPool.maxActiveWorkers` (default `1`), `providerRegistry` (per-provider eligibility, role, capability, quota, trust, cost, and slot declarations), and `allowCrossAgentFallback` (default `false`). With all defaults, router behavior is indistinguishable from the pre-router single-worker model. A `sol` config surface (`SolConfig`) was added by POL-477: `sol.history.enabled` (default `false`) controls whether SOL score snapshots are persisted; `sol.history.path` (default `.polaris/sol-history`) sets the storage directory. The SOL threshold policy can create run-health symptoms and force a pending Medic decision when enabled. A `run_health` config surface controls foreman-side symptom emission from runtime intervention events, and `finalize.medic.bypassPolicy` determines whether the run-health Medic gate can be bypassed from the CLI.
+Config now includes a `graph` section with `outputPath` and `invalidationTriggers` for graph governance. Defaults point to `.polaris/graph` with repo/config invalidation enabled. Provider detection separates compaction providers from repo-analysis providers; repo analysis reports `polaris-graph` when the Polaris command is available. The `execution.routerPolicy` surface (`WorkerRouterPolicyConfig`) is now part of the schema and defaults: it declares `defaultWorkerPool.maxActiveWorkers` (default `1`), `providerRegistry` (per-provider eligibility, role, capability, quota, trust, cost, and slot declarations), and `allowCrossAgentFallback` (default `false`). With all defaults, router behavior is indistinguishable from the pre-router single-worker model. A `sol` config surface (`SolConfig`) was added by POL-477: `sol.history.enabled` (default `false`) controls whether SOL score snapshots are persisted; `sol.history.path` (default `.polaris/sol-history`) sets the storage directory. The SOL threshold policy can create run-health symptoms and force a pending Medic decision when enabled. A `run_health` config surface controls foreman-side symptom emission from runtime intervention events, and `finalize.medic.bypassPolicy` determines whether the run-health Medic gate can be bypassed from the CLI. The `qc` config surface now includes `maxRepairRounds` (default `2`) and `repairDispatchTimeoutMs` (default 30 minutes) to bound the QC repair loop.
 
 ## Linked Canonical Sources
 - [POLARIS.md](POLARIS.md)

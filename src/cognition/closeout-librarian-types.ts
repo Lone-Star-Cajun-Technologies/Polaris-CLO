@@ -25,6 +25,17 @@ export interface ChildSummary {
 }
 
 /** Per-folder cognition file paths included in the Librarian packet. */
+export type RouteArtifactIntent = "must-reconcile" | "reconcile-if-present" | "not-present";
+
+export interface RouteArtifactContract {
+  /** Repo-relative path to the artifact, or null when the artifact does not exist. */
+  path: string | null;
+  /** Artifact-specific reconciliation intent for this folder. */
+  intent: RouteArtifactIntent;
+  /** Why this artifact should (or should not) be reconciled for the folder. */
+  reason: string;
+}
+
 export interface FolderCognitionPaths {
   /** Repo-relative folder path (e.g. "src/loop/"). */
   folder: string;
@@ -36,6 +47,11 @@ export interface FolderCognitionPaths {
   summary_md: string | null;
   /** Repo-relative path to the cognition-index.json for this folder, or null if absent. */
   cognition_index: string | null;
+  /** Explicit per-artifact reconciliation contract for this folder. */
+  artifact_contract: {
+    polaris_md: RouteArtifactContract;
+    summary_md: RouteArtifactContract;
+  };
 }
 
 /** Constraint configuration for the Closeout Librarian. */
@@ -164,6 +180,31 @@ export interface LibrarianBlocker {
 }
 
 /** The sealed result written by the Closeout Librarian to result_path. */
+export type ArtifactReconciliationDecision =
+  | "polaris-only"
+  | "summary-only"
+  | "both"
+  | "no-change";
+
+export interface ArtifactReconciliationUpdate {
+  /** Folder whose route artifacts were evaluated for reconciliation. */
+  folder: string;
+  /**
+   * Explicit artifact-level decision:
+   * - polaris-only: only POLARIS.md changed
+   * - summary-only: only SUMMARY.md changed
+   * - both: both artifacts changed
+   * - no-change: neither artifact changed
+   */
+  decision: ArtifactReconciliationDecision;
+  /** Repo-relative POLARIS.md path for the folder (always expected for affected folders). */
+  polaris_md: string;
+  /** Repo-relative SUMMARY.md path for the folder, or null when the file does not exist. */
+  summary_md: string | null;
+  /** Why this reconciliation decision was chosen for the folder. */
+  reason: string;
+}
+
 export interface CloseoutLibrarianResult {
   schema_version: "1.0";
   role: "closeout-librarian";
@@ -193,6 +234,9 @@ export interface CloseoutLibrarianResult {
 
   /** SUMMARY.md files updated in step 03. */
   summary_md_updates: CloseoutFileUpdate[];
+
+  /** Per-folder artifact reconciliation decisions (optional for backward compatibility). */
+  artifact_reconciliation?: ArtifactReconciliationUpdate[];
 
   /** Documentation ingested or promoted in step 04. */
   docs_ingested: DocAction[];
@@ -326,6 +370,73 @@ export function validateCloseoutLibrarianResult(value: unknown): string[] {
   }
   if (!Array.isArray(r["summary_md_updates"])) {
     errors.push("summary_md_updates must be an array");
+  }
+  if (
+    r["artifact_reconciliation"] !== undefined &&
+    !Array.isArray(r["artifact_reconciliation"])
+  ) {
+    errors.push("artifact_reconciliation must be an array when provided");
+  }
+  if (Array.isArray(r["artifact_reconciliation"])) {
+    const allowed = new Set<ArtifactReconciliationDecision>([
+      "polaris-only",
+      "summary-only",
+      "both",
+      "no-change",
+    ]);
+    for (const [index, update] of r["artifact_reconciliation"].entries()) {
+      if (typeof update !== "object" || update === null) {
+        errors.push(`artifact_reconciliation[${index}] must be an object`);
+        continue;
+      }
+      const entry = update as Record<string, unknown>;
+      if (typeof entry["folder"] !== "string" || !entry["folder"]) {
+        errors.push(`artifact_reconciliation[${index}].folder must be a non-empty string`);
+      }
+      const decision = entry["decision"] as ArtifactReconciliationDecision;
+      if (
+        typeof entry["decision"] !== "string" ||
+        !allowed.has(decision)
+      ) {
+        errors.push(
+          `artifact_reconciliation[${index}].decision must be one of: polaris-only, summary-only, both, no-change`,
+        );
+      }
+      if (typeof entry["polaris_md"] !== "string" || !entry["polaris_md"]) {
+        errors.push(
+          `artifact_reconciliation[${index}].polaris_md must be a non-empty string`,
+        );
+      }
+      // Validate summary_md based on decision: required for summary-only and both, null for polaris-only and no-change
+      if (decision === "summary-only" || decision === "both") {
+        if (typeof entry["summary_md"] !== "string" || !entry["summary_md"]) {
+          errors.push(
+            `artifact_reconciliation[${index}].summary_md must be a non-empty string for decision "${decision}"`,
+          );
+        }
+      } else if (decision === "polaris-only" || decision === "no-change") {
+        if (entry["summary_md"] !== null && (typeof entry["summary_md"] !== "string" || !entry["summary_md"])) {
+          errors.push(
+            `artifact_reconciliation[${index}].summary_md must be a non-empty string or null for decision "${decision}"`,
+          );
+        }
+      } else {
+        // Fallback for any decision type: reject empty strings
+        if (entry["summary_md"] !== null && typeof entry["summary_md"] !== "string") {
+          errors.push(
+            `artifact_reconciliation[${index}].summary_md must be a string or null`,
+          );
+        }
+        if (typeof entry["summary_md"] === "string" && !entry["summary_md"]) {
+          errors.push(
+            `artifact_reconciliation[${index}].summary_md must not be an empty string when provided`,
+          );
+        }
+      }
+      if (typeof entry["reason"] !== "string" || !entry["reason"]) {
+        errors.push(`artifact_reconciliation[${index}].reason must be a non-empty string`);
+      }
+    }
   }
   if (!Array.isArray(r["docs_ingested"])) {
     errors.push("docs_ingested must be an array");

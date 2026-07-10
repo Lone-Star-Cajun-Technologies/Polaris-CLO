@@ -9,7 +9,7 @@ Unit tests for `src/loop/adapters/` execution adapters. Tests validate adapter d
 
 ## What belongs here
 
-- `terminal-cli.test.ts` — unit tests for `TerminalCliAdapter`: covers dispatch success, pre-dispatch failure with `fallback_eligible` classification, quota signal detection, and `router_evidence` attachment in `DispatchResult`
+- `terminal-cli.test.ts` — unit tests for `TerminalCliAdapter`: covers dispatch success, pre-dispatch failure with `fallback_eligible` classification, quota signal detection, `router_evidence` attachment in `DispatchResult`, and empty `allowed_scope` blocking for `impl` and `repair` packets.
 
 ## What does not belong here
 

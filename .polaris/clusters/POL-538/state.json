@@ -1,0 +1,107 @@
+{
+  "schema_version": "1.0",
+  "run_id": "polaris-run-pol-538-2026-07-10-001",
+  "cluster_id": "POL-538",
+  "skill": "polaris-run",
+  "branch": "pol-524-pol-530-pol-535-pol-538-delivery",
+  "session_type": "implement",
+  "active_child": "",
+  "completed_children": [
+    "POL-539"
+  ],
+  "open_children": [],
+  "step_cursor": "checkpoint",
+  "context_budget": {
+    "children_completed": 1,
+    "max_children_per_session": 1
+  },
+  "status": "cluster-complete",
+  "next_open_child": null,
+  "artifact_dir": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run",
+  "dispatch_boundary": {
+    "dispatch_epoch": 1,
+    "continue_epoch": 1,
+    "last_dispatched_child": "POL-539"
+  },
+  "run_bootstrap_seal": {
+    "sealer": "polaris-loop-bootstrap",
+    "run_id": "polaris-run-pol-538-2026-07-10-001",
+    "cluster_id": "POL-538",
+    "open_children_sha": "bc47904e3e89813eefe74dad507ce4292d9bc8f923789a383496dcae4c9d7dab",
+    "sealed_at": "2026-07-10T17:01:55.854Z"
+  },
+  "open_children_meta": {
+    "POL-539": {
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-538/results/POL-539-36f70341-1adc-462d-b2c5-cdb7ff40cdb1.json",
+      "dispatch_record": {
+        "dispatch_id": "36f70341-1adc-462d-b2c5-cdb7ff40cdb1",
+        "child_id": "POL-539",
+        "run_id": "polaris-run-pol-538-2026-07-10-001",
+        "cluster_id": "POL-538",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-538/packets/POL-539-36f70341-1adc-462d-b2c5-cdb7ff40cdb1.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-538/results/POL-539-36f70341-1adc-462d-b2c5-cdb7ff40cdb1.json",
+        "provider": "devin",
+        "provider_selection_reason": "role-policy",
+        "providers_tried": [
+          "devin"
+        ],
+        "dispatched_at": "2026-07-10T17:02:00.326Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-pol-538-2026-07-10-001:POL-539:1783702920326",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    }
+  },
+  "worker_pool_state": {
+    "max_concurrent": 1,
+    "slot_claims": []
+  },
+  "last_commit": "dfd7bad3f53c41b4c6a5496eaac46e3e7c4ddcfa",
+  "completed_children_results": {
+    "POL-539": {
+      "child_id": "POL-539",
+      "status": "done",
+      "validation": "passed",
+      "commit": "dfd7bad3f53c41b4c6a5496eaac46e3e7c4ddcfa",
+      "next_recommended_action": "continue",
+      "run_id": "polaris-run-pol-538-2026-07-10-001",
+      "cluster_id": "POL-538",
+      "skill_name": "polaris-run",
+      "role": "worker",
+      "provider": "devin",
+      "packet_hash": "c050ba62db2a12b3fff4e0cebe5c602d3793ee39c47041f0bd5be394db296577",
+      "worker_id": "polaris-run-pol-538-2026-07-10-001:POL-539:1783702920326",
+      "escalation_count": 0,
+      "heartbeat_count": 7,
+      "result_artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-538/results/POL-539-36f70341-1adc-462d-b2c5-cdb7ff40cdb1.json",
+      "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-538/packets/POL-539-36f70341-1adc-462d-b2c5-cdb7ff40cdb1.json",
+      "telemetry_path": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-538-2026-07-10-001/telemetry.jsonl",
+      "user_intervened": null,
+      "foreman_intervened": null,
+      "dispatch_epoch": 1,
+      "session_pointer": null
+    }
+  },
+  "qc_repair_loop": {
+    "current_round": 0,
+    "max_rounds": 2,
+    "source_qc_run_ids": [
+      "coderabbit-1783705412419"
+    ],
+    "manifest_path": null,
+    "pending_packet_ids": [],
+    "completed_packet_ids": [],
+    "rerun_requested": false,
+    "rerun_qc_run_ids": {},
+    "terminal_outcome": "all-providers-failed",
+    "initiated_at": "2026-07-10T17:43:32.428Z",
+    "updated_at": "2026-07-10T17:43:32.428Z"
+  }
+}

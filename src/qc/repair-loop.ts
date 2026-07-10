@@ -38,6 +38,9 @@ import { writeClusterState, readClusterStateSync } from "../cluster-state/store.
 /** Default maximum repair rounds when not configured. */
 export const DEFAULT_MAX_REPAIR_ROUNDS = 2;
 
+/** Default timeout for a single repair worker dispatch (30 minutes). */
+export const DEFAULT_REPAIR_DISPATCH_TIMEOUT_MS = 1_800_000;
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 /** Dispatch result for a single repair worker. */
@@ -53,6 +56,7 @@ export type DispatchRepairWorkerFn = (
   packet: QcRepairPacket,
   round: number,
   manifest: QcRepairPacketManifest,
+  signal?: AbortSignal,
 ) => Promise<RepairWorkerResult>;
 
 /** Options for running the bounded QC repair loop. */
@@ -104,6 +108,72 @@ function appendTelemetry(
 ): void {
   mkdirSync(dirname(telemetryFile), { recursive: true });
   appendFileSync(telemetryFile, JSON.stringify(event) + "\n", "utf-8");
+}
+
+/**
+ * Emit a pre-dispatch telemetry checkpoint and wrap the dispatch call in a
+ * configurable timeout. A timed-out dispatch resolves to a failure/timeout
+ * RepairWorkerResult instead of blocking the loop indefinitely.
+ * On timeout, aborts the dispatch via AbortSignal to terminate the worker process.
+ */
+async function dispatchRepairWorkerWithTimeout(
+  dispatch: DispatchRepairWorkerFn,
+  packet: QcRepairPacket,
+  round: number,
+  manifest: QcRepairPacketManifest,
+  timeoutMs: number,
+  telemetryFile: string,
+  runId: string,
+  clusterId: string,
+): Promise<RepairWorkerResult> {
+  appendTelemetry(telemetryFile, {
+    event: "qc-repair-worker-dispatch-start",
+    run_id: runId,
+    cluster_id: clusterId,
+    round,
+    packet_id: packet.packetId,
+    medic: packet.medic,
+    parallel_group: packet.parallelGroup,
+    timestamp: new Date().toISOString(),
+  });
+
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let timedOut = false;
+  try {
+    const result = await Promise.race<RepairWorkerResult>([
+      dispatch(packet, round, manifest, controller.signal),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          timedOut = true;
+          controller.abort(new Error(`Repair worker dispatch timed out after ${timeoutMs}ms`));
+          reject(new Error(`Repair worker dispatch timed out after ${timeoutMs}ms`));
+        }, timeoutMs);
+      }),
+    ]);
+    if (timer) clearTimeout(timer);
+    return result;
+  } catch (err) {
+    if (timer) clearTimeout(timer);
+    const msg = err instanceof Error ? err.message : String(err);
+    if (timedOut) {
+      appendTelemetry(telemetryFile, {
+        event: "qc-repair-worker-dispatch-timeout",
+        run_id: runId,
+        cluster_id: clusterId,
+        round,
+        packet_id: packet.packetId,
+        timeout_ms: timeoutMs,
+        error: msg,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    return {
+      packetId: packet.packetId,
+      status: "failure",
+      errorMessage: msg,
+    };
+  }
 }
 
 async function persistQcRepairOutcome(
@@ -204,9 +274,11 @@ export function partitionRepairPackets(packets: QcRepairPacket[]): {
   parallelGroups: QcRepairPacket[][];
   serialized: QcRepairPacket[];
 } {
-  // Medic (operator-review) packets are always serialized.
-  const serialized = packets.filter((p) => p.medic || p.routingTarget === "operator-review");
-  const parallelizable = packets.filter((p) => !p.medic && p.routingTarget !== "operator-review");
+  // Medic packets are always serialized; operator-review packets are never dispatched.
+  const serialized = packets.filter((p) => p.medic);
+  const parallelizable = packets.filter(
+    (p) => !p.medic && p.routingTarget !== "operator-review",
+  );
 
   // Group by parallelGroup assignment from the compiler.
   const groups = new Map<string, QcRepairPacket[]>();
@@ -272,6 +344,9 @@ export async function runQcRepairLoop(
     onStateUpdate,
   } = options;
 
+  const repairDispatchTimeoutMs =
+    config.repairDispatchTimeoutMs ?? DEFAULT_REPAIR_DISPATCH_TIMEOUT_MS;
+
   if (!config.enabled) {
     const state = initRepairLoopState({
       maxRounds,
@@ -335,26 +410,6 @@ export async function runQcRepairLoop(
       };
     }
 
-    if (requiresOperatorReview(currentResults)) {
-      loopState = { ...loopState, terminal_outcome: "operator-review", updated_at: new Date().toISOString() };
-      onStateUpdate?.(loopState);
-      appendTelemetry(telemetryFile, {
-        event: "qc-repair-loop-terminal",
-        run_id: runId,
-        outcome: "operator-review",
-        round,
-        timestamp: new Date().toISOString(),
-      });
-      await persistQcRepairOutcome(clusterId, repoRoot, "operator-review");
-      return {
-        outcome: "operator-review",
-        rounds_completed: roundsCompleted,
-        final_qc_results: currentResults,
-        loop_state: loopState,
-        summary: `QC repair loop halted: unresolved operator-review findings at round ${round}`,
-      };
-    }
-
     // ── Compile / discover repair packets ──────────────────────────────────
 
     let manifest: QcRepairPacketManifest | null = null;
@@ -411,14 +466,34 @@ export async function runQcRepairLoop(
 
     // ── Check for repairable packets ────────────────────────────────────────
 
-    const repairablePackets = manifest.packets.filter(
+    const dispatchablePackets = manifest.packets.filter(
       (p) =>
         p.routingTarget === "repair-worker" &&
         p.status === "pending" &&
         !loopState.completed_packet_ids.includes(p.packetId),
     );
 
-    if (repairablePackets.length === 0 && !hasRepairableFindings(currentResults)) {
+    if (dispatchablePackets.length === 0 && requiresOperatorReview(currentResults)) {
+      loopState = { ...loopState, terminal_outcome: "operator-review", updated_at: new Date().toISOString() };
+      onStateUpdate?.(loopState);
+      appendTelemetry(telemetryFile, {
+        event: "qc-repair-loop-terminal",
+        run_id: runId,
+        outcome: "operator-review",
+        round,
+        timestamp: new Date().toISOString(),
+      });
+      await persistQcRepairOutcome(clusterId, repoRoot, "operator-review");
+      return {
+        outcome: "operator-review",
+        rounds_completed: roundsCompleted,
+        final_qc_results: currentResults,
+        loop_state: loopState,
+        summary: `QC repair loop halted: unresolved operator-review findings at round ${round}`,
+      };
+    }
+
+    if (dispatchablePackets.length === 0 && !hasRepairableFindings(currentResults)) {
       loopState = { ...loopState, terminal_outcome: "no-repairable", updated_at: new Date().toISOString() };
       onStateUpdate?.(loopState);
       appendTelemetry(telemetryFile, {
@@ -440,7 +515,7 @@ export async function runQcRepairLoop(
 
     // ── Dispatch repair workers (parallel groups, then serialized) ──────────
 
-    const { parallelGroups, serialized } = partitionRepairPackets(repairablePackets);
+    const { parallelGroups, serialized } = partitionRepairPackets(dispatchablePackets);
     const allWorkerResults: RepairWorkerResult[] = [];
     let hasMedicReferral = false;
 
@@ -457,14 +532,34 @@ export async function runQcRepairLoop(
 
       // Within a group, packets are non-conflicting and can run concurrently.
       const groupResults = await Promise.all(
-        group.map((pkt) => dispatchRepairWorker(pkt, round, manifest!)),
+        group.map((pkt) =>
+          dispatchRepairWorkerWithTimeout(
+            dispatchRepairWorker,
+            pkt,
+            round,
+            manifest!,
+            repairDispatchTimeoutMs,
+            telemetryFile,
+            runId,
+            clusterId,
+          )
+        ),
       );
       allWorkerResults.push(...groupResults);
     }
 
-    // Dispatch serialized (medic/operator-review) packets sequentially.
+    // Dispatch serialized (medic) packets sequentially.
     for (const pkt of serialized) {
-      const result = await dispatchRepairWorker(pkt, round, manifest);
+      const result = await dispatchRepairWorkerWithTimeout(
+        dispatchRepairWorker,
+        pkt,
+        round,
+        manifest!,
+        repairDispatchTimeoutMs,
+        telemetryFile,
+        runId,
+        clusterId,
+      );
       allWorkerResults.push(result);
     }
 
@@ -612,6 +707,26 @@ export async function runQcRepairLoop(
   }
 
   // ── Max rounds exhausted ──────────────────────────────────────────────────
+
+  if (requiresOperatorReview(currentResults)) {
+    loopState = { ...loopState, terminal_outcome: "operator-review", updated_at: new Date().toISOString() };
+    onStateUpdate?.(loopState);
+    appendTelemetry(telemetryFile, {
+      event: "qc-repair-loop-terminal",
+      run_id: runId,
+      outcome: "operator-review",
+      rounds_completed: roundsCompleted,
+      timestamp: new Date().toISOString(),
+    });
+    await persistQcRepairOutcome(clusterId, repoRoot, "operator-review");
+    return {
+      outcome: "operator-review",
+      rounds_completed: roundsCompleted,
+      final_qc_results: currentResults,
+      loop_state: loopState,
+      summary: `QC repair loop halted: unresolved operator-review findings after ${roundsCompleted} round(s)`,
+    };
+  }
 
   loopState = { ...loopState, terminal_outcome: "max-rounds", updated_at: new Date().toISOString() };
   onStateUpdate?.(loopState);

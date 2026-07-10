@@ -170,12 +170,34 @@ Use `checkLibrarianResultGate(result)` from `closeout-librarian-types.ts`.
 
 ## 5. Librarian Mission Details
 
+### 5.0 Route Artifact Contract
+
+The Closeout Librarian treats route artifacts as distinct contracts:
+
+| Artifact | Contract |
+|---|---|
+| `POLARIS.md` | Route-local operating doctrine: responsibilities, boundaries, invariants, commands/workflows, safety rules, and related canonical links |
+| `SUMMARY.md` | Informational current-state memory: current behavior, recent changes synthesized into current state, known gaps, current caveats, and linked canonical sources |
+
+Evidence determines write scope:
+- update only `POLARIS.md` when operating doctrine changed but current-state memory is still accurate
+- update only `SUMMARY.md` when current-state memory changed but operating doctrine is still accurate
+- update both when both contracts changed
+- update neither when both remain accurate
+
+Recent-run/changelog information is only written to `SUMMARY.md` when synthesized into
+the current-state view. Diary-style append-only run logs are prohibited.
+
+Stable operating rules belong in `POLARIS.md` and must not be duplicated verbatim in
+`SUMMARY.md`; summaries should reference the relevant doctrine.
+
 ### 5.1 POLARIS.md Reconciliation
 
-POLARIS.md files describe the current reality of each folder. The Librarian:
+POLARIS.md files are route-local operating doctrine. The Librarian:
 - Reads the current POLARIS.md for each affected folder
 - Reads all child summaries and worker cognition notes
-- Determines what has changed and whether POLARIS.md reflects that change
+- Determines whether responsibilities, boundaries, invariants, commands/workflows,
+  safety rules, or related canon links changed
 - Performs full reconciliation (not append-only notes)
 - Writes the updated POLARIS.md with full content
 
@@ -183,10 +205,12 @@ Confidence threshold: `≥ 0.80` to apply. Below threshold → blocker, skip.
 
 ### 5.2 SUMMARY.md Reconciliation
 
-SUMMARY.md files are continuation artifacts. The Librarian:
+SUMMARY.md files are informational current-state memory. The Librarian:
 - Removes stale content contradicted by completed work
 - Replaces superseded references with canonical ones
-- Does NOT append history or changelog entries
+- Synthesizes recent changes into current behavior/current caveats where still relevant
+- Captures known gaps and links to canonical sources
+- Does NOT append diary-style history or changelog entries
 - Produces a current-state snapshot usable by future sessions
 
 ### 5.3 Documentation Ingestion

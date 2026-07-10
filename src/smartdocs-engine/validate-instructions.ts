@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
-import { resolve, relative, join, dirname } from "node:path";
+import { basename, dirname, join, relative, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 import { loadConfig } from "../config/loader.js";
 import { readFileRoutes, readNeedsReview } from "../map/atlas.js";
@@ -11,6 +11,50 @@ export type FindingSeverity = "OK" | "WARN" | "ERROR" | "MISSING";
 export interface Finding {
   severity: Exclude<FindingSeverity, "OK">;
   message: string;
+}
+
+const DEFAULT_PAIRWISE_DRIFT_THRESHOLD = 0.5;
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Normalize route artifact text so shared boilerplate (headings, links, route
+ * names) does not dominate similarity scores.
+ */
+function normalizeRouteArtifact(content: string, routeName?: string): string {
+  let s = content.toLowerCase();
+  // Strip markdown headings
+  s = s.replace(/^#+\s+.*$/gm, " ");
+  // Remove link URLs but keep link text
+  s = s.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+  // Remove bare URLs
+  s = s.replace(/https?:\/\/\S+/g, " ");
+  // Remove route name tokens
+  if (routeName) {
+    for (const token of routeName.split(/[-_\s]+/).filter(Boolean)) {
+      s = s.replace(new RegExp(`\\b${escapeRegExp(token)}\\b`, "g"), " ");
+    }
+  }
+  // Drop non-alphanumeric characters
+  s = s.replace(/[^\p{L}\p{N}\s]+/gu, " ");
+  // Collapse whitespace
+  s = s.replace(/\s+/g, " ").trim();
+  return s;
+}
+
+/**
+ * Compute a normalized Jaccard similarity between two route artifacts.
+ * Returns a value between 0 and 1.
+ */
+function computeNormalizedSimilarity(a: string, b: string, routeName?: string): number {
+  const tokensA = new Set(normalizeRouteArtifact(a, routeName).split(" ").filter(Boolean));
+  const tokensB = new Set(normalizeRouteArtifact(b, routeName).split(" ").filter(Boolean));
+  if (tokensA.size === 0 && tokensB.size === 0) return 0;
+  const intersection = new Set([...tokensA].filter((t) => tokensB.has(t)));
+  const union = new Set([...tokensA, ...tokensB]);
+  return union.size === 0 ? 0 : intersection.size / union.size;
 }
 
 export interface ValidationResult {
@@ -154,6 +198,7 @@ export function validateDir(
   relDir: string,
   repoRoot: string,
   allRoutes: Record<string, { instructionFile?: string }>,
+  similarityThreshold: number = DEFAULT_PAIRWISE_DRIFT_THRESHOLD,
 ): ValidationResult {
   const absDir = resolve(repoRoot, relDir);
   const polarisFile = join(absDir, "POLARIS.md");
@@ -292,6 +337,7 @@ export function validateDir(
   } else {
     // Signal 6: SUMMARY.md doctrine-bleed scan
     const summaryContent = readFileSync(summaryFile, "utf-8");
+    const summaryRel = relative(repoRoot, summaryFile).replace(/\\/g, "/");
     const modalVerbs = ["must", "never", "always"];
     const lines = summaryContent.split("\n");
     for (let i = 0; i < lines.length; i++) {
@@ -304,6 +350,21 @@ export function validateDir(
           });
         }
       }
+    }
+
+    // Signal 7: pairwise POLARIS.md / SUMMARY.md drift
+    const routeName = relDir === "." ? undefined : basename(relDir);
+    const similarity = computeNormalizedSimilarity(content, summaryContent, routeName);
+    if (content === summaryContent) {
+      findings.push({
+        severity: "ERROR",
+        message: `Route ${relDir || "."}: POLARIS.md and SUMMARY.md are exact duplicates (${polarisRel}, ${summaryRel})`,
+      });
+    } else if (similarity >= similarityThreshold) {
+      findings.push({
+        severity: "WARN",
+        message: `Route ${relDir || "."}: POLARIS.md and SUMMARY.md normalized similarity ${similarity.toFixed(2)} exceeds threshold ${similarityThreshold} (${polarisRel}, ${summaryRel})`,
+      });
     }
   }
 
@@ -324,6 +385,7 @@ export interface ValidateInstructionsOptions {
   path?: string;
   fix?: boolean;
   repoRoot?: string;
+  similarityThreshold?: number;
 }
 
 export interface ValidateInstructionsReport {
@@ -363,9 +425,11 @@ export function validateInstructions(
     dirsToCheck = [".", ...dirs];
   }
 
+  const threshold = opts.similarityThreshold ?? DEFAULT_PAIRWISE_DRIFT_THRESHOLD;
+
   const results: ValidationResult[] = [];
   for (const relDir of dirsToCheck) {
-    const result = validateDir(relDir, repoRoot, allRoutes);
+    const result = validateDir(relDir, repoRoot, allRoutes, threshold);
     // Upgrade MISSING → ERROR for required dirs
     if (result.status === "MISSING" && requiredDirs.includes(relDir)) {
       result.status = "ERROR";

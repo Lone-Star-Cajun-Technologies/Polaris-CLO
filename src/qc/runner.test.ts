@@ -126,6 +126,22 @@ describe("executeQcProvider", () => {
     expect(result.providerAttempt?.failureReason).toBe("timeout");
   });
 
+  it("classifies exit code 143 as a timeout", async () => {
+    const result = await executeQcProvider(
+      makeProvider(),
+      { clusterId: "POL-1", runId: "run-1", branch: "main" },
+      {
+        repoRoot: process.cwd(),
+        runId: "run-1",
+        clusterId: "POL-1",
+        execFileImpl: makeExecFileImpl("some output", "", 143) as unknown as typeof import("node:child_process").execFile,
+      },
+    );
+
+    expect(result.status).toBe("failed");
+    expect(result.providerAttempt?.failureReason).toBe("timeout");
+  });
+
   it("classifies a missing command as command-not-found", async () => {
     const execFileImpl: ExecFileImpl = (_file, _args, _options, callback) => {
       const error = Object.assign(new Error("ENOENT"), { code: "ENOENT" });
@@ -504,6 +520,33 @@ describe("executeQcProvider", () => {
         runId: "run-1",
         clusterId: "POL-1",
         execFileImpl: makeExecFileImpl(loadFixtureText("coderabbit-status-only.jsonl"), "", 0) as unknown as typeof import("node:child_process").execFile,
+      },
+    );
+
+    expect(result.status).toBe("failed");
+    expect(result.providerAttempt?.failureReason).toBe("unusable-output");
+    expect(result.findings).toHaveLength(0);
+  });
+
+  it("classifies bookkeeping-only CodeRabbit JSONL as unusable-output", async () => {
+    const provider = new CodeRabbitQcProvider();
+    const stdout = [
+      { severity: "high", category: "finding", id: "1" },
+      { severity: "high", category: "finding", id: "2" },
+      { severity: "high", category: "finding", id: "3" },
+      { severity: "high", category: "finding", id: "4" },
+    ]
+      .map((record) => JSON.stringify(record))
+      .join("\n");
+
+    const result = await executeQcProvider(
+      provider,
+      { clusterId: "POL-1", runId: "run-1", branch: "main" },
+      {
+        repoRoot: process.cwd(),
+        runId: "run-1",
+        clusterId: "POL-1",
+        execFileImpl: makeExecFileImpl(stdout, "", 0) as unknown as typeof import("node:child_process").execFile,
       },
     );
 

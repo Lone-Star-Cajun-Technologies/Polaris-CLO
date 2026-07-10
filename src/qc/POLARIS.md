@@ -9,7 +9,7 @@ The QC subsystem is the provider-agnostic Quality Control layer for Polaris. It 
 
 ## What belongs here
 
-- `orchestration.ts` — `runQcAtTrigger()`: invokes active providers, collects outputs, runs the repair loop, and returns aggregate policy action; owns repair round state transitions.
+- `orchestration.ts` — `runQcAtTrigger()`: invokes active providers, collects outputs, and returns aggregate policy action. Does not own repair-loop dispatch or round transitions; those are owned by the callers of `runQcRepairLoop()` (currently `src/finalize/index.ts` and `src/loop/parent.ts`). `src/qc/` compiles the repair packet manifest only.
 - `provider.ts` — `IQcProvider`, `QcReviewScope`, `QcProviderOutput`, `QcProviderRegistry` interfaces and base contracts.
 - `registry.ts` — `QcProviderRegistry` singleton; registers concrete provider adapters.
 - `providers/` — one file per provider adapter (e.g., `coderabbit.ts`); each adapter parses provider-specific output into `QcFinding[]`.
@@ -38,15 +38,18 @@ The QC subsystem is the provider-agnostic Quality Control layer for Polaris. It 
 ## Editing rules
 
 - QC providers are external critics, not worker providers. Providers must never be dispatched through the Worker Router; they are invoked directly by `runner.ts`.
-- Provider execution failures (`timeout`, `rate-limited`, `auth-failure`, `command-not-found`, `nonzero-exit`, `parse-failed`, `empty-output`, `unusable-output`, `unsupported-mode`, `unavailable-provider`) are classified as `QcProviderFailure`, not as findings. `unusable-output` covers provider payloads (e.g. progress/status/heartbeat/complete records) that parse successfully but contain no actionable finding — no `file`/`path` plus `message`/`title` fields. All failures must produce telemetry.
-- Repair workers that address QC findings are dispatched by `src/loop/dispatch.ts` with `worker_role: repair`. `src/qc/` compiles the repair packet manifest; it does not dispatch workers.
+- Provider execution failures (`timeout`, `rate-limited`, `auth-failure`, `command-not-found`, `nonzero-exit`, `parse-failed`, `empty-output`, `unusable-output`, `unsupported-mode`, `unavailable-provider`) are classified as `QcProviderFailure`, not as findings. All failures must produce telemetry.
+- `unusable-output` covers provider payloads that parse successfully but contain no actionable finding. A record has no actionable finding when it lacks `file`/`path` and `message`/`title`/`summary`/`description`/`body`/`suggestion`/`fix` content, or when its only `title` duplicates the `category`, `type`, or `rule`. Bookkeeping-only records (`severity`, `category`, `rule`, `id`, `findingId`, `providerFindingId`) and progress/status/heartbeat/complete records are therefore unusable output.
+- `runner.ts` classifies provider exit code `143` (the shell convention for SIGTERM, `128 + SIGTERM`) as `timeout`, in addition to `error.killed` with `signal === "SIGTERM"`.
+- Repair workers that address QC findings are dispatched by the caller of `runQcRepairLoop()` (currently `src/finalize/index.ts` and `src/loop/parent.ts`) with `worker_role: repair`. `src/qc/` compiles the repair packet manifest; it does not dispatch workers.
 - Repair packet manifests are written to `.polaris/clusters/<cluster-id>/qc/repair-rounds/<round>/repair-packets.json`.
 - Max repair rounds is `2` by default, overridable by `polaris.config.json → qc.maxRepairRounds`. The loop must stop when `round > maxRepairRounds`.
+- Each repair worker dispatch is bounded by `polaris.config.json → qc.repairDispatchTimeoutMs` (default `1_800_000` ms, 30 minutes). A dispatch that exceeds the timeout is recorded as a failure/timeout result.
 - A finding may be marked `repaired` only after a post-repair QC run or explicit validation evidence from the repair worker's result packet.
 - Grouping rules for repair packets: group by file + root-cause/category when ranges overlap; do not mix security/auth/data-loss/migration/governance findings with unrelated work.
 - Parallelism is governed by `parallel_group`, `conflicts_with`, and scope overlap. Do not mark packets as parallel-safe if `allowed_scope` sets overlap or either touches shared governance/config files.
 - All QC artifacts written to `.polaris/clusters/<cluster-id>/qc/` must use atomic writes. Never call `fs.writeFile()` directly on artifact paths.
-- The telemetry event catalog for the repair loop is defined in `smartdocs/specs/active/quality-control-architecture.md §8.9`. Emit events from `orchestration.ts` and `runner.ts`; do not emit them from individual provider adapters.
+- The repair loop emits `qc-repair-worker-dispatch-start` before each repair worker dispatch and `qc-repair-worker-dispatch-timeout` if the dispatch timeout fires. See the event catalog in `smartdocs/specs/active/quality-control-architecture.md §8.9` and the implementation in `src/qc/repair-loop.ts`.
 
 ## Provider config model
 
@@ -74,11 +77,13 @@ interface QcProviderExecutionConfig {
 
 ## Repair loop state machine
 
-States (managed by `orchestration.ts`):
+States (managed by `src/qc/repair-loop.ts`):
 
 `qc_review_requested` → `qc_provider_attempted` → `qc_results_normalized` → `repair_packets_compiled` → `repair_packets_dispatched` → `repair_results_collected` → `qc_rerun_requested` → (loop) or terminal state
 
 Terminal states (`QcRepairLoopOutcome` in `src/loop/checkpoint.ts`): `pass`, `no-repairable`, `max-rounds`, `all-providers-failed`, `operator-review`, `medic-referral`, `qc-disabled`. These are the exact string literals stored in `state.qc_repair_loop.terminal_outcome` and `ClusterState.qc_repair_outcome`; finalize's repair-loop gate (`src/finalize/index.ts`) matches against them directly.
+
+Operator-review findings do not bypass packet compilation: the loop still compiles a repair manifest for the round, but it dispatches only eligible `repair-worker` packets. `operator-review` packets settle the terminal `operator-review` outcome directly without worker dispatch.
 
 See `smartdocs/specs/active/quality-control-architecture.md §8.9` for the telemetry-aligned terminal outcome catalog that matches these values (§8.6–8.7 predate the implemented naming).
 
@@ -87,6 +92,12 @@ See `smartdocs/specs/active/quality-control-architecture.md §8.9` for the telem
 - QC run result: `.polaris/clusters/<cluster-id>/qc/<qc-run-id>.json`
 - Raw provider output: `.polaris/clusters/<cluster-id>/qc/<qc-run-id>-raw.<ext>`
 - Repair packet manifest: `.polaris/clusters/<cluster-id>/qc/repair-rounds/<round>/repair-packets.json`
+
+## Architecture assumptions
+
+- QC providers are external critics; the runtime owns routing, attribution, and policy decisions.
+- Repair workers are dispatched by the caller of `runQcRepairLoop()` through a configured `ExecutionAdapter`, not by the QC subsystem directly.
+- The repair loop is bounded by `qc.maxRepairRounds` and `qc.repairDispatchTimeoutMs` and terminates deterministically.
 
 ## Read before editing
 
@@ -99,7 +110,7 @@ See `smartdocs/specs/active/quality-control-architecture.md §8.9` for the telem
 ## Related routes
 
 - `polaris.qc` — all files in this directory
-- `src/loop/dispatch.ts` — dispatches repair workers (not QC providers)
+- `src/finalize/index.ts` and `src/loop/parent.ts` — invoke `runQcRepairLoop()` and dispatch repair workers through the configured `ExecutionAdapter` (not QC providers)
 - `src/cluster-state/` — stores QC run pointers and round state
 - `src/finalize/` — reads QC artifacts for delivery gating
 - `src/autoresearch/` — reads QC artifacts for SOL scoring

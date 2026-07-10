@@ -1,0 +1,107 @@
+{
+  "schema_version": "2.1",
+  "worker_role": "impl",
+  "run_id": "polaris-run-pol-538-2026-07-10-001",
+  "cluster_id": "POL-538",
+  "active_child": "POL-539",
+  "state_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json",
+  "telemetry_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-538-2026-07-10-001/telemetry.jsonl",
+  "instructions": {
+    "primary_goal": "Issue: POL-539 — POL-539\nWorktree: .\nBranch: pol-524-pol-530-pol-535-delivery\n\n## Goal\n## Objective\n\nAdd the missing `appendRepairLoopOutcomeSymptom()`/`appendQcEscalationSymptoms()` calls in `runCompletedClusterQcWithRepair()` (`src/finalize/index.ts`) so untrusted QC repair-loop outcomes escalate to the run-health report before finalize blocks.\n\n## Context\n\n`src/loop/parent.ts` (lines ~1318-1332) calls both escalation functions immediately after `runQcRepairLoop()` returns:\n\n```ts\nappendRepairLoopOutcomeSymptom({ runId: state.run_id, clusterId: state.cluster_id, repairResult: repairLoopResult, repoRoot });\nif (repairLoopResult.final_qc_results.length > 0 && repairLoopResult.rounds_completed > 0) {\n  appendQcEscalationSymptoms({ runId: state.run_id, clusterId: state.cluster_id, qcResults: repairLoopResult.final_qc_results, afterRepair: true, repoRoot });\n}\n```\n\n`src/finalize/index.ts`'s `runCompletedClusterQcWithRepair()` calls `runQcRepairLoop()` and gets the identical `QcRepairLoopResult` shape into `repairLoopResult`, but goes straight to `validateQcRepairLoopGate(nextState, config.qc)` and blocks — never calling either function. This means an `all-providers-failed` (or `max-rounds`/`medic-referral`) outcome hit during finalize has no automated Medic recourse, unlike the identical scenario during the normal run loop.\n\nAnalysis doc: `smartdocs/raw/analysis/pol-537-finalize-medic-escalation-gap-analysis.md`\n\n## Goal\n\n`runCompletedClusterQcWithRepair()` escalates repair-loop outcomes and post-repair QC results the same way `parent.ts` does, before enforcing the terminal-state gate.\n\n## Scope\n\n* `src/finalize/index.ts`\n* `src/finalize/qc-trigger.test.ts`\n* `src/finalize/POLARIS.md`\n\n## Acceptance Criteria\n\n- [ ] Import `appendRepairLoopOutcomeSymptom` and `appendQcEscalationSymptoms` from `../run-health/qc-escalation.js` in `src/finalize/index.ts`\n- [ ] `appendRepairLoopOutcomeSymptom({runId: nextState.run_id, clusterId: nextState.cluster_id, repairResult: repairLoopResult, repoRoot})` is called immediately after `runQcRepairLoop()` returns, before `validateQcRepairLoopGate()`\n- [ ] `appendQcEscalationSymptoms()` is called for the initial pre-repair `runQcAtTrigger()` result when it doesn't pass, and for `repairLoopResult.final_qc_results` when `rounds_completed > 0`, mirroring `parent.ts`'s condition\n- [ ] Test: an `all-providers-failed` repair-loop outcome produces a `qc-all-providers-failed` symptom in `.polaris/runs/<run-id>/run-health-report.json` before finalize exits\n- [ ] Test: a `max-rounds` outcome produces a `qc-max-repair-rounds` symptom\n- [ ] Existing `validateQcRepairLoopGate` blocking-behavior tests still pass unmodified in outcome\n- [ ] `src/finalize/POLARIS.md`'s \"QC repair loop relationship\" section mentions the escalation call\n- [ ] `npm run build` and `npm test` pass\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/finalize src/run-health\n\n## Ordering\n\nFirst and only child. No dependencies.\n\n## Non-goals\n\n* Do not modify `src/run-health/qc-escalation.ts`\n* Do not add automatic inline Medic dispatch inside finalize\n* Do not touch the repair-loop dispatch/timeout logic from POL-531/532/533 or the coderabbit classification fix from POL-536\n\n## Implementation Discipline\nBefore writing code, stop at the first rung that holds:\n\n1. Does this need to exist?   → no: skip it (YAGNI)\n2. Stdlib does it?            → use it\n3. Native platform feature?   → use it\n4. Installed dependency?      → use it\n5. One line?                  → one line\n6. Only then: the minimum that works\n\nLazy, not negligent: validation, error handling, security, and accessibility are never on the chopping block.\n\nWhen you defer a simplification for later, mark it inline:\n  // ponytail: <what you deferred and why>\n\n## Scope\nTouch only:\n- `src/finalize/index.ts`\n- `src/finalize/qc-trigger.test.ts`\n- `src/finalize/POLARIS.md`\n\n## Acceptance Criteria\n\n## Validation\n- npm run build\n- npm test\n- npx vitest run src/finalize src/run-health\n\n## Commit\n[POL-539] POL-539\n\n## Governance\n- Do NOT modify open_children or completed_children in /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json. The parent runtime (loop continue) owns state transitions.\n- Append a telemetry event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-538-2026-07-10-001/telemetry.jsonl.\n\n## Worker Progress Telemetry (MANDATORY)\nThe parent CANNOT see your work. You MUST emit heartbeat events so the parent knows you are alive and making progress.\n\nAfter EVERY step, append a JSONL event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-538-2026-07-10-001/telemetry.jsonl:\n```jsonl\n{\"event\":\"worker-heartbeat\",\"run_id\":\"<from packet>\",\"child_id\":\"POL-539\",\"step_cursor\":\"<current step>\",\"timestamp\":\"<ISO8601>\",\"progress_pct\":<0-100>,\"files_changed\":<count>,\"current_file\":\"<file being edited>\"}\n```\n\nRequired heartbeat points:\n  1. Immediately after reading this packet (step_cursor: \"start\")\n  2. After verifying state file (step_cursor: \"verify\")\n  3. After EACH file edit (step_cursor: \"implement\")\n  4. After running validation (step_cursor: \"validate\")\n  5. After creating commit (step_cursor: \"commit\")\n  6. Before terminating (step_cursor: \"complete\" or \"failed\")\n\nIf heartbeats stop, the parent will assume you crashed and may dispatch a replacement worker.\n\n## Approval Escalation (when uncertain)\nYou have a sealed packet defining your exact scope, allowed files, and validation commands. Use this to decide:\n\nRule 1 - Auto-approve WITHIN scope (normal work):\n  - If the operation touches files within `instructions.allowed_scope` → Just do it\n  - If the command is in `instructions.validation_commands` → Just run it\n  - Low risk, expected work → No need to ask, emit heartbeat with step_cursor: \"implement\"\n\nRule 2 - ESCALATE out-of-scope or high-risk:\n  - File outside allowed_scope → Emit worker-blocked with approval_type: \"out-of-scope\"\n  - Destructive operation (rm -rf, major refactor) → Emit worker-blocked with approval_type: \"destructive\"\n  - External API calls with cost → Emit worker-blocked with approval_type: \"cost\"\n  - Changing secrets/.env → Emit worker-blocked with approval_type: \"security\"\n  - Unclear requirements → Emit worker-blocked with approval_type: \"ambiguous\"\n\nTo escalate, emit IMMEDIATELY to telemetry:\n```jsonl\n{\"event\":\"worker-blocked\",\"run_id\":\"<from packet>\",\"child_id\":\"POL-539\",\"reason\":\"needs-approval\",\"approval_type\":\"<out-of-scope|destructive|cost|security|ambiguous>\",\"description\":\"<specifically what needs approval>\",\"blocker_id\":\"<unique-id>\",\"timestamp\":\"<ISO8601>\"}\n```\n\nThen: Continue heartbeats every 30s with step_cursor: \"blocked-awaiting-approval\"\nWait for parent response. If no response in 5 minutes → TERMINATE with approval-timeout.\n\nRemember: Your packet scope is your authority. Within scope = proceed. Outside scope = escalate.\n\n## Route Cognition Delta\nAfter implementation, apply route-local cognition delta — only if something materially changed.\n\n**POLARIS.md** — update only when ALL of the following are true:\n  - You touched a file in that folder (not a distant folder).\n  - The change materially affects: folder responsibilities, commands/workflows,\n    execution constraints, ownership/routing, or operational behavior.\n  - The current POLARIS.md content is actually wrong or incomplete as a result.\n  DO NOT update POLARIS.md for: formatting fixes, comment changes, tiny refactors,\n  internal implementation details, or any change that leaves the operational guidance\n  still accurate. When in doubt, do not update.\n\n**SUMMARY.md** — update only when: linked docs/specs changed, canon relationships\n  changed, architecture meaning changed, or doctrine/spec linkage changed.\n  SUMMARY.md is informational only. Do not create it if missing — that is a hint for\n  operators, not a task for workers. Keep it short. Never add operational doctrine.\n\n**Never** scan unrelated folders. **Never** regenerate all route docs.\nIf no material change occurred, skip this section entirely.\n\n## Report Back\n- files changed\n- validation results\n- commit hash\n- blockers\n\nTERMINATE SESSION IMMEDIATELY. Do not select or execute the next child.",
+    "steps": [
+      "Verify: read /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json and confirm active_child === \"POL-539\".",
+      "Implement POL-539: \"POL-539\".",
+      "Issue description:\n## Objective\n\nAdd the missing `appendRepairLoopOutcomeSymptom()`/`appendQcEscalationSymptoms()` calls in `runCompletedClusterQcWithRepair()` (`src/finalize/index.ts`) so untrusted QC repair-loop outcomes escalate to the run-health report before finalize blocks.\n\n## Context\n\n`src/loop/parent.ts` (lines ~1318-1332) calls both escalation functions immediately after `runQcRepairLoop()` returns:\n\n```ts\nappendRepairLoopOutcomeSymptom({ runId: state.run_id, clusterId: state.cluster_id, repairResult: repairLoopResult, repoRoot });\nif (repairLoopResult.final_qc_results.length > 0 && repairLoopResult.rounds_completed > 0) {\n  appendQcEscalationSymptoms({ runId: state.run_id, clusterId: state.cluster_id, qcResults: repairLoopResult.final_qc_results, afterRepair: true, repoRoot });\n}\n```\n\n`src/finalize/index.ts`'s `runCompletedClusterQcWithRepair()` calls `runQcRepairLoop()` and gets the identical `QcRepairLoopResult` shape into `repairLoopResult`, but goes straight to `validateQcRepairLoopGate(nextState, config.qc)` and blocks — never calling either function. This means an `all-providers-failed` (or `max-rounds`/`medic-referral`) outcome hit during finalize has no automated Medic recourse, unlike the identical scenario during the normal run loop.\n\nAnalysis doc: `smartdocs/raw/analysis/pol-537-finalize-medic-escalation-gap-analysis.md`\n\n## Goal\n\n`runCompletedClusterQcWithRepair()` escalates repair-loop outcomes and post-repair QC results the same way `parent.ts` does, before enforcing the terminal-state gate.\n\n## Scope\n\n* `src/finalize/index.ts`\n* `src/finalize/qc-trigger.test.ts`\n* `src/finalize/POLARIS.md`\n\n## Acceptance Criteria\n\n- [ ] Import `appendRepairLoopOutcomeSymptom` and `appendQcEscalationSymptoms` from `../run-health/qc-escalation.js` in `src/finalize/index.ts`\n- [ ] `appendRepairLoopOutcomeSymptom({runId: nextState.run_id, clusterId: nextState.cluster_id, repairResult: repairLoopResult, repoRoot})` is called immediately after `runQcRepairLoop()` returns, before `validateQcRepairLoopGate()`\n- [ ] `appendQcEscalationSymptoms()` is called for the initial pre-repair `runQcAtTrigger()` result when it doesn't pass, and for `repairLoopResult.final_qc_results` when `rounds_completed > 0`, mirroring `parent.ts`'s condition\n- [ ] Test: an `all-providers-failed` repair-loop outcome produces a `qc-all-providers-failed` symptom in `.polaris/runs/<run-id>/run-health-report.json` before finalize exits\n- [ ] Test: a `max-rounds` outcome produces a `qc-max-repair-rounds` symptom\n- [ ] Existing `validateQcRepairLoopGate` blocking-behavior tests still pass unmodified in outcome\n- [ ] `src/finalize/POLARIS.md`'s \"QC repair loop relationship\" section mentions the escalation call\n- [ ] `npm run build` and `npm test` pass\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/finalize src/run-health\n\n## Ordering\n\nFirst and only child. No dependencies.\n\n## Non-goals\n\n* Do not modify `src/run-health/qc-escalation.ts`\n* Do not add automatic inline Medic dispatch inside finalize\n* Do not touch the repair-loop dispatch/timeout logic from POL-531/532/533 or the coderabbit classification fix from POL-536",
+      "Requirements:",
+      "   1. [ ] Import `appendRepairLoopOutcomeSymptom` and `appendQcEscalationSymptoms` from `../run-health/qc-escalation.js` in `src/finalize/index.ts`",
+      "   2. [ ] `appendRepairLoopOutcomeSymptom({runId: nextState.run_id, clusterId: nextState.cluster_id, repairResult: repairLoopResult, repoRoot})` is called immediately after `runQcRepairLoop()` returns, before `validateQcRepairLoopGate()`",
+      "   3. [ ] `appendQcEscalationSymptoms()` is called for the initial pre-repair `runQcAtTrigger()` result when it doesn't pass, and for `repairLoopResult.final_qc_results` when `rounds_completed > 0`, mirroring `parent.ts`'s condition",
+      "   4. [ ] Test: an `all-providers-failed` repair-loop outcome produces a `qc-all-providers-failed` symptom in `.polaris/runs/<run-id>/run-health-report.json` before finalize exits",
+      "   5. [ ] Test: a `max-rounds` outcome produces a `qc-max-repair-rounds` symptom",
+      "   6. [ ] Existing `validateQcRepairLoopGate` blocking-behavior tests still pass unmodified in outcome",
+      "   7. [ ] `src/finalize/POLARIS.md`'s \"QC repair loop relationship\" section mentions the escalation call",
+      "   8. [ ] `npm run build` and `npm test` pass",
+      "Run validation commands and confirm all pass.",
+      "Create exactly ONE git commit: [POL-539] POL-539.",
+      "Do NOT modify open_children or completed_children in /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json. The parent runtime (loop continue) owns that state transition.",
+      "Append a telemetry event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-538-2026-07-10-001/telemetry.jsonl.",
+      "If you encountered any struggle signals during execution, include a \"run_health_symptoms\" array in your sealed result. Use one of these categories: worker-blocked, validation-failed, repeated-rework, unclear-requirements, unusual-assumption. Report what you observed — do NOT diagnose root cause. Omit the field if no symptoms occurred.",
+      "Write compact return JSON to stdout (fields: child_id, status, commit, validation, next_recommended_action). next_recommended_action MUST be exactly \"continue\" on success, \"stop\" on unresolvable blocker, or \"investigate\" if manual review is needed.",
+      "TERMINATE SESSION IMMEDIATELY. Do not select or execute the next child."
+    ],
+    "allowed_scope": [
+      "`src/finalize/index.ts`",
+      "`src/finalize/qc-trigger.test.ts`",
+      "`src/finalize/POLARIS.md`"
+    ],
+    "validation_commands": [
+      "npm run build",
+      "npm test",
+      "npx vitest run src/finalize src/run-health"
+    ],
+    "issue_context": {
+      "id": "POL-539",
+      "title": "POL-539",
+      "key_requirements": [],
+      "body": "## Objective\n\nAdd the missing `appendRepairLoopOutcomeSymptom()`/`appendQcEscalationSymptoms()` calls in `runCompletedClusterQcWithRepair()` (`src/finalize/index.ts`) so untrusted QC repair-loop outcomes escalate to the run-health report before finalize blocks.\n\n## Context\n\n`src/loop/parent.ts` (lines ~1318-1332) calls both escalation functions immediately after `runQcRepairLoop()` returns:\n\n```ts\nappendRepairLoopOutcomeSymptom({ runId: state.run_id, clusterId: state.cluster_id, repairResult: repairLoopResult, repoRoot });\nif (repairLoopResult.final_qc_results.length > 0 && repairLoopResult.rounds_completed > 0) {\n  appendQcEscalationSymptoms({ runId: state.run_id, clusterId: state.cluster_id, qcResults: repairLoopResult.final_qc_results, afterRepair: true, repoRoot });\n}\n```\n\n`src/finalize/index.ts`'s `runCompletedClusterQcWithRepair()` calls `runQcRepairLoop()` and gets the identical `QcRepairLoopResult` shape into `repairLoopResult`, but goes straight to `validateQcRepairLoopGate(nextState, config.qc)` and blocks — never calling either function. This means an `all-providers-failed` (or `max-rounds`/`medic-referral`) outcome hit during finalize has no automated Medic recourse, unlike the identical scenario during the normal run loop.\n\nAnalysis doc: `smartdocs/raw/analysis/pol-537-finalize-medic-escalation-gap-analysis.md`\n\n## Goal\n\n`runCompletedClusterQcWithRepair()` escalates repair-loop outcomes and post-repair QC results the same way `parent.ts` does, before enforcing the terminal-state gate.\n\n## Scope\n\n* `src/finalize/index.ts`\n* `src/finalize/qc-trigger.test.ts`\n* `src/finalize/POLARIS.md`\n\n## Acceptance Criteria\n\n- [ ] Import `appendRepairLoopOutcomeSymptom` and `appendQcEscalationSymptoms` from `../run-health/qc-escalation.js` in `src/finalize/index.ts`\n- [ ] `appendRepairLoopOutcomeSymptom({runId: nextState.run_id, clusterId: nextState.cluster_id, repairResult: repairLoopResult, repoRoot})` is called immediately after `runQcRepairLoop()` returns, before `validateQcRepairLoopGate()`\n- [ ] `appendQcEscalationSymptoms()` is called for the initial pre-repair `runQcAtTrigger()` result when it doesn't pass, and for `repairLoopResult.final_qc_results` when `rounds_completed > 0`, mirroring `parent.ts`'s condition\n- [ ] Test: an `all-providers-failed` repair-loop outcome produces a `qc-all-providers-failed` symptom in `.polaris/runs/<run-id>/run-health-report.json` before finalize exits\n- [ ] Test: a `max-rounds` outcome produces a `qc-max-repair-rounds` symptom\n- [ ] Existing `validateQcRepairLoopGate` blocking-behavior tests still pass unmodified in outcome\n- [ ] `src/finalize/POLARIS.md`'s \"QC repair loop relationship\" section mentions the escalation call\n- [ ] `npm run build` and `npm test` pass\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/finalize src/run-health\n\n## Ordering\n\nFirst and only child. No dependencies.\n\n## Non-goals\n\n* Do not modify `src/run-health/qc-escalation.ts`\n* Do not add automatic inline Medic dispatch inside finalize\n* Do not touch the repair-loop dispatch/timeout logic from POL-531/532/533 or the coderabbit classification fix from POL-536"
+    }
+  },
+  "lifecycle": {
+    "terminate_after_completion": true,
+    "max_concurrent": 1,
+    "cleanup_on_exit": "commit-and-exit"
+  },
+  "return_contract": [
+    "child_id",
+    "status",
+    "commit",
+    "validation",
+    "next_recommended_action"
+  ],
+  "prompt_mode": "compact",
+  "prompt_metrics": {
+    "mode": "compact",
+    "char_count": 8258,
+    "estimated_tokens": 2065
+  },
+  "role_context": {
+    "role": "worker",
+    "role_authority": "implementation",
+    "may_implement": true,
+    "may_assign_workers": false,
+    "prohibited_actions": [
+      "modify-cluster-plan",
+      "dispatch-children",
+      "polaris-loop-dispatch",
+      "polaris-loop-continue"
+    ]
+  },
+  "routing_context": {
+    "task_type": "impl",
+    "required_capabilities": [
+      "implementation"
+    ]
+  },
+  "prohibited_write_paths": [
+    ".taskchain_artifacts/",
+    ".polaris/clusters/",
+    ".polaris/runs/",
+    "**/telemetry.jsonl"
+  ],
+  "result_file_contract": {
+    "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-538/results/POL-539-36f70341-1adc-462d-b2c5-cdb7ff40cdb1.json",
+    "result_required_fields": {
+      "run_id": "polaris-run-pol-538-2026-07-10-001",
+      "cluster_id": "POL-538",
+      "child_id": "<child_id>",
+      "status": "<status>",
+      "commit": "<commit>",
+      "validation": "<validation>",
+      "next_recommended_action": "<next_recommended_action>"
+    }
+  },
+  "context": {
+    "branch": "pol-524-pol-530-pol-535-delivery",
+    "worker_role": "impl"
+  }
+}

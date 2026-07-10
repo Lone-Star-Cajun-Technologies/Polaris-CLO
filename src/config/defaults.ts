@@ -122,5 +122,6 @@ export const DEFAULT_CONFIG: Omit<Required<PolarisConfig>, "canon" | "providers"
     },
     routes: {},
     maxRepairRounds: 2,
+    repairDispatchTimeoutMs: 1_800_000,
   },
 };

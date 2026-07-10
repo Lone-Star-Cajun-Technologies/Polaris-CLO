@@ -6,7 +6,7 @@ The `src/` tree contains the Polaris application source: CLI entrypoints, runtim
 
 ## What belongs here
 
-- Route folders such as `cli/`, `loop/`, `runtime/`, `config/`, `cognition/`, `map/`, `smartdocs-engine/`, `graph/`, `finalize/`, `tracker/`, and `agent-plugin/`
+- Route folders such as `cli/`, `loop/`, `runtime/`, `config/`, `cognition/`, `map/`, `smartdocs-engine/`, `graph/`, `qc/`, `finalize/`, `tracker/`, and `agent-plugin/`
 - Shared support modules such as `mcp/`, `types/`, `utils/`, `ignore/`, `cluster-state/`, and `skill-packet/`
 - `medic/` — Medic chart generation, run-health consult handling, and treatment-packet tooling
 - `run-health/` — canonical symptom-report helpers, report storage, and mutation APIs for run-health ingestion
@@ -30,7 +30,7 @@ The `src/` tree contains the Polaris application source: CLI entrypoints, runtim
 
 - `src/` is the checked-in source root for the Polaris runtime.
 - Cognition, map, Smart Docs, graph, run-health, and Medic subsystems are separate and documented with folder-level contracts.
-- Run-health reports are the machine-readable source of truth for symptoms; workers and SOL append symptoms, Medic resolves them, and finalize blocks until the report has a Medic decision or explicit bypass.
+- Run-health reports are the machine-readable source of truth for symptoms; workers, SOL, and finalize append symptoms (finalize escalates QC outcomes to the report), Medic resolves them, and finalize blocks until the report has a Medic decision or explicit bypass.
 - Route health and identity checks span `src/map/`, `src/cognition/`, `src/run-health/`, and CLI command wiring; keep their public terms aligned.
 - New config or governance surfaces must be reflected in the relevant subfolder docs.
 
@@ -41,6 +41,7 @@ The `src/` tree contains the Polaris application source: CLI entrypoints, runtim
 - `src/map/POLARIS.md`
 - `src/graph/POLARIS.md`
 - `src/smartdocs-engine/POLARIS.md`
+- `src/qc/POLARIS.md`
 - `src/run-health/schema.ts`
 - `src/run-health/index.ts`
 - `src/medic/run-health-consult.ts`

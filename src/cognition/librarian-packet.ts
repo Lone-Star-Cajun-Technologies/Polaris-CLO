@@ -98,6 +98,26 @@ export function generateLibrarianPacket(options: GenerateLibrarianPacketOptions)
       cognition_index: fs.existsSync(cognitionIndexAbs)
         ? path.relative(repoRoot, cognitionIndexAbs)
         : null,
+      artifact_contract: {
+        polaris_md: {
+          path: path.join(folder, "POLARIS.md"),
+          intent: "must-reconcile",
+          reason: "Affected folders must reconcile POLARIS.md to keep operational doctrine current.",
+        },
+        summary_md: fs.existsSync(summaryAbs)
+          ? {
+              path: path.join(folder, "SUMMARY.md"),
+              intent: "reconcile-if-present",
+              reason:
+                "SUMMARY.md exists for this folder and may be reconciled independently when informational canon changed.",
+            }
+          : {
+              path: null,
+              intent: "not-present",
+              reason:
+                "SUMMARY.md is missing for this folder; skip SUMMARY reconciliation and evaluate POLARIS.md independently.",
+            },
+      },
     };
   });
 
@@ -129,10 +149,16 @@ export function generateLibrarianPacket(options: GenerateLibrarianPacketOptions)
   ];
 
   // Allowed: documentation and cognition paths only
+  // Build explicit smartdocs paths instead of granting the entire root
+  const smartdocsRawDir = path.join(repoRoot, "smartdocs", "raw");
+  const smartdocsSpecsActiveDir = path.join(repoRoot, "smartdocs", "specs", "active");
+  const smartdocsDoctrineActiveDir = path.join(repoRoot, "smartdocs", "doctrine", "active");
   const allowedWritePaths = [
     ...polarisMdPaths.map((p) => path.join(repoRoot, p.polaris_md)),
     ...polarisMdPaths.filter((p) => p.summary_md).map((p) => path.join(repoRoot, p.summary_md!)),
-    path.join(repoRoot, "smartdocs"),
+    smartdocsRawDir,
+    smartdocsSpecsActiveDir,
+    smartdocsDoctrineActiveDir,
     path.join(repoRoot, ".polaris", "cognition", "archive"),
     resultPath,
   ];

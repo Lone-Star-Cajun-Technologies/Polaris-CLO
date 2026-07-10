@@ -11,7 +11,7 @@
         "command": "devin",
         "args": [
           "--permission-mode",
-          "bypass",
+          "dangerous",
           "-p",
           "{{worker_prompt}}"
         ]
@@ -157,14 +157,14 @@
         "capabilities": ["diff-review", "result-parsing"],
         "execution": {
           "command": "coderabbit",
-          "args": ["review", "--agent"],
+          "args": ["review", "--agent", "--light", "--base", "main"],
           "output": {
             "format": "jsonl",
             "parser": "coderabbit"
           },
           "configPath": ".polaris/coderabbit.config.yaml"
         },
-        "timeoutMs": 300000,
+        "timeoutMs": 900000,
         "primary": true,
         "failurePolicy": {
           "timeout": "fail",

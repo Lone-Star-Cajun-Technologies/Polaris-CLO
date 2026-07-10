@@ -165,7 +165,7 @@ function dispatchCanonAgent(options: {
     .map((d, i) => `${i + 1}. [${d.title}] path: ${d.path}`)
     .join("\n");
 
-  const prompt = `You are a Polaris librarian generating context files for an agent work area.
+  const prompt = `You are a Polaris librarian generating route cognition for an agent work area.
 
 Route folder: ${routeFolder}
 Repo root: ${repoRoot}
@@ -173,16 +173,27 @@ Repo root: ${repoRoot}
 Available doctrine documents:
 ${docList}
 
-Generate two outputs for this route area:
+Generate two outputs for this route area.
 
-1. SUMMARY.md content — a navigation index. Select relevant doctrine docs and write 2-4 lines describing what this area covers.
+1. SUMMARY.md content (current-state memory / navigation index):
+   - Include: 2-4 lines describing what this area covers, its current canonical status, and which doctrine docs are relevant.
+   - Avoid: operational procedures, step-by-step agent instructions, duplicated doctrine text, or per-run diary content.
 
-2. POLARIS.md content — operational instructions for agents entering this work area. Write 4-8 lines covering: what this area is responsible for, key patterns/conventions agents should follow, what to avoid, and which doctrine docs to consult for specific concerns. Be concise and directive — agents read this cold before starting work.
+2. POLARIS.md content (route operating guidance):
+   REQUIRED sections that must be present in polaris_lines:
+   - Purpose/boundaries: what this area is responsible for and what it excludes
+   - Invariants/safety rules: constraints and what to avoid
+   - Commands/workflows: key patterns/conventions agents must follow
+   - Canonical links: which doctrine docs to consult for specific concerns
+   - Read-before-edit references: upstream/downstream dependencies
+
+   Avoid: navigation-index content, summary-style history, per-run notes, or duplicating doctrine text instead of linking to it.
 
 Respond with ONLY valid JSON on a single line:
 {"relevant_docs":[{"path":"<doc path>","title":"<doc title>"}],"summary_lines":["line1","line2"],"polaris_lines":["line1","line2"]}
 
-If no doctrine docs are relevant, return an empty array for relevant_docs.`;
+If no doctrine docs are relevant, return an empty array for relevant_docs.
+The polaris_lines array must contain all required POLARIS contract sections or be empty if the agent cannot generate valid content.`;
 
   // Same dispatch pattern as dispatchLibrarianReview — pass args straight through,
   // letting the provider config (e.g. env CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=0) handle auth.

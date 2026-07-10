@@ -53,19 +53,20 @@ The loop subsystem manages the session lifecycle for Polaris cluster runs. It ha
 
 ## Read before editing
 
-- `docs/spec/polaris-architecture-spec.md` — full loop/map/finalize architecture
+- `smartdocs/specs/active/polaris-implementation-plan.md` — full loop/map/finalize architecture
 - `.polaris/skills/polaris-run/chain.md` — step traversal order, continuation rules, telemetry requirements
 - `src/loop/checkpoint.ts` — state schema and read/write contract
 - `smartdocs/specs/active/worker-router-architecture.md` — Worker Router architecture, slot-aware scheduling, and provider selection invariants
 - `src/loop/router/engine.ts` — deterministic router decision engine
 - `src/loop/router/types.ts` — WorkerRouterInput, WorkerRouterDecision, RouterRejectionReason types
 
-## Architecture notes
+## Architecture assumptions
 
 - The Worker Router (`src/loop/router/`) is implemented and integrated into dispatch. `dispatch.ts` calls `decideWorkerRoute()` with router context (role, taskType, constraints, runtime slot state), validates the decision, and records `routerEvidence` in the dispatch record. Telemetry events (`provider-selected`, `provider-fallback-attempted`, `provider-exhausted`) are emitted from dispatch and parent.
 - Slot-aware child scheduling lives in `src/runtime/scheduling/child-selector.ts`. It enforces `maxActiveWorkers` concurrency limits and tracks `slot_claims` per child. With `routerPolicy.defaultWorkerPool.maxActiveWorkers = 1` (the default), behavior is identical to the legacy single-worker loop.
 - Router fallback (`pre_dispatch_failure`) is handled in execution adapters: the adapter returns `fallback_eligible: true` and `router_evidence`, and the caller may retry the next provider in the fallback chain. Once a worker emits `worker-acknowledged`, the child is bound and no further fallback is attempted.
 - SOL scoring inputs are emitted from dispatch and parent as router telemetry; `src/autoresearch/score.ts` reads these events to compute `RouterOutcomesSummary`.
+- QC repair workers are dispatched through the caller-supplied `dispatchRepairWorker` callback passed to `runQcRepairLoop()`, not through `polaris loop continue` or the Worker Router. The callback compiles a `BootstrapPacket` with `worker_role: "repair"` and invokes the configured `ExecutionAdapter` directly. Repair worker dispatch is therefore not subject to the one-child-per-session boundary, but the repair loop still enforces `maxRepairRounds` and `repairDispatchTimeoutMs`.
 
 ## QC relationship
 
@@ -77,13 +78,13 @@ The loop subsystem manages the session lifecycle for Polaris cluster runs. It ha
 
 ## QC repair loop relationship
 
-- When `src/qc/orchestration.ts` compiles a repair packet manifest, the loop dispatches repair workers as governed children using `worker_role: repair` through `dispatch.ts` and the Worker Router.
-- Repair workers are normal governed children. The loop's session boundary (one child per session), slot management, and STOP rule apply equally to repair workers.
-- `src/qc/` owns repair round state and the compiled manifest. The loop owns worker dispatch and slot claims; it does not modify QC round state directly.
-- After all repair workers in a round complete, the loop signals `src/qc/orchestration.ts` to trigger the post-repair QC rerun. The loop does not own the rerun decision.
-- The bounded round limit (`maxRepairRounds`, default `2`) is enforced by `src/qc/orchestration.ts`. The loop does not need to track repair round counts.
-- `open_children` and `completed_children` in `current-state.json` reflect repair workers just as they reflect any other child. The loop must not treat repair workers differently at the dispatch or continue boundary.
-- See `smartdocs/specs/active/quality-control-architecture.md §8` for the full repair loop implementation contract.
+- The parent loop and finalize path each invoke `runQcRepairLoop()` from `src/qc/repair-loop.ts` when completed-cluster QC produces actionable findings.
+- The repair loop compiles the packet manifest, partitions packets into parallel groups and serialized medic packets, and calls the caller-provided `dispatchRepairWorker` callback for each packet.
+- The caller-provided callback (in `src/loop/parent.ts` and `src/finalize/index.ts`) compiles a `BootstrapPacket` with `worker_role: "repair"` and invokes the configured `ExecutionAdapter` directly. It does not route through `dispatch.ts` or the Worker Router, and repair workers do not flow through `polaris loop continue` boundaries.
+- Repair workers are not added to `open_children`/`completed_children` in `current-state.json`; the repair loop stores its own `QcRepairLoopState` in `state.qc_repair_loop`.
+- The repair loop triggers the post-repair QC rerun by calling `runQcAtTrigger()` from `src/qc/orchestration.ts` after all repair workers in a round complete. The loop does not own the rerun decision.
+- The bounded round limit (`maxRepairRounds`, default `2`) and per-dispatch timeout (`repairDispatchTimeoutMs`, default 30 minutes) are enforced by `src/qc/repair-loop.ts`.
+- See `smartdocs/specs/active/quality-control-architecture.md §8` and `src/qc/POLARIS.md` for the full repair loop implementation contract.
 
 ## Related routes
 
