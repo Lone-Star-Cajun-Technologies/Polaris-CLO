@@ -121,7 +121,11 @@ function stageFile(dir: string, relativePath: string, content = "test\n"): void 
 function makeFinding(
   overrides: Partial<QcFinding> & { findingId: string; severity: QcFinding["severity"]; title: string },
 ): QcFinding {
+  const { findingId, severity, title, ...rest } = overrides;
   return {
+    findingId,
+    severity,
+    title,
     category: "style",
     filePath: "src/impl.ts",
     fixAvailable: false,
@@ -129,40 +133,16 @@ function makeFinding(
     attribution: { confidence: "low", reason: "provider-uncertain", childId: "POL-9" },
     status: "open",
     routingDecision: "follow-up",
-    ...overrides,
+    ...rest,
   };
 }
 
-function makeCompletedClusterResult(
+function makeCompletedClusterResult<TAction extends "pass" | "block" | "follow-up">(
   clusterId: string,
-  action: "pass",
-  findings?: QcFinding[],
-): {
-  result: { trigger: "completed-cluster"; results: QcResult[]; action: "pass"; summary: string };
-  repairLoopResult: QcRepairLoopResult;
-};
-function makeCompletedClusterResult(
-  clusterId: string,
-  action: "block",
-  findings?: QcFinding[],
-): {
-  result: { trigger: "completed-cluster"; results: QcResult[]; action: "block"; summary: string };
-  repairLoopResult: QcRepairLoopResult;
-};
-function makeCompletedClusterResult(
-  clusterId: string,
-  action: "follow-up",
-  findings?: QcFinding[],
-): {
-  result: { trigger: "completed-cluster"; results: QcResult[]; action: "follow-up"; summary: string };
-  repairLoopResult: QcRepairLoopResult;
-};
-function makeCompletedClusterResult(
-  clusterId: string,
-  action: "pass" | "block" | "follow-up",
+  action: TAction,
   findings: QcFinding[] = [],
 ): {
-  result: { trigger: "completed-cluster"; results: QcResult[]; action: "pass" | "block" | "follow-up"; summary: string };
+  result: { trigger: "completed-cluster"; results: QcResult[]; action: TAction; summary: string };
   repairLoopResult: QcRepairLoopResult;
 } {
   const status = action === "pass" ? "passed" : "findings";
@@ -208,14 +188,16 @@ function makeCompletedClusterResult(
           ? "operator-review"
           : "no-repairable";
 
-  const roundsCompleted = (() => {
-    switch (terminalOutcome) {
+  const roundsCompleted = ((outcome: QcRepairLoopResult["outcome"]) => {
+    switch (outcome) {
       case "pass":
+      case "medic-referral":
+      case "max-rounds":
         return 1;
       default:
         return 0;
     }
-  })();
+  })(terminalOutcome);
 
   const finalQcResults: QcResult[] =
     terminalOutcome === "pass"
