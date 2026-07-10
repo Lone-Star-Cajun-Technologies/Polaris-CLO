@@ -6,7 +6,7 @@ The `src/` tree contains the Polaris application source: CLI entrypoints, runtim
 
 ## What belongs here
 
-- Route folders such as `cli/`, `loop/`, `runtime/`, `config/`, `cognition/`, `map/`, `smartdocs-engine/`, `graph/`, `finalize/`, `tracker/`, and `agent-plugin/`
+- Route folders such as `cli/`, `loop/`, `runtime/`, `config/`, `cognition/`, `map/`, `smartdocs-engine/`, `graph/`, `qc/`, `finalize/`, `tracker/`, and `agent-plugin/`
 - Shared support modules such as `mcp/`, `types/`, `utils/`, `ignore/`, `cluster-state/`, and `skill-packet/`
 - `medic/` — Medic chart generation, run-health consult handling, and treatment-packet tooling
 - `run-health/` — canonical symptom-report helpers, report storage, and mutation APIs for run-health ingestion
@@ -41,6 +41,7 @@ The `src/` tree contains the Polaris application source: CLI entrypoints, runtim
 - `src/map/POLARIS.md`
 - `src/graph/POLARIS.md`
 - `src/smartdocs-engine/POLARIS.md`
+- `src/qc/POLARIS.md`
 - `src/run-health/schema.ts`
 - `src/run-health/index.ts`
 - `src/medic/run-health-consult.ts`
