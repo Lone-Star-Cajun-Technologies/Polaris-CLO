@@ -28,6 +28,7 @@ The adapters subfolder provides execution adapter implementations for dispatchin
 
 - `dispatchForeman()` must remain provider-neutral. Provider-specific launch behavior stays in adapter implementations (e.g., `TerminalCliAdapter`). Do not add provider conditionals here.
 - `assertCheckpointGateEnforced()` is a safety pre-condition: a `SetupBootstrapPacket` without `checkpoint_gate.self_approval_prohibited === true` must be rejected at dispatch time, not silently passed.
+- `TerminalCliAdapter.dispatch()` blocks `impl` and `repair` packets with an empty `allowed_scope` at the adapter boundary. It returns `pre_dispatch_failure: true`, `fallback_eligible: false`, and a summary with `status: "blocked"` and `warnings: ["empty-allowed-scope"]`.
 - Do not add new adapter implementations without a corresponding registry entry in `registry.ts`.
 - Adapters must implement the `ExecutionAdapter` interface from `types.ts`.
 

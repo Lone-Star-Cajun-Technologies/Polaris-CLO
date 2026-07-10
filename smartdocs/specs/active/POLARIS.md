@@ -18,3 +18,19 @@ Active specs live here and represent the canonical current-state specification s
 
 - Keep active specs accurate and concise.
 - Update references when spec authority moves.
+
+## Architecture assumptions
+
+- Active specs are the authoritative implementation reference for the current Polaris surface.
+- Specs in this directory are updated by implementing clusters and the Closeout Librarian, not by ad-hoc draft edits.
+
+## Read before editing
+
+- [SUMMARY.md](SUMMARY.md)
+- [index.md](index.md)
+
+## Related routes
+
+- `smartdocs/specs/` — spec tier overview
+- `smartdocs/specs/implemented/` — historical implemented specs
+- `smartdocs/specs/superseded/` — archival superseded specs

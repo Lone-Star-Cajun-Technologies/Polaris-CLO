@@ -12,11 +12,11 @@ Unit tests for `src/loop/adapters/` execution adapters. Validates dispatch succe
 Provides regression coverage for adapter fallback and failure classification logic introduced by the Worker Router integration (POL-468).
 
 ## Key Constraints
-- Tests must not spawn real provider processes.
-- Fallback behavior tests must inject `routerDecision` with a deterministic `providersTried` array.
+- Tests do not spawn real provider processes.
+- Fallback behavior tests inject `routerDecision` with a deterministic `providersTried` array.
 
 ## Current State
-`terminal-cli.test.ts` covers dispatch success, pre-dispatch failure, quota signal detection, and `router_evidence` attachment. All tests pass under the mocked adapter harness.
+`terminal-cli.test.ts` covers dispatch success, pre-dispatch failure, quota signal detection, `router_evidence` attachment, and empty `allowed_scope` blocking for `impl` and `repair` packets. All tests pass under the mocked adapter harness.
 
 ## Linked Canonical Sources
 - [POLARIS.md](POLARIS.md)

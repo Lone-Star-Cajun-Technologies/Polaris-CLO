@@ -17,6 +17,10 @@ Current canonical SmartDocs specs.
   [quality-control-architecture.md](quality-control-architecture.md). It defines provider
   boundaries, trigger policy (PR/completed-cluster default, child-level gated), severity,
   attribution, auto-fix limits, repair routing, and SOL feedback boundaries.
+- POL-530 completed the repair loop implementation: `operator-review` packets are filtered from
+  dispatch, `qc.repairDispatchTimeoutMs` bounds every repair-worker dispatch, `qc-repair-worker-dispatch-start`
+  telemetry checkpoints are emitted, `TerminalCliAdapter` blocks `impl`/`repair` packets with an empty
+  `allowed_scope`, and `src/finalize/index.ts` delegates completed-cluster QC repair to `runQcRepairLoop()`.
 
 ## Relationships
 - **Parent**: `smartdocs/specs/`

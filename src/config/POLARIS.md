@@ -12,6 +12,7 @@ The config subsystem loads, validates, and provides the resolved `PolarisConfig`
 - `validator.ts` — schema validation logic
 - `graph` config fields — graph output path and invalidation triggers for graph governance
 - Provider detection helpers — compaction providers remain separate from repo-analysis providers; repo analysis prefers Polaris graph only.
+- `qc` config fields — `QcConfig` with `enabled` (default `false`), `defaultTrigger`, `repairRouting`, `maxRepairRounds` (default `2`), `repairDispatchTimeoutMs` (default `1_800_000` ms, 30 minutes), `severityThresholds`, `autoFix`, `providers`, `routes`, and `artifactRetention`.
 - `sol` config fields — `SolConfig` with `history.enabled` (default `false`), `history.path` (default `.polaris/sol-history`), and threshold policy controls for SOL → run-health symptom triggers.
 - `run_health` config fields — `RunHealthConfig` and `ForemanSymptomsConfig` for foreman-side symptom emission.
 - `finalize.medic` config fields — `bypassPolicy` for the run-health Medic gate.
@@ -50,12 +51,13 @@ The config subsystem loads, validates, and provides the resolved `PolarisConfig`
 - `src/graph/governance.ts` — consumer of `config.graph` behavior
 - `smartdocs/specs/active/worker-router-architecture.md` — future Worker Router config types and invariants (default remains single-worker)
 
-## Architecture notes
+## Architecture assumptions
 
 - The `execution.routerPolicy` config surface (`WorkerRouterPolicyConfig`) is the live provider eligibility and slot-pool configuration for the Worker Router. It is present in `schema.ts`, `schema.json`, and `defaults.ts`. Key sub-fields: `defaultWorkerPool.maxActiveWorkers` (default `1`), `providerRegistry` (per-provider eligibility, role, capability, quota, trust, cost, and max slot declarations), `allowCrossAgentFallback` (default `false`).
 - With `routerPolicy` absent or all defaults, behavior is identical to the pre-router single-worker loop: one active worker, first configured provider selected, no cross-agent fallback.
 - The `sol` config surface (`SolConfig`) controls SOL history persistence and threshold-based symptom emission. `sol.history.enabled` (default `false`) gates all snapshot writes; `sol.history.path` (default `.polaris/sol-history`) sets the storage directory relative to the repo root. `sol.thresholds.enabled` must be true before any thresholds can create run-health symptoms, and `sol.thresholds.policy.requireMedic` promotes critical threshold crossings into a pending Medic decision.
 - `run_health.foreman_symptoms.enabled` governs foreman-side symptom emission from runtime intervention events; it is disabled by default and only affects repositories that opt in.
+- The `qc` config surface (`QcConfig`) controls the Quality Control layer. With `qc.enabled` false (the default), no QC providers are invoked and runtime behavior is unchanged. When enabled, `qc.maxRepairRounds` (default `2`) and `qc.repairDispatchTimeoutMs` (default 30 minutes) bound the repair loop.
 - `finalize.medic.bypassPolicy` defaults to `none`; set it to `cli` only when operators should be able to bypass the run-health Medic gate with `--bypass-medic`.
 
 ## Related routes

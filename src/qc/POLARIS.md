@@ -39,14 +39,15 @@ The QC subsystem is the provider-agnostic Quality Control layer for Polaris. It 
 
 - QC providers are external critics, not worker providers. Providers must never be dispatched through the Worker Router; they are invoked directly by `runner.ts`.
 - Provider execution failures (`timeout`, `rate-limited`, `auth-failure`, `command-not-found`, `nonzero-exit`, `parse-failed`, `empty-output`, `unusable-output`, `unsupported-mode`, `unavailable-provider`) are classified as `QcProviderFailure`, not as findings. `unusable-output` covers provider payloads (e.g. progress/status/heartbeat/complete records) that parse successfully but contain no actionable finding — no `file`/`path` plus `message`/`title` fields. All failures must produce telemetry.
-- Repair workers that address QC findings are dispatched by `src/loop/dispatch.ts` with `worker_role: repair`. `src/qc/` compiles the repair packet manifest; it does not dispatch workers.
+- Repair workers that address QC findings are dispatched by the caller of `runQcRepairLoop()` (currently `src/finalize/index.ts` and `src/loop/parent.ts`) with `worker_role: repair`. `src/qc/` compiles the repair packet manifest; it does not dispatch workers.
 - Repair packet manifests are written to `.polaris/clusters/<cluster-id>/qc/repair-rounds/<round>/repair-packets.json`.
 - Max repair rounds is `2` by default, overridable by `polaris.config.json → qc.maxRepairRounds`. The loop must stop when `round > maxRepairRounds`.
+- Each repair worker dispatch is bounded by `polaris.config.json → qc.repairDispatchTimeoutMs` (default `1_800_000` ms, 30 minutes). A dispatch that exceeds the timeout is recorded as a failure/timeout result.
 - A finding may be marked `repaired` only after a post-repair QC run or explicit validation evidence from the repair worker's result packet.
 - Grouping rules for repair packets: group by file + root-cause/category when ranges overlap; do not mix security/auth/data-loss/migration/governance findings with unrelated work.
 - Parallelism is governed by `parallel_group`, `conflicts_with`, and scope overlap. Do not mark packets as parallel-safe if `allowed_scope` sets overlap or either touches shared governance/config files.
 - All QC artifacts written to `.polaris/clusters/<cluster-id>/qc/` must use atomic writes. Never call `fs.writeFile()` directly on artifact paths.
-- The telemetry event catalog for the repair loop is defined in `smartdocs/specs/active/quality-control-architecture.md §8.9`. Emit events from `orchestration.ts` and `runner.ts`; do not emit them from individual provider adapters.
+- The repair loop emits `qc-repair-worker-dispatch-start` before each repair worker dispatch and `qc-repair-worker-dispatch-timeout` if the dispatch timeout fires. See the event catalog in `smartdocs/specs/active/quality-control-architecture.md §8.9` and the implementation in `src/qc/repair-loop.ts`.
 
 ## Provider config model
 
@@ -74,7 +75,7 @@ interface QcProviderExecutionConfig {
 
 ## Repair loop state machine
 
-States (managed by `orchestration.ts`):
+States (managed by `src/qc/repair-loop.ts`):
 
 `qc_review_requested` → `qc_provider_attempted` → `qc_results_normalized` → `repair_packets_compiled` → `repair_packets_dispatched` → `repair_results_collected` → `qc_rerun_requested` → (loop) or terminal state
 
@@ -90,6 +91,12 @@ See `smartdocs/specs/active/quality-control-architecture.md §8.9` for the telem
 - Raw provider output: `.polaris/clusters/<cluster-id>/qc/<qc-run-id>-raw.<ext>`
 - Repair packet manifest: `.polaris/clusters/<cluster-id>/qc/repair-rounds/<round>/repair-packets.json`
 
+## Architecture assumptions
+
+- QC providers are external critics; the runtime owns routing, attribution, and policy decisions.
+- Repair workers are dispatched by the caller of `runQcRepairLoop()` through a configured `ExecutionAdapter`, not by the QC subsystem directly.
+- The repair loop is bounded by `qc.maxRepairRounds` and `qc.repairDispatchTimeoutMs` and terminates deterministically.
+
 ## Read before editing
 
 - `smartdocs/specs/active/quality-control-architecture.md` — full architecture spec including repair loop contract (§8).
@@ -101,7 +108,7 @@ See `smartdocs/specs/active/quality-control-architecture.md §8.9` for the telem
 ## Related routes
 
 - `polaris.qc` — all files in this directory
-- `src/loop/dispatch.ts` — dispatches repair workers (not QC providers)
+- `src/finalize/index.ts` and `src/loop/parent.ts` — invoke `runQcRepairLoop()` and dispatch repair workers through the configured `ExecutionAdapter` (not QC providers)
 - `src/cluster-state/` — stores QC run pointers and round state
 - `src/finalize/` — reads QC artifacts for delivery gating
 - `src/autoresearch/` — reads QC artifacts for SOL scoring

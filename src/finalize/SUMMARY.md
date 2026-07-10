@@ -19,8 +19,8 @@ Atomic 13-step delivery sequence — the only subsystem that pushes branches, op
 - **Downstream**: GitHub (PR creation), Linear (issue update)
 
 ## Current State
-The finalize subsystem owns the atomic delivery sequence, QC gating, and the run-health Medic gate. It commits state, map, and run-report artifacts only, then optionally proceeds to PR creation and tracker updates when the QC and Medic gates pass. Run-health reports now block delivery until Medic resolves or bypasses them, and the QC repair loop continues to gate finalize independently of the Medic check. Finalize still remains the only subsystem that pushes branches and opens PRs.
+The finalize subsystem owns the atomic delivery sequence, QC gating, and the run-health Medic gate. It commits state, map, and run-report artifacts only, then optionally proceeds to PR creation and tracker updates when the QC and Medic gates pass. Run-health reports now block delivery until Medic resolves or bypasses them, and the QC repair loop continues to gate finalize independently of the Medic check. `runCompletedClusterQcWithRepair()` now delegates directly to `runQcRepairLoop()`, which filters `operator-review` packets, bounds repair-worker dispatch with `qc.repairDispatchTimeoutMs`, and emits telemetry checkpoints before finalizing. Finalize still remains the only subsystem that pushes branches and opens PRs.
 
 ## Linked Canonical Sources
 - [POLARIS.md](POLARIS.md)
-- `docs/spec/polaris-architecture-spec.md`
+- `smartdocs/specs/active/polaris-implementation-plan.md`

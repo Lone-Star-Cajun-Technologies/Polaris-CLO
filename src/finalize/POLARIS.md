@@ -38,10 +38,16 @@ The finalize subsystem implements the atomic 13-step final delivery sequence for
 - `polaris finalize` reads `current-state.json` for cluster_id, branch, run_id, and completed_children — it does not re-read Linear for this information.
 - Linear parent issue (cluster_id) is updated in step 11 after the PR URL is known.
 
+## Architecture assumptions
+
+- Finalize is the only delivery path that touches remote Git, PRs, and tracker closeout.
+- The completed-cluster QC repair loop runs in-band before PR creation when `qc.enabled` is true and `qc.repairRouting` is `route` or `follow-up`.
+- The Closeout Librarian and run-health Medic gates are independent prerequisites that run before finalize commits or delivers.
+
 ## Read before editing
 
 - `smartdocs/specs/active/polaris-artifact-promotion-commit-hygiene-policy.md` — durable artifact promotion and commit-hygiene contract
-- `docs/spec/polaris-architecture-spec.md` — finalize's role in the loop/map/finalize triad
+- `smartdocs/specs/active/polaris-implementation-plan.md` — finalize's role in the loop/map/finalize triad
 - `.polaris/skills/polaris-run/chain.md` — step 08 (final-delivery) invocation contract
 - `src/loop/checkpoint.ts` — state schema that `runFinalize` reads
 
