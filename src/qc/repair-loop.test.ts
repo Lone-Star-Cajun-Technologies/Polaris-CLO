@@ -587,6 +587,7 @@ describe("runQcRepairLoop", () => {
       expect.objectContaining({ packetId: "pkt-test-r1-001" }),
       1,
       expect.any(Object),
+      expect.any(AbortSignal),
     );
   });
 

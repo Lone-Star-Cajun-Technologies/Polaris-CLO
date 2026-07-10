@@ -537,8 +537,8 @@ async function runCompletedClusterQcWithRepair(options: {
     const passLoopState: QcRepairLoopState = existingLoop
       ? {
           ...existingLoop,
-          terminal_outcome: "pass",
-          updated_at: now,
+          terminal_outcome: existingLoop.terminal_outcome ?? "pass",
+          updated_at: existingLoop.terminal_outcome == null ? now : (existingLoop.updated_at ?? now),
         }
       : {
           ...initRepairLoopState({ maxRounds, sourceQcRunIds }),
