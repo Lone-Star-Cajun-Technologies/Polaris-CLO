@@ -10,6 +10,7 @@ Atomic 13-step delivery sequence — the only subsystem that pushes branches, op
 - `stepCommit` commits exactly: state + map + run-report. Nothing else.
 - `validateMedicGate()` blocks finalize when a run-health report exists without a Medic decision or explicit bypass.
 - Only `polaris finalize` may call `git push`.
+- Completed-cluster QC blocks now trigger the QC repair loop during finalize when repair routing is active, so repair packets can be compiled/dispatched in-band before the terminal-state gate.
 - `validateQcRepairLoopGate()` blocks finalize unless the QC repair loop's `terminal_outcome` is `"pass"`, `"qc-disabled"`, or `"no-repairable"` (when QC + repair routing are active).
 - `validateAuthoritativeChildState()` cross-checks completed-child counts against cluster-state before PR creation; its authoritative count is used in the PR body and Linear comment instead of the raw loop-state count.
 

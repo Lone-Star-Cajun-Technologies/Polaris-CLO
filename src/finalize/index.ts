@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { randomUUID } from "node:crypto";
 import { join, resolve } from "node:path";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { execFileSync } from "node:child_process";
@@ -9,7 +10,7 @@ import {
 } from "../cognition/closeout-librarian-types.js";
 import { loadConfig } from "../config/loader.js";
 import type { QcConfig } from "../config/schema.js";
-import { readState, writeStateAtomic, type LoopState } from "../loop/checkpoint.js";
+import { readState, writeStateAtomic, type LoopState, type QcRepairLoopState } from "../loop/checkpoint.js";
 import { classifyArtifactPath } from "./artifact-policy.js";
 import { hasNonArtifactSourceChanges, verifyChildCommitCustody, patternMatchesPath } from "../loop/git-custody.js";
 import { readClusterStateSync } from "../cluster-state/store.js";
@@ -33,7 +34,18 @@ import { TrackerSyncService } from "../tracker/sync/index.js";
 import { formatFinalizeEvidenceFailures, verifyCompletedChildFinalizeEvidence } from "../loop/finalize-evidence.js";
 import { validateDeliveryIntegrity } from "./delivery-integrity.js";
 import { validateMedicGate } from "./medic-gate.js";
-import { runQcAtTrigger, createQcRegistry } from "../qc/index.js";
+import {
+  runQcAtTrigger,
+  createQcRegistry,
+  runQcRepairLoop,
+  initRepairLoopState,
+  DEFAULT_MAX_REPAIR_ROUNDS,
+  type DispatchRepairWorkerFn,
+} from "../qc/index.js";
+import { compileRepairWorkerPacket } from "../loop/worker-packet.js";
+import { createAdapter } from "../loop/adapters/registry.js";
+import { resolveProviderAndMode } from "../loop/dispatch.js";
+import type { WorkerSummary } from "../loop/adapters/types.js";
 
 export interface FinalizeOptions {
   repoRoot: string;
@@ -476,6 +488,184 @@ async function runQcGate(options: {
   process.exit(1);
 }
 
+function parseWorkerSummary(summary: string | undefined): WorkerSummary | null {
+  if (!summary) return null;
+  try {
+    const parsed = JSON.parse(summary) as unknown;
+    if (typeof parsed === "object" && parsed !== null) {
+      return parsed as WorkerSummary;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function runCompletedClusterQcWithRepair(options: {
+  config: ReturnType<typeof loadConfig>;
+  state: LoopState;
+  stateFile: string;
+  repoRoot: string;
+  branch: string;
+  baseRef: string;
+  stepLabel: string;
+}): Promise<LoopState> {
+  const { config, state, stateFile, repoRoot, branch, baseRef, stepLabel } = options;
+  const registry = createQcRegistry(config.qc);
+  const qcResult = await runQcAtTrigger({
+    config: config.qc,
+    registry,
+    trigger: "completed-cluster",
+    repoRoot,
+    runId: state.run_id,
+    clusterId: state.cluster_id,
+    branch,
+    baseRef,
+    telemetryFile: resolveQcTelemetryFile(state, repoRoot),
+    state,
+  });
+
+  if (qcResult.action === "pass") {
+    if (!state.qc_repair_loop) {
+      const maxRounds = config.qc.maxRepairRounds ?? DEFAULT_MAX_REPAIR_ROUNDS;
+      const sourceQcRunIds = qcResult.results.map((r) => r.qcRunId).filter(Boolean);
+      const passLoopState: QcRepairLoopState = {
+        ...initRepairLoopState({ maxRounds, sourceQcRunIds }),
+        terminal_outcome: "pass",
+        updated_at: new Date().toISOString(),
+      };
+      const passedState = { ...state, qc_repair_loop: passLoopState };
+      writeStateAtomic(stateFile, passedState);
+      console.log(`${stepLabel} QC completed-cluster passed: ${qcResult.summary}`);
+      return passedState;
+    }
+    console.log(`${stepLabel} QC completed-cluster passed: ${qcResult.summary}`);
+    return state;
+  }
+
+  const repairRouting = config.qc.repairRouting ?? "route";
+  if (repairRouting !== "route" && repairRouting !== "follow-up") {
+    process.stderr.write(`${stepLabel} QC completed-cluster blocked finalize: ${qcResult.summary}\n`);
+    process.exit(1);
+  }
+
+  const adapterName = config.execution?.adapter ?? "terminal-cli";
+  let providerName: string;
+  if (adapterName === "agent-subtask") {
+    providerName = "agent-subtask";
+  } else {
+    try {
+      const providerEvidence = resolveProviderAndMode(
+        { stateFile, repoRoot },
+        "worker",
+        config,
+      );
+      providerName = providerEvidence.provider ?? "default";
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      process.stderr.write(`${stepLabel} QC repair loop provider resolution failed: ${msg}\n`);
+      process.exit(1);
+    }
+  }
+
+  const executionConfig =
+    adapterName === "agent-subtask"
+      ? { ...(config.execution ?? { providers: {} }), adapter: "agent-subtask" }
+      : config.execution ?? { adapter: adapterName, providers: {} };
+  const adapter = createAdapter(adapterName, executionConfig);
+  const maxConcurrentWorkers = config.execution?.routerPolicy?.defaultWorkerPool?.maxActiveWorkers ?? 1;
+  const telemetryFile = resolveQcTelemetryFile(state, repoRoot);
+  let nextState = state;
+
+  const repairDispatcher: DispatchRepairWorkerFn = async (packet, round) => {
+    const dispatchId = randomUUID();
+    const repairResultPath = join(
+      repoRoot,
+      ".polaris",
+      "clusters",
+      nextState.cluster_id,
+      "results",
+      `repair-${packet.packetId}-${dispatchId}.json`,
+    );
+
+    const workerPacket = compileRepairWorkerPacket({
+      runId: nextState.run_id,
+      clusterId: nextState.cluster_id,
+      packetId: packet.packetId,
+      branch,
+      stateFile,
+      telemetryFile,
+      round,
+      allowedScope: packet.allowedScope,
+      prohibitedScope: packet.prohibitedScope,
+      validationCommands: packet.validationCommands,
+      rootCauseHint: packet.rootCauseHint,
+      resultFile: repairResultPath,
+      maxConcurrentWorkers,
+    });
+
+    try {
+      const dispatchResult = await adapter.dispatch(workerPacket, { provider: providerName });
+      const workerSummary = parseWorkerSummary(dispatchResult.summary);
+      const success = workerSummary?.status === "done";
+      const commitSha =
+        workerSummary && typeof workerSummary["commit"] === "string"
+          ? workerSummary["commit"]
+          : undefined;
+      const errorMessage =
+        workerSummary && typeof workerSummary["error_message"] === "string"
+          ? workerSummary["error_message"]
+          : "repair worker failed";
+      return {
+        packetId: packet.packetId,
+        status: success ? "success" : "failure",
+        commitSha,
+        errorMessage: success ? undefined : errorMessage,
+      };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return {
+        packetId: packet.packetId,
+        status: "failure",
+        errorMessage: msg,
+      };
+    }
+  };
+
+  const repairLoopResult = await runQcRepairLoop({
+    clusterId: nextState.cluster_id,
+    runId: nextState.run_id,
+    branch,
+    repoRoot,
+    telemetryFile,
+    config: config.qc,
+    registry,
+    initialQcResults: qcResult.results,
+    dispatchRepairWorker: repairDispatcher,
+    maxRounds: config.qc.maxRepairRounds ?? DEFAULT_MAX_REPAIR_ROUNDS,
+    priorLoopState: nextState.qc_repair_loop ?? null,
+    onStateUpdate: (loopState) => {
+      nextState = { ...nextState, qc_repair_loop: loopState };
+      writeStateAtomic(stateFile, nextState);
+    },
+  });
+
+  nextState = { ...nextState, qc_repair_loop: repairLoopResult.loop_state };
+  writeStateAtomic(stateFile, nextState);
+
+  const repairLoopBlocker = validateQcRepairLoopGate(nextState, config.qc);
+  if (repairLoopBlocker) {
+    process.stderr.write(
+      `${stepLabel} QC completed-cluster blocked finalize: ${qcResult.summary}\n` +
+      `${repairLoopBlocker}\n`,
+    );
+    process.exit(1);
+  }
+
+  console.log(`${stepLabel} QC completed-cluster repaired: ${repairLoopResult.summary}`);
+  return nextState;
+}
+
 export async function runFinalize(options: FinalizeOptions): Promise<void> {
   const { repoRoot, stateFile, dryRun, skipDelivery, skipLibrarian, bypassMedicReason } = options;
   const config = loadConfig(repoRoot);
@@ -711,13 +901,13 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
     clusterStateForQc?.base_branch ??
     config.finalize?.targetBranch ??
     "main";
-  await runQcGate({
-    config: config.qc,
+  state = await runCompletedClusterQcWithRepair({
+    config,
     state,
+    stateFile: resolve(stateFile),
     repoRoot,
     branch,
     baseRef: qcBaseRef,
-    trigger: "completed-cluster",
     stepLabel: "[5.8/14]",
   });
 
