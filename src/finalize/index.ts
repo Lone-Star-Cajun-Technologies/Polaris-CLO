@@ -35,6 +35,10 @@ import { formatFinalizeEvidenceFailures, verifyCompletedChildFinalizeEvidence } 
 import { validateDeliveryIntegrity } from "./delivery-integrity.js";
 import { validateMedicGate } from "./medic-gate.js";
 import {
+  appendQcEscalationSymptoms,
+  appendRepairLoopOutcomeSymptom,
+} from "../run-health/qc-escalation.js";
+import {
   runQcAtTrigger,
   createQcRegistry,
   runQcRepairLoop,
@@ -547,6 +551,17 @@ async function runCompletedClusterQcWithRepair(options: {
     return passedState;
   }
 
+  // Append QC escalation symptoms for the initial non-passing completed-cluster QC result.
+  if (qcResult.results.length > 0) {
+    appendQcEscalationSymptoms({
+      runId: state.run_id,
+      clusterId: state.cluster_id,
+      qcResults: qcResult.results,
+      afterRepair: false,
+      repoRoot,
+    });
+  }
+
   const repairRouting = config.qc.repairRouting ?? "route";
   if (repairRouting !== "route" && repairRouting !== "follow-up") {
     process.stderr.write(`${stepLabel} QC completed-cluster blocked finalize: ${qcResult.summary}\n`);
@@ -656,6 +671,23 @@ async function runCompletedClusterQcWithRepair(options: {
 
   nextState = { ...nextState, qc_repair_loop: repairLoopResult.loop_state };
   writeStateAtomic(stateFile, nextState);
+
+  // Append QC escalation symptoms for non-passing repair-loop outcomes and post-repair findings.
+  appendRepairLoopOutcomeSymptom({
+    runId: nextState.run_id,
+    clusterId: nextState.cluster_id,
+    repairResult: repairLoopResult,
+    repoRoot,
+  });
+  if (repairLoopResult.final_qc_results.length > 0 && repairLoopResult.rounds_completed > 0) {
+    appendQcEscalationSymptoms({
+      runId: nextState.run_id,
+      clusterId: nextState.cluster_id,
+      qcResults: repairLoopResult.final_qc_results,
+      afterRepair: true,
+      repoRoot,
+    });
+  }
 
   const repairLoopBlocker = validateQcRepairLoopGate(nextState, config.qc);
   if (repairLoopBlocker) {

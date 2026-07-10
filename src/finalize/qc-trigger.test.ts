@@ -19,10 +19,13 @@ vi.mock("../qc/index.js", async (importOriginal) => {
 });
 
 import { runQcAtTrigger, runQcRepairLoop } from "../qc/index.js";
+import { computeQcPolicyDecision } from "../qc/policy.js";
 import { stepCreatePr } from "./steps/08-create-pr.js";
 import { runFinalize } from "./index.js";
+import { readRunHealthReport } from "../run-health/index.js";
 import type { QcFinding, QcResult } from "../qc/types.js";
 import type { QcRepairLoopResult } from "../qc/repair-loop.js";
+import type { QcConfig } from "../config/schema.js";
 
 function makeTestDir(): string {
   const dir = join(tmpdir(), `polaris-finalize-qc-${Date.now()}`);
@@ -142,39 +145,40 @@ function makeCompletedClusterResult(
   repairLoopResult: QcRepairLoopResult;
 } {
   const status = action === "pass" ? "passed" : "findings";
-  const policyDecision = {
-    blocksDelivery: action === "block",
-    requiresOperatorReview: findings.some((f) => f.routingDecision === "operator-review"),
-    routedToRepair: findings.some(
-      (f) => f.routingDecision === "repair-worker" || f.routingDecision === "original-worker",
-    ),
-    summary: "test",
-  };
+  const baseResult: QcResult = {
+    schemaVersion: "1.0",
+    qcRunId: `qc-${clusterId}-1`,
+    runId: "test-finalize-qc-001",
+    clusterId,
+    trigger: "completed-cluster",
+    provider: "test",
+    providerMode: "local",
+    startedAt: new Date().toISOString(),
+    completedAt: new Date().toISOString(),
+    status,
+    findings,
+    rawArtifactPaths: [],
+    parserVersion: "test",
+    policyDecision: {
+      blocksDelivery: false,
+      requiresOperatorReview: false,
+      routedToRepair: false,
+      summary: "test",
+    },
+  } as QcResult;
+
+  const policyDecision = computeQcPolicyDecision(baseResult, {
+    severityThresholds: { block: "high" },
+  } as QcConfig);
+
   const result = {
     trigger: "completed-cluster" as const,
-    results: [
-      {
-        schemaVersion: "1.0",
-        qcRunId: `qc-${clusterId}-1`,
-        runId: "test-finalize-qc-001",
-        clusterId,
-        trigger: "completed-cluster" as const,
-        provider: "test",
-        providerMode: "local" as const,
-        startedAt: new Date().toISOString(),
-        completedAt: new Date().toISOString(),
-        status,
-        findings,
-        rawArtifactPaths: [],
-        parserVersion: "test",
-        policyDecision,
-      },
-    ],
+    results: [{ ...baseResult, policyDecision }],
     action,
     summary: "test",
   };
 
-  const terminalOutcome =
+  const terminalOutcome: QcRepairLoopResult["outcome"] =
     action === "pass"
       ? "pass"
       : findings.some((f) => f.routingDecision === "repair-worker" || f.routingDecision === "original-worker")
@@ -183,10 +187,40 @@ function makeCompletedClusterResult(
           ? "operator-review"
           : "no-repairable";
 
+  const roundsCompleted = (() => {
+    switch (terminalOutcome) {
+      case "pass":
+      case "medic-referral":
+      case "max-rounds":
+        return 1;
+      default:
+        return 0;
+    }
+  })();
+
+  const finalQcResults: QcResult[] =
+    terminalOutcome === "pass"
+      ? [
+          {
+            ...baseResult,
+            qcRunId: `${baseResult.qcRunId}-final`,
+            status: "passed",
+            findings: [],
+            policyDecision: {
+              blocksDelivery: false,
+              requiresOperatorReview: false,
+              routedToRepair: false,
+              summary: "passed after repair",
+            },
+            rawArtifactPaths: [],
+          },
+        ]
+      : result.results;
+
   const repairLoopResult: QcRepairLoopResult = {
     outcome: terminalOutcome,
-    rounds_completed: 1,
-    final_qc_results: result.results,
+    rounds_completed: roundsCompleted,
+    final_qc_results: finalQcResults,
     loop_state: {
       current_round: 1,
       max_rounds: 1,
@@ -249,6 +283,94 @@ function makePrResult(clusterId: string): {
     action: "pass",
     summary: "ok",
   };
+}
+
+function makeAllProvidersFailedResult(clusterId: string): {
+  result: { trigger: "completed-cluster"; results: QcResult[]; action: "block"; summary: string };
+  repairLoopResult: QcRepairLoopResult;
+} {
+  const baseResult: QcResult = {
+    schemaVersion: "1.0",
+    qcRunId: `qc-${clusterId}-1`,
+    runId: "test-finalize-qc-001",
+    clusterId,
+    trigger: "completed-cluster",
+    provider: "test",
+    providerMode: "local",
+    startedAt: new Date().toISOString(),
+    completedAt: new Date().toISOString(),
+    status: "failed",
+    allProvidersFailed: true,
+    findings: [],
+    rawArtifactPaths: [],
+    parserVersion: "test",
+    policyDecision: {
+      blocksDelivery: false,
+      requiresOperatorReview: false,
+      routedToRepair: false,
+      summary: "test",
+    },
+  } as QcResult;
+  const policyDecision = computeQcPolicyDecision(baseResult, {
+    severityThresholds: { block: "high" },
+  } as QcConfig);
+  const result = {
+    trigger: "completed-cluster" as const,
+    results: [{ ...baseResult, policyDecision }],
+    action: "block" as const,
+    summary: "all providers failed",
+  };
+  const repairLoopResult: QcRepairLoopResult = {
+    outcome: "all-providers-failed",
+    rounds_completed: 0,
+    final_qc_results: result.results,
+    loop_state: {
+      current_round: 1,
+      max_rounds: 1,
+      source_qc_run_ids: [`qc-${clusterId}-1`],
+      manifest_path: null,
+      pending_packet_ids: [],
+      completed_packet_ids: [],
+      rerun_requested: false,
+      rerun_qc_run_ids: {},
+      terminal_outcome: "all-providers-failed",
+      initiated_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+    summary: "all providers failed",
+  };
+  return { result, repairLoopResult };
+}
+
+function makeMaxRoundsResult(clusterId: string): {
+  result: { trigger: "completed-cluster"; results: QcResult[]; action: "follow-up"; summary: string };
+  repairLoopResult: QcRepairLoopResult;
+} {
+  const { result } = makeCompletedClusterResult(
+    clusterId,
+    "follow-up",
+    [makeFinding({ findingId: "f1", severity: "low", title: "repair", routingDecision: "repair-worker" })],
+  );
+  const repairLoopResult: QcRepairLoopResult = {
+    outcome: "max-rounds",
+    rounds_completed: 1,
+    final_qc_results: result.results,
+    loop_state: {
+      current_round: 1,
+      max_rounds: 1,
+      source_qc_run_ids: [`qc-${clusterId}-1`],
+      manifest_path: null,
+      pending_packet_ids: [],
+      completed_packet_ids: [],
+      rerun_requested: false,
+      rerun_qc_run_ids: {},
+      terminal_outcome: "max-rounds",
+      initiated_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+    summary: "max rounds",
+  };
+  return { result, repairLoopResult };
 }
 
 describe("runFinalize QC trigger integration", () => {
@@ -389,54 +511,13 @@ describe("runFinalize QC trigger integration", () => {
       }),
     );
 
-    const blockedResult = {
-      trigger: "completed-cluster" as const,
-      results: [
-        {
-          schemaVersion: "1.0",
-          qcRunId: "qc-1",
-          runId: "test-finalize-qc-001",
-          clusterId,
-          trigger: "completed-cluster" as const,
-          provider: "test",
-          providerMode: "local" as const,
-          startedAt: new Date().toISOString(),
-          completedAt: new Date().toISOString(),
-          status: "findings" as const,
-          findings: [],
-          rawArtifactPaths: [],
-          parserVersion: "test",
-          policyDecision: {
-            blocksDelivery: true,
-            requiresOperatorReview: false,
-            routedToRepair: true,
-            summary: "blocked",
-          },
-        },
-      ],
-      action: "block" as const,
-      summary: "blocked",
-    };
+    const { result: blockedResult, repairLoopResult } = makeCompletedClusterResult(
+      clusterId,
+      "follow-up",
+      [makeFinding({ findingId: "f1", severity: "low", title: "repair", routingDecision: "repair-worker" })],
+    );
     vi.mocked(runQcAtTrigger).mockResolvedValueOnce(blockedResult);
-    vi.mocked(runQcRepairLoop).mockResolvedValueOnce({
-      outcome: "pass",
-      rounds_completed: 1,
-      final_qc_results: blockedResult.results,
-      loop_state: {
-        current_round: 1,
-        max_rounds: 1,
-        source_qc_run_ids: ["qc-1"],
-        manifest_path: join(testDir, ".polaris", "clusters", clusterId, "qc", "repair-rounds", "1", "repair-packets.json"),
-        pending_packet_ids: [],
-        completed_packet_ids: [],
-        rerun_requested: false,
-        rerun_qc_run_ids: { 1: ["qc-2"] },
-        terminal_outcome: "pass",
-        initiated_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-      summary: "repair pass",
-    });
+    vi.mocked(runQcRepairLoop).mockResolvedValueOnce(repairLoopResult);
     vi.mocked(runQcAtTrigger).mockResolvedValueOnce({
       trigger: "pr",
       results: [],
@@ -589,7 +670,7 @@ describe("runFinalize QC trigger integration", () => {
 
     const { result, repairLoopResult } = makeCompletedClusterResult(
       clusterId,
-      "block",
+      "follow-up",
       [
         makeFinding({
           findingId: "f1",
@@ -599,7 +680,7 @@ describe("runFinalize QC trigger integration", () => {
         }),
         makeFinding({
           findingId: "f2",
-          severity: "high",
+          severity: "low",
           title: "operator review required",
           routingDecision: "operator-review",
         }),
@@ -701,5 +782,91 @@ describe("runFinalize QC trigger integration", () => {
 
     exitSpy.mockRestore();
     stderrSpy.mockRestore();
+  });
+
+  it("escalates an all-providers-failed repair-loop outcome to the run-health report before finalize exits", async () => {
+    const clusterId = "POL-11";
+    const stateFile = writeCanonicalState(testDir, clusterId);
+    execFileSync("git", ["checkout", "-b", "pol-11-delivery"], { cwd: testDir, stdio: "pipe" });
+    writeAtlas(testDir);
+    writeClusterArtifacts(testDir, clusterId);
+    stageFile(testDir, "src/impl.ts", "export function impl() {}\n");
+
+    writeFileSync(
+      join(testDir, "polaris.config.json"),
+      JSON.stringify({
+        version: "1.0",
+        qc: {
+          enabled: true,
+          defaultTrigger: "completed-cluster",
+          providers: {
+            test: { name: "test", mode: "local" },
+          },
+          repairRouting: "route",
+          maxRepairRounds: 1,
+        },
+      }),
+    );
+
+    const { result, repairLoopResult } = makeAllProvidersFailedResult(clusterId);
+    vi.mocked(runQcAtTrigger).mockResolvedValueOnce(result);
+    vi.mocked(runQcRepairLoop).mockResolvedValueOnce(repairLoopResult);
+
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation((() => {
+      throw new Error("process.exit called");
+    }) as never);
+
+    await expect(
+      runFinalize({ repoRoot: testDir, stateFile, skipLibrarian: true }),
+    ).rejects.toThrow("process.exit called");
+
+    const report = readRunHealthReport("test-finalize-qc-001", testDir);
+    expect(report).not.toBeNull();
+    expect(report?.symptoms.some((s) => s.code === "qc-all-providers-failed")).toBe(true);
+
+    exitSpy.mockRestore();
+  });
+
+  it("escalates a max-rounds repair-loop outcome to the run-health report before finalize exits", async () => {
+    const clusterId = "POL-12";
+    const stateFile = writeCanonicalState(testDir, clusterId);
+    execFileSync("git", ["checkout", "-b", "pol-12-delivery"], { cwd: testDir, stdio: "pipe" });
+    writeAtlas(testDir);
+    writeClusterArtifacts(testDir, clusterId);
+    stageFile(testDir, "src/impl.ts", "export function impl() {}\n");
+
+    writeFileSync(
+      join(testDir, "polaris.config.json"),
+      JSON.stringify({
+        version: "1.0",
+        qc: {
+          enabled: true,
+          defaultTrigger: "completed-cluster",
+          providers: {
+            test: { name: "test", mode: "local" },
+          },
+          repairRouting: "route",
+          maxRepairRounds: 1,
+        },
+      }),
+    );
+
+    const { result, repairLoopResult } = makeMaxRoundsResult(clusterId);
+    vi.mocked(runQcAtTrigger).mockResolvedValueOnce(result);
+    vi.mocked(runQcRepairLoop).mockResolvedValueOnce(repairLoopResult);
+
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation((() => {
+      throw new Error("process.exit called");
+    }) as never);
+
+    await expect(
+      runFinalize({ repoRoot: testDir, stateFile, skipLibrarian: true }),
+    ).rejects.toThrow("process.exit called");
+
+    const report = readRunHealthReport("test-finalize-qc-001", testDir);
+    expect(report).not.toBeNull();
+    expect(report?.symptoms.some((s) => s.code === "qc-max-repair-rounds")).toBe(true);
+
+    exitSpy.mockRestore();
   });
 });
