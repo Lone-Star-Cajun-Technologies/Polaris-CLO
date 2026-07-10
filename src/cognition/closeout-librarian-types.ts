@@ -393,9 +393,10 @@ export function validateCloseoutLibrarianResult(value: unknown): string[] {
       if (typeof entry["folder"] !== "string" || !entry["folder"]) {
         errors.push(`artifact_reconciliation[${index}].folder must be a non-empty string`);
       }
+      const decision = entry["decision"] as ArtifactReconciliationDecision;
       if (
         typeof entry["decision"] !== "string" ||
-        !allowed.has(entry["decision"] as ArtifactReconciliationDecision)
+        !allowed.has(decision)
       ) {
         errors.push(
           `artifact_reconciliation[${index}].decision must be one of: polaris-only, summary-only, both, no-change`,
@@ -406,10 +407,31 @@ export function validateCloseoutLibrarianResult(value: unknown): string[] {
           `artifact_reconciliation[${index}].polaris_md must be a non-empty string`,
         );
       }
-      if (entry["summary_md"] !== null && typeof entry["summary_md"] !== "string") {
-        errors.push(
-          `artifact_reconciliation[${index}].summary_md must be a string or null`,
-        );
+      // Validate summary_md based on decision: required for summary-only and both, null for polaris-only and no-change
+      if (decision === "summary-only" || decision === "both") {
+        if (typeof entry["summary_md"] !== "string" || !entry["summary_md"]) {
+          errors.push(
+            `artifact_reconciliation[${index}].summary_md must be a non-empty string for decision "${decision}"`,
+          );
+        }
+      } else if (decision === "polaris-only" || decision === "no-change") {
+        if (entry["summary_md"] !== null && (typeof entry["summary_md"] !== "string" || !entry["summary_md"])) {
+          errors.push(
+            `artifact_reconciliation[${index}].summary_md must be a non-empty string or null for decision "${decision}"`,
+          );
+        }
+      } else {
+        // Fallback for any decision type: reject empty strings
+        if (entry["summary_md"] !== null && typeof entry["summary_md"] !== "string") {
+          errors.push(
+            `artifact_reconciliation[${index}].summary_md must be a string or null`,
+          );
+        }
+        if (typeof entry["summary_md"] === "string" && !entry["summary_md"]) {
+          errors.push(
+            `artifact_reconciliation[${index}].summary_md must not be an empty string when provided`,
+          );
+        }
       }
       if (typeof entry["reason"] !== "string" || !entry["reason"]) {
         errors.push(`artifact_reconciliation[${index}].reason must be a non-empty string`);

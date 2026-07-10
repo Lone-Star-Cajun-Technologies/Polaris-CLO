@@ -180,13 +180,20 @@ Generate two outputs for this route area.
    - Avoid: operational procedures, step-by-step agent instructions, duplicated doctrine text, or per-run diary content.
 
 2. POLARIS.md content (route operating guidance):
-   - Include: what this area is responsible for, key patterns/conventions agents must follow, constraints and what to avoid, and which doctrine docs to consult for specific concerns.
-   - Avoid: navigation-index content, summary-style history, per-run notes, or duplicating doctrine text instead of linking to it.
+   REQUIRED sections that must be present in polaris_lines:
+   - Purpose/boundaries: what this area is responsible for and what it excludes
+   - Invariants/safety rules: constraints and what to avoid
+   - Commands/workflows: key patterns/conventions agents must follow
+   - Canonical links: which doctrine docs to consult for specific concerns
+   - Read-before-edit references: upstream/downstream dependencies
+
+   Avoid: navigation-index content, summary-style history, per-run notes, or duplicating doctrine text instead of linking to it.
 
 Respond with ONLY valid JSON on a single line:
 {"relevant_docs":[{"path":"<doc path>","title":"<doc title>"}],"summary_lines":["line1","line2"],"polaris_lines":["line1","line2"]}
 
-If no doctrine docs are relevant, return an empty array for relevant_docs.`;
+If no doctrine docs are relevant, return an empty array for relevant_docs.
+The polaris_lines array must contain all required POLARIS contract sections or be empty if the agent cannot generate valid content.`;
 
   // Same dispatch pattern as dispatchLibrarianReview — pass args straight through,
   // letting the provider config (e.g. env CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=0) handle auth.

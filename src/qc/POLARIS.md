@@ -9,7 +9,7 @@ The QC subsystem is the provider-agnostic Quality Control layer for Polaris. It 
 
 ## What belongs here
 
-- `orchestration.ts` — `runQcAtTrigger()`: invokes active providers, collects outputs, runs the repair loop, and returns aggregate policy action; owns repair round state transitions.
+- `orchestration.ts` — `runQcAtTrigger()`: invokes active providers, collects outputs, and returns aggregate policy action. Does not own repair-loop dispatch or round transitions; those are owned by the callers of `runQcRepairLoop()` (currently `src/finalize/index.ts` and `src/loop/parent.ts`). `src/qc/` compiles the repair packet manifest only.
 - `provider.ts` — `IQcProvider`, `QcReviewScope`, `QcProviderOutput`, `QcProviderRegistry` interfaces and base contracts.
 - `registry.ts` — `QcProviderRegistry` singleton; registers concrete provider adapters.
 - `providers/` — one file per provider adapter (e.g., `coderabbit.ts`); each adapter parses provider-specific output into `QcFinding[]`.

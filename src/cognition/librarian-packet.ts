@@ -149,10 +149,16 @@ export function generateLibrarianPacket(options: GenerateLibrarianPacketOptions)
   ];
 
   // Allowed: documentation and cognition paths only
+  // Build explicit smartdocs paths instead of granting the entire root
+  const smartdocsRawDir = path.join(repoRoot, "smartdocs", "raw");
+  const smartdocsSpecsActiveDir = path.join(repoRoot, "smartdocs", "specs", "active");
+  const smartdocsDoctrineActiveDir = path.join(repoRoot, "smartdocs", "doctrine", "active");
   const allowedWritePaths = [
     ...polarisMdPaths.map((p) => path.join(repoRoot, p.polaris_md)),
     ...polarisMdPaths.filter((p) => p.summary_md).map((p) => path.join(repoRoot, p.summary_md!)),
-    path.join(repoRoot, "smartdocs"),
+    smartdocsRawDir,
+    smartdocsSpecsActiveDir,
+    smartdocsDoctrineActiveDir,
     path.join(repoRoot, ".polaris", "cognition", "archive"),
     resultPath,
   ];

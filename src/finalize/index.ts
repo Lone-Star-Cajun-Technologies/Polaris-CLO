@@ -537,8 +537,8 @@ async function runCompletedClusterQcWithRepair(options: {
     const passLoopState: QcRepairLoopState = existingLoop
       ? {
           ...existingLoop,
-          terminal_outcome: existingLoop.terminal_outcome ?? "pass",
-          updated_at: existingLoop.terminal_outcome == null ? now : (existingLoop.updated_at ?? now),
+          terminal_outcome: "pass",
+          updated_at: now,
         }
       : {
           ...initRepairLoopState({ maxRounds, sourceQcRunIds }),
@@ -596,7 +596,7 @@ async function runCompletedClusterQcWithRepair(options: {
   const telemetryFile = resolveQcTelemetryFile(state, repoRoot);
   let nextState = state;
 
-  const repairDispatcher: DispatchRepairWorkerFn = async (packet, round) => {
+  const repairDispatcher: DispatchRepairWorkerFn = async (packet, round, manifest, signal) => {
     const dispatchId = randomUUID();
     const repairResultPath = join(
       repoRoot,
@@ -624,6 +624,12 @@ async function runCompletedClusterQcWithRepair(options: {
     });
 
     try {
+      // TODO: Propagate AbortSignal to adapter.dispatch() once ExecutionAdapter
+      // interface supports cancellation. Current limitation: timeout abandons the
+      // Promise but doesn't terminate the spawned worker process.
+      if (signal?.aborted) {
+        throw signal.reason || new Error("Repair dispatch aborted");
+      }
       const dispatchResult = await adapter.dispatch(workerPacket, { provider: providerName });
       const workerSummary = parseWorkerSummary(dispatchResult.summary);
       const success = workerSummary?.status === "done";

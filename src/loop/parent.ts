@@ -1206,7 +1206,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
           const priorLoopState = state.qc_repair_loop ?? null;
 
           // Build the repair worker dispatcher using the existing adapter + provider.
-          const repairDispatcher: DispatchRepairWorkerFn = async (packet, round, manifest) => {
+          const repairDispatcher: DispatchRepairWorkerFn = async (packet, round, manifest, signal) => {
             const repairPacketId = packet.packetId;
             const dispatchId = randomUUID();
             const repairWorkerId = `${state.run_id}:repair-${repairPacketId}:${Date.now()}`;
@@ -1246,6 +1246,12 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
             });
 
             try {
+              // TODO: Propagate AbortSignal to adapter.dispatch() once ExecutionAdapter
+              // interface supports cancellation. Current limitation: timeout abandons the
+              // Promise but doesn't terminate the spawned worker process.
+              if (signal?.aborted) {
+                throw signal.reason || new Error("Repair dispatch aborted");
+              }
               const dispatchResult = await adapter.dispatch(workerPacket, { provider: providerName, dryRun });
               const workerSummary = parseWorkerSummary(dispatchResult.summary);
               const success = workerSummary?.status === "done";

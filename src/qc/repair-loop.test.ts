@@ -245,8 +245,15 @@ describe("runQcRepairLoop", () => {
   it("records a timeout failure when a repair dispatch exceeds the configured timeout", async () => {
     const config = makeQcConfig({ repairDispatchTimeoutMs: 10 });
 
+    // Mock dispatch that checks for AbortSignal cancellation
+    let receivedSignal: AbortSignal | undefined;
     const dispatch: DispatchRepairWorkerFn = vi.fn().mockImplementation(
-      () => new Promise<RepairWorkerResult>(() => {}),
+      (packet, round, manifest, signal) => {
+        receivedSignal = signal;
+        return new Promise<RepairWorkerResult>(() => {
+          // Never resolves - will timeout
+        });
+      },
     );
 
     const packet = makeRepairable({ packetId: "pkt-timeout-r1-001" });
@@ -277,6 +284,10 @@ describe("runQcRepairLoop", () => {
     expect(dispatch).toHaveBeenCalledTimes(1);
     expect(result.outcome).toBe("medic-referral");
 
+    // Verify AbortSignal was provided and was aborted on timeout
+    expect(receivedSignal).toBeDefined();
+    expect(receivedSignal?.aborted).toBe(true);
+
     const telemetry = readFileSync(telemetryFile, "utf-8")
       .trim()
       .split("\n")
@@ -289,6 +300,10 @@ describe("runQcRepairLoop", () => {
     );
     expect(timeoutEvent).toBeDefined();
     expect(timeoutEvent.timeout_ms).toBe(10);
+
+    // NOTE: Full worker process termination requires ExecutionAdapter-level support for
+    // AbortSignal propagation to spawned child processes. This test verifies the signal
+    // is provided and aborted; actual process cleanup is a future enhancement.
   });
 
   it("exits with no-repairable when manifest has no repair-worker packets and findings are follow-up only", async () => {

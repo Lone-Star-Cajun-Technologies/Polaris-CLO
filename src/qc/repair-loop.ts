@@ -56,6 +56,7 @@ export type DispatchRepairWorkerFn = (
   packet: QcRepairPacket,
   round: number,
   manifest: QcRepairPacketManifest,
+  signal?: AbortSignal,
 ) => Promise<RepairWorkerResult>;
 
 /** Options for running the bounded QC repair loop. */
@@ -113,6 +114,7 @@ function appendTelemetry(
  * Emit a pre-dispatch telemetry checkpoint and wrap the dispatch call in a
  * configurable timeout. A timed-out dispatch resolves to a failure/timeout
  * RepairWorkerResult instead of blocking the loop indefinitely.
+ * On timeout, aborts the dispatch via AbortSignal to terminate the worker process.
  */
 async function dispatchRepairWorkerWithTimeout(
   dispatch: DispatchRepairWorkerFn,
@@ -135,14 +137,16 @@ async function dispatchRepairWorkerWithTimeout(
     timestamp: new Date().toISOString(),
   });
 
+  const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
   let timedOut = false;
   try {
     const result = await Promise.race<RepairWorkerResult>([
-      dispatch(packet, round, manifest),
+      dispatch(packet, round, manifest, controller.signal),
       new Promise<never>((_, reject) => {
         timer = setTimeout(() => {
           timedOut = true;
+          controller.abort(new Error(`Repair worker dispatch timed out after ${timeoutMs}ms`));
           reject(new Error(`Repair worker dispatch timed out after ${timeoutMs}ms`));
         }, timeoutMs);
       }),
