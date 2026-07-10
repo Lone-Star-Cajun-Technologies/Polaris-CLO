@@ -141,6 +141,9 @@ async function dispatchRepairWorkerWithTimeout(
   let timer: ReturnType<typeof setTimeout> | undefined;
   let timedOut = false;
   try {
+    process.stderr.write(
+      `[DEBUG-POL540] dispatch.length=${dispatch.length} packetId=${packet.packetId} round=${round} manifestType=${typeof manifest} manifestKeys=${manifest ? Object.keys(manifest).join(",") : "n/a"}\n`,
+    );
     const result = await Promise.race<RepairWorkerResult>([
       dispatch(packet, round, manifest, controller.signal),
       new Promise<never>((_, reject) => {
