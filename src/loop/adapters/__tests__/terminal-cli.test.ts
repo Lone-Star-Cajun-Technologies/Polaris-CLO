@@ -5,7 +5,7 @@ import { describe, it, expect } from "vitest";
 import { TerminalCliAdapter } from "../terminal-cli.js";
 import { createAdapter } from "../registry.js";
 import type { BootstrapPacket } from "../types.js";
-import { compileImplPacket } from "../../worker-packet.js";
+import { compileImplPacket, compileRepairWorkerPacket } from "../../worker-packet.js";
 
 const MOCK_PACKET: BootstrapPacket = {
   schema_version: "1.0",
@@ -166,6 +166,40 @@ describe("TerminalCliAdapter", () => {
       expect(result.stderr).toContain("empty allowed_scope");
       expect(JSON.parse(result.summary ?? "{}")).toMatchObject({
         child_id: "POL-14",
+        status: "blocked",
+        warnings: ["empty-allowed-scope"],
+      });
+    });
+
+    it("blocks repair packets with empty allowed_scope", async () => {
+      const packet = compileRepairWorkerPacket({
+        runId: "run-test-0001",
+        clusterId: "POL-5",
+        packetId: "POL-REPAIR",
+        branch: "feature/pol-repair",
+        stateFile: "/tmp/polaris-test/current-state.json",
+        telemetryFile: "/tmp/polaris-test/telemetry.jsonl",
+        round: 1,
+        allowedScope: [],
+        prohibitedScope: [],
+        validationCommands: ["npm test"],
+        rootCauseHint: "empty-scope repair packet",
+        resultFile: "/tmp/polaris-test/result.json",
+      });
+      const adapter = new TerminalCliAdapter({
+        adapter: "terminal-cli",
+        providers: {
+          codex: { command: "echo", args: ["--child", "{{active_child}}"] },
+        },
+      });
+
+      const result = await adapter.dispatch(packet, { provider: "codex", dryRun: true });
+
+      expect(result.exit_code).toBe(1);
+      expect(result.provider_used).toBe("codex");
+      expect(result.stderr).toContain("empty allowed_scope");
+      expect(JSON.parse(result.summary ?? "{}")).toMatchObject({
+        child_id: "POL-REPAIR",
         status: "blocked",
         warnings: ["empty-allowed-scope"],
       });

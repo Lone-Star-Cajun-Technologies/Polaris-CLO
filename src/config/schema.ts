@@ -810,4 +810,12 @@ export interface QcConfig {
    * Default: 2.
    */
   maxRepairRounds?: number;
+
+  /**
+   * Timeout in milliseconds for a single repair worker dispatch.
+   * A dispatch that exceeds this limit is recorded as a failure/timeout result
+   * instead of hanging indefinitely.
+   * Default: 1,800,000 (30 minutes).
+   */
+  repairDispatchTimeoutMs?: number;
 }

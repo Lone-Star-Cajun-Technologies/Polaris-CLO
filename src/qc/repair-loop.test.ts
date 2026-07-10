@@ -77,6 +77,7 @@ function makeQcConfig(overrides: Partial<QcConfig> = {}): QcConfig {
     enabled: true,
     severityThresholds: { block: "high", repair: "medium", followUp: "low" },
     maxRepairRounds: 2,
+    repairDispatchTimeoutMs: 1_800_000,
     providers: {
       mock: { enabled: true, mode: "local", trigger: "completed-cluster" } as import("../config/schema.js").QcProviderConfig,
     },
@@ -187,6 +188,107 @@ describe("runQcRepairLoop", () => {
     expect(result.outcome).toBe("pass");
     expect(result.rounds_completed).toBe(1);
     expect(dispatch).toHaveBeenCalledTimes(1);
+  });
+
+  it("emits telemetry immediately before serialized (medic) dispatch", async () => {
+    const config = makeQcConfig();
+    vi.mocked(runQcAtTrigger).mockResolvedValue(makePassedQcResult());
+
+    const dispatch: DispatchRepairWorkerFn = vi.fn().mockResolvedValue({
+      packetId: "pkt-medic-r1-001",
+      status: "success",
+    } as RepairWorkerResult);
+
+    const medicPacket = makeRepairable({
+      packetId: "pkt-medic-r1-001",
+      medic: true,
+    });
+
+    const manifestDir = path.join(tmpDir, ".polaris", "clusters", "POL-TEST", "qc", "repair-rounds", "1");
+    mkdirSync(manifestDir, { recursive: true });
+    const { writeFileSync } = await import("node:fs");
+    writeFileSync(
+      path.join(manifestDir, "repair-packets.json"),
+      JSON.stringify(makeManifest([medicPacket]), null, 2),
+      "utf-8",
+    );
+
+    const telemetryFile = path.join(tmpDir, "telemetry.jsonl");
+    const result = await runQcRepairLoop({
+      clusterId: "POL-TEST",
+      runId: "run-1",
+      branch: "main",
+      repoRoot: tmpDir,
+      telemetryFile,
+      config,
+      registry: emptyRegistry,
+      initialQcResults: [makeQcResultWithFindings()],
+      dispatchRepairWorker: dispatch,
+      maxRounds: 2,
+    });
+
+    expect(result.outcome).toBe("pass");
+    expect(dispatch).toHaveBeenCalledTimes(1);
+
+    const telemetry = readFileSync(telemetryFile, "utf-8")
+      .trim()
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => JSON.parse(line));
+    const dispatchStart = telemetry.find(
+      (e) => e.event === "qc-repair-worker-dispatch-start" && e.packet_id === "pkt-medic-r1-001",
+    );
+    expect(dispatchStart).toBeDefined();
+    expect(dispatchStart.medic).toBe(true);
+  });
+
+  it("records a timeout failure when a repair dispatch exceeds the configured timeout", async () => {
+    const config = makeQcConfig({ repairDispatchTimeoutMs: 10 });
+
+    const dispatch: DispatchRepairWorkerFn = vi.fn().mockImplementation(
+      () => new Promise<RepairWorkerResult>(() => {}),
+    );
+
+    const packet = makeRepairable({ packetId: "pkt-timeout-r1-001" });
+
+    const manifestDir = path.join(tmpDir, ".polaris", "clusters", "POL-TEST", "qc", "repair-rounds", "1");
+    mkdirSync(manifestDir, { recursive: true });
+    const { writeFileSync } = await import("node:fs");
+    writeFileSync(
+      path.join(manifestDir, "repair-packets.json"),
+      JSON.stringify(makeManifest([packet]), null, 2),
+      "utf-8",
+    );
+
+    const telemetryFile = path.join(tmpDir, "telemetry.jsonl");
+    const result = await runQcRepairLoop({
+      clusterId: "POL-TEST",
+      runId: "run-1",
+      branch: "main",
+      repoRoot: tmpDir,
+      telemetryFile,
+      config,
+      registry: emptyRegistry,
+      initialQcResults: [makeQcResultWithFindings()],
+      dispatchRepairWorker: dispatch,
+      maxRounds: 1,
+    });
+
+    expect(dispatch).toHaveBeenCalledTimes(1);
+    expect(result.outcome).toBe("medic-referral");
+
+    const telemetry = readFileSync(telemetryFile, "utf-8")
+      .trim()
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => JSON.parse(line));
+    const timeoutEvent = telemetry.find(
+      (e) =>
+        e.event === "qc-repair-worker-dispatch-timeout" &&
+        e.packet_id === "pkt-timeout-r1-001",
+    );
+    expect(timeoutEvent).toBeDefined();
+    expect(timeoutEvent.timeout_ms).toBe(10);
   });
 
   it("exits with no-repairable when manifest has no repair-worker packets and findings are follow-up only", async () => {

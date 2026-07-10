@@ -30,6 +30,7 @@ const DEFAULT_QC = {
   artifactRetention: { retainRawOutput: false, maxRuns: 10 },
   routes: {},
   maxRepairRounds: 2,
+  repairDispatchTimeoutMs: 1_800_000,
 };
 
 describe("loadConfig", () => {
@@ -157,6 +158,7 @@ describe("loadConfig", () => {
       artifactRetention: { retainRawOutput: false, maxRuns: 10 },
       routes: {},
       maxRepairRounds: 2,
+      repairDispatchTimeoutMs: 1_800_000,
     });
   });
 });

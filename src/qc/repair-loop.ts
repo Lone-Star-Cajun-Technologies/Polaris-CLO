@@ -38,6 +38,9 @@ import { writeClusterState, readClusterStateSync } from "../cluster-state/store.
 /** Default maximum repair rounds when not configured. */
 export const DEFAULT_MAX_REPAIR_ROUNDS = 2;
 
+/** Default timeout for a single repair worker dispatch (30 minutes). */
+export const DEFAULT_REPAIR_DISPATCH_TIMEOUT_MS = 1_800_000;
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 /** Dispatch result for a single repair worker. */
@@ -104,6 +107,68 @@ function appendTelemetry(
 ): void {
   mkdirSync(dirname(telemetryFile), { recursive: true });
   appendFileSync(telemetryFile, JSON.stringify(event) + "\n", "utf-8");
+}
+
+/**
+ * Emit a pre-dispatch telemetry checkpoint and wrap the dispatch call in a
+ * configurable timeout. A timed-out dispatch resolves to a failure/timeout
+ * RepairWorkerResult instead of blocking the loop indefinitely.
+ */
+async function dispatchRepairWorkerWithTimeout(
+  dispatch: DispatchRepairWorkerFn,
+  packet: QcRepairPacket,
+  round: number,
+  manifest: QcRepairPacketManifest,
+  timeoutMs: number,
+  telemetryFile: string,
+  runId: string,
+  clusterId: string,
+): Promise<RepairWorkerResult> {
+  appendTelemetry(telemetryFile, {
+    event: "qc-repair-worker-dispatch-start",
+    run_id: runId,
+    cluster_id: clusterId,
+    round,
+    packet_id: packet.packetId,
+    medic: packet.medic,
+    parallel_group: packet.parallelGroup,
+    timestamp: new Date().toISOString(),
+  });
+
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const result = await Promise.race<RepairWorkerResult>([
+      dispatch(packet, round, manifest),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error(`Repair worker dispatch timed out after ${timeoutMs}ms`)),
+          timeoutMs,
+        );
+      }),
+    ]);
+    if (timer) clearTimeout(timer);
+    return result;
+  } catch (err) {
+    if (timer) clearTimeout(timer);
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("timed out")) {
+      appendTelemetry(telemetryFile, {
+        event: "qc-repair-worker-dispatch-timeout",
+        run_id: runId,
+        cluster_id: clusterId,
+        round,
+        packet_id: packet.packetId,
+        timeout_ms: timeoutMs,
+        error: msg,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    return {
+      packetId: packet.packetId,
+      status: "failure",
+      errorMessage: msg,
+    };
+  }
 }
 
 async function persistQcRepairOutcome(
@@ -273,6 +338,9 @@ export async function runQcRepairLoop(
     priorLoopState,
     onStateUpdate,
   } = options;
+
+  const repairDispatchTimeoutMs =
+    config.repairDispatchTimeoutMs ?? DEFAULT_REPAIR_DISPATCH_TIMEOUT_MS;
 
   if (!config.enabled) {
     const state = initRepairLoopState({
@@ -459,14 +527,34 @@ export async function runQcRepairLoop(
 
       // Within a group, packets are non-conflicting and can run concurrently.
       const groupResults = await Promise.all(
-        group.map((pkt) => dispatchRepairWorker(pkt, round, manifest!)),
+        group.map((pkt) =>
+          dispatchRepairWorkerWithTimeout(
+            dispatchRepairWorker,
+            pkt,
+            round,
+            manifest!,
+            repairDispatchTimeoutMs,
+            telemetryFile,
+            runId,
+            clusterId,
+          )
+        ),
       );
       allWorkerResults.push(...groupResults);
     }
 
     // Dispatch serialized (medic) packets sequentially.
     for (const pkt of serialized) {
-      const result = await dispatchRepairWorker(pkt, round, manifest);
+      const result = await dispatchRepairWorkerWithTimeout(
+        dispatchRepairWorker,
+        pkt,
+        round,
+        manifest!,
+        repairDispatchTimeoutMs,
+        telemetryFile,
+        runId,
+        clusterId,
+      );
       allWorkerResults.push(result);
     }
 
