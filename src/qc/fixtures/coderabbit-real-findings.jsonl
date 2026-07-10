@@ -1,0 +1,10 @@
+{"type":"review_context","reviewType":"all","currentBranch":"main","baseBranch":"main","workingDirectory":"/repo"}
+{"type":"status","phase":"connecting","status":"connecting_to_review_service"}
+{"type":"status","phase":"analyzing","status":"setting_up","message":"Found this repository in Example-Org."}
+{"type":"status","phase":"setup","status":"setting_up"}
+{"type":"status","phase":"setup","status":"preparing_sandbox"}
+{"type":"status","phase":"analyzing","status":"summarizing"}
+{"type":"status","phase":"analyzing","status":"reviewing"}
+{"type":"finding","severity":"critical","fileName":"src/qc/example.ts","codegenInstructions":"Replace string concatenation with a parameterized query.","suggestions":[]}
+{"type":"finding","severity":"major","fileName":"src/qc/example.ts","codegenInstructions":"Remove the console.log statement or redact sensitive fields.","suggestions":[""]}
+{"type":"complete","status":"review_completed","findings":2}

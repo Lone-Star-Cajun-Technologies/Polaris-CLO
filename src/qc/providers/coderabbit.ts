@@ -18,6 +18,7 @@ interface CodeRabbitFindingLike {
   file?: string;
   filePath?: string;
   path?: string;
+  fileName?: string;
   line?: number;
   startLine?: number;
   endLine?: number;
@@ -35,6 +36,8 @@ interface CodeRabbitFindingLike {
   suggestion?: string;
   suggestedAction?: string;
   fix?: string;
+  codegenInstructions?: string;
+  suggestions?: string[];
   fixAvailable?: boolean;
   autofixEligible?: boolean;
   providerFindingId?: string;
@@ -69,7 +72,7 @@ function pickString(...candidates: (unknown | undefined)[]): string | undefined 
   return undefined;
 }
 
-const FINDING_LOCATION_KEYS = ["file", "filePath", "path"];
+const FINDING_LOCATION_KEYS = ["file", "filePath", "path", "fileName"];
 const FINDING_CONTENT_KEYS = [
   "message",
   "title",
@@ -79,6 +82,7 @@ const FINDING_CONTENT_KEYS = [
   "suggestion",
   "suggestedAction",
   "fix",
+  "codegenInstructions",
 ];
 const FINDING_BOOKKEEPING_KEYS = [
   "severity",
@@ -358,6 +362,7 @@ function parseReport(
   let progressLineCount = 0;
   let unusableLineCount = 0;
   let parsedLineCount = 0;
+  let sawExplicitSkip = false;
   for (const line of lines) {
     try {
       const parsed = JSON.parse(line) as unknown;
@@ -366,6 +371,9 @@ function parseReport(
         continue;
       }
       const record = parsed as Record<string, unknown>;
+      if (record.type === "complete" && record.status === "review_skipped") {
+        sawExplicitSkip = true;
+      }
       if (isProgressRecord(record)) {
         progressLineCount++;
         continue;
@@ -381,6 +389,9 @@ function parseReport(
   }
   if (lineFindings.length > 0) {
     return { findings: lineFindings };
+  }
+  if (sawExplicitSkip) {
+    return { findings: [] };
   }
   if (progressLineCount > 0 || unusableLineCount > 0) {
     throw makeUnusableOutputError(
@@ -398,9 +409,14 @@ function normalizeFinding(raw: CodeRabbitFindingLike, index: number): QcFinding 
   const severityLabel = pickString(raw.severity, raw.level) ?? "info";
   const severity: QcSeverity = normalizeSeverity(severityLabel);
   const title = pickString(raw.title, raw.summary, raw.rule, raw.type, raw.category) ?? `Finding #${index + 1}`;
-  const message = pickString(raw.message, raw.description, raw.body);
-  const filePath = pickString(raw.file, raw.filePath, raw.path);
-  const suggestedAction = pickString(raw.suggestion, raw.suggestedAction, raw.fix);
+  const message = pickString(raw.message, raw.description, raw.body, raw.codegenInstructions);
+  const filePath = pickString(raw.file, raw.filePath, raw.path, raw.fileName);
+  const suggestedAction = pickString(
+    raw.suggestion,
+    raw.suggestedAction,
+    raw.fix,
+    ...(Array.isArray(raw.suggestions) ? raw.suggestions : []),
+  );
   const providerFindingId = pickString(raw.providerFindingId, raw.id, raw.findingId);
   const confidence = coerceNumber(raw.confidence);
 
@@ -410,7 +426,11 @@ function normalizeFinding(raw: CodeRabbitFindingLike, index: number): QcFinding 
     filePath,
   };
 
-  const fixAvailable = raw.fixAvailable === true || raw.autofixEligible === true || Boolean(raw.fix);
+  const fixAvailable =
+    raw.fixAvailable === true ||
+    raw.autofixEligible === true ||
+    Boolean(raw.fix) ||
+    Boolean(raw.codegenInstructions);
 
   return {
     findingId: `coderabbit-${index + 1}-${Date.now()}`,
