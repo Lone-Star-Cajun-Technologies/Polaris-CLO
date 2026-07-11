@@ -634,7 +634,7 @@ function normalizeLegacyCompactReturn(raw: Record<string, unknown>, activeChild:
 
 /**
  * Extract a worker summary from stdout.
- * Looks for the last line that is valid JSON; falls back to the last 500 chars.
+ * Looks for the last line that is a valid JSON *object*; falls back to the last 500 chars.
  */
 function extractSummary(stdout: string): string | undefined {
   if (!stdout) return undefined;
@@ -643,8 +643,15 @@ function extractSummary(stdout: string): string | undefined {
     const trimmed = line.trim();
     if (!trimmed) continue;
     try {
-      JSON.parse(trimmed);
-      return trimmed;
+      const parsed = JSON.parse(trimmed) as unknown;
+      if (
+        typeof parsed === 'object' &&
+        parsed !== null &&
+        !Array.isArray(parsed)
+      ) {
+        return trimmed;
+      }
+      // not an object-shaped JSON value, keep looking
     } catch {
       // not JSON, keep looking
     }
