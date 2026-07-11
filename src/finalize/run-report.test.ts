@@ -293,4 +293,45 @@ describe("generateRunReport", () => {
     expect(report).toContain("devin: 2 occurrence(s) — children: POL-001, POL-002");
     expect(report).not.toContain("missing-child-completion");
   });
+
+  it("calls out missing registry metadata and routing anomalies", () => {
+    const telemetryEvents = [
+      {
+        event: "provider-selected",
+        run_id: "test-run-001",
+        child_id: "POL-001",
+        selected_provider: "devin",
+        selection_reason: "policy-router",
+        router_compatibility_mode: false,
+        providers_tried: ["devin", "copilot"],
+        routing_summary: { registry_present: true },
+      },
+      {
+        event: "stale-dispatch-aborted",
+        run_id: "test-run-001",
+        child_id: "POL-001",
+        reason: "POL-494",
+        aborted_dispatch_id: "59dad3bd-2638-4991-9509-0e2478c4c34f",
+      },
+      {
+        event: "sealed-result-read-error",
+        run_id: "test-run-001",
+        child_id: "POL-002",
+      },
+    ];
+
+    const state = {
+      ...minimalState(),
+      completed_children: ["POL-001"],
+      open_children: ["POL-002"],
+    };
+
+    const report = generateRunReport(baseReportData({ state, telemetryEvents }));
+    expect(report).toContain("## Provider routing");
+    expect(report).toContain("Evidence gaps:");
+    expect(report).toContain("missing-router-candidates");
+    expect(report).toContain("State repair / runtime review signals:");
+    expect(report).toContain("stale-dispatch-abort");
+    expect(report).toContain("missing-sealed-result");
+  });
 });
