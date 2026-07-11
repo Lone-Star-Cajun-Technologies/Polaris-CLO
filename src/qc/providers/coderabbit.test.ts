@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { CodeRabbitQcProvider } from "./coderabbit.js";
 import type { QcProviderOutput, QcMetricsPayload } from "../provider.js";
@@ -8,6 +10,10 @@ function makeOutput(stdout: string): QcProviderOutput {
     stdout,
     exitCode: 0,
   };
+}
+
+function loadFixtureText(name: string): string {
+  return readFileSync(join("src/qc/fixtures", name), "utf-8");
 }
 
 function makeMetrics(data: unknown): QcMetricsPayload {
@@ -158,6 +164,35 @@ describe("CodeRabbitQcProvider", () => {
     expect(result.status).toBe("findings");
     expect(result.findings).toHaveLength(1);
     expect(result.findings[0].title).toBe("Issue A");
+  });
+
+  it("treats a real 'no changes detected' review as a passed result with zero findings", () => {
+    const provider = new CodeRabbitQcProvider();
+    const output = makeOutput(loadFixtureText("coderabbit-review-skipped.jsonl"));
+
+    const result = provider.parse(output);
+
+    expect(result.status).toBe("passed");
+    expect(result.findings).toHaveLength(0);
+  });
+
+  it("parses real CodeRabbit CLI finding records (fileName/codegenInstructions/suggestions)", () => {
+    const provider = new CodeRabbitQcProvider();
+    const output = makeOutput(loadFixtureText("coderabbit-real-findings.jsonl"));
+
+    const result = provider.parse(output);
+
+    expect(result.status).toBe("blocked");
+    expect(result.findings).toHaveLength(2);
+
+    expect(result.findings[0].severity).toBe("critical");
+    expect(result.findings[0].filePath).toBe("src/qc/example.ts");
+    expect(result.findings[0].message).toBe("Replace string concatenation with a parameterized query.");
+    expect(result.findings[0].fixAvailable).toBe(true);
+
+    expect(result.findings[1].severity).toBe("high");
+    expect(result.findings[1].filePath).toBe("src/qc/example.ts");
+    expect(result.findings[1].message).toBe("Remove the console.log statement or redact sensitive fields.");
   });
 
   it("classifies bookkeeping-only metrics payload as unusable-output", () => {
