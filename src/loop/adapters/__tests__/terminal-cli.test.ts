@@ -140,6 +140,50 @@ describe("TerminalCliAdapter", () => {
       }
     });
 
+    it("backfills a missing or empty child_id from packet.active_child for an otherwise valid CompactReturn", async () => {
+      const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "polaris-terminal-cli-missing-child-id-"));
+      try {
+        const resultFile = path.join(tmpDir, "sealed-result.json");
+        const adapter = new TerminalCliAdapter({
+          adapter: "terminal-cli",
+          providers: {
+            devin: {
+              command: process.execPath,
+              args: [
+                "-e",
+                "console.log(JSON.stringify({status:'done',commit:'e284a3c',validation:'passed',tracker_updated:false,state_updated:false,telemetry_updated:false,next_recommended_action:'continue'}))",
+              ],
+            },
+          },
+        });
+        const packet = compileImplPacket({
+          runId: "run-test-0001",
+          clusterId: "POL-5",
+          childId: "POL-14",
+          branch: "feature/pol-14",
+          stateFile: "/tmp/polaris-test/current-state.json",
+          telemetryFile: "/tmp/polaris-test/telemetry.jsonl",
+          resultFile,
+          allowedScope: ["src/**"],
+          validationCommands: ["npm test"],
+        });
+
+        await adapter.dispatch(packet, { provider: "devin" });
+
+        expect(fs.existsSync(resultFile)).toBe(true);
+        const written = JSON.parse(fs.readFileSync(resultFile, "utf-8")) as Record<string, unknown>;
+        expect(written).toEqual({
+          run_id: "run-test-0001",
+          child_id: "POL-14",
+          status: "success",
+          commit: "e284a3c",
+          validation: "passed",
+        });
+      } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
+
     it("blocks impl packets with empty allowed_scope", async () => {
       const packet = compileImplPacket({
         runId: "run-test-0001",

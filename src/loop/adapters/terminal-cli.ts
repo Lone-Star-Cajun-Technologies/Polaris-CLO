@@ -555,7 +555,7 @@ export class TerminalCliAdapter implements ExecutionAdapter {
       // Normalize legacy CompactReturn shapes before validation so that
       // workers using pre-spec formats (status:"success", validation:{passed:[...]})
       // are accepted rather than silently marked as failures.
-      const normalized = normalizeLegacyCompactReturn(parsed);
+      const normalized = normalizeLegacyCompactReturn(parsed, packet.active_child);
       const compactReturnErrors = validateCompactReturn(normalized);
       const isValidCompactReturn = compactReturnErrors.length === 0;
 
@@ -599,9 +599,14 @@ export class TerminalCliAdapter implements ExecutionAdapter {
  *   - status:"success"|"completed" → status:"done"
  *   - validation:{passed:[...],failed:[...]} → validation:"passed"|"failed"|"skipped"
  *   - missing boolean flags → false
+ *   - missing or empty child_id → active_child from the bootstrap packet
  */
-function normalizeLegacyCompactReturn(raw: Record<string, unknown>): Record<string, unknown> {
+function normalizeLegacyCompactReturn(raw: Record<string, unknown>, activeChild: string): Record<string, unknown> {
   const result = { ...raw };
+
+  if (typeof result['child_id'] !== 'string' || !result['child_id']) {
+    result['child_id'] = activeChild;
+  }
 
   if (result['status'] === 'success' || result['status'] === 'completed') {
     result['status'] = 'done';
