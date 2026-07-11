@@ -17,7 +17,7 @@ The safest target model for Polaris runtime state components is as follows:
 -   `packets/`: Designated for sealed, immutable dispatch packets. These artifacts represent the instructions given to a worker for a specific child issue.
 -   `results/`: Designated for sealed, immutable worker result files. Workers will write their outcomes to these files, which are then validated by the Polaris runtime.
 -   `.polaris/runs/ledger.jsonl`: Continues as the committed, cross-agent run index, providing a historical record of all Polaris runs.
--   Telemetry (`.taskchain_artifacts/*/runs/<run-id>/telemetry.jsonl`): Functions as append-only debug/audit output during migration. It is not considered resume truth but provides valuable insights into execution flow and potential issues.
+-   Telemetry (`.taskchain_artifacts/*/runs/<run-id>/telemetry.jsonl`): Functions as append-only debug/audit output during the run. After finalize, the raw telemetry is promoted into `.polaris/runs/<run-id>/telemetry.jsonl` as durable archived routing evidence.
 -   `.taskchain_artifacts/`: Acts as compatibility/debug output during the transitional phase until all readers/writers are migrated to the new canonical state models.
 
 ## Current-State Inventory and Migration Strategy
@@ -28,10 +28,11 @@ The following table provides an inventory of existing state surfaces and their p
 | :------------------------------------------ | :--------------------------------------------- | :------------------------------ | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `.taskchain_artifacts/polaris-run/current-state.json` | Active run state for current Polaris run | Canonical during migration | Compatibility mirror / Deprecated (after `cluster-state.json` becomes authoritative) |
 | `.taskchain_artifacts/bootstrap-run/current-state.json` | Legacy/default bootstrap-run state path | Legacy/Transitional | Deprecated |
-| `.taskchain_artifacts/*/runs/<run-id>/telemetry.jsonl` | Append-only lifecycle/debug events | Debug/Audit | Append-only debug/audit output (not resume truth) |
+| `.taskchain_artifacts/*/runs/<run-id>/telemetry.jsonl` | Append-only lifecycle/debug events | Workspace scratch / Debug-Audit | Copied to `.polaris/runs/<run-id>/telemetry.jsonl` on finalize; workspace scratch may be pruned after archive |
 | `.polaris/runs/ledger.jsonl` | Committed global resume index | Canonical cross-agent index | Canonical cross-agent index |
 | `.polaris/runs/current-state.json` | Duplicate active run snapshot observed in repo | Transitional/Derived | Deprecated |
-| `.polaris/runs/<run-id>/` | Final archived run snapshot and report | Canonical archive after finalize | Canonical archive after finalize |
+| `.polaris/runs/run-report.md` | Transient finalize report | Workspace scratch | Transient — archived snapshot lives under `.polaris/runs/<run-id>/run-report.md` |
+| `.polaris/runs/<run-id>/` | Final archived run snapshot, report, and telemetry | Canonical archive after finalize | Canonical archive after finalize |
 | `.polaris/bootstrap/*.json` | Bootstrap packets emitted at checkpoint/handoff | Derived sealed handoff | Derived sealed handoff |
 | `.polaris/clusters/<id>/clusters.json` | Imported/planned work graph | Canonical graph/import truth | Canonical graph/import truth |
 | `.polaris/runs/mutation-queue.json` | Tracker sync-out mutation queue | Canonical queue when mcp-bridge reconciliation is used | Canonical queue when mcp-bridge reconciliation is used |

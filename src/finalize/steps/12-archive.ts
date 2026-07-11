@@ -25,5 +25,12 @@ export function stepArchive(
     }
   }
 
+  const artifactDir = state.artifact_dir
+    ?? join(repoRoot, ".taskchain_artifacts", "polaris-run");
+  const telemetryFile = join(artifactDir, "runs", state.run_id, "telemetry.jsonl");
+  if (existsSync(telemetryFile)) {
+    copyFileSync(telemetryFile, join(archiveDir, "telemetry.jsonl"));
+  }
+
   console.log(`Run archived to .polaris/runs/${state.run_id}/`);
 }

@@ -4,6 +4,7 @@ export type ArtifactPathClass =
   | "non-artifact"
   | "promoted-cluster-artifact"
   | "promoted-run-ledger"
+  | "promoted-run-archive"
   | "promoted-cognition-archive"
   | "promoted-map-artifact"
   | "workspace-scratch"
@@ -12,7 +13,7 @@ export type ArtifactPathClass =
 
 export interface ArtifactPromotionViolation {
   path: string;
-  classification: Exclude<ArtifactPathClass, "non-artifact" | "promoted-cluster-artifact" | "promoted-run-ledger" | "promoted-cognition-archive" | "promoted-map-artifact">;
+  classification: Exclude<ArtifactPathClass, "non-artifact" | "promoted-cluster-artifact" | "promoted-run-ledger" | "promoted-run-archive" | "promoted-cognition-archive" | "promoted-map-artifact">;
   message: string;
 }
 
@@ -22,8 +23,30 @@ const PROMOTED_MAP_PREFIX = ".polaris/map/";
 const WORKSPACE_SCRATCH_PREFIX = ".taskchain_artifacts/";
 const LEGACY_RUN_ARTIFACTS = new Set([
   ".polaris/runs/mutation-queue.json",
+  ".polaris/runs/current-state.json",
+  ".polaris/runs/run-report.md",
   ".polaris/runs/current-state.pre-pol-198.json",
 ]);
+
+function isPromotedRunArchivePath(relativePath: string): boolean {
+  if (!relativePath.startsWith(".polaris/runs/")) {
+    return false;
+  }
+  const rest = relativePath.slice(".polaris/runs/".length);
+  if (rest === "" || rest === "evo-run-archive") {
+    return false;
+  }
+
+  const slashIndex = rest.indexOf("/");
+  if (slashIndex === -1) {
+    // The path is a directory-style run archive path (e.g. `.polaris/runs/<run-id>`),
+    // not a top-level file like `ledger.jsonl`.
+    return !rest.includes(".") && !rest.startsWith(".");
+  }
+
+  const firstSegment = rest.slice(0, slashIndex);
+  return firstSegment !== "evo-run-archive";
+}
 
 function normalizeArtifactPath(filePath: string): string {
   const normalized = path.posix.normalize(filePath.replace(/\\/g, "/"));
@@ -74,6 +97,10 @@ export function classifyArtifactPath(filePath: string, activeClusterId: string):
     return "promoted-run-ledger";
   }
 
+  if (isPromotedRunArchivePath(relativePath)) {
+    return "promoted-run-archive";
+  }
+
   if (relativePath.startsWith(PROMOTED_COGNITION_ARCHIVE_PREFIX)) {
     return "promoted-cognition-archive";
   }
@@ -102,6 +129,7 @@ export function isPromotedArtifactPath(filePath: string, activeClusterId: string
   return (
     classification === "promoted-cluster-artifact"
     || classification === "promoted-run-ledger"
+    || classification === "promoted-run-archive"
     || classification === "promoted-cognition-archive"
     || classification === "promoted-map-artifact"
   );
@@ -116,6 +144,8 @@ export function explainArtifactPolicy(filePath: string, activeClusterId: string)
       return "active cluster evidence is eligible for promotion into finalize commits";
     case "promoted-run-ledger":
       return "the run ledger is durable audit evidence and stays commit-eligible";
+    case "promoted-run-archive":
+      return "archived run snapshots under .polaris/runs/<run-id>/ are durable audit evidence and stay commit-eligible";
     case "promoted-cognition-archive":
       return "archived cognition reconciliation notes are durable provenance and stay commit-eligible";
     case "promoted-map-artifact":
@@ -146,6 +176,7 @@ export function findArtifactPromotionViolations(
       classification === "non-artifact"
       || classification === "promoted-cluster-artifact"
       || classification === "promoted-run-ledger"
+      || classification === "promoted-run-archive"
       || classification === "promoted-cognition-archive"
       || classification === "promoted-map-artifact"
     ) {
@@ -207,6 +238,8 @@ export function getGitignorePatterns(): string[] {
     ".taskchain_artifacts/**",
     "*.bak",
     ".polaris/runs/mutation-queue.json",
+    ".polaris/runs/current-state.json",
+    ".polaris/runs/run-report.md",
     ".polaris/runs/current-state.pre-pol-198.json",
     ".polaris/runs/evo-run-archive/**",
     ".polaris/bootstrap/**",
