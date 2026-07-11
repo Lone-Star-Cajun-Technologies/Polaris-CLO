@@ -73,6 +73,7 @@ export interface WorkerRouterCandidateDecision {
     activeSlots: number;
     slotLimit?: number;
     policyMatched: boolean;
+    fallbackEligible?: boolean;
   };
 }
 

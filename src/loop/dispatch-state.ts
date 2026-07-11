@@ -7,7 +7,7 @@
  * @module dispatch-state
  */
 
-import type { ChildDispatchRecord } from "./checkpoint.js";
+import type { ChildDispatchRecord, ProviderRoutingSummary } from "./checkpoint.js";
 
 /**
  * Worker dispatch states.
@@ -303,6 +303,7 @@ export interface ProviderSelectedEvent extends WorkerTelemetryEventBase {
   fallback_reason?: string;
   providers_tried?: string[];
   router_exhausted_reason?: string;
+  routing_summary?: ProviderRoutingSummary;
   router_candidates?: Array<{
     provider: string;
     eligible: boolean;
@@ -321,6 +322,7 @@ export interface ProviderSelectedEvent extends WorkerTelemetryEventBase {
       active_slots: number;
       slot_limit?: number;
       policy_matched: boolean;
+      fallback_eligible?: boolean;
     };
   }>;
 }

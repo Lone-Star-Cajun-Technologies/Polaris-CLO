@@ -214,6 +214,7 @@ export function decideWorkerRoute(input: WorkerRouterInput): WorkerRouterDecisio
         activeSlots,
         slotLimit: providerSlotLimit ?? globalSlotLimit,
         policyMatched,
+        fallbackEligible: policy?.fallbackEligible,
       },
     });
   }
