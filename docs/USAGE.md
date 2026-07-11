@@ -148,6 +148,15 @@ All configuration lives in `polaris.config.json` at the repository root.
 
 `{{worker_prompt}}` is substituted with the full worker instruction packet at dispatch time.
 
+### Provider routing and compatibility mode
+
+Polaris dispatches in one of two modes, controlled by `execution.routerPolicy.providerRegistry`:
+
+- **Compatibility mode** (default): the registry is empty or missing. `providerPolicy.<role>.providers` is the provider preference/fallback order; unless `execution.rotation` is configured, the first configured provider allowed by the role policy is selected. Because the router engine is not engaged, `providers_tried` contains only that selected provider.
+- **Router mode**: the registry is present. The router builds a full ordered, scored candidate list from the registry metadata and `providerPolicy.<role>.providers` acts as an eligibility filter. `providers_tried` contains the ordered candidate list, and the adapter may try the next candidate on a pre-dispatch failure.
+
+If your run evidence shows only one provider in `providers_tried` even though the role policy lists multiple providers, the repo is in compatibility mode and is missing provider registry metadata.
+
 ### Budget
 
 ```json

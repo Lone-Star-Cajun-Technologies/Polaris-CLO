@@ -349,12 +349,14 @@ No stage may change the default behavior to multi-worker. Multi-worker is opt-in
 
 ### 8.1 Default behavior
 
-When `execution.router` is absent or unset, Polaris behaves exactly as it does today:
+When `execution.routerPolicy.providerRegistry` is empty or missing, Polaris dispatches in **compatibility mode**:
 
 - `max_concurrent = 1`.
-- Provider selection follows `execution.rotation`, `execution.providerPolicy`, or the first configured provider.
+- Provider selection follows `execution.rotation`, then `execution.providerPolicy.<role>.providers`, then the first configured provider.
+- `providerPolicy.<role>.providers` order is the provider preference/fallback order unless `execution.rotation` is configured, in which case the rotation is filtered by the policy and the first match wins.
 - `allowCrossAgentFallback` remains `false` by default.
 - One child is dispatched per `polaris loop continue` invocation.
+- Only the selected provider appears in `providers_tried`, because the router engine is not engaged and no full candidate list is built.
 - No external routing service is contacted.
 
 ### 8.2 Invariants
@@ -375,6 +377,12 @@ When `execution.router` is absent or unset, Polaris behaves exactly as it does t
 - Do not make 9Router a required dependency.
 - Do not promote draft docs to doctrine without the existing SmartDocs promotion workflow.
 - Do not change the default to multi-worker.
+
+### 8.4 Compatibility mode vs router mode
+
+**Compatibility mode** is active when `execution.routerPolicy.providerRegistry` is empty or missing. `resolveProviderAndMode` bypasses `decideWorkerRoute()` and uses legacy role-policy selection. The first configured provider allowed by `providerPolicy.<role>.providers` is selected, with `execution.rotation` taking precedence if it is configured. `providers_tried` contains only the selected provider because the router engine is not engaged and no full candidate list is built.
+
+**Router mode** is active when `execution.routerPolicy.providerRegistry` contains provider metadata. `decideWorkerRoute()` builds an ordered candidate list from `execution.rotation` (or the configured provider order), filtered by `providerPolicy.<role>.providers` (which acts as an eligibility filter), then ranks each candidate by registry metadata (role, capability, trust, cost, quota, and slots). The ordered candidate list is returned as `providers_tried`, and the adapter may attempt the next candidate on a pre-dispatch failure.
 
 ---
 
