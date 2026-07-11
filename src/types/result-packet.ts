@@ -31,6 +31,25 @@ export interface WorkerRunHealthSymptom {
   occurred_at: string;
 }
 
+// ── Routing anomaly signal types ─────────────────────────────────────────────
+
+/**
+ * Routing anomaly signal surfaced by the loop/dispatch boundary or SOL scoring.
+ *
+ * These are review signals, not routing overrides. They feed Medic and SOL
+ * follow-up surfaces without changing provider trust or policy automatically.
+ */
+export interface RoutingSignal {
+  /** Canonical signal name (e.g. "missing-sealed-result"). */
+  signal: string;
+  /** Human-readable reason for the signal. */
+  reason: string;
+  /** Number of telemetry events aggregated into this signal. */
+  occurrences: number;
+  /** Child ids that produced the signal. */
+  child_ids: string[];
+}
+
 /**
  * Base result packet interface
  */
