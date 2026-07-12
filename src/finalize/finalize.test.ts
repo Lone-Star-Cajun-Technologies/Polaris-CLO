@@ -377,11 +377,16 @@ describe("stepArchive", () => {
     mkdirSync(join(testDir, ".polaris", "runs"), { recursive: true });
     writeFileSync(reportPath, "# Run Report: test-finalize-001\n");
 
+    const telemetryFile = join(testDir, ".taskchain_artifacts", "polaris-run", "runs", "test-finalize-001", "telemetry.jsonl");
+    mkdirSync(join(testDir, ".taskchain_artifacts", "polaris-run", "runs", "test-finalize-001"), { recursive: true });
+    writeFileSync(telemetryFile, '{"event":"child-complete","child_id":"POL-9"}\n');
+
     stepArchive(testDir, state, stateFile, reportPath);
 
     const archiveDir = join(testDir, ".polaris", "runs", "test-finalize-001");
     expect(existsSync(join(archiveDir, "current-state.json"))).toBe(true);
     expect(existsSync(join(archiveDir, "run-report.md"))).toBe(true);
+    expect(existsSync(join(archiveDir, "telemetry.jsonl"))).toBe(true);
   });
 });
 

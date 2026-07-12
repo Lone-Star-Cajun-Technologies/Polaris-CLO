@@ -129,6 +129,34 @@ const ROUTER_FAILURE_FIX_ZONE_MAP: Record<string, RouterFailureFixEntry> = {
   },
 };
 
+const ROUTER_ANOMALY_FIX_ZONE_MAP: Record<string, FixZoneEntry> = {
+  "provider-monopoly": {
+    artifact_type: "provider-role-recommendation",
+    hint:
+      "Repeated same-provider selection when policy evidence shows multiple providers were eligible. Review provider role assignment and policy ordering to avoid routing concentration.",
+  },
+  "missing-evidence": {
+    artifact_type: "runtime-config",
+    hint:
+      "Routing evidence gaps detected (missing exhausted reason, router candidates, or child completion). Improve telemetry and dispatch evidence capture.",
+  },
+  "missing-sealed-result": {
+    artifact_type: "medic-template",
+    hint:
+      "Missing sealed result file indicates a state-repair review signal. Investigate worker result writing and dispatch boundary.",
+  },
+  "stale-dispatch-abort": {
+    artifact_type: "medic-template",
+    hint:
+      "Stale dispatch abort indicates a state-repair review signal. Investigate dispatch lifecycle and orphan recovery.",
+  },
+  "invalid-inline-attempt": {
+    artifact_type: "medic-template",
+    hint:
+      "Invalid inline attempt indicates a state-repair review signal. Investigate dispatch boundary enforcement.",
+  },
+};
+
 // ──────────────────────────────────────────────
 // AutresearchProposal type
 // ──────────────────────────────────────────────
@@ -301,6 +329,32 @@ export function buildProposals(report: DiagnosisReport): AutresearchProposal[] {
       fix_zone: `${entry.artifact_type}/router-failure-${failure.reason}`,
     });
   }
+
+  // Routing anomaly signals (provider monopoly, evidence gaps, state-repair).
+  const routerOutcomes = report.router_outcomes;
+  const anomalySignals = [
+    ...(routerOutcomes?.provider_monopoly_signals ?? []),
+    ...(routerOutcomes?.evidence_gap_signals ?? []),
+    ...(routerOutcomes?.state_repair_signals ?? []),
+  ];
+  for (const signal of anomalySignals) {
+    // Evidence gaps and provider monopoly must be recurring to be worth a proposal.
+    if (signal.signal === "missing-evidence" && signal.occurrences < 2) continue;
+    if (signal.signal === "provider-monopoly" && signal.occurrences < 2) continue;
+    const entry = ROUTER_ANOMALY_FIX_ZONE_MAP[signal.signal] ?? {
+      artifact_type: "runtime-config" as const,
+      hint: "Recurring routing anomaly detected. Review dispatch telemetry and routing policy.",
+    };
+    proposals.push({
+      gate_id: `router-anomaly:${signal.signal}:${signal.reason}`,
+      artifact_type: entry.artifact_type,
+      hint: `${entry.hint} Observed ${signal.occurrences} times across children: ${signal.child_ids.join(", ") || "unknown"}.`,
+      run_id: report.run_id,
+      evidence_run_ids: [report.run_id],
+      confidence: report.score,
+      fix_zone: `${entry.artifact_type}/router-anomaly-${signal.signal}`,
+    });
+  }
   return proposals;
 }
 
@@ -391,6 +445,15 @@ export function validateDiagnosisReport(raw: unknown): DiagnosisReport {
         recurring_failures: Array.isArray(routerOutcomesRaw["recurring_failures"])
           ? routerOutcomesRaw["recurring_failures"]
           : [],
+        provider_monopoly_signals: Array.isArray(routerOutcomesRaw["provider_monopoly_signals"])
+          ? routerOutcomesRaw["provider_monopoly_signals"]
+          : [],
+        evidence_gap_signals: Array.isArray(routerOutcomesRaw["evidence_gap_signals"])
+          ? routerOutcomesRaw["evidence_gap_signals"]
+          : [],
+        state_repair_signals: Array.isArray(routerOutcomesRaw["state_repair_signals"])
+          ? routerOutcomesRaw["state_repair_signals"]
+          : [],
       }
     : {
         total_decisions: 0,
@@ -398,6 +461,9 @@ export function validateDiagnosisReport(raw: unknown): DiagnosisReport {
         fallback_attempts: 0,
         successful_fallbacks: 0,
         recurring_failures: [],
+        provider_monopoly_signals: [],
+        evidence_gap_signals: [],
+        state_repair_signals: [],
       };
 
   const normalizedQcSummary = normalizeQcScoreSummary(r["qc_summary"]);

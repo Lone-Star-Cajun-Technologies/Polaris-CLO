@@ -25,6 +25,7 @@ function baseReportData(overrides: Partial<RunReportData> = {}): RunReportData {
     state: minimalState(),
     branch: "feature/test",
     validationPassed: true,
+    telemetryEvents: [],
     ...overrides,
   };
 }
@@ -147,5 +148,190 @@ describe("generateRunReport", () => {
     expect(report).toContain("| ID | Title | Commit | Status |");
     expect(report).toContain("| Status | Count |");
     expect(report).toContain("| Provider | Total | Blocking | Unvalidated |");
+  });
+
+  it("summarizes provider distribution with all children on one provider", () => {
+    const telemetryEvents = [
+      {
+        event: "child-dispatched",
+        run_id: "test-run-001",
+        child_id: "POL-001",
+        provider: "devin",
+        routing_summary: {
+          selected_provider: "devin",
+          selected_adapter: "terminal-cli",
+          selection_reason: "role-policy",
+          effective_policy_order: ["devin"],
+          compatibility_mode: true,
+          registry_present: false,
+          fallback_eligible: false,
+        },
+      },
+      {
+        event: "child-complete",
+        run_id: "test-run-001",
+        child_id: "POL-001",
+        provider: "devin",
+        routing_summary: {
+          selected_provider: "devin",
+          selected_adapter: "terminal-cli",
+          selection_reason: "role-policy",
+          effective_policy_order: ["devin"],
+          compatibility_mode: true,
+          registry_present: false,
+          fallback_eligible: false,
+        },
+      },
+      {
+        event: "child-dispatched",
+        run_id: "test-run-001",
+        child_id: "POL-002",
+        provider: "devin",
+        routing_summary: {
+          selected_provider: "devin",
+          selected_adapter: "terminal-cli",
+          selection_reason: "role-policy",
+          effective_policy_order: ["devin"],
+          compatibility_mode: true,
+          registry_present: false,
+          fallback_eligible: false,
+        },
+      },
+    ];
+
+    const report = generateRunReport(baseReportData({ telemetryEvents }));
+    expect(report).toContain("## Provider routing");
+    expect(report).toContain("| POL-001 | — | devin | role-policy | compatibility | devin | — | 0 | Done |");
+    expect(report).toContain("| POL-002 | — | devin | role-policy | compatibility | devin | — | 0 | Done |");
+    expect(report).toContain("**Provider summary:** devin: 2");
+    expect(report).toContain("No routing anomalies or evidence gaps detected.");
+  });
+
+  it("summarizes full router candidate evidence with fallback counts", () => {
+    const telemetryEvents = [
+      {
+        event: "provider-selected",
+        run_id: "test-run-001",
+        child_id: "POL-001",
+        selected_provider: "devin",
+        selection_reason: "policy-router",
+        router_mode: "direct-worker",
+        router_compatibility_mode: false,
+        providers_tried: ["devin", "copilot"],
+        router_candidates: [
+          { provider: "devin", adapter: "terminal-cli", score: 0.9, fallback_eligible: true },
+          { provider: "copilot", adapter: "terminal-cli", score: 0.7, fallback_eligible: true },
+        ],
+        routing_summary: {
+          selected_provider: "devin",
+          selected_adapter: "terminal-cli",
+          selection_reason: "policy-router",
+          effective_policy_order: ["devin", "copilot"],
+          compatibility_mode: false,
+          registry_present: true,
+          fallback_eligible: true,
+        },
+      },
+      {
+        event: "provider-selected",
+        run_id: "test-run-001",
+        child_id: "POL-002",
+        selected_provider: "devin",
+        selection_reason: "policy-router",
+        router_mode: "direct-worker",
+        router_compatibility_mode: false,
+        providers_tried: ["copilot", "codex", "devin"],
+        router_candidates: [
+          { provider: "devin", adapter: "terminal-cli", score: 0.9, fallback_eligible: true },
+          { provider: "copilot", adapter: "terminal-cli", score: 0.7, fallback_eligible: true },
+          { provider: "codex", adapter: "terminal-cli", score: 0.6, fallback_eligible: false },
+        ],
+        fallback_attempts: [
+          { provider: "copilot", attempt_index: 1, outcome: "rejected", rejection_reasons: ["cost-policy"] },
+          { provider: "codex", attempt_index: 2, outcome: "rejected", rejection_reasons: ["no-slot"] },
+          { provider: "devin", attempt_index: 3, outcome: "selected", rejection_reasons: [] },
+        ],
+        routing_summary: {
+          selected_provider: "devin",
+          selected_adapter: "terminal-cli",
+          selection_reason: "policy-router",
+          effective_policy_order: ["copilot", "codex", "devin"],
+          compatibility_mode: false,
+          registry_present: true,
+          fallback_eligible: true,
+        },
+      },
+      {
+        event: "provider-fallback-attempted",
+        run_id: "test-run-001",
+        child_id: "POL-002",
+        fallback_from: "copilot",
+        fallback_reason: "cost-policy",
+        fallback_to: "codex",
+      },
+      {
+        event: "child-complete",
+        run_id: "test-run-001",
+        child_id: "POL-002",
+        completion_status: "done",
+      },
+    ];
+
+    const state = {
+      ...minimalState(),
+      completed_children: ["POL-002"],
+      open_children: ["POL-001"],
+    };
+
+    const report = generateRunReport(baseReportData({ state, telemetryEvents }));
+    expect(report).toContain("## Provider routing");
+    expect(report).toContain("| POL-001 | — | devin | policy-router | router | devin, copilot | 2 | 0 | Open |");
+    expect(report).toContain("| POL-002 | — | devin | policy-router | router | copilot, codex, devin | 3 | 2 | Done |");
+    expect(report).toContain("**Provider summary:** devin: 2");
+    expect(report).toContain("Fallback attempts: 1 (1 successful)");
+    expect(report).toContain("Provider monopoly (repeated same-provider selection):");
+    expect(report).toContain("devin: 2 occurrence(s) — children: POL-001, POL-002");
+    expect(report).not.toContain("missing-child-completion");
+  });
+
+  it("calls out missing registry metadata and routing anomalies", () => {
+    const telemetryEvents = [
+      {
+        event: "provider-selected",
+        run_id: "test-run-001",
+        child_id: "POL-001",
+        selected_provider: "devin",
+        selection_reason: "policy-router",
+        router_compatibility_mode: false,
+        providers_tried: ["devin", "copilot"],
+        routing_summary: { registry_present: true },
+      },
+      {
+        event: "stale-dispatch-aborted",
+        run_id: "test-run-001",
+        child_id: "POL-001",
+        reason: "POL-494",
+        aborted_dispatch_id: "59dad3bd-2638-4991-9509-0e2478c4c34f",
+      },
+      {
+        event: "sealed-result-read-error",
+        run_id: "test-run-001",
+        child_id: "POL-002",
+      },
+    ];
+
+    const state = {
+      ...minimalState(),
+      completed_children: ["POL-001"],
+      open_children: ["POL-002"],
+    };
+
+    const report = generateRunReport(baseReportData({ state, telemetryEvents }));
+    expect(report).toContain("## Provider routing");
+    expect(report).toContain("Evidence gaps:");
+    expect(report).toContain("missing-router-candidates");
+    expect(report).toContain("State repair / runtime review signals:");
+    expect(report).toContain("stale-dispatch-abort");
+    expect(report).toContain("missing-sealed-result");
   });
 });

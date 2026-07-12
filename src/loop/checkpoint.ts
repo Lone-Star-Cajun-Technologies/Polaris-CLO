@@ -61,6 +61,27 @@ export interface WorkerAssignmentRecord {
 }
 
 /**
+ * Compact routing evidence summary shared across dispatch telemetry,
+ * dispatch records, child completion events, and ledger entries.
+ */
+export interface ProviderRoutingSummary {
+  /** Selected provider (or null when delegated) */
+  selected_provider?: string | null;
+  /** Adapter used for dispatch */
+  selected_adapter?: string;
+  /** Human-readable reason why this provider was selected */
+  selection_reason?: string;
+  /** Ordered providers that determined the selection / fallback chain */
+  effective_policy_order?: string[];
+  /** Whether the dispatch used compatibility (legacy) selection logic */
+  compatibility_mode?: boolean;
+  /** Whether execution.routerPolicy.providerRegistry was present */
+  registry_present?: boolean;
+  /** Whether fallback to alternative providers is eligible */
+  fallback_eligible?: boolean;
+}
+
+/**
  * Dispatch record stored in child meta for durable dispatch evidence.
  */
 export interface ChildDispatchRecord {
@@ -84,6 +105,8 @@ export interface ChildDispatchRecord {
   provider_override_source?: string;
   /** Ordered providers considered during selection */
   providers_tried?: string[];
+  /** Compact routing evidence summary for dispatch review */
+  routing_summary?: ProviderRoutingSummary;
   /** Dispatch timestamp */
   dispatched_at: string;
   /** Legacy dispatch status - superseded by runtime_state */

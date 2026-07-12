@@ -1,0 +1,193 @@
+{
+  "schemaVersion": "1.0",
+  "qcRunId": "coderabbit-1783813556239",
+  "runId": "polaris-run-pol-494-2026-07-11-001",
+  "clusterId": "POL-494",
+  "trigger": "completed-cluster",
+  "provider": "coderabbit",
+  "providerMode": "local",
+  "startedAt": "2026-07-11T23:40:59.318Z",
+  "completedAt": "2026-07-11T23:45:56.239Z",
+  "status": "findings",
+  "findings": [
+    {
+      "findingId": "coderabbit-1-1783813556239",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/tmp/merge-check3.txt at line 1, Resolve the incomplete merge status recorded in the temporary merge-check artifact: complete the merge and regenerate the check output so it no longer says “not merged,” or remove the temporary artifact if it is not intended to be tracked.",
+      "filePath": ".polaris/tmp/merge-check3.txt",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/tmp/merge-check3.txt"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-2-1783813556239",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/tmp/merge-check.txt at line 1, Remove or reconcile the stale merge status in merge-check.txt with merge-check2.txt so only one authoritative result remains. Update the merge-check generation flow to write these status files atomically and, if both are retained, include commit or timestamp metadata to prevent contradictory downstream results.",
+      "filePath": ".polaris/tmp/merge-check.txt",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/tmp/merge-check.txt"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-3-1783813556239",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-494/state.json around lines 8 - 20, Reconcile the POL-494 state.json with the authoritative successful result ledger for the same run_id before publishing: add POL-495, POL-497, POL-499, and POL-540 to completed_children, remove POL-499 from open_children, and update active_child, next_open_child, step_cursor, and status consistently with the remaining work. Apply the state update atomically so resume or closeout cannot observe a partial reconciliation.",
+      "filePath": ".polaris/clusters/POL-494/state.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-494/state.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-4-1783813556239",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-494/results/POL-496-c17cd224-5c2d-4619-822e-541a067ff66b.json around lines 1 - 7, Update the result serializer producing the POL-496 artifact to emit the contract-compliant status \"done\" instead of \"success\" and include an allowed next_recommended_action such as \"continue\". Ensure newly generated results use this schema rather than relying on malformed historical artifacts.",
+      "filePath": ".polaris/clusters/POL-494/results/POL-496-c17cd224-5c2d-4619-822e-541a067ff66b.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-494/results/POL-496-c17cd224-5c2d-4619-822e-541a067ff66b.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-5-1783813556239",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-494/results/POL-499-845b9610-70ef-4c3f-8081-3478a74dd146.json around lines 1 - 6, Update the failure-result emitter that produces this CompactReturn payload to use status \"failed\" instead of \"failure\" and include the required validation and next_recommended_action fields with contract-valid values. Ensure commit is emitted as a string when available or null otherwise, and preserve the existing child_id.",
+      "filePath": ".polaris/clusters/POL-494/results/POL-499-845b9610-70ef-4c3f-8081-3478a74dd146.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-494/results/POL-499-845b9610-70ef-4c3f-8081-3478a74dd146.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-6-1783813556239",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-494/results/POL-541-d971d900-c2a9-4532-9595-a524db49a528.json around lines 1 - 7, Update the producer generating this compact result to emit the contract-compliant status \"done\" instead of \"success\", and include the required next_recommended_action field with an allowed value such as \"continue\". Preserve the existing run_id, child_id, commit, and validation fields.",
+      "filePath": ".polaris/clusters/POL-494/results/POL-541-d971d900-c2a9-4532-9595-a524db49a528.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-494/results/POL-541-d971d900-c2a9-4532-9595-a524db49a528.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-7-1783813556239",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/tmp/refs.txt around lines 1 - 69, Remove the tracked refs snapshot from delivery artifacts and add an ignore rule covering .polaris/tmp/** so files such as refs.txt cannot be committed again.",
+      "filePath": ".polaris/tmp/refs.txt",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/tmp/refs.txt"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-8-1783813556239",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-494/clusters.json around lines 89 - 96, Update the children array in the POL-494 cluster definition to follow the declared dependency order, ensuring each child runs only after its prerequisites and avoiding conflicting same-file dispatches. Prefer the proposed topological ordering from the dependency declarations; do not change unrelated cluster configuration.",
+      "filePath": ".polaris/clusters/POL-494/clusters.json",
+      "range": {
+        "startLine": 1
+      },
+      "suggestedAction": "\"children\": [\n        \"POL-495\",\n        \"POL-496\",\n        \"POL-497\",\n        \"POL-499\",\n        \"POL-498\",\n        \"POL-540\",\n        \"POL-541\"",
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-494/clusters.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    }
+  ],
+  "rawArtifactPaths": [],
+  "parserVersion": "coderabbit-1.0",
+  "policyDecision": {
+    "blocksDelivery": true,
+    "requiresOperatorReview": true,
+    "routedToRepair": false,
+    "summary": "8 findings; operator review required"
+  },
+  "providerAttempt": {
+    "provider": "coderabbit",
+    "status": "success",
+    "rawOutputAvailable": true,
+    "rawOutputRetained": false,
+    "stdoutLength": 6280,
+    "stderrLength": 0,
+    "exitCode": 0,
+    "parserResult": "success"
+  }
+}

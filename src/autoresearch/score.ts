@@ -17,7 +17,8 @@
 
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
-import type { WorkerResultContract } from "../types/result-packet.js";
+import type { WorkerResultContract, RoutingSignal } from "../types/result-packet.js";
+import { classifyRoutingTelemetryEvent } from "../medic/routing-signals.js";
 import { listQcArtifactIds, readQcArtifact } from "../qc/artifacts.js";
 import type { QcAttributionConfidence, QcProviderAttemptStatus, QcResult, QcSeverity } from "../qc/types.js";
 import type { ClusterState } from "../cluster-state/types.js";
@@ -66,6 +67,9 @@ export interface RouterOutcomesSummary {
   fallback_attempts: number;
   successful_fallbacks: number;
   recurring_failures: RouterFailureSummary[];
+  provider_monopoly_signals: RoutingSignal[];
+  evidence_gap_signals: RoutingSignal[];
+  state_repair_signals: RoutingSignal[];
 }
 
 /** Per-severity breakdown of QC findings for scoring. */
@@ -874,12 +878,142 @@ export function summarizeRouterOutcomes(artifacts: RunArtifacts): RouterOutcomes
     }))
     .sort((a, b) => b.occurrences - a.occurrences || a.reason.localeCompare(b.reason));
 
+  // ── Provider monopoly detection ─────────────────────────────────────────────
+  // Repeated same-provider selection when policy evidence shows multiple
+  // providers were eligible or configured.
+
+  const hasMultiProviderEvidence = (event: Record<string, unknown>): boolean => {
+    const candidates = Array.isArray(event["router_candidates"]) ? event["router_candidates"] : [];
+    const eligibleCount = candidates.filter((candidate) => asRecord(candidate)?.["eligible"] === true).length;
+    const routingSummary = asRecord(event["routing_summary"]);
+    const effectivePolicyOrder = asStringArray(routingSummary?.["effective_policy_order"]);
+    const providersTried = asStringArray(event["providers_tried"]);
+    const fallbackAttempts = Array.isArray(event["fallback_attempts"]) ? event["fallback_attempts"] : [];
+    return (
+      eligibleCount > 1 ||
+      effectivePolicyOrder.length > 1 ||
+      providersTried.length > 1 ||
+      fallbackAttempts.length > 0 ||
+      routingSummary?.["fallback_eligible"] === true
+    );
+  };
+
+  const providerSelections = new Map<string, RoutingSignal>();
+  for (const event of selectedEvents) {
+    const selectedProvider = asString(event["selected_provider"]);
+    if (!selectedProvider || !hasMultiProviderEvidence(event)) continue;
+    const childId = asString(event["child_id"]) ?? undefined;
+    const existing = providerSelections.get(selectedProvider);
+    if (existing) {
+      existing.occurrences += 1;
+      if (childId) existing.child_ids.push(childId);
+    } else {
+      providerSelections.set(selectedProvider, {
+        signal: "provider-monopoly",
+        reason: selectedProvider,
+        occurrences: 1,
+        child_ids: childId ? [childId] : [],
+      });
+    }
+  }
+
+  const providerMonopolySignals = Array.from(providerSelections.values())
+    .filter((signal) => signal.occurrences >= 2)
+    .map((signal) => ({
+      ...signal,
+      child_ids: [...new Set(signal.child_ids)].sort(),
+    }))
+    .sort((a, b) => b.occurrences - a.occurrences || a.reason.localeCompare(b.reason));
+
+  // ── Evidence gap detection ──────────────────────────────────────────────────
+  // Missing evidence that prevents distinguishing true provider failures from
+  // routing/telemetry gaps.
+
+  const evidenceGapMap = new Map<string, RoutingSignal>();
+  const countEvidenceGap = (reason: string, childId?: string): void => {
+    const existing = evidenceGapMap.get(reason);
+    if (existing) {
+      existing.occurrences += 1;
+      if (childId) existing.child_ids.push(childId);
+    } else {
+      evidenceGapMap.set(reason, {
+        signal: "missing-evidence",
+        reason,
+        occurrences: 1,
+        child_ids: childId ? [childId] : [],
+      });
+    }
+  };
+
+  for (const event of selectedEvents) {
+    const selectedProvider = asString(event["selected_provider"]);
+    const childId = asString(event["child_id"]) ?? undefined;
+    const candidates = Array.isArray(event["router_candidates"]) ? event["router_candidates"] : [];
+    const routingSummary = asRecord(event["routing_summary"]);
+    const fallbackAttempts = Array.isArray(event["fallback_attempts"]) ? event["fallback_attempts"] : [];
+
+    if (selectedProvider === null) {
+      const exhaustedReason = asString(event["router_exhausted_reason"]);
+      if (!exhaustedReason && candidates.length === 0) {
+        countEvidenceGap("missing-exhausted-reason", childId);
+      }
+    } else if (selectedProvider !== null) {
+      const registryPresent = routingSummary?.["registry_present"] === true;
+      if (registryPresent && candidates.length === 0) {
+        countEvidenceGap("missing-router-candidates", childId);
+      }
+      if (fallbackAttempts.length > 0 && childId && !childCompletionStatus.has(childId)) {
+        countEvidenceGap("missing-child-completion", childId);
+      }
+    }
+  }
+
+  for (const event of exhaustedEvents) {
+    const childId = asString(event["child_id"]) ?? undefined;
+    const reason = asString(event["reason"]);
+    if (!reason && childId) {
+      countEvidenceGap("missing-exhausted-reason", childId);
+    }
+  }
+
+  const evidenceGapSignals = Array.from(evidenceGapMap.values())
+    .map((signal) => ({
+      ...signal,
+      child_ids: [...new Set(signal.child_ids)].sort(),
+    }))
+    .sort((a, b) => b.occurrences - a.occurrences || a.reason.localeCompare(b.reason));
+
+  // ── State-repair / Medic review signal classification ───────────────────────
+
+  const stateRepairMap = new Map<string, RoutingSignal>();
+  for (const event of telemetry) {
+    const classified = classifyRoutingTelemetryEvent(event);
+    if (!classified) continue;
+    const existing = stateRepairMap.get(classified.signal);
+    if (existing) {
+      existing.occurrences += classified.occurrences;
+      existing.child_ids.push(...classified.child_ids);
+    } else {
+      stateRepairMap.set(classified.signal, { ...classified });
+    }
+  }
+
+  const stateRepairSignals = Array.from(stateRepairMap.values())
+    .map((signal) => ({
+      ...signal,
+      child_ids: [...new Set(signal.child_ids)].sort(),
+    }))
+    .sort((a, b) => b.occurrences - a.occurrences || a.signal.localeCompare(b.signal));
+
   return {
     total_decisions: selectedEvents.length,
     exhausted_decisions: exhaustedEvents.length,
     fallback_attempts: fallbackEvents.length,
     successful_fallbacks: successfulFallbacks,
     recurring_failures: recurringFailures,
+    provider_monopoly_signals: providerMonopolySignals,
+    evidence_gap_signals: evidenceGapSignals,
+    state_repair_signals: stateRepairSignals,
   };
 }
 

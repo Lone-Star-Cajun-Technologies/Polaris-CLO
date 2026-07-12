@@ -78,6 +78,14 @@ export interface RoleExecutionConfig {
 export interface RoleProviderPolicy {
   /**
    * Ordered provider list for this role.
+   *
+   * In compatibility mode (no execution.routerPolicy.providerRegistry), this order is
+   * the provider preference/fallback order unless execution.rotation is configured,
+   * in which case the rotation list is filtered by this policy and the first match
+   * wins. In router mode, provider registry metadata is the source of candidate
+   * ranking and this list acts as an eligibility filter; compatibility evidence may
+   * show only the selected provider in providers_tried.
+   *
    * An empty array means the role is disabled.
    */
   providers: string[];
@@ -125,6 +133,10 @@ export interface WorkerRouterPolicyConfig {
   defaultWorkerPool?: WorkerPoolLimits;
   /**
    * Provider metadata registry keyed by execution provider name.
+   *
+   * When this registry is empty or missing, dispatch uses compatibility mode and
+   * falls back to legacy role-policy/rotation selection. The router engine only
+   * builds a full ranked candidate list when registry metadata is present.
    */
   providerRegistry?: Record<string, WorkerProviderRouterPolicy>;
   /**
@@ -149,8 +161,9 @@ export interface ExecutionConfig {
   /**
    * Experimental: ordered list of provider names for cross-run load rotation.
    * Off by default (empty array). When non-empty, overrides providerPolicy
-   * ordering — the rotation list is filtered by the role policy rather than
-   * the role policy acting as a priority list. Leave empty unless intentionally
+   * ordering — the rotation list is filtered by the role policy and the first
+   * match is selected. In compatibility mode, only the first filtered match is
+   * used and no full candidate list is built. Leave empty unless intentionally
    * enabling rotation; use providerPolicy.providers ordering instead.
    */
   rotation?: string[];
@@ -167,10 +180,18 @@ export interface ExecutionConfig {
   roles?: Partial<Record<ExecutionRole, RoleExecutionConfig>>;
   /**
    * Per-role provider governance policy.
+   *
+   * In compatibility mode (no execution.routerPolicy.providerRegistry), the order
+   * of providers in the role policy is the preference/fallback order unless
+   * execution.rotation overrides it. In router mode, the policy acts as an
+   * eligibility filter for the ranked provider registry.
    */
   providerPolicy?: Partial<Record<ExecutionRole, RoleProviderPolicy>>;
   /**
    * Worker router policy surface for provider eligibility and pool limits.
+   *
+   * When providerRegistry is absent or empty, dispatch runs in compatibility mode
+   * and ignores the router engine's ranking/fallback evidence.
    */
   routerPolicy?: WorkerRouterPolicyConfig;
 }
@@ -614,6 +635,8 @@ export interface QcProviderFailurePolicy {
   timeout?: QcFailureAction;
   /** Action when provider output cannot be parsed. Default: "fail". */
   parseFailure?: QcFailureAction;
+  /** Action when the provider is rate-limited. Default: "fail". */
+  rateLimited?: QcFailureAction;
   /** Action when every configured provider fails. Default: "block". */
   allProvidersFailed?: QcFailureAction;
 }

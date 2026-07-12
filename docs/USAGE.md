@@ -148,6 +148,15 @@ All configuration lives in `polaris.config.json` at the repository root.
 
 `{{worker_prompt}}` is substituted with the full worker instruction packet at dispatch time.
 
+### Provider routing and compatibility mode
+
+Polaris dispatches in one of two modes, controlled by `execution.routerPolicy.providerRegistry`:
+
+- **Compatibility mode** (default): the registry is empty or missing. `providerPolicy.<role>.providers` is the provider preference/fallback order; unless `execution.rotation` is configured, the first configured provider allowed by the role policy is selected. Because the router engine is not engaged, `providers_tried` contains only that selected provider.
+- **Router mode**: the registry is present. The router builds a full ordered, scored candidate list from the registry metadata and `providerPolicy.<role>.providers` acts as an eligibility filter. `providers_tried` contains the ordered candidate list, and the adapter may try the next candidate on a pre-dispatch failure.
+
+If your run evidence shows only one provider in `providers_tried` even though the role policy lists multiple providers, the repo is in compatibility mode and is missing provider registry metadata.
+
 ### Budget
 
 ```json
@@ -239,6 +248,22 @@ All run artifacts are written under `.polaris/`:
 ```
 
 These directories are excluded from git by default (added to `.gitignore` during `polaris init`).
+
+### Retention
+
+| Artifact | Path | Lifetime | Commit status |
+|---|---|---|---|
+| Raw routing telemetry (workspace scratch) | `.taskchain_artifacts/polaris-run/runs/<run-id>/telemetry.jsonl` | Workspace scratch; may be pruned after finalize | Never commit |
+| Finalized run snapshot | `.polaris/runs/<run-id>/current-state.json` | Durable after `polaris finalize` | Commit-eligible (promoted run archive) |
+| Finalized run report | `.polaris/runs/<run-id>/run-report.md` | Durable after `polaris finalize` | Commit-eligible (promoted run archive) |
+| Archived routing telemetry | `.polaris/runs/<run-id>/telemetry.jsonl` | Durable after `polaris finalize` | Commit-eligible (promoted run archive) |
+| Run ledger | `.polaris/runs/ledger.jsonl` | Durable, append-only resume index | Commit-eligible |
+| Cluster packets/results | `.polaris/clusters/<cluster-id>/packets/**`, `.polaris/clusters/<cluster-id>/results/**` | Durable evidence for each child | Commit-eligible |
+| Transient run report | `.polaris/runs/run-report.md` | Workspace scratch; overwritten by finalize | Never commit |
+| Transient active-state snapshot | `.polaris/runs/current-state.json` | Workspace scratch / deprecated | Never commit |
+| Legacy run artifacts | `.polaris/runs/mutation-queue.json`, `.polaris/runs/current-state.pre-pol-198.json`, `.polaris/runs/evo-run-archive/**` | Workspace scratch / legacy | Never commit |
+
+`polaris finalize` copies the raw telemetry and run report from `.taskchain_artifacts/polaris-run/runs/<run-id>/` into `.polaris/runs/<run-id>/` so the routing evidence survives for review. Workspace scratch under `.taskchain_artifacts/**` and transient root files under `.polaris/runs/` (the files directly in `runs/`, not the per-run directories) must stay out of delivery commits.
 
 ---
 

@@ -76,6 +76,8 @@ export function decideProviderFailureAction(
       return policy?.timeout ?? "fail";
     case "parse-failed":
       return policy?.parseFailure ?? "fail";
+    case "rate-limited":
+      return policy?.rateLimited ?? "fail";
     default:
       return "fail";
   }

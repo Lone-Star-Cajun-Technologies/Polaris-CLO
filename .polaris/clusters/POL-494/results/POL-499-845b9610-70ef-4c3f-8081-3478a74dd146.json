@@ -1,0 +1,6 @@
+{
+  "run_id": "polaris-run-pol-494-2026-07-11-001",
+  "child_id": "POL-499",
+  "status": "failure",
+  "error_message": "CompactReturn validation failed: missing or empty child_id; status must be \"done\", \"failed\", or \"blocked\"; commit must be a string or null; validation must be \"passed\", \"failed\", or \"skipped\"; next_recommended_action must be \"continue\", \"stop\", or \"investigate\""
+}

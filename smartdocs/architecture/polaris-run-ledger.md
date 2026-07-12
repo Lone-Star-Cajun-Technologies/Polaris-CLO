@@ -24,6 +24,7 @@ Polaris has three durable state surfaces. They are complementary, not interchang
 | Global run ledger | `.polaris/runs/ledger.jsonl` | Compact, committed, append-only resume index for all Polaris run types across agents, branches, and worktrees. | Yes | Append-only |
 | Current state | `.taskchain_artifacts/polaris-run/current-state.json` during the current migration phase; eventual per-run snapshots may live under `.polaris/runs/` | Mutable active worktree pointer and fast local snapshot for the run currently claimed in this checkout. | Preferred fast path, but not sufficient alone | Mutable, atomic replace |
 | Telemetry | `.taskchain_artifacts/polaris-run/runs/<run-id>/telemetry.jsonl` | Verbose audit/debug trail for lifecycle boundaries, failures, adapter behavior, and diagnostics. | No | Append-only |
+| Archived run evidence | `.polaris/runs/<run-id>/telemetry.jsonl` | Copy of raw telemetry promoted by `polaris finalize` for durable audit/review. | No | Write-once, preserve after finalize |
 
 ### Ledger
 
@@ -72,6 +73,22 @@ Why this path:
 - It survives branch switches, pull requests, cloud agents, and local context resets.
 - It is distinct from `.taskchain_artifacts/`, which can contain transient runtime snapshots and verbose artifacts.
 - It keeps the global resume index near future per-run `.polaris/runs/<run-id>/` snapshots without mixing it with telemetry.
+
+### Retention rules
+
+| Artifact | Path | Retention | Commit policy |
+|---|---|---|---|
+| Global run ledger | `.polaris/runs/ledger.jsonl` | Retained indefinitely; append-only | Commit-eligible |
+| Finalized run snapshot | `.polaris/runs/<run-id>/current-state.json` | Durable after finalize | Commit-eligible (promoted run archive) |
+| Finalized run report | `.polaris/runs/<run-id>/run-report.md` | Durable after finalize | Commit-eligible (promoted run archive) |
+| Archived routing telemetry | `.polaris/runs/<run-id>/telemetry.jsonl` | Durable after finalize | Commit-eligible (promoted run archive) |
+| Raw routing telemetry | `.taskchain_artifacts/polaris-run/runs/<run-id>/telemetry.jsonl` | Workspace scratch; may be pruned after archive | Never commit |
+| Cluster packets/results | `.polaris/clusters/<cluster-id>/packets/**`, `.polaris/clusters/<cluster-id>/results/**` | Durable child evidence | Commit-eligible |
+| Transient run report | `.polaris/runs/run-report.md` | Workspace scratch; overwritten by finalize | Never commit |
+| Transient active-state snapshot | `.polaris/runs/current-state.json` | Workspace scratch / deprecated | Never commit |
+| Legacy run artifacts | `.polaris/runs/mutation-queue.json`, `.polaris/runs/current-state.pre-pol-198.json`, `.polaris/runs/evo-run-archive/**` | Legacy workspace scratch | Never commit |
+
+`polaris finalize` promotes the raw telemetry from `.taskchain_artifacts/polaris-run/runs/<run-id>/telemetry.jsonl` into `.polaris/runs/<run-id>/telemetry.jsonl` so the routing evidence survives as a durable artifact. The workspace scratch copy may be pruned once the archived copy exists.
 
 ---
 

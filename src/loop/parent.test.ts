@@ -754,6 +754,15 @@ describe("runParentLoop", () => {
       provider: "mock",
       model: "gpt-5.3-codex",
       router_selection_reason: "config-rotation",
+      routing_summary: {
+        selected_provider: "mock",
+        selected_adapter: "mock",
+        selection_reason: "config-rotation",
+        effective_policy_order: ["mock"],
+        compatibility_mode: true,
+        registry_present: false,
+        fallback_eligible: false,
+      },
     });
     expect(Array.isArray(childComplete?.["providers_tried"])).toBe(true);
     expect(childComplete?.["dispatch_id"]).toBeDefined();
@@ -771,6 +780,15 @@ describe("runParentLoop", () => {
       provider: "mock",
       model: "gpt-5.3-codex",
       router_selection_reason: "config-rotation",
+      routing_summary: {
+        selected_provider: "mock",
+        selected_adapter: "mock",
+        selection_reason: "config-rotation",
+        effective_policy_order: ["mock"],
+        compatibility_mode: true,
+        registry_present: false,
+        fallback_eligible: false,
+      },
     });
     expect(Array.isArray(childCompleted?.["providers_tried"])).toBe(true);
     expect(Array.isArray(childCompleted?.["commit_files"]) || childCompleted?.["commit_files"] === null).toBe(true);

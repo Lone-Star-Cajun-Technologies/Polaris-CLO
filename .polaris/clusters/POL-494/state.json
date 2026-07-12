@@ -1,0 +1,121 @@
+{
+  "schema_version": "1.0",
+  "run_id": "polaris-run-pol-494-2026-07-12-001",
+  "cluster_id": "POL-494",
+  "skill": "polaris-run",
+  "branch": "pol-494-delivery",
+  "session_type": "implement",
+  "active_child": "",
+  "completed_children": [
+    "POL-544"
+  ],
+  "open_children": [],
+  "step_cursor": "checkpoint",
+  "context_budget": {
+    "children_completed": 1,
+    "max_children_per_session": 1
+  },
+  "status": "cluster-complete",
+  "next_open_child": null,
+  "artifact_dir": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run",
+  "dispatch_boundary": {
+    "dispatch_epoch": 1,
+    "continue_epoch": 1,
+    "last_dispatched_child": "POL-544"
+  },
+  "run_bootstrap_seal": {
+    "sealer": "polaris-loop-bootstrap",
+    "run_id": "polaris-run-pol-494-2026-07-12-001",
+    "cluster_id": "POL-494",
+    "open_children_sha": "82f020a635112ea7059f5fdcb9e5fc41b9cf7bb8d1b80122c5edc1a19d077366",
+    "sealed_at": "2026-07-12T04:12:13.871Z"
+  },
+  "open_children_meta": {
+    "POL-544": {
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-494/results/POL-544-da3811bd-201f-4499-b2ba-010e034f44a7.json",
+      "dispatch_record": {
+        "dispatch_id": "da3811bd-201f-4499-b2ba-010e034f44a7",
+        "child_id": "POL-544",
+        "run_id": "polaris-run-pol-494-2026-07-12-001",
+        "cluster_id": "POL-494",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-494/packets/POL-544-da3811bd-201f-4499-b2ba-010e034f44a7.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-494/results/POL-544-da3811bd-201f-4499-b2ba-010e034f44a7.json",
+        "provider": "devin",
+        "provider_selection_reason": "role-policy",
+        "providers_tried": [
+          "devin"
+        ],
+        "routing_summary": {
+          "selected_provider": "devin",
+          "selected_adapter": "terminal-cli",
+          "selection_reason": "role-policy",
+          "effective_policy_order": [
+            "devin",
+            "copilot",
+            "codex",
+            "kiro"
+          ],
+          "compatibility_mode": true,
+          "registry_present": false,
+          "fallback_eligible": true
+        },
+        "dispatched_at": "2026-07-12T04:12:14.018Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-pol-494-2026-07-12-001:POL-544:1783829534018",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    }
+  },
+  "worker_pool_state": {
+    "max_concurrent": 1,
+    "slot_claims": []
+  },
+  "last_commit": "4fde07accdb121d87da443933d63d4caf28d1651",
+  "completed_children_results": {
+    "POL-544": {
+      "child_id": "POL-544",
+      "status": "done",
+      "validation": "passed",
+      "commit": "4fde07accdb121d87da443933d63d4caf28d1651",
+      "next_recommended_action": "continue",
+      "run_id": "polaris-run-pol-494-2026-07-12-001",
+      "cluster_id": "POL-494",
+      "skill_name": "polaris-run",
+      "role": "worker",
+      "provider": "devin",
+      "packet_hash": "7ea4732895b55456c2ee1ce3db2b17a85b759313fdaf8c17ae597b11fbdb8780",
+      "worker_id": "polaris-run-pol-494-2026-07-12-001:POL-544:1783829534018",
+      "escalation_count": 0,
+      "heartbeat_count": 8,
+      "result_artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-494/results/POL-544-da3811bd-201f-4499-b2ba-010e034f44a7.json",
+      "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-494/packets/POL-544-da3811bd-201f-4499-b2ba-010e034f44a7.json",
+      "telemetry_path": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-494-2026-07-12-001/telemetry.jsonl",
+      "user_intervened": null,
+      "foreman_intervened": null,
+      "dispatch_epoch": 1,
+      "session_pointer": null
+    }
+  },
+  "qc_repair_loop": {
+    "current_round": 0,
+    "max_rounds": 2,
+    "source_qc_run_ids": [
+      "coderabbit-1783832990101"
+    ],
+    "manifest_path": null,
+    "pending_packet_ids": [],
+    "completed_packet_ids": [],
+    "rerun_requested": false,
+    "rerun_qc_run_ids": {},
+    "terminal_outcome": "pass",
+    "initiated_at": "2026-07-12T05:09:50.107Z",
+    "updated_at": "2026-07-12T05:09:50.107Z"
+  }
+}

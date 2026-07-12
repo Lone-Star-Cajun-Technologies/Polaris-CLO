@@ -31,6 +31,7 @@ import {
   computePacketHashFromPath,
   type ChildDispatchRecord,
   type LoopState,
+  type ProviderRoutingSummary,
 } from "./checkpoint.js";
 import type { WorkerResultContract } from "../types/result-packet.js";
 import { createAdapter } from "./adapters/registry.js";
@@ -325,6 +326,7 @@ function appendChildCompletedLedgerEvent(
     completionStatus?: "done" | "blocked" | "error";
     routerSelectionReason?: string;
     providersTried?: string[];
+    routingSummary?: ProviderRoutingSummary;
   },
 ): void {
   const writer = new LedgerWriter(join(repoRoot, DEFAULT_LEDGER_PATH));
@@ -364,6 +366,7 @@ function appendChildCompletedLedgerEvent(
     ...(completion?.providersTried?.length
       ? { providers_tried: completion.providersTried }
       : {}),
+    ...(completion?.routingSummary ? { routing_summary: completion.routingSummary } : {}),
   } satisfies ChildCompletedEvent);
 }
 
@@ -579,6 +582,7 @@ function buildParentDispatchRecord(args: {
   provider: string;
   providerSelectionReason?: string;
   providersTried?: string[];
+  routingSummary?: ProviderRoutingSummary;
   workerId: string;
   dispatchedAt: string;
 }): ChildDispatchRecord {
@@ -592,6 +596,7 @@ function buildParentDispatchRecord(args: {
     provider: args.provider,
     provider_selection_reason: args.providerSelectionReason,
     providers_tried: args.providersTried,
+    routing_summary: args.routingSummary,
     dispatched_at: args.dispatchedAt,
     status: "dispatched",
     dispatch_mode: "direct-worker",
@@ -912,10 +917,20 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
   let providerName: string;
   let providerSelectionReason: string | undefined;
   let providersTried: string[] | undefined;
+  let routingSummary: ProviderRoutingSummary | undefined;
   if (adapterName === "agent-subtask") {
     providerName = "agent-subtask";
     providerSelectionReason = "agent-subtask-adapter";
     providersTried = ["agent-subtask"];
+    routingSummary = {
+      selected_provider: "agent-subtask",
+      selected_adapter: "agent-subtask",
+      selection_reason: "agent-subtask-adapter",
+      effective_policy_order: ["agent-subtask"],
+      compatibility_mode: false,
+      registry_present: false,
+      fallback_eligible: false,
+    };
   } else {
     let evidence;
     try {
@@ -935,6 +950,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     providerName = evidence.provider ?? "default";
     providerSelectionReason = evidence.selectionReason;
     providersTried = evidence.providersTried;
+    routingSummary = evidence.routingSummary;
   }
 
   const executionConfig =
@@ -1808,6 +1824,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
         provider: providerName,
         providerSelectionReason,
         providersTried,
+        routingSummary,
         workerId,
         dispatchedAt,
       });
@@ -1888,6 +1905,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
         dry_run: dryRun,
         selected_slot_claim: selectedSlotClaim ?? null,
         slot_claims: nextSlotClaims,
+        routing_summary: routingSummary ?? null,
         timestamp: new Date().toISOString(),
       });
 
@@ -2558,6 +2576,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
         model: modelUsed,
         router_selection_reason: dispatchRecord?.provider_selection_reason,
         providers_tried: dispatchRecord?.providers_tried,
+        routing_summary: dispatchRecord?.routing_summary ?? null,
         timestamp: new Date().toISOString(),
       };
       if (elapsedSeconds !== undefined) {
@@ -2573,6 +2592,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
         completionStatus: workerStatus,
         routerSelectionReason: dispatchRecord?.provider_selection_reason,
         providersTried: dispatchRecord?.providers_tried,
+        routingSummary: dispatchRecord?.routing_summary,
       });
     }
 

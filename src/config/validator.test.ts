@@ -379,6 +379,75 @@ describe("validateConfig — execution providerPolicy", () => {
     expect(result.valid).toBe(false);
     expect(result.errors).toContain("execution.providerPolicy.worker.providers contains unknown provider: claude");
   });
+
+  it("warns when a role policy lists multiple providers and providerRegistry is missing", () => {
+    const result = validateConfig({
+      execution: {
+        providers: {
+          copilot: { command: "copilot" },
+          codex: { command: "codex" },
+        },
+        providerPolicy: {
+          worker: {
+            providers: ["copilot", "codex"],
+          },
+        },
+      },
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+    expect(result.warnings).toContain(
+      "execution.providerPolicy.worker.providers lists multiple providers but execution.routerPolicy.providerRegistry is missing or empty; dispatch will use compatibility mode and only the selected provider will appear in providers_tried",
+    );
+  });
+
+  it("does not warn when a role policy lists multiple providers and providerRegistry is present", () => {
+    const result = validateConfig({
+      execution: {
+        providers: {
+          copilot: { command: "copilot" },
+          codex: { command: "codex" },
+        },
+        providerPolicy: {
+          worker: {
+            providers: ["copilot", "codex"],
+          },
+        },
+        routerPolicy: {
+          providerRegistry: {
+            copilot: { eligibleRoles: ["worker"] },
+            codex: { eligibleRoles: ["worker"] },
+          },
+        },
+      },
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.warnings).not.toContain(
+      "execution.providerPolicy.worker.providers lists multiple providers but execution.routerPolicy.providerRegistry is missing or empty; dispatch will use compatibility mode and only the selected provider will appear in providers_tried",
+    );
+  });
+
+  it("does not warn when a role policy lists a single provider without providerRegistry", () => {
+    const result = validateConfig({
+      execution: {
+        providers: {
+          copilot: { command: "copilot" },
+        },
+        providerPolicy: {
+          worker: {
+            providers: ["copilot"],
+          },
+        },
+      },
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.warnings).not.toContain(
+      "execution.providerPolicy.worker.providers lists multiple providers but execution.routerPolicy.providerRegistry is missing or empty; dispatch will use compatibility mode and only the selected provider will appear in providers_tried",
+    );
+  });
 });
 
 describe("validateConfig — execution routerPolicy", () => {

@@ -594,4 +594,39 @@ describe("executeQcProvider", () => {
     expect(events.some((e) => e.event === "qc-provider-attempted")).toBe(true);
     expect(events.some((e) => e.event === "qc-provider-failed" && e.reason === "unusable-output")).toBe(true);
   });
+
+  it("skips a CodeRabbit rate-limit error when policy is ignore", async () => {
+    const provider = new CodeRabbitQcProvider();
+    const stdout = [
+      JSON.stringify({ type: "review_context", reviewType: "all", currentBranch: "main", baseBranch: "main", workingDirectory: "/repo" }),
+      JSON.stringify({ type: "status", phase: "connecting", status: "connecting_to_review_service" }),
+      JSON.stringify({ type: "error", errorType: "rate_limit", message: "Rate limit exceeded", recoverable: true }),
+    ].join("\n");
+
+    const registry = new QcProviderRegistry();
+    registry.register(provider);
+
+    const config = makeQcConfig({
+      name: "coderabbit",
+      mode: "local",
+      failurePolicy: { timeout: "fail", parseFailure: "fail", rateLimited: "ignore", allProvidersFailed: "block" },
+    });
+
+    const result = await executeQcProvider(
+      provider,
+      { clusterId: "POL-1", runId: "run-1", branch: "main" },
+      {
+        repoRoot: process.cwd(),
+        runId: "run-1",
+        clusterId: "POL-1",
+        config,
+        registry,
+        execFileImpl: makeExecFileImpl(stdout, "", 0) as unknown as typeof import("node:child_process").execFile,
+      },
+    );
+
+    expect(result.status).toBe("skipped");
+    expect(result.providerAttempt?.failureReason).toBe("rate-limited");
+    expect(result.allProvidersFailed).toBeUndefined();
+  });
 });

@@ -222,8 +222,25 @@ Every routing decision emits structured telemetry events that can later be used 
 | `slot-leased` | Records that a child has claimed a concurrency slot. |
 | `slot-released` | Records that a child has freed its slot. |
 | `router-decision-evidence` | Carries the full eligibility list, excluded providers, trust/cost/quota scores, and policy rule. |
+| `sealed-result-read-error` | Indicates a worker result could not be read at completion time. Classified as a state-repair review signal. |
+| `stale-dispatch-aborted` | Indicates a dispatch was aborted because it was never acknowledged or became stale. Classified as a state-repair review signal. |
+| `invalid-inline-attempt` | Indicates a child attempted a state transition that violates the dispatch boundary. Classified as a state-repair review signal. |
 
 These events are durable, append-only, and queryable by `dispatch_id` and `run_id`.
+
+### 3.9.1 SOL anomaly signals
+
+Autoresearch scoring derives the following review-gated routing anomaly signals from the telemetry above. These signals feed the Medic/SOL review surfaces and are **never** used to automatically change routing behavior.
+
+| Signal | Source events | Meaning | Fix zone |
+|---|---|---|---|
+| `provider-monopoly` | `provider-selected` | The same provider was repeatedly selected when policy evidence shows multiple providers were eligible or configured. | `provider-role-recommendation` |
+| `missing-evidence` | `provider-selected` / `provider-exhausted` | Required routing evidence is missing (e.g., no exhausted reason, no router candidates, or missing child completion). | `runtime-config` |
+| `missing-sealed-result` | `sealed-result-read-error` | A sealed worker result file was not found or could not be read. | `medic-template` |
+| `stale-dispatch-abort` | `stale-dispatch-aborted`, `child-recovery-initiated` (stale-dispatch) | A dispatch was aborted for stale/no-ack and needs Medic/state-repair review. | `medic-template` |
+| `invalid-inline-attempt` | `invalid-inline-attempt` | A child attempted an invalid state transition and needs Medic/state-repair review. | `medic-template` |
+
+The QC `state-repair` finding category is routed to `operator-review` so that state-repair signals stay review-gated rather than dispatched to an auto-repair worker.
 
 ---
 
@@ -349,12 +366,14 @@ No stage may change the default behavior to multi-worker. Multi-worker is opt-in
 
 ### 8.1 Default behavior
 
-When `execution.router` is absent or unset, Polaris behaves exactly as it does today:
+When `execution.routerPolicy.providerRegistry` is empty or missing, Polaris dispatches in **compatibility mode**:
 
 - `max_concurrent = 1`.
-- Provider selection follows `execution.rotation`, `execution.providerPolicy`, or the first configured provider.
+- Provider selection follows `execution.rotation`, then `execution.providerPolicy.<role>.providers`, then the first configured provider.
+- `providerPolicy.<role>.providers` order is the provider preference/fallback order unless `execution.rotation` is configured, in which case the rotation is filtered by the policy and the first match wins.
 - `allowCrossAgentFallback` remains `false` by default.
 - One child is dispatched per `polaris loop continue` invocation.
+- Only the selected provider appears in `providers_tried`, because the router engine is not engaged and no full candidate list is built.
 - No external routing service is contacted.
 
 ### 8.2 Invariants
@@ -375,6 +394,12 @@ When `execution.router` is absent or unset, Polaris behaves exactly as it does t
 - Do not make 9Router a required dependency.
 - Do not promote draft docs to doctrine without the existing SmartDocs promotion workflow.
 - Do not change the default to multi-worker.
+
+### 8.4 Compatibility mode vs router mode
+
+**Compatibility mode** is active when `execution.routerPolicy.providerRegistry` is empty or missing. `resolveProviderAndMode` bypasses `decideWorkerRoute()` and uses legacy role-policy selection. The first configured provider allowed by `providerPolicy.<role>.providers` is selected, with `execution.rotation` taking precedence if it is configured. `providers_tried` contains only the selected provider because the router engine is not engaged and no full candidate list is built.
+
+**Router mode** is active when `execution.routerPolicy.providerRegistry` contains provider metadata. `decideWorkerRoute()` builds an ordered candidate list from `execution.rotation` (or the configured provider order), filtered by `providerPolicy.<role>.providers` (which acts as an eligibility filter), then ranks each candidate by registry metadata (role, capability, trust, cost, quota, and slots). The ordered candidate list is returned as `providers_tried`, and the adapter may attempt the next candidate on a pre-dispatch failure.
 
 ---
 

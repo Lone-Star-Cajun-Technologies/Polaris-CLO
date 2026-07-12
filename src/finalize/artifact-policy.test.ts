@@ -22,6 +22,8 @@ describe("artifact promotion policy", () => {
     expect(isPromotedArtifactPath(".polaris/clusters/POL-242/qc/qc-run-1.json", "POL-242")).toBe(true);
     expect(isPromotedArtifactPath(".polaris/clusters/POL-242/qc/repair-rounds/1/repair-packets.json", "POL-242")).toBe(true);
     expect(isPromotedArtifactPath(".polaris/runs/ledger.jsonl", "POL-242")).toBe(true);
+    expect(isPromotedArtifactPath(".polaris/runs/run-1/telemetry.jsonl", "POL-242")).toBe(true);
+    expect(isPromotedArtifactPath(".polaris/runs/run-1/current-state.json", "POL-242")).toBe(true);
     expect(isPromotedArtifactPath(".polaris/cognition/archive/src/loop/cognition-index.json", "POL-242")).toBe(true);
     expect(isPromotedArtifactPath(".polaris/map/file-routes.json", "POL-242")).toBe(true);
   });
@@ -30,9 +32,28 @@ describe("artifact promotion policy", () => {
     expect(classifyArtifactPath(".taskchain_artifacts/polaris-run/current-state.json", "POL-242")).toBe("workspace-scratch");
     expect(classifyArtifactPath(".taskchain_artifacts/polaris-run/runs/run-1/telemetry.jsonl", "POL-242")).toBe("workspace-scratch");
     expect(classifyArtifactPath(".polaris/runs/mutation-queue.json", "POL-242")).toBe("legacy-run-artifact");
+    expect(classifyArtifactPath(".polaris/runs/current-state.json", "POL-242")).toBe("legacy-run-artifact");
+    expect(classifyArtifactPath(".polaris/runs/run-report.md", "POL-242")).toBe("legacy-run-artifact");
+    expect(classifyArtifactPath(".polaris/runs/evo-run-archive/run-1/telemetry.jsonl", "POL-242")).toBe("legacy-run-artifact");
     expect(classifyArtifactPath(".polaris/clusters/POL-240/cluster-state.json", "POL-242")).toBe("foreign-cluster-artifact");
     expect(classifyArtifactPath(".polaris/clusters/POL-240/qc/qc-run-1.json", "POL-242")).toBe("foreign-cluster-artifact");
     expect(classifyArtifactPath("src/finalize/steps/06-commit.ts", "POL-242")).toBe("non-artifact");
+  });
+
+  it("classifies archived run snapshots as durable promoted evidence", () => {
+    expect(classifyArtifactPath(".polaris/runs/run-1/telemetry.jsonl", "POL-242")).toBe("promoted-run-archive");
+    expect(classifyArtifactPath(".polaris/runs/run-1/run-report.md", "POL-242")).toBe("promoted-run-archive");
+    expect(classifyArtifactPath(".polaris/runs/run-1/current-state.json", "POL-242")).toBe("promoted-run-archive");
+    expect(classifyArtifactPath(".polaris/runs/run-1/file-routes.json", "POL-242")).toBe("promoted-run-archive");
+    expect(classifyArtifactPath(".polaris/runs/run-1/", "POL-242")).toBe("promoted-run-archive");
+  });
+
+  it("does not flag promoted run archives as delivery violations", () => {
+    expect(findArtifactPromotionViolations([
+      ".polaris/runs/run-1/telemetry.jsonl",
+      ".polaris/runs/run-1/run-report.md",
+      ".polaris/runs/run-1/current-state.json",
+    ], "POL-242")).toEqual([]);
   });
 
   it("reports actionable commit-hygiene violations without blocking non-artifact files", () => {
@@ -112,6 +133,8 @@ describe("gitignore pattern generation", () => {
     expect(patterns).toContain(".taskchain_artifacts/**");
     expect(patterns).toContain("*.bak");
     expect(patterns).toContain(".polaris/runs/mutation-queue.json");
+    expect(patterns).toContain(".polaris/runs/current-state.json");
+    expect(patterns).toContain(".polaris/runs/run-report.md");
     expect(patterns).toContain(".polaris/runs/current-state.pre-pol-198.json");
     expect(patterns).toContain(".polaris/runs/evo-run-archive/**");
     expect(patterns).toContain(".polaris/bootstrap/**");
@@ -142,6 +165,8 @@ describe("adoption staging policy", () => {
 
   it("blocks legacy run artifacts from staging", () => {
     expect(isPathBlockedFromStaging(".polaris/runs/mutation-queue.json")).toBe(true);
+    expect(isPathBlockedFromStaging(".polaris/runs/current-state.json")).toBe(true);
+    expect(isPathBlockedFromStaging(".polaris/runs/run-report.md")).toBe(true);
     expect(isPathBlockedFromStaging(".polaris/runs/current-state.pre-pol-198.json")).toBe(true);
     expect(isPathBlockedFromStaging(".polaris/runs/evo-run-archive/run-1/telemetry.jsonl")).toBe(true);
   });
@@ -164,6 +189,7 @@ describe("adoption staging policy", () => {
     expect(isPathBlockedFromStaging(".polaris/clusters/POL-242/results/worker.json")).toBe(false);
     expect(isPathBlockedFromStaging(".polaris/clusters/POL-242/qc/qc-run-1.json")).toBe(false);
     expect(isPathBlockedFromStaging(".polaris/runs/ledger.jsonl")).toBe(false);
+    expect(isPathBlockedFromStaging(".polaris/runs/run-1/telemetry.jsonl")).toBe(false);
     expect(isPathBlockedFromStaging(".polaris/cognition/archive/src/loop/cognition-index.json")).toBe(false);
     expect(isPathBlockedFromStaging(".polaris/map/file-routes.json")).toBe(false);
     expect(isPathBlockedFromStaging("src/finalize/steps/06-commit.ts")).toBe(false);

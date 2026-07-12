@@ -467,6 +467,15 @@ describe("runLoopDispatch", () => {
           selection_reason: "cli-provider-override",
           selected_provider: "gemini",
           override_source: "dispatch-flag",
+          routing_summary: {
+            selected_provider: "gemini",
+            selected_adapter: "terminal-cli",
+            selection_reason: "cli-provider-override",
+            effective_policy_order: ["gemini"],
+            compatibility_mode: true,
+            registry_present: false,
+            fallback_eligible: false,
+          },
         },
       },
       {
@@ -488,6 +497,15 @@ describe("runLoopDispatch", () => {
         expected: {
           selection_reason: "config-rotation",
           selected_provider: "codex",
+          routing_summary: {
+            selected_provider: "codex",
+            selected_adapter: "terminal-cli",
+            selection_reason: "config-rotation",
+            effective_policy_order: ["codex", "copilot"],
+            compatibility_mode: true,
+            registry_present: false,
+            fallback_eligible: true,
+          },
         },
       },
       {
@@ -511,6 +529,15 @@ describe("runLoopDispatch", () => {
           selected_provider: "copilot",
           fallback_from: "rotation",
           fallback_reason: "rotation-empty",
+          routing_summary: {
+            selected_provider: "copilot",
+            selected_adapter: "terminal-cli",
+            selection_reason: "config-first-provider",
+            effective_policy_order: ["copilot"],
+            compatibility_mode: true,
+            registry_present: false,
+            fallback_eligible: false,
+          },
         },
       },
       {
@@ -523,6 +550,15 @@ describe("runLoopDispatch", () => {
         expected: {
           selection_reason: "delegated-no-provider",
           selected_provider: null,
+          routing_summary: {
+            selected_provider: null,
+            selected_adapter: "terminal-cli",
+            selection_reason: "delegated-no-provider",
+            effective_policy_order: [],
+            compatibility_mode: true,
+            registry_present: false,
+            fallback_eligible: false,
+          },
         },
       },
     ] as const;
@@ -961,6 +997,15 @@ describe("runLoopDispatch", () => {
     expect(codexCandidate?.score).toBeDefined();
     expect(codexCandidate?.inputs).toBeDefined();
     expect(Array.isArray(providerSelected.fallback_attempts)).toBe(true);
+    expect(providerSelected.routing_summary).toMatchObject({
+      selected_provider: "codex",
+      selected_adapter: "terminal-cli",
+      selection_reason: "policy-router",
+      effective_policy_order: ["copilot", "codex"],
+      compatibility_mode: false,
+      registry_present: true,
+      fallback_eligible: true,
+    });
   });
 
   it("refuses provider override in router mode when provider is excluded by role policy", () => {
@@ -998,6 +1043,69 @@ describe("runLoopDispatch", () => {
       runLoopDispatch({ repoRoot: testDir, stateFile, provider: "codex" })
     );
     expect(stderr).toContain("reason=not-in-policy");
+  });
+
+  it("compatibility mode records effective_policy_order and fallback eligibility for multi-provider policy with missing registry metadata", () => {
+    writeFileSync(
+      join(testDir, "polaris.config.json"),
+      JSON.stringify({
+        execution: {
+          adapter: "terminal-cli",
+          providers: { codex: { command: "codex" }, copilot: { command: "copilot" } },
+          rotation: ["codex"],
+          providerPolicy: {
+            worker: { providers: ["copilot", "codex"] },
+          },
+        },
+      }),
+      "utf-8",
+    );
+    const stateFile = writeState(testDir, baseState());
+
+    captureStdout(() => runLoopDispatch({ repoRoot: testDir, stateFile }));
+
+    const updated = readState(stateFile);
+    const dr = updated.open_children_meta?.["POL-145"]?.dispatch_record;
+    expect(dr?.provider).toBe("codex");
+    expect(dr?.provider_selection_reason).toBe("policy-filtered-rotation");
+    expect(dr?.routing_summary).toMatchObject({
+      selected_provider: "codex",
+      selected_adapter: "terminal-cli",
+      selection_reason: "policy-filtered-rotation",
+      effective_policy_order: ["codex", "copilot"],
+      compatibility_mode: true,
+      registry_present: false,
+      fallback_eligible: true,
+    });
+
+    const telemetryFile = join(testDir, ".taskchain_artifacts", "polaris-run", "runs", "pol-142-session-1", "telemetry.jsonl");
+    const providerSelected = readFileSync(telemetryFile, "utf-8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line))
+      .find((event) => event.event === "provider-selected");
+    expect(providerSelected).toBeDefined();
+    expect(providerSelected.routing_summary).toMatchObject({
+      selected_provider: "codex",
+      effective_policy_order: ["codex", "copilot"],
+      compatibility_mode: true,
+      registry_present: false,
+      fallback_eligible: true,
+    });
+
+    const childDispatched = readFileSync(telemetryFile, "utf-8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line))
+      .find((event) => event.event === "child-dispatched");
+    expect(childDispatched).toBeDefined();
+    expect(childDispatched.routing_summary).toMatchObject({
+      selected_provider: "codex",
+      effective_policy_order: ["codex", "copilot"],
+      compatibility_mode: true,
+      registry_present: false,
+      fallback_eligible: true,
+    });
   });
 
   it("emits provider probe failure telemetry with classified fallback evidence", () => {

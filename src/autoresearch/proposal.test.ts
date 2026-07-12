@@ -34,6 +34,9 @@ function makeDiagnosisReport(overrides: Partial<DiagnosisReport> = {}): Diagnosi
       fallback_attempts: 0,
       successful_fallbacks: 0,
       recurring_failures: [],
+      provider_monopoly_signals: [],
+      evidence_gap_signals: [],
+      state_repair_signals: [],
     },
     qc_summary: null,
     ...overrides,
@@ -173,6 +176,9 @@ describe("buildProposals", () => {
           { reason: "quota-exhausted", occurrences: 3, child_ids: ["POL-101", "POL-103"] },
           { reason: "capability-mismatch", occurrences: 2, child_ids: ["POL-102"] },
         ],
+        provider_monopoly_signals: [],
+        evidence_gap_signals: [],
+        state_repair_signals: [],
       },
     });
 
@@ -190,11 +196,113 @@ describe("buildProposals", () => {
         fallback_attempts: 1,
         successful_fallbacks: 1,
         recurring_failures: [{ reason: "quota-exhausted", occurrences: 1, child_ids: ["POL-200"] }],
+        provider_monopoly_signals: [],
+        evidence_gap_signals: [],
+        state_repair_signals: [],
       },
     });
 
     const proposals = buildProposals(report);
     expect(proposals.some((proposal) => proposal.gate_id.startsWith("router-failure:"))).toBe(false);
+  });
+
+  it("emits provider-role-recommendation proposal for provider monopoly", () => {
+    const report = makeDiagnosisReport({
+      failed_gates: [],
+      score: 0.6,
+      router_outcomes: {
+        total_decisions: 2,
+        exhausted_decisions: 0,
+        fallback_attempts: 0,
+        successful_fallbacks: 0,
+        recurring_failures: [],
+        provider_monopoly_signals: [
+          { signal: "provider-monopoly", reason: "codex", occurrences: 2, child_ids: ["POL-201", "POL-202"] },
+        ],
+        evidence_gap_signals: [],
+        state_repair_signals: [],
+      },
+    });
+
+    const proposals = buildProposals(report);
+    const proposal = proposals.find((p) => p.gate_id === "router-anomaly:provider-monopoly:codex");
+    expect(proposal).toBeDefined();
+    expect(proposal!.artifact_type).toBe("provider-role-recommendation");
+    expect(proposal!.fix_zone).toBe("provider-role-recommendation/router-anomaly-provider-monopoly");
+  });
+
+  it("emits runtime-config proposal for recurring evidence gaps", () => {
+    const report = makeDiagnosisReport({
+      failed_gates: [],
+      score: 0.6,
+      router_outcomes: {
+        total_decisions: 0,
+        exhausted_decisions: 0,
+        fallback_attempts: 0,
+        successful_fallbacks: 0,
+        recurring_failures: [],
+        provider_monopoly_signals: [],
+        evidence_gap_signals: [
+          { signal: "missing-evidence", reason: "missing-router-candidates", occurrences: 2, child_ids: ["POL-301", "POL-302"] },
+        ],
+        state_repair_signals: [],
+      },
+    });
+
+    const proposals = buildProposals(report);
+    const proposal = proposals.find((p) => p.gate_id === "router-anomaly:missing-evidence:missing-router-candidates");
+    expect(proposal).toBeDefined();
+    expect(proposal!.artifact_type).toBe("runtime-config");
+  });
+
+  it("does not emit proposal for a single evidence gap", () => {
+    const report = makeDiagnosisReport({
+      failed_gates: [],
+      router_outcomes: {
+        total_decisions: 0,
+        exhausted_decisions: 0,
+        fallback_attempts: 0,
+        successful_fallbacks: 0,
+        recurring_failures: [],
+        provider_monopoly_signals: [],
+        evidence_gap_signals: [
+          { signal: "missing-evidence", reason: "missing-exhausted-reason", occurrences: 1, child_ids: ["POL-303"] },
+        ],
+        state_repair_signals: [],
+      },
+    });
+
+    const proposals = buildProposals(report);
+    expect(proposals.some((p) => p.gate_id.startsWith("router-anomaly:missing-evidence"))).toBe(false);
+  });
+
+  it("emits medic-template proposal for state-repair signals", () => {
+    const report = makeDiagnosisReport({
+      failed_gates: [],
+      score: 0.6,
+      router_outcomes: {
+        total_decisions: 0,
+        exhausted_decisions: 0,
+        fallback_attempts: 0,
+        successful_fallbacks: 0,
+        recurring_failures: [],
+        provider_monopoly_signals: [],
+        evidence_gap_signals: [],
+        state_repair_signals: [
+          { signal: "missing-sealed-result", reason: "missing-sealed-result", occurrences: 1, child_ids: ["POL-401"] },
+          { signal: "stale-dispatch-abort", reason: "stale-dispatch-abort", occurrences: 2, child_ids: ["POL-402", "POL-404"] },
+          { signal: "invalid-inline-attempt", reason: "invalid-inline-attempt", occurrences: 1, child_ids: ["POL-403"] },
+        ],
+      },
+    });
+
+    const proposals = buildProposals(report);
+    expect(proposals.some((p) => p.gate_id === "router-anomaly:missing-sealed-result:missing-sealed-result")).toBe(true);
+    expect(proposals.some((p) => p.gate_id === "router-anomaly:stale-dispatch-abort:stale-dispatch-abort")).toBe(true);
+    expect(proposals.some((p) => p.gate_id === "router-anomaly:invalid-inline-attempt:invalid-inline-attempt")).toBe(true);
+    for (const proposal of proposals) {
+      expect(proposal.artifact_type).toBe("medic-template");
+    }
   });
 });
 

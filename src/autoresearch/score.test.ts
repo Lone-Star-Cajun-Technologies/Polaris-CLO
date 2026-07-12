@@ -460,6 +460,171 @@ describe("gateStateRepairRequired", () => {
       expect(summary.recurring_failures.some((failure) => failure.reason === "trust-too-low")).toBe(true);
       expect(summary.recurring_failures.some((failure) => failure.reason === "capability-mismatch")).toBe(true);
     });
+
+    it("detects provider exhaustion from provider-exhausted events", () => {
+      const artifacts = emptyArtifacts({
+        telemetryEvents: [
+          {
+            event: "provider-exhausted",
+            child_id: "POL-101",
+            reason: "no-provider-selected",
+          },
+          {
+            event: "provider-exhausted",
+            child_id: "POL-102",
+            reason: "no-provider-selected",
+          },
+        ],
+      });
+
+      const summary = summarizeRouterOutcomes(artifacts);
+      expect(summary.exhausted_decisions).toBe(2);
+      expect(summary.recurring_failures.some((failure) => failure.reason === "no-provider-selected")).toBe(true);
+    });
+
+    it("detects provider monopoly when the same provider is repeatedly selected with multi-provider evidence", () => {
+      const artifacts = emptyArtifacts({
+        telemetryEvents: [
+          {
+            event: "provider-selected",
+            child_id: "POL-201",
+            selected_provider: "codex",
+            providers_tried: ["codex", "copilot"],
+            routing_summary: {
+              effective_policy_order: ["codex", "copilot"],
+              fallback_eligible: true,
+              registry_present: false,
+            },
+          },
+          {
+            event: "provider-selected",
+            child_id: "POL-202",
+            selected_provider: "codex",
+            providers_tried: ["codex", "copilot"],
+            routing_summary: {
+              effective_policy_order: ["codex", "copilot"],
+              fallback_eligible: true,
+              registry_present: false,
+            },
+          },
+        ],
+      });
+
+      const summary = summarizeRouterOutcomes(artifacts);
+      expect(summary.provider_monopoly_signals).toHaveLength(1);
+      expect(summary.provider_monopoly_signals[0].signal).toBe("provider-monopoly");
+      expect(summary.provider_monopoly_signals[0].reason).toBe("codex");
+      expect(summary.provider_monopoly_signals[0].occurrences).toBe(2);
+      expect(summary.provider_monopoly_signals[0].child_ids).toEqual(["POL-201", "POL-202"]);
+    });
+
+    it("does not flag provider monopoly from a single selection", () => {
+      const artifacts = emptyArtifacts({
+        telemetryEvents: [
+          {
+            event: "provider-selected",
+            child_id: "POL-203",
+            selected_provider: "codex",
+            providers_tried: ["codex", "copilot"],
+            routing_summary: {
+              effective_policy_order: ["codex", "copilot"],
+              fallback_eligible: true,
+              registry_present: false,
+            },
+          },
+        ],
+      });
+
+      const summary = summarizeRouterOutcomes(artifacts);
+      expect(summary.provider_monopoly_signals).toEqual([]);
+    });
+
+    it("detects evidence gaps separately from provider failures", () => {
+      const artifacts = emptyArtifacts({
+        telemetryEvents: [
+          {
+            event: "provider-selected",
+            child_id: "POL-301",
+            selected_provider: null,
+            // No router_exhausted_reason and no router_candidates
+          },
+          {
+            event: "provider-selected",
+            child_id: "POL-302",
+            selected_provider: "codex",
+            routing_summary: { registry_present: true },
+            // Missing router_candidates in router mode
+          },
+          {
+            event: "provider-selected",
+            child_id: "POL-303",
+            selected_provider: "codex",
+            providers_tried: ["codex", "copilot"],
+            fallback_attempts: [
+              { provider: "copilot", attempt_index: 1, outcome: "rejected", rejection_reasons: ["quota-exhausted"] },
+            ],
+            // Missing child-complete for fallback
+          },
+        ],
+      });
+
+      const summary = summarizeRouterOutcomes(artifacts);
+      expect(summary.evidence_gap_signals).toHaveLength(3);
+      expect(summary.evidence_gap_signals.some((signal) => signal.reason === "missing-exhausted-reason")).toBe(true);
+      expect(summary.evidence_gap_signals.some((signal) => signal.reason === "missing-router-candidates")).toBe(true);
+      expect(summary.evidence_gap_signals.some((signal) => signal.reason === "missing-child-completion")).toBe(true);
+    });
+
+    it("does not flag evidence gaps when router candidates are present", () => {
+      const artifacts = emptyArtifacts({
+        telemetryEvents: [
+          {
+            event: "provider-selected",
+            child_id: "POL-304",
+            selected_provider: null,
+            router_exhausted_reason: "quota-exhausted",
+            router_candidates: [{ provider: "copilot", eligible: false, rejection_reasons: ["quota-exhausted"] }],
+          },
+        ],
+      });
+
+      const summary = summarizeRouterOutcomes(artifacts);
+      expect(summary.evidence_gap_signals).toEqual([]);
+    });
+
+    it("classifies state-repair telemetry events as review signals", () => {
+      const artifacts = emptyArtifacts({
+        telemetryEvents: [
+          {
+            event: "sealed-result-read-error",
+            child_id: "POL-401",
+            error: "ENOENT",
+          },
+          {
+            event: "stale-dispatch-aborted",
+            child_id: "POL-402",
+            reason: "no-acknowledgment",
+          },
+          {
+            event: "invalid-inline-attempt",
+            child_id: "POL-403",
+            reason: "child completion without dispatch",
+          },
+          {
+            event: "child-recovery-initiated",
+            child_id: "POL-404",
+            recovery_reason: "stale-dispatch",
+          },
+        ],
+      });
+
+      const summary = summarizeRouterOutcomes(artifacts);
+      expect(summary.state_repair_signals).toHaveLength(3);
+      expect(summary.state_repair_signals.some((signal) => signal.signal === "missing-sealed-result")).toBe(true);
+      expect(summary.state_repair_signals.some((signal) => signal.signal === "stale-dispatch-abort")).toBe(true);
+      expect(summary.state_repair_signals.some((signal) => signal.signal === "invalid-inline-attempt")).toBe(true);
+      expect(summary.state_repair_signals.find((signal) => signal.signal === "stale-dispatch-abort")?.occurrences).toBe(2);
+    });
   });
 
   it("passes when cluster dir has no medic artifacts", () => {

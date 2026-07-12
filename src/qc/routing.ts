@@ -13,6 +13,10 @@ import type { QcFinding, QcRoutingDecision, QcSeverity } from "./types.js";
 import { isSecurityCategory } from "./security-category.js";
 import { compareSeverity } from "./severity.js";
 
+function isStateRepairCategory(category: string | undefined): boolean {
+  return category === "state-repair";
+}
+
 export interface RepairRoutingContext {
   /** Route name for per-route block threshold overrides. */
   routeName?: string;
@@ -46,6 +50,10 @@ export function decideRepairRouting(
   }
 
   if (isSecurityCategory(finding.category)) {
+    return "operator-review";
+  }
+
+  if (isStateRepairCategory(finding.category)) {
     return "operator-review";
   }
 

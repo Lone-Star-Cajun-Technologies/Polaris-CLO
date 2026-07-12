@@ -97,6 +97,15 @@ Run the config doctor at any time to check for issues:
 polaris doctor
 ```
 
+### Provider routing and compatibility mode
+
+Polaris dispatches in one of two modes, controlled by `execution.routerPolicy.providerRegistry`:
+
+- **Compatibility mode** (default): the registry is empty or missing. `providerPolicy.<role>.providers` is the provider preference/fallback order; unless `execution.rotation` is configured, the first configured provider allowed by the role policy is selected. Because the router engine is not engaged, `providers_tried` contains only that selected provider.
+- **Router mode**: the registry is present. The router builds a full ordered, scored candidate list from the registry metadata and `providerPolicy.<role>.providers` acts as an eligibility filter. `providers_tried` contains the ordered candidate list, and the adapter may try the next candidate on a pre-dispatch failure.
+
+To enable router mode, populate `execution.routerPolicy.providerRegistry` with at least `eligibleRoles` for each provider.
+
 ---
 
 ## Tracker Adapters

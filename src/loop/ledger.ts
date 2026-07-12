@@ -1,5 +1,6 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname } from "node:path";
+import type { ProviderRoutingSummary } from "./checkpoint.js";
 
 export const DEFAULT_LEDGER_PATH = ".polaris/runs/ledger.jsonl";
 
@@ -90,6 +91,7 @@ export interface ChildDispatchedEvent extends LedgerBaseEvent {
   status: "child-dispatched" | "running";
   next_child: string;
   dispatch_epoch: number;
+  routing_summary?: ProviderRoutingSummary;
 }
 
 export interface ChildCompletedEvent extends LedgerBaseEvent {
@@ -106,6 +108,7 @@ export interface ChildCompletedEvent extends LedgerBaseEvent {
   completion_status?: "done" | "blocked" | "error";
   router_selection_reason?: string;
   providers_tried?: string[];
+  routing_summary?: ProviderRoutingSummary;
 }
 
 export interface RunPausedEvent extends LedgerBaseEvent {

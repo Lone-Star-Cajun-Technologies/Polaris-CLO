@@ -388,12 +388,25 @@ export function validateConfig(config: unknown): ValidationResult {
             if (!("providers" in rolePolicy) || !isStringArray(rolePolicy.providers)) {
               result.valid = false;
               result.errors.push(`execution.providerPolicy.${roleName}.providers must be an array of strings`);
-            } else if (providerKeys) {
-              for (const providerName of rolePolicy.providers) {
-                if (!providerKeys.has(providerName)) {
-                  result.valid = false;
-                  result.errors.push(`execution.providerPolicy.${roleName}.providers contains unknown provider: ${providerName}`);
+            } else {
+              if (providerKeys) {
+                for (const providerName of rolePolicy.providers) {
+                  if (!providerKeys.has(providerName)) {
+                    result.valid = false;
+                    result.errors.push(`execution.providerPolicy.${roleName}.providers contains unknown provider: ${providerName}`);
+                  }
                 }
+              }
+              const routerPolicyObj = isPlainObject(config.execution.routerPolicy)
+                ? config.execution.routerPolicy
+                : undefined;
+              const providerRegistry = routerPolicyObj?.providerRegistry;
+              const hasRegistry =
+                isPlainObject(providerRegistry) && Object.keys(providerRegistry).length > 0;
+              if (!hasRegistry && rolePolicy.providers.length > 1) {
+                result.warnings.push(
+                  `execution.providerPolicy.${roleName}.providers lists multiple providers but execution.routerPolicy.providerRegistry is missing or empty; dispatch will use compatibility mode and only the selected provider will appear in providers_tried`,
+                );
               }
             }
             if ("allowNativeSubagent" in rolePolicy && rolePolicy.allowNativeSubagent !== undefined && !isBoolean(rolePolicy.allowNativeSubagent)) {
@@ -1128,7 +1141,7 @@ export function validateConfig(config: unknown): ValidationResult {
                 result.valid = false;
                 result.errors.push(`qc.providers.${providerName}.failurePolicy must be a plain object`);
               } else {
-                for (const key of ["timeout", "parseFailure", "allProvidersFailed"] as const) {
+                for (const key of ["timeout", "parseFailure", "rateLimited", "allProvidersFailed"] as const) {
                   const value = providerConfig.failurePolicy[key];
                   if (value !== undefined && (!isString(value) || !SUPPORTED_QC_FAILURE_ACTIONS.includes(value as typeof SUPPORTED_QC_FAILURE_ACTIONS[number]))) {
                     result.valid = false;

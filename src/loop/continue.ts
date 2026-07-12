@@ -261,7 +261,7 @@ function appendTelemetryEvent(telemetryFile: string, event: Record<string, unkno
   appendFileSync(telemetryFile, JSON.stringify(event) + "\n", "utf-8");
 }
 
-function resolveTelemetryFilePath(state: LoopState, repoRoot: string): string {
+export function resolveTelemetryFilePath(state: LoopState, repoRoot: string): string {
   const artifactDir = state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "polaris-run");
   return join(artifactDir, "runs", state.run_id, "telemetry.jsonl");
 }
@@ -715,6 +715,20 @@ export function runLoopContinue(options: ContinueOptions): void {
 
   // Step 1 (cont): Atomic write of updated current-state.json (open_children_meta pruned after bridge)
   const sha = writeStateAtomic(stateFile, updatedState);
+
+  // Also keep the canonical cluster state snapshot in sync so finalize and
+  // direct cluster-state reads see the same completed children.
+  const canonicalStatePath = join(repoRoot, ".polaris", "clusters", updatedState.cluster_id, "state.json");
+  if (resolve(stateFile) !== resolve(canonicalStatePath)) {
+    try {
+      writeStateAtomic(canonicalStatePath, updatedState);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      console.error(`Error: failed to persist canonical cluster state snapshot: ${msg}`);
+      process.exit(1);
+    }
+  }
+
   appendContinueLedgerEvents(repoRoot, updatedState, completedChild);
 
   // Step 2: Append JSONL checkpoint event

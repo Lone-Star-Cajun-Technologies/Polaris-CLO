@@ -1,10 +1,10 @@
 {
-  "scan_date": "2026-07-10T17:45:31.174Z",
-  "file_count": 660,
+  "scan_date": "2026-07-12T05:09:45.482Z",
+  "file_count": 662,
   "coverage_pct": 92,
   "instructionCoverage": {
-    "routesCovered": 643,
-    "routesTotal": 660,
+    "routesCovered": 645,
+    "routesTotal": 662,
     "coveragePercent": 97
   },
   "entries": {
@@ -8035,7 +8035,7 @@
       "taskchain": "polaris-qc",
       "confidence": 0.9500000000000001,
       "classification": "indexed",
-      "last_updated": "2026-07-10T14:47:24.559Z",
+      "last_updated": "2026-07-12T05:09:45.482Z",
       "updated_by": "polaris-map-update",
       "tags": [
         "qc"
@@ -8117,6 +8117,33 @@
       "confidence": 0.9,
       "classification": "indexed",
       "last_updated": "2026-07-10T04:58:59.422Z",
+      "updated_by": "polaris-map-update",
+      "tags": [
+        "qc"
+      ],
+      "instructionFile": "src/qc/POLARIS.md"
+    },
+    "src/qc/providers/coderabbit.test.ts": {
+      "domain": "qc",
+      "route": "src/qc",
+      "taskchain": "polaris-qc",
+      "confidence": 0.85,
+      "classification": "indexed",
+      "last_updated": "2026-07-12T05:09:45.482Z",
+      "updated_by": "polaris-map-update",
+      "tags": [
+        "qc",
+        "test"
+      ],
+      "instructionFile": "src/qc/POLARIS.md"
+    },
+    "src/qc/providers/coderabbit.ts": {
+      "domain": "qc",
+      "route": "src/qc",
+      "taskchain": "polaris-qc",
+      "confidence": 0.9,
+      "classification": "indexed",
+      "last_updated": "2026-07-12T05:09:45.482Z",
       "updated_by": "polaris-map-update",
       "tags": [
         "qc"

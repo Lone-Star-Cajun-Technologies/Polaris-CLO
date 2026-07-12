@@ -10,7 +10,7 @@ import {
   type CustodyRecord,
 } from "./git-custody.js";
 import { dirname, join, isAbsolute, resolve, relative } from "node:path";
-import { readState, validateState, writeStateAtomic, readBodyFromClusterSnapshot, type LoopState, type ChildDispatchRecord, type DispatchMode, type WorkerRuntimeState, type WorkerAssignmentRecord } from "./checkpoint.js";
+import { readState, validateState, writeStateAtomic, readBodyFromClusterSnapshot, type LoopState, type ChildDispatchRecord, type DispatchMode, type WorkerRuntimeState, type WorkerAssignmentRecord, type ProviderRoutingSummary } from "./checkpoint.js";
 import { compileImplPacket, type WorkerPacket, type WorkerRoleContext } from "./worker-packet.js";
 import { parseIssueBody } from "./body-parser.js";
 import { loadConfig } from "../config/loader.js";
@@ -97,6 +97,7 @@ export interface ProviderDecisionEvidence {
     activeSlotsByProvider?: Record<string, number>;
     quotaAvailableByProvider?: Record<string, boolean>;
   };
+  routingSummary?: ProviderRoutingSummary;
 }
 
 type ProviderPolicyByRole = Partial<Record<ExecutionRole, RoleProviderPolicy>>;
@@ -232,6 +233,19 @@ export function resolveProviderAndMode(
     compatibilityMode: false,
   });
 
+  const workerPolicy = exec?.providerPolicy?.[role];
+  const noFallback = workerPolicy?.noFallback === true;
+  const fallbackEligible = !noFallback && decision.providersTried.length > 1;
+  const routingSummary: ProviderRoutingSummary = {
+    selected_provider: decision.selectedProvider ?? null,
+    selected_adapter: adapter,
+    selection_reason: decision.selectionReason,
+    effective_policy_order: decision.providersTried,
+    compatibility_mode: false,
+    registry_present: true,
+    fallback_eligible: fallbackEligible,
+  };
+
   return {
     provider: decision.selectedProvider,
     mode: decision.mode,
@@ -250,6 +264,7 @@ export function resolveProviderAndMode(
       activeSlotsByProvider: routerContext?.activeSlotsByProvider,
       quotaAvailableByProvider: routerContext?.quotaAvailableByProvider,
     },
+    routingSummary,
   };
 }
 
@@ -259,96 +274,103 @@ function resolveProviderAndModeLegacy(
   adapter: string,
   exec: Required<PolarisConfig>["execution"],
 ): ProviderDecisionEvidence {
-  if (options.provider) {
-    return {
-      provider: options.provider,
-      mode: "direct-worker",
-      adapter,
-      selectionReason: "cli-provider-override",
-      overrideSource: "dispatch-flag",
-      providersTried: [options.provider],
-    };
-  }
-
   const rolePolicy = exec?.providerPolicy?.[role];
   const roleProviders = rolePolicy?.providers ?? [];
+  const noFallback = rolePolicy?.noFallback === true;
   const rotation = exec?.rotation ?? [];
+  const configuredProviders = new Set(Object.keys(exec?.providers ?? {}));
 
-  if (roleProviders.length > 0) {
+  let provider: string | undefined;
+  let selectionReason: string;
+  let overrideSource: string | undefined;
+  let fallbackFrom: string | undefined;
+  let fallbackReason: string | undefined;
+  let exhaustedReason: string | undefined;
+  let effectivePolicyOrder: string[];
+
+  if (options.provider) {
+    provider = options.provider;
+    selectionReason = "cli-provider-override";
+    overrideSource = "dispatch-flag";
+    effectivePolicyOrder = [options.provider];
+  } else if (roleProviders.length > 0) {
     // When a role policy is configured, filter the rotation to only include
     // providers that are allowed by the policy.  This ensures that a provider
     // present in rotation but absent from the policy is never selected.
     const allowedByPolicy = new Set(roleProviders);
-    const configuredProviders = new Set(Object.keys(exec?.providers ?? {}));
     const filteredRotation = rotation.filter((p) => allowedByPolicy.has(p));
-    if (filteredRotation.length > 0 && filteredRotation[0]) {
-      return {
-        provider: filteredRotation[0],
-        mode: "direct-worker",
-        adapter,
-        selectionReason: "policy-filtered-rotation",
-        providersTried: [filteredRotation[0]],
-      };
-    }
-    // No rotation entry is in the policy — fall back to first policy provider
-    // that is actually configured.  If none is configured, fail before mutation.
     const availablePolicyProviders = roleProviders.filter((p) => configuredProviders.has(p));
-    if (availablePolicyProviders.length > 0 && availablePolicyProviders[0]) {
-      return {
-        provider: availablePolicyProviders[0],
-        mode: "direct-worker",
-        adapter,
-        selectionReason: "role-policy",
-        providersTried: [availablePolicyProviders[0]],
-      };
+    if (filteredRotation.length > 0 && filteredRotation[0]) {
+      provider = filteredRotation[0];
+      selectionReason = "policy-filtered-rotation";
+      effectivePolicyOrder = filteredRotation.slice();
+      // Surface remaining configured policy providers as fallback alternatives
+      for (const p of availablePolicyProviders) {
+        if (!effectivePolicyOrder.includes(p)) {
+          effectivePolicyOrder.push(p);
+        }
+      }
+    } else if (availablePolicyProviders.length > 0 && availablePolicyProviders[0]) {
+      provider = availablePolicyProviders[0];
+      selectionReason = "role-policy";
+      effectivePolicyOrder = availablePolicyProviders.slice();
+    } else {
+      // No configured provider satisfies the policy — fail clearly before dispatch.
+      throw new Error(
+        `provider dispatch forbidden: no configured provider satisfies the "${role}" role policy (policy=${roleProviders.join(",")})`,
+      );
     }
-    // No configured provider satisfies the policy — fail clearly before dispatch.
-    throw new Error(
-      `provider dispatch forbidden: no configured provider satisfies the "${role}" role policy (policy=${roleProviders.join(",")})`,
-    );
+  } else if (exec?.roles?.[role]?.provider) {
+    provider = exec.roles[role].provider;
+    selectionReason = "role-config";
+    effectivePolicyOrder = [provider];
+    // If a role policy exists for this role, include its other providers as alternatives
+    for (const p of roleProviders) {
+      if (p !== provider && !effectivePolicyOrder.includes(p)) {
+        effectivePolicyOrder.push(p);
+      }
+    }
+  } else if (rotation.length > 0 && rotation[0]) {
+    provider = rotation[0];
+    selectionReason = "config-rotation";
+    effectivePolicyOrder = rotation.slice();
+  } else {
+    const providers = Object.keys(exec?.providers ?? {});
+    if (providers.length > 0 && providers[0]) {
+      provider = providers[0];
+      selectionReason = "config-first-provider";
+      fallbackFrom = "rotation";
+      fallbackReason = "rotation-empty";
+      effectivePolicyOrder = providers.slice();
+    } else {
+      selectionReason = "delegated-no-provider";
+      exhaustedReason = "no-configured-provider";
+      effectivePolicyOrder = [];
+    }
   }
 
-  const roleProvider = exec?.roles?.[role]?.provider;
-  if (roleProvider) {
-    return {
-      provider: roleProvider,
-      mode: "direct-worker",
-      adapter,
-      selectionReason: "role-config",
-      providersTried: [roleProvider],
-    };
-  }
-
-  if (rotation.length > 0 && rotation[0]) {
-    return {
-      provider: rotation[0],
-      mode: "direct-worker",
-      adapter,
-      selectionReason: "config-rotation",
-      providersTried: [rotation[0]],
-    };
-  }
-
-  const providers = Object.keys(exec?.providers ?? {});
-  if (providers.length > 0 && providers[0]) {
-    return {
-      provider: providers[0],
-      mode: "direct-worker",
-      adapter,
-      selectionReason: "config-first-provider",
-      fallbackFrom: "rotation",
-      fallbackReason: "rotation-empty",
-      providersTried: [providers[0]],
-    };
-  }
+  const fallbackEligible = !noFallback && effectivePolicyOrder.length > 1;
+  const routingSummary: ProviderRoutingSummary = {
+    selected_provider: provider ?? null,
+    selected_adapter: adapter,
+    selection_reason: selectionReason,
+    effective_policy_order: effectivePolicyOrder,
+    compatibility_mode: true,
+    registry_present: false,
+    fallback_eligible: fallbackEligible,
+  };
 
   return {
-    provider: undefined,
-    mode: "delegated",
+    provider,
+    mode: provider ? "direct-worker" : "delegated",
     adapter,
-    selectionReason: "delegated-no-provider",
-    providersTried: [],
-    exhaustedReason: "no-configured-provider",
+    selectionReason,
+    overrideSource,
+    fallbackFrom,
+    fallbackReason,
+    providersTried: provider ? [provider] : [],
+    exhaustedReason,
+    routingSummary,
   };
 }
 
@@ -611,6 +633,7 @@ function emitProviderSelected(
     ...(decision.fallbackReason ? { fallback_reason: decision.fallbackReason } : {}),
     ...(decision.providersTried.length > 0 ? { providers_tried: decision.providersTried } : {}),
     ...(decision.exhaustedReason ? { router_exhausted_reason: decision.exhaustedReason } : {}),
+    ...(decision.routingSummary ? { routing_summary: decision.routingSummary } : {}),
     ...(decision.routerEvidence?.candidates?.length
       ? {
           router_candidates: decision.routerEvidence.candidates.map((candidate) => ({
@@ -631,6 +654,7 @@ function emitProviderSelected(
               active_slots: candidate.evidence.activeSlots,
               slot_limit: candidate.evidence.slotLimit,
               policy_matched: candidate.evidence.policyMatched,
+              fallback_eligible: candidate.evidence.fallbackEligible,
             },
           })),
         }
@@ -757,6 +781,7 @@ function createDispatchRecord(
   providerSelectionReason?: string,
   providerOverrideSource?: string,
   providersTried?: string[],
+  routingSummary?: ProviderRoutingSummary,
 ): ChildDispatchRecord {
   const dispatchMode = determineDispatchMode(provider);
   const runtimeState = determineRuntimeState(dispatchMode);
@@ -772,6 +797,7 @@ function createDispatchRecord(
     provider_selection_reason: providerSelectionReason,
     provider_override_source: providerOverrideSource,
     providers_tried: providersTried && providersTried.length > 0 ? providersTried : undefined,
+    routing_summary: routingSummary,
     dispatched_at: new Date().toISOString(),
     status: "dispatched",
     dispatch_mode: dispatchMode,
@@ -1016,6 +1042,7 @@ function ledgerLastCommit(state: LoopState): string | null {
 }
 
 function appendDispatchLedgerEvent(repoRoot: string, state: LoopState, childId: string): void {
+  const routingSummary = state.open_children_meta?.[childId]?.dispatch_record?.routing_summary;
   new LedgerWriter(join(repoRoot, DEFAULT_LEDGER_PATH)).append({
     schema_version: 1,
     event_id: randomUUID(),
@@ -1033,6 +1060,7 @@ function appendDispatchLedgerEvent(repoRoot: string, state: LoopState, childId: 
     pr_url: null,
     timestamp: new Date().toISOString(),
     dispatch_epoch: state.dispatch_boundary?.dispatch_epoch ?? 0,
+    ...(routingSummary ? { routing_summary: routingSummary } : {}),
   } satisfies ChildDispatchedEvent);
 }
 
@@ -1544,6 +1572,7 @@ export function runLoopDispatch(options: DispatchOptions): void {
     providerDecision.selectionReason,
     providerDecision.overrideSource,
     providerDecision.providersTried,
+    providerDecision.routingSummary,
   );
 
   emitProviderFallbackAttempted(telemetryFile, dispatchRecord.dispatch_id, state.run_id, childId, providerDecision);
@@ -1612,6 +1641,7 @@ export function runLoopDispatch(options: DispatchOptions): void {
     dispatch_mode: dispatchRecord.dispatch_mode,
     runtime_state: dispatchRecord.runtime_state,
     provider: dispatchRecord.provider ?? null,
+    routing_summary: dispatchRecord.routing_summary ?? null,
     timestamp: new Date().toISOString(),
   });
 
