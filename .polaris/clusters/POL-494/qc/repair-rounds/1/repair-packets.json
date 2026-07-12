@@ -1,0 +1,131 @@
+{
+  "schemaVersion": "1.0",
+  "clusterId": "POL-494",
+  "round": 1,
+  "compiledAt": "2026-07-11T23:45:56.350Z",
+  "sourceQcRunIds": [
+    "coderabbit-1783813556239"
+  ],
+  "packets": [
+    {
+      "packetId": "pkt-POL-494-r1-000",
+      "round": 1,
+      "clusterId": "POL-494",
+      "sourceQcRunIds": [
+        "coderabbit-1783813556239"
+      ],
+      "findingIds": [
+        "coderabbit-1-1783813556239"
+      ],
+      "severityFloor": "high",
+      "rootCauseHint": "categories=[finding]; files=[.polaris/tmp/merge-check3.txt]; confidence=unclear; severity=high",
+      "allowedScope": [
+        ".polaris/tmp/merge-check3.txt"
+      ],
+      "prohibitedScope": [],
+      "validationCommands": [],
+      "routingTarget": "operator-review",
+      "parallelGroup": "g-000",
+      "conflicts": [
+        "pkt-POL-494-r1-001",
+        "pkt-POL-494-r1-002",
+        "pkt-POL-494-r1-003"
+      ],
+      "medic": true,
+      "status": "pending",
+      "createdAt": "2026-07-11T23:45:56.350Z"
+    },
+    {
+      "packetId": "pkt-POL-494-r1-001",
+      "round": 1,
+      "clusterId": "POL-494",
+      "sourceQcRunIds": [
+        "coderabbit-1783813556239"
+      ],
+      "findingIds": [
+        "coderabbit-2-1783813556239",
+        "coderabbit-7-1783813556239"
+      ],
+      "severityFloor": "low",
+      "rootCauseHint": "categories=[finding]; files=[.polaris/tmp/merge-check.txt, .polaris/tmp/refs.txt]; confidence=unclear; severity=low",
+      "allowedScope": [
+        ".polaris/tmp/merge-check.txt",
+        ".polaris/tmp/refs.txt"
+      ],
+      "prohibitedScope": [],
+      "validationCommands": [],
+      "routingTarget": "follow-up",
+      "parallelGroup": "g-001",
+      "conflicts": [
+        "pkt-POL-494-r1-000",
+        "pkt-POL-494-r1-002",
+        "pkt-POL-494-r1-003"
+      ],
+      "medic": false,
+      "status": "pending",
+      "createdAt": "2026-07-11T23:45:56.350Z"
+    },
+    {
+      "packetId": "pkt-POL-494-r1-002",
+      "round": 1,
+      "clusterId": "POL-494",
+      "sourceQcRunIds": [
+        "coderabbit-1783813556239"
+      ],
+      "findingIds": [
+        "coderabbit-3-1783813556239",
+        "coderabbit-8-1783813556239"
+      ],
+      "severityFloor": "high",
+      "rootCauseHint": "categories=[finding]; files=[.polaris/clusters/POL-494/clusters.json, .polaris/clusters/POL-494/state.json]; confidence=unclear; severity=high",
+      "allowedScope": [
+        ".polaris/clusters/POL-494/clusters.json",
+        ".polaris/clusters/POL-494/state.json"
+      ],
+      "prohibitedScope": [],
+      "validationCommands": [],
+      "routingTarget": "operator-review",
+      "parallelGroup": "g-002",
+      "conflicts": [
+        "pkt-POL-494-r1-000",
+        "pkt-POL-494-r1-001",
+        "pkt-POL-494-r1-003"
+      ],
+      "medic": true,
+      "status": "pending",
+      "createdAt": "2026-07-11T23:45:56.350Z"
+    },
+    {
+      "packetId": "pkt-POL-494-r1-003",
+      "round": 1,
+      "clusterId": "POL-494",
+      "sourceQcRunIds": [
+        "coderabbit-1783813556239"
+      ],
+      "findingIds": [
+        "coderabbit-4-1783813556239",
+        "coderabbit-5-1783813556239",
+        "coderabbit-6-1783813556239"
+      ],
+      "severityFloor": "high",
+      "rootCauseHint": "categories=[finding]; files=[.polaris/clusters/POL-494/results/POL-496-c17cd224-5c2d-4619-822e-541a067ff66b.json, .polaris/clusters/POL-494/results/POL-499-845b9610-70ef-4c3f-8081-3478a74dd146.json, .polaris/clusters/POL-494/results/POL-541-d971d900-c2a9-4532-9595-a524db49a528.json]; confidence=unclear; severity=high",
+      "allowedScope": [
+        ".polaris/clusters/POL-494/results/POL-496-c17cd224-5c2d-4619-822e-541a067ff66b.json",
+        ".polaris/clusters/POL-494/results/POL-499-845b9610-70ef-4c3f-8081-3478a74dd146.json",
+        ".polaris/clusters/POL-494/results/POL-541-d971d900-c2a9-4532-9595-a524db49a528.json"
+      ],
+      "prohibitedScope": [],
+      "validationCommands": [],
+      "routingTarget": "operator-review",
+      "parallelGroup": "g-003",
+      "conflicts": [
+        "pkt-POL-494-r1-000",
+        "pkt-POL-494-r1-001",
+        "pkt-POL-494-r1-002"
+      ],
+      "medic": true,
+      "status": "pending",
+      "createdAt": "2026-07-11T23:45:56.350Z"
+    }
+  ]
+}

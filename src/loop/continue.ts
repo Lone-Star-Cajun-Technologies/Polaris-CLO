@@ -261,7 +261,7 @@ function appendTelemetryEvent(telemetryFile: string, event: Record<string, unkno
   appendFileSync(telemetryFile, JSON.stringify(event) + "\n", "utf-8");
 }
 
-function resolveTelemetryFilePath(state: LoopState, repoRoot: string): string {
+export function resolveTelemetryFilePath(state: LoopState, repoRoot: string): string {
   const artifactDir = state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "polaris-run");
   return join(artifactDir, "runs", state.run_id, "telemetry.jsonl");
 }

@@ -635,6 +635,8 @@ export interface QcProviderFailurePolicy {
   timeout?: QcFailureAction;
   /** Action when provider output cannot be parsed. Default: "fail". */
   parseFailure?: QcFailureAction;
+  /** Action when the provider is rate-limited. Default: "fail". */
+  rateLimited?: QcFailureAction;
   /** Action when every configured provider fails. Default: "block". */
   allProvidersFailed?: QcFailureAction;
 }

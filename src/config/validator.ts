@@ -1141,7 +1141,7 @@ export function validateConfig(config: unknown): ValidationResult {
                 result.valid = false;
                 result.errors.push(`qc.providers.${providerName}.failurePolicy must be a plain object`);
               } else {
-                for (const key of ["timeout", "parseFailure", "allProvidersFailed"] as const) {
+                for (const key of ["timeout", "parseFailure", "rateLimited", "allProvidersFailed"] as const) {
                   const value = providerConfig.failurePolicy[key];
                   if (value !== undefined && (!isString(value) || !SUPPORTED_QC_FAILURE_ACTIONS.includes(value as typeof SUPPORTED_QC_FAILURE_ACTIONS[number]))) {
                     result.valid = false;

@@ -639,7 +639,7 @@ function normalizeLegacyCompactReturn(raw: Record<string, unknown>, activeChild:
   } else if (result['status'] === 'failure' || result['status'] === 'error' || result['status'] === 'in-progress') {
     result['status'] = 'failed';
   } else if (result['status'] !== 'done' && result['status'] !== 'failed' && result['status'] !== 'blocked') {
-    result['status'] = 'done';
+    result['status'] = 'failed';
   }
 
   if (typeof result['validation'] === 'object' && result['validation'] !== null) {
