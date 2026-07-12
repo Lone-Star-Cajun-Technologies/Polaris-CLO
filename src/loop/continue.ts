@@ -341,7 +341,9 @@ function bridgeEvidenceToClusterState(
   // Evict any stale commit entry for this child before conditionally re-adding
   const { [childId]: _staleCommit, ...remainingCommits } = existing.commits;
 
-  const relativeResultFile = resultFile ? relative(repoRoot, resultFile) : resultFile;
+  const relativeResultFile = resultFile
+    ? relative(repoRoot, isAbsolute(resultFile) ? resultFile : resolve(repoRoot, resultFile))
+    : resultFile;
   const updated: ClusterState = {
     ...existing,
     state_generation: existing.state_generation + 1,

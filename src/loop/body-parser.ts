@@ -188,8 +188,17 @@ function normalizeDirectoryPattern(pattern: string): string {
   if (pattern.endsWith('/') && !pattern.endsWith('/**')) {
     return pattern + '**';
   }
+  // Extract the final path segment to check for extensions
+  const lastSlashIndex = pattern.lastIndexOf('/');
+  const finalSegment = lastSlashIndex >= 0 ? pattern.slice(lastSlashIndex + 1) : pattern;
+
+  // Check if final segment has a file extension (not counting leading dot in dot-directories)
+  const hasExtension = finalSegment.startsWith('.')
+    ? finalSegment.slice(1).includes('.')  // For .github, .vscode: no extension. For .env.local: has extension
+    : finalSegment.includes('.');
+
   if (
-    !pattern.includes('.') &&
+    !hasExtension &&
     !pattern.endsWith('*') &&
     !pattern.endsWith('?')
   ) {

@@ -411,6 +411,10 @@ export function readQcResolutionArtifact(
     const data = readFileSync(artifactPath, "utf-8");
     const parsed = JSON.parse(data) as unknown;
     if (isValidQcResolutionArtifact(parsed)) {
+      // Verify identity matches expected clusterId and round
+      if (parsed.clusterId !== clusterId || parsed.round !== round) {
+        return null;
+      }
       return parsed;
     }
     return null;

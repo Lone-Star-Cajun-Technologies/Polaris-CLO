@@ -5,7 +5,7 @@
   "resolvedAt": "2026-07-12T03:33:42.050Z",
   "resolver": "Phillip meaux",
   "resolvedOutcome": "no-repairable",
-  "reason": "3 findings: 2 are false positives against untracked local runtime scratch (.polaris/clusters/POL-494/results/*, .polaris/clusters/POL-542/results/*) never committed on pol-542-delivery. Third (.gitignore) is a legitimate, low-risk expansion adding .polaris/tmp/** and runtime scratch exclusions, consistent with this cluster's own retention-hygiene theme — not a defect.",
+  "reason": "4 findings: 3 are false positives against untracked local runtime scratch (.polaris/clusters/POL-543/results/*, .polaris/clusters/POL-541/results/*, .polaris/clusters/POL-499/results/*) never committed on pol-542-delivery. Fourth (.gitignore) is a legitimate, low-risk expansion adding .polaris/tmp/** and runtime scratch exclusions, consistent with this cluster's own retention-hygiene theme — not a defect.",
   "findings": [
     "coderabbit-1-1783825345241",
     "coderabbit-2-1783825345241",
