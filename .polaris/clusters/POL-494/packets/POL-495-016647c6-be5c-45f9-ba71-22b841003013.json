@@ -1,0 +1,109 @@
+{
+  "schema_version": "2.1",
+  "worker_role": "impl",
+  "run_id": "polaris-run-pol-494-2026-07-11-001",
+  "cluster_id": "POL-494",
+  "active_child": "POL-495",
+  "state_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json",
+  "telemetry_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-494-2026-07-11-001/telemetry.jsonl",
+  "instructions": {
+    "primary_goal": "Issue: POL-495 — Document provider routing behavior and policy semantics\nWorktree: .\nBranch: pol-494-delivery\n\n## Goal\n## Objective\n\nDocument the current provider routing behavior behind [POL-493](https://linear.app/lsctech/issue/POL-493/analyze-provider-routing-evidence), including compatibility mode, provider registry requirements, and role policy ordering semantics.\n\n## Context\n\n[POL-493](https://linear.app/lsctech/issue/POL-493/analyze-provider-routing-evidence) found that current config can list multiple worker providers while current run evidence only shows one tried provider. The key code path is `resolveProviderAndMode`: when `execution.routerPolicy.providerRegistry` is absent, it bypasses the new router engine and uses legacy role-policy selection. The Worker Router spec already describes provider ranking and fallback but needs a concrete current-behavior note for operators.\n\n## Goal\n\nMake it clear whether `providerPolicy.<role>.providers` is priority, fallback order, or eligibility-only under both compatibility mode and router mode.\n\n## Scope\n\n* smartdocs/raw/analysis/**\n* smartdocs/specs/active/worker-router-architecture.md\n* docs/USAGE.md\n* docs/SETUP.md\n* src/config/schema.ts\n* src/config/schema.json\n* src/config/validator.ts\n* src/config/validator.test.ts\n\n## Acceptance Criteria\n\n- [ ] Docs explicitly state that role policy order is the provider preference/fallback order unless rotation is configured.\n- [ ] Docs explain that an empty or missing `execution.routerPolicy.providerRegistry` puts dispatch in compatibility mode.\n- [ ] Docs explain why compatibility evidence may show only the selected provider in `providers_tried`.\n- [ ] Config comments/schema descriptions do not imply multiple providers are tried when registry metadata is absent.\n- [ ] Validation warns or tests cover ambiguous multi-provider policy without registry metadata, if a warning surface already exists.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/config\n\n## Ordering\n\n* None. This child should run first because later evidence/report changes should use the clarified terminology.\n\n## Non-goals\n\n* Do not change provider selection behavior.\n* Do not require every repo to define `execution.routerPolicy.providerRegistry`.\n* Do not remove compatibility mode.\n\n## Implementation Discipline\nBefore writing code, stop at the first rung that holds:\n\n1. Does this need to exist?   → no: skip it (YAGNI)\n2. Stdlib does it?            → use it\n3. Native platform feature?   → use it\n4. Installed dependency?      → use it\n5. One line?                  → one line\n6. Only then: the minimum that works\n\nLazy, not negligent: validation, error handling, security, and accessibility are never on the chopping block.\n\nWhen you defer a simplification for later, mark it inline:\n  // ponytail: <what you deferred and why>\n\n## Scope\nTouch only:\n- smartdocs/raw/analysis/**\n- smartdocs/specs/active/worker-router-architecture.md\n- docs/USAGE.md\n- docs/SETUP.md\n- src/config/schema.ts\n- src/config/schema.json\n- src/config/validator.ts\n- src/config/validator.test.ts\n\n## Acceptance Criteria\n\n## Validation\n- npm run build\n- npm test\n- npx vitest run src/config\n\n## Commit\n[POL-495] Document provider routing behavior and policy semantics\n\n## Governance\n- Do NOT modify open_children or completed_children in /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json. The parent runtime (loop continue) owns state transitions.\n- Append a telemetry event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-494-2026-07-11-001/telemetry.jsonl.\n\n## Worker Progress Telemetry (MANDATORY)\nThe parent CANNOT see your work. You MUST emit heartbeat events so the parent knows you are alive and making progress.\n\nAfter EVERY step, append a JSONL event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-494-2026-07-11-001/telemetry.jsonl:\n```jsonl\n{\"event\":\"worker-heartbeat\",\"run_id\":\"<from packet>\",\"child_id\":\"POL-495\",\"step_cursor\":\"<current step>\",\"timestamp\":\"<ISO8601>\",\"progress_pct\":<0-100>,\"files_changed\":<count>,\"current_file\":\"<file being edited>\"}\n```\n\nRequired heartbeat points:\n  1. Immediately after reading this packet (step_cursor: \"start\")\n  2. After verifying state file (step_cursor: \"verify\")\n  3. After EACH file edit (step_cursor: \"implement\")\n  4. After running validation (step_cursor: \"validate\")\n  5. After creating commit (step_cursor: \"commit\")\n  6. Before terminating (step_cursor: \"complete\" or \"failed\")\n\nIf heartbeats stop, the parent will assume you crashed and may dispatch a replacement worker.\n\n## Approval Escalation (when uncertain)\nYou have a sealed packet defining your exact scope, allowed files, and validation commands. Use this to decide:\n\nRule 1 - Auto-approve WITHIN scope (normal work):\n  - If the operation touches files within `instructions.allowed_scope` → Just do it\n  - If the command is in `instructions.validation_commands` → Just run it\n  - Low risk, expected work → No need to ask, emit heartbeat with step_cursor: \"implement\"\n\nRule 2 - ESCALATE out-of-scope or high-risk:\n  - File outside allowed_scope → Emit worker-blocked with approval_type: \"out-of-scope\"\n  - Destructive operation (rm -rf, major refactor) → Emit worker-blocked with approval_type: \"destructive\"\n  - External API calls with cost → Emit worker-blocked with approval_type: \"cost\"\n  - Changing secrets/.env → Emit worker-blocked with approval_type: \"security\"\n  - Unclear requirements → Emit worker-blocked with approval_type: \"ambiguous\"\n\nTo escalate, emit IMMEDIATELY to telemetry:\n```jsonl\n{\"event\":\"worker-blocked\",\"run_id\":\"<from packet>\",\"child_id\":\"POL-495\",\"reason\":\"needs-approval\",\"approval_type\":\"<out-of-scope|destructive|cost|security|ambiguous>\",\"description\":\"<specifically what needs approval>\",\"blocker_id\":\"<unique-id>\",\"timestamp\":\"<ISO8601>\"}\n```\n\nThen: Continue heartbeats every 30s with step_cursor: \"blocked-awaiting-approval\"\nWait for parent response. If no response in 5 minutes → TERMINATE with approval-timeout.\n\nRemember: Your packet scope is your authority. Within scope = proceed. Outside scope = escalate.\n\n## Route Cognition Delta\nAfter implementation, apply route-local cognition delta — only if something materially changed.\n\n**POLARIS.md** — update only when ALL of the following are true:\n  - You touched a file in that folder (not a distant folder).\n  - The change materially affects: folder responsibilities, commands/workflows,\n    execution constraints, ownership/routing, or operational behavior.\n  - The current POLARIS.md content is actually wrong or incomplete as a result.\n  DO NOT update POLARIS.md for: formatting fixes, comment changes, tiny refactors,\n  internal implementation details, or any change that leaves the operational guidance\n  still accurate. When in doubt, do not update.\n\n**SUMMARY.md** — update only when: linked docs/specs changed, canon relationships\n  changed, architecture meaning changed, or doctrine/spec linkage changed.\n  SUMMARY.md is informational only. Do not create it if missing — that is a hint for\n  operators, not a task for workers. Keep it short. Never add operational doctrine.\n\n**Never** scan unrelated folders. **Never** regenerate all route docs.\nIf no material change occurred, skip this section entirely.\n\n## Report Back\n- files changed\n- validation results\n- commit hash\n- blockers\n\nTERMINATE SESSION IMMEDIATELY. Do not select or execute the next child.",
+    "steps": [
+      "Verify: read /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json and confirm active_child === \"POL-495\".",
+      "Implement POL-495: \"Document provider routing behavior and policy semantics\".",
+      "Issue description:\n## Objective\n\nDocument the current provider routing behavior behind [POL-493](https://linear.app/lsctech/issue/POL-493/analyze-provider-routing-evidence), including compatibility mode, provider registry requirements, and role policy ordering semantics.\n\n## Context\n\n[POL-493](https://linear.app/lsctech/issue/POL-493/analyze-provider-routing-evidence) found that current config can list multiple worker providers while current run evidence only shows one tried provider. The key code path is `resolveProviderAndMode`: when `execution.routerPolicy.providerRegistry` is absent, it bypasses the new router engine and uses legacy role-policy selection. The Worker Router spec already describes provider ranking and fallback but needs a concrete current-behavior note for operators.\n\n## Goal\n\nMake it clear whether `providerPolicy.<role>.providers` is priority, fallback order, or eligibility-only under both compatibility mode and router mode.\n\n## Scope\n\n* smartdocs/raw/analysis/**\n* smartdocs/specs/active/worker-router-architecture.md\n* docs/USAGE.md\n* docs/SETUP.md\n* src/config/schema.ts\n* src/config/schema.json\n* src/config/validator.ts\n* src/config/validator.test.ts\n\n## Acceptance Criteria\n\n- [ ] Docs explicitly state that role policy order is the provider preference/fallback order unless rotation is configured.\n- [ ] Docs explain that an empty or missing `execution.routerPolicy.providerRegistry` puts dispatch in compatibility mode.\n- [ ] Docs explain why compatibility evidence may show only the selected provider in `providers_tried`.\n- [ ] Config comments/schema descriptions do not imply multiple providers are tried when registry metadata is absent.\n- [ ] Validation warns or tests cover ambiguous multi-provider policy without registry metadata, if a warning surface already exists.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/config\n\n## Ordering\n\n* None. This child should run first because later evidence/report changes should use the clarified terminology.\n\n## Non-goals\n\n* Do not change provider selection behavior.\n* Do not require every repo to define `execution.routerPolicy.providerRegistry`.\n* Do not remove compatibility mode.",
+      "Requirements:",
+      "   1. [ ] Docs explicitly state that role policy order is the provider preference/fallback order unless rotation is configured.",
+      "   2. [ ] Docs explain that an empty or missing `execution.routerPolicy.providerRegistry` puts dispatch in compatibility mode.",
+      "   3. [ ] Docs explain why compatibility evidence may show only the selected provider in `providers_tried`.",
+      "   4. [ ] Config comments/schema descriptions do not imply multiple providers are tried when registry metadata is absent.",
+      "   5. [ ] Validation warns or tests cover ambiguous multi-provider policy without registry metadata, if a warning surface already exists.",
+      "Run validation commands and confirm all pass.",
+      "Create exactly ONE git commit: [POL-495] Document provider routing behavior and policy semantics.",
+      "Do NOT modify open_children or completed_children in /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json. The parent runtime (loop continue) owns that state transition.",
+      "Append a telemetry event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-494-2026-07-11-001/telemetry.jsonl.",
+      "If you encountered any struggle signals during execution, include a \"run_health_symptoms\" array in your sealed result. Use one of these categories: worker-blocked, validation-failed, repeated-rework, unclear-requirements, unusual-assumption. Report what you observed — do NOT diagnose root cause. Omit the field if no symptoms occurred.",
+      "Write compact return JSON to stdout (fields: child_id, status, commit, validation, next_recommended_action). next_recommended_action MUST be exactly \"continue\" on success, \"stop\" on unresolvable blocker, or \"investigate\" if manual review is needed.",
+      "TERMINATE SESSION IMMEDIATELY. Do not select or execute the next child."
+    ],
+    "allowed_scope": [
+      "smartdocs/raw/analysis/**",
+      "smartdocs/specs/active/worker-router-architecture.md",
+      "docs/USAGE.md",
+      "docs/SETUP.md",
+      "src/config/schema.ts",
+      "src/config/schema.json",
+      "src/config/validator.ts",
+      "src/config/validator.test.ts"
+    ],
+    "validation_commands": [
+      "npm run build",
+      "npm test",
+      "npx vitest run src/config"
+    ],
+    "issue_context": {
+      "id": "POL-495",
+      "title": "Document provider routing behavior and policy semantics",
+      "key_requirements": [],
+      "body": "## Objective\n\nDocument the current provider routing behavior behind [POL-493](https://linear.app/lsctech/issue/POL-493/analyze-provider-routing-evidence), including compatibility mode, provider registry requirements, and role policy ordering semantics.\n\n## Context\n\n[POL-493](https://linear.app/lsctech/issue/POL-493/analyze-provider-routing-evidence) found that current config can list multiple worker providers while current run evidence only shows one tried provider. The key code path is `resolveProviderAndMode`: when `execution.routerPolicy.providerRegistry` is absent, it bypasses the new router engine and uses legacy role-policy selection. The Worker Router spec already describes provider ranking and fallback but needs a concrete current-behavior note for operators.\n\n## Goal\n\nMake it clear whether `providerPolicy.<role>.providers` is priority, fallback order, or eligibility-only under both compatibility mode and router mode.\n\n## Scope\n\n* smartdocs/raw/analysis/**\n* smartdocs/specs/active/worker-router-architecture.md\n* docs/USAGE.md\n* docs/SETUP.md\n* src/config/schema.ts\n* src/config/schema.json\n* src/config/validator.ts\n* src/config/validator.test.ts\n\n## Acceptance Criteria\n\n- [ ] Docs explicitly state that role policy order is the provider preference/fallback order unless rotation is configured.\n- [ ] Docs explain that an empty or missing `execution.routerPolicy.providerRegistry` puts dispatch in compatibility mode.\n- [ ] Docs explain why compatibility evidence may show only the selected provider in `providers_tried`.\n- [ ] Config comments/schema descriptions do not imply multiple providers are tried when registry metadata is absent.\n- [ ] Validation warns or tests cover ambiguous multi-provider policy without registry metadata, if a warning surface already exists.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/config\n\n## Ordering\n\n* None. This child should run first because later evidence/report changes should use the clarified terminology.\n\n## Non-goals\n\n* Do not change provider selection behavior.\n* Do not require every repo to define `execution.routerPolicy.providerRegistry`.\n* Do not remove compatibility mode."
+    }
+  },
+  "lifecycle": {
+    "terminate_after_completion": true,
+    "max_concurrent": 1,
+    "cleanup_on_exit": "commit-and-exit"
+  },
+  "return_contract": [
+    "child_id",
+    "status",
+    "commit",
+    "validation",
+    "next_recommended_action"
+  ],
+  "prompt_mode": "compact",
+  "prompt_metrics": {
+    "mode": "compact",
+    "char_count": 7481,
+    "estimated_tokens": 1870
+  },
+  "role_context": {
+    "role": "worker",
+    "role_authority": "implementation",
+    "may_implement": true,
+    "may_assign_workers": false,
+    "prohibited_actions": [
+      "modify-cluster-plan",
+      "dispatch-children",
+      "polaris-loop-dispatch",
+      "polaris-loop-continue"
+    ]
+  },
+  "routing_context": {
+    "task_type": "impl",
+    "required_capabilities": [
+      "implementation"
+    ]
+  },
+  "prohibited_write_paths": [
+    ".taskchain_artifacts/",
+    ".polaris/clusters/",
+    ".polaris/runs/",
+    "**/telemetry.jsonl"
+  ],
+  "result_file_contract": {
+    "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-494/results/POL-495-016647c6-be5c-45f9-ba71-22b841003013.json",
+    "result_required_fields": {
+      "run_id": "polaris-run-pol-494-2026-07-11-001",
+      "cluster_id": "POL-494",
+      "child_id": "<child_id>",
+      "status": "<status>",
+      "commit": "<commit>",
+      "validation": "<validation>",
+      "next_recommended_action": "<next_recommended_action>"
+    }
+  },
+  "context": {
+    "branch": "pol-494-delivery",
+    "worker_role": "impl"
+  }
+}

@@ -1,0 +1,105 @@
+{
+  "schema_version": "2.1",
+  "worker_role": "impl",
+  "run_id": "polaris-run-pol-494-2026-07-12-001",
+  "cluster_id": "POL-494",
+  "active_child": "POL-544",
+  "state_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json",
+  "telemetry_file": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-494-2026-07-12-001/telemetry.jsonl",
+  "instructions": {
+    "primary_goal": "Issue: POL-544 — POL-544\nWorktree: .\nBranch: pol-494-delivery\n\n## Goal\n## Objective\n\nApply two minor, genuine coderabbit QC findings from [POL-494](https://linear.app/lsctech/issue/POL-494/implement-provider-routing-evidence)'s round-2 QC pass that were routed to `operator-review` (unclear attribution) but confirmed as valid, low-risk improvements.\n\n## Context\n\nDuring [POL-494](https://linear.app/lsctech/issue/POL-494/implement-provider-routing-evidence) finalize, QC round 2 (`coderabbit-1783818427444`) flagged 7 items; most were false positives against untracked runtime scratch, but two are genuine:\n\n1. `src/loop/adapters/terminal-cli.ts` **(around** `normalizeLegacyCompactReturn`**, lines \\~630-643)**: missing or unrecognized `status` values currently default to `\"done\"` rather than `\"failed\"`. This means `buildCompactReturnForSealedResult` can treat a zero-exit result with an ambiguous/unrecognized status as a clean success. Fix: default unrecognized/missing status to `\"failed\"`, while preserving existing mappings for recognized legacy synonyms (`\"success\"`/`\"completed\"` → `\"done\"`) and already-valid statuses (`\"done\"`/`\"failed\"`/`\"blocked\"`).\n2. `src/finalize/steps/05-generate-report.ts` **(lines \\~15-19)**: telemetry file path is constructed with duplicated conditional join logic instead of calling the existing `resolveTelemetryFilePath(state, repoRoot)` helper. Fix: call the helper and pass its result to `readJsonLines`, removing the duplicated `artifact_dir` fallback logic.\n\n## Goal\n\nBoth findings applied with minimal, targeted changes — no unrelated refactoring.\n\n## Scope\n\n* src/loop/adapters/terminal-cli.ts\n* src/loop/adapters/terminal-cli.test.ts\n* src/finalize/steps/05-generate-report.ts\n* src/finalize/steps/05-generate-report.test.ts\n\n## Acceptance Criteria\n\n- [ ] `normalizeLegacyCompactReturn` defaults missing/unrecognized `status` to `\"failed\"`, not `\"done\"`.\n- [ ] Recognized legacy synonyms (`\"success\"`, `\"completed\"` → `\"done\"`) and already-valid statuses (`\"done\"`, `\"failed\"`, `\"blocked\"`) are unchanged.\n- [ ] A zero-exit worker result with an ambiguous/unrecognized status is no longer treated as a clean success.\n- [ ] `05-generate-report.ts` calls `resolveTelemetryFilePath(state, repoRoot)` instead of duplicating path-join logic; duplicated fallback removed.\n- [ ] Regression tests added for both: an unrecognized-status CompactReturn defaults to failed; report generation uses the shared telemetry path resolver.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/loop/adapters/terminal-cli.test.ts src/finalize/steps/05-generate-report.test.ts\n\n## Ordering\n\n* None — independent of other [POL-494](https://linear.app/lsctech/issue/POL-494/implement-provider-routing-evidence) children (all already done).\n\n## Non-goals\n\n* Do not touch the other QC round-2 findings — those are confirmed false positives against untracked runtime scratch files and will be resolved via `polaris qc resolve`, not code changes.\n* Do not change the CompactReturn schema itself.\n* Do not refactor unrelated parts of either file.\n\n## Implementation Discipline\nBefore writing code, stop at the first rung that holds:\n\n1. Does this need to exist?   → no: skip it (YAGNI)\n2. Stdlib does it?            → use it\n3. Native platform feature?   → use it\n4. Installed dependency?      → use it\n5. One line?                  → one line\n6. Only then: the minimum that works\n\nLazy, not negligent: validation, error handling, security, and accessibility are never on the chopping block.\n\nWhen you defer a simplification for later, mark it inline:\n  // ponytail: <what you deferred and why>\n\n## Scope\nTouch only:\n- src/loop/adapters/terminal-cli.ts\n- src/loop/adapters/terminal-cli.test.ts\n- src/finalize/steps/05-generate-report.ts\n- src/finalize/steps/05-generate-report.test.ts\n\n## Acceptance Criteria\n\n## Validation\n- npm run build\n- npm test\n- npx vitest run src/loop/adapters/terminal-cli.test.ts src/finalize/steps/05-generate-report.test.ts\n\n## Commit\n[POL-544] POL-544\n\n## Governance\n- Do NOT modify open_children or completed_children in /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json. The parent runtime (loop continue) owns state transitions.\n- Append a telemetry event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-494-2026-07-12-001/telemetry.jsonl.\n\n## Worker Progress Telemetry (MANDATORY)\nThe parent CANNOT see your work. You MUST emit heartbeat events so the parent knows you are alive and making progress.\n\nAfter EVERY step, append a JSONL event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-494-2026-07-12-001/telemetry.jsonl:\n```jsonl\n{\"event\":\"worker-heartbeat\",\"run_id\":\"<from packet>\",\"child_id\":\"POL-544\",\"step_cursor\":\"<current step>\",\"timestamp\":\"<ISO8601>\",\"progress_pct\":<0-100>,\"files_changed\":<count>,\"current_file\":\"<file being edited>\"}\n```\n\nRequired heartbeat points:\n  1. Immediately after reading this packet (step_cursor: \"start\")\n  2. After verifying state file (step_cursor: \"verify\")\n  3. After EACH file edit (step_cursor: \"implement\")\n  4. After running validation (step_cursor: \"validate\")\n  5. After creating commit (step_cursor: \"commit\")\n  6. Before terminating (step_cursor: \"complete\" or \"failed\")\n\nIf heartbeats stop, the parent will assume you crashed and may dispatch a replacement worker.\n\n## Approval Escalation (when uncertain)\nYou have a sealed packet defining your exact scope, allowed files, and validation commands. Use this to decide:\n\nRule 1 - Auto-approve WITHIN scope (normal work):\n  - If the operation touches files within `instructions.allowed_scope` → Just do it\n  - If the command is in `instructions.validation_commands` → Just run it\n  - Low risk, expected work → No need to ask, emit heartbeat with step_cursor: \"implement\"\n\nRule 2 - ESCALATE out-of-scope or high-risk:\n  - File outside allowed_scope → Emit worker-blocked with approval_type: \"out-of-scope\"\n  - Destructive operation (rm -rf, major refactor) → Emit worker-blocked with approval_type: \"destructive\"\n  - External API calls with cost → Emit worker-blocked with approval_type: \"cost\"\n  - Changing secrets/.env → Emit worker-blocked with approval_type: \"security\"\n  - Unclear requirements → Emit worker-blocked with approval_type: \"ambiguous\"\n\nTo escalate, emit IMMEDIATELY to telemetry:\n```jsonl\n{\"event\":\"worker-blocked\",\"run_id\":\"<from packet>\",\"child_id\":\"POL-544\",\"reason\":\"needs-approval\",\"approval_type\":\"<out-of-scope|destructive|cost|security|ambiguous>\",\"description\":\"<specifically what needs approval>\",\"blocker_id\":\"<unique-id>\",\"timestamp\":\"<ISO8601>\"}\n```\n\nThen: Continue heartbeats every 30s with step_cursor: \"blocked-awaiting-approval\"\nWait for parent response. If no response in 5 minutes → TERMINATE with approval-timeout.\n\nRemember: Your packet scope is your authority. Within scope = proceed. Outside scope = escalate.\n\n## Route Cognition Delta\nAfter implementation, apply route-local cognition delta — only if something materially changed.\n\n**POLARIS.md** — update only when ALL of the following are true:\n  - You touched a file in that folder (not a distant folder).\n  - The change materially affects: folder responsibilities, commands/workflows,\n    execution constraints, ownership/routing, or operational behavior.\n  - The current POLARIS.md content is actually wrong or incomplete as a result.\n  DO NOT update POLARIS.md for: formatting fixes, comment changes, tiny refactors,\n  internal implementation details, or any change that leaves the operational guidance\n  still accurate. When in doubt, do not update.\n\n**SUMMARY.md** — update only when: linked docs/specs changed, canon relationships\n  changed, architecture meaning changed, or doctrine/spec linkage changed.\n  SUMMARY.md is informational only. Do not create it if missing — that is a hint for\n  operators, not a task for workers. Keep it short. Never add operational doctrine.\n\n**Never** scan unrelated folders. **Never** regenerate all route docs.\nIf no material change occurred, skip this section entirely.\n\n## Report Back\n- files changed\n- validation results\n- commit hash\n- blockers\n\nTERMINATE SESSION IMMEDIATELY. Do not select or execute the next child.",
+    "steps": [
+      "Verify: read /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json and confirm active_child === \"POL-544\".",
+      "Implement POL-544: \"POL-544\".",
+      "Issue description:\n## Objective\n\nApply two minor, genuine coderabbit QC findings from [POL-494](https://linear.app/lsctech/issue/POL-494/implement-provider-routing-evidence)'s round-2 QC pass that were routed to `operator-review` (unclear attribution) but confirmed as valid, low-risk improvements.\n\n## Context\n\nDuring [POL-494](https://linear.app/lsctech/issue/POL-494/implement-provider-routing-evidence) finalize, QC round 2 (`coderabbit-1783818427444`) flagged 7 items; most were false positives against untracked runtime scratch, but two are genuine:\n\n1. `src/loop/adapters/terminal-cli.ts` **(around** `normalizeLegacyCompactReturn`**, lines \\~630-643)**: missing or unrecognized `status` values currently default to `\"done\"` rather than `\"failed\"`. This means `buildCompactReturnForSealedResult` can treat a zero-exit result with an ambiguous/unrecognized status as a clean success. Fix: default unrecognized/missing status to `\"failed\"`, while preserving existing mappings for recognized legacy synonyms (`\"success\"`/`\"completed\"` → `\"done\"`) and already-valid statuses (`\"done\"`/`\"failed\"`/`\"blocked\"`).\n2. `src/finalize/steps/05-generate-report.ts` **(lines \\~15-19)**: telemetry file path is constructed with duplicated conditional join logic instead of calling the existing `resolveTelemetryFilePath(state, repoRoot)` helper. Fix: call the helper and pass its result to `readJsonLines`, removing the duplicated `artifact_dir` fallback logic.\n\n## Goal\n\nBoth findings applied with minimal, targeted changes — no unrelated refactoring.\n\n## Scope\n\n* src/loop/adapters/terminal-cli.ts\n* src/loop/adapters/terminal-cli.test.ts\n* src/finalize/steps/05-generate-report.ts\n* src/finalize/steps/05-generate-report.test.ts\n\n## Acceptance Criteria\n\n- [ ] `normalizeLegacyCompactReturn` defaults missing/unrecognized `status` to `\"failed\"`, not `\"done\"`.\n- [ ] Recognized legacy synonyms (`\"success\"`, `\"completed\"` → `\"done\"`) and already-valid statuses (`\"done\"`, `\"failed\"`, `\"blocked\"`) are unchanged.\n- [ ] A zero-exit worker result with an ambiguous/unrecognized status is no longer treated as a clean success.\n- [ ] `05-generate-report.ts` calls `resolveTelemetryFilePath(state, repoRoot)` instead of duplicating path-join logic; duplicated fallback removed.\n- [ ] Regression tests added for both: an unrecognized-status CompactReturn defaults to failed; report generation uses the shared telemetry path resolver.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/loop/adapters/terminal-cli.test.ts src/finalize/steps/05-generate-report.test.ts\n\n## Ordering\n\n* None — independent of other [POL-494](https://linear.app/lsctech/issue/POL-494/implement-provider-routing-evidence) children (all already done).\n\n## Non-goals\n\n* Do not touch the other QC round-2 findings — those are confirmed false positives against untracked runtime scratch files and will be resolved via `polaris qc resolve`, not code changes.\n* Do not change the CompactReturn schema itself.\n* Do not refactor unrelated parts of either file.",
+      "Requirements:",
+      "   1. [ ] `normalizeLegacyCompactReturn` defaults missing/unrecognized `status` to `\"failed\"`, not `\"done\"`.",
+      "   2. [ ] Recognized legacy synonyms (`\"success\"`, `\"completed\"` → `\"done\"`) and already-valid statuses (`\"done\"`, `\"failed\"`, `\"blocked\"`) are unchanged.",
+      "   3. [ ] A zero-exit worker result with an ambiguous/unrecognized status is no longer treated as a clean success.",
+      "   4. [ ] `05-generate-report.ts` calls `resolveTelemetryFilePath(state, repoRoot)` instead of duplicating path-join logic; duplicated fallback removed.",
+      "   5. [ ] Regression tests added for both: an unrecognized-status CompactReturn defaults to failed; report generation uses the shared telemetry path resolver.",
+      "Run validation commands and confirm all pass.",
+      "Create exactly ONE git commit: [POL-544] POL-544.",
+      "Do NOT modify open_children or completed_children in /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/current-state.json. The parent runtime (loop continue) owns that state transition.",
+      "Append a telemetry event to /Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-494-2026-07-12-001/telemetry.jsonl.",
+      "If you encountered any struggle signals during execution, include a \"run_health_symptoms\" array in your sealed result. Use one of these categories: worker-blocked, validation-failed, repeated-rework, unclear-requirements, unusual-assumption. Report what you observed — do NOT diagnose root cause. Omit the field if no symptoms occurred.",
+      "Write compact return JSON to stdout (fields: child_id, status, commit, validation, next_recommended_action). next_recommended_action MUST be exactly \"continue\" on success, \"stop\" on unresolvable blocker, or \"investigate\" if manual review is needed.",
+      "TERMINATE SESSION IMMEDIATELY. Do not select or execute the next child."
+    ],
+    "allowed_scope": [
+      "src/loop/adapters/terminal-cli.ts",
+      "src/loop/adapters/terminal-cli.test.ts",
+      "src/finalize/steps/05-generate-report.ts",
+      "src/finalize/steps/05-generate-report.test.ts"
+    ],
+    "validation_commands": [
+      "npm run build",
+      "npm test",
+      "npx vitest run src/loop/adapters/terminal-cli.test.ts src/finalize/steps/05-generate-report.test.ts"
+    ],
+    "issue_context": {
+      "id": "POL-544",
+      "title": "POL-544",
+      "key_requirements": [],
+      "body": "## Objective\n\nApply two minor, genuine coderabbit QC findings from [POL-494](https://linear.app/lsctech/issue/POL-494/implement-provider-routing-evidence)'s round-2 QC pass that were routed to `operator-review` (unclear attribution) but confirmed as valid, low-risk improvements.\n\n## Context\n\nDuring [POL-494](https://linear.app/lsctech/issue/POL-494/implement-provider-routing-evidence) finalize, QC round 2 (`coderabbit-1783818427444`) flagged 7 items; most were false positives against untracked runtime scratch, but two are genuine:\n\n1. `src/loop/adapters/terminal-cli.ts` **(around** `normalizeLegacyCompactReturn`**, lines \\~630-643)**: missing or unrecognized `status` values currently default to `\"done\"` rather than `\"failed\"`. This means `buildCompactReturnForSealedResult` can treat a zero-exit result with an ambiguous/unrecognized status as a clean success. Fix: default unrecognized/missing status to `\"failed\"`, while preserving existing mappings for recognized legacy synonyms (`\"success\"`/`\"completed\"` → `\"done\"`) and already-valid statuses (`\"done\"`/`\"failed\"`/`\"blocked\"`).\n2. `src/finalize/steps/05-generate-report.ts` **(lines \\~15-19)**: telemetry file path is constructed with duplicated conditional join logic instead of calling the existing `resolveTelemetryFilePath(state, repoRoot)` helper. Fix: call the helper and pass its result to `readJsonLines`, removing the duplicated `artifact_dir` fallback logic.\n\n## Goal\n\nBoth findings applied with minimal, targeted changes — no unrelated refactoring.\n\n## Scope\n\n* src/loop/adapters/terminal-cli.ts\n* src/loop/adapters/terminal-cli.test.ts\n* src/finalize/steps/05-generate-report.ts\n* src/finalize/steps/05-generate-report.test.ts\n\n## Acceptance Criteria\n\n- [ ] `normalizeLegacyCompactReturn` defaults missing/unrecognized `status` to `\"failed\"`, not `\"done\"`.\n- [ ] Recognized legacy synonyms (`\"success\"`, `\"completed\"` → `\"done\"`) and already-valid statuses (`\"done\"`, `\"failed\"`, `\"blocked\"`) are unchanged.\n- [ ] A zero-exit worker result with an ambiguous/unrecognized status is no longer treated as a clean success.\n- [ ] `05-generate-report.ts` calls `resolveTelemetryFilePath(state, repoRoot)` instead of duplicating path-join logic; duplicated fallback removed.\n- [ ] Regression tests added for both: an unrecognized-status CompactReturn defaults to failed; report generation uses the shared telemetry path resolver.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/loop/adapters/terminal-cli.test.ts src/finalize/steps/05-generate-report.test.ts\n\n## Ordering\n\n* None — independent of other [POL-494](https://linear.app/lsctech/issue/POL-494/implement-provider-routing-evidence) children (all already done).\n\n## Non-goals\n\n* Do not touch the other QC round-2 findings — those are confirmed false positives against untracked runtime scratch files and will be resolved via `polaris qc resolve`, not code changes.\n* Do not change the CompactReturn schema itself.\n* Do not refactor unrelated parts of either file."
+    }
+  },
+  "lifecycle": {
+    "terminate_after_completion": true,
+    "max_concurrent": 1,
+    "cleanup_on_exit": "commit-and-exit"
+  },
+  "return_contract": [
+    "child_id",
+    "status",
+    "commit",
+    "validation",
+    "next_recommended_action"
+  ],
+  "prompt_mode": "compact",
+  "prompt_metrics": {
+    "mode": "compact",
+    "char_count": 8243,
+    "estimated_tokens": 2061
+  },
+  "role_context": {
+    "role": "worker",
+    "role_authority": "implementation",
+    "may_implement": true,
+    "may_assign_workers": false,
+    "prohibited_actions": [
+      "modify-cluster-plan",
+      "dispatch-children",
+      "polaris-loop-dispatch",
+      "polaris-loop-continue"
+    ]
+  },
+  "routing_context": {
+    "task_type": "impl",
+    "required_capabilities": [
+      "implementation"
+    ]
+  },
+  "prohibited_write_paths": [
+    ".taskchain_artifacts/",
+    ".polaris/clusters/",
+    ".polaris/runs/",
+    "**/telemetry.jsonl"
+  ],
+  "result_file_contract": {
+    "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-494/results/POL-544-da3811bd-201f-4499-b2ba-010e034f44a7.json",
+    "result_required_fields": {
+      "run_id": "polaris-run-pol-494-2026-07-12-001",
+      "cluster_id": "POL-494",
+      "child_id": "<child_id>",
+      "status": "<status>",
+      "commit": "<commit>",
+      "validation": "<validation>",
+      "next_recommended_action": "<next_recommended_action>"
+    }
+  },
+  "context": {
+    "branch": "pol-494-delivery",
+    "worker_role": "impl"
+  }
+}

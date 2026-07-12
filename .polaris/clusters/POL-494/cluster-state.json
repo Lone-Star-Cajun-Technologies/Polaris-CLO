@@ -1,0 +1,155 @@
+{
+  "schema_version": "1.0",
+  "cluster_id": "POL-494",
+  "state_generation": 34,
+  "child_states": [
+    {
+      "id": "POL-499",
+      "status": "done",
+      "commit": "fbc1b02d7b83838571d95b549acda416854cd94b"
+    },
+    {
+      "id": "POL-498",
+      "status": "done",
+      "commit": "affd3e47f036344ec78a5c1e6650a16f6c09e8b5"
+    },
+    {
+      "id": "POL-497",
+      "status": "done",
+      "commit": "2bb7e61ca3c0cb2a852ba0aaf653c31ba5bebd9e"
+    },
+    {
+      "id": "POL-496",
+      "status": "done",
+      "commit": "74fb89e7ce1b177f671b8ea0e014b3ad1495f341"
+    },
+    {
+      "id": "POL-495",
+      "status": "done",
+      "commit": "a04cabc3477047be12dab9015e89ed6ee4902370"
+    },
+    {
+      "id": "POL-540",
+      "status": "done",
+      "commit": "b350679afcf9eeca7837036eb9fd8e69f014f744"
+    },
+    {
+      "id": "POL-541",
+      "status": "done",
+      "commit": "bfe65bb0f1bd9b844f63d09787d2f540022c2074"
+    },
+    {
+      "id": "POL-544",
+      "status": "done",
+      "commit": "4fde07accdb121d87da443933d63d4caf28d1651"
+    }
+  ],
+  "claim_metadata": {},
+  "packet_pointers": {
+    "POL-495": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-494/packets/POL-495-016647c6-be5c-45f9-ba71-22b841003013.json",
+    "POL-496": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-494/packets/POL-496-c17cd224-5c2d-4619-822e-541a067ff66b.json",
+    "POL-498": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-494/packets/POL-498-90f12f49-4ec5-40e7-8f12-90a3dc0aa70f.json",
+    "POL-497": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-494/packets/POL-497-9b6288a6-143c-4d5f-badd-11c6976b8423.json",
+    "POL-540": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-494/packets/POL-540-9fa4a69d-48b4-4caa-9d33-c50d0c811a0b.json",
+    "POL-499": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-494/packets/POL-499-e2f624af-4e27-4a19-bf5b-28ff24cbcce0.json",
+    "POL-541": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-494/packets/POL-541-d971d900-c2a9-4532-9595-a524db49a528.json",
+    "POL-544": ".polaris/clusters/POL-494/packets/POL-544-da3811bd-201f-4499-b2ba-010e034f44a7.json"
+  },
+  "result_pointers": {
+    "POL-495": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-494/results/POL-495-016647c6-be5c-45f9-ba71-22b841003013.json",
+    "POL-496": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-494/results/POL-496-c17cd224-5c2d-4619-822e-541a067ff66b.json",
+    "POL-498": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-494/results/POL-498-90f12f49-4ec5-40e7-8f12-90a3dc0aa70f.json",
+    "POL-540": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-494/results/POL-540-9fa4a69d-48b4-4caa-9d33-c50d0c811a0b.json",
+    "POL-497": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-494/results/POL-497-9b6288a6-143c-4d5f-badd-11c6976b8423.json",
+    "POL-541": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-494/results/POL-541-d971d900-c2a9-4532-9595-a524db49a528.json",
+    "POL-499": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-494/results/POL-499-e2f624af-4e27-4a19-bf5b-28ff24cbcce0.json",
+    "POL-544": ".polaris/clusters/POL-494/results/POL-544-da3811bd-201f-4499-b2ba-010e034f44a7.json"
+  },
+  "validation_results": {
+    "POL-495": {
+      "passed": true,
+      "output": "passed"
+    },
+    "POL-496": {
+      "passed": true,
+      "output": "passed"
+    },
+    "POL-498": {
+      "passed": true,
+      "output": "passed"
+    },
+    "POL-540": {
+      "passed": true,
+      "output": "passed"
+    },
+    "POL-497": {
+      "passed": true,
+      "output": "passed"
+    },
+    "POL-541": {
+      "passed": true,
+      "output": "passed"
+    },
+    "POL-499": {
+      "passed": true,
+      "output": "passed"
+    },
+    "POL-544": {
+      "passed": true,
+      "output": "passed"
+    }
+  },
+  "commits": {
+    "POL-495": "a04cabc3477047be12dab9015e89ed6ee4902370",
+    "POL-496": "74fb89e7ce1b177f671b8ea0e014b3ad1495f341",
+    "POL-498": "affd3e47f036344ec78a5c1e6650a16f6c09e8b5",
+    "POL-540": "b350679afcf9eeca7837036eb9fd8e69f014f744",
+    "POL-497": "2bb7e61ca3c0cb2a852ba0aaf653c31ba5bebd9e",
+    "POL-541": "bfe65bb0f1bd9b844f63d09787d2f540022c2074",
+    "POL-499": "fbc1b02d7b83838571d95b549acda416854cd94b",
+    "POL-544": "4fde07accdb121d87da443933d63d4caf28d1651"
+  },
+  "tracker_mutations": {},
+  "blockers": [],
+  "qc_runs": {
+    "coderabbit-1783813556239": {
+      "artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-494/qc/coderabbit-1783813556239.json",
+      "status": "findings",
+      "provider": "coderabbit",
+      "started_at": "2026-07-11T23:40:59.318Z",
+      "completed_at": "2026-07-11T23:45:56.239Z",
+      "availability": "available"
+    },
+    "coderabbit-1783818427444": {
+      "artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-494/qc/coderabbit-1783818427444.json",
+      "status": "findings",
+      "provider": "coderabbit",
+      "started_at": "2026-07-12T00:57:48.069Z",
+      "completed_at": "2026-07-12T01:07:07.444Z",
+      "availability": "available"
+    },
+    "coderabbit-1783830316317": {
+      "artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-494/qc/coderabbit-1783830316317.json",
+      "status": "failed",
+      "provider": "coderabbit",
+      "started_at": "2026-07-12T04:20:16.665Z",
+      "completed_at": "2026-07-12T04:25:16.317Z",
+      "availability": "available"
+    },
+    "coderabbit-1783832990101": {
+      "artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-494/qc/coderabbit-1783832990101.json",
+      "status": "skipped",
+      "provider": "coderabbit",
+      "started_at": "2026-07-12T05:09:45.760Z",
+      "completed_at": "2026-07-12T05:09:50.101Z",
+      "availability": "available"
+    }
+  },
+  "delivery_branch": "pol-494-delivery",
+  "base_branch": "main",
+  "qc_repair_manifests": {
+    "1": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-494/qc/repair-rounds/1/repair-packets.json",
+    "2": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-494/qc/repair-rounds/2/repair-packets.json"
+  },
+  "qc_repair_outcome": "medic-referral"
+}

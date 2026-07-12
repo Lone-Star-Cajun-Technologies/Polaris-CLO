@@ -1,0 +1,239 @@
+{
+  "schemaVersion": "1.0",
+  "qcRunId": "coderabbit-1783818427444",
+  "runId": "polaris-run-pol-494-2026-07-11-001",
+  "clusterId": "POL-494",
+  "trigger": "completed-cluster",
+  "provider": "coderabbit",
+  "providerMode": "local",
+  "startedAt": "2026-07-12T00:57:48.069Z",
+  "completedAt": "2026-07-12T01:07:07.444Z",
+  "status": "findings",
+  "findings": [
+    {
+      "findingId": "coderabbit-1-1783818427443",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-494/results/POL-540-9fa4a69d-48b4-4caa-9d33-c50d0c811a0b.json around lines 1 - 7, Update the result producer for POL-540 to emit the contract-valid status \"done\" and include next_recommended_action set to \"continue\", then regenerate the POL-540 artifact from that producer rather than editing only the generated JSON.",
+      "filePath": ".polaris/clusters/POL-494/results/POL-540-9fa4a69d-48b4-4caa-9d33-c50d0c811a0b.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-494/results/POL-540-9fa4a69d-48b4-4caa-9d33-c50d0c811a0b.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-2-1783818427443",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-494/results/POL-496-c17cd224-5c2d-4619-822e-541a067ff66b.json around lines 1 - 7, Update the producer for the POL-496 result artifact to emit the contract-valid status value \"done\" instead of \"success\" and include next_recommended_action set to \"continue\"; then regenerate the artifact while preserving the existing run_id, child_id, commit, and validation fields.",
+      "filePath": ".polaris/clusters/POL-494/results/POL-496-c17cd224-5c2d-4619-822e-541a067ff66b.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-494/results/POL-496-c17cd224-5c2d-4619-822e-541a067ff66b.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-3-1783818427443",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-494/results/POL-499-845b9610-70ef-4c3f-8081-3478a74dd146.json around lines 1 - 6, The generated result payload is invalid: update the serializer producing this CompactReturn to emit status \"failed\", include commit as null, set validation to a valid value such as \"failed\" or \"skipped\", and set next_recommended_action to \"stop\" or \"investigate\". Preserve the existing child_id and correct the error message so it no longer claims child_id is missing, then regenerate the stored result.",
+      "filePath": ".polaris/clusters/POL-494/results/POL-499-845b9610-70ef-4c3f-8081-3478a74dd146.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-494/results/POL-499-845b9610-70ef-4c3f-8081-3478a74dd146.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-4-1783818427444",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-494/medic/polaris-run-pol-494-2026-07-11-001-r1-qc_qc-blocking-findings_47bad229-cb1b-4f6d-8ecc-6b1f73b25adb.json around lines 9 - 20, Update the repair packet’s allowed/prohibited scope so the worker can address the eight QC blockers under .polaris/**, or route each finding to its source producer and regenerate the affected artifacts; then rerun QC with validation covering the QC and CompactReturn contracts while preserving the existing build and test checks.",
+      "filePath": ".polaris/clusters/POL-494/medic/polaris-run-pol-494-2026-07-11-001-r1-qc_qc-blocking-findings_47bad229-cb1b-4f6d-8ecc-6b1f73b25adb.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-494/medic/polaris-run-pol-494-2026-07-11-001-r1-qc_qc-blocking-findings_47bad229-cb1b-4f6d-8ecc-6b1f73b25adb.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-5-1783818427444",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-494/state.json at line 21, Update the state fields covering artifact, packet, result, and telemetry paths to persist repository-relative paths or run identifiers instead of developer-local absolute paths. Ensure runtime consumers resolve these values against the checkout root, preserving portability across worktrees and agents.",
+      "filePath": ".polaris/clusters/POL-494/state.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-494/state.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-6-1783818427444",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/runs/polaris-run-pol-494-2026-07-11-001/run-health-report.json around lines 26 - 29, Remove the duplicate CHART-2026-07-11-001 entry from chart_refs so each chart reference is emitted only once; preserve the existing reference and ordering.",
+      "filePath": ".polaris/runs/polaris-run-pol-494-2026-07-11-001/run-health-report.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/runs/polaris-run-pol-494-2026-07-11-001/run-health-report.json"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-7-1783818427444",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/finalize/steps/05-generate-report.ts around lines 15 - 19, Update the telemetry file setup in the report-generation flow to call the existing resolveTelemetryFilePath(state, repoRoot) helper instead of constructing the path with conditional join logic. Pass its returned path to readJsonLines and remove the duplicated artifact_dir fallback.",
+      "filePath": "src/finalize/steps/05-generate-report.ts",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "low",
+        "reason": "shared-file",
+        "childId": "POL-540",
+        "filePath": "src/finalize/steps/05-generate-report.ts"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-8-1783818427444",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/finalize/run-report.ts around lines 285 - 289, Update the routing table template in the routing construction to use a single leading pipe for the repair-worker, follow-up, operator-review, and unset rows, matching the original-worker row and other tables in the file.",
+      "filePath": "src/finalize/run-report.ts",
+      "range": {
+        "startLine": 1
+      },
+      "suggestedAction": "const routing = `| original-worker | ${routing_breakdown.original_worker} |\n| repair-worker | ${routing_breakdown.repair_worker} |\n| follow-up | ${routing_breakdown.follow_up} |\n| operator-review | ${routing_breakdown.operator_review} |\n| unset | ${routing_breakdown.unset} |`;",
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "low",
+        "reason": "shared-file",
+        "childId": "POL-540",
+        "filePath": "src/finalize/run-report.ts"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-9-1783818427444",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/finalize/run-report.ts around lines 371 - 374, Add a blank line between the `${routingSection}` interpolation and the `## Artifacts produced` heading in the report template, matching the spacing used between other section headings.",
+      "filePath": "src/finalize/run-report.ts",
+      "range": {
+        "startLine": 1
+      },
+      "suggestedAction": "## Provider routing\n\n${routingSection}\n\n## Artifacts produced",
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "low",
+        "reason": "shared-file",
+        "childId": "POL-540",
+        "filePath": "src/finalize/run-report.ts"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-10-1783818427444",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/loop/adapters/terminal-cli.ts around lines 630 - 643, Update normalizeLegacyCompactReturn so missing or unrecognized status values default to \"failed\" rather than \"done\", while preserving the existing mappings for recognized legacy synonyms and valid statuses. Ensure buildCompactReturnForSealedResult cannot treat a zero-exit result with an ambiguous status as a clean success.",
+      "filePath": "src/loop/adapters/terminal-cli.ts",
+      "range": {
+        "startLine": 1
+      },
+      "suggestedAction": "function normalizeLegacyCompactReturn(raw: Record<string, unknown>, activeChild: string): Record<string, unknown> {\n  const result = { ...raw };\n\n  if (typeof result['child_id'] !== 'string' || !result['child_id']) {\n    result['child_id'] = activeChild;\n  }\n\n  if (result['status'] === 'success' || result['status'] === 'completed') {\n    result['status'] = 'done';\n  } else if (result['status'] === 'failure' || result['status'] === 'error' || result['status'] === 'in-progress') {\n    result['status'] = 'failed';\n  } else if (result['status'] !== 'done' && result['status'] !== 'failed' && result['status'] !== 'blocked') {\n    // Unknown or missing status is treated as a failure signal rather than an\n    // optimistic success, forcing the sealed result down the review path.\n    result['status'] = 'failed';\n  }",
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "low",
+        "reason": "shared-file",
+        "childId": "POL-540",
+        "filePath": "src/loop/adapters/terminal-cli.ts"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    }
+  ],
+  "rawArtifactPaths": [],
+  "parserVersion": "coderabbit-1.0",
+  "policyDecision": {
+    "blocksDelivery": true,
+    "requiresOperatorReview": true,
+    "routedToRepair": false,
+    "summary": "10 findings; operator review required"
+  },
+  "providerAttempt": {
+    "provider": "coderabbit",
+    "status": "success",
+    "rawOutputAvailable": true,
+    "rawOutputRetained": false,
+    "stdoutLength": 8628,
+    "stderrLength": 0,
+    "exitCode": 0,
+    "parserResult": "success"
+  }
+}
