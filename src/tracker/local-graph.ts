@@ -55,18 +55,74 @@ export class LocalGraph {
   
   /**
    * Persists the graph to `.polaris/clusters/{clusterId}/clusters.json`.
-   * Creates the directory if it does not exist.
+   * Children are sorted topologically before writing so the saved cluster
+   * definition reflects dependency order.
    *
    * @param clusterId The cluster ID to use as the directory name (e.g., "POL-198").
    * @param repoRoot The root directory of the repository.
    * @returns The absolute path of the written file.
    */
   async save(clusterId: string, repoRoot: string = process.cwd()): Promise<string> {
+    for (const cluster of Object.values(this.graph.clusters)) {
+      if (Array.isArray(cluster.children) && cluster.children.length > 1) {
+        cluster.children = this.topoSortChildren(cluster.children);
+      }
+    }
+
     const dir = path.join(repoRoot, ".polaris", "clusters", clusterId);
     await mkdir(dir, { recursive: true });
     const filePath = path.join(dir, "clusters.json");
     await writeFile(filePath, JSON.stringify(this.graph, null, 2), "utf-8");
     return filePath;
+  }
+
+  /**
+   * Sort a list of children topologically using the graph dependencies.
+   * Children with no in-cluster dependencies come first; if a cycle exists,
+   * the remaining nodes are appended in their original order.
+   */
+  private topoSortChildren(children: string[]): string[] {
+    const childSet = new Set(children);
+    const inDegree = new Map<string, number>();
+    const dependents = new Map<string, string[]>();
+
+    for (const child of children) {
+      inDegree.set(child, 0);
+      dependents.set(child, []);
+    }
+
+    for (const child of children) {
+      for (const dep of this.getDependencies(child)) {
+        if (!childSet.has(dep)) continue;
+        inDegree.set(child, (inDegree.get(child) ?? 0) + 1);
+        dependents.get(dep)!.push(child);
+      }
+    }
+
+    const queue: string[] = [];
+    for (const [child, deg] of inDegree) {
+      if (deg === 0) queue.push(child);
+    }
+
+    const sorted: string[] = [];
+    while (queue.length > 0) {
+      const node = queue.shift()!;
+      sorted.push(node);
+      for (const dependent of dependents.get(node) ?? []) {
+        const newDeg = (inDegree.get(dependent) ?? 1) - 1;
+        inDegree.set(dependent, newDeg);
+        if (newDeg === 0) queue.push(dependent);
+      }
+    }
+
+    if (sorted.length < children.length) {
+      const sortedSet = new Set(sorted);
+      for (const child of children) {
+        if (!sortedSet.has(child)) sorted.push(child);
+      }
+    }
+
+    return sorted;
   }
 
   /**

@@ -244,6 +244,7 @@ export function getGitignorePatterns(): string[] {
     ".polaris/runs/evo-run-archive/**",
     ".polaris/bootstrap/**",
     ".polaris/session-type",
+    ".polaris/tmp/**",
     "# Cognition staging — ephemeral, not committed",
     ".polaris/cognition/pending/**",
   ];
@@ -284,7 +285,8 @@ export function isPathBlockedFromStaging(filePath: string): boolean {
     relativePath === ".polaris/runs/mutation-queue.json" ||
     relativePath === ".polaris/runs/current-state.pre-pol-198.json" ||
     relativePath.startsWith(".polaris/bootstrap/") ||
-    relativePath === ".polaris/session-type"
+    relativePath === ".polaris/session-type" ||
+    relativePath.startsWith(".polaris/tmp/")
   ) {
     return true;
   }

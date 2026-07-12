@@ -24,6 +24,7 @@ smartdocs/
 .polaris/runs/evo-run-archive/**
 .polaris/bootstrap/**
 .polaris/session-type
+.polaris/tmp/**
 
 # Cognition staging — ephemeral, not committed
 .polaris/cognition/pending/**

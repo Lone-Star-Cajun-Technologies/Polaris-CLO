@@ -556,34 +556,58 @@ export class TerminalCliAdapter implements ExecutionAdapter {
       // workers using pre-spec formats (status:"success", validation:{passed:[...]})
       // are accepted rather than silently marked as failures.
       const normalized = normalizeLegacyCompactReturn(parsed, packet.active_child);
-      const compactReturnErrors = validateCompactReturn(normalized);
+      const compact = buildCompactReturnForSealedResult(normalized, exitCode);
+      const compactReturnErrors = validateCompactReturn(compact);
       const isValidCompactReturn = compactReturnErrors.length === 0;
 
-      // If the parsed result isn't a valid CompactReturn, treat it as a failure
-      // regardless of exit code — this prevents phantom successes from workers
-      // that return minimal status objects instead of proper CompactReturn structs.
-      const effectiveStatus = (exitCode === 0 && isValidCompactReturn) ? "success" : "failure";
+      const finalStatus: "done" | "failed" | "blocked" = isValidCompactReturn
+        ? (compact["status"] as "done" | "failed" | "blocked")
+        : "failed";
+      const finalValidation: "passed" | "failed" | "skipped" = isValidCompactReturn
+        ? (compact["validation"] as "passed" | "failed" | "skipped")
+        : "failed";
+      const finalNext: "continue" | "stop" | "investigate" = isValidCompactReturn
+        ? (compact["next_recommended_action"] as "continue" | "stop" | "investigate")
+        : "stop";
 
-      const sealedResult = {
+      const errorMessage =
+        finalStatus === "failed" || finalStatus === "blocked"
+          ? isValidCompactReturn
+            ? typeof compact["error_message"] === "string"
+              ? compact["error_message"]
+              : typeof compact["blocker"] === "string"
+                ? compact["blocker"]
+                : stdout || summary
+            : `CompactReturn validation failed: ${compactReturnErrors.join("; ")}`
+          : undefined;
+
+      const sealedResult: Record<string, unknown> = {
         run_id: packet.run_id,
-        child_id: String(normalized["child_id"] ?? packet.active_child),
-        status: effectiveStatus,
-        commit:
-          typeof normalized["commit"] === "string"
-            ? normalized["commit"]
-            : typeof normalized["commit_hash"] === "string"
-              ? normalized["commit_hash"]
-              : undefined,
-        validation: normalized["validation"] ?? normalized["validation_summary"],
-        error_message:
-          effectiveStatus === "failure"
-            ? (!isValidCompactReturn
-                ? `CompactReturn validation failed: ${compactReturnErrors.join("; ")}`
-                : typeof normalized["error_message"] === "string"
-                  ? normalized["error_message"]
-                  : stdout || summary)
-            : undefined,
+        child_id: compact["child_id"],
+        status: finalStatus,
+        commit: compact["commit"],
+        validation: finalValidation,
+        next_recommended_action: finalNext,
       };
+
+      if (isValidCompactReturn) {
+        if (compact["result_data"] !== undefined) {
+          sealedResult["result_data"] = compact["result_data"];
+        }
+        if (compact["work_note_paths"] !== undefined) {
+          sealedResult["work_note_paths"] = compact["work_note_paths"];
+        }
+      }
+      if (Array.isArray(compact["run_health_symptoms"])) {
+        sealedResult["run_health_symptoms"] = compact["run_health_symptoms"];
+      }
+      if (finalStatus === "blocked" && typeof compact["blocker"] === "string") {
+        sealedResult["blocker"] = compact["blocker"];
+      }
+      if (errorMessage !== undefined) {
+        sealedResult["error_message"] = errorMessage;
+      }
+
       fs.mkdirSync(path.dirname(resultFile), { recursive: true });
       fs.writeFileSync(resultFile, JSON.stringify(sealedResult, null, 2), "utf-8");
     } catch {
@@ -597,7 +621,9 @@ export class TerminalCliAdapter implements ExecutionAdapter {
  * Normalize a legacy CompactReturn shape to the current spec before validation.
  * Handles pre-spec formats produced by older workers:
  *   - status:"success"|"completed" → status:"done"
+ *   - status:"failure"|"error"|"in-progress" → status:"failed"
  *   - validation:{passed:[...],failed:[...]} → validation:"passed"|"failed"|"skipped"
+ *   - next_action:"continue"|"stop"|"escalate" → next_recommended_action
  *   - missing boolean flags → false
  *   - missing or empty child_id → active_child from the bootstrap packet
  */
@@ -609,6 +635,10 @@ function normalizeLegacyCompactReturn(raw: Record<string, unknown>, activeChild:
   }
 
   if (result['status'] === 'success' || result['status'] === 'completed') {
+    result['status'] = 'done';
+  } else if (result['status'] === 'failure' || result['status'] === 'error' || result['status'] === 'in-progress') {
+    result['status'] = 'failed';
+  } else if (result['status'] !== 'done' && result['status'] !== 'failed' && result['status'] !== 'blocked') {
     result['status'] = 'done';
   }
 
@@ -623,6 +653,18 @@ function normalizeLegacyCompactReturn(raw: Record<string, unknown>, activeChild:
     }
   }
 
+  if (typeof result['next_action'] === 'string' && !result['next_recommended_action']) {
+    const action = result['next_action'] as string;
+    if (action === 'continue') {
+      result['next_recommended_action'] = 'continue';
+    } else if (action === 'stop') {
+      result['next_recommended_action'] = 'stop';
+    } else if (action === 'escalate') {
+      result['next_recommended_action'] = 'investigate';
+    }
+    delete result['next_action'];
+  }
+
   for (const flag of ['tracker_updated', 'state_updated', 'telemetry_updated'] as const) {
     if (typeof result[flag] !== 'boolean') {
       result[flag] = false;
@@ -630,6 +672,74 @@ function normalizeLegacyCompactReturn(raw: Record<string, unknown>, activeChild:
   }
 
   return result;
+}
+
+function compactReturnDefaults(
+  status: "done" | "failed" | "blocked",
+): { validation: "passed" | "failed" | "skipped"; next_recommended_action: "continue" | "stop" | "investigate" } {
+  return {
+    validation: status === 'done' ? 'passed' : status === 'failed' ? 'failed' : 'skipped',
+    next_recommended_action: status === 'done' ? 'continue' : 'stop',
+  };
+}
+
+function resolveCommit(raw: Record<string, unknown>): string | null {
+  if (typeof raw['commit'] === 'string') {
+    return raw['commit'];
+  }
+  if (typeof raw['commit_hash'] === 'string') {
+    return raw['commit_hash'];
+  }
+  if (typeof raw['commit_sha'] === 'string') {
+    return raw['commit_sha'];
+  }
+  return null;
+}
+
+function isValidValidation(value: unknown): value is "passed" | "failed" | "skipped" {
+  return value === 'passed' || value === 'failed' || value === 'skipped';
+}
+
+function isValidNextAction(value: unknown): value is "continue" | "stop" | "investigate" {
+  return value === 'continue' || value === 'stop' || value === 'investigate';
+}
+
+function buildCompactReturnForSealedResult(
+  normalized: Record<string, unknown>,
+  exitCode: number,
+): Record<string, unknown> {
+  const rawStatus = normalized['status'];
+  let baseStatus: "done" | "failed" | "blocked";
+  if (rawStatus === 'done' || rawStatus === 'failed' || rawStatus === 'blocked') {
+    baseStatus = rawStatus;
+  } else {
+    baseStatus = 'done';
+  }
+
+  const effectiveStatus: "done" | "failed" | "blocked" =
+    exitCode === 0
+      ? baseStatus
+      : baseStatus === 'failed' || baseStatus === 'blocked'
+        ? baseStatus
+        : 'failed';
+
+  const defaults = compactReturnDefaults(effectiveStatus);
+
+  const compact: Record<string, unknown> = {
+    ...normalized,
+    child_id: String(normalized['child_id'] || ''),
+    status: effectiveStatus,
+    commit: resolveCommit(normalized),
+    validation: isValidValidation(normalized['validation']) ? normalized['validation'] : defaults.validation,
+    next_recommended_action: isValidNextAction(normalized['next_recommended_action'])
+      ? normalized['next_recommended_action']
+      : defaults.next_recommended_action,
+    tracker_updated: typeof normalized['tracker_updated'] === 'boolean' ? normalized['tracker_updated'] : false,
+    state_updated: typeof normalized['state_updated'] === 'boolean' ? normalized['state_updated'] : false,
+    telemetry_updated: typeof normalized['telemetry_updated'] === 'boolean' ? normalized['telemetry_updated'] : false,
+  };
+
+  return compact;
 }
 
 /**

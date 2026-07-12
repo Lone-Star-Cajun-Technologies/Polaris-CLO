@@ -131,9 +131,10 @@ describe("TerminalCliAdapter", () => {
         expect(written).toEqual({
           run_id: "run-test-0001",
           child_id: "POL-14",
-          status: "success",
+          status: "done",
           commit: "abc1234",
           validation: "passed",
+          next_recommended_action: "continue",
         });
       } finally {
         fs.rmSync(tmpDir, { recursive: true, force: true });
@@ -175,9 +176,10 @@ describe("TerminalCliAdapter", () => {
         expect(written).toEqual({
           run_id: "run-test-0001",
           child_id: "POL-14",
-          status: "success",
+          status: "done",
           commit: "e284a3c",
           validation: "passed",
+          next_recommended_action: "continue",
         });
       } finally {
         fs.rmSync(tmpDir, { recursive: true, force: true });
