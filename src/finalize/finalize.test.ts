@@ -1285,6 +1285,145 @@ describe("validateQcRepairLoopGate", () => {
   });
 });
 
+// ---- QC repair-loop operator resolution artifact (unit tests) ----
+
+describe("validateQcRepairLoopGate with operator resolution artifact", () => {
+  let testDir: string;
+
+  beforeEach(() => {
+    testDir = makeTestDir();
+  });
+
+  afterEach(() => {
+    rmSync(testDir, { recursive: true, force: true });
+  });
+
+  function writeResolutionArtifact(
+    clusterId: string,
+    round: number,
+    outcome: "pass" | "no-repairable",
+    reason: string,
+    findings: string[] = ["f-1"],
+  ): void {
+    const roundDir = join(
+      testDir,
+      ".polaris",
+      "clusters",
+      clusterId,
+      "qc",
+      "repair-rounds",
+      String(round),
+    );
+    mkdirSync(roundDir, { recursive: true });
+    writeFileSync(
+      join(roundDir, "resolution.json"),
+      JSON.stringify(
+        {
+          schemaVersion: "1.0",
+          clusterId,
+          round,
+          resolvedAt: new Date().toISOString(),
+          resolver: "Test",
+          resolvedOutcome: outcome,
+          reason,
+          findings,
+        },
+        null,
+        2,
+      ),
+      "utf-8",
+    );
+  }
+
+  function makeStateWithRepairLoop(
+    outcome: string,
+    currentRound = 1,
+  ): import("../loop/checkpoint.js").LoopState {
+    return {
+      schema_version: "1.0",
+      run_id: "test-run-001",
+      cluster_id: "POL-6",
+      active_child: "",
+      completed_children: ["POL-9"],
+      open_children: [],
+      step_cursor: "CLUSTER-COMPLETE",
+      context_budget: { children_completed: 1 },
+      status: "complete",
+      next_open_child: null,
+      qc_repair_loop: {
+        current_round: currentRound,
+        max_rounds: 2,
+        source_qc_run_ids: [],
+        manifest_path: null,
+        pending_packet_ids: [],
+        completed_packet_ids: [],
+        rerun_requested: false,
+        rerun_qc_run_ids: {},
+        terminal_outcome: outcome,
+        initiated_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    } as import("../loop/checkpoint.js").LoopState;
+  }
+
+  it("blocks operator-review terminal state when no resolution artifact exists", async () => {
+    const { validateQcRepairLoopGate } = await import("./index.js");
+    const result = validateQcRepairLoopGate(
+      makeStateWithRepairLoop("operator-review"),
+      { enabled: true, repairRouting: "route" },
+      testDir,
+    );
+    expect(result).toBeTruthy();
+    expect(result).toContain("operator-review");
+    expect(result).toContain("polaris qc resolve");
+  });
+
+  it("blocks operator-review terminal state when the resolution artifact is for a different round", async () => {
+    const { validateQcRepairLoopGate } = await import("./index.js");
+    writeResolutionArtifact("POL-6", 2, "pass", "operator resolved");
+    const result = validateQcRepairLoopGate(
+      makeStateWithRepairLoop("operator-review", 1),
+      { enabled: true, repairRouting: "route" },
+      testDir,
+    );
+    expect(result).toBeTruthy();
+    expect(result).toContain("operator-review");
+  });
+
+  it("passes operator-review terminal state when a valid resolution artifact exists", async () => {
+    const { validateQcRepairLoopGate } = await import("./index.js");
+    writeResolutionArtifact("POL-6", 1, "pass", "operator resolved");
+    const result = validateQcRepairLoopGate(
+      makeStateWithRepairLoop("operator-review"),
+      { enabled: true, repairRouting: "route" },
+      testDir,
+    );
+    expect(result).toBeNull();
+  });
+
+  it("passes medic-referral terminal state when a valid resolution artifact exists", async () => {
+    const { validateQcRepairLoopGate } = await import("./index.js");
+    writeResolutionArtifact("POL-6", 1, "no-repairable", "no repair capacity");
+    const result = validateQcRepairLoopGate(
+      makeStateWithRepairLoop("medic-referral"),
+      { enabled: true, repairRouting: "route" },
+      testDir,
+    );
+    expect(result).toBeNull();
+  });
+
+  it("still blocks all-providers-failed without a resolution artifact", async () => {
+    const { validateQcRepairLoopGate } = await import("./index.js");
+    const result = validateQcRepairLoopGate(
+      makeStateWithRepairLoop("all-providers-failed"),
+      { enabled: true, repairRouting: "route" },
+      testDir,
+    );
+    expect(result).toBeTruthy();
+    expect(result).toContain("all-providers-failed");
+  });
+});
+
 // ---- Authoritative completed-child state cross-check (unit tests) ----
 
 describe("validateAuthoritativeChildState", () => {

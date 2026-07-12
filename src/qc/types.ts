@@ -178,3 +178,21 @@ export interface QcRepairPacketManifest {
   sourceQcRunIds: string[];
   packets: QcRepairPacket[];
 }
+
+/** Allowed outcomes for an operator resolution artifact. */
+export const QC_RESOLUTION_OUTCOMES = ["pass", "no-repairable"] as const;
+
+/** Outcome an operator records in a QC resolution artifact. */
+export type QcResolutionOutcome = (typeof QC_RESOLUTION_OUTCOMES)[number];
+
+/** Operator-written resolution artifact for a QC repair-loop round. */
+export interface QcResolutionArtifact {
+  schemaVersion: string;
+  clusterId: string;
+  round: number;
+  resolvedAt: string;
+  resolver: string;
+  resolvedOutcome: QcResolutionOutcome;
+  reason: string;
+  findings: string[];
+}
