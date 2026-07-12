@@ -283,10 +283,10 @@ function renderQcSection(qcSummary: QcScoreSummary | null | undefined): string {
     .join("\n");
 
   const routing = `| original-worker | ${routing_breakdown.original_worker} |
-|| repair-worker | ${routing_breakdown.repair_worker} |
-|| follow-up | ${routing_breakdown.follow_up} |
-|| operator-review | ${routing_breakdown.operator_review} |
-|| unset | ${routing_breakdown.unset} |`;
+| repair-worker | ${routing_breakdown.repair_worker} |
+| follow-up | ${routing_breakdown.follow_up} |
+| operator-review | ${routing_breakdown.operator_review} |
+| unset | ${routing_breakdown.unset} |`;
 
   const solImpactValue =
     qc_penalty > 0
@@ -371,6 +371,7 @@ ${childRows || "_No children recorded_"}
 ## Provider routing
 
 ${routingSection}
+
 ## Artifacts produced
 
 ${artifactList}
