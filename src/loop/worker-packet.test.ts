@@ -176,6 +176,67 @@ describe("compileImplPacket", () => {
     expect(p.instructions.validation_commands).toEqual(["npm test"]);
   });
 
+  it("expands allowedScope with adjacent test paths when validation includes vitest", () => {
+    const p = compileImplPacket({
+      ...BASE,
+      childId: "POL-121",
+      allowedScope: [
+        "src/loop/worker-packet.ts",
+        "src/finalize/index.ts",
+      ],
+      validationCommands: ["npx vitest run src/loop src/finalize"],
+    });
+    expect(p.instructions.allowed_scope).toEqual([
+      "src/loop/worker-packet.ts",
+      "src/finalize/index.ts",
+      "src/loop/worker-packet.test.ts",
+      "src/finalize/index.test.ts",
+      "src/finalize/finalize.test.ts",
+    ]);
+  });
+
+  it("does not expand test paths when validation commands omit vitest", () => {
+    const p = compileImplPacket({
+      ...BASE,
+      childId: "POL-121",
+      allowedScope: ["src/loop/worker-packet.ts"],
+      validationCommands: ["npm run build", "npm test"],
+    });
+    expect(p.instructions.allowed_scope).toEqual(["src/loop/worker-packet.ts"]);
+  });
+
+  it("expands allowedScope with test paths from an issue body with vitest validation", () => {
+    const body = `## Scope
+- src/cli/qc.ts
+- src/cli/index.ts
+- src/qc/repair-loop.ts
+- src/finalize/index.ts
+- src/qc/POLARIS.md
+- .polaris/skills/polaris-run/chain.md
+
+## Validation
+- npm run build
+- npm test
+- npx vitest run src/qc src/finalize src/cli
+`;
+    const p = compileImplPacket({
+      ...BASE,
+      childId: "POL-543",
+      issueContext: {
+        id: "POL-543",
+        title: "POL-543",
+        key_requirements: [],
+        body,
+      },
+    });
+    expect(p.instructions.allowed_scope).toContain("src/cli/qc.test.ts");
+    expect(p.instructions.allowed_scope).toContain("src/cli/index.test.ts");
+    expect(p.instructions.allowed_scope).toContain("src/qc/repair-loop.test.ts");
+    expect(p.instructions.allowed_scope).toContain("src/finalize/finalize.test.ts");
+    expect(p.instructions.allowed_scope).not.toContain("src/qc/POLARIS.md.test.ts");
+    expect(p.instructions.allowed_scope).not.toContain(".polaris/skills/polaris-run/chain.md.test.ts");
+  });
+
   it("includes prohibited_write_paths on compiled impl packets", () => {
     const p = compileImplPacket({ ...BASE, childId: "POL-121" });
     expect(p.prohibited_write_paths).toEqual(WORKER_PROHIBITED_WRITE_PATHS);

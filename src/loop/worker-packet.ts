@@ -10,6 +10,7 @@
  * accept BootstrapPacket transparently accept WorkerPacket.
  */
 
+import * as path from "node:path";
 import type { BootstrapPacket } from "./adapters/types.js";
 import {
   buildPromptFromPacketInput,
@@ -356,15 +357,23 @@ function defaultLifecycle(
   };
 }
 
-/** Derives the adjacent test file path for a single source TypeScript file. */
-function deriveTestPath(sourcePath: string): string | null {
+/** Derives the adjacent test file path(s) for a single source TypeScript file. */
+function deriveTestPaths(sourcePath: string): string[] {
   if (!sourcePath.endsWith('.ts') || sourcePath.endsWith('.test.ts') || sourcePath.endsWith('.d.ts')) {
-    return null;
+    return [];
   }
   if (sourcePath.includes('*') || sourcePath.includes('?')) {
-    return null;
+    return [];
   }
-  return sourcePath.replace(/\.ts$/, '.test.ts');
+  const candidates = [sourcePath.replace(/\.ts$/, '.test.ts')];
+  if (sourcePath.endsWith('/index.ts')) {
+    const dir = sourcePath.slice(0, -'/index.ts'.length);
+    const dirName = path.basename(dir);
+    if (dirName) {
+      candidates.push(`${dir}/${dirName}.test.ts`);
+    }
+  }
+  return candidates;
 }
 
 /**
@@ -378,8 +387,9 @@ function expandScopeWithTestPaths(scope: string[], validationCommands: string[])
 
   const testPaths = new Set<string>();
   for (const item of scope) {
-    const testPath = deriveTestPath(item);
-    if (testPath) testPaths.add(testPath);
+    for (const testPath of deriveTestPaths(item)) {
+      testPaths.add(testPath);
+    }
   }
 
   if (testPaths.size === 0) return scope;

@@ -67,6 +67,20 @@ describe("parseIssueBody — scope", () => {
     const { scope } = parseIssueBody("   \n  \n  ");
     expect(scope).toEqual([]);
   });
+
+  it("strips trailing prose and preserves bare file/glob patterns", () => {
+    const body = `## Scope
+- src/foo.ts some comment
+- .polaris/runs/**/run-report.md fixtures if tests use fixtures
+- src/bar.ts (new)
+`;
+    const { scope } = parseIssueBody(body);
+    expect(scope).toEqual([
+      "src/foo.ts",
+      ".polaris/runs/**/run-report.md",
+      "src/bar.ts",
+    ]);
+  });
 });
 
 // ── parseIssueBody: validationCommands ───────────────────────────────────────
