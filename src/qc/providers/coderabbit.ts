@@ -114,6 +114,14 @@ const PROGRESS_STATUS_VALUES = new Set([
   "ok",
   "success",
 ]);
+const TERMINAL_COMPLETE_STATUSES = new Set([
+  "review_completed",
+  "review_skipped",
+  "completed",
+  "complete",
+  "done",
+  "success",
+]);
 
 function hasFindingLocation(record: Record<string, unknown>): boolean {
   return FINDING_LOCATION_KEYS.some((key) => record[key] !== undefined);
@@ -225,14 +233,35 @@ function classifyErrorType(record: Record<string, unknown>): QcFailureReason {
   return "unavailable-provider";
 }
 
+function getTerminalCompleteFindingsCount(record: Record<string, unknown>): number | undefined {
+  if (record.findings !== undefined) {
+    if (Array.isArray(record.findings)) {
+      return record.findings.length;
+    }
+    const count = typeof record.findings === "number" ? record.findings : Number(record.findings);
+    if (Number.isFinite(count)) return count;
+  }
+  const summary = record.summary;
+  if (summary && typeof summary === "object") {
+    const summaryRecord = summary as Record<string, unknown>;
+    if (summaryRecord.total !== undefined) {
+      const count = Number(summaryRecord.total);
+      if (Number.isFinite(count)) return count;
+    }
+    if (summaryRecord.issues !== undefined) {
+      const count = Number(summaryRecord.issues);
+      if (Number.isFinite(count)) return count;
+    }
+  }
+  return undefined;
+}
+
 function isTerminalCompleteNoFindings(record: Record<string, unknown>): boolean {
   if (record.type !== "complete") return false;
-  const status = typeof record.status === "string" ? record.status.toLowerCase() : "";
-  if (status !== "review_completed" && status !== "review_skipped") return false;
-  const findings = record.findings;
-  if (findings === undefined) return false;
-  const count = typeof findings === "number" ? findings : Number(findings);
-  return Number.isFinite(count) && count === 0;
+  const status = typeof record.status === "string" ? record.status.trim().toLowerCase() : "";
+  if (!TERMINAL_COMPLETE_STATUSES.has(status)) return false;
+  const count = getTerminalCompleteFindingsCount(record);
+  return count === undefined || count === 0;
 }
 
 function buildRange(raw: CodeRabbitFindingLike) {

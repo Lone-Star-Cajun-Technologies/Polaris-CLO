@@ -166,6 +166,25 @@ describe("CodeRabbitQcProvider", () => {
     expect(result.findings).toHaveLength(0);
   });
 
+  it("treats a complete review with terminal status synonyms and summary as passed", () => {
+    const provider = new CodeRabbitQcProvider();
+    const stdout = [
+      { type: "review_context", reviewType: "all", currentBranch: "main", baseBranch: "main", workingDirectory: "/repo" },
+      { type: "status", phase: "setup", status: "setting_up" },
+      { type: "complete", status: "completed", findings: 0 },
+      { type: "complete", status: "complete", summary: { total: 0 } },
+      { type: "complete", status: "done", summary: { issues: 0 } },
+      { type: "complete", status: "success" },
+    ]
+      .map((record) => JSON.stringify(record))
+      .join("\n");
+
+    const result = provider.parse(makeOutput(stdout));
+
+    expect(result.status).toBe("passed");
+    expect(result.findings).toHaveLength(0);
+  });
+
   it("classifies a JSON findings array of only bookkeeping records as unusable-output", () => {
     const provider = new CodeRabbitQcProvider();
     const output = makeOutput(
