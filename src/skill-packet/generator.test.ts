@@ -1,6 +1,70 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, beforeAll, afterAll } from "vitest";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { execFileSync } from "node:child_process";
+import path from "node:path";
 import { generateSkillPacket, generateSetupBootstrapPacket, SKILL_ROLE_MAP, SUPPORTED_SKILLS } from "./generator.js";
 import type { SkillName, SetupBootstrapCheckpoint } from "./types.js";
+
+function createReconcileFixture(): string {
+  const repoRoot = mkdtempSync(path.join(tmpdir(), "reconcile-"));
+
+  mkdirSync(path.join(repoRoot, "src", "route"), { recursive: true });
+  mkdirSync(path.join(repoRoot, ".polaris", "map"), { recursive: true });
+  mkdirSync(path.join(repoRoot, ".taskchain_artifacts", "polaris-run"), { recursive: true });
+
+  writeFileSync(path.join(repoRoot, "src", "route", "changed.ts"), "export const x = 1;\n");
+  writeFileSync(path.join(repoRoot, "src", "route", "POLARIS.md"), "# Route POLARIS\n");
+  writeFileSync(path.join(repoRoot, "src", "route", "SUMMARY.md"), "# Route SUMMARY\n");
+  writeFileSync(
+    path.join(repoRoot, ".polaris", "map", "file-routes.json"),
+    JSON.stringify({
+      "src/route/changed.ts": { route: "src/route" },
+    }),
+  );
+  writeFileSync(
+    path.join(repoRoot, ".taskchain_artifacts", "polaris-run", "current-state.json"),
+    JSON.stringify({ active_child: "POL-999" }),
+  );
+
+  execFileSync("git", ["init"], { cwd: repoRoot });
+  execFileSync("git", ["config", "user.email", "test@example.com"], { cwd: repoRoot });
+  execFileSync("git", ["config", "user.name", "Test"], { cwd: repoRoot });
+  execFileSync("git", ["checkout", "-b", "main"], { cwd: repoRoot });
+  execFileSync("git", ["add", "."], { cwd: repoRoot });
+  execFileSync("git", ["commit", "-m", "initial"], { cwd: repoRoot });
+
+  execFileSync("git", ["checkout", "-b", "pol-999-delivery"], { cwd: repoRoot });
+  writeFileSync(path.join(repoRoot, "src", "route", "changed.ts"), "export const x = 2;\n");
+  execFileSync("git", ["add", "."], { cwd: repoRoot });
+  execFileSync("git", ["commit", "-m", "change"], { cwd: repoRoot });
+
+  return repoRoot;
+}
+
+function createEmptyReconcileFixture(): string {
+  const repoRoot = mkdtempSync(path.join(tmpdir(), "reconcile-empty-"));
+  mkdirSync(path.join(repoRoot, ".polaris", "map"), { recursive: true });
+  mkdirSync(path.join(repoRoot, "src", "route"), { recursive: true });
+
+  writeFileSync(path.join(repoRoot, "src", "route", "unchanged.ts"), "export const x = 1;\n");
+  writeFileSync(path.join(repoRoot, "src", "route", "POLARIS.md"), "# Route POLARIS\n");
+  writeFileSync(
+    path.join(repoRoot, ".polaris", "map", "file-routes.json"),
+    JSON.stringify({
+      "src/route/unchanged.ts": { route: "src/route" },
+    }),
+  );
+
+  execFileSync("git", ["init"], { cwd: repoRoot });
+  execFileSync("git", ["config", "user.email", "test@example.com"], { cwd: repoRoot });
+  execFileSync("git", ["config", "user.name", "Test"], { cwd: repoRoot });
+  execFileSync("git", ["checkout", "-b", "main"], { cwd: repoRoot });
+  execFileSync("git", ["add", "."], { cwd: repoRoot });
+  execFileSync("git", ["commit", "-m", "initial"], { cwd: repoRoot });
+
+  return repoRoot;
+}
 
 const DEFAULT_CONFIG = {
   analysis_confidence_threshold: 85,
@@ -232,6 +296,94 @@ describe("generateSkillPacket", () => {
       expect(packet.allowed_outputs.join(" ")).toContain("SUMMARY.md");
       expect(packet.prohibited_actions.join(" ")).toContain("Move, ingest, classify, or promote documents");
       expect(packet.prohibited_actions.join(" ")).toContain("source code");
+    });
+
+    describe("with real git diff and map", () => {
+      let repoRoot: string;
+      let packet: ReturnType<typeof generateSkillPacket>;
+
+      beforeAll(() => {
+        repoRoot = createReconcileFixture();
+        packet = generateSkillPacket("reconcile", DEFAULT_CONFIG, { repoRoot });
+      });
+
+      afterAll(() => {
+        rmSync(repoRoot, { recursive: true, force: true });
+      });
+
+      it("returns a ReconcilePacket with packet_kind and issue_id", () => {
+        expect(packet.packet_kind).toBe("reconcile");
+        expect(packet.issue_id).toBe("POL-999");
+        expect(packet.run_id).toMatch(/^polaris-reconcile-POL-999-/);
+      });
+
+      it("populates affected_folders from git diff cross-referenced with file-routes.json", () => {
+        expect(packet.affected_folders).toEqual(["src/route/"]);
+      });
+
+      it("populates work_inventory with changed files and current cognition content", () => {
+        const reconcilePacket = packet as Record<string, unknown>;
+        const workInventory = reconcilePacket.work_inventory as {
+          all_changed_files: string[];
+          affected_folders: string[];
+          polaris_md_files: Record<string, string | null>;
+          summary_md_files: Record<string, string | null>;
+        };
+
+        expect(workInventory.all_changed_files).toContain("src/route/changed.ts");
+        expect(workInventory.affected_folders).toEqual(["src/route/"]);
+        expect(workInventory.polaris_md_files["src/route/"]).toBe("# Route POLARIS\n");
+        expect(workInventory.summary_md_files["src/route/"]).toBe("# Route SUMMARY\n");
+      });
+
+      it("restricts allowed_write_paths to POLARIS.md and SUMMARY.md under affected folders", () => {
+        const reconcilePacket = packet as Record<string, unknown>;
+        const allowed = reconcilePacket.allowed_write_paths as string[];
+        const polarisMd = path.join(repoRoot, "src", "route", "POLARIS.md");
+        const summaryMd = path.join(repoRoot, "src", "route", "SUMMARY.md");
+
+        expect(allowed).toContain(polarisMd);
+        expect(allowed).toContain(summaryMd);
+        expect(allowed.length).toBe(2);
+      });
+
+      it("covers the repo root in prohibited_write_paths", () => {
+        const reconcilePacket = packet as Record<string, unknown>;
+        const prohibited = reconcilePacket.prohibited_write_paths as string[];
+        expect(prohibited).toContain(repoRoot);
+      });
+    });
+
+    describe("with no git diff to inspect", () => {
+      let repoRoot: string;
+      let packet: ReturnType<typeof generateSkillPacket>;
+
+      beforeAll(() => {
+        repoRoot = createEmptyReconcileFixture();
+        packet = generateSkillPacket("reconcile", DEFAULT_CONFIG, { repoRoot });
+      });
+
+      afterAll(() => {
+        rmSync(repoRoot, { recursive: true, force: true });
+      });
+
+      it("falls back to an empty/blocked state", () => {
+        const reconcilePacket = packet as Record<string, unknown>;
+        const workInventory = reconcilePacket.work_inventory as {
+          affected_folders: string[];
+          all_changed_files: string[];
+          polaris_md_files: Record<string, unknown>;
+          summary_md_files: Record<string, unknown>;
+        };
+
+        expect(packet.affected_folders).toEqual([]);
+        expect(reconcilePacket.allowed_write_paths).toEqual([]);
+        expect(workInventory.affected_folders).toEqual([]);
+        expect(workInventory.all_changed_files).toEqual([]);
+        expect(Object.keys(workInventory.polaris_md_files)).toEqual([]);
+        expect(Object.keys(workInventory.summary_md_files)).toEqual([]);
+        expect(packet.prohibited_actions.join(" ")).toContain("Fabricate");
+      });
     });
   });
 
