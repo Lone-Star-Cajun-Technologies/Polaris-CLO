@@ -138,6 +138,15 @@ function validPolarisContent(extra?: string): string {
   ].join("\n");
 }
 
+function generatedPolarisContent(extra?: string, trailing?: string): string {
+  return [
+    "<!-- BEGIN POLARIS GENERATED -->",
+    validPolarisContent(extra),
+    "<!-- END POLARIS GENERATED -->",
+    ...(trailing ? [trailing] : []),
+  ].join("\n");
+}
+
 describe("validateDir - OK", () => {
   beforeEach(setup);
   afterEach(teardown);
@@ -147,6 +156,52 @@ describe("validateDir - OK", () => {
     const result = validateDir("src/map", TMP, {});
     expect(result.status).toBe("OK");
     expect(result.findings).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// validateDir — generated region
+// ---------------------------------------------------------------------------
+
+describe("validateDir - generated region", () => {
+  beforeEach(setup);
+  afterEach(teardown);
+
+  it("returns OK for a POLARIS.md with generated markers and a trailing Route model section", () => {
+    writeFileSync(
+      join(TMP, "src/map/POLARIS.md"),
+      generatedPolarisContent("none", "## Route model\n\n- conventions\n"),
+    );
+    const result = validateDir("src/map", TMP, {});
+    expect(result.status).toBe("OK");
+    expect(result.findings).toHaveLength(0);
+  });
+
+  it("ignores forbidden sections outside the generated region", () => {
+    writeFileSync(
+      join(TMP, "src/map/POLARIS.md"),
+      generatedPolarisContent("none", "## History\n\nSession notes.\n"),
+    );
+    const result = validateDir("src/map", TMP, {});
+    expect(result.status).toBe("OK");
+    expect(result.findings).toHaveLength(0);
+  });
+
+  it("flags missing required sections inside the generated region", () => {
+    writeFileSync(
+      join(TMP, "src/map/POLARIS.md"),
+      [
+        "<!-- BEGIN POLARIS GENERATED -->",
+        "# map",
+        "",
+        "## Purpose",
+        "Some text.",
+        "<!-- END POLARIS GENERATED -->",
+      ].join("\n"),
+    );
+    const result = validateDir("src/map", TMP, {});
+    expect(result.status).toBe("WARN");
+    expect(result.findings.some((f) => f.message.includes('Missing required section: "What belongs here"'))).toBe(true);
   });
 });
 

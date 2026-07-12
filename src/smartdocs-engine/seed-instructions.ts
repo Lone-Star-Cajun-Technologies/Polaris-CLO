@@ -6,6 +6,8 @@ import { isDirectoryEligible, type DirectoryEligibilityOptions } from "./smartdo
 import { parseFrontMatter } from "./doctrine.js";
 
 export const DRAFT_MARKER = "<!-- polaris:draft -->";
+export const GENERATED_START_MARKER = "<!-- BEGIN POLARIS GENERATED -->";
+export const GENERATED_END_MARKER = "<!-- END POLARIS GENERATED -->";
 
 export function hasDraftMarker(filePath: string): boolean {
   try {
@@ -137,7 +139,7 @@ export function generateDraft(
   lines.push("<!-- Atlas route pointer to sibling or parent folders. -->");
   lines.push("");
 
-  return lines.join("\n");
+  return [DRAFT_MARKER, GENERATED_START_MARKER, ...lines.slice(1), GENERATED_END_MARKER].join("\n");
 }
 
 export function generateSummaryDraft(
@@ -202,7 +204,7 @@ export function generateSummaryDraft(
     "",
   ];
 
-  return lines.join("\n");
+  return [DRAFT_MARKER, GENERATED_START_MARKER, ...lines.slice(1), GENERATED_END_MARKER].join("\n");
 }
 
 const RESERVED_INDEX_NAMES = new Set(["index.md", "POLARIS.md", "SUMMARY.md", "log.md"]);

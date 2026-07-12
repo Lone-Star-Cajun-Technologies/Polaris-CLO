@@ -3,7 +3,13 @@ import { join, relative } from "node:path";
 import { spawnSync } from "node:child_process";
 import { loadConfig } from "../config/loader.js";
 import { resolveLibrarianProvider } from "../smartdocs-engine/librarian-dispatch.js";
-import { hasDraftMarker } from "../smartdocs-engine/seed-instructions.js";
+import {
+  DRAFT_MARKER,
+  GENERATED_END_MARKER,
+  GENERATED_START_MARKER,
+  generateSummaryDraft,
+  hasDraftMarker,
+} from "../smartdocs-engine/seed-instructions.js";
 
 const SKIP_DIRS = new Set(["node_modules", ".git", "dist", "build", ".polaris", "smartdocs"]);
 
@@ -37,11 +43,7 @@ function scaffoldDraftSummaryFiles(repoRoot: string, canonicalFolders: string[])
     const summaryPath = join(dir, "SUMMARY.md");
     if (existsSync(summaryPath)) continue;
     mkdirSync(dir, { recursive: true });
-    writeFileSync(
-      summaryPath,
-      `# ${folder}\n\n<!-- polaris:draft -->\n`,
-      "utf-8",
-    );
+    writeFileSync(summaryPath, generateSummaryDraft(folder, repoRoot, {}), "utf-8");
     console.log(`  Scaffolded draft SUMMARY.md: ${folder}`);
   }
 }
@@ -103,16 +105,23 @@ function injectLinkedDocs(content: string, docs: { path: string; title: string }
   const headingIdx = lines.findIndex((l) => l.startsWith("#"));
   if (headingIdx === -1) return content;
 
+  const heading = lines[headingIdx];
+  const hasSummaryContent = summaryLines.length > 0;
+
   const yamlLines = ["", "---", ...buildLinkedDocsBlock(docs), "---"];
 
-  const before = lines.slice(0, headingIdx + 1);
+  const bodyLines = hasSummaryContent
+    ? [...yamlLines, "", ...summaryLines]
+    : [...yamlLines, ...lines.slice(headingIdx + 1).filter((l) => {
+        const t = l.trim();
+        return t !== DRAFT_MARKER && t !== GENERATED_START_MARKER && t !== GENERATED_END_MARKER;
+      })];
 
-  // If agent provided summary content, append after YAML block
-  const after = summaryLines.length > 0
-    ? ["", ...summaryLines]
-    : lines.slice(headingIdx + 1);
+  const generatedRegion = [heading, ...bodyLines].join("\n");
 
-  return [...before, ...yamlLines, ...after].join("\n");
+  return hasSummaryContent
+    ? [GENERATED_START_MARKER, generatedRegion, GENERATED_END_MARKER].join("\n")
+    : [DRAFT_MARKER, GENERATED_START_MARKER, generatedRegion, GENERATED_END_MARKER].join("\n");
 }
 
 
@@ -289,10 +298,12 @@ export async function enrichCanonFiles(repoRoot: string): Promise<void> {
     if ((response.polaris_lines ?? []).length > 0) {
       const polarisPath = join(dir, "POLARIS.md");
       const polarisContent = [
+        GENERATED_START_MARKER,
         `# POLARIS — ${routeFolder}`,
         "",
         ...response.polaris_lines,
         "",
+        GENERATED_END_MARKER,
       ].join("\n");
       if (!existsSync(polarisPath) || hasDraftMarker(polarisPath)) {
         writeFileSync(polarisPath, polarisContent, "utf-8");

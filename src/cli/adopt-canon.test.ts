@@ -152,6 +152,17 @@ describe("enrichCanonFiles", () => {
     await expect(enrichCanonFiles(root)).rejects.toThrow("polaris agent setup required");
   });
 
+  it("wraps enriched POLARIS.md and SUMMARY.md in generated markers", async () => {
+    setupRepo({ polarisDraft: true });
+    await enrichCanonFiles(root);
+    const summary = readFileSync(join(root, "src", "SUMMARY.md"), "utf-8");
+    const polaris = readFileSync(join(root, "src", "POLARIS.md"), "utf-8");
+    expect(summary).toContain("<!-- BEGIN POLARIS GENERATED -->");
+    expect(summary).toContain("<!-- END POLARIS GENERATED -->");
+    expect(polaris).toContain("<!-- BEGIN POLARIS GENERATED -->");
+    expect(polaris).toContain("<!-- END POLARIS GENERATED -->");
+  });
+
   it("prompts the librarian with separate include/avoid lists for each artifact", async () => {
     setupRepo();
     const { spawnSync } = await import("node:child_process");

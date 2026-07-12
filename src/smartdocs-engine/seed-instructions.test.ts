@@ -3,6 +3,8 @@ import { mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from "node
 import { join } from "node:path";
 import {
   DRAFT_MARKER,
+  GENERATED_END_MARKER,
+  GENERATED_START_MARKER,
   hasDraftMarker,
   generateDraft,
   seedInstructions,
@@ -71,6 +73,13 @@ describe("generateDraft", () => {
   it("includes draft marker at top", () => {
     const content = generateDraft("src/map", TMP, {});
     expect(content.startsWith(DRAFT_MARKER)).toBe(true);
+  });
+
+  it("wraps generated body in BEGIN/END markers", () => {
+    const content = generateDraft("src/map", TMP, {});
+    expect(content.includes(GENERATED_START_MARKER)).toBe(true);
+    expect(content.includes(GENERATED_END_MARKER)).toBe(true);
+    expect(content.indexOf(GENERATED_START_MARKER)).toBeLessThan(content.indexOf(GENERATED_END_MARKER));
   });
 
   it("uses directory basename as heading", () => {
@@ -233,6 +242,13 @@ describe("generateSummaryDraft", () => {
   it("includes draft marker at top", () => {
     const content = generateSummaryDraft("src/map", TMP, {});
     expect(content.startsWith(DRAFT_MARKER)).toBe(true);
+  });
+
+  it("wraps generated body in BEGIN/END markers", () => {
+    const content = generateSummaryDraft("src/map", TMP, {});
+    expect(content.includes(GENERATED_START_MARKER)).toBe(true);
+    expect(content.includes(GENERATED_END_MARKER)).toBe(true);
+    expect(content.indexOf(GENERATED_START_MARKER)).toBeLessThan(content.indexOf(GENERATED_END_MARKER));
   });
 
   it("uses directory basename in heading", () => {
