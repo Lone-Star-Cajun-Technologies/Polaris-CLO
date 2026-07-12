@@ -104,8 +104,13 @@ describe("artifact promotion policy", () => {
         ".taskchain_artifacts/**",
         "*.bak",
         ".polaris/runs/mutation-queue.json",
+        ".polaris/runs/current-state.json",
+        ".polaris/runs/run-report.md",
         ".polaris/runs/current-state.pre-pol-198.json",
         ".polaris/runs/evo-run-archive/**",
+        ".polaris/bootstrap/**",
+        ".polaris/session-type",
+        ".polaris/tmp/**",
         ".polaris/clusters/<other-cluster>/**",
       ],
     });

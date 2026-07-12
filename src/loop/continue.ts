@@ -725,7 +725,10 @@ export function runLoopContinue(options: ContinueOptions): void {
       writeStateAtomic(canonicalStatePath, updatedState);
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
-      console.error(`Error: failed to persist canonical cluster state snapshot: ${msg}`);
+      console.error(
+        `Error: primary state for cluster ${updatedState.cluster_id} was persisted, but the canonical ` +
+          `cluster state snapshot at ${canonicalStatePath} failed to update and remains stale: ${msg}`,
+      );
       process.exit(1);
     }
   }

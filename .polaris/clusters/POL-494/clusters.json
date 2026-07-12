@@ -103,14 +103,14 @@
       "id": "POL-494",
       "title": "Linear Issue: POL-494",
       "children": [
-        "POL-544",
-        "POL-541",
-        "POL-540",
-        "POL-499",
-        "POL-498",
-        "POL-497",
+        "POL-495",
         "POL-496",
-        "POL-495"
+        "POL-497",
+        "POL-498",
+        "POL-499",
+        "POL-540",
+        "POL-541",
+        "POL-544"
       ],
       "cluster_root": "POL-494"
     }

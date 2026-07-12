@@ -291,6 +291,34 @@ describe("stepCommit", () => {
     expect(files).not.toContain(".polaris/runs/run-report.md");
     expect(files).not.toContain(".taskchain_artifacts/polaris-run/current-state.json");
   });
+
+  it("stages the archived run directory alongside promoted cluster artifacts", async () => {
+    const { stepCommit } = await import("./steps/06-commit.js");
+    const { readState } = await import("../loop/checkpoint.js");
+    const stateFile = writeState(testDir);
+    const state = readState(stateFile);
+    const reportPath = join(testDir, ".polaris", "runs", "run-report.md");
+
+    writeEmptyAtlas(testDir);
+    writeDurableClusterArtifacts(testDir, state.cluster_id);
+    writeFileSync(reportPath, "# Run Report: test-finalize-001\n");
+    const runArchiveDir = join(testDir, ".polaris", "runs", state.run_id);
+    mkdirSync(runArchiveDir, { recursive: true });
+    writeFileSync(join(runArchiveDir, "current-state.json"), "{\"status\":\"cluster-complete\"}\n");
+    writeFileSync(join(runArchiveDir, "run-report.md"), "# Run Report: test-finalize-001\n");
+    writeFileSync(join(runArchiveDir, "telemetry.jsonl"), "{\"event\":\"run-start\"}\n");
+
+    stepCommit(testDir, state, stateFile, reportPath);
+
+    const files = execFileSync("git", ["show", "--name-only", "--format=", "HEAD"], {
+      cwd: testDir,
+      encoding: "utf-8",
+    }).trim().split("\n").filter(Boolean);
+
+    expect(files).toContain(`.polaris/runs/${state.run_id}/current-state.json`);
+    expect(files).toContain(`.polaris/runs/${state.run_id}/run-report.md`);
+    expect(files).toContain(`.polaris/runs/${state.run_id}/telemetry.jsonl`);
+  });
 });
 
 // ---- step 09: update state --------------------------------------------------

@@ -65,16 +65,22 @@ export class LocalGraph {
    */
   async save(clusterId: string, repoRoot: string = process.cwd()): Promise<string> {
     this.mergeOrderingDependencies();
-    for (const cluster of Object.values(this.graph.clusters)) {
-      if (Array.isArray(cluster.children) && cluster.children.length > 1) {
-        cluster.children = this.topoSortChildren(cluster.children);
-      }
-    }
+    const persistedGraph: ExecutionGraphV2 = {
+      ...this.graph,
+      clusters: Object.fromEntries(
+        Object.entries(this.graph.clusters).map(([id, cluster]) => [
+          id,
+          Array.isArray(cluster.children) && cluster.children.length > 1
+            ? { ...cluster, children: this.topoSortChildren(cluster.children) }
+            : cluster,
+        ]),
+      ),
+    };
 
     const dir = path.join(repoRoot, ".polaris", "clusters", clusterId);
     await mkdir(dir, { recursive: true });
     const filePath = path.join(dir, "clusters.json");
-    await writeFile(filePath, JSON.stringify(this.graph, null, 2), "utf-8");
+    await writeFile(filePath, JSON.stringify(persistedGraph, null, 2), "utf-8");
     return filePath;
   }
 

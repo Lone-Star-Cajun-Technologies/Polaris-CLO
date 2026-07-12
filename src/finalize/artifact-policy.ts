@@ -214,9 +214,11 @@ export function getArtifactPromotionPolicy(activeClusterId: string): {
     blocked: [
       `${WORKSPACE_SCRATCH_PREFIX}**`,
       "*.bak",
-      ".polaris/runs/mutation-queue.json",
-      ".polaris/runs/current-state.pre-pol-198.json",
+      ...LEGACY_RUN_ARTIFACTS,
       ".polaris/runs/evo-run-archive/**",
+      ".polaris/bootstrap/**",
+      ".polaris/session-type",
+      ".polaris/tmp/**",
       ".polaris/clusters/<other-cluster>/**",
     ],
   };
