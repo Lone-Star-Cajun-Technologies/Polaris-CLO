@@ -1,0 +1,111 @@
+{
+  "schema_version": "1.0",
+  "run_id": "polaris-run-pol-542-2026-07-12-001",
+  "cluster_id": "POL-542",
+  "skill": "polaris-run",
+  "branch": "pol-542-delivery",
+  "session_type": "implement",
+  "active_child": "",
+  "completed_children": [
+    "POL-543"
+  ],
+  "open_children": [],
+  "step_cursor": "checkpoint",
+  "context_budget": {
+    "children_completed": 1,
+    "max_children_per_session": 1
+  },
+  "status": "cluster-complete",
+  "next_open_child": null,
+  "artifact_dir": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run",
+  "dispatch_boundary": {
+    "dispatch_epoch": 1,
+    "continue_epoch": 1,
+    "last_dispatched_child": "POL-543"
+  },
+  "run_bootstrap_seal": {
+    "sealer": "polaris-loop-bootstrap",
+    "run_id": "polaris-run-pol-542-2026-07-12-001",
+    "cluster_id": "POL-542",
+    "open_children_sha": "964d76be898d96ecce923fc99625a1852f4cd10686254b29cbb825fdbbbedd74",
+    "sealed_at": "2026-07-12T01:43:21.131Z"
+  },
+  "open_children_meta": {
+    "POL-543": {
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-542/results/POL-543-b42b69f5-b7cb-4c72-b161-06d137b33361.json",
+      "dispatch_record": {
+        "dispatch_id": "b42b69f5-b7cb-4c72-b161-06d137b33361",
+        "child_id": "POL-543",
+        "run_id": "polaris-run-pol-542-2026-07-12-001",
+        "cluster_id": "POL-542",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-542/packets/POL-543-b42b69f5-b7cb-4c72-b161-06d137b33361.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-542/results/POL-543-b42b69f5-b7cb-4c72-b161-06d137b33361.json",
+        "provider": "devin",
+        "provider_selection_reason": "role-policy",
+        "providers_tried": [
+          "devin"
+        ],
+        "dispatched_at": "2026-07-12T01:43:21.300Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-pol-542-2026-07-12-001:POL-543:1783820601300",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    }
+  },
+  "worker_pool_state": {
+    "max_concurrent": 1,
+    "slot_claims": []
+  },
+  "last_commit": "f616350eea6ef2005771b89699e1786423e3d8f3",
+  "completed_children_results": {
+    "POL-543": {
+      "child_id": "POL-543",
+      "status": "done",
+      "validation": "passed",
+      "commit": "f616350eea6ef2005771b89699e1786423e3d8f3",
+      "next_recommended_action": "continue",
+      "run_id": "polaris-run-pol-542-2026-07-12-001",
+      "cluster_id": "POL-542",
+      "skill_name": "polaris-run",
+      "role": "worker",
+      "provider": "devin",
+      "packet_hash": "f5d207d4e24ac0b113ce82e0d088fca1883453537714b2f7c5d1b5f4517ce070",
+      "worker_id": "polaris-run-pol-542-2026-07-12-001:POL-543:1783820601300",
+      "escalation_count": 0,
+      "heartbeat_count": 15,
+      "result_artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-542/results/POL-543-b42b69f5-b7cb-4c72-b161-06d137b33361.json",
+      "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-542/packets/POL-543-b42b69f5-b7cb-4c72-b161-06d137b33361.json",
+      "telemetry_path": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-pol-542-2026-07-12-001/telemetry.jsonl",
+      "user_intervened": null,
+      "foreman_intervened": null,
+      "dispatch_epoch": 1,
+      "session_pointer": null
+    }
+  },
+  "qc_repair_loop": {
+    "current_round": 2,
+    "max_rounds": 2,
+    "source_qc_run_ids": [
+      "coderabbit-1783821515113"
+    ],
+    "manifest_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-542/qc/repair-rounds/2/repair-packets.json",
+    "pending_packet_ids": [
+      "pkt-POL-542-r2-000",
+      "pkt-POL-542-r2-001",
+      "pkt-POL-542-r2-002"
+    ],
+    "completed_packet_ids": [],
+    "rerun_requested": false,
+    "rerun_qc_run_ids": {},
+    "terminal_outcome": "operator-review",
+    "initiated_at": "2026-07-12T01:58:35.230Z",
+    "updated_at": "2026-07-12T03:40:13.974Z"
+  }
+}

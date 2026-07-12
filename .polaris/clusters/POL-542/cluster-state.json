@@ -1,0 +1,71 @@
+{
+  "schema_version": "1.0",
+  "cluster_id": "POL-542",
+  "state_generation": 15,
+  "child_states": [
+    {
+      "id": "POL-543",
+      "status": "done",
+      "commit": "f616350eea6ef2005771b89699e1786423e3d8f3"
+    }
+  ],
+  "claim_metadata": {},
+  "packet_pointers": {
+    "POL-543": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-542/packets/POL-543-b42b69f5-b7cb-4c72-b161-06d137b33361.json"
+  },
+  "result_pointers": {
+    "POL-543": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-542/results/POL-543-b42b69f5-b7cb-4c72-b161-06d137b33361.json"
+  },
+  "validation_results": {
+    "POL-543": {
+      "passed": true,
+      "output": "passed"
+    }
+  },
+  "commits": {
+    "POL-543": "f616350eea6ef2005771b89699e1786423e3d8f3"
+  },
+  "tracker_mutations": {},
+  "blockers": [],
+  "qc_runs": {
+    "coderabbit-1783821515113": {
+      "artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-542/qc/coderabbit-1783821515113.json",
+      "status": "findings",
+      "provider": "coderabbit",
+      "started_at": "2026-07-12T01:47:14.357Z",
+      "completed_at": "2026-07-12T01:58:35.113Z",
+      "availability": "available"
+    },
+    "coderabbit-1783825345241": {
+      "artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-542/qc/coderabbit-1783825345241.json",
+      "status": "findings",
+      "provider": "coderabbit",
+      "started_at": "2026-07-12T02:54:35.233Z",
+      "completed_at": "2026-07-12T03:02:25.241Z",
+      "availability": "available"
+    },
+    "coderabbit-1783827358063": {
+      "artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-542/qc/coderabbit-1783827358063.json",
+      "status": "failed",
+      "provider": "coderabbit",
+      "started_at": "2026-07-12T03:33:47.470Z",
+      "completed_at": "2026-07-12T03:35:58.063Z",
+      "availability": "available"
+    },
+    "coderabbit-1783827613928": {
+      "artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-542/qc/coderabbit-1783827613928.json",
+      "status": "findings",
+      "provider": "coderabbit",
+      "started_at": "2026-07-12T03:38:36.196Z",
+      "completed_at": "2026-07-12T03:40:13.928Z",
+      "availability": "available"
+    }
+  },
+  "delivery_branch": "pol-542-delivery",
+  "base_branch": "main",
+  "qc_repair_manifests": {
+    "1": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-542/qc/repair-rounds/1/repair-packets.json",
+    "2": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-542/qc/repair-rounds/2/repair-packets.json"
+  },
+  "qc_repair_outcome": "operator-review"
+}

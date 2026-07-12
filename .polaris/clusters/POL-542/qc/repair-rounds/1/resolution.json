@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "1.0",
+  "clusterId": "POL-542",
+  "round": 1,
+  "resolvedAt": "2026-07-12T02:54:22.474Z",
+  "resolver": "Phillip meaux",
+  "resolvedOutcome": "no-repairable",
+  "reason": "All 5 findings are false positives against untracked local runtime scratch (.polaris/clusters/POL-494/, .polaris/clusters/POL-542/) — none of these files are tracked or committed on pol-542-delivery; nothing at risk of shipping in the PR. Confirmed via git status/ls-tree before resolving.",
+  "findings": [
+    "coderabbit-1-1783821515113",
+    "coderabbit-2-1783821515113",
+    "coderabbit-3-1783821515113",
+    "coderabbit-4-1783821515113",
+    "coderabbit-5-1783821515113",
+    "coderabbit-6-1783821515113"
+  ]
+}

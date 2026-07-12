@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "1.0",
+  "qcRunId": "coderabbit-1783827358063",
+  "runId": "polaris-run-pol-542-2026-07-12-001",
+  "clusterId": "POL-542",
+  "trigger": "completed-cluster",
+  "provider": "coderabbit",
+  "providerMode": "local",
+  "startedAt": "2026-07-12T03:33:47.470Z",
+  "completedAt": "2026-07-12T03:35:58.063Z",
+  "status": "failed",
+  "findings": [],
+  "rawArtifactPaths": [],
+  "parserVersion": "coderabbit-synthetic",
+  "policyDecision": {
+    "blocksDelivery": true,
+    "requiresOperatorReview": true,
+    "routedToRepair": false,
+    "summary": "all providers failed; 0 findings; operator review required"
+  },
+  "providerAttempt": {
+    "provider": "coderabbit",
+    "status": "failure",
+    "rawOutputAvailable": true,
+    "rawOutputRetained": false,
+    "stdoutLength": 861,
+    "stderrLength": 0,
+    "exitCode": 0,
+    "failureReason": "unusable-output",
+    "parserResult": "failed"
+  },
+  "allProvidersFailed": true
+}

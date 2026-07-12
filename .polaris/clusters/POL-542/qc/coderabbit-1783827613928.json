@@ -1,0 +1,92 @@
+{
+  "schemaVersion": "1.0",
+  "qcRunId": "coderabbit-1783827613928",
+  "runId": "polaris-run-pol-542-2026-07-12-001",
+  "clusterId": "POL-542",
+  "trigger": "completed-cluster",
+  "provider": "coderabbit",
+  "providerMode": "local",
+  "startedAt": "2026-07-12T03:38:36.196Z",
+  "completedAt": "2026-07-12T03:40:13.928Z",
+  "status": "findings",
+  "findings": [
+    {
+      "findingId": "coderabbit-1-1783827613928",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-542/cluster-state.json around lines 13 - 17, Update the packet and result pointers in the cluster state to use repository-relative paths beginning with .polaris instead of workstation-specific absolute paths. Ensure pointer resolution joins these paths with the repository root when reading, and apply the same normalization to .taskchain_artifacts/polaris-run/current-state.json.",
+      "filePath": ".polaris/clusters/POL-542/cluster-state.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-542/cluster-state.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-2-1783827613928",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.taskchain_artifacts/polaris-run/current-state.json around lines 3 - 20, Remove the generated current-state.json artifact from the delivery commit; do not include files under .taskchain_artifacts in committed changes. If durable run state is required, promote it through polaris finalize into the established .polaris/runs/<run-id>/ location instead.",
+      "filePath": ".taskchain_artifacts/polaris-run/current-state.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "low",
+        "reason": "pre-existing",
+        "filePath": ".taskchain_artifacts/polaris-run/current-state.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-3-1783827613928",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.taskchain_artifacts/polaris-run/current-state.json around lines 33 - 59, Update the completion handling for child POL-543 so its entry is removed from active open_children_meta when the child reaches status done, preventing resume or dispatch logic from redispatching it. Keep historical dispatch details separately if needed, but ensure active-child metadata only contains pending children and remains consistent with open_children.",
+      "filePath": ".taskchain_artifacts/polaris-run/current-state.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "low",
+        "reason": "pre-existing",
+        "filePath": ".taskchain_artifacts/polaris-run/current-state.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    }
+  ],
+  "rawArtifactPaths": [],
+  "parserVersion": "coderabbit-1.0",
+  "policyDecision": {
+    "blocksDelivery": true,
+    "requiresOperatorReview": true,
+    "routedToRepair": false,
+    "summary": "3 findings; operator review required"
+  },
+  "providerAttempt": {
+    "provider": "coderabbit",
+    "status": "success",
+    "rawOutputAvailable": true,
+    "rawOutputRetained": false,
+    "stdoutLength": 2922,
+    "stderrLength": 0,
+    "exitCode": 0,
+    "parserResult": "success"
+  }
+}
