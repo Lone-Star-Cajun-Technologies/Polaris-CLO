@@ -44,6 +44,7 @@ import {
   runQcRepairLoop,
   initRepairLoopState,
   DEFAULT_MAX_REPAIR_ROUNDS,
+  readQcResolutionArtifact,
   type DispatchRepairWorkerFn,
 } from "../qc/index.js";
 import { compileRepairWorkerPacket } from "../loop/worker-packet.js";
@@ -325,10 +326,15 @@ const TRUSTED_QC_REPAIR_OUTCOMES = new Set(["pass", "qc-disabled", "no-repairabl
  * Validate QC repair-loop terminal state when QC is enabled and repair routing
  * is active. Returns null when finalize may proceed; returns a human-readable
  * blocker string otherwise.
+ *
+ * A valid operator resolution artifact for the current repair round is accepted
+ * as equivalent to a trusted terminal_outcome; finalize does not mutate the
+ * loop state.
  */
 export function validateQcRepairLoopGate(
   state: LoopState,
   config: QcConfig,
+  repoRoot?: string,
 ): string | null {
   // Gate only applies when QC is enabled
   if (!config.enabled) return null;
@@ -360,10 +366,36 @@ export function validateQcRepairLoopGate(
 
   if (TRUSTED_QC_REPAIR_OUTCOMES.has(outcome)) return null;
 
+  // A valid operator resolution artifact for the current round overrides the
+  // untrusted terminal_outcome without mutating state.qc_repair_loop.
+  if (
+    repoRoot &&
+    repairLoop.current_round &&
+    repairLoop.current_round > 0
+  ) {
+    const resolution = readQcResolutionArtifact(
+      state.cluster_id,
+      repairLoop.current_round,
+      repoRoot,
+    );
+    if (
+      resolution &&
+      TRUSTED_QC_REPAIR_OUTCOMES.has(resolution.resolvedOutcome)
+    ) {
+      return null;
+    }
+  }
+
+  const resolutionHint =
+    outcome === "operator-review" || outcome === "medic-referral"
+      ? ` Resolve with: polaris qc resolve --cluster-id ${state.cluster_id} --outcome <pass|no-repairable> --reason "<text>" [--findings <id1,id2,...>].`
+      : "";
+
   return (
     `QC repair loop terminated with untrusted outcome: "${outcome}". ` +
     `Only ${Array.from(TRUSTED_QC_REPAIR_OUTCOMES).join(", ")} outcomes allow finalize to proceed. ` +
-    `Resolve the repair loop before re-running finalize.`
+    `A valid resolution artifact for the current round is also accepted.` +
+    resolutionHint
   );
 }
 
@@ -695,7 +727,7 @@ async function runCompletedClusterQcWithRepair(options: {
     });
   }
 
-  const repairLoopBlocker = validateQcRepairLoopGate(nextState, config.qc);
+  const repairLoopBlocker = validateQcRepairLoopGate(nextState, config.qc, repoRoot);
   if (repairLoopBlocker) {
     process.stderr.write(
       `${stepLabel} QC completed-cluster blocked finalize: ${qcResult.summary}\n` +
@@ -957,7 +989,7 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
   // When QC is enabled and repair routing is active, require a trusted
   // terminal outcome from the QC repair loop before allowing PR creation.
   {
-    const repairLoopBlocker = validateQcRepairLoopGate(state, config.qc);
+    const repairLoopBlocker = validateQcRepairLoopGate(state, config.qc, repoRoot);
     if (repairLoopBlocker) {
       process.stderr.write(
         `finalize aborted: QC repair-loop gate failed.\n${repairLoopBlocker}\n`,

@@ -11,7 +11,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -1236,8 +1236,8 @@ describe("runParentLoop", () => {
     const resultPath = (clusterState.result_pointers as Record<string, string>)["POL-100"];
     expect(packetPath).toContain(".polaris/clusters/POL-99/packets/POL-100-");
     expect(resultPath).toContain(".polaris/clusters/POL-99/results/POL-100-");
-    expect(existsSync(packetPath)).toBe(true);
-    expect(existsSync(resultPath)).toBe(true);
+    expect(existsSync(resolve(tmpDir, packetPath))).toBe(true);
+    expect(existsSync(resolve(tmpDir, resultPath))).toBe(true);
   });
 
   it("records an explicit auto-finalize handoff in auto mode", async () => {

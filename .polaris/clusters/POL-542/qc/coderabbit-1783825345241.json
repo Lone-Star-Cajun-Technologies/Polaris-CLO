@@ -1,0 +1,113 @@
+{
+  "schemaVersion": "1.0",
+  "qcRunId": "coderabbit-1783825345241",
+  "runId": "polaris-run-pol-542-2026-07-12-001",
+  "clusterId": "POL-542",
+  "trigger": "completed-cluster",
+  "provider": "coderabbit",
+  "providerMode": "local",
+  "startedAt": "2026-07-12T02:54:35.233Z",
+  "completedAt": "2026-07-12T03:02:25.241Z",
+  "status": "findings",
+  "findings": [
+    {
+      "findingId": "coderabbit-1-1783825345241",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-542/results/POL-543-6efeb77e-fa87-44a4-a271-d9099d3d5113.json around lines 1 - 6, Update the failure result emitted for the worker packet around the CompactReturn payload to include the required commit, validation, and next_recommended_action fields. Use commit: null, validation: \"failed\", and an appropriate next action such as \"investigate\", while preserving the existing failure status and child_id.",
+      "filePath": ".polaris/clusters/POL-542/results/POL-543-6efeb77e-fa87-44a4-a271-d9099d3d5113.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-542/results/POL-543-6efeb77e-fa87-44a4-a271-d9099d3d5113.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-2-1783825345241",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-494/results/POL-541-d971d900-c2a9-4532-9595-a524db49a528.json around lines 1 - 6, Update the successful sealed result record for child POL-541 to include the required next_recommended_action field alongside the existing status, commit, and validation fields. Set it to the appropriate next-step action expected by the worker packet so the parent can route deterministically.",
+      "filePath": ".polaris/clusters/POL-494/results/POL-541-d971d900-c2a9-4532-9595-a524db49a528.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-494/results/POL-541-d971d900-c2a9-4532-9595-a524db49a528.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-3-1783825345241",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-494/results/POL-499-845b9610-70ef-4c3f-8081-3478a74dd146.json around lines 1 - 6, Update the failure result JSON to use the contract-valid failed payload: retain the non-empty child_id, add commit as a string or null, set validation to failed or skipped as appropriate, and set next_recommended_action to continue, stop, or investigate. Correct error_message so it no longer claims child_id is missing or empty.",
+      "filePath": ".polaris/clusters/POL-494/results/POL-499-845b9610-70ef-4c3f-8081-3478a74dd146.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-494/results/POL-499-845b9610-70ef-4c3f-8081-3478a74dd146.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-4-1783825345241",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.gitignore around lines 21 - 27, Untrack the already-committed .polaris/runs/run-report.md artifact so the new ignore rule takes effect, removing it from the repository index while leaving the local file ignored. Check the other newly ignored .polaris paths for tracked transient files and untrack any such files as well.",
+      "filePath": ".gitignore",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-543",
+        "filePath": ".gitignore"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    }
+  ],
+  "rawArtifactPaths": [],
+  "parserVersion": "coderabbit-1.0",
+  "policyDecision": {
+    "blocksDelivery": true,
+    "requiresOperatorReview": true,
+    "routedToRepair": false,
+    "summary": "4 findings; operator review required"
+  },
+  "providerAttempt": {
+    "provider": "coderabbit",
+    "status": "success",
+    "rawOutputAvailable": true,
+    "rawOutputRetained": false,
+    "stdoutLength": 3629,
+    "stderrLength": 0,
+    "exitCode": 0,
+    "parserResult": "success"
+  }
+}

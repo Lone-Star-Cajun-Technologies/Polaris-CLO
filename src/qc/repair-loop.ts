@@ -15,18 +15,23 @@
  * Each repair packet becomes a sealed WorkerPacket with worker_role: "repair".
  */
 
-import { appendFileSync, mkdirSync } from "node:fs";
+import { appendFileSync, mkdirSync, readFileSync, writeFileSync, renameSync, unlinkSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import type { QcConfig } from "../config/schema.js";
 import type {
   QcRepairPacket,
   QcRepairPacketManifest,
+  QcResolutionArtifact,
   QcResult,
 } from "./types.js";
 import {
   compileAndWriteRepairPackets,
   readRepairPacketManifest,
+  writeRepairPacketManifest,
+  getRepairRoundDir,
 } from "./repair-packets.js";
+import { QC_RESOLUTION_OUTCOMES } from "./types.js";
 import type { RunQcAtTriggerOptions, QcOrchestratorResult } from "./orchestration.js";
 import { runQcAtTrigger } from "./orchestration.js";
 import type { QcProviderRegistry } from "./provider.js";
@@ -315,6 +320,168 @@ export function initRepairLoopState(opts: {
   };
 }
 
+// ── Operator resolution artifact helpers ──────────────────────────────────────
+
+/** Path for the operator-written resolution artifact for a repair round. */
+export function getQcResolutionArtifactPath(
+  clusterId: string,
+  round: number,
+  repoRoot?: string,
+): string {
+  return join(getRepairRoundDir(clusterId, round, repoRoot), "resolution.json");
+}
+
+/** Resolve the finding IDs covered by a resolution artifact. */
+export function resolveQcResolutionFindings(
+  manifest: QcRepairPacketManifest,
+  explicitFindings?: string[],
+): string[] {
+  const manifestFindings = [
+    ...new Set(manifest.packets.flatMap((p) => p.findingIds)),
+  ].sort();
+
+  if (!explicitFindings || explicitFindings.length === 0) {
+    return manifestFindings;
+  }
+
+  const allowed = new Set(manifestFindings);
+  const unknown = explicitFindings.filter((id) => !allowed.has(id));
+  if (unknown.length > 0) {
+    throw new Error(
+      `Unknown finding IDs: ${unknown.join(", ")}. Expected one of: ${manifestFindings.join(", ") || "none"}`,
+    );
+  }
+
+  return [...new Set(explicitFindings)].sort();
+}
+
+/** Determine the resolver identity from git config or the default operator. */
+export function getResolverIdentity(repoRoot?: string): string {
+  try {
+    const name = execFileSync("git", ["config", "user.name"], {
+      cwd: repoRoot || process.cwd(),
+      encoding: "utf-8",
+    }).trim();
+    return name || "lsctech";
+  } catch {
+    return "lsctech";
+  }
+}
+
+const QC_RESOLUTION_OUTCOME_SET = new Set<string>(QC_RESOLUTION_OUTCOMES);
+
+/** Validate a resolution artifact object. */
+export function isValidQcResolutionArtifact(
+  value: unknown,
+): value is QcResolutionArtifact {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+
+  if (typeof v.schemaVersion !== "string") return false;
+  if (typeof v.clusterId !== "string") return false;
+  if (typeof v.round !== "number") return false;
+  if (typeof v.resolvedAt !== "string") return false;
+  if (typeof v.resolver !== "string" || v.resolver === "") return false;
+  if (
+    typeof v.resolvedOutcome !== "string" ||
+    !QC_RESOLUTION_OUTCOME_SET.has(v.resolvedOutcome)
+  ) {
+    return false;
+  }
+  if (typeof v.reason !== "string" || v.reason.trim() === "") return false;
+  if (
+    !Array.isArray(v.findings) ||
+    v.findings.length === 0 ||
+    !v.findings.every((f) => typeof f === "string")
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+/** Read and validate a resolution artifact, if it exists. */
+export function readQcResolutionArtifact(
+  clusterId: string,
+  round: number,
+  repoRoot?: string,
+): QcResolutionArtifact | null {
+  const artifactPath = getQcResolutionArtifactPath(clusterId, round, repoRoot);
+  try {
+    const data = readFileSync(artifactPath, "utf-8");
+    const parsed = JSON.parse(data) as unknown;
+    if (isValidQcResolutionArtifact(parsed)) {
+      // Verify identity matches expected clusterId and round
+      if (parsed.clusterId !== clusterId || parsed.round !== round) {
+        return null;
+      }
+      return parsed;
+    }
+    return null;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return null;
+    }
+    if (error instanceof SyntaxError) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+/** Write a resolution artifact atomically and return its absolute path. */
+export function writeQcResolutionArtifact(options: {
+  clusterId: string;
+  round: number;
+  resolver: string;
+  resolvedOutcome: "pass" | "no-repairable";
+  reason: string;
+  findings: string[];
+  repoRoot?: string;
+}): string {
+  const {
+    clusterId,
+    round,
+    resolver,
+    resolvedOutcome,
+    reason,
+    findings,
+    repoRoot,
+  } = options;
+
+  const artifactPath = getQcResolutionArtifactPath(clusterId, round, repoRoot);
+  const dir = dirname(artifactPath);
+  mkdirSync(dir, { recursive: true });
+
+  const artifact: QcResolutionArtifact = {
+    schemaVersion: "1.0",
+    clusterId,
+    round,
+    resolvedAt: new Date().toISOString(),
+    resolver,
+    resolvedOutcome,
+    reason,
+    findings,
+  };
+
+  const tempPath = `${artifactPath}.tmp.${process.pid}.${Date.now()}.${Math.random()
+    .toString(36)
+    .slice(2, 8)}`;
+  try {
+    writeFileSync(tempPath, JSON.stringify(artifact, null, 2), "utf-8");
+    renameSync(tempPath, artifactPath);
+  } catch (error) {
+    try {
+      unlinkSync(tempPath);
+    } catch {
+      // Ignore cleanup failure.
+    }
+    throw error;
+  }
+
+  return artifactPath;
+}
+
 // ── Main repair loop ───────────────────────────────────────────────────────────
 
 /**
@@ -454,10 +621,23 @@ export async function runQcRepairLoop(
       const existingManifestPath =
         loopState.manifest_path ??
         join(repoRoot, ".polaris", "clusters", clusterId, "qc", "repair-rounds", String(round), "repair-packets.json");
+
+      // Synchronize manifest packet statuses with the persisted loop state.
+      const completedSet = new Set(loopState.completed_packet_ids);
+      for (const packet of manifest.packets) {
+        if (completedSet.has(packet.packetId)) {
+          packet.status = "completed";
+        }
+      }
+      writeRepairPacketManifest(manifest, repoRoot);
+
       loopState = {
         ...loopState,
         current_round: round,
         manifest_path: existingManifestPath,
+        pending_packet_ids: manifest.packets
+          .filter((p) => p.status === "pending" && !completedSet.has(p.packetId))
+          .map((p) => p.packetId),
         updated_at: new Date().toISOString(),
       };
       onStateUpdate?.(loopState);
@@ -563,10 +743,17 @@ export async function runQcRepairLoop(
       allWorkerResults.push(result);
     }
 
-    // Record completed packet IDs.
+    // Record completed packet IDs and update manifest statuses.
     const completedIds = allWorkerResults
       .filter((r) => r.status !== "skipped")
       .map((r) => r.packetId);
+    for (const packet of manifest.packets) {
+      if (completedIds.includes(packet.packetId)) {
+        packet.status = "completed";
+      }
+    }
+    writeRepairPacketManifest(manifest, repoRoot);
+
     loopState = {
       ...loopState,
       completed_packet_ids: [...loopState.completed_packet_ids, ...completedIds],

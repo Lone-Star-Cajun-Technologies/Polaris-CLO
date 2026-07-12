@@ -10,6 +10,7 @@ import { migrateV1toV2 } from "./migration.js";
  */
 export class LocalGraph {
   private graph: ExecutionGraphV2;
+  private orderingDependenciesMerged = false;
 
   private constructor(graph: ExecutionGraphV2) {
     this.graph = graph;
@@ -63,16 +64,23 @@ export class LocalGraph {
    * @returns The absolute path of the written file.
    */
   async save(clusterId: string, repoRoot: string = process.cwd()): Promise<string> {
-    for (const cluster of Object.values(this.graph.clusters)) {
-      if (Array.isArray(cluster.children) && cluster.children.length > 1) {
-        cluster.children = this.topoSortChildren(cluster.children);
-      }
-    }
+    this.mergeOrderingDependencies();
+    const persistedGraph: ExecutionGraphV2 = {
+      ...this.graph,
+      clusters: Object.fromEntries(
+        Object.entries(this.graph.clusters).map(([id, cluster]) => [
+          id,
+          Array.isArray(cluster.children) && cluster.children.length > 1
+            ? { ...cluster, children: this.topoSortChildren(cluster.children) }
+            : cluster,
+        ]),
+      ),
+    };
 
     const dir = path.join(repoRoot, ".polaris", "clusters", clusterId);
     await mkdir(dir, { recursive: true });
     const filePath = path.join(dir, "clusters.json");
-    await writeFile(filePath, JSON.stringify(this.graph, null, 2), "utf-8");
+    await writeFile(filePath, JSON.stringify(persistedGraph, null, 2), "utf-8");
     return filePath;
   }
 
@@ -148,11 +156,53 @@ export class LocalGraph {
   }
 
   /**
-   * Returns the dependencies for a given node.
+   * Returns the dependencies for a given node, merging any dependencies declared
+   * in the node's `## Ordering` body section.
    * @param id The ID of the node to get dependencies for.
    * @returns An array of node IDs that the given node is blocked by.
    */
   getDependencies(id: string): string[] {
+    this.mergeOrderingDependencies();
     return this.graph.dependencies[id] ?? [];
+  }
+
+  /**
+   * Extracts issue IDs from the `## Ordering` section of a node body.
+   *
+   * Only lines that explicitly declare ordering ("depends on" or "after" / "sequence after")
+   * contribute, and "before or after" clauses are ignored because they are not strict.
+   */
+  private extractOrderingIds(body: string): string[] {
+    const sectionMatch = body.match(/##\s*Ordering\b([\s\S]*?)(?:\n##\s|\n\n(?=\n##\s)|$)/i);
+    if (!sectionMatch) return [];
+    const section = sectionMatch[1];
+    const cleaned = section.replace(/before\s+or\s+after\s*\[[^\]]*\]/gi, "");
+    const ids = new Set<string>();
+    const re = /(?:depends\s+on|after)\s*\[?\s*(\w+-\d+)\b/gi;
+    for (const line of cleaned.split("\n")) {
+      if (!/^\s*[-*]\s/.test(line)) continue;
+      for (const match of line.matchAll(re)) {
+        ids.add(match[1]);
+      }
+    }
+    return [...ids];
+  }
+
+  /**
+   * Merges dependencies declared in node body `## Ordering` sections into the
+   * graph's explicit dependency map. This is idempotent for the loaded graph.
+   */
+  private mergeOrderingDependencies(): void {
+    if (this.orderingDependenciesMerged) return;
+    for (const node of Object.values(this.graph.nodes)) {
+      const orderingIds = this.extractOrderingIds(node.body ?? "");
+      if (orderingIds.length === 0) continue;
+      const existing = new Set(this.graph.dependencies[node.id] ?? []);
+      for (const dep of orderingIds) {
+        if (dep !== node.id) existing.add(dep);
+      }
+      this.graph.dependencies[node.id] = [...existing].sort();
+    }
+    this.orderingDependenciesMerged = true;
   }
 }

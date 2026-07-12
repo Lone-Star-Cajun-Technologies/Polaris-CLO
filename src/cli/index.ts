@@ -26,6 +26,7 @@ import { createGraphCommand } from "./graph.js";
 import { createSkillCommand } from "../skill-packet/index.js";
 import { createLibrarianCommand } from "./librarian.js";
 import { createMedicCommand } from "./medic.js";
+import { createQcCommand } from "./qc.js";
 import { runWelfareCheck, printWelfareCheckReport } from "../map/welfare.js";
 import { createAdoptCommand } from "./adopt-command.js";
 import { createUpgradeCommand } from "./upgrade-command.js";
@@ -177,6 +178,12 @@ export function createPolarisCommand(options: PolarisCommandOptions = {}): Comma
 
   program.addCommand(
     createMedicCommand({
+      repoRoot,
+    }),
+  );
+
+  program.addCommand(
+    createQcCommand({
       repoRoot,
     }),
   );

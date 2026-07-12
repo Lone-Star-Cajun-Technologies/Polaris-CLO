@@ -92,6 +92,25 @@ See `smartdocs/specs/active/quality-control-architecture.md §8.9` for the telem
 - QC run result: `.polaris/clusters/<cluster-id>/qc/<qc-run-id>.json`
 - Raw provider output: `.polaris/clusters/<cluster-id>/qc/<qc-run-id>-raw.<ext>`
 - Repair packet manifest: `.polaris/clusters/<cluster-id>/qc/repair-rounds/<round>/repair-packets.json`
+- Operator resolution artifact: `.polaris/clusters/<cluster-id>/qc/repair-rounds/<round>/resolution.json`
+
+## Operator resolution
+
+The terminal outcomes `operator-review` and `medic-referral` require an operator to formally record a decision before finalize can proceed. Use:
+
+```
+polaris qc resolve --cluster-id <cluster-id> --outcome <pass|no-repairable> --reason "<text>" [--findings <id1,id2,...>]
+```
+
+The command writes a durable `resolution.json` for the current repair round. The artifact contains:
+
+- `resolver` — git `user.name` (or `lsctech` if unset)
+- `resolvedAt` — ISO 8601 timestamp
+- `resolvedOutcome` — `pass` or `no-repairable`
+- `reason` — non-empty operator justification
+- `findings` — finding IDs from the round's `repair-packets.json` that the resolution addresses (defaults to all referenced findings)
+
+`finalize` (`validateQcRepairLoopGate` in `src/finalize/index.ts`) treats a valid `resolution.json` for the current round as equivalent to a trusted `terminal_outcome`; finalize proceeds without mutating `state.qc_repair_loop.terminal_outcome`. The resolution artifact must be present — the gate is not weakened for `operator-review` or `medic-referral` without it.
 
 ## Architecture assumptions
 

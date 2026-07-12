@@ -287,11 +287,11 @@ export async function ensureClusterRunState(options: EnsureClusterRunStateOption
     }
   }
 
-  const { openChildren, openChildrenMeta } = buildBootstrapPlan(
-    clusterId,
-    await loadOrSyncGraph(clusterId, repoRoot),
-    repoRoot,
-  );
+  const graph = await loadOrSyncGraph(clusterId, repoRoot);
+  const { openChildren, openChildrenMeta } = buildBootstrapPlan(clusterId, graph, repoRoot);
+
+  // Persist canonical child ordering and any body-derived ordering dependencies.
+  await graph.save(clusterId, repoRoot);
 
   await bootstrapHandler({
     clusterId,

@@ -78,6 +78,17 @@ interface EnrichedFinding extends QcFinding {
   sourceQcRunId: string;
 }
 
+function deriveSourceQcRunId(finding: QcFinding, fallbackRunId: string): string {
+  // Some findingId formats encode the source QC run as `<provider>-<index>-<runId>`
+  // (e.g. coderabbit-1-1783818427443). Prefer that provenance over the result
+  // run ID so packet sourceQcRunIds match the runs that emitted the findings.
+  const match = finding.findingId.match(/^(.+?)-(\d+)-(\d+)$/);
+  if (match) {
+    return `${match[1]}-${match[3]}`;
+  }
+  return fallbackRunId;
+}
+
 function enrichFinding(finding: QcFinding, config: QcConfig, sourceQcRunId: string): EnrichedFinding {
   return {
     ...finding,
@@ -85,7 +96,7 @@ function enrichFinding(finding: QcFinding, config: QcConfig, sourceQcRunId: stri
     risk: riskLevel(finding),
     confidenceBand: confidenceBand(finding),
     subsystem: subsystemFromFilePath(finding.filePath),
-    sourceQcRunId,
+    sourceQcRunId: deriveSourceQcRunId(finding, sourceQcRunId),
   };
 }
 
@@ -246,6 +257,8 @@ function buildPacket(
   const packetId = `pkt-${clusterId}-r${round}-${String(index).padStart(3, "0")}`;
   const findingIds = group.map((f) => f.findingId).sort();
   const sourceRunIds = [...new Set(group.map((f) => f.sourceQcRunId))].sort();
+  // Preserve the artifact run ID while also capturing the finding-level source run.
+  const combinedSourceRunIds = [...new Set([...allRunIds, ...sourceRunIds])].sort();
   const severityFloor = group.reduce(
     (acc, f) => maxSeverity(acc, f.severity),
     "info" as QcSeverity,
@@ -270,7 +283,7 @@ function buildPacket(
     packetId,
     round,
     clusterId,
-    sourceQcRunIds: sourceRunIds.length > 0 ? sourceRunIds : allRunIds,
+    sourceQcRunIds: combinedSourceRunIds,
     findingIds,
     severityFloor,
     rootCauseHint,
@@ -424,12 +437,13 @@ export function compileRepairPackets(input: CompileRepairPacketsInput): Compiled
 
   const finalPackets = assignParallelGroups(packets);
 
+  const manifestSourceRunIds = [...new Set(finalPackets.flatMap((p) => p.sourceQcRunIds))].sort();
   const manifest: QcRepairPacketManifest = {
     schemaVersion: "1.0",
     clusterId,
     round,
     compiledAt,
-    sourceQcRunIds: allRunIds,
+    sourceQcRunIds: manifestSourceRunIds.length > 0 ? manifestSourceRunIds : allRunIds,
     packets: finalPackets,
   };
 

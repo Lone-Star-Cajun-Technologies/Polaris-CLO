@@ -185,6 +185,22 @@ describe("CodeRabbitQcProvider", () => {
     expect(result.findings).toHaveLength(0);
   });
 
+  it("treats a review_skipped terminal status as passed", () => {
+    const provider = new CodeRabbitQcProvider();
+    const stdout = [
+      { type: "review_context", reviewType: "all", currentBranch: "main", baseBranch: "main", workingDirectory: "/repo" },
+      { type: "status", phase: "connecting", status: "connecting_to_review_service" },
+      { type: "complete", status: "review_skipped", findings: 0 },
+    ]
+      .map((record) => JSON.stringify(record))
+      .join("\n");
+
+    const result = provider.parse(makeOutput(stdout));
+
+    expect(result.status).toBe("passed");
+    expect(result.findings).toHaveLength(0);
+  });
+
   it("classifies a JSON findings array of only bookkeeping records as unusable-output", () => {
     const provider = new CodeRabbitQcProvider();
     const output = makeOutput(

@@ -203,8 +203,7 @@ polaris-run uses these Polaris CLI calls:
 | Step | Polaris call | Purpose |
 |---|---|---|
 | 07 | `polaris loop run <cluster-id>` | Run all eligible children serially; emits `[POLARIS] RUNNING <child> (N/M)` per child and `[POLARIS] COMPLETE <child> (commit: <sha>)` on completion; exits when cluster-complete or blocked |
-| 08 | `polaris medic packet <cluster-id>` | Generate Medic packet for failed worker result (if triage required) |
-| 08 | Medic subagent dispatch | Dispatch Medic; wait for sealed result; validate result before proceeding |
+| 08 | Medic subagent dispatch | Dispatch Medic for failed worker result (if triage required); wait for sealed result; validate result before proceeding |
 | 09 | `polaris librarian packet <cluster-id>` | Generate Closeout Librarian packet for the completed cluster |
 | 09 | Librarian subagent dispatch | Dispatch Closeout Librarian; wait for sealed result; validate result before proceeding |
 | 10 | `polaris finalize` | Push branch (including librarian commit), open PR, append JSONL closeout events, archive run snapshot |

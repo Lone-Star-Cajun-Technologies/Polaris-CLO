@@ -170,6 +170,77 @@ function stripTrailingParenthetical(s: string): string {
   return s.replace(/\s*\([^)]*\)\s*$/, '').trim();
 }
 
+/** Returns true for tokens that look like a file path or glob pattern. */
+function isPathLikeToken(token: string): boolean {
+  return (
+    token.includes('/') ||
+    token.includes('*') ||
+    token.includes('.') ||
+    token.includes('?')
+  );
+}
+
+/**
+ * Normalizes a bare directory path into a glob pattern so that
+ * matchesAllowedScope() treats it as the directory and its contents.
+ */
+function normalizeDirectoryPattern(pattern: string): string {
+  if (pattern.endsWith('/') && !pattern.endsWith('/**')) {
+    return pattern + '**';
+  }
+  // Extract the final path segment to check for extensions
+  const lastSlashIndex = pattern.lastIndexOf('/');
+  const finalSegment = lastSlashIndex >= 0 ? pattern.slice(lastSlashIndex + 1) : pattern;
+
+  // Check if final segment has a file extension (not counting leading dot in dot-directories)
+  const hasExtension = finalSegment.startsWith('.')
+    ? finalSegment.slice(1).includes('.')  // For .github, .vscode: no extension. For .env.local: has extension
+    : finalSegment.includes('.');
+
+  if (
+    !hasExtension &&
+    !pattern.endsWith('*') &&
+    !pattern.endsWith('?')
+  ) {
+    return pattern + '/**';
+  }
+  return pattern;
+}
+
+/**
+ * Extracts bare file/glob patterns from a raw scope bullet line.
+ *
+ * Strips backticks and trailing prose (e.g. `src/foo.ts some comment`), splits
+ * comma/semicolon separated entries, and returns only path-like leading tokens.
+ */
+function parseScopeItem(raw: string): string[] {
+  const cleaned = raw.replace(/`/g, '').trim();
+  if (cleaned.length === 0) return [];
+
+  const parts = cleaned
+    .split(/[,;]+/)
+    .map((s) => stripTrailingParenthetical(s.trim()))
+    .filter((s) => s.length > 0);
+
+  const results: string[] = [];
+  for (const part of parts) {
+    const tokens = part.split(/\s+/);
+    const pathTokens: string[] = [];
+    for (const token of tokens) {
+      if (isPathLikeToken(token)) {
+        pathTokens.push(token);
+      } else {
+        break;
+      }
+    }
+    for (const pathToken of pathTokens) {
+      results.push(normalizeDirectoryPattern(pathToken));
+    }
+  }
+
+  return results;
+}
+
 /**
  * Extracts list items from the first section whose header matches a provided set.
  *
@@ -190,15 +261,15 @@ function findSection(sections: Map<string, string>, headers: Set<string>): strin
 }
 
 /**
- * Extracts list items from the Scope section, stripping trailing parenthetical annotations.
+ * Extracts raw list items from the Scope section, stripping trailing parenthetical annotations.
  *
  * Scope section items often include human-readable annotations like "(new)" or
- * "(thread flag through...)". These are stripped so that allowed_scope entries in
- * worker packets contain only bare file paths or valid glob patterns.
+ * "(thread flag through...)". These are stripped so that callers can then parse
+ * bare paths/globs with parseScopeItem.
  *
  * @param sections - Map of normalized header names to their section content
  * @param headers - Set of normalized Scope header variants (e.g., SCOPE_HEADERS)
- * @returns An array of scope paths with parentheticals removed, or an empty array if no Scope section is found
+ * @returns An array of raw scope strings with parentheticals removed, or an empty array if no Scope section is found
  */
 function findScopeSection(sections: Map<string, string>, headers: Set<string>): string[] {
   for (const [header, content] of sections) {
@@ -254,10 +325,12 @@ export function parseIssueBody(body: string): ParsedIssueBody {
 
   const rawScope = findScopeSection(sections, SCOPE_HEADERS);
   const scopeBlocked = rawScope.length > 0 && rawScope.every((item) => TBD_BLOCKED_RE.test(item));
-  const filteredScope = rawScope.filter((item) => !TBD_BLOCKED_RE.test(item));
+  const filteredScope = scopeBlocked
+    ? []
+    : rawScope.filter((item) => !TBD_BLOCKED_RE.test(item)).flatMap(parseScopeItem);
 
   return {
-    scope: scopeBlocked ? [] : filteredScope,
+    scope: filteredScope,
     scopeBlocked,
     validationCommands: findSection(sections, VALIDATION_HEADERS),
     requirements: findSection(sections, REQUIREMENTS_HEADERS),

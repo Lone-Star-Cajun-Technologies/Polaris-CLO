@@ -713,7 +713,7 @@ function buildCompactReturnForSealedResult(
   if (rawStatus === 'done' || rawStatus === 'failed' || rawStatus === 'blocked') {
     baseStatus = rawStatus;
   } else {
-    baseStatus = 'done';
+    baseStatus = 'failed';
   }
 
   const effectiveStatus: "done" | "failed" | "blocked" =
