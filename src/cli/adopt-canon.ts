@@ -3,6 +3,7 @@ import { join, relative } from "node:path";
 import { spawnSync } from "node:child_process";
 import { loadConfig } from "../config/loader.js";
 import { resolveLibrarianProvider } from "../smartdocs-engine/librarian-dispatch.js";
+import { hasDraftMarker } from "../smartdocs-engine/seed-instructions.js";
 
 const SKIP_DIRS = new Set(["node_modules", ".git", "dist", "build", ".polaris", "smartdocs"]);
 
@@ -293,7 +294,11 @@ export async function enrichCanonFiles(repoRoot: string): Promise<void> {
         ...response.polaris_lines,
         "",
       ].join("\n");
-      writeFileSync(polarisPath, polarisContent, "utf-8");
+      if (!existsSync(polarisPath) || hasDraftMarker(polarisPath)) {
+        writeFileSync(polarisPath, polarisContent, "utf-8");
+      } else {
+        console.log(`  Skipping POLARIS.md (existing non-draft): ${routeFolder}`);
+      }
     }
 
     enrichedCount++;
