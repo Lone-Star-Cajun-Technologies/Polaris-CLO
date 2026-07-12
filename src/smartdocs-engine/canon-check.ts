@@ -67,7 +67,7 @@ function locateCanonFiles(changedFiles: string[], repoRoot: string): Set<string>
   }
 
   // Active doctrine
-  const doctrineDir = join(repoRoot, "docs", "doctrine", "active");
+  const doctrineDir = join(repoRoot, "smartdocs", "doctrine", "active");
   if (existsSync(doctrineDir)) {
     for (const f of readdirSync(doctrineDir)) {
       if (f.endsWith(".md") && basename(f).toLowerCase() !== "summary.md") canon.add(join(doctrineDir, f));
@@ -84,7 +84,7 @@ function locateCanonFiles(changedFiles: string[], repoRoot: string): Set<string>
   }
 
   for (const specSubdir of ["active", "implemented"]) {
-    const specDir = join(repoRoot, "docs", "specs", specSubdir);
+    const specDir = join(repoRoot, "smartdocs", "specs", specSubdir);
     if (!existsSync(specDir)) continue;
     for (const f of readdirSync(specDir)) {
       if (!f.endsWith(".md") || basename(f).toLowerCase() === "summary.md") continue;
@@ -151,7 +151,7 @@ function checkPolarisMd(
         // Determine conflict type based on rule text and changed file
         let conflictType: Exclude<CanonOutcome, "aligned"> = "stale-implementation";
         const ext = changedFile.split(".").pop()?.toLowerCase() ?? "";
-        const isDocFile = ext === "md" || changedFile.startsWith("docs/");
+        const isDocFile = ext === "md" || changedFile.startsWith("smartdocs/");
         const hasDocKeywords = /\b(doc|documentation|readme|guide|spec)\b/i.test(lower);
         const hasCandidateKeywords = /\b(candidate|divergence|proposal)\b/i.test(lower);
 
@@ -325,7 +325,7 @@ export function runCanonCheck(options: CanonCheckOptions): CanonCheckResult {
 }
 
 function writeStaleDraftDocs(conflicts: CanonConflict[], repoRoot: string, childId?: string): void {
-  const rawDir = join(repoRoot, "docs", "raw");
+  const rawDir = join(repoRoot, "smartdocs", "raw");
   try {
     mkdirSync(rawDir, { recursive: true });
     for (const conflict of conflicts) {
@@ -352,7 +352,7 @@ function writeStaleDraftDocs(conflicts: CanonConflict[], repoRoot: string, child
 }
 
 function writeCandidateDraftDocs(conflicts: CanonConflict[], repoRoot: string, childId?: string): void {
-  const candidateDir = join(repoRoot, "docs", "doctrine", "candidate");
+  const candidateDir = join(repoRoot, "smartdocs", "doctrine", "candidate");
   try {
     mkdirSync(candidateDir, { recursive: true });
     for (const conflict of conflicts) {
