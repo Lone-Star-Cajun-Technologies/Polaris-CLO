@@ -128,6 +128,44 @@ describe("CodeRabbitQcProvider", () => {
     expect((thrown as { qcFailureReason?: string }).qcFailureReason).toBe("unusable-output");
   });
 
+  it("classifies a CodeRabbit error record as a provider failure", () => {
+    const provider = new CodeRabbitQcProvider();
+    const output = makeOutput(
+      JSON.stringify({
+        type: "error",
+        errorType: "rate_limit",
+        message: "Rate limit exceeded",
+        recoverable: true,
+      }),
+    );
+
+    let thrown: unknown;
+    try {
+      provider.parse(output);
+    } catch (err) {
+      thrown = err;
+    }
+
+    expect(thrown).toBeInstanceOf(Error);
+    expect((thrown as { qcFailureReason?: string }).qcFailureReason).toBe("rate-limited");
+  });
+
+  it("treats a complete review with zero findings as passed", () => {
+    const provider = new CodeRabbitQcProvider();
+    const stdout = [
+      { type: "review_context", reviewType: "all", currentBranch: "main", baseBranch: "main", workingDirectory: "/repo" },
+      { type: "status", phase: "connecting", status: "connecting_to_review_service" },
+      { type: "complete", status: "review_completed", findings: 0 },
+    ]
+      .map((record) => JSON.stringify(record))
+      .join("\n");
+
+    const result = provider.parse(makeOutput(stdout));
+
+    expect(result.status).toBe("passed");
+    expect(result.findings).toHaveLength(0);
+  });
+
   it("classifies a JSON findings array of only bookkeeping records as unusable-output", () => {
     const provider = new CodeRabbitQcProvider();
     const output = makeOutput(

@@ -93,6 +93,8 @@ const FINDING_BOOKKEEPING_KEYS = [
   "findingId",
 ];
 const PROGRESS_SHAPE_KEYS = new Set(["event", "progress", "heartbeat", "complete", "review_context"]);
+const ERROR_TYPE_RATE_LIMIT = new Set(["rate_limit", "rate-limit", "ratelimit", "rate limit"]);
+const ERROR_TYPE_AUTH = new Set(["auth", "authentication", "unauthorized", "unauthorised", "forbidden"]);
 const PROGRESS_TYPE_VALUES = new Set([
   "progress",
   "status",
@@ -171,6 +173,7 @@ function isProgressRecord(record: Record<string, unknown>): boolean {
 }
 
 function isActionableFinding(record: Record<string, unknown>): boolean {
+  if (isErrorRecord(record)) return false;
   if (isProgressRecord(record)) return false;
   return hasFindingLocation(record) || hasFindingContent(record);
 }
@@ -183,6 +186,53 @@ function makeUnusableOutputError(message: string): Error {
   const err = new Error(message);
   (err as { qcFailureReason?: QcFailureReason }).qcFailureReason = "unusable-output";
   return err;
+}
+
+function makeQcFailureError(reason: QcFailureReason, message: string): Error {
+  const err = new Error(message);
+  (err as { qcFailureReason?: QcFailureReason }).qcFailureReason = reason;
+  return err;
+}
+
+function isErrorRecord(record: Record<string, unknown>): boolean {
+  if (record.type === "error") return true;
+  if (typeof record.errorType === "string") return true;
+  if (record.error === true || record.error === "true") return true;
+  return false;
+}
+
+function errorTypeFromRecord(record: Record<string, unknown>): string | undefined {
+  const fromType = typeof record.errorType === "string" ? record.errorType : undefined;
+  const fromMessage = typeof record.message === "string" ? record.message : undefined;
+  return fromType ?? fromMessage;
+}
+
+function classifyErrorType(record: Record<string, unknown>): QcFailureReason {
+  const raw = errorTypeFromRecord(record);
+  const errorType = (raw ?? "").toString().toLowerCase().trim();
+  if (errorType === "") return "unavailable-provider";
+  if (ERROR_TYPE_RATE_LIMIT.has(errorType)) return "rate-limited";
+  if (ERROR_TYPE_AUTH.has(errorType)) return "auth-failure";
+  if (errorType.includes("rate limit")) return "rate-limited";
+  if (errorType.includes("auth")) return "auth-failure";
+  if (errorType.includes("unauthorized")) return "auth-failure";
+  if (errorType.includes("forbidden")) return "auth-failure";
+  if (["timeout", "timed out"].includes(errorType)) return "timeout";
+  if (errorType.includes("not found") || errorType.includes("not_found")) return "command-not-found";
+  if (errorType.includes("unavailable") || errorType.includes("api_error") || errorType.includes("apierror") || errorType.includes("server") || errorType.includes("network") || errorType.includes("connection") || errorType.includes("internal")) {
+    return "unavailable-provider";
+  }
+  return "unavailable-provider";
+}
+
+function isTerminalCompleteNoFindings(record: Record<string, unknown>): boolean {
+  if (record.type !== "complete") return false;
+  const status = typeof record.status === "string" ? record.status.toLowerCase() : "";
+  if (status !== "review_completed" && status !== "review_skipped") return false;
+  const findings = record.findings;
+  if (findings === undefined) return false;
+  const count = typeof findings === "number" ? findings : Number(findings);
+  return Number.isFinite(count) && count === 0;
 }
 
 function buildRange(raw: CodeRabbitFindingLike) {
@@ -210,25 +260,34 @@ function parseFindingsFromPayload(payload: unknown): CodeRabbitFindingLike[] {
 
   const record = payload as Record<string, unknown>;
 
-  if (Array.isArray(record.findings)) {
-    return (record.findings as unknown[]).filter(
-      (item): item is CodeRabbitFindingLike =>
-        typeof item === "object" && item !== null && isActionableFinding(item as Record<string, unknown>),
+  if (isErrorRecord(record)) {
+    throw makeQcFailureError(
+      classifyErrorType(record),
+      `CodeRabbit provider returned an error: ${record.message ?? record.errorType ?? "unknown"}`,
     );
   }
 
-  if (Array.isArray(record.issues)) {
-    return (record.issues as unknown[]).filter(
-      (item): item is CodeRabbitFindingLike =>
-        typeof item === "object" && item !== null && isActionableFinding(item as Record<string, unknown>),
-    );
-  }
-
-  if (Array.isArray(record.results)) {
-    return (record.results as unknown[]).filter(
-      (item): item is CodeRabbitFindingLike =>
-        typeof item === "object" && item !== null && isActionableFinding(item as Record<string, unknown>),
-    );
+  const arrays = [record.findings, record.issues, record.results];
+  for (const arr of arrays) {
+    if (Array.isArray(arr)) {
+      const findings: CodeRabbitFindingLike[] = [];
+      for (const item of arr as unknown[]) {
+        if (typeof item !== "object" || item === null) {
+          continue;
+        }
+        const itemRecord = item as Record<string, unknown>;
+        if (isErrorRecord(itemRecord)) {
+          throw makeQcFailureError(
+            classifyErrorType(itemRecord),
+            `CodeRabbit provider returned an error in findings array: ${itemRecord.message ?? itemRecord.errorType ?? "unknown"}`,
+          );
+        }
+        if (isActionableFinding(itemRecord)) {
+          findings.push(item as CodeRabbitFindingLike);
+        }
+      }
+      return findings;
+    }
   }
 
   // Single finding wrapped in an object
@@ -260,6 +319,10 @@ function parseReport(
     const record = data as Record<string, unknown>;
 
     if (findings.length === 0) {
+      if (isTerminalCompleteNoFindings(record)) {
+        return { findings: [] };
+      }
+
       if (isProgressRecord(record)) {
         throw makeUnusableOutputError("CodeRabbit output was a progress/status/heartbeat record");
       }
@@ -295,10 +358,22 @@ function parseReport(
     try {
       const parsed = JSON.parse(text) as unknown;
       if (Array.isArray(parsed)) {
-        const findings = (parsed as unknown[]).filter(
-          (item): item is CodeRabbitFindingLike =>
-            typeof item === "object" && item !== null && isActionableFinding(item as Record<string, unknown>),
-        );
+        const findings: CodeRabbitFindingLike[] = [];
+        for (const item of parsed as unknown[]) {
+          if (typeof item !== "object" || item === null) {
+            continue;
+          }
+          const itemRecord = item as Record<string, unknown>;
+          if (isErrorRecord(itemRecord)) {
+            throw makeQcFailureError(
+              classifyErrorType(itemRecord),
+              `CodeRabbit provider returned an error in JSON array: ${itemRecord.message ?? itemRecord.errorType ?? "unknown"}`,
+            );
+          }
+          if (isActionableFinding(itemRecord)) {
+            findings.push(item as CodeRabbitFindingLike);
+          }
+        }
         if (findings.length === 0 && parsed.length > 0) {
           const unusableCount = (parsed as unknown[]).filter(
             (item) => typeof item === "object" && item !== null && isUnusableFindingRecord(item as Record<string, unknown>),
@@ -314,6 +389,9 @@ function parseReport(
       const findings = parseFindingsFromPayload(parsed);
       if (findings.length === 0) {
         const parsedRecord = parsed as Record<string, unknown>;
+        if (isTerminalCompleteNoFindings(parsedRecord)) {
+          return { findings: [] };
+        }
         if (isProgressRecord(parsedRecord)) {
           throw makeUnusableOutputError("CodeRabbit output was a progress/status/heartbeat record");
         }
@@ -371,8 +449,14 @@ function parseReport(
         continue;
       }
       const record = parsed as Record<string, unknown>;
-      if (record.type === "complete" && record.status === "review_skipped") {
+      if (isTerminalCompleteNoFindings(record)) {
         sawExplicitSkip = true;
+      }
+      if (isErrorRecord(record)) {
+        throw makeQcFailureError(
+          classifyErrorType(record),
+          `CodeRabbit provider returned an error in JSONL: ${record.message ?? record.errorType ?? "unknown"}`,
+        );
       }
       if (isProgressRecord(record)) {
         progressLineCount++;
@@ -383,7 +467,10 @@ function parseReport(
       } else if (isUnusableFindingRecord(record)) {
         unusableLineCount++;
       }
-    } catch {
+    } catch (err) {
+      if (typeof err === "object" && err !== null && "qcFailureReason" in err) {
+        throw err;
+      }
       // Ignore unparseable lines.
     }
   }

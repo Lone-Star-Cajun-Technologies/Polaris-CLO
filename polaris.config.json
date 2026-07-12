@@ -169,6 +169,7 @@
         "failurePolicy": {
           "timeout": "fail",
           "parseFailure": "fail",
+          "rateLimited": "ignore",
           "allProvidersFailed": "block"
         },
         "rateLimit": {
