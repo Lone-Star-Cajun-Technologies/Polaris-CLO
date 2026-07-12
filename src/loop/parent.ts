@@ -20,7 +20,7 @@
 
 import { appendFileSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
-import { dirname, isAbsolute, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { ensureDeliveryBranch } from "./git-custody.js";
 import {
   readState,
@@ -748,6 +748,8 @@ async function syncClusterCompletion(args: {
           },
         };
 
+  const relativeResultFile = args.resultFile ? relative(args.repoRoot, args.resultFile) : args.resultFile;
+
   await writeClusterState(
     args.clusterId,
     {
@@ -757,10 +759,10 @@ async function syncClusterCompletion(args: {
       claim_metadata: Object.fromEntries(
         Object.entries(clusterState.claim_metadata).filter(([childId]) => childId !== args.childId),
       ),
-      result_pointers: args.resultFile
+      result_pointers: relativeResultFile
         ? {
             ...clusterState.result_pointers,
-            [args.childId]: args.resultFile,
+            [args.childId]: relativeResultFile,
           }
         : clusterState.result_pointers,
       validation_results: nextValidationResults,
@@ -808,6 +810,8 @@ async function syncClusterDispatch(args: {
       )
     : [...clusterState.child_states, { id: args.childId, status: "dispatched" }];
 
+  const relativePacketPath = relative(args.repoRoot, args.packetPath);
+
   await writeClusterState(
     args.clusterId,
     {
@@ -824,7 +828,7 @@ async function syncClusterDispatch(args: {
       },
       packet_pointers: {
         ...clusterState.packet_pointers,
-        [args.childId]: args.packetPath,
+        [args.childId]: relativePacketPath,
       },
     },
     args.repoRoot,

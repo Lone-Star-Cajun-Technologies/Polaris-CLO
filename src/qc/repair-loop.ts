@@ -28,6 +28,7 @@ import type {
 import {
   compileAndWriteRepairPackets,
   readRepairPacketManifest,
+  writeRepairPacketManifest,
   getRepairRoundDir,
 } from "./repair-packets.js";
 import { QC_RESOLUTION_OUTCOMES } from "./types.js";
@@ -616,10 +617,23 @@ export async function runQcRepairLoop(
       const existingManifestPath =
         loopState.manifest_path ??
         join(repoRoot, ".polaris", "clusters", clusterId, "qc", "repair-rounds", String(round), "repair-packets.json");
+
+      // Synchronize manifest packet statuses with the persisted loop state.
+      const completedSet = new Set(loopState.completed_packet_ids);
+      for (const packet of manifest.packets) {
+        if (completedSet.has(packet.packetId)) {
+          packet.status = "completed";
+        }
+      }
+      writeRepairPacketManifest(manifest, repoRoot);
+
       loopState = {
         ...loopState,
         current_round: round,
         manifest_path: existingManifestPath,
+        pending_packet_ids: manifest.packets
+          .filter((p) => p.status === "pending" && !completedSet.has(p.packetId))
+          .map((p) => p.packetId),
         updated_at: new Date().toISOString(),
       };
       onStateUpdate?.(loopState);
@@ -725,10 +739,17 @@ export async function runQcRepairLoop(
       allWorkerResults.push(result);
     }
 
-    // Record completed packet IDs.
+    // Record completed packet IDs and update manifest statuses.
     const completedIds = allWorkerResults
       .filter((r) => r.status !== "skipped")
       .map((r) => r.packetId);
+    for (const packet of manifest.packets) {
+      if (completedIds.includes(packet.packetId)) {
+        packet.status = "completed";
+      }
+    }
+    writeRepairPacketManifest(manifest, repoRoot);
+
     loopState = {
       ...loopState,
       completed_packet_ids: [...loopState.completed_packet_ids, ...completedIds],

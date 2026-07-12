@@ -1,4 +1,4 @@
-import { join, isAbsolute, resolve, dirname } from "node:path";
+import { join, isAbsolute, resolve, dirname, relative } from "node:path";
 import { existsSync, readFileSync, appendFileSync, statSync, mkdirSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { execFileSync } from "node:child_process";
@@ -341,12 +341,13 @@ function bridgeEvidenceToClusterState(
   // Evict any stale commit entry for this child before conditionally re-adding
   const { [childId]: _staleCommit, ...remainingCommits } = existing.commits;
 
+  const relativeResultFile = resultFile ? relative(repoRoot, resultFile) : resultFile;
   const updated: ClusterState = {
     ...existing,
     state_generation: existing.state_generation + 1,
     child_states: updatedChildStates,
     commits: commit ? { ...remainingCommits, [childId]: commit } : remainingCommits,
-    result_pointers: resultFile ? { ...existing.result_pointers, [childId]: resultFile } : existing.result_pointers,
+    result_pointers: relativeResultFile ? { ...existing.result_pointers, [childId]: relativeResultFile } : existing.result_pointers,
     validation_results: { ...existing.validation_results, [childId]: toValidationResult(rawValidation) },
   };
 

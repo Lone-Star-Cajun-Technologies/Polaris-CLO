@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { mkdirSync, writeFileSync, readFileSync, existsSync, rmSync, statSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { join, dirname, relative } from "node:path";
 import { tmpdir } from "node:os";
 import { execFileSync } from "node:child_process";
 import { runLoopContinue } from "./continue.js";
@@ -913,7 +913,7 @@ describe("runLoopContinue", () => {
     const cs = readClusterStateSync("POL-5", testDir);
     expect(cs).not.toBeNull();
     expect(cs!.commits["POL-23"]).toBe("deadbeef1234");
-    expect(cs!.result_pointers["POL-23"]).toBe(resultFile);
+    expect(cs!.result_pointers["POL-23"]).toBe(relative(testDir, resultFile));
     expect(cs!.validation_results["POL-23"]).toMatchObject({ passed: true });
     const childState = cs!.child_states.find((c) => c.id === "POL-23");
     expect(childState?.status).toBe("done");

@@ -356,6 +356,43 @@ function defaultLifecycle(
   };
 }
 
+/** Derives the adjacent test file path for a single source TypeScript file. */
+function deriveTestPath(sourcePath: string): string | null {
+  if (!sourcePath.endsWith('.ts') || sourcePath.endsWith('.test.ts') || sourcePath.endsWith('.d.ts')) {
+    return null;
+  }
+  if (sourcePath.includes('*') || sourcePath.includes('?')) {
+    return null;
+  }
+  return sourcePath.replace(/\.ts$/, '.test.ts');
+}
+
+/**
+ * Expands an allowed scope list with adjacent test paths when the validation
+ * commands include a vitest run. This lets workers touch test files for source
+ * files they are modifying, matching the `*.test.ts` validation commands.
+ */
+function expandScopeWithTestPaths(scope: string[], validationCommands: string[]): string[] {
+  const hasVitest = validationCommands.some((cmd) => cmd.includes('vitest'));
+  if (!hasVitest || scope.length === 0) return scope;
+
+  const testPaths = new Set<string>();
+  for (const item of scope) {
+    const testPath = deriveTestPath(item);
+    if (testPath) testPaths.add(testPath);
+  }
+
+  if (testPaths.size === 0) return scope;
+
+  const expanded = [...scope];
+  for (const testPath of testPaths) {
+    if (!expanded.includes(testPath)) {
+      expanded.push(testPath);
+    }
+  }
+  return expanded;
+}
+
 // ── Impl worker packet compiler ───────────────────────────────────────────────
 
 export interface CompileStartupPacketInput {
@@ -483,6 +520,9 @@ export function compileImplPacket(input: CompileImplPacketInput): WorkerPacket {
     ? input.issueContext.key_requirements
     : bodyParsed?.requirements ?? [];
 
+  // Include adjacent test files when the validation commands indicate a vitest run.
+  const expandedScope = expandScopeWithTestPaths(resolvedScope, resolvedValidation);
+
   const requirementLines = resolvedRequirements.map((r, i) => `   ${i + 1}. ${r}`);
 
   const bodyLines = input.issueContext?.body
@@ -514,7 +554,7 @@ export function compileImplPacket(input: CompileImplPacketInput): WorkerPacket {
     stateFile: input.stateFile,
     telemetryFile: input.telemetryFile,
     issueContext: input.issueContext,
-    allowedScope: resolvedScope,
+    allowedScope: expandedScope,
     validationCommands: resolvedValidation,
     mode: promptMode,
     simplicityMode: input.simplicityMode,
@@ -531,7 +571,7 @@ export function compileImplPacket(input: CompileImplPacketInput): WorkerPacket {
     instructions: {
       primary_goal: promptResult.prompt,
       steps,
-      allowed_scope: resolvedScope,
+      allowed_scope: expandedScope,
       validation_commands: resolvedValidation,
       issue_context: input.issueContext,
     },
