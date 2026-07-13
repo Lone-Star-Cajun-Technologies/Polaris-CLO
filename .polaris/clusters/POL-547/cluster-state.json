@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "cluster_id": "POL-547",
-  "state_generation": 32,
+  "state_generation": 36,
   "child_states": [
     {
       "id": "POL-548",
@@ -130,6 +130,22 @@
       "provider": "coderabbit",
       "started_at": "2026-07-13T18:10:13.811Z",
       "completed_at": "2026-07-13T18:17:59.456Z",
+      "availability": "available"
+    },
+    "coderabbit-1783967455222": {
+      "artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-547/qc/coderabbit-1783967455222.json",
+      "status": "findings",
+      "provider": "coderabbit",
+      "started_at": "2026-07-13T18:23:02.425Z",
+      "completed_at": "2026-07-13T18:30:55.222Z",
+      "availability": "available"
+    },
+    "coderabbit-1783967849655": {
+      "artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-547/qc/coderabbit-1783967849655.json",
+      "status": "findings",
+      "provider": "coderabbit",
+      "started_at": "2026-07-13T18:31:55.586Z",
+      "completed_at": "2026-07-13T18:37:29.655Z",
       "availability": "available"
     }
   },

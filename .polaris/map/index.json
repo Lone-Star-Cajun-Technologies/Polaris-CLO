@@ -1,5 +1,5 @@
 {
-  "scan_date": "2026-07-13T18:10:13.567Z",
+  "scan_date": "2026-07-13T18:31:55.328Z",
   "file_count": 735,
   "coverage_pct": 92,
   "instructionCoverage": {
@@ -1660,8 +1660,8 @@
       "taskchain": "polaris-finalize",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-07-04T02:53:23.054Z",
-      "updated_by": "polaris-map-index",
+      "last_updated": "2026-07-13T18:31:55.328Z",
+      "updated_by": "polaris-map-update",
       "tags": [
         "finalize",
         "test"
@@ -1674,8 +1674,8 @@
       "taskchain": "polaris-finalize",
       "confidence": 0.9,
       "classification": "indexed",
-      "last_updated": "2026-07-04T02:53:23.054Z",
-      "updated_by": "polaris-map-index",
+      "last_updated": "2026-07-13T18:31:55.328Z",
+      "updated_by": "polaris-map-update",
       "tags": [
         "finalize"
       ],
