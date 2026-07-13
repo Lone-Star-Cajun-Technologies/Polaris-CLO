@@ -292,12 +292,17 @@ describe("stepCommit", () => {
     expect(files).not.toContain(".taskchain_artifacts/polaris-run/current-state.json");
   });
 
-  it("stages the archived run directory alongside promoted cluster artifacts", async () => {
+  it("does not stage the per-run archive directory even when it already exists", async () => {
     const { stepCommit } = await import("./steps/06-commit.js");
     const { readState } = await import("../loop/checkpoint.js");
     const stateFile = writeState(testDir);
     const state = readState(stateFile);
     const reportPath = join(testDir, ".polaris", "runs", "run-report.md");
+
+    // The per-run archive directory is git-ignored per POL-548.
+    writeFileSync(join(testDir, ".gitignore"), ".polaris/runs/*/\n");
+    execFileSync("git", ["add", ".gitignore"], { cwd: testDir, stdio: "pipe" });
+    execFileSync("git", ["commit", "-m", "ignore per-run archives"], { cwd: testDir, stdio: "pipe" });
 
     writeEmptyAtlas(testDir);
     writeDurableClusterArtifacts(testDir, state.cluster_id);
@@ -315,9 +320,9 @@ describe("stepCommit", () => {
       encoding: "utf-8",
     }).trim().split("\n").filter(Boolean);
 
-    expect(files).toContain(`.polaris/runs/${state.run_id}/current-state.json`);
-    expect(files).toContain(`.polaris/runs/${state.run_id}/run-report.md`);
-    expect(files).toContain(`.polaris/runs/${state.run_id}/telemetry.jsonl`);
+    expect(files).not.toContain(`.polaris/runs/${state.run_id}/current-state.json`);
+    expect(files).not.toContain(`.polaris/runs/${state.run_id}/run-report.md`);
+    expect(files).not.toContain(`.polaris/runs/${state.run_id}/telemetry.jsonl`);
   });
 });
 

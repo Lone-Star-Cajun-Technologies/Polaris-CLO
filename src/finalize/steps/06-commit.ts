@@ -9,8 +9,7 @@ import {
 
 export function stepCommit(repoRoot: string, state: LoopState, _stateFile: string, _reportPath: string): string {
   const msg = `polaris finalize: ${state.run_id}\n\nChildren: ${state.completed_children.length} completed\nBranch: ${getBranch(repoRoot)}`;
-  const runArchiveTarget = `.polaris/runs/${state.run_id}`;
-  const promotedTargets = [...getArtifactPromotionStageTargets(state.cluster_id), runArchiveTarget]
+  const promotedTargets = getArtifactPromotionStageTargets(state.cluster_id)
     .filter((target) => existsSync(join(repoRoot, target)));
   if (promotedTargets.length > 0) {
     execFileSync("git", ["add", "--", ...promotedTargets], { cwd: repoRoot, stdio: "inherit" });
