@@ -328,7 +328,7 @@ describe("stepUpdateState", () => {
   beforeEach(() => { testDir = makeTestDir(); });
   afterEach(() => { rmSync(testDir, { recursive: true, force: true }); });
 
-  it("writes pr_url to current-state.json", async () => {
+  it("writes pr_url and status to current-state.json", async () => {
     const { stepUpdateState } = await import("./steps/09-update-state.js");
     const { readState } = await import("../loop/checkpoint.js");
     const stateFile = writeState(testDir);
@@ -337,6 +337,7 @@ describe("stepUpdateState", () => {
 
     const updated = JSON.parse(readFileSync(stateFile, "utf-8")) as Record<string, unknown>;
     expect(updated["pr_url"]).toBe("https://github.com/test/repo/pull/42");
+    expect(updated["status"]).toBe("complete");
   });
 });
 

@@ -1092,6 +1092,14 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
   const resolvedStateFile = resolve(stateFile);
   stepCommit(repoRoot, state, resolvedStateFile, reportPath);
 
+  // The run's local state file is the authoritative place for post-PR state
+  // (pr_url, status: complete). When the state file passed to finalize is the
+  // tracked cluster snapshot, redirect post-PR writes to the untracked per-run
+  // archive so the cluster snapshot is never written after PR creation.
+  const runLocalStateFile = isClusterStateSnapshotFile(resolvedStateFile)
+    ? resolve(repoRoot, ".polaris", "runs", state.run_id, "current-state.json")
+    : resolvedStateFile;
+
   if (skipDelivery) {
     console.log("[9–14/14] Delivery skipped (--skip-delivery).");
     console.log("polaris finalize steps 1–8 complete.");
@@ -1119,24 +1127,9 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
     stepLabel: "[10.5/14]",
   });
 
-  // Step 11: Write PR URL to current-state.json
+  // Step 11: Write PR URL to the run's local state file
   console.log("[11/14] Writing PR URL to state...");
-  state = stepUpdateState(resolvedStateFile, state, prUrl);
-
-  // Promote the authoritative run state into the cluster snapshot so that
-  // `.polaris/clusters/<id>/state.json` preserves completed children, the
-  // dispatch boundary, QC repair-loop terminal state, and the PR URL.
-  try {
-    const clusterStateSnapshotPath = join(repoRoot, ".polaris", "clusters", state.cluster_id, "state.json");
-    writeStateAtomic(clusterStateSnapshotPath, state);
-  } catch (snapshotError) {
-    process.stderr.write(
-      `[11/14] WARNING: Failed to write cluster state snapshot: ${snapshotError instanceof Error ? snapshotError.message : String(snapshotError)}\n`
-    );
-    process.stderr.write(
-      `Delivery will proceed, but cluster state snapshot at .polaris/clusters/${state.cluster_id}/state.json may be incomplete.\n`
-    );
-  }
+  state = stepUpdateState(runLocalStateFile, state, prUrl);
 
   // Step 12: Append JSONL events
   console.log("[12/14] Appending JSONL events...");
@@ -1152,7 +1145,7 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
 
   // Step 14: Archive run snapshot
   console.log("[14/14] Archiving run snapshot...");
-  stepArchive(repoRoot, state, resolvedStateFile, reportPath);
+  stepArchive(repoRoot, state, runLocalStateFile, reportPath);
 
   console.log("polaris finalize complete.");
 }
