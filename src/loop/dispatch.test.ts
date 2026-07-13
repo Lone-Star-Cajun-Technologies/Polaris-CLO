@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
-import { runLoopDispatch, checkAcknowledgmentTimeout } from "./dispatch.js";
+import { runLoopDispatch, checkAcknowledgmentTimeout, resolveProviderAndMode } from "./dispatch.js";
 import { readState } from "./checkpoint.js";
 import { createBootstrapSeal } from "./run-bootstrap.js";
 import { buildWorkerInstructions } from "./adapters/worker-instructions.js";
@@ -1513,5 +1513,38 @@ describe("result_file_contract — dispatch contract consistency", () => {
     expect(liveRfc).toBeDefined();
     expect(typeof liveRfc.result_file).toBe("string");
     expect(Object.keys(liveRfc)).toContain("result_file");
+  });
+});
+
+// ── Resolve provider and mode unit coverage ─────────────────────────────────
+
+describe("resolveProviderAndMode", () => {
+  it("selects first configured provider under role policy when rotation is not configured", () => {
+    const decision = resolveProviderAndMode(
+      { repoRoot: "/tmp", stateFile: "/tmp/state.json" },
+      "worker",
+      {
+        execution: {
+          adapter: "terminal-cli",
+          providers: { codex: { command: "codex" }, copilot: { command: "copilot" } },
+          providerPolicy: {
+            worker: { providers: ["codex", "copilot"] },
+          },
+        },
+      } as unknown as NonNullable<Parameters<typeof resolveProviderAndMode>[2]>,
+    );
+
+    expect(decision.provider).toBe("codex");
+    expect(decision.selectionReason).toBe("role-policy");
+    expect(decision.mode).toBe("direct-worker");
+    expect(decision.routingSummary).toMatchObject({
+      selected_provider: "codex",
+      selected_adapter: "terminal-cli",
+      selection_reason: "role-policy",
+      effective_policy_order: ["codex", "copilot"],
+      compatibility_mode: true,
+      registry_present: false,
+      fallback_eligible: true,
+    });
   });
 });

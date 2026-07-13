@@ -407,6 +407,7 @@ export async function runMedicRunHealthConsult(
           stateFile,
           telemetryFile,
           branch,
+          repoRoot,
           maxConcurrentWorkers,
         });
         results.push(result);

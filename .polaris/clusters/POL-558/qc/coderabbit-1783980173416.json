@@ -1,0 +1,52 @@
+{
+  "schemaVersion": "1.0",
+  "qcRunId": "coderabbit-1783980173416",
+  "runId": "polaris-run-provider-routing-evidence-2026-07-13-001",
+  "clusterId": "POL-558",
+  "trigger": "completed-cluster",
+  "provider": "coderabbit",
+  "providerMode": "local",
+  "startedAt": "2026-07-13T21:54:23.886Z",
+  "completedAt": "2026-07-13T22:02:53.416Z",
+  "status": "findings",
+  "findings": [
+    {
+      "findingId": "coderabbit-1-1783980173416",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-558/packets/librarian-packet-26e17388-3da8-4d72-9b4c-b5172397df2b.json around lines 181 - 194, Update the packet-generation logic that assembles prohibited_write_paths to deduplicate entries, specifically preventing repeated state.json paths while preserving all distinct paths and their existing behavior; do not edit the sealed packet directly.",
+      "filePath": ".polaris/clusters/POL-558/packets/librarian-packet-26e17388-3da8-4d72-9b4c-b5172397df2b.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-558/packets/librarian-packet-26e17388-3da8-4d72-9b4c-b5172397df2b.json"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    }
+  ],
+  "rawArtifactPaths": [],
+  "parserVersion": "coderabbit-1.0",
+  "policyDecision": {
+    "blocksDelivery": false,
+    "requiresOperatorReview": false,
+    "routedToRepair": false,
+    "summary": "1 findings"
+  },
+  "providerAttempt": {
+    "provider": "coderabbit",
+    "status": "success",
+    "rawOutputAvailable": true,
+    "rawOutputRetained": false,
+    "stdoutLength": 1792,
+    "stderrLength": 0,
+    "exitCode": 0,
+    "parserResult": "success"
+  }
+}

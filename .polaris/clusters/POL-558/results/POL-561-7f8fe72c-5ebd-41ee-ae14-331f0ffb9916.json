@@ -1,0 +1,9 @@
+{
+  "run_id": "polaris-run-provider-routing-evidence-2026-07-13-001",
+  "cluster_id": "POL-558",
+  "child_id": "POL-561",
+  "status": "done",
+  "commit": "73f91e95961c950e17647b99bb4a3db216afd832",
+  "validation": "passed",
+  "next_recommended_action": "continue"
+}

@@ -365,15 +365,10 @@ function deriveTestPaths(sourcePath: string): string[] {
   if (sourcePath.includes('*') || sourcePath.includes('?')) {
     return [];
   }
-  const candidates = [sourcePath.replace(/\.ts$/, '.test.ts')];
   if (sourcePath.endsWith('/index.ts')) {
-    const dir = sourcePath.slice(0, -'/index.ts'.length);
-    const dirName = path.basename(dir);
-    if (dirName) {
-      candidates.push(`${dir}/${dirName}.test.ts`);
-    }
+    return [];
   }
-  return candidates;
+  return [sourcePath.replace(/\.ts$/, '.test.ts')];
 }
 
 /**
