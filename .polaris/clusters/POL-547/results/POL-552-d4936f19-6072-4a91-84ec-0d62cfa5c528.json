@@ -1,0 +1,8 @@
+{
+  "run_id": "polaris-run-terminal-finalize-followup-2026-07-13-001",
+  "child_id": "POL-552",
+  "status": "done",
+  "commit": "2065679e2935c355f6e827f504d0f4d8c2eef918",
+  "validation": "skipped",
+  "next_recommended_action": "continue"
+}

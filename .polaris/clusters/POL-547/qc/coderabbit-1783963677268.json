@@ -1,0 +1,112 @@
+{
+  "schemaVersion": "1.0",
+  "qcRunId": "coderabbit-1783963677268",
+  "runId": "polaris-run-terminal-finalize-followup-2026-07-13-001",
+  "clusterId": "POL-547",
+  "trigger": "completed-cluster",
+  "provider": "coderabbit",
+  "providerMode": "local",
+  "startedAt": "2026-07-13T17:23:02.937Z",
+  "completedAt": "2026-07-13T17:27:57.268Z",
+  "status": "blocked",
+  "findings": [
+    {
+      "findingId": "coderabbit-1-1783963677268",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-547/results/POL-552-d4936f19-6072-4a91-84ec-0d62cfa5c528.json around lines 1 - 7, Update the result record to include the required run_id and cluster_id fields, and reconcile validation with the completion contract by recording a passing validation result before setting next_recommended_action to continue. If validation remains skipped or the sibling QC run still blocks delivery, change the recommendation to prevent continuation.",
+      "filePath": ".polaris/clusters/POL-547/results/POL-552-d4936f19-6072-4a91-84ec-0d62cfa5c528.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-547/results/POL-552-d4936f19-6072-4a91-84ec-0d62cfa5c528.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-2-1783963677268",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-547/qc/repair-rounds/2/resolution.json around lines 7 - 13, Update the resolvedOutcome and reason in the POL-547 round-2 resolution to keep the POL-99 validation failure actionable rather than marking all findings “no-repairable.” Preserve the distinction between unrelated bookkeeping findings and the POL-99 repair packet routed for operator review, and explicitly retain the contradictory npm run build pass/failure signal for resolution.",
+      "filePath": ".polaris/clusters/POL-547/qc/repair-rounds/2/resolution.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-547/qc/repair-rounds/2/resolution.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-3-1783963677268",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-99/medic/test-run-001-r1-POL-100_validation-failed_0-result.json at line 1, Update the validation result for test run POL-100 so the failed build is removed from validation.passed and recorded in the schema’s failure field. Change next_recommended_action from continue to the appropriate unresolved-failure action, preserving the existing run_health_symptoms entry.",
+      "filePath": ".polaris/clusters/POL-99/medic/test-run-001-r1-POL-100_validation-failed_0-result.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-99/medic/test-run-001-r1-POL-100_validation-failed_0-result.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-4-1783963677268",
+      "severity": "critical",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-547/clusters.json around lines 77 - 78, Remove the trailing POL-552/POL-551 JSON fragment after the root object closes in clusters.json, leaving only one valid root object and preserving the existing POL-548 children entry.",
+      "filePath": ".polaris/clusters/POL-547/clusters.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-547/clusters.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    }
+  ],
+  "rawArtifactPaths": [],
+  "parserVersion": "coderabbit-1.0",
+  "policyDecision": {
+    "blocksDelivery": true,
+    "requiresOperatorReview": true,
+    "routedToRepair": false,
+    "summary": "4 findings; operator review required"
+  },
+  "providerAttempt": {
+    "provider": "coderabbit",
+    "status": "success",
+    "rawOutputAvailable": true,
+    "rawOutputRetained": false,
+    "stdoutLength": 3948,
+    "stderrLength": 0,
+    "exitCode": 0,
+    "parserResult": "success"
+  }
+}

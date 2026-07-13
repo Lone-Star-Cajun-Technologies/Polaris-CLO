@@ -1,0 +1,92 @@
+{
+  "schemaVersion": "1.0",
+  "clusterId": "POL-547",
+  "round": 2,
+  "compiledAt": "2026-07-13T16:40:02.821Z",
+  "sourceQcRunIds": [
+    "coderabbit-1783960802731"
+  ],
+  "packets": [
+    {
+      "packetId": "pkt-POL-547-r2-000",
+      "round": 2,
+      "clusterId": "POL-547",
+      "sourceQcRunIds": [
+        "coderabbit-1783960802731"
+      ],
+      "findingIds": [
+        "coderabbit-1-1783960802731",
+        "coderabbit-3-1783960802731"
+      ],
+      "severityFloor": "low",
+      "rootCauseHint": "categories=[finding]; files=[.polaris/clusters/POL-434/medic/polaris-run-pol-434-2026-07-12-001-r1-qc_qc-blocking-findings_d18c24e0-55f9-4799-bd50-013287cc8173.json, .polaris/clusters/POL-434/medic/polaris-run-pol-434-2026-07-12-001-r2-qc_qc-blocking-findings_d18c24e0-55f9-4799-bd50-013287cc8173.json]; confidence=unclear; severity=low",
+      "allowedScope": [
+        ".polaris/clusters/POL-434/medic/polaris-run-pol-434-2026-07-12-001-r1-qc_qc-blocking-findings_d18c24e0-55f9-4799-bd50-013287cc8173.json",
+        ".polaris/clusters/POL-434/medic/polaris-run-pol-434-2026-07-12-001-r2-qc_qc-blocking-findings_d18c24e0-55f9-4799-bd50-013287cc8173.json"
+      ],
+      "prohibitedScope": [],
+      "validationCommands": [],
+      "routingTarget": "follow-up",
+      "parallelGroup": "g-000",
+      "conflicts": [
+        "pkt-POL-547-r2-002"
+      ],
+      "medic": false,
+      "status": "pending",
+      "createdAt": "2026-07-13T16:40:02.821Z"
+    },
+    {
+      "packetId": "pkt-POL-547-r2-001",
+      "round": 2,
+      "clusterId": "POL-547",
+      "sourceQcRunIds": [
+        "coderabbit-1783960802731"
+      ],
+      "findingIds": [
+        "coderabbit-2-1783960802731"
+      ],
+      "severityFloor": "low",
+      "rootCauseHint": "categories=[finding]; files=[.polaris/clusters/POL-547/medic/polaris-run-terminal-finalize-2026-07-13-001-r1-qc_qc-blocking-findings_5166951b-cb9e-4dd6-aabc-09e17a40152c.json]; confidence=unclear; severity=low",
+      "allowedScope": [
+        ".polaris/clusters/POL-547/medic/polaris-run-terminal-finalize-2026-07-13-001-r1-qc_qc-blocking-findings_5166951b-cb9e-4dd6-aabc-09e17a40152c.json"
+      ],
+      "prohibitedScope": [],
+      "validationCommands": [],
+      "routingTarget": "follow-up",
+      "parallelGroup": "g-000",
+      "conflicts": [
+        "pkt-POL-547-r2-002"
+      ],
+      "medic": false,
+      "status": "pending",
+      "createdAt": "2026-07-13T16:40:02.821Z"
+    },
+    {
+      "packetId": "pkt-POL-547-r2-002",
+      "round": 2,
+      "clusterId": "POL-547",
+      "sourceQcRunIds": [
+        "coderabbit-1783960802731"
+      ],
+      "findingIds": [
+        "coderabbit-4-1783960802731"
+      ],
+      "severityFloor": "high",
+      "rootCauseHint": "categories=[finding]; files=[.polaris/clusters/POL-99/medic/test-run-001-r1-POL-100_validation-failed_0-result.json]; confidence=unclear; severity=high",
+      "allowedScope": [
+        ".polaris/clusters/POL-99/medic/test-run-001-r1-POL-100_validation-failed_0-result.json"
+      ],
+      "prohibitedScope": [],
+      "validationCommands": [],
+      "routingTarget": "operator-review",
+      "parallelGroup": "g-001",
+      "conflicts": [
+        "pkt-POL-547-r2-000",
+        "pkt-POL-547-r2-001"
+      ],
+      "medic": true,
+      "status": "pending",
+      "createdAt": "2026-07-13T16:40:02.821Z"
+    }
+  ]
+}

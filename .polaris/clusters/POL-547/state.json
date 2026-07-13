@@ -1,0 +1,125 @@
+{
+  "schema_version": "1.0",
+  "run_id": "polaris-run-terminal-finalize-followup-2026-07-13-001",
+  "cluster_id": "POL-547",
+  "skill": "polaris-run",
+  "branch": "philmeaux/pol-547-implement-make-pr-creation-the-terminal-finalize-action",
+  "session_type": "implement",
+  "active_child": "",
+  "completed_children": [
+    "POL-552"
+  ],
+  "open_children": [],
+  "step_cursor": "checkpoint",
+  "context_budget": {
+    "children_completed": 1,
+    "max_children_per_session": 6
+  },
+  "status": "cluster-complete",
+  "next_open_child": null,
+  "artifact_dir": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run",
+  "dispatch_boundary": {
+    "dispatch_epoch": 1,
+    "continue_epoch": 1,
+    "last_dispatched_child": "POL-552"
+  },
+  "run_bootstrap_seal": {
+    "sealer": "polaris-loop-bootstrap",
+    "run_id": "polaris-run-terminal-finalize-followup-2026-07-13-001",
+    "cluster_id": "POL-547",
+    "open_children_sha": "bab903ecd80061f81a170aa356cf18f0777fd52fdbbe03d4c8b31f2eb2b7270c",
+    "sealed_at": "2026-07-13T17:11:05.454Z"
+  },
+  "open_children_meta": {
+    "POL-552": {
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-547/results/POL-552-d4936f19-6072-4a91-84ec-0d62cfa5c528.json",
+      "dispatch_record": {
+        "dispatch_id": "d4936f19-6072-4a91-84ec-0d62cfa5c528",
+        "child_id": "POL-552",
+        "run_id": "polaris-run-terminal-finalize-followup-2026-07-13-001",
+        "cluster_id": "POL-547",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-547/packets/POL-552-d4936f19-6072-4a91-84ec-0d62cfa5c528.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-547/results/POL-552-d4936f19-6072-4a91-84ec-0d62cfa5c528.json",
+        "provider": "devin",
+        "provider_selection_reason": "role-policy",
+        "providers_tried": [
+          "devin"
+        ],
+        "routing_summary": {
+          "selected_provider": "devin",
+          "selected_adapter": "terminal-cli",
+          "selection_reason": "role-policy",
+          "effective_policy_order": [
+            "devin",
+            "copilot",
+            "codex",
+            "kiro"
+          ],
+          "compatibility_mode": true,
+          "registry_present": false,
+          "fallback_eligible": true
+        },
+        "dispatched_at": "2026-07-13T17:13:16.262Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-terminal-finalize-followup-2026-07-13-001:POL-552:1783962796262",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    }
+  },
+  "worker_pool_state": {
+    "max_concurrent": 1,
+    "slot_claims": []
+  },
+  "last_commit": "2065679e2935c355f6e827f504d0f4d8c2eef918",
+  "completed_children_results": {
+    "POL-552": {
+      "child_id": "POL-552",
+      "status": "done",
+      "validation": "skipped",
+      "commit": "2065679e2935c355f6e827f504d0f4d8c2eef918",
+      "next_recommended_action": "continue",
+      "run_id": "polaris-run-terminal-finalize-followup-2026-07-13-001",
+      "cluster_id": "POL-547",
+      "skill_name": "polaris-run",
+      "role": "worker",
+      "provider": "devin",
+      "packet_hash": "1ace8d0d44234cf10f2858bc5ec1d390ff330f4a01d645a0e7020b5c5698f243",
+      "worker_id": "polaris-run-terminal-finalize-followup-2026-07-13-001:POL-552:1783962796262",
+      "escalation_count": 0,
+      "heartbeat_count": 5,
+      "result_artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-547/results/POL-552-d4936f19-6072-4a91-84ec-0d62cfa5c528.json",
+      "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-547/packets/POL-552-d4936f19-6072-4a91-84ec-0d62cfa5c528.json",
+      "telemetry_path": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-terminal-finalize-followup-2026-07-13-001/telemetry.jsonl",
+      "user_intervened": null,
+      "foreman_intervened": null,
+      "dispatch_epoch": 1,
+      "session_pointer": null
+    }
+  },
+  "qc_repair_loop": {
+    "current_round": 2,
+    "max_rounds": 2,
+    "source_qc_run_ids": [
+      "coderabbit-1783963677268"
+    ],
+    "manifest_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-547/qc/repair-rounds/1/repair-packets.json",
+    "pending_packet_ids": [
+      "pkt-POL-547-r2-000",
+      "pkt-POL-547-r2-001",
+      "pkt-POL-547-r2-002"
+    ],
+    "completed_packet_ids": [],
+    "rerun_requested": false,
+    "rerun_qc_run_ids": {},
+    "terminal_outcome": "operator-review",
+    "initiated_at": "2026-07-13T17:27:57.358Z",
+    "updated_at": "2026-07-13T18:17:59.497Z"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "1.0",
+  "clusterId": "POL-547",
+  "round": 2,
+  "resolvedAt": "2026-07-13T17:35:02.497Z",
+  "resolver": "Phillip meaux",
+  "resolvedOutcome": "no-repairable",
+  "reason": "Finding claims POL-552's result JSON is missing cluster_id, but this is a pre-existing, systemic omission across all 5 children's worker result files in this session (verified POL-548's result file has the same gap) -- not a defect introduced by POL-552's actual code change (.gitignore-referenced .polaris/clusters/POL-547/results/*.json is worker CompactReturn output, not part of POL-552's scoped fix to src/finalize/steps/06-commit.ts). Out of scope for this cluster's delivery.",
+  "findings": [
+    "coderabbit-1-1783960802731",
+    "coderabbit-2-1783960802731",
+    "coderabbit-3-1783960802731",
+    "coderabbit-4-1783960802731"
+  ]
+}

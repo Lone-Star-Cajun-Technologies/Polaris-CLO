@@ -1,0 +1,73 @@
+{
+  "schemaVersion": "1.0",
+  "qcRunId": "coderabbit-1783962500021",
+  "runId": "polaris-run-terminal-finalize-2026-07-13-001",
+  "clusterId": "POL-547",
+  "trigger": "completed-cluster",
+  "provider": "coderabbit",
+  "providerMode": "local",
+  "startedAt": "2026-07-13T17:04:59.172Z",
+  "completedAt": "2026-07-13T17:08:20.021Z",
+  "status": "findings",
+  "findings": [
+    {
+      "findingId": "coderabbit-1-1783962500021",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-547/state.json around lines 301 - 305, Update the POL-549 entry in the cluster-complete state so its historical blocker no longer remains active: mark blocker.resolved as true or remove the blocker record, while preserving the completed status, passed validation, and commit details.",
+      "filePath": ".polaris/clusters/POL-547/state.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-547/state.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-2-1783962500021",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-547/clusters.json around lines 53 - 56, Update the POL-551 entry in the dependencies graph to include all documented prerequisites: POL-548, POL-549, and POL-550. Preserve the existing dependency structure and ensure each prerequisite is listed exactly once.",
+      "filePath": ".polaris/clusters/POL-547/clusters.json",
+      "range": {
+        "startLine": 1
+      },
+      "suggestedAction": "\"dependencies\": {\n    \"POL-551\": [\n      \"POL-548\",\n      \"POL-549\",\n      \"POL-550\"\n    ],",
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-547/clusters.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    }
+  ],
+  "rawArtifactPaths": [],
+  "parserVersion": "coderabbit-1.0",
+  "policyDecision": {
+    "blocksDelivery": true,
+    "requiresOperatorReview": true,
+    "routedToRepair": false,
+    "summary": "2 findings; operator review required"
+  },
+  "providerAttempt": {
+    "provider": "coderabbit",
+    "status": "success",
+    "rawOutputAvailable": true,
+    "rawOutputRetained": false,
+    "stdoutLength": 2218,
+    "stderrLength": 0,
+    "exitCode": 0,
+    "parserResult": "success"
+  }
+}

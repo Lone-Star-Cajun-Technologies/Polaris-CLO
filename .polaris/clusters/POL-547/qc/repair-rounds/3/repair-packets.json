@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "1.0",
+  "clusterId": "POL-547",
+  "round": 3,
+  "compiledAt": "2026-07-13T17:32:08.280Z",
+  "sourceQcRunIds": [
+    "coderabbit-1783963928237"
+  ],
+  "packets": [
+    {
+      "packetId": "pkt-POL-547-r3-000",
+      "round": 3,
+      "clusterId": "POL-547",
+      "sourceQcRunIds": [
+        "coderabbit-1783963928237"
+      ],
+      "findingIds": [
+        "coderabbit-1-1783963928237"
+      ],
+      "severityFloor": "high",
+      "rootCauseHint": "categories=[finding]; files=[.polaris/clusters/POL-547/results/POL-552-d4936f19-6072-4a91-84ec-0d62cfa5c528.json]; confidence=unclear; severity=high",
+      "allowedScope": [
+        ".polaris/clusters/POL-547/results/POL-552-d4936f19-6072-4a91-84ec-0d62cfa5c528.json"
+      ],
+      "prohibitedScope": [],
+      "validationCommands": [],
+      "routingTarget": "operator-review",
+      "parallelGroup": "g-000",
+      "conflicts": [],
+      "medic": true,
+      "status": "pending",
+      "createdAt": "2026-07-13T17:32:08.280Z"
+    }
+  ]
+}

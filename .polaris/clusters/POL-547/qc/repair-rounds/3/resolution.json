@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "1.0",
+  "clusterId": "POL-547",
+  "round": 3,
+  "resolvedAt": "2026-07-13T18:05:10.095Z",
+  "resolver": "Phillip meaux",
+  "resolvedOutcome": "no-repairable",
+  "reason": "Finding claims a worker result JSON is missing cluster_id -- pre-existing, systemic across all children's result files in this session, not introduced by any of this cluster's actual code changes. Out of scope for this delivery.",
+  "findings": [
+    "coderabbit-1-1783963928237"
+  ]
+}

@@ -1,0 +1,112 @@
+{
+  "schemaVersion": "1.0",
+  "qcRunId": "coderabbit-1783960802731",
+  "runId": "polaris-run-terminal-finalize-2026-07-13-001",
+  "clusterId": "POL-547",
+  "trigger": "completed-cluster",
+  "provider": "coderabbit",
+  "providerMode": "local",
+  "startedAt": "2026-07-13T16:35:44.173Z",
+  "completedAt": "2026-07-13T16:40:02.731Z",
+  "status": "findings",
+  "findings": [
+    {
+      "findingId": "coderabbit-1-1783960802731",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-434/medic/polaris-run-pol-434-2026-07-12-001-r2-qc_qc-blocking-findings_d18c24e0-55f9-4799-bd50-013287cc8173.json at line 25, Update the result_file value in the artifact to remove the host-specific /Users/lsctech/Developer/Polaris prefix, replacing it with a repository-relative path or stable artifact identifier while preserving the referenced result file.",
+      "filePath": ".polaris/clusters/POL-434/medic/polaris-run-pol-434-2026-07-12-001-r2-qc_qc-blocking-findings_d18c24e0-55f9-4799-bd50-013287cc8173.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-434/medic/polaris-run-pol-434-2026-07-12-001-r2-qc_qc-blocking-findings_d18c24e0-55f9-4799-bd50-013287cc8173.json"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-2-1783960802731",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-547/medic/polaris-run-terminal-finalize-2026-07-13-001-r1-qc_qc-blocking-findings_5166951b-cb9e-4dd6-aabc-09e17a40152c.json at line 25, Replace the absolute workstation-specific value in the result_file field with a relative path or stable artifact identifier, removing the /Users/lsctech/Developer/Polaris prefix while preserving the result artifact reference.",
+      "filePath": ".polaris/clusters/POL-547/medic/polaris-run-terminal-finalize-2026-07-13-001-r1-qc_qc-blocking-findings_5166951b-cb9e-4dd6-aabc-09e17a40152c.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-547/medic/polaris-run-terminal-finalize-2026-07-13-001-r1-qc_qc-blocking-findings_5166951b-cb9e-4dd6-aabc-09e17a40152c.json"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-3-1783960802731",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-434/medic/polaris-run-pol-434-2026-07-12-001-r1-qc_qc-blocking-findings_d18c24e0-55f9-4799-bd50-013287cc8173.json at line 25, Replace the absolute host-specific value in the result_file field with a repository-relative path or stable artifact identifier, removing the embedded username and local filesystem prefix while preserving the result artifact reference.",
+      "filePath": ".polaris/clusters/POL-434/medic/polaris-run-pol-434-2026-07-12-001-r1-qc_qc-blocking-findings_d18c24e0-55f9-4799-bd50-013287cc8173.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-434/medic/polaris-run-pol-434-2026-07-12-001-r1-qc_qc-blocking-findings_d18c24e0-55f9-4799-bd50-013287cc8173.json"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-4-1783960802731",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-99/medic/test-run-001-r1-POL-100_validation-failed_0-result.json at line 1, Update the validation result record so the failed npm run build is removed from validation.passed and persisted as a failure, and change next_recommended_action from continue to the blocking action. Keep the validation-failed status and build failure symptom consistent with the corrected outcome.",
+      "filePath": ".polaris/clusters/POL-99/medic/test-run-001-r1-POL-100_validation-failed_0-result.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-99/medic/test-run-001-r1-POL-100_validation-failed_0-result.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    }
+  ],
+  "rawArtifactPaths": [],
+  "parserVersion": "coderabbit-1.0",
+  "policyDecision": {
+    "blocksDelivery": true,
+    "requiresOperatorReview": true,
+    "routedToRepair": false,
+    "summary": "4 findings; operator review required"
+  },
+  "providerAttempt": {
+    "provider": "coderabbit",
+    "status": "success",
+    "rawOutputAvailable": true,
+    "rawOutputRetained": false,
+    "stdoutLength": 4002,
+    "stderrLength": 0,
+    "exitCode": 0,
+    "parserResult": "success"
+  }
+}

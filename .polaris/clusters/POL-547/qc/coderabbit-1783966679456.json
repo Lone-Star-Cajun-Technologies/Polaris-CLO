@@ -1,0 +1,73 @@
+{
+  "schemaVersion": "1.0",
+  "qcRunId": "coderabbit-1783966679456",
+  "runId": "polaris-run-terminal-finalize-followup-2026-07-13-001",
+  "clusterId": "POL-547",
+  "trigger": "completed-cluster",
+  "provider": "coderabbit",
+  "providerMode": "local",
+  "startedAt": "2026-07-13T18:10:13.811Z",
+  "completedAt": "2026-07-13T18:17:59.456Z",
+  "status": "findings",
+  "findings": [
+    {
+      "findingId": "coderabbit-1-1783966679456",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/finalize/steps/06-commit.ts around lines 12 - 13, Update the promotedTargets construction in the finalize commit step to also include the current run archive path under .polaris/runs/${state.run_id}, while retaining the existing cluster-scoped targets and ledger filtering. Ensure the per-run archive is staged when it exists so finalize commits preserve its evidence.",
+      "filePath": "src/finalize/steps/06-commit.ts",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-552",
+        "filePath": "src/finalize/steps/06-commit.ts"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-2-1783966679456",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-547/medic/polaris-run-terminal-finalize-followup-2026-07-13-001-r1-qc_qc-blocking-findings_3d4b474e-77d0-4258-9764-35d325236ea5-result.json around lines 4 - 7, Reconcile the result state with both sibling QC packet states before emitting next_recommended_action \"continue\": update the sibling packets from pending and remove their blocking root-cause hints only after their findings are resolved, or keep this result non-terminal until reconciliation is complete. Ensure status, validation, action, and root-cause signals consistently indicate whether delivery can proceed.",
+      "filePath": ".polaris/clusters/POL-547/medic/polaris-run-terminal-finalize-followup-2026-07-13-001-r1-qc_qc-blocking-findings_3d4b474e-77d0-4258-9764-35d325236ea5-result.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-547/medic/polaris-run-terminal-finalize-followup-2026-07-13-001-r1-qc_qc-blocking-findings_3d4b474e-77d0-4258-9764-35d325236ea5-result.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    }
+  ],
+  "rawArtifactPaths": [],
+  "parserVersion": "coderabbit-1.0",
+  "policyDecision": {
+    "blocksDelivery": true,
+    "requiresOperatorReview": true,
+    "routedToRepair": false,
+    "summary": "2 findings; operator review required"
+  },
+  "providerAttempt": {
+    "provider": "coderabbit",
+    "status": "success",
+    "rawOutputAvailable": true,
+    "rawOutputRetained": false,
+    "stdoutLength": 2693,
+    "stderrLength": 0,
+    "exitCode": 0,
+    "parserResult": "success"
+  }
+}
