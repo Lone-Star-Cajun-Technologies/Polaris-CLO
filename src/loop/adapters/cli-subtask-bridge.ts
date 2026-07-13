@@ -80,11 +80,13 @@ function writeSealedResultFromSummary(
   const commit =
     (typeof parsedSummary["commit"] === "string" && parsedSummary["commit"]) ||
     (typeof parsedSummary["commit_hash"] === "string" && parsedSummary["commit_hash"]) ||
+    (typeof parsedSummary["commit_sha"] === "string" && parsedSummary["commit_sha"]) ||
     undefined;
   const validation = parsedSummary["validation"] ?? parsedSummary["validation_summary"];
 
   const sealedResult: Record<string, unknown> = {
     run_id: packet.run_id,
+    cluster_id: packet.cluster_id,
     child_id: packet.active_child,
     status: normalizeSealedStatus(parsedSummary["status"]),
   };
