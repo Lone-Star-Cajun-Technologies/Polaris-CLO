@@ -249,11 +249,14 @@ export function validateDir(
 
   const content = readFileSync(polarisFile, "utf-8");
   const findings: Finding[] = [];
-  const polarisGenerated = extractGeneratedRegion(content) ?? content;
+  const polarisGeneratedRaw = extractGeneratedRegion(content);
+  const polarisGenerated = polarisGeneratedRaw ?? content;
 
-  // Signal 0: template-version stamp inside generated region
-  const polarisStampFinding = checkTemplateVersionStamp(polarisGenerated, "POLARIS.md");
-  if (polarisStampFinding) findings.push(polarisStampFinding);
+  // Signal 0: template-version stamp inside generated region (only when present)
+  if (polarisGeneratedRaw !== null) {
+    const polarisStampFinding = checkTemplateVersionStamp(polarisGeneratedRaw, "POLARIS.md");
+    if (polarisStampFinding) findings.push(polarisStampFinding);
+  }
 
   // Signal 1: ≥3 files in directory changed since last POLARIS.md git modification
   const lastMod = getLastGitModDate(polarisFile, repoRoot);

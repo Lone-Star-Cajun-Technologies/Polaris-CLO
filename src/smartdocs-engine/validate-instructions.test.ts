@@ -140,10 +140,14 @@ function validPolarisContent(extra?: string, stamp: string = TEMPLATE_VERSION_ST
   ].join("\n");
 }
 
-function generatedPolarisContent(extra?: string, trailing?: string): string {
+function generatedPolarisContent(
+  extra?: string,
+  trailing?: string,
+  stamp: string = TEMPLATE_VERSION_STAMP,
+): string {
   return [
     "<!-- BEGIN POLARIS GENERATED -->",
-    validPolarisContent(extra),
+    validPolarisContent(extra, stamp),
     "<!-- END POLARIS GENERATED -->",
     ...(trailing ? [trailing] : []),
   ].join("\n");
@@ -216,7 +220,7 @@ describe("validateDir - template version", () => {
   afterEach(teardown);
 
   it("reports OK when POLARIS.md has the current template-version stamp", () => {
-    writeFileSync(join(TMP, "src/map/POLARIS.md"), validPolarisContent());
+    writeFileSync(join(TMP, "src/map/POLARIS.md"), generatedPolarisContent());
     const result = validateDir("src/map", TMP, {});
     expect(result.status).toBe("OK");
     expect(result.findings).toHaveLength(0);
@@ -224,7 +228,12 @@ describe("validateDir - template version", () => {
 
   it("reports WARN when POLARIS.md is unstamped", () => {
     const unstamped = validPolarisContent().replace(TEMPLATE_VERSION_STAMP + "\n", "");
-    writeFileSync(join(TMP, "src/map/POLARIS.md"), unstamped);
+    const generatedUnstamped = [
+      "<!-- BEGIN POLARIS GENERATED -->",
+      unstamped,
+      "<!-- END POLARIS GENERATED -->",
+    ].join("\n");
+    writeFileSync(join(TMP, "src/map/POLARIS.md"), generatedUnstamped);
     const result = validateDir("src/map", TMP, {});
     expect(result.status).toBe("WARN");
     const finding = result.findings.find((f) => f.message.includes("unstamped"));
@@ -234,7 +243,7 @@ describe("validateDir - template version", () => {
 
   it("reports WARN when POLARIS.md has an outdated template-version stamp", () => {
     const oldStamp = "<!-- polaris:template-version: 0 -->";
-    writeFileSync(join(TMP, "src/map/POLARIS.md"), validPolarisContent(undefined, oldStamp));
+    writeFileSync(join(TMP, "src/map/POLARIS.md"), generatedPolarisContent(undefined, undefined, oldStamp));
     const result = validateDir("src/map", TMP, {});
     expect(result.status).toBe("WARN");
     const finding = result.findings.find((f) => f.message.includes("template version drift"));
