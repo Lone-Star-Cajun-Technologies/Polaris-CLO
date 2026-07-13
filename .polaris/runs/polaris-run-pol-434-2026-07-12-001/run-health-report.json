@@ -1,0 +1,125 @@
+{
+  "schema_version": "1",
+  "run_id": "polaris-run-pol-434-2026-07-12-001",
+  "cluster_id": "POL-434",
+  "symptoms": [
+    {
+      "id": "qc:qc-blocking-findings:d18c24e0-55f9-4799-bd50-013287cc8173",
+      "severity": "high",
+      "code": "qc-blocking-findings",
+      "message": "QC provider \"coderabbit\" has 7 blocking finding(s) that prevent delivery (qcRunId: coderabbit-1783902482484).",
+      "source_actor": {
+        "role": "foreman"
+      },
+      "evidence_refs": [],
+      "occurred_at": "2026-07-13T00:28:02.590Z"
+    },
+    {
+      "id": "qc:qc-blocking-findings:44e1bbfc-bb66-4fb2-9fd6-d0b4e3303fc8",
+      "severity": "high",
+      "code": "qc-blocking-findings",
+      "message": "QC provider \"coderabbit\" has 57 blocking finding(s) that prevent delivery (qcRunId: coderabbit-1783906622660).",
+      "source_actor": {
+        "role": "foreman"
+      },
+      "evidence_refs": [],
+      "occurred_at": "2026-07-13T01:37:02.842Z"
+    },
+    {
+      "id": "qc:qc-repair-dispatch-failure:9a41768f-2515-4f92-bf97-cb2e046fc1fa",
+      "severity": "high",
+      "code": "qc-repair-dispatch-failure",
+      "message": "QC repair loop terminated with Medic referral after 2 round(s) — repair worker(s) failed: QC repair loop: 1 repair worker(s) failed at round 2 — Medic referral triggered",
+      "source_actor": {
+        "role": "foreman"
+      },
+      "evidence_refs": [],
+      "occurred_at": "2026-07-13T01:41:47.917Z"
+    },
+    {
+      "id": "qc:qc-blocking-findings:684da199-8c45-446c-99a9-a661f53a60ee",
+      "severity": "high",
+      "code": "qc-blocking-findings",
+      "message": "QC provider \"coderabbit\" has 57 blocking finding(s) that prevent delivery (qcRunId: coderabbit-1783906622660).",
+      "source_actor": {
+        "role": "foreman"
+      },
+      "evidence_refs": [],
+      "occurred_at": "2026-07-13T01:41:47.918Z"
+    },
+    {
+      "id": "qc:qc-repeated-findings:5457303b-eca6-4716-acfb-f1fad5631fb3",
+      "severity": "medium",
+      "code": "qc-repeated-findings",
+      "message": "QC provider \"coderabbit\" still shows 57 open finding(s) after repair (qcRunId: coderabbit-1783906622660).",
+      "source_actor": {
+        "role": "foreman"
+      },
+      "evidence_refs": [],
+      "occurred_at": "2026-07-13T01:41:47.918Z"
+    },
+    {
+      "id": "qc:qc-max-repair-rounds:341e754a-25ee-4432-8efd-b7fdab4f7f11",
+      "severity": "medium",
+      "code": "qc-max-repair-rounds",
+      "message": "QC repair loop exhausted max rounds (2) without passing: QC repair loop exhausted max rounds (2) without passing",
+      "source_actor": {
+        "role": "foreman"
+      },
+      "evidence_refs": [],
+      "occurred_at": "2026-07-13T03:00:00.630Z"
+    },
+    {
+      "id": "qc:qc-repeated-findings:8b294f4d-149a-4c0b-8b2a-911ce51c0c82",
+      "severity": "medium",
+      "code": "qc-repeated-findings",
+      "message": "QC provider \"coderabbit\" still shows 2 open finding(s) after repair (qcRunId: coderabbit-1783911600590).",
+      "source_actor": {
+        "role": "foreman"
+      },
+      "evidence_refs": [],
+      "occurred_at": "2026-07-13T03:00:00.633Z"
+    },
+    {
+      "id": "qc:qc-max-repair-rounds:1dd55343-f901-4d21-8b88-5809d997b774",
+      "severity": "medium",
+      "code": "qc-max-repair-rounds",
+      "message": "QC repair loop exhausted max rounds (2) without passing: QC repair loop exhausted max rounds (2) without passing",
+      "source_actor": {
+        "role": "foreman"
+      },
+      "evidence_refs": [],
+      "occurred_at": "2026-07-13T03:05:04.278Z"
+    },
+    {
+      "id": "qc:qc-repeated-findings:3c52859a-5dc2-4d02-b98c-614f890e26c2",
+      "severity": "medium",
+      "code": "qc-repeated-findings",
+      "message": "QC provider \"coderabbit\" still shows 3 open finding(s) after repair (qcRunId: coderabbit-1783911904231).",
+      "source_actor": {
+        "role": "foreman"
+      },
+      "evidence_refs": [],
+      "occurred_at": "2026-07-13T03:05:04.281Z"
+    }
+  ],
+  "evidence_refs": [],
+  "created_at": "2026-07-13T00:28:02.590Z",
+  "updated_at": "2026-07-13T03:05:04.281Z",
+  "source_actor": {
+    "role": "foreman"
+  },
+  "medic_consult": {
+    "status": "resolved",
+    "chart_refs": [
+      "CHART-2026-07-13-001",
+      "CHART-2026-07-13-001"
+    ],
+    "treatment_packet_refs": [
+      ".polaris/clusters/POL-434/medic/polaris-run-pol-434-2026-07-12-001-r1-qc_qc-blocking-findings_d18c24e0-55f9-4799-bd50-013287cc8173.json",
+      ".polaris/clusters/POL-434/medic/polaris-run-pol-434-2026-07-12-001-r2-qc_qc-blocking-findings_d18c24e0-55f9-4799-bd50-013287cc8173.json"
+    ],
+    "resolved_at": "2026-07-13T00:57:05.099Z",
+    "resolution_notes": "Terminal outcome: max-rounds"
+  }
+}

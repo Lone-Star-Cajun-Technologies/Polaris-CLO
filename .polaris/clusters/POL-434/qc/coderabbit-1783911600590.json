@@ -1,0 +1,74 @@
+{
+  "schemaVersion": "1.0",
+  "qcRunId": "coderabbit-1783911600590",
+  "runId": "polaris-run-pol-434-2026-07-12-001",
+  "clusterId": "POL-434",
+  "trigger": "completed-cluster",
+  "provider": "coderabbit",
+  "providerMode": "local",
+  "startedAt": "2026-07-13T02:52:51.531Z",
+  "completedAt": "2026-07-13T03:00:00.590Z",
+  "status": "findings",
+  "findings": [
+    {
+      "findingId": "coderabbit-1-1783911600590",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/graph/store/POLARIS.md around lines 36 - 39, Update the POLARIS.md read-before-edit link to use the correct relative target ../POLARIS.md instead of src/graph/POLARIS.md.",
+      "filePath": "src/graph/store/POLARIS.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "src/graph/store/POLARIS.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-2-1783911600590",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/runs/polaris-run-pol-434-2026-07-12-001/run-health-report.json around lines 68 - 80, Remove the duplicate CHART-2026-07-13-001 value from the medic_consult chart_refs array, leaving exactly one entry while preserving the surrounding report data.",
+      "filePath": ".polaris/runs/polaris-run-pol-434-2026-07-12-001/run-health-report.json",
+      "range": {
+        "startLine": 1
+      },
+      "suggestedAction": "\"medic_consult\": {\n    \"status\": \"resolved\",\n    \"chart_refs\": [\n      \"CHART-2026-07-13-001\"\n    ],\n    \"treatment_packet_refs\": [\n      \".polaris/clusters/POL-434/medic/polaris-run-pol-434-2026-07-12-001-r1-qc_qc-blocking-findings_d18c24e0-55f9-4799-bd50-013287cc8173.json\",\n      \".polaris/clusters/POL-434/medic/polaris-run-pol-434-2026-07-12-001-r2-qc_qc-blocking-findings_d18c24e0-55f9-4799-bd50-013287cc8173.json\"\n    ],\n    \"resolved_at\": \"2026-07-13T00:57:05.099Z\",\n    \"resolution_notes\": \"Terminal outcome: max-rounds\"\n  }",
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/runs/polaris-run-pol-434-2026-07-12-001/run-health-report.json"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    }
+  ],
+  "rawArtifactPaths": [],
+  "parserVersion": "coderabbit-1.0",
+  "policyDecision": {
+    "blocksDelivery": false,
+    "requiresOperatorReview": false,
+    "routedToRepair": false,
+    "summary": "2 findings"
+  },
+  "providerAttempt": {
+    "provider": "coderabbit",
+    "status": "success",
+    "rawOutputAvailable": true,
+    "rawOutputRetained": false,
+    "stdoutLength": 2444,
+    "stderrLength": 0,
+    "exitCode": 0,
+    "parserResult": "success"
+  }
+}

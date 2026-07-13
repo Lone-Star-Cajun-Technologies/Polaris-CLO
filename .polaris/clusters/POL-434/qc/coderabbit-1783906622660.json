@@ -1,0 +1,1227 @@
+{
+  "schemaVersion": "1.0",
+  "qcRunId": "coderabbit-1783906622660",
+  "runId": "polaris-run-pol-434-2026-07-12-001",
+  "clusterId": "POL-434",
+  "trigger": "completed-cluster",
+  "provider": "coderabbit",
+  "providerMode": "local",
+  "startedAt": "2026-07-13T01:30:15.472Z",
+  "completedAt": "2026-07-13T01:37:02.660Z",
+  "status": "findings",
+  "findings": [
+    {
+      "findingId": "coderabbit-1-1783906622659",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/runs/polaris-run-pol-494-2026-07-12-001/run-report.md around lines 20 - 22, Align the provider table header and the POL-544 row so both contain the same columns and values map correctly: report devin as the provider, preserve the fallback count in its dedicated column, and render Done under the final status column. Remove the extra or misplaced cell rather than leaving orphaned values.",
+      "filePath": ".polaris/runs/polaris-run-pol-494-2026-07-12-001/run-report.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/runs/polaris-run-pol-494-2026-07-12-001/run-report.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-2-1783906622659",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/graph/adapter/kotlin-java/POLARIS.md at line 41, Update the POLARIS.md related-route link to use ../../POLARIS.md so it resolves to the shared src/graph/POLARIS.md location instead of nesting the adapter directory path.",
+      "filePath": "src/graph/adapter/kotlin-java/POLARIS.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "src/graph/adapter/kotlin-java/POLARIS.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-3-1783906622659",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/runs/POLARIS.md around lines 41 - 42, Update the POLARIS.md links in the documentation list to use paths relative to src/runs/, changing them to POLARIS.md and SUMMARY.md so they resolve without duplicating the directory prefix.",
+      "filePath": "src/runs/POLARIS.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "src/runs/POLARIS.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-4-1783906622659",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @test/runtime/verification/POLARIS.md at line 41, Update the POLARIS.md link in test/runtime/verification/POLARIS.md to use the correct repository-root-relative path, such as ../../../scripts/POLARIS.md, so it resolves to the generated scripts/POLARIS.md file.",
+      "filePath": "test/runtime/verification/POLARIS.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "test/runtime/verification/POLARIS.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-5-1783906622659",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @test/loop/POLARIS.md at line 47, Update the POLARIS.md link in test/loop/POLARIS.md to resolve from the test/loop directory to the generated scripts/POLARIS.md file, using ../../scripts/POLARIS.md or the repository’s supported root-relative syntax.",
+      "filePath": "test/loop/POLARIS.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "test/loop/POLARIS.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-6-1783906622659",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @test/tracker/adapters/local-file/POLARIS.md at line 38, Update the POLARIS.md link in the local-file tracker documentation to use the correct relative path ../../../../scripts/POLARIS.md, or the repository-supported root-relative syntax, so it resolves from test/tracker/adapters/local-file.",
+      "filePath": "test/tracker/adapters/local-file/POLARIS.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "test/tracker/adapters/local-file/POLARIS.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-7-1783906622659",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/ignore/POLARIS.md around lines 38 - 39, Update the relative links in src/ignore/POLARIS.md to reference POLARIS.md and SUMMARY.md directly, removing the src/ignore/ prefix so they resolve correctly from that document’s directory.",
+      "filePath": "src/ignore/POLARIS.md",
+      "range": {
+        "startLine": 1
+      },
+      "suggestedAction": "- [POLARIS.md](POLARIS.md)\n- [SUMMARY.md](SUMMARY.md)",
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "src/ignore/POLARIS.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-8-1783906622659",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/utils/POLARIS.md around lines 37 - 38, Update the links in POLARIS.md to reference the sibling POLARIS.md and SUMMARY.md files directly, removing the duplicated src/utils path while preserving the existing link targets.",
+      "filePath": "src/utils/POLARIS.md",
+      "range": {
+        "startLine": 1
+      },
+      "suggestedAction": "- [POLARIS.md](POLARIS.md)\n- [SUMMARY.md](SUMMARY.md)",
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "src/utils/POLARIS.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-9-1783906622659",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/medic/SUMMARY.md around lines 46 - 50, Replace the HTML comment following the canonical_docs list with a YAML-compatible # comment, keeping the POLARIS.md entry and its guidance unchanged within the YAML block.",
+      "filePath": "src/medic/SUMMARY.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "src/medic/SUMMARY.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-10-1783906622659",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/loop/router/SUMMARY.md around lines 46 - 50, Replace the HTML comment inside the YAML block under canonical_docs with a valid YAML # comment, or move the guidance outside the fenced block, while preserving the POLARIS.md canonical reference.",
+      "filePath": "src/loop/router/SUMMARY.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "src/loop/router/SUMMARY.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-11-1783906622659",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/graph/resolver/SUMMARY.md around lines 46 - 50, Replace the HTML comment following the canonical_docs entry with valid YAML comment syntax using #, while preserving the existing guidance text and canonical_docs values.",
+      "filePath": "src/graph/resolver/SUMMARY.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "src/graph/resolver/SUMMARY.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-12-1783906622659",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/graph/parser/SUMMARY.md around lines 46 - 50, Replace the HTML comment beneath the canonical_docs list with a YAML-compatible # comment, or move the guidance outside the YAML fence, while preserving the canonical_docs entry and its navigation guidance.",
+      "filePath": "src/graph/parser/SUMMARY.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "src/graph/parser/SUMMARY.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-13-1783906622659",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/utils/SUMMARY.md around lines 46 - 50, Replace the HTML comment beneath the canonical_docs list with valid YAML comment syntax, preserving its existing guidance text and keeping the canonical_docs block parseable.",
+      "filePath": "src/utils/SUMMARY.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "src/utils/SUMMARY.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-14-1783906622659",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/graph/store/SUMMARY.md around lines 46 - 50, Replace the HTML comment following the canonical_docs list in the YAML block with a valid YAML comment using #, or move the guidance outside the fenced block, while preserving the canonical_docs configuration and its explanatory text.",
+      "filePath": "src/graph/store/SUMMARY.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "src/graph/store/SUMMARY.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-15-1783906622659",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-434/clusters.json around lines 35 - 39, Correct the malformed POLARIS.md/SUMMARY.md link in the POL-438 task body so it references the intended repository paths rather than the invalid http URL. Update only the affected Markdown link text/target and leave the surrounding task requirements unchanged.",
+      "filePath": ".polaris/clusters/POL-434/clusters.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "low",
+        "reason": "pre-existing",
+        "filePath": ".polaris/clusters/POL-434/clusters.json"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-16-1783906622659",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/smartdocs-engine/validate-instructions.test.ts around lines 218 - 244, Update the POLARIS.md test fixtures in the current-template, unstamped, and outdated-stamp cases to wrap the template-version stamp within BEGIN/END POLARIS GENERATED markers. Ensure the outdated-stamp fixture passes its old stamp inside that generated region, so these tests validate the required generated-region contract.",
+      "filePath": "src/smartdocs-engine/validate-instructions.test.ts",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "low",
+        "reason": "shared-file",
+        "childId": "POL-437",
+        "filePath": "src/smartdocs-engine/validate-instructions.test.ts"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-17-1783906622659",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/smartdocs-engine/POLARIS.md around lines 43 - 47, Update the Read before editing list in POLARIS.md so the docs-authority-model.md entry is a resolvable Markdown link relative to this file, allowing parseReadBeforeEditingLinks to validate it; preserve the existing links and list structure.",
+      "filePath": "src/smartdocs-engine/POLARIS.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "src/smartdocs-engine/POLARIS.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-18-1783906622659",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-494/medic/polaris-run-pol-494-2026-07-11-001-r1-qc_qc-blocking-findings_47bad229-cb1b-4f6d-8ecc-6b1f73b25adb.json around lines 22 - 25, The dispatch_metadata.result_file value uses an environment-specific absolute path. Update the code generating dispatch_metadata to persist a repository-relative result path or stable artifact ID, and resolve it from the run root when consumed; preserve the existing result-file association.",
+      "filePath": ".polaris/clusters/POL-494/medic/polaris-run-pol-494-2026-07-11-001-r1-qc_qc-blocking-findings_47bad229-cb1b-4f6d-8ecc-6b1f73b25adb.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-494/medic/polaris-run-pol-494-2026-07-11-001-r1-qc_qc-blocking-findings_47bad229-cb1b-4f6d-8ecc-6b1f73b25adb.json"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-19-1783906622660",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-434/medic/polaris-run-pol-434-2026-07-12-001-r2-qc_qc-blocking-findings_d18c24e0-55f9-4799-bd50-013287cc8173.json at line 25, Replace the absolute workstation path in the result_file field with a repository-relative path, or update the artifact generation flow to derive the path at runtime. Ensure no user-specific filesystem prefix is persisted while preserving the reference to the result artifact.",
+      "filePath": ".polaris/clusters/POL-434/medic/polaris-run-pol-434-2026-07-12-001-r2-qc_qc-blocking-findings_d18c24e0-55f9-4799-bd50-013287cc8173.json",
+      "range": {
+        "startLine": 1
+      },
+      "suggestedAction": "\"result_file\": \".polaris/clusters/POL-434/medic/polaris-run-pol-434-2026-07-12-001-r2-qc_qc-blocking-findings_d18c24e0-55f9-4799-bd50-013287cc8173-result.json\"",
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-434/medic/polaris-run-pol-434-2026-07-12-001-r2-qc_qc-blocking-findings_d18c24e0-55f9-4799-bd50-013287cc8173.json"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-20-1783906622660",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/tracker/adapters/linear/SUMMARY.md around lines 46 - 50, Replace the HTML comment beneath the canonical_docs entry in the YAML fenced block with a valid YAML comment using “#”, or move the guidance outside the fenced block while preserving the canonical_docs value.",
+      "filePath": "src/tracker/adapters/linear/SUMMARY.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "src/tracker/adapters/linear/SUMMARY.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-21-1783906622660",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/runs/polaris-run-pol-494-2026-07-12-001/run-health-report.json around lines 26 - 29, Remove the duplicate CHART-2026-07-12-002 entry from the chart_refs array so each chart reference appears only once.",
+      "filePath": ".polaris/runs/polaris-run-pol-494-2026-07-12-001/run-health-report.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/runs/polaris-run-pol-494-2026-07-12-001/run-health-report.json"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-22-1783906622660",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/runs/polaris-run-pol-434-2026-07-12-001/run-health-report.json around lines 26 - 29, Remove the duplicate CHART-2026-07-13-001 entry from the chart_refs array, leaving each chart reference listed only once.",
+      "filePath": ".polaris/runs/polaris-run-pol-434-2026-07-12-001/run-health-report.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/runs/polaris-run-pol-434-2026-07-12-001/run-health-report.json"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-23-1783906622660",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @test/config/SUMMARY.md around lines 46 - 50, Replace the HTML comment beneath canonical_docs in the YAML fenced block with a valid YAML # comment, preserving the existing navigation guidance and canonical_docs structure.",
+      "filePath": "test/config/SUMMARY.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "test/config/SUMMARY.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-24-1783906622660",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/graph/adapter/svelte/SUMMARY.md around lines 46 - 50, Replace the HTML comment following the canonical_docs entry in the fenced YAML block with a valid YAML # comment, keeping the navigation guidance intact and inside the YAML block.",
+      "filePath": "src/graph/adapter/svelte/SUMMARY.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "src/graph/adapter/svelte/SUMMARY.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-25-1783906622660",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-434/medic/polaris-run-pol-434-2026-07-12-001-r1-qc_qc-blocking-findings_d18c24e0-55f9-4799-bd50-013287cc8173.json at line 25, Update the result_file value in the medic run artifact to use a repository-relative path instead of the machine-specific absolute /Users/lsctech path, preserving the referenced result filename and location relative to the repository root.",
+      "filePath": ".polaris/clusters/POL-434/medic/polaris-run-pol-434-2026-07-12-001-r1-qc_qc-blocking-findings_d18c24e0-55f9-4799-bd50-013287cc8173.json",
+      "range": {
+        "startLine": 1
+      },
+      "suggestedAction": "\"result_file\": \".polaris/clusters/POL-434/medic/polaris-run-pol-434-2026-07-12-001-r1-qc_qc-blocking-findings_d18c24e0-55f9-4799-bd50-013287cc8173-result.json\"",
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-434/medic/polaris-run-pol-434-2026-07-12-001-r1-qc_qc-blocking-findings_d18c24e0-55f9-4799-bd50-013287cc8173.json"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-26-1783906622660",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/tracker/adapters/local-file/POLARIS.md around lines 34 - 35, Update the sibling adapter links in POLARIS.md to resolve from the local-file directory by using ../github/README.md and ../jira/README.md instead of the current paths.",
+      "filePath": "src/tracker/adapters/local-file/POLARIS.md",
+      "range": {
+        "startLine": 1
+      },
+      "suggestedAction": "- [README.md](src/tracker/adapters/github/README.md)\n [README.md](../github/README.md)\n [README.md](../jira/README.md)",
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "src/tracker/adapters/local-file/POLARIS.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-27-1783906622660",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-494/medic/polaris-run-pol-494-2026-07-12-001-r1-qc_qc-all-providers-failed_b651cd96-cb00-43e9-b87c-4d0422536466.json at line 25, Replace the developer-specific absolute value in the result_file field with a repository-relative path or stable result identifier, ensuring the generated artifact contains no local filesystem paths.",
+      "filePath": ".polaris/clusters/POL-494/medic/polaris-run-pol-494-2026-07-12-001-r1-qc_qc-all-providers-failed_b651cd96-cb00-43e9-b87c-4d0422536466.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-494/medic/polaris-run-pol-494-2026-07-12-001-r1-qc_qc-all-providers-failed_b651cd96-cb00-43e9-b87c-4d0422536466.json"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-28-1783906622660",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-494/medic/polaris-run-pol-494-2026-07-12-001-r1-qc_qc-all-providers-failed_b651cd96-cb00-43e9-b87c-4d0422536466-result.json at line 8, Update the result artifact’s summary to match the effective rateLimited failure policy configured in polaris.config.json: report it as fail rather than ignore, or regenerate the artifact from the current configuration. Ensure downstream consumers receive no stale policy information.",
+      "filePath": ".polaris/clusters/POL-494/medic/polaris-run-pol-494-2026-07-12-001-r1-qc_qc-all-providers-failed_b651cd96-cb00-43e9-b87c-4d0422536466-result.json",
+      "range": {
+        "startLine": 1
+      },
+      "suggestedAction": "\"summary\": \"Fixed coderabbit QC provider classification of error/complete records and configured rateLimited failure policy to fail.\"",
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-494/medic/polaris-run-pol-494-2026-07-12-001-r1-qc_qc-all-providers-failed_b651cd96-cb00-43e9-b87c-4d0422536466-result.json"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-29-1783906622660",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/runtime/verification/SUMMARY.md around lines 46 - 50, Keep the canonical_docs block in SUMMARY.md valid YAML by moving the HTML instruction outside the yaml fence or converting it to a YAML comment beginning with #; preserve the POLARIS.md entry and its navigation guidance.",
+      "filePath": "src/runtime/verification/SUMMARY.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "src/runtime/verification/SUMMARY.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-30-1783906622660",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/runtime/continuation/POLARIS.md around lines 18 - 19, The generated POLARIS.md metadata and entries use the parent src/runtime route instead of src/runtime/continuation. Update the generator inputs or route identity for the continuation directory, then regenerate POLARIS.md so its entries and surrounding metadata consistently reference src/runtime/continuation.",
+      "filePath": "src/runtime/continuation/POLARIS.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "src/runtime/continuation/POLARIS.md"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-31-1783906622660",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @test/config/POLARIS.md at line 38, Update the POLARIS.md link in test/config/POLARIS.md to reference the repository-root scripts/POLARIS.md location via the correct ../../scripts/POLARIS.md relative path.",
+      "filePath": "test/config/POLARIS.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "test/config/POLARIS.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-32-1783906622660",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @test/runtime/SUMMARY.md around lines 46 - 50, Keep the canonical_docs block in test/runtime/SUMMARY.md valid YAML by moving the HTML instruction outside the fenced YAML block or converting it to a YAML comment beginning with #.",
+      "filePath": "test/runtime/SUMMARY.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "test/runtime/SUMMARY.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-33-1783906622660",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/mcp/POLARIS.md around lines 36 - 41, Update the links in the Read before editing section of POLARIS.md to be relative to src/mcp: use POLARIS.md, SUMMARY.md, lib/POLARIS.md, lib/SUMMARY.md, and tools/POLARIS.md without the src/mcp/ prefix.",
+      "filePath": "src/mcp/POLARIS.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "src/mcp/POLARIS.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-34-1783906622660",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/runtime/continuation/POLARIS.md around lines 38 - 42, Update the links in the continuation POLARIS.md navigation list to be relative to the current file: use ../POLARIS.md, ../SUMMARY.md, ../audit/POLARIS.md, ../audit/SUMMARY.md, and POLARIS.md as appropriate, removing the src/runtime/ prefixes.",
+      "filePath": "src/runtime/continuation/POLARIS.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "src/runtime/continuation/POLARIS.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-35-1783906622660",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/graph/adapter/python/POLARIS.md at line 38, Update the POLARIS.md link in the documentation to use the correct relative path ../../POLARIS.md, ensuring it resolves from src/graph/adapter/python/ to src/graph/POLARIS.md.",
+      "filePath": "src/graph/adapter/python/POLARIS.md",
+      "range": {
+        "startLine": 1
+      },
+      "suggestedAction": "[POLARIS.md](../../POLARIS.md)",
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "src/graph/adapter/python/POLARIS.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-36-1783906622660",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @test/tracker/POLARIS.md around lines 39 - 45, Update the route entry in test/tracker/POLARIS.md to link to the repository-level scripts/POLARIS.md using ../../scripts/POLARIS.md, and restore that link as a bullet under the existing ## Related routes section before the generated-section marker.",
+      "filePath": "test/tracker/POLARIS.md",
+      "range": {
+        "startLine": 1
+      },
+      "suggestedAction": "- [POLARIS.md](../../scripts/POLARIS.md)\n\n## Related routes\n\n- [scripts/POLARIS.md](../../scripts/POLARIS.md)\n\n<!-- END POLARIS GENERATED -->",
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "test/tracker/POLARIS.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-37-1783906622660",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/skill-packet/SUMMARY.md around lines 21 - 23, Update the Upstream relationship in the Important Relationships section to reference .polaris/map/file-routes.json as the authoritative route-data source for affected-folder resolution, optionally naming the loader that reads it; remove the inaccurate src/map reference while preserving the other relationships.",
+      "filePath": "src/skill-packet/SUMMARY.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "src/skill-packet/SUMMARY.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-38-1783906622660",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-434/packets/POL-438-bcd885e7-3824-4e90-b306-1c77a65132e0.json around lines 7 - 10, The packet generation flow must stop embedding developer-specific absolute paths in worker instructions and generated run-state artifacts. Update the source-of-truth packet producer and its run-state serialization to emit repository-relative paths or resolve them from the runtime checkout, preserving valid worker behavior across hosts; add or update tests covering this normalization, including the paths represented by the relevant packet fields.",
+      "filePath": ".polaris/clusters/POL-434/packets/POL-438-bcd885e7-3824-4e90-b306-1c77a65132e0.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-434/packets/POL-438-bcd885e7-3824-4e90-b306-1c77a65132e0.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-39-1783906622660",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/finalize/steps/SUMMARY.md around lines 44 - 50, Update the canonical_docs example in SUMMARY.md so the fenced content remains valid YAML: move the navigation-note HTML comment outside the YAML fence or replace it with a YAML # comment, while preserving the canonical_docs structure and guidance.",
+      "filePath": "src/finalize/steps/SUMMARY.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "src/finalize/steps/SUMMARY.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-40-1783906622660",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @test/loop/SUMMARY.md around lines 46 - 50, Replace the HTML comment inside the fenced YAML block following canonical_docs with a YAML comment using #, preserving the note’s wording and keeping the YAML valid.",
+      "filePath": "test/loop/SUMMARY.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "test/loop/SUMMARY.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-41-1783906622660",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @test/tracker/adapters/linear/POLARIS.md at line 38, Fix the related-route link in POLARIS.md by changing the relative target to the repository-root scripts/POLARIS.md location and updating the link label to match the correct destination.",
+      "filePath": "test/tracker/adapters/linear/POLARIS.md",
+      "range": {
+        "startLine": 1
+      },
+      "suggestedAction": "- [scripts/POLARIS.md](../../../../scripts/POLARIS.md)",
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "test/tracker/adapters/linear/POLARIS.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-42-1783906622660",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/runtime/audit/SUMMARY.md around lines 46 - 50, Update the canonical_docs YAML example in SUMMARY.md by replacing the embedded HTML comment with a YAML # comment, preserving the comment’s guidance while keeping the fenced YAML valid.",
+      "filePath": "src/runtime/audit/SUMMARY.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "src/runtime/audit/SUMMARY.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-43-1783906622660",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-542/medic/polaris-run-pol-542-2026-07-12-001-r2-qc_qc-blocking-findings_d4201ec0-e94e-48e9-b963-c80f7338e074.json at line 25, Replace the absolute machine-specific value of result_file with a repository-relative path, and update the code that consumes result_file to resolve it against the runtime workspace before accessing the result file. Ensure the persisted configuration remains portable across checkouts and workers.",
+      "filePath": ".polaris/clusters/POL-542/medic/polaris-run-pol-542-2026-07-12-001-r2-qc_qc-blocking-findings_d4201ec0-e94e-48e9-b963-c80f7338e074.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-542/medic/polaris-run-pol-542-2026-07-12-001-r2-qc_qc-blocking-findings_d4201ec0-e94e-48e9-b963-c80f7338e074.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-44-1783906622660",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/runs/polaris-run-pol-494-2026-07-12-001/telemetry.jsonl around lines 3 - 7, Remove the generated telemetry.jsonl artifact from the reviewed changes, or prevent it from being persisted and tracked by applying the repository’s existing ignore/exclusion mechanism for telemetry files. Ensure no machine-specific paths such as /Users/lsctech/... remain in the reviewed artifact set.",
+      "filePath": ".polaris/runs/polaris-run-pol-494-2026-07-12-001/telemetry.jsonl",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/runs/polaris-run-pol-494-2026-07-12-001/telemetry.jsonl"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-45-1783906622660",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @test/runtime/verification/SUMMARY.md around lines 46 - 50, Update the canonical_docs YAML block in SUMMARY.md so the navigation-path instruction is valid YAML: replace the HTML comment with a # comment or move it outside the closing code fence, while preserving the existing canonical_docs entry.",
+      "filePath": "test/runtime/verification/SUMMARY.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "test/runtime/verification/SUMMARY.md"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-46-1783906622660",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/mcp/SUMMARY.md around lines 46 - 50, Update the canonical_docs YAML template/generator to remove the HTML comment from inside the fenced YAML, replacing it with a YAML # comment or moving it outside the fence. Keep the canonical_docs entries valid YAML and ensure the shared source is corrected so regenerated documentation preserves the fix.",
+      "filePath": "src/mcp/SUMMARY.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "src/mcp/SUMMARY.md"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-47-1783906622660",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @scripts/POLARIS.md around lines 37 - 47, Update the generated links in the file’s document-list section so each target is relative to scripts/POLARIS.md: use parent-relative paths for AGENTS.md, CLAUDE.md, POLARIS_RULES.md, and README.md, and link POLARIS.md directly without the scripts/ prefix. Preserve the surrounding generated markers and link labels.",
+      "filePath": "scripts/POLARIS.md",
+      "range": {
+        "startLine": 1
+      },
+      "suggestedAction": "- [AGENTS.md](../AGENTS.md)\n- [CLAUDE.md](../CLAUDE.md)\n- [POLARIS_RULES.md](../POLARIS_RULES.md)\n- [README.md](../README.md)\n- [POLARIS.md](POLARIS.md)\n\n## Related routes\n\n<!-- Atlas route pointer to sibling or parent folders. -->\n\n<!-- END POLARIS GENERATED -->",
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "scripts/POLARIS.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-48-1783906622660",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/runs/run-report.md around lines 25 - 32, Correct the table rows for POL-435 through POL-440 in the provider distribution table so each contains exactly eight cells matching the headers, removing the extra separator/value that shifts Provider, Status, and Done out of alignment.",
+      "filePath": ".polaris/runs/run-report.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "low",
+        "reason": "pre-existing",
+        "filePath": ".polaris/runs/run-report.md"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-49-1783906622660",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/runtime/audit/POLARIS.md around lines 37 - 47, Update the generated links in the Related routes section of POLARIS.md to use paths relative to src/runtime/audit/POLARIS.md, including parent and sibling references such as ../POLARIS.md and ../continuation/POLARIS.md, so they resolve from the current document without duplicating src/runtime.",
+      "filePath": "src/runtime/audit/POLARIS.md",
+      "range": {
+        "startLine": 1
+      },
+      "suggestedAction": "- [POLARIS.md](../POLARIS.md)\n- [SUMMARY.md](../SUMMARY.md)\n- [POLARIS.md](POLARIS.md)\n- [SUMMARY.md](SUMMARY.md)\n- [POLARIS.md](../continuation/POLARIS.md)\n\n## Related routes\n\n<!-- Atlas route pointer to sibling or parent folders. -->\n\n<!-- END POLARIS GENERATED -->",
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "src/runtime/audit/POLARIS.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-50-1783906622660",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/runs/SUMMARY.md around lines 46 - 50, Move the navigation guidance comment outside the YAML block, or replace the HTML comment following canonical_docs with a YAML # comment. Keep the canonical_docs structure and POLARIS.md entry unchanged so the block remains valid YAML for parsers.",
+      "filePath": "src/runs/SUMMARY.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "src/runs/SUMMARY.md"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-51-1783906622660",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/smartdocs-engine/index.ts around lines 56 - 84, Update printReconcileReport so the completion summary’s skipped count includes report.skipped, the optional skippedRoot entry, and every report.skippedIneligible entry, while preserving the existing detailed output.",
+      "filePath": "src/smartdocs-engine/index.ts",
+      "range": {
+        "startLine": 1
+      },
+      "suggestedAction": "function printReconcileReport(report: ReconcileReport, dryRun: boolean | undefined): void {\n  const skippedCount =\n    report.skipped.length +\n    (report.skippedRoot ? 1 : 0) +\n    report.skippedIneligible.length;\n\n  for (const path of report.created) {\n    console.log(`${dryRun ? \"[dry-run] would create\" : \"created\"}: ${path}`);\n  }\n  for (const path of report.regenerated) {\n    console.log(`${dryRun ? \"[dry-run] would regenerate\" : \"regenerated\"}: ${path}`);\n  }\n  for (const path of report.regeneratedRegion) {\n    console.log(`${dryRun ? \"[dry-run] would regenerate (region)\" : \"regenerated (region)\"}: ${path}`);\n  }\n  for (const path of report.skipped) {\n    console.log(`skipped (up-to-date): ${path}`);\n  }\n  for (const path of report.blocked) {\n    console.log(`blocked (manual migration): ${path}`);\n  }\n  if (report.skippedRoot) {\n    console.log(`skipped (root): ${report.skippedRoot.path}/ (${report.skippedRoot.reason})`);\n  }\n  if (report.skippedIneligible.length > 0) {\n    for (const entry of report.skippedIneligible) {\n      console.log(`skipped (ineligible): ${entry.path}/ (${entry.reason})`);\n    }\n  }\n  console.log(\n    `\\nDone. ${report.created.length} created, ${report.regenerated.length} regenerated, ${report.regeneratedRegion.length} regenerated (region), ${skippedCount} skipped, ${report.blocked.length} blocked.`,\n  );\n}",
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "src/smartdocs-engine/index.ts"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-52-1783906622660",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @scripts/SUMMARY.md around lines 46 - 50, Replace the HTML comment inside the fenced YAML canonical_docs block with valid YAML comment syntax or move it outside the fence, and update the associated generator/template so regeneration preserves the valid YAML format.",
+      "filePath": "scripts/SUMMARY.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "scripts/SUMMARY.md"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-53-1783906622660",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-494/medic/polaris-run-pol-494-2026-07-12-001-r2-qc_qc-all-providers-failed_b651cd96-cb00-43e9-b87c-4d0422536466.json at line 25, Replace the developer-specific absolute value in result_file with a repository-relative path, or derive it at runtime from the repository location, while preserving the reference to the result JSON file.",
+      "filePath": ".polaris/clusters/POL-494/medic/polaris-run-pol-494-2026-07-12-001-r2-qc_qc-all-providers-failed_b651cd96-cb00-43e9-b87c-4d0422536466.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-494/medic/polaris-run-pol-494-2026-07-12-001-r2-qc_qc-all-providers-failed_b651cd96-cb00-43e9-b87c-4d0422536466.json"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-54-1783906622660",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @test/runtime/continuation/SUMMARY.md around lines 44 - 50, Update the canonical_docs YAML block in the Canonical References section to remove the HTML comment or replace it with a YAML-compatible # comment, while preserving the existing canonical_docs entry and keeping the fenced block valid YAML.",
+      "filePath": "test/runtime/continuation/SUMMARY.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "test/runtime/continuation/SUMMARY.md"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-55-1783906622660",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/graph/adapter/typescript-javascript/SUMMARY.md around lines 46 - 50, Keep the canonical_docs YAML block valid by replacing the HTML comment inside the fenced block with a YAML-compatible # comment, or move that instruction outside the YAML fence while preserving the POLARIS.md entry.",
+      "filePath": "src/graph/adapter/typescript-javascript/SUMMARY.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "src/graph/adapter/typescript-javascript/SUMMARY.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-56-1783906622660",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/runs/polaris-run-pol-542-2026-07-12-001/run-report.md around lines 20 - 30, Fix the provider-distribution table row for POL-543 so its cell count matches the eight-column header, ensuring the status value Done occupies the declared Status column and all preceding values remain correctly aligned.",
+      "filePath": ".polaris/runs/polaris-run-pol-542-2026-07-12-001/run-report.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/runs/polaris-run-pol-542-2026-07-12-001/run-report.md"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-57-1783906622660",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/smartdocs-engine/validate-instructions.ts around lines 252 - 256, Guard the Signal 0 call in the validation flow so checkTemplateVersionStamp only runs when extractGeneratedRegion(content) finds an actual generated region. Preserve the existing polarisGenerated extraction for other checks, but avoid adding the “POLARIS.md is unstamped” finding for legacy files without generated-region markers.",
+      "filePath": "src/smartdocs-engine/validate-instructions.ts",
+      "range": {
+        "startLine": 1
+      },
+      "suggestedAction": "const polarisGeneratedRaw = extractGeneratedRegion(content);\n  const polarisGenerated = polarisGeneratedRaw ?? content;\n\n  // Signal 0: template-version stamp inside generated region (only when present)\n  if (polarisGeneratedRaw !== null) {\n    const polarisStampFinding = checkTemplateVersionStamp(polarisGeneratedRaw, \"POLARIS.md\");\n    if (polarisStampFinding) findings.push(polarisStampFinding);\n  }",
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "low",
+        "reason": "shared-file",
+        "childId": "POL-437",
+        "filePath": "src/smartdocs-engine/validate-instructions.ts"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    }
+  ],
+  "rawArtifactPaths": [],
+  "parserVersion": "coderabbit-1.0",
+  "policyDecision": {
+    "blocksDelivery": true,
+    "requiresOperatorReview": true,
+    "routedToRepair": false,
+    "summary": "57 findings; operator review required"
+  },
+  "providerAttempt": {
+    "provider": "coderabbit",
+    "status": "success",
+    "rawOutputAvailable": true,
+    "rawOutputRetained": false,
+    "stdoutLength": 37712,
+    "stderrLength": 0,
+    "exitCode": 0,
+    "parserResult": "success"
+  }
+}

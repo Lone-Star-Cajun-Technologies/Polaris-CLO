@@ -1,0 +1,172 @@
+{
+  "schemaVersion": "1.0",
+  "qcRunId": "coderabbit-1783902482484",
+  "runId": "polaris-run-pol-434-2026-07-12-001",
+  "clusterId": "POL-434",
+  "trigger": "completed-cluster",
+  "provider": "coderabbit",
+  "providerMode": "local",
+  "startedAt": "2026-07-13T00:19:12.393Z",
+  "completedAt": "2026-07-13T00:28:02.484Z",
+  "status": "findings",
+  "findings": [
+    {
+      "findingId": "coderabbit-1-1783902482484",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-434/state.json around lines 9 - 16, Reconcile the POL-434 cluster state for run polaris-run-pol-434-2026-07-12-001 through the state-transition path: move POL-437 from open_children to completed_children based on its done result. Preserve the remaining open children unchanged and ensure the resulting state accurately reflects completion before merging.",
+      "filePath": ".polaris/clusters/POL-434/state.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-434/state.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-2-1783902482484",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/runs/polaris-run-pol-494-2026-07-12-001/run-report.md around lines 20 - 24, Regenerate the provider distribution table in the report so its header and POL-544 row use the same canonical column count and ordering. Set the provider and routing/status values consistently with the reported devin selection, removing the extra cell and resolving the ambiguous “—” provider entry.",
+      "filePath": ".polaris/runs/polaris-run-pol-494-2026-07-12-001/run-report.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/runs/polaris-run-pol-494-2026-07-12-001/run-report.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-3-1783902482484",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-494/medic/polaris-run-pol-494-2026-07-11-001-r1-qc_qc-blocking-findings_47bad229-cb1b-4f6d-8ecc-6b1f73b25adb.json at line 27, Update the packet’s status from \"pending\" to match the authoritative medic treatment outcome recorded as \"treatment-success\", ensuring the packet and result lifecycle transition atomically or deriving the report status from that result.",
+      "filePath": ".polaris/clusters/POL-494/medic/polaris-run-pol-494-2026-07-11-001-r1-qc_qc-blocking-findings_47bad229-cb1b-4f6d-8ecc-6b1f73b25adb.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-494/medic/polaris-run-pol-494-2026-07-11-001-r1-qc_qc-blocking-findings_47bad229-cb1b-4f6d-8ecc-6b1f73b25adb.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-4-1783902482484",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/runs/polaris-run-pol-494-2026-07-11-001/run-health-report.json around lines 68 - 78, The medic_consult entry must no longer remain resolved after later blocking findings and repair-dispatch failures appear. Update the report’s medic_consult status and resolution fields to represent the later unresolved symptoms, either by reopening this consult or adding a new unresolved consult, while preserving references to the relevant findings.",
+      "filePath": ".polaris/runs/polaris-run-pol-494-2026-07-11-001/run-health-report.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/runs/polaris-run-pol-494-2026-07-11-001/run-health-report.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-5-1783902482484",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-494/medic/polaris-run-pol-494-2026-07-12-001-r1-qc_qc-all-providers-failed_b651cd96-cb00-43e9-b87c-4d0422536466-result.json at line 8, Update the QC failure-policy handling referenced by this result so rateLimited provider failures cannot satisfy the QC gate or produce a passing terminal outcome. Treat them as retryable, or require explicit operator review when retries are exhausted, and ensure completion without a usable QC review remains non-passing.",
+      "filePath": ".polaris/clusters/POL-494/medic/polaris-run-pol-494-2026-07-12-001-r1-qc_qc-all-providers-failed_b651cd96-cb00-43e9-b87c-4d0422536466-result.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-494/medic/polaris-run-pol-494-2026-07-12-001-r1-qc_qc-all-providers-failed_b651cd96-cb00-43e9-b87c-4d0422536466-result.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-6-1783902482484",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/runs/polaris-run-pol-494-2026-07-12-001/current-state.json around lines 106 - 119, Update the qc_repair_loop state in the persisted snapshot to reflect the repair rounds that actually ran, including the current round, manifest path, pending and completed packet IDs, rerun metadata, and terminal outcome. Reuse the recorded telemetry values for rounds 1 and 2 rather than leaving default zero, null, empty, or pass values that misrepresent remediation history.",
+      "filePath": ".polaris/runs/polaris-run-pol-494-2026-07-12-001/current-state.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/runs/polaris-run-pol-494-2026-07-12-001/current-state.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-7-1783902482484",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/runs/polaris-run-pol-542-2026-07-12-001/run-report.md around lines 20 - 24, Correct the POL-543 row in the provider distribution table so it contains exactly eight cells matching the header order, with Provider, Fallbacks, and Status aligned to their respective columns. Preserve the existing values and remove the extra cell causing the shift.",
+      "filePath": ".polaris/runs/polaris-run-pol-542-2026-07-12-001/run-report.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/runs/polaris-run-pol-542-2026-07-12-001/run-report.md"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    }
+  ],
+  "rawArtifactPaths": [],
+  "parserVersion": "coderabbit-1.0",
+  "policyDecision": {
+    "blocksDelivery": true,
+    "requiresOperatorReview": true,
+    "routedToRepair": false,
+    "summary": "7 findings; operator review required"
+  },
+  "providerAttempt": {
+    "provider": "coderabbit",
+    "status": "success",
+    "rawOutputAvailable": true,
+    "rawOutputRetained": false,
+    "stdoutLength": 6297,
+    "stderrLength": 0,
+    "exitCode": 0,
+    "parserResult": "success"
+  }
+}

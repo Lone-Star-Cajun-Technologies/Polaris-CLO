@@ -1,0 +1,94 @@
+{
+  "schemaVersion": "1.0",
+  "qcRunId": "coderabbit-1783911904231",
+  "runId": "polaris-run-pol-434-2026-07-12-001",
+  "clusterId": "POL-434",
+  "trigger": "completed-cluster",
+  "provider": "coderabbit",
+  "providerMode": "local",
+  "startedAt": "2026-07-13T03:00:56.980Z",
+  "completedAt": "2026-07-13T03:05:04.231Z",
+  "status": "findings",
+  "findings": [
+    {
+      "findingId": "coderabbit-1-1783911904231",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/runs/polaris-run-pol-434-2026-07-12-001/run-health-report.json around lines 92 - 95, Remove the duplicate CHART-2026-07-13-001 entry from the chart_refs array so each chart reference is emitted only once.",
+      "filePath": ".polaris/runs/polaris-run-pol-434-2026-07-12-001/run-health-report.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/runs/polaris-run-pol-434-2026-07-12-001/run-health-report.json"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-2-1783911904231",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/graph/store/POLARIS.md at line 38, Update the POLARIS.md link in the documentation to use the parent-relative path so it correctly resolves from the nested store directory.",
+      "filePath": "src/graph/store/POLARIS.md",
+      "range": {
+        "startLine": 1
+      },
+      "suggestedAction": "[POLARIS.md](../POLARIS.md)",
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-440",
+        "filePath": "src/graph/store/POLARIS.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-3-1783911904231",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/runs/polaris-run-pol-542-2026-07-12-001/run-report.md around lines 20 - 24, Fix the run-report generator’s row formatter so the POL-543 provider-distribution row emits exactly eight cells matching the header order, with Selection reason, Status, and Done mapped to their intended columns and no orphaned value.",
+      "filePath": ".polaris/runs/polaris-run-pol-542-2026-07-12-001/run-report.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/runs/polaris-run-pol-542-2026-07-12-001/run-report.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    }
+  ],
+  "rawArtifactPaths": [],
+  "parserVersion": "coderabbit-1.0",
+  "policyDecision": {
+    "blocksDelivery": false,
+    "requiresOperatorReview": false,
+    "routedToRepair": false,
+    "summary": "3 findings"
+  },
+  "providerAttempt": {
+    "provider": "coderabbit",
+    "status": "success",
+    "rawOutputAvailable": true,
+    "rawOutputRetained": false,
+    "stdoutLength": 2487,
+    "stderrLength": 0,
+    "exitCode": 0,
+    "parserResult": "success"
+  }
+}
