@@ -1,0 +1,94 @@
+{
+  "schemaVersion": "1.0",
+  "qcRunId": "coderabbit-1783967455222",
+  "runId": "polaris-run-terminal-finalize-followup-2026-07-13-001",
+  "clusterId": "POL-547",
+  "trigger": "completed-cluster",
+  "provider": "coderabbit",
+  "providerMode": "local",
+  "startedAt": "2026-07-13T18:23:02.425Z",
+  "completedAt": "2026-07-13T18:30:55.222Z",
+  "status": "findings",
+  "findings": [
+    {
+      "findingId": "coderabbit-1-1783967455222",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-547/state.json at line 20, Replace the hard-coded /Users/lsctech/... values in the durable artifact fields of the committed cluster state with repository-relative paths. Update artifact_dir, result_file, packet_path, expected_result_path, result_artifact_path, telemetry_path, and manifest_path while preserving each field’s referenced artifact location.",
+      "filePath": ".polaris/clusters/POL-547/state.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "low",
+        "reason": "pre-existing",
+        "filePath": ".polaris/clusters/POL-547/state.json"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-2-1783967455222",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/medic/treatment-packets.ts at line 2, Ensure result_file remains valid regardless of the process working directory by resolving it against repoRoot before adapters use it, or convert it to an absolute path in the treatment-packet flow. Update the relevant result_file construction and pass-through logic near the path imports, while preserving repo-root-relative output semantics for all writers.",
+      "filePath": "src/medic/treatment-packets.ts",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-552",
+        "filePath": "src/medic/treatment-packets.ts"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-3-1783967455222",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/loop/continue.ts around lines 264 - 267, Add a test for resolveTelemetryFilePath using a relative state.artifact_dir, asserting the resulting telemetry path is rooted at repoRoot rather than the process cwd. Retain the existing absolute-artifact_dir coverage and verify the expected runs/{run_id}/telemetry.jsonl suffix.",
+      "filePath": "src/loop/continue.ts",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-552",
+        "filePath": "src/loop/continue.ts"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    }
+  ],
+  "rawArtifactPaths": [],
+  "parserVersion": "coderabbit-1.0",
+  "policyDecision": {
+    "blocksDelivery": false,
+    "requiresOperatorReview": false,
+    "routedToRepair": false,
+    "summary": "3 findings"
+  },
+  "providerAttempt": {
+    "provider": "coderabbit",
+    "status": "success",
+    "rawOutputAvailable": true,
+    "rawOutputRetained": false,
+    "stdoutLength": 3129,
+    "stderrLength": 0,
+    "exitCode": 0,
+    "parserResult": "success"
+  }
+}

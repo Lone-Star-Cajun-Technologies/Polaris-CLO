@@ -1,0 +1,39 @@
+{
+  "schema_version": "1.0",
+  "role": "closeout-librarian",
+  "run_id": "polaris-run-terminal-finalize-2026-07-13-001",
+  "dispatch_id": "e22bcd2a-394d-4512-b3cf-51636aea6ddd",
+  "cluster_id": "POL-547",
+  "status": "success",
+  "commit_sha": null,
+  "commit_message": "",
+  "files_committed": [],
+  "drift_reconciliation": {
+    "medic_ran": false,
+    "charts_created": [],
+    "drift_observations": [],
+    "chart_links_required": false,
+    "charts_linked": []
+  },
+  "polaris_md_updates": [],
+  "summary_md_updates": [
+    { "file": "src/finalize/POLARIS.md", "action": "no_change" },
+    { "file": "src/finalize/SUMMARY.md", "action": "no_change" },
+    { "file": "src/POLARIS.md", "action": "no_change" },
+    { "file": "src/SUMMARY.md", "action": "no_change" }
+  ],
+  "docs_ingested": [],
+  "docs_archived": [],
+  "yaml_updates": [],
+  "cognition_archived": [],
+  "link_validation": {
+    "total_checked": 3,
+    "valid": 3,
+    "broken": 0,
+    "repaired": 0,
+    "unrepairable": []
+  },
+  "blockers": [],
+  "reconciled_at": "2026-07-13T17:04:02Z",
+  "evidence_summary": "Cluster POL-547 made PR creation the terminal finalize action (redirect post-PR state writes to git-ignored run/archive paths, drop the cluster-state snapshot write). POL-551 already reconciled src/finalize/POLARIS.md and SUMMARY.md with the new invariant (stepCreatePr is the terminal tracked-file mutation; stepUpdateLinear is the sole external-call exception; post-PR bookkeeping stays in git-ignored paths). Reviewed the subsequent QC-repair commit (87f1218): it only made minor path-resolution fixes (relative to absolute telemetry paths) and a test-description clarification, with no architectural or behavioral change requiring further doc updates. Checked src/POLARIS.md and src/SUMMARY.md (root-level) — both remain accurate at their level of detail; the finalize-specific invariant is already fully captured in src/finalize/'s own docs and does not need duplication at the root level. No smartdocs/raw candidates relate to this cluster's scope. No cognition notes were pending. No Medic charts were declared in the packet. All canonical references in the affected docs resolve. No documentation writes were required; step 08 commit is a no-op (commit_sha: null)."
+}

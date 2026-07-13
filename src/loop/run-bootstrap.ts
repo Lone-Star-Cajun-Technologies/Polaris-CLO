@@ -23,7 +23,7 @@
 
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, renameSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { writeStateAtomic, type LoopState } from "./checkpoint.js";
 import {
   appendDispatchViolationEvent,
@@ -230,6 +230,11 @@ export function runLoopBootstrapInit(options: BootstrapInitOptions): Promise<voi
   const runId = options.runId ?? deriveRunId(clusterId);
   const seal = createBootstrapSeal(runId, clusterId, openChildren);
   const deliveryBranch = branch ?? buildDeliveryBranchName(clusterId);
+  const resolvedArtifactDir = resolve(
+    repoRoot,
+    artifactDir ?? join(repoRoot, ".taskchain_artifacts", "polaris-run"),
+  );
+  const artifactDirValue = relative(repoRoot, resolvedArtifactDir);
 
   const initialState: LoopState = {
     schema_version: "1.0",
@@ -249,7 +254,7 @@ export function runLoopBootstrapInit(options: BootstrapInitOptions): Promise<voi
     },
     status: "running",
     next_open_child: openChildren[0] ?? null,
-    artifact_dir: artifactDir ?? join(repoRoot, ".taskchain_artifacts", "polaris-run"),
+    artifact_dir: artifactDirValue,
     dispatch_boundary: initialDispatchBoundary()!,
     run_bootstrap_seal: seal,
   };

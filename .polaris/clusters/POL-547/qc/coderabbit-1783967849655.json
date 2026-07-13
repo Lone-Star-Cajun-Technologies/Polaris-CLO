@@ -1,0 +1,93 @@
+{
+  "schemaVersion": "1.0",
+  "qcRunId": "coderabbit-1783967849655",
+  "runId": "polaris-run-terminal-finalize-followup-2026-07-13-001",
+  "clusterId": "POL-547",
+  "trigger": "completed-cluster",
+  "provider": "coderabbit",
+  "providerMode": "local",
+  "startedAt": "2026-07-13T18:31:55.586Z",
+  "completedAt": "2026-07-13T18:37:29.655Z",
+  "status": "findings",
+  "findings": [
+    {
+      "findingId": "coderabbit-1-1783967849655",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/loop/adapters/terminal-cli.ts around lines 573 - 588, Update the validation-failed symptom override in the surrounding finalValidation/finalNext reconciliation so it always sets finalValidation to \"failed\" but only changes finalNext when its current value is \"continue\"; preserve an existing \"investigate\" recommendation and update the nearby comment to reflect that only continue is blocked.",
+      "filePath": "src/loop/adapters/terminal-cli.ts",
+      "range": {
+        "startLine": 1
+      },
+      "suggestedAction": "// Reconcile validation/next_recommended_action with run-health symptoms.\n      // A validation-failed symptom overrides a passing validation string and\n      // prevents a continue recommendation when the build/tests did not pass.\n      const rawSymptoms = compact[\"run_health_symptoms\"];\n      const hasValidationFailedSymptom =\n        Array.isArray(rawSymptoms) &&\n        rawSymptoms.some(\n          (s) =>\n            typeof s === \"object\" &&\n            s !== null &&\n            (s as Record<string, unknown>)[\"category\"] === \"validation-failed\",\n        );\n      if (hasValidationFailedSymptom) {\n        finalValidation = \"failed\";\n        if (finalNext === \"continue\") {\n          finalNext = \"stop\";\n        }\n      }",
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "low",
+        "reason": "pre-existing",
+        "filePath": "src/loop/adapters/terminal-cli.ts"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-2-1783967849655",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-547/cluster-state.json around lines 79 - 134, Replace the developer-specific absolute values in the qc run artifact_path entries of cluster-state.json with portable repository-relative or otherwise environment-resolvable paths. Update all affected coderabbit entries, including those shown, while preserving their run metadata and artifact references.",
+      "filePath": ".polaris/clusters/POL-547/cluster-state.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "low",
+        "reason": "pre-existing",
+        "filePath": ".polaris/clusters/POL-547/cluster-state.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-3-1783967849655",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-547/cluster-state.json around lines 138 - 141, The round-2 entry in qc_repair_manifests must reference the round-2 repair packets. Update its path from repair-rounds/1/repair-packets.json to repair-rounds/2/repair-packets.json while leaving other manifest entries unchanged.",
+      "filePath": ".polaris/clusters/POL-547/cluster-state.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "low",
+        "reason": "pre-existing",
+        "filePath": ".polaris/clusters/POL-547/cluster-state.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    }
+  ],
+  "rawArtifactPaths": [],
+  "parserVersion": "coderabbit-1.0",
+  "policyDecision": {
+    "blocksDelivery": true,
+    "requiresOperatorReview": true,
+    "routedToRepair": false,
+    "summary": "3 findings; operator review required"
+  },
+  "providerAttempt": {
+    "provider": "coderabbit",
+    "status": "success",
+    "rawOutputAvailable": true,
+    "rawOutputRetained": false,
+    "stdoutLength": 3777,
+    "stderrLength": 0,
+    "exitCode": 0,
+    "parserResult": "success"
+  }
+}

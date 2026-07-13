@@ -292,12 +292,17 @@ describe("stepCommit", () => {
     expect(files).not.toContain(".taskchain_artifacts/polaris-run/current-state.json");
   });
 
-  it("stages the archived run directory alongside promoted cluster artifacts", async () => {
+  it("does not stage the per-run archive directory even when it already exists", async () => {
     const { stepCommit } = await import("./steps/06-commit.js");
     const { readState } = await import("../loop/checkpoint.js");
     const stateFile = writeState(testDir);
     const state = readState(stateFile);
     const reportPath = join(testDir, ".polaris", "runs", "run-report.md");
+
+    // The per-run archive directory is git-ignored per POL-548.
+    writeFileSync(join(testDir, ".gitignore"), ".polaris/runs/*/\n");
+    execFileSync("git", ["add", ".gitignore"], { cwd: testDir, stdio: "pipe" });
+    execFileSync("git", ["commit", "-m", "ignore per-run archives"], { cwd: testDir, stdio: "pipe" });
 
     writeEmptyAtlas(testDir);
     writeDurableClusterArtifacts(testDir, state.cluster_id);
@@ -315,9 +320,9 @@ describe("stepCommit", () => {
       encoding: "utf-8",
     }).trim().split("\n").filter(Boolean);
 
-    expect(files).toContain(`.polaris/runs/${state.run_id}/current-state.json`);
-    expect(files).toContain(`.polaris/runs/${state.run_id}/run-report.md`);
-    expect(files).toContain(`.polaris/runs/${state.run_id}/telemetry.jsonl`);
+    expect(files).not.toContain(`.polaris/runs/${state.run_id}/current-state.json`);
+    expect(files).not.toContain(`.polaris/runs/${state.run_id}/run-report.md`);
+    expect(files).not.toContain(`.polaris/runs/${state.run_id}/telemetry.jsonl`);
   });
 });
 
@@ -328,7 +333,7 @@ describe("stepUpdateState", () => {
   beforeEach(() => { testDir = makeTestDir(); });
   afterEach(() => { rmSync(testDir, { recursive: true, force: true }); });
 
-  it("writes pr_url to current-state.json", async () => {
+  it("writes pr_url and status to current-state.json", async () => {
     const { stepUpdateState } = await import("./steps/09-update-state.js");
     const { readState } = await import("../loop/checkpoint.js");
     const stateFile = writeState(testDir);
@@ -337,6 +342,7 @@ describe("stepUpdateState", () => {
 
     const updated = JSON.parse(readFileSync(stateFile, "utf-8")) as Record<string, unknown>;
     expect(updated["pr_url"]).toBe("https://github.com/test/repo/pull/42");
+    expect(updated["status"]).toBe("complete");
   });
 });
 
@@ -2148,5 +2154,64 @@ describe("runFinalize run-health Medic gate", () => {
 
     exitSpy.mockRestore();
     stderrSpy.mockRestore();
+  });
+});
+
+// ---- runFinalize delivery path post-PR git status ----------------------------
+
+describe("runFinalize delivery path leaves no tracked-file diff after PR creation", () => {
+  let testDir: string;
+  beforeEach(() => { testDir = makeTestDir(); });
+  afterEach(() => { rmSync(testDir, { recursive: true, force: true }); });
+
+  it("leaves git status --porcelain clean after stepUpdateState, stepAppendJsonl, and stepArchive", async () => {
+    vi.resetModules();
+
+    // The final check runs after the complete post-PR bookkeeping path, not just
+    // at the stepCreatePr boundary, so any tracked-file mutation in the later
+    // steps will fail the test.
+    writeFileSync(
+      join(testDir, ".gitignore"),
+      [
+        ".taskchain_artifacts/**",
+        ".polaris/runs/*/",
+        ".polaris/runs/run-report.md",
+        ".polaris/runs/current-state.json",
+        ".polaris/runs/mutation-queue.json",
+      ].join("\n") + "\n",
+    );
+    execFileSync("git", ["add", ".gitignore"], { cwd: testDir, stdio: "pipe" });
+    execFileSync("git", ["commit", "-m", "ignore runtime artifacts"], { cwd: testDir, stdio: "pipe" });
+
+    const stateFile = writeCanonicalState(testDir, "POL-6");
+    writeEmptyAtlas(testDir);
+    writeDurableClusterArtifacts(testDir, "POL-6");
+    execFileSync("git", ["checkout", "-b", "pol-6-delivery"], { cwd: testDir, stdio: "pipe" });
+    stageFile(testDir, "src/impl.ts", "export const impl = true;\n");
+
+    const createDraftPrMock = vi.fn(() => "https://github.com/test/repo/pull/42");
+    const stepPushMock = vi.fn();
+    vi.doMock("./github.js", () => ({
+      createDraftPr: createDraftPrMock,
+      buildPrBody: vi.fn(() => "PR body"),
+    }));
+    vi.doMock("./steps/07-push.js", () => ({ stepPush: stepPushMock }));
+
+    try {
+      const { runFinalize } = await import("./index.js");
+      await runFinalize({ repoRoot: testDir, stateFile, skipLibrarian: true });
+
+      const status = execFileSync("git", ["status", "--porcelain"], {
+        cwd: testDir,
+        encoding: "utf-8",
+      }).trim();
+
+      expect(status).toBe("");
+      expect(createDraftPrMock).toHaveBeenCalledOnce();
+      expect(stepPushMock).toHaveBeenCalledOnce();
+    } finally {
+      vi.doUnmock("./github.js");
+      vi.doUnmock("./steps/07-push.js");
+    }
   });
 });

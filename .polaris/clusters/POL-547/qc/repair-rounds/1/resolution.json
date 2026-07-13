@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "1.0",
+  "clusterId": "POL-547",
+  "round": 1,
+  "resolvedAt": "2026-07-13T16:35:35.759Z",
+  "resolver": "Phillip meaux",
+  "resolvedOutcome": "no-repairable",
+  "reason": "6 of 7 findings target internal Polaris bookkeeping files (3 from unrelated, in-progress clusters POL-494/POL-542 sitting untracked in the working tree; 3 from POL-547's own runtime artifacts: state.json, packets/*.json, clusters.json), and the 7th is a low-severity follow-up on the same POL-494 debris. None touch the actual deliverable (.gitignore, src/finalize/*, tests, docs). Matches the known coderabbit bookkeeping-misclassification pattern (see POL-534/POL-536).",
+  "findings": [
+    "coderabbit-1-1783957910809",
+    "coderabbit-2-1783957910809",
+    "coderabbit-3-1783957910809",
+    "coderabbit-4-1783957910809",
+    "coderabbit-5-1783957910809",
+    "coderabbit-6-1783957910809",
+    "coderabbit-7-1783957910809"
+  ]
+}

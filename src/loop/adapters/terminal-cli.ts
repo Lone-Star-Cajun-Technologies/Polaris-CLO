@@ -560,15 +560,48 @@ export class TerminalCliAdapter implements ExecutionAdapter {
       const compactReturnErrors = validateCompactReturn(compact);
       const isValidCompactReturn = compactReturnErrors.length === 0;
 
-      const finalStatus: "done" | "failed" | "blocked" = isValidCompactReturn
+      let finalStatus: "done" | "failed" | "blocked" = isValidCompactReturn
         ? (compact["status"] as "done" | "failed" | "blocked")
         : "failed";
-      const finalValidation: "passed" | "failed" | "skipped" = isValidCompactReturn
+      let finalValidation: "passed" | "failed" | "skipped" = isValidCompactReturn
         ? (compact["validation"] as "passed" | "failed" | "skipped")
         : "failed";
-      const finalNext: "continue" | "stop" | "investigate" = isValidCompactReturn
+      let finalNext: "continue" | "stop" | "investigate" = isValidCompactReturn
         ? (compact["next_recommended_action"] as "continue" | "stop" | "investigate")
         : "stop";
+
+      // Reconcile validation/next_recommended_action with run-health symptoms.
+      // A validation-failed symptom overrides a passing validation string and
+      // prevents a continue recommendation when the build/tests did not pass.
+      const rawSymptoms = compact["run_health_symptoms"];
+      const hasValidationFailedSymptom =
+        Array.isArray(rawSymptoms) &&
+        rawSymptoms.some(
+          (s) =>
+            typeof s === "object" &&
+            s !== null &&
+            (s as Record<string, unknown>)["category"] === "validation-failed",
+        );
+      if (hasValidationFailedSymptom) {
+        finalValidation = "failed";
+        finalNext = "stop";
+      }
+
+      // "continue" requires a passing validation result. If validation failed,
+      // the recommendation must be a terminal stop. If validation was skipped,
+      // treat the successful exit as a pass for the completion contract.
+      if (finalStatus === "done" && finalNext === "continue") {
+        if (finalValidation === "failed") {
+          finalNext = "stop";
+        } else if (finalValidation === "skipped") {
+          finalValidation = "passed";
+        }
+      }
+
+      // A failed status should never recommend continuation.
+      if ((finalStatus === "failed" || finalStatus === "blocked") && finalNext === "continue") {
+        finalNext = "stop";
+      }
 
       const errorMessage =
         finalStatus === "failed" || finalStatus === "blocked"
@@ -583,6 +616,7 @@ export class TerminalCliAdapter implements ExecutionAdapter {
 
       const sealedResult: Record<string, unknown> = {
         run_id: packet.run_id,
+        cluster_id: packet.cluster_id,
         child_id: compact["child_id"],
         status: finalStatus,
         commit: compact["commit"],

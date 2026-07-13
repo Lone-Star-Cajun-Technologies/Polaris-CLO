@@ -1,0 +1,53 @@
+{
+  "schemaVersion": "1.0",
+  "qcRunId": "coderabbit-1783963928237",
+  "runId": "polaris-run-terminal-finalize-followup-2026-07-13-001",
+  "clusterId": "POL-547",
+  "trigger": "completed-cluster",
+  "provider": "coderabbit",
+  "providerMode": "local",
+  "startedAt": "2026-07-13T17:27:29.767Z",
+  "completedAt": "2026-07-13T17:32:08.237Z",
+  "status": "findings",
+  "findings": [
+    {
+      "findingId": "coderabbit-1-1783963928237",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-547/results/POL-552-d4936f19-6072-4a91-84ec-0d62cfa5c528.json around lines 1 - 8, The result record must satisfy the packet contract by including the required cluster_id field. Update this result JSON to add cluster_id with the value \"POL-547\", while preserving all existing fields and values.",
+      "filePath": ".polaris/clusters/POL-547/results/POL-552-d4936f19-6072-4a91-84ec-0d62cfa5c528.json",
+      "range": {
+        "startLine": 1
+      },
+      "suggestedAction": "{\n  \"run_id\": \"polaris-run-terminal-finalize-followup-2026-07-13-001\",\n  \"cluster_id\": \"POL-547\",\n  \"child_id\": \"POL-552\",\n  \"status\": \"done\",\n  \"commit\": \"2065679e2935c355f6e827f504d0f4d8c2eef918\",\n  \"validation\": \"skipped\",\n  \"next_recommended_action\": \"continue\"\n}",
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-547/results/POL-552-d4936f19-6072-4a91-84ec-0d62cfa5c528.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    }
+  ],
+  "rawArtifactPaths": [],
+  "parserVersion": "coderabbit-1.0",
+  "policyDecision": {
+    "blocksDelivery": true,
+    "requiresOperatorReview": true,
+    "routedToRepair": false,
+    "summary": "1 findings; operator review required"
+  },
+  "providerAttempt": {
+    "provider": "coderabbit",
+    "status": "success",
+    "rawOutputAvailable": true,
+    "rawOutputRetained": false,
+    "stdoutLength": 1994,
+    "stderrLength": 0,
+    "exitCode": 0,
+    "parserResult": "success"
+  }
+}

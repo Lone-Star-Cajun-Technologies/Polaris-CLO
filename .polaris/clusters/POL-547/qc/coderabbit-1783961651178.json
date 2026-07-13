@@ -1,0 +1,135 @@
+{
+  "schemaVersion": "1.0",
+  "qcRunId": "coderabbit-1783961651178",
+  "runId": "polaris-run-terminal-finalize-2026-07-13-001",
+  "clusterId": "POL-547",
+  "trigger": "completed-cluster",
+  "provider": "coderabbit",
+  "providerMode": "local",
+  "startedAt": "2026-07-13T16:43:09.966Z",
+  "completedAt": "2026-07-13T16:54:11.178Z",
+  "status": "findings",
+  "findings": [
+    {
+      "findingId": "coderabbit-1-1783961651177",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-547/clusters.json around lines 53 - 62, Update the dependencies entry for POL-551 in the dependency map to include POL-549 and POL-550 alongside POL-548, preserving the existing dependency relationships and formatting.",
+      "filePath": ".polaris/clusters/POL-547/clusters.json",
+      "range": {
+        "startLine": 1
+      },
+      "suggestedAction": "\"dependencies\": {\n    \"POL-551\": [\n      \"POL-548\",\n      \"POL-549\",\n      \"POL-550\"\n    ],\n    \"POL-550\": [\n      \"POL-548\"\n    ],\n    \"POL-549\": [\n      \"POL-548\"\n    ]",
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-547/clusters.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-2-1783961651177",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/finalize/SUMMARY.md at line 13, Update the cluster-state bookkeeping description in the PR creation workflow summary to state that tracked .polaris cluster state is not mutated after PR creation and only run-local state retains pr_url. Ensure the wording no longer implies cluster-state pr_url updates occur post-PR.",
+      "filePath": "src/finalize/SUMMARY.md",
+      "range": {
+        "startLine": 1
+      },
+      "suggestedAction": "- PR creation (step 10) is the terminal tracked-repo-state mutation; `stepUpdateLinear` only makes the external tracker call, and post-PR local bookkeeping (run-local state and archive) stays in git-ignored paths. The tracked cluster-state snapshot is not mutated after PR creation.",
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-551",
+        "filePath": "src/finalize/SUMMARY.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-3-1783961651177",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-547/state.json around lines 301 - 306, Update advanceState() to clear the blocker when transitioning the cluster to status \"cluster-complete\". Ensure the final state omits or resets blocker so a completed run cannot retain blocker.resolved as false, while preserving blocker propagation for non-completed statuses.",
+      "filePath": ".polaris/clusters/POL-547/state.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-547/state.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-4-1783961651177",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/loop/run-bootstrap.ts around lines 233 - 237, Update the artifact path construction in the readers status, orphan recovery, abort, and bootstrap packet to resolve artifactDir against repoRoot before appending subpaths. Replace the affected join(artifactDir, ...) calls with resolve(repoRoot, artifactDir, ...) while preserving each existing suffix and behavior.",
+      "filePath": "src/loop/run-bootstrap.ts",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "low",
+        "reason": "pre-existing",
+        "filePath": "src/loop/run-bootstrap.ts"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-5-1783961651177",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-547/packets/POL-548-3170bf34-b31e-4a26-9bb0-5be716cdb7dd.json around lines 28 - 30, Update the scope-inference logic that generates the packet so an allowed scope of “.gitignore/**” also permits the root “.gitignore” file, while preserving descendant matching. Regenerate the sealed POL-548 packet through that logic rather than editing the JSON artifact directly.",
+      "filePath": ".polaris/clusters/POL-547/packets/POL-548-3170bf34-b31e-4a26-9bb0-5be716cdb7dd.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-547/packets/POL-548-3170bf34-b31e-4a26-9bb0-5be716cdb7dd.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    }
+  ],
+  "rawArtifactPaths": [],
+  "parserVersion": "coderabbit-1.0",
+  "policyDecision": {
+    "blocksDelivery": true,
+    "requiresOperatorReview": true,
+    "routedToRepair": false,
+    "summary": "5 findings; operator review required"
+  },
+  "providerAttempt": {
+    "provider": "coderabbit",
+    "status": "success",
+    "rawOutputAvailable": true,
+    "rawOutputRetained": false,
+    "stdoutLength": 4981,
+    "stderrLength": 0,
+    "exitCode": 0,
+    "parserResult": "success"
+  }
+}

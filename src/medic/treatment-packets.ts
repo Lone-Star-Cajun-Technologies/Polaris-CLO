@@ -1,5 +1,5 @@
 import { mkdirSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, relative } from "node:path";
 import { randomUUID } from "node:crypto";
 import type {
   MedicTreatmentPacket,
@@ -76,9 +76,9 @@ export function buildTreatmentPackets(
   return treated.map((symptom) => {
     const packetId = buildTreatmentPacketId(report.run_id, round, symptom.id);
     const dispatchId = randomUUID();
-    const resultFile = join(
-      getMedicDir(report.cluster_id, repoRoot),
-      `${packetId}-result.json`,
+    const resultFile = relative(
+      repoRoot,
+      join(getMedicDir(report.cluster_id, repoRoot), `${packetId}-result.json`),
     );
 
     return {

@@ -27,7 +27,7 @@ export function stepArchive(
 
   const artifactDir = state.artifact_dir
     ?? join(repoRoot, ".taskchain_artifacts", "polaris-run");
-  const telemetryFile = join(artifactDir, "runs", state.run_id, "telemetry.jsonl");
+  const telemetryFile = resolve(repoRoot, artifactDir, "runs", state.run_id, "telemetry.jsonl");
   if (existsSync(telemetryFile)) {
     copyFileSync(telemetryFile, join(archiveDir, "telemetry.jsonl"));
   }

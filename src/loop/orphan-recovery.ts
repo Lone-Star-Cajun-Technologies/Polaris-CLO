@@ -267,12 +267,13 @@ function resetForRedispatch(
 
   const newDispatchId = randomUUID();
 
-  // Clear dispatch record but retain audit trail via telemetry
+  // Clear dispatch record and result_file to prevent stale artifact reads
   const updatedMeta = {
     ...state.open_children_meta,
     [childId]: {
       ...childMeta,
       dispatch_record: undefined,
+      result_file: undefined,
     },
   };
 

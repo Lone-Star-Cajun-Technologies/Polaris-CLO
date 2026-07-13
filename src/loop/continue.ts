@@ -263,7 +263,7 @@ function appendTelemetryEvent(telemetryFile: string, event: Record<string, unkno
 
 export function resolveTelemetryFilePath(state: LoopState, repoRoot: string): string {
   const artifactDir = state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "polaris-run");
-  return join(artifactDir, "runs", state.run_id, "telemetry.jsonl");
+  return resolve(repoRoot, artifactDir, "runs", state.run_id, "telemetry.jsonl");
 }
 
 function hasValidationEvidence(validation: unknown): boolean {
@@ -458,7 +458,7 @@ export function runLoopContinue(options: ContinueOptions): void {
   // reject immediately and do NOT mutate any state.
   const artifactDirForTelemetry =
     state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "polaris-run");
-  const telemetryFileForCheck = join(artifactDirForTelemetry, "runs", state.run_id, "telemetry.jsonl");
+  const telemetryFileForCheck = resolve(repoRoot, artifactDirForTelemetry, "runs", state.run_id, "telemetry.jsonl");
 
   try {
     assertContinueRequiresDispatch(state, telemetryFileForCheck);
@@ -740,7 +740,7 @@ export function runLoopContinue(options: ContinueOptions): void {
   // Step 2: Append JSONL checkpoint event
   const artifactDir =
     state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "polaris-run");
-  const telemetryFile = join(artifactDir, "runs", state.run_id, "telemetry.jsonl");
+  const telemetryFile = resolve(repoRoot, artifactDir, "runs", state.run_id, "telemetry.jsonl");
   appendCheckpointEvent(telemetryFile, {
     event: "loop-checkpoint",
     run_id: state.run_id,

@@ -1,0 +1,173 @@
+{
+  "schemaVersion": "1.0",
+  "qcRunId": "coderabbit-1783957910809",
+  "runId": "polaris-run-terminal-finalize-2026-07-13-001",
+  "clusterId": "POL-547",
+  "trigger": "completed-cluster",
+  "provider": "coderabbit",
+  "providerMode": "local",
+  "startedAt": "2026-07-13T15:47:25.761Z",
+  "completedAt": "2026-07-13T15:51:50.809Z",
+  "status": "findings",
+  "findings": [
+    {
+      "findingId": "coderabbit-1-1783957910809",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-494/medic/polaris-run-pol-494-2026-07-12-001-r1-qc_qc-all-providers-failed_b651cd96-cb00-43e9-b87c-4d0422536466.json at line 25, The result_file value must not contain a machine-specific absolute path. Update the artifact-writing logic that produces result_file to persist a repository-relative path, resolving it against the active repository root when consumed, and apply the same normalization to state.json.artifact_dir.",
+      "filePath": ".polaris/clusters/POL-494/medic/polaris-run-pol-494-2026-07-12-001-r1-qc_qc-all-providers-failed_b651cd96-cb00-43e9-b87c-4d0422536466.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-494/medic/polaris-run-pol-494-2026-07-12-001-r1-qc_qc-all-providers-failed_b651cd96-cb00-43e9-b87c-4d0422536466.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-2-1783957910809",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-542/medic/polaris-run-pol-542-2026-07-12-001-r1-qc_qc-blocking-findings_d4201ec0-e94e-48e9-b963-c80f7338e074.json at line 27, Update the packet status from \"pending\" to the appropriate terminal status matching the successful paired result, consistent with the POL-494 packet/result pair. Preserve the recorded success and validation-passed outcome while ensuring this packet is finalized and not eligible for repeat dispatch.",
+      "filePath": ".polaris/clusters/POL-542/medic/polaris-run-pol-542-2026-07-12-001-r1-qc_qc-blocking-findings_d4201ec0-e94e-48e9-b963-c80f7338e074.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-542/medic/polaris-run-pol-542-2026-07-12-001-r1-qc_qc-blocking-findings_d4201ec0-e94e-48e9-b963-c80f7338e074.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-3-1783957910809",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-547/state.json around lines 8 - 22, Update the POL-547 coordinator state to move completed children POL-548 and POL-549 from open_children into completed_children, remove them from next_open_child selection so it points to the next unfinished child, and preserve the running/closure state consistently. Apply the same reconciliation to the referenced additional state section, then refresh the bootstrap seal/hash after making these atomic state updates.",
+      "filePath": ".polaris/clusters/POL-547/state.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-547/state.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-4-1783957910809",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-547/packets/POL-548-3170bf34-b31e-4a26-9bb0-5be716cdb7dd.json around lines 16 - 18, Update the packet-generation/source-of-truth contract so the intended git cleanup paths are authorized without weakening unrelated protections: permit the staged removals through an authorized scope or dedicated child, explicitly authorize the root .gitignore for the required rule, and preserve the staging/commit denylist semantics. Regenerate the sealed packet from that source rather than editing the packet JSON directly.",
+      "filePath": ".polaris/clusters/POL-547/packets/POL-548-3170bf34-b31e-4a26-9bb0-5be716cdb7dd.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-547/packets/POL-548-3170bf34-b31e-4a26-9bb0-5be716cdb7dd.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-5-1783957910809",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-547/clusters.json around lines 23 - 33, Update the POL-551 dependency and child ordering entries in the cluster graph so POL-551 depends on POL-548, POL-549, and POL-550, and appears after those nodes in the child list. Preserve the intended execution order POL-548 → POL-549 → POL-550 → POL-551; do not change the issue descriptions.",
+      "filePath": ".polaris/clusters/POL-547/clusters.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-547/clusters.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-6-1783957910809",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-547/packets/POL-550-309e90ef-64b7-439a-8913-03e76c594062.json around lines 10 - 18, Update the test around the runFinalize delivery flow in src/finalize/finalize.test.ts so the clean-tree assertion runs only after the complete post-PR bookkeeping path, including stepUpdateState, stepAppendJsonl, and stepArchive, has finished. Do not assert solely at the stepCreatePr return boundary; optionally retain that as a separate snapshot while making the final git status --porcelain check cover all subsequent writes.",
+      "filePath": ".polaris/clusters/POL-547/packets/POL-550-309e90ef-64b7-439a-8913-03e76c594062.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-547/packets/POL-550-309e90ef-64b7-439a-8913-03e76c594062.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-7-1783957910809",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-494/medic/polaris-run-pol-494-2026-07-12-001-r2-qc_qc-all-providers-failed_b651cd96-cb00-43e9-b87c-4d0422536466.json at line 25, Update the result_file value in the generated Polaris run metadata to use a repository-relative path or opaque result identifier instead of an absolute local filesystem path, removing developer and machine-specific directory details while preserving the result reference.",
+      "filePath": ".polaris/clusters/POL-494/medic/polaris-run-pol-494-2026-07-12-001-r2-qc_qc-all-providers-failed_b651cd96-cb00-43e9-b87c-4d0422536466.json",
+      "range": {
+        "startLine": 1
+      },
+      "suggestedAction": "\"result_file\": \".polaris/clusters/POL-494/medic/polaris-run-pol-494-2026-07-12-001-r2-qc_qc-all-providers-failed_b651cd96-cb00-43e9-b87c-4d0422536466-result.json\"",
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-494/medic/polaris-run-pol-494-2026-07-12-001-r2-qc_qc-all-providers-failed_b651cd96-cb00-43e9-b87c-4d0422536466.json"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    }
+  ],
+  "rawArtifactPaths": [],
+  "parserVersion": "coderabbit-1.0",
+  "policyDecision": {
+    "blocksDelivery": true,
+    "requiresOperatorReview": true,
+    "routedToRepair": false,
+    "summary": "7 findings; operator review required"
+  },
+  "providerAttempt": {
+    "provider": "coderabbit",
+    "status": "success",
+    "rawOutputAvailable": true,
+    "rawOutputRetained": false,
+    "stdoutLength": 6811,
+    "stderrLength": 0,
+    "exitCode": 0,
+    "parserResult": "success"
+  }
+}
