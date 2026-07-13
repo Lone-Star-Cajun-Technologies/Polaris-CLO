@@ -209,6 +209,55 @@ export function generateSummaryDraft(
   return [DRAFT_MARKER, GENERATED_START_MARKER, TEMPLATE_VERSION_STAMP, ...lines.slice(1), GENERATED_END_MARKER].join("\n");
 }
 
+function generateDraftRegion(
+  targetDir: string,
+  repoRoot: string,
+  allRoutes: Record<string, FileRouteEntry>,
+): string {
+  const full = generateDraft(targetDir, repoRoot, allRoutes);
+  const lines = full.split("\n");
+  // Remove the DRAFT marker, GENERATED_START_MARKER, and GENERATED_END_MARKER;
+  // the remaining lines are the region body, including the template-version stamp.
+  return lines.slice(2, -1).join("\n");
+}
+
+function generateSummaryDraftRegion(
+  targetDir: string,
+  repoRoot: string,
+  allRoutes: Record<string, FileRouteEntry>,
+): string {
+  const full = generateSummaryDraft(targetDir, repoRoot, allRoutes);
+  const lines = full.split("\n");
+  return lines.slice(2, -1).join("\n");
+}
+
+const TEMPLATE_VERSION_RE = /^<!-- polaris:template-version:\s*(\d+)\s*-->/;
+
+function getGeneratedRegionVersion(content: string): number | undefined | null {
+  const startIdx = content.indexOf(GENERATED_START_MARKER);
+  if (startIdx === -1) return null;
+
+  const startLineEnd = content.indexOf("\n", startIdx + GENERATED_START_MARKER.length);
+  if (startLineEnd === -1) return null;
+
+  const endIdx = content.indexOf(GENERATED_END_MARKER, startLineEnd + 1);
+  if (endIdx === -1) return null;
+
+  const region = content.slice(startLineEnd + 1, endIdx);
+  const firstLine = region.split("\n")[0] ?? "";
+  const match = TEMPLATE_VERSION_RE.exec(firstLine);
+  return match ? parseInt(match[1], 10) : undefined;
+}
+
+function replaceGeneratedRegion(content: string, newRegionBody: string): string {
+  const startIdx = content.indexOf(GENERATED_START_MARKER);
+  const startLineEnd = content.indexOf("\n", startIdx + GENERATED_START_MARKER.length);
+  const endIdx = content.indexOf(GENERATED_END_MARKER, startLineEnd + 1);
+  const before = content.slice(0, startLineEnd + 1);
+  const after = content.slice(endIdx);
+  return before + newRegionBody + "\n" + after;
+}
+
 const RESERVED_INDEX_NAMES = new Set(["index.md", "POLARIS.md", "SUMMARY.md", "log.md"]);
 
 function isReservedIndexName(name: string): boolean {
@@ -688,4 +737,184 @@ export function seedIndexAll(
   }
 
   return { written, skippedExists, skippedDraft, skippedIneligible: [] };
+}
+
+export interface ReconcileOptions {
+  dryRun?: boolean;
+  includeAgentFolders?: boolean;
+  includeHidden?: boolean;
+  includeRoot?: boolean;
+}
+
+export interface ReconcileReport {
+  created: string[];
+  regenerated: string[];
+  regeneratedRegion: string[];
+  skipped: string[];
+  blocked: string[];
+  skippedIneligible: IneligibleEntry[];
+  skippedRoot?: { path: string; reason: string };
+}
+
+type ReconcileStatus =
+  | "created"
+  | "regenerated"
+  | "regenerated-region"
+  | "skipped"
+  | "blocked";
+
+function reconcileFile(
+  relDir: string,
+  fileName: "POLARIS.md" | "SUMMARY.md",
+  repoRoot: string,
+  allRoutes: Record<string, FileRouteEntry>,
+  dryRun: boolean,
+  generateFull: (targetDir: string, repoRoot: string, allRoutes: Record<string, FileRouteEntry>) => string,
+  generateRegion: (targetDir: string, repoRoot: string, allRoutes: Record<string, FileRouteEntry>) => string,
+): ReconcileStatus {
+  const absDir = resolve(repoRoot, relDir);
+  const relCheck = relative(repoRoot, absDir).replace(/\\/g, "/");
+  if (relCheck.startsWith("..") || relCheck.startsWith("/")) {
+    throw new Error(`Path traversal detected: target path is outside repo root`);
+  }
+
+  const outFile = join(absDir, fileName);
+  const relPath = relative(repoRoot, outFile).replace(/\\/g, "/");
+
+  if (!existsSync(outFile)) {
+    const content = generateFull(relDir, repoRoot, allRoutes);
+    if (!dryRun) {
+      writeFileSync(outFile, content, "utf-8");
+    }
+    return "created";
+  }
+
+  const content = readFileSync(outFile, "utf-8");
+
+  if (content.includes(DRAFT_MARKER)) {
+    const newContent = generateFull(relDir, repoRoot, allRoutes);
+    if (!dryRun) {
+      writeFileSync(outFile, newContent, "utf-8");
+    }
+    return "regenerated";
+  }
+
+  const regionVersion = getGeneratedRegionVersion(content);
+  if (regionVersion !== null) {
+    if (regionVersion === TEMPLATE_VERSION) {
+      return "skipped";
+    }
+    const newRegionBody = generateRegion(relDir, repoRoot, allRoutes);
+    if (!dryRun) {
+      const newContent = replaceGeneratedRegion(content, newRegionBody);
+      writeFileSync(outFile, newContent, "utf-8");
+    }
+    return "regenerated-region";
+  }
+
+  return "blocked";
+}
+
+export function reconcileAll(
+  repoRoot: string,
+  opts: ReconcileOptions = {},
+): ReconcileReport {
+  const config = loadConfig(repoRoot);
+  const atlasPath = resolve(repoRoot, config.repo.sidecarOutputPath ?? ".polaris/map");
+  const allRoutes = {
+    ...readFileRoutes(atlasPath),
+    ...readNeedsReview(atlasPath),
+  };
+
+  // Root handling: skipped by default (root uses AGENTS.md/CLAUDE.md)
+  const rootEligibility = isDirectoryEligible(repoRoot, repoRoot, {
+    isRoot: true,
+    skipRoot: opts.includeRoot ? false : true,
+  });
+  let skippedRoot: { path: string; reason: string } | undefined;
+  if (!rootEligibility.eligible) {
+    skippedRoot = { path: ".", reason: rootEligibility.reason || "root skipped" };
+  }
+
+  const eligibilityOpts: DirectoryEligibilityOptions = {
+    includeAgentFolders: opts.includeAgentFolders,
+    includeHidden: opts.includeHidden,
+    skipRoot: true,
+  };
+
+  const { eligible: dirs, ineligible: skippedIneligible } = collectDirs(repoRoot, repoRoot, eligibilityOpts);
+
+  const dirsToProcess: string[] = [];
+  if (rootEligibility.eligible) {
+    dirsToProcess.push(".");
+  }
+  dirsToProcess.push(...dirs);
+
+  const report: ReconcileReport = {
+    created: [],
+    regenerated: [],
+    regeneratedRegion: [],
+    skipped: [],
+    blocked: [],
+    skippedIneligible,
+    skippedRoot,
+  };
+
+  for (const relDir of dirsToProcess) {
+    const polarisStatus = reconcileFile(
+      relDir,
+      "POLARIS.md",
+      repoRoot,
+      allRoutes,
+      opts.dryRun ?? false,
+      generateDraft,
+      generateDraftRegion,
+    );
+    switch (polarisStatus) {
+      case "created":
+        report.created.push(relDir === "." ? "POLARIS.md" : `${relDir}/POLARIS.md`);
+        break;
+      case "regenerated":
+        report.regenerated.push(relDir === "." ? "POLARIS.md" : `${relDir}/POLARIS.md`);
+        break;
+      case "regenerated-region":
+        report.regeneratedRegion.push(relDir === "." ? "POLARIS.md" : `${relDir}/POLARIS.md`);
+        break;
+      case "skipped":
+        report.skipped.push(relDir === "." ? "POLARIS.md" : `${relDir}/POLARIS.md`);
+        break;
+      case "blocked":
+        report.blocked.push(relDir === "." ? "POLARIS.md" : `${relDir}/POLARIS.md`);
+        break;
+    }
+
+    const summaryStatus = reconcileFile(
+      relDir,
+      "SUMMARY.md",
+      repoRoot,
+      allRoutes,
+      opts.dryRun ?? false,
+      generateSummaryDraft,
+      generateSummaryDraftRegion,
+    );
+    switch (summaryStatus) {
+      case "created":
+        report.created.push(relDir === "." ? "SUMMARY.md" : `${relDir}/SUMMARY.md`);
+        break;
+      case "regenerated":
+        report.regenerated.push(relDir === "." ? "SUMMARY.md" : `${relDir}/SUMMARY.md`);
+        break;
+      case "regenerated-region":
+        report.regeneratedRegion.push(relDir === "." ? "SUMMARY.md" : `${relDir}/SUMMARY.md`);
+        break;
+      case "skipped":
+        report.skipped.push(relDir === "." ? "SUMMARY.md" : `${relDir}/SUMMARY.md`);
+        break;
+      case "blocked":
+        report.blocked.push(relDir === "." ? "SUMMARY.md" : `${relDir}/SUMMARY.md`);
+        break;
+    }
+  }
+
+  return report;
 }

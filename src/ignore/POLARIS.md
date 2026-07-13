@@ -1,4 +1,6 @@
 <!-- polaris:draft -->
+<!-- BEGIN POLARIS GENERATED -->
+<!-- polaris:template-version: 1 -->
 # ignore
 
 > Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
@@ -14,6 +16,8 @@
 ## What belongs here
 
 - `.gitkeep` — src/ignore (ignore)
+- `POLARIS.md` — src/ignore (ignore)
+- `SUMMARY.md` — src/ignore (ignore)
 - `defaults.ts` — src/ignore (ignore)
 - `parser.ts` — src/ignore (ignore)
 
@@ -31,8 +35,11 @@
 
 ## Read before editing
 
-<!-- Links to canonical sources (doctrine, specs). -->
+- [POLARIS.md](src/ignore/POLARIS.md)
+- [SUMMARY.md](src/ignore/SUMMARY.md)
 
 ## Related routes
 
 <!-- Atlas route pointer to sibling or parent folders. -->
+
+<!-- END POLARIS GENERATED -->

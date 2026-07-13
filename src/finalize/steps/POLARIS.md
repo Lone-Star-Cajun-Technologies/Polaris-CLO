@@ -1,4 +1,6 @@
 <!-- polaris:draft -->
+<!-- BEGIN POLARIS GENERATED -->
+<!-- polaris:template-version: 1 -->
 # steps
 
 > Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
@@ -24,7 +26,9 @@
 - `09-update-state.ts` — src/finalize (finalize)
 - `10-append-jsonl.ts` — src/finalize (finalize)
 - `11-update-linear.ts` — src/finalize (finalize)
-- `12-archive.ts` — src/finalize (finalize) — archives the final run snapshot (state, report, map, and telemetry) under `.polaris/runs/<run-id>/`
+- `12-archive.ts` — src/finalize (finalize)
+- `POLARIS.md` — src/finalize (finalize)
+- `SUMMARY.md` — src/finalize (finalize)
 
 ## What does not belong here
 
@@ -36,14 +40,17 @@
 
 ## Architecture assumptions
 
-- `12-archive.ts` runs after the finalize commit and remote delivery steps. It copies durable evidence into `.polaris/runs/<run-id>/` and does not create the directory unless finalizing a real run.
-- Raw telemetry is read from `state.artifact_dir` or the default `.taskchain_artifacts/polaris-run/runs/<run-id>/telemetry.jsonl` and copied into the run archive.
-- Per-run archive contents under `.polaris/runs/<run-id>/` are promoted by `artifact-policy.ts` as durable run evidence; workspace scratch under `.taskchain_artifacts/**` is not.
+<!-- What the code assumes about the world. -->
 
 ## Read before editing
 
-- [POLARIS.md](../POLARIS.md)
+- [POLARIS.md](src/finalize/POLARIS.md)
+- [SUMMARY.md](src/finalize/SUMMARY.md)
+- [POLARIS.md](src/finalize/steps/POLARIS.md)
+- [SUMMARY.md](src/finalize/steps/SUMMARY.md)
 
 ## Related routes
 
 <!-- Atlas route pointer to sibling or parent folders. -->
+
+<!-- END POLARIS GENERATED -->

@@ -1,4 +1,6 @@
 <!-- polaris:draft -->
+<!-- BEGIN POLARIS GENERATED -->
+<!-- polaris:template-version: 1 -->
 # local-file
 
 > Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
@@ -33,8 +35,10 @@
 - [CLAUDE.md](CLAUDE.md)
 - [POLARIS_RULES.md](POLARIS_RULES.md)
 - [README.md](README.md)
-- [foreman-worker-architecture.md](foreman-worker-architecture.md)
+- [POLARIS.md](scripts/POLARIS.md)
 
 ## Related routes
 
 <!-- Atlas route pointer to sibling or parent folders. -->
+
+<!-- END POLARIS GENERATED -->

@@ -99,3 +99,29 @@ describe("docs init command", () => {
     expect(existsSync(join(repoRoot, CANONICAL_TARGET, "raw", "smart-docs.md"))).toBe(true);
   });
 });
+
+describe("docs reconcile command", () => {
+  it("dry-runs reconciliation without writing files", async () => {
+    const repoRoot = makeRepo();
+    mkdirSync(join(repoRoot, "src", "foo"), { recursive: true });
+
+    const output = await runDocsCommand(repoRoot, ["reconcile", "--all", "--dry-run"]);
+
+    expect(output.stdout).toContain("[dry-run] would create: src/foo/POLARIS.md");
+    expect(output.stdout).toContain("[dry-run] would create: src/foo/SUMMARY.md");
+    expect(existsSync(join(repoRoot, "src", "foo", "POLARIS.md"))).toBe(false);
+    expect(existsSync(join(repoRoot, "src", "foo", "SUMMARY.md"))).toBe(false);
+  });
+
+  it("creates missing POLARIS.md and SUMMARY.md on reconcile --all", async () => {
+    const repoRoot = makeRepo();
+    mkdirSync(join(repoRoot, "src", "foo"), { recursive: true });
+
+    const output = await runDocsCommand(repoRoot, ["reconcile", "--all"]);
+
+    expect(output.stdout).toContain("created: src/foo/POLARIS.md");
+    expect(output.stdout).toContain("created: src/foo/SUMMARY.md");
+    expect(existsSync(join(repoRoot, "src", "foo", "POLARIS.md"))).toBe(true);
+    expect(existsSync(join(repoRoot, "src", "foo", "SUMMARY.md"))).toBe(true);
+  });
+});

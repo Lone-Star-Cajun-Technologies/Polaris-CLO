@@ -1,4 +1,6 @@
 <!-- polaris:draft -->
+<!-- BEGIN POLARIS GENERATED -->
+<!-- polaris:template-version: 1 -->
 # local-file
 
 > Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
@@ -8,12 +10,12 @@
 <!-- One paragraph describing what this folder does. -->
 
 **Domain:** tracker
-**Route:** src/tracker/adapters/local-file
+**Route:** src/tracker
 **Taskchain:** polaris-tracker
 
 ## What belongs here
 
-- `index.ts` — Local file tracker adapter implementation for file-based issue tracking
+- `index.ts` — src/tracker (tracker)
 
 ## What does not belong here
 
@@ -29,9 +31,11 @@
 
 ## Read before editing
 
-- [POLARIS.md](../POLARIS.md)
-- [POLARIS.md](../../POLARIS.md)
+- [README.md](src/tracker/adapters/github/README.md)
+- [README.md](src/tracker/adapters/jira/README.md)
 
 ## Related routes
 
 <!-- Atlas route pointer to sibling or parent folders. -->
+
+<!-- END POLARIS GENERATED -->

@@ -1,4 +1,6 @@
 <!-- polaris:draft -->
+<!-- BEGIN POLARIS GENERATED -->
+<!-- polaris:template-version: 1 -->
 # lib
 
 > Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
@@ -13,6 +15,8 @@
 
 ## What belongs here
 
+- `POLARIS.md` — src/mcp (mcp)
+- `SUMMARY.md` — src/mcp (mcp)
 - `invoke.ts` — src/mcp (mcp)
 - `redact.test.ts` — src/mcp (mcp)
 - `redact.ts` — src/mcp (mcp)
@@ -33,8 +37,14 @@
 
 ## Read before editing
 
-<!-- Links to canonical sources (doctrine, specs). -->
+- [POLARIS.md](src/mcp/POLARIS.md)
+- [SUMMARY.md](src/mcp/SUMMARY.md)
+- [POLARIS.md](src/mcp/lib/POLARIS.md)
+- [SUMMARY.md](src/mcp/lib/SUMMARY.md)
+- [POLARIS.md](src/mcp/tools/POLARIS.md)
 
 ## Related routes
 
 <!-- Atlas route pointer to sibling or parent folders. -->
+
+<!-- END POLARIS GENERATED -->

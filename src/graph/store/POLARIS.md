@@ -1,4 +1,6 @@
 <!-- polaris:draft -->
+<!-- BEGIN POLARIS GENERATED -->
+<!-- polaris:template-version: 1 -->
 # store
 
 > Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
@@ -13,11 +15,11 @@
 
 ## What belongs here
 
-- `adapter.ts` — SQLite adapter for graph storage and persistence
-- `adapter.test.ts` — Unit tests for the graph store adapter
-- `queries.ts` — SQL query helpers for graph operations
-- `schema.sql` — SQLite schema definition for graph storage
-- `types.ts` — Type definitions for graph store operations
+- `adapter.test.ts` — src/graph (graph)
+- `adapter.ts` — src/graph (graph)
+- `queries.ts` — src/graph (graph)
+- `schema.sql` — src/graph (graph)
+- `types.ts` — src/graph (graph)
 
 ## What does not belong here
 
@@ -33,8 +35,10 @@
 
 ## Read before editing
 
-- [POLARIS.md](../POLARIS.md)
+- [POLARIS.md](src/graph/POLARIS.md)
 
 ## Related routes
 
 <!-- Atlas route pointer to sibling or parent folders. -->
+
+<!-- END POLARIS GENERATED -->
