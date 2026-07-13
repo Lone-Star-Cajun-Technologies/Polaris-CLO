@@ -29,6 +29,7 @@ The finalize subsystem implements the atomic 13-step final delivery sequence for
 - `polaris finalize run` is manual/operator-triggered and performs delivery unless `--dry-run` or `--skip-delivery` is supplied.
 - JSONL telemetry events (`pr-opened`, `run-complete`) are emitted by `polaris finalize` via step 10. Do not emit them elsewhere.
 - `polaris finalize` is the only command that pushes to remote. No other subsystem may call `git push`.
+- `stepCreatePr` (step 10) is the terminal tracked-file mutation. No step after `stepCreatePr` may write to a git-tracked path; `stepUpdateLinear` is the sole deliberate exception because it performs an external Linear call, not a tracked-file write. Local post-PR bookkeeping (state, archive, cluster-state `pr_url`) lives only in git-ignored paths.
 
 ## Route model
 
