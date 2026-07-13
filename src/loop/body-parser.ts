@@ -192,6 +192,11 @@ function normalizeDirectoryPattern(pattern: string): string {
   const lastSlashIndex = pattern.lastIndexOf('/');
   const finalSegment = lastSlashIndex >= 0 ? pattern.slice(lastSlashIndex + 1) : pattern;
 
+  // Dot-files that are files, not directories, must not get a trailing `/**`.
+  if (finalSegment === '.gitignore' || finalSegment === '.gitattributes') {
+    return pattern;
+  }
+
   // Check if final segment has a file extension (not counting leading dot in dot-directories)
   const hasExtension = finalSegment.startsWith('.')
     ? finalSegment.slice(1).includes('.')  // For .github, .vscode: no extension. For .env.local: has extension

@@ -2159,11 +2159,12 @@ describe("runFinalize delivery path leaves no tracked-file diff after PR creatio
   beforeEach(() => { testDir = makeTestDir(); });
   afterEach(() => { rmSync(testDir, { recursive: true, force: true }); });
 
-  it("leaves git status --porcelain clean after stepCreatePr", async () => {
+  it("leaves git status --porcelain clean after stepUpdateState, stepAppendJsonl, and stepArchive", async () => {
     vi.resetModules();
 
-    // Post-PR writes are intentionally ignored in this fixture; the assertion
-    // surfaces only unwanted tracked-file modifications.
+    // The final check runs after the complete post-PR bookkeeping path, not just
+    // at the stepCreatePr boundary, so any tracked-file mutation in the later
+    // steps will fail the test.
     writeFileSync(
       join(testDir, ".gitignore"),
       [

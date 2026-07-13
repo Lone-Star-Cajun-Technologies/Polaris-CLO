@@ -310,7 +310,7 @@ function checkLibrarianGate(repoRoot: string, clusterId: string): string | null 
 
 function resolveQcTelemetryFile(state: LoopState, repoRoot: string): string {
   const artifactDir = state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "polaris-run");
-  return join(artifactDir, "runs", state.run_id, "telemetry.jsonl");
+  return resolve(repoRoot, artifactDir, "runs", state.run_id, "telemetry.jsonl");
 }
 
 // ── QC repair-loop terminal state gate ────────────────────────────────────────
@@ -803,7 +803,7 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
     }
 
     const artifactDirForCheck = state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "polaris-run");
-    const telemetryFileForCheck = join(artifactDirForCheck, "runs", state.run_id, "telemetry.jsonl");
+    const telemetryFileForCheck = resolve(repoRoot, artifactDirForCheck, "runs", state.run_id, "telemetry.jsonl");
 
     const canonResult = runCanonCheck({
       repoRoot,
@@ -1134,7 +1134,7 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
   // Step 12: Append JSONL events
   console.log("[12/14] Appending JSONL events...");
   const artifactDir = state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "polaris-run");
-  const telemetryFile = join(artifactDir, "runs", state.run_id, "telemetry.jsonl");
+  const telemetryFile = resolve(repoRoot, artifactDir, "runs", state.run_id, "telemetry.jsonl");
   stepAppendJsonl(telemetryFile, state, prUrl);
 
   // Step 13: Update Linear parent issue

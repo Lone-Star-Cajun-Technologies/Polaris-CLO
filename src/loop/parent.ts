@@ -206,7 +206,7 @@ function appendTelemetry(telemetryFile: string, event: Record<string, unknown>):
 function resolveTelemetryFile(state: LoopState, repoRoot: string): string {
   const artifactDir =
     state.artifact_dir ?? join(repoRoot, ".taskchain_artifacts", "polaris-run");
-  return join(artifactDir, "runs", state.run_id, "telemetry.jsonl");
+  return resolve(repoRoot, artifactDir, "runs", state.run_id, "telemetry.jsonl");
 }
 
 function estimateTokensFromBytes(bytes: number): number {
