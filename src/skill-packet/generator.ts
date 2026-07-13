@@ -1,6 +1,19 @@
 import { randomUUID } from "node:crypto";
+import { execFileSync } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
 import type { SkillPacketConfig } from "../config/schema.js";
-import type { SkillName, AgentRole, SkillPacket, SetupBootstrapMode, SetupBootstrapPacket, SetupBootstrapCheckpoint, CheckpointGate } from "./types.js";
+import type { SkillName, AgentRole, SkillPacket, SetupBootstrapMode, SetupBootstrapPacket, SetupBootstrapCheckpoint, CheckpointGate, ReconcilePacket, ReconcileWorkInventory } from "./types.js";
+
+export interface GenerateSkillPacketOptions {
+  /** Repository root used for git diff and map lookups. Defaults to `process.cwd()`. */
+  repoRoot?: string;
+  /** Explicit issue/cluster identifier for the reconcile packet. */
+  issueId?: string;
+}
+
+type SkillPacketBody = Omit<SkillPacket, "packet_id" | "skill_name" | "active_role" | "role_summary" | "source_config_snapshot" | "generated_at">;
+type ReconcilePacketBody = Omit<ReconcilePacket, "packet_id" | "skill_name" | "active_role" | "role_summary" | "source_config_snapshot" | "generated_at">;
 
 export const SKILL_ROLE_MAP: Record<SkillName, AgentRole> = {
   analyze: "Analyst",
@@ -380,7 +393,48 @@ function buildCatalogPacket(): Omit<SkillPacket, "packet_id" | "skill_name" | "a
   };
 }
 
-function buildReconcilePacket(): Omit<SkillPacket, "packet_id" | "skill_name" | "active_role" | "role_summary" | "source_config_snapshot" | "generated_at"> {
+function buildReconcilePacket(
+  _config: Required<SkillPacketConfig>,
+  options?: GenerateSkillPacketOptions,
+): ReconcilePacketBody {
+  const repoRoot = path.resolve(options?.repoRoot ?? process.cwd());
+  const issueId = resolveIssueId(repoRoot, options?.issueId);
+  const runId = buildReconcileRunId(issueId);
+  const changedFiles = getReconcileChangedFiles(repoRoot);
+  const affectedFolders = resolveAffectedFolders(repoRoot, changedFiles);
+
+  if (affectedFolders.length === 0) {
+    return buildBlockedReconcilePacket(runId, issueId, repoRoot);
+  }
+
+  const allowedWritePaths = affectedFolders.flatMap((folder) => {
+    const paths = [path.join(repoRoot, folder, "POLARIS.md")];
+    const summaryPath = path.join(repoRoot, folder, "SUMMARY.md");
+    if (fs.existsSync(summaryPath)) {
+      paths.push(summaryPath);
+    }
+    return paths;
+  });
+
+  const workInventory: ReconcileWorkInventory = {
+    affected_folders: affectedFolders,
+    all_changed_files: changedFiles,
+    child_summaries: [],
+    pending_cognition_notes: [],
+    polaris_md_files: Object.fromEntries(
+      affectedFolders.map((folder) => [
+        folder,
+        readFileOrNull(path.join(repoRoot, folder, "POLARIS.md")),
+      ]),
+    ),
+    summary_md_files: Object.fromEntries(
+      affectedFolders.map((folder) => [
+        folder,
+        readFileOrNull(path.join(repoRoot, folder, "SUMMARY.md")),
+      ]),
+    ),
+  };
+
   return {
     authority_boundaries: [
       "Read packet-scoped folders and their POLARIS.md and SUMMARY.md files",
@@ -407,13 +461,235 @@ function buildReconcilePacket(): Omit<SkillPacket, "packet_id" | "skill_name" | 
       "A requested write falls outside packet-allowed paths",
       "Work evidence is missing or contradictory",
     ],
+    packet_kind: "reconcile",
+    run_id: runId,
+    issue_id: issueId,
+    affected_folders: affectedFolders,
+    work_inventory: workInventory,
+    allowed_write_paths: allowedWritePaths,
+    prohibited_write_paths: [repoRoot],
+    constraints: {
+      max_summary_addition_lines: 50,
+    },
   };
 }
 
+function buildBlockedReconcilePacket(
+  runId: string,
+  issueId: string,
+  repoRoot: string,
+): ReconcilePacketBody {
+  return {
+    authority_boundaries: [
+      "Read packet-scoped folders and their POLARIS.md and SUMMARY.md files",
+      "Update cognition files only within packet-allowed write paths",
+      "Create one sealed local cognition commit",
+    ],
+    prohibited_actions: [
+      "Modify implementation source code, tests, or configuration",
+      "Move, ingest, classify, or promote documents",
+      "Write outside packet-allowed paths",
+      "Call polaris loop continue or polaris finalize",
+      "Git push or create a pull request",
+      "Fabricate affected folders or work inventory when no git diff is available",
+    ],
+    allowed_outputs: [
+      "Updated POLARIS.md and SUMMARY.md files in packet-allowed paths",
+      "A sealed local cognition commit",
+    ],
+    deliverables: [
+      "Packet-scoped cognition reconciled with completed work",
+      "All cognition changes recorded in one sealed local commit",
+    ],
+    stop_conditions: [
+      "All packet-scoped cognition reconciled",
+      "A requested write falls outside packet-allowed paths",
+      "Work evidence is missing or contradictory",
+      "No git diff is available to scope reconciliation",
+    ],
+    packet_kind: "reconcile",
+    run_id: runId,
+    issue_id: issueId,
+    affected_folders: [],
+    work_inventory: {
+      affected_folders: [],
+      all_changed_files: [],
+      child_summaries: [],
+      pending_cognition_notes: [],
+      polaris_md_files: {},
+      summary_md_files: {},
+    },
+    allowed_write_paths: [],
+    prohibited_write_paths: [repoRoot],
+    constraints: {
+      max_summary_addition_lines: 50,
+    },
+  };
+}
+
+// ── Reconcile helpers ─────────────────────────────────────────────────────────
+
+function resolveIssueId(repoRoot: string, explicitIssueId?: string): string {
+  if (explicitIssueId) return explicitIssueId;
+
+  const stateCandidates = [
+    path.join(repoRoot, ".taskchain_artifacts", "polaris-run", "current-state.json"),
+    path.join(repoRoot, ".polaris", "runs", "current-state.json"),
+  ];
+
+  for (const candidate of stateCandidates) {
+    try {
+      const raw = JSON.parse(fs.readFileSync(candidate, "utf-8")) as Record<string, unknown>;
+      const activeChild = raw["active_child"];
+      if (typeof activeChild === "string" && activeChild) return activeChild;
+      const clusterId = raw["cluster_id"];
+      if (typeof clusterId === "string" && clusterId) return clusterId;
+    } catch {
+      // ignore missing or malformed state
+    }
+  }
+
+  try {
+    const branch = execGit(repoRoot, ["branch", "--show-current"]).join("").trim();
+    const match = /^pol-?(\d+)(?:-.*)?$/i.exec(branch);
+    if (match && match[1]) {
+      return `POL-${match[1]}`;
+    }
+  } catch {
+    // ignore
+  }
+
+  return "unknown";
+}
+
+function buildReconcileRunId(issueId: string): string {
+  const slug = issueId.replace(/\s+/g, "-");
+  const date = new Date().toISOString().slice(0, 10);
+  // Minimal sequence: 001 for now; each call is a distinct run by packet_id.
+  const seq = "001";
+  return `polaris-reconcile-${slug}-${date}-${seq}`;
+}
+
+function getReconcileChangedFiles(repoRoot: string): string[] {
+  const files = new Set<string>();
+
+  try {
+    for (const file of execGit(repoRoot, ["diff", "--name-only", "HEAD"])) {
+      if (file) files.add(file);
+    }
+  } catch {
+    // ignore
+  }
+
+  try {
+    const base = resolveReconcileBase(repoRoot);
+    if (base) {
+      for (const file of execGit(repoRoot, ["diff", "--name-only", `${base}..HEAD`])) {
+        if (file) files.add(file);
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  return [...files].sort();
+}
+
+function resolveReconcileBase(repoRoot: string): string | null {
+  const candidates = [
+    resolveRemoteDefaultBranch(repoRoot),
+    "origin/main",
+    "origin/master",
+    "main",
+    "master",
+  ];
+
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    try {
+      const base = execGit(repoRoot, ["merge-base", "HEAD", candidate]).join("").trim();
+      if (base) return base;
+    } catch {
+      // try next candidate
+    }
+  }
+
+  return null;
+}
+
+function resolveRemoteDefaultBranch(repoRoot: string): string | null {
+  try {
+    const ref = execGit(repoRoot, ["rev-parse", "--abbrev-ref", "refs/remotes/origin/HEAD"]).join("").trim();
+    return ref || null;
+  } catch {
+    return null;
+  }
+}
+
+function resolveAffectedFolders(repoRoot: string, changedFiles: string[]): string[] {
+  const routeMap = loadFileRouteMap(repoRoot);
+  const folders = new Set<string>();
+
+  for (const file of changedFiles) {
+    const entry = routeMap[file];
+    if (entry && typeof entry.route === "string") {
+      folders.add(entry.route.replace(/\/+$/, "") + "/");
+    }
+  }
+
+  return [...folders].sort();
+}
+
+function loadFileRouteMap(repoRoot: string): Record<string, { route?: string }> {
+  const mapPath = path.join(repoRoot, ".polaris", "map", "file-routes.json");
+  try {
+    const raw = JSON.parse(fs.readFileSync(mapPath, "utf-8")) as Record<string, unknown>;
+    const normalized: Record<string, { route?: string }> = {};
+    for (const [key, value] of Object.entries(raw)) {
+      if (value && typeof value === "object") {
+        const entry = value as Record<string, unknown>;
+        normalized[key] = { route: typeof entry.route === "string" ? entry.route : undefined };
+      }
+    }
+    return normalized;
+  } catch {
+    return {};
+  }
+}
+
+function readFileOrNull(filePath: string): string | null {
+  try {
+    return fs.readFileSync(filePath, "utf-8");
+  } catch {
+    return null;
+  }
+}
+
+function execGit(repoRoot: string, args: string[]): string[] {
+  const output = execFileSync("git", args, { cwd: repoRoot, encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] });
+  return output.split("\n").filter(Boolean);
+}
+
+export function generateSkillPacket(
+  skillName: "reconcile",
+  config: Required<SkillPacketConfig>,
+  options?: GenerateSkillPacketOptions,
+): ReconcilePacket;
+export function generateSkillPacket(
+  skillName: Exclude<SkillName, "reconcile">,
+  config: Required<SkillPacketConfig>,
+  options?: GenerateSkillPacketOptions,
+): SkillPacket;
 export function generateSkillPacket(
   skillName: SkillName,
   config: Required<SkillPacketConfig>,
-): SkillPacket {
+  options?: GenerateSkillPacketOptions,
+): SkillPacket | ReconcilePacket;
+export function generateSkillPacket(
+  skillName: SkillName,
+  config: Required<SkillPacketConfig>,
+  options?: GenerateSkillPacketOptions,
+): SkillPacket | ReconcilePacket {
   const active_role = SKILL_ROLE_MAP[skillName];
   const role_summary = ROLE_SUMMARIES[active_role];
   const generated_at = new Date().toISOString();
@@ -425,7 +701,7 @@ export function generateSkillPacket(
     allow_cross_provider_delegation: config.allow_cross_provider_delegation,
   };
 
-  let body: Omit<SkillPacket, "packet_id" | "skill_name" | "active_role" | "role_summary" | "source_config_snapshot" | "generated_at">;
+  let body: SkillPacketBody | ReconcilePacketBody;
 
   switch (skillName) {
     case "analyze":
@@ -450,7 +726,7 @@ export function generateSkillPacket(
       body = buildCatalogPacket();
       break;
     case "reconcile":
-      body = buildReconcilePacket();
+      body = buildReconcilePacket(config, options);
       break;
   }
 

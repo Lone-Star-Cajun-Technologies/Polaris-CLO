@@ -206,6 +206,7 @@ function isErrorRecord(record: Record<string, unknown>): boolean {
   if (record.type === "error") return true;
   if (typeof record.errorType === "string") return true;
   if (record.error === true || record.error === "true") return true;
+  if (typeof record.status === "string" && record.status.toLowerCase() === "error") return true;
   return false;
 }
 

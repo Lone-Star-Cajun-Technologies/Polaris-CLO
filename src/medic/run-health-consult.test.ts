@@ -232,7 +232,7 @@ describe("runMedicRunHealthConsult", () => {
       dispatchTreatmentWorkerFn: dispatchFn,
     });
 
-    expect(result.status).toBe("resolved");
+    expect(result.status).toBe("blocked");
     expect(result.terminal_outcome).toBe("max-rounds");
 
     const events = telemetryEvents();

@@ -3,7 +3,14 @@ import { basename, dirname, join, relative, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 import { loadConfig } from "../config/loader.js";
 import { readFileRoutes, readNeedsReview } from "../map/atlas.js";
-import { generateDraft, type CollectDirsResult, type IneligibleEntry } from "./seed-instructions.js";
+import {
+  generateDraft,
+  GENERATED_END_MARKER,
+  GENERATED_START_MARKER,
+  TEMPLATE_VERSION,
+  type CollectDirsResult,
+  type IneligibleEntry,
+} from "./seed-instructions.js";
 import { isDirectoryEligible, type DirectoryEligibilityOptions } from "./smartdoc-ignore.js";
 
 export type FindingSeverity = "OK" | "WARN" | "ERROR" | "MISSING";
@@ -149,6 +156,33 @@ export function parseReadBeforeEditingLinks(content: string): string[] {
   return links;
 }
 
+function extractGeneratedRegion(content: string): string | null {
+  const start = content.indexOf(GENERATED_START_MARKER);
+  const end = content.indexOf(GENERATED_END_MARKER);
+  if (start === -1 || end === -1 || start >= end) return null;
+  return content.slice(start + GENERATED_START_MARKER.length, end).trim();
+}
+
+function parseTemplateVersionStamp(content: string): number | undefined {
+  const match = content.match(/<!--\s*polaris:template-version:\s*(\d+)\s*-->/);
+  if (!match) return undefined;
+  return parseInt(match[1], 10);
+}
+
+function checkTemplateVersionStamp(content: string, fileLabel: string): Finding | null {
+  const version = parseTemplateVersionStamp(content);
+  if (version === undefined) {
+    return { severity: "WARN", message: `${fileLabel} is unstamped (no template-version stamp)` };
+  }
+  if (version !== TEMPLATE_VERSION) {
+    return {
+      severity: "WARN",
+      message: `${fileLabel} template version drift: found ${version}, expected ${TEMPLATE_VERSION}`,
+    };
+  }
+  return null;
+}
+
 function getRequiredDirs(repoRoot: string): string[] {
   const config = loadConfig(repoRoot);
   // The config type may not yet have a docs key; access dynamically
@@ -215,6 +249,14 @@ export function validateDir(
 
   const content = readFileSync(polarisFile, "utf-8");
   const findings: Finding[] = [];
+  const polarisGeneratedRaw = extractGeneratedRegion(content);
+  const polarisGenerated = polarisGeneratedRaw ?? content;
+
+  // Signal 0: template-version stamp inside generated region (only when present)
+  if (polarisGeneratedRaw !== null) {
+    const polarisStampFinding = checkTemplateVersionStamp(polarisGeneratedRaw, "POLARIS.md");
+    if (polarisStampFinding) findings.push(polarisStampFinding);
+  }
 
   // Signal 1: ≥3 files in directory changed since last POLARIS.md git modification
   const lastMod = getLastGitModDate(polarisFile, repoRoot);
@@ -232,7 +274,7 @@ export function validateDir(
   }
 
   // Signal 2: broken links in "Read before editing"
-  const links = parseReadBeforeEditingLinks(content);
+  const links = parseReadBeforeEditingLinks(polarisGenerated);
   for (const link of links) {
     const absLink = resolve(absDir, link);
     if (!existsSync(absLink)) {
@@ -262,7 +304,7 @@ export function validateDir(
   const headingRe = /^##\s+(.+)$/gm;
   const parsedHeadings: { normalized: string; original: string }[] = [];
   let headingMatch: RegExpExecArray | null;
-  while ((headingMatch = headingRe.exec(content)) !== null) {
+  while ((headingMatch = headingRe.exec(polarisGenerated)) !== null) {
     const original = headingMatch[1].trim();
     parsedHeadings.push({
       normalized: original.toLowerCase(),
@@ -337,9 +379,17 @@ export function validateDir(
   } else {
     // Signal 6: SUMMARY.md doctrine-bleed scan
     const summaryContent = readFileSync(summaryFile, "utf-8");
+    const summaryGeneratedRaw = extractGeneratedRegion(summaryContent);
+    const summaryGenerated = summaryGeneratedRaw ?? summaryContent;
     const summaryRel = relative(repoRoot, summaryFile).replace(/\\/g, "/");
+
+    // Signal 5.5: SUMMARY.md template-version stamp (only inside generated region)
+    if (summaryGeneratedRaw !== null) {
+      const summaryStampFinding = checkTemplateVersionStamp(summaryGeneratedRaw, "SUMMARY.md");
+      if (summaryStampFinding) findings.push(summaryStampFinding);
+    }
     const modalVerbs = ["must", "never", "always"];
-    const lines = summaryContent.split("\n");
+    const lines = summaryGenerated.split("\n");
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].toLowerCase();
       for (const verb of modalVerbs) {
@@ -354,7 +404,7 @@ export function validateDir(
 
     // Signal 7: pairwise POLARIS.md / SUMMARY.md drift
     const routeName = relDir === "." ? undefined : basename(relDir);
-    const similarity = computeNormalizedSimilarity(content, summaryContent, routeName);
+    const similarity = computeNormalizedSimilarity(polarisGenerated, summaryGenerated, routeName);
     if (content === summaryContent) {
       findings.push({
         severity: "ERROR",

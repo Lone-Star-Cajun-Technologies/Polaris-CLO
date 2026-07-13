@@ -1,0 +1,105 @@
+{
+  "schema_version": "1.0",
+  "role": "closeout-librarian",
+  "run_id": "polaris-run-pol-434-2026-07-12-001",
+  "dispatch_id": "14536cd6-babd-45f2-98c4-19c9b3c9c398",
+  "cluster_id": "POL-434",
+  "status": "partial",
+  "commit_sha": "ae4e3c36e807f13cf75718a7516cbb845bd4cae0",
+  "commit_message": "docs(closeout): reconcile cognition for cluster POL-434",
+  "files_committed": [
+    "src/skill-packet/POLARIS.md",
+    "src/skill-packet/SUMMARY.md",
+    "src/smartdocs-engine/POLARIS.md",
+    "src/smartdocs-engine/SUMMARY.md",
+    "smartdocs/specs/raw/POLARIS.md",
+    "src/finalize/steps/POLARIS.md",
+    "src/graph/adapter/kotlin-java/POLARIS.md",
+    "src/graph/adapter/rust/POLARIS.md",
+    "src/graph/adapter/python/POLARIS.md",
+    "src/graph/adapter/dart/POLARIS.md",
+    "src/graph/store/POLARIS.md",
+    "src/tracker/adapters/linear/POLARIS.md",
+    "src/tracker/adapters/local-file/POLARIS.md"
+  ],
+  "drift_reconciliation": {
+    "medic_ran": false,
+    "charts_created": [],
+    "drift_observations": [
+      {
+        "type": "canon_mismatch",
+        "target": "smartdocs/specs/raw/POLARIS.md",
+        "severity": "high",
+        "detail": "POL-440 (mass seed-instructions re-scaffold) overwrote an existing, accurate POLARIS.md with an empty draft template, destroying real content describing this folder's promotion workflow and file inventory. Restored the prior accurate content and re-applied the current Generated Region Convention markers."
+      },
+      {
+        "type": "canon_mismatch",
+        "target": "src/finalize/steps/POLARIS.md",
+        "severity": "high",
+        "detail": "POL-440 overwrote the `12-archive.ts` bullet description and the entire 'Architecture assumptions' section (3 substantive lines on archive timing/telemetry sourcing/artifact-policy promotion) with empty placeholder comments. Restored the prior content."
+      },
+      {
+        "type": "canon_mismatch",
+        "target": "src/graph/adapter/{kotlin-java,rust,python,dart}/POLARIS.md, src/graph/store/POLARIS.md, src/tracker/adapters/{linear,local-file}/POLARIS.md",
+        "severity": "medium",
+        "detail": "POL-440 re-ran seed-instructions over 7 already-populated POLARIS.md files and replaced per-file behavioral descriptions (e.g. 'Rust graph adapter implementation') with a generic '<file> — <route> (<domain>)' placeholder, and in 2 cases (tracker/linear, tracker/local-file) coarsened the Route field from the specific subfolder to the parent 'src/tracker'. Restored the prior per-file descriptions and Route specificity in all 7 files."
+      },
+      {
+        "type": "missing_documentation",
+        "target": "src/skill-packet/POLARIS.md, src/skill-packet/SUMMARY.md, src/smartdocs-engine/POLARIS.md",
+        "severity": "medium",
+        "detail": "These folders received real, functional code changes this cluster (ReconcilePacket support in skill-packet; canon-check.ts and validate-instructions.ts additions in smartdocs-engine) but their POLARIS.md/SUMMARY.md were still empty seed-instructions drafts. Filled in Purpose, What belongs here, Editing rules, Architecture assumptions, and Related routes from direct source inspection; promoted (removed polaris:draft marker, kept the Generated Region markers per smartdocs-summary-architecture.md section 9)."
+      },
+      {
+        "type": "missing_documentation",
+        "target": "~65 additional folders scaffolded by POL-440",
+        "severity": "low",
+        "detail": "POL-440 scaffolded draft POLARIS.md/SUMMARY.md across ~65 other folders (branding/, test/**, most src/** leaves) that were not otherwise touched by this cluster's code changes. These remain accurate-but-empty drafts (no data loss found on inspection — verified via numstat sweep of POL-440's diff). Out of scope for this closeout session since no functional change occurred in those folders this cluster; recommend a follow-up ingestion/enrichment pass (or a seed-instructions fix so re-seeding never clobbers non-empty content) to populate or explicitly triage them."
+      }
+    ],
+    "chart_links_required": false,
+    "charts_linked": []
+  },
+  "polaris_md_updates": [
+    { "file": "src/skill-packet/POLARIS.md", "action": "update", "change_summary": "Filled empty seed-instructions draft with real content from generator.ts/types.ts/index.ts; promoted from draft." },
+    { "file": "src/smartdocs-engine/POLARIS.md", "action": "update", "change_summary": "Filled empty seed-instructions draft with real content covering canon-check.ts, validate-instructions.ts, seed-instructions.ts; promoted from draft." },
+    { "file": "smartdocs/specs/raw/POLARIS.md", "action": "update", "change_summary": "Restored real content destroyed by POL-440's mass re-scaffold (folder purpose, file inventory, editing rules)." },
+    { "file": "src/finalize/steps/POLARIS.md", "action": "update", "change_summary": "Restored 12-archive.ts description and Architecture assumptions section destroyed by POL-440's mass re-scaffold." },
+    { "file": "src/graph/adapter/kotlin-java/POLARIS.md", "action": "update", "change_summary": "Restored per-file descriptions and missing fixtures/adapter.test.ts entry lost in POL-440's re-scaffold." },
+    { "file": "src/graph/adapter/rust/POLARIS.md", "action": "update", "change_summary": "Restored per-file descriptions and missing fixtures/adapter.test.ts entry lost in POL-440's re-scaffold." },
+    { "file": "src/graph/adapter/python/POLARIS.md", "action": "update", "change_summary": "Restored per-file descriptions and missing fixtures/adapter.test.ts entry lost in POL-440's re-scaffold." },
+    { "file": "src/graph/adapter/dart/POLARIS.md", "action": "update", "change_summary": "Restored per-file descriptions and missing fixtures/adapter.test.ts entry lost in POL-440's re-scaffold." },
+    { "file": "src/graph/store/POLARIS.md", "action": "update", "change_summary": "Restored per-file descriptions lost in POL-440's re-scaffold." },
+    { "file": "src/tracker/adapters/linear/POLARIS.md", "action": "update", "change_summary": "Restored per-file descriptions and Route specificity lost in POL-440's re-scaffold." },
+    { "file": "src/tracker/adapters/local-file/POLARIS.md", "action": "update", "change_summary": "Restored per-file description and Route specificity lost in POL-440's re-scaffold." }
+  ],
+  "summary_md_updates": [
+    { "file": "src/skill-packet/SUMMARY.md", "action": "update", "change_summary": "Filled empty seed-instructions draft with real content; promoted from draft." },
+    { "file": "src/smartdocs-engine/SUMMARY.md", "action": "update", "change_summary": "Added 2 bullets documenting the new validate-instructions CLI command and canon-check drift classification (2 net new lines, within 50-line budget)." }
+  ],
+  "docs_ingested": [],
+  "docs_archived": [],
+  "yaml_updates": [],
+  "cognition_archived": [],
+  "link_validation": {
+    "total_checked": 8,
+    "valid": 8,
+    "broken": 0,
+    "repaired": 0,
+    "unrepairable": []
+  },
+  "blockers": [
+    {
+      "description": "~65 draft POLARIS.md/SUMMARY.md files scaffolded by POL-440 across folders not otherwise touched by this cluster remain unpopulated seed-instructions drafts. No data loss found there, but they carry no real operational content yet.",
+      "resolution_required": false,
+      "recommendation": "File a follow-up docs-ingest/enrichment cluster to run the adopt-canon 'canon' phase (enrichCanonFiles) over the remaining draft folders, or route them through operator review for manual authoring."
+    },
+    {
+      "description": "seed-instructions.ts / adopt-canon.ts re-scaffolding (as exercised by POL-440) overwrites existing non-empty POLARIS.md content with generic placeholders instead of preserving it, causing the two high-severity and one medium-severity drift observations recorded above.",
+      "resolution_required": false,
+      "recommendation": "Consider filing a bug against seed-instructions.ts: re-seeding an existing POLARIS.md/SUMMARY.md should preserve prior human/generated descriptions (or refuse to touch non-draft-marked files) rather than regenerating generic placeholder text over real content."
+    }
+  ],
+  "reconciled_at": "2026-07-12T19:45:00-05:00",
+  "evidence_summary": "Reconciled cognition for POL-434 (adopt-canon / smartdocs-engine canon-check, seed-instructions, validate-instructions / skill-packet reconcile-packet work, children POL-435-440). Filled in real content for two folders (src/skill-packet, src/smartdocs-engine) that got functional code changes but only had empty seed-instructions drafts. Discovered and repaired a regression: POL-440's mass re-scaffold run overwrote already-accurate POLARIS.md content in 9 folders (smartdocs/specs/raw, src/finalize/steps, and 7 graph/tracker adapter folders), destroying real prose in 2 cases and degrading per-file descriptions in 7 more; all restored from pre-POL-440 git history. Verified no other modified POLARIS.md files in POL-440's diff lost real content (numstat sweep). No cognition notes, Medic charts, or smartdocs/raw candidates were tied to this cluster's work, so no ingestion/promotion or cognition archival was needed. Link validation on all touched files passed (8/8). Left ~65 other POL-440-scaffolded draft folders untouched since this cluster made no functional changes there; flagged as a follow-up enrichment recommendation and filed a tooling-bug recommendation against seed-instructions.ts for clobbering non-draft content on re-seed. Status is 'partial' to surface these two non-blocking recommendations to the operator; the commit itself succeeded with no unresolved blockers to the reconciliation work performed."
+}

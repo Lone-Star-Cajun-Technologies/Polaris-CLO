@@ -1,4 +1,6 @@
 <!-- polaris:draft -->
+<!-- BEGIN POLARIS GENERATED -->
+<!-- polaris:template-version: 1 -->
 # github
 
 > Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
@@ -8,14 +10,14 @@
 <!-- One paragraph describing what this folder does. -->
 
 **Domain:** tracker
-**Route:** src/tracker
+**Route:** src/tracker/adapters/github
 **Taskchain:** polaris-tracker
 
 ## What belongs here
 
-- `README.md` — src/tracker (tracker)
-- `index.test.ts` — src/tracker (tracker)
-- `index.ts` — src/tracker (tracker)
+- `README.md` — src/tracker/adapters/github (tracker)
+- `index.test.ts` — src/tracker/adapters/github (tracker)
+- `index.ts` — src/tracker/adapters/github (tracker)
 
 ## What does not belong here
 
@@ -37,3 +39,5 @@
 ## Related routes
 
 <!-- Atlas route pointer to sibling or parent folders. -->
+
+<!-- END POLARIS GENERATED -->

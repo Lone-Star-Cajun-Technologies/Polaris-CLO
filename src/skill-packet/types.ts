@@ -73,3 +73,62 @@ export interface SkillPacket {
   };
   generated_at: string;
 }
+
+/** Per-child summary that may be included in a reconcile/catalog work inventory. */
+export interface ReconcileChildSummary {
+  child_id: string;
+  title: string;
+  commit_sha: string | null;
+  changed_files: string[];
+  /** Repo-relative path to the child's compact result JSON, if available. */
+  compact_return_path: string | null;
+  /** Repo-relative path to a pending cognition note for the child, if available. */
+  cognition_note_path: string | null;
+}
+
+/** Work inventory carried by a ReconcilePacket (or CatalogPacket). */
+export interface ReconcileWorkInventory {
+  /** Folders whose POLARIS.md and/or SUMMARY.md may need updating. */
+  affected_folders: string[];
+  /** All files changed by the completed work (repo-relative). */
+  all_changed_files: string[];
+  /** Per-child summaries when the packet is cluster-based; empty for standalone reconciles. */
+  child_summaries: ReconcileChildSummary[];
+  /** Repo-relative paths to pending cognition notes. */
+  pending_cognition_notes: string[];
+  /** Current POLARIS.md content keyed by folder path. */
+  polaris_md_files: Record<string, string | null>;
+  /** Current SUMMARY.md content keyed by folder path. */
+  summary_md_files: Record<string, string | null>;
+}
+
+/** Reconciliation constraints. */
+export interface ReconcileConstraints {
+  /** Maximum net new lines per SUMMARY.md update. */
+  max_summary_addition_lines: number;
+}
+
+/**
+ * Packet returned by `polaris skill packet reconcile`.
+ *
+ * Reconcile packets are scoped to the current working branch/diff, not a full cluster
+ * closeout, and provide the runtime-authoritative `affected_folders` and `work_inventory`
+ * the `polaris-reconcile` and `polaris-catalog` skills require.
+ */
+export interface ReconcilePacket extends SkillPacket {
+  packet_kind: "reconcile";
+  /** Identifier for this reconcile run. */
+  run_id: string;
+  /** Bound issue or cluster identifier (e.g. `POL-257`). */
+  issue_id: string;
+  /** Folders whose POLARIS.md and/or SUMMARY.md may need updating. */
+  affected_folders: string[];
+  /** Summary of completed work: changed files, child summaries, cognition notes. */
+  work_inventory: ReconcileWorkInventory;
+  /** Paths this skill may write. */
+  allowed_write_paths: string[];
+  /** Paths this skill must not write. */
+  prohibited_write_paths: string[];
+  /** Reconciliation constraints. */
+  constraints: ReconcileConstraints;
+}

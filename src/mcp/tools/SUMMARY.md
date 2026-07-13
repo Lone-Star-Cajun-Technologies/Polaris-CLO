@@ -1,4 +1,6 @@
 <!-- polaris:draft -->
+<!-- BEGIN POLARIS GENERATED -->
+<!-- polaris:template-version: 1 -->
 # Summary: tools
 
 > Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
@@ -21,9 +23,34 @@
 ## Current State
 <!-- What is implemented, what is not yet, known gaps. -->
 
-## Known Drift
-<!-- Places where the summary may be stale (honesty field. -->
+## Route Health
+<!-- Current operational condition. Workers should understand route health in under 10 seconds. -->
 
-## Linked Canonical Sources
-- [POLARIS.md](POLARIS.md)
-<!-- Links to spec files, doctrine, etc. -->
+### Healthy
+<!-- If the route is healthy, state why. Otherwise omit this subsection. -->
+
+### Monitoring
+<!-- Any ongoing monitoring or observations. Omit if none. -->
+
+### Known Issues
+<!-- Any known problems or risks. Omit if none. -->
+
+### Recent Treatments
+<!-- Recent fixes or improvements, with chart references if applicable. Omit if none. -->
+
+### Improvement Opportunities
+<!-- Potential future improvements. Omit if none. -->
+
+## Canonical References
+
+```yaml
+canonical_docs:
+  - POLARIS.md
+```
+
+<!-- Add navigation paths to canonical docs, specs, or doctrine. These are retrieval paths, not reading assignments. -->
+
+## Known Drift
+<!-- Places where the summary may be stale (honesty field). -->
+
+<!-- END POLARIS GENERATED -->

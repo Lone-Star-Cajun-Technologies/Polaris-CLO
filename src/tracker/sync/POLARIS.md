@@ -1,4 +1,6 @@
 <!-- polaris:draft -->
+<!-- BEGIN POLARIS GENERATED -->
+<!-- polaris:template-version: 1 -->
 # sync
 
 > Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
@@ -8,15 +10,15 @@
 <!-- One paragraph describing what this folder does. -->
 
 **Domain:** tracker
-**Route:** src/tracker
+**Route:** src/tracker/sync
 **Taskchain:** polaris-tracker
 
 ## What belongs here
 
-- `index.test.ts` — src/tracker (tracker)
-- `index.ts` — src/tracker (tracker)
-- `queue-store.test.ts` — src/tracker (tracker)
-- `queue-store.ts` — src/tracker (tracker)
+- `index.test.ts` — src/tracker/sync (tracker)
+- `index.ts` — src/tracker/sync (tracker)
+- `queue-store.test.ts` — src/tracker/sync (tracker)
+- `queue-store.ts` — src/tracker/sync (tracker)
 
 ## What does not belong here
 
@@ -38,3 +40,5 @@
 ## Related routes
 
 <!-- Atlas route pointer to sibling or parent folders. -->
+
+<!-- END POLARIS GENERATED -->

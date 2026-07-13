@@ -118,7 +118,7 @@ describe("runCanonCheck", () => {
     it("does not report conflicts for SUMMARY.md even if it contains 'must' and 'deleted'", () => {
       // Create a SUMMARY.md with modal verbs that would normally trigger checkDocFile
       writeFileSync(join(testDir, "SUMMARY.md"), "Agents must not use old-file.ts as it is deleted.");
-      mkdirSync(join(testDir, "docs", "doctrine", "active"), { recursive: true });
+      mkdirSync(join(testDir, "smartdocs", "doctrine", "active"), { recursive: true });
 
       const result = runCanonCheck({
         repoRoot: testDir,
@@ -185,6 +185,31 @@ describe("runCanonCheck", () => {
       expect(halt).toBeTruthy();
       expect(halt.run_id).toBe("test-run-halt");
       expect(halt.child_id).toBe("POL-99");
+    });
+
+    it("detects a contradiction from a smartdocs/doctrine/active fixture", () => {
+      const doctrineDir = join(testDir, "smartdocs", "doctrine", "active");
+      mkdirSync(doctrineDir, { recursive: true });
+      mkdirSync(join(testDir, "src"), { recursive: true });
+      writeFileSync(join(testDir, "src", "legacy.ts"), "// still exists");
+      writeFileSync(
+        join(doctrineDir, "deprecated.md"),
+        "- `legacy.ts` must be removed and is deleted.\n",
+      );
+
+      const result = runCanonCheck({
+        repoRoot: testDir,
+        changedFiles: ["src/legacy.ts"],
+        runId: "test-smartdocs-doctrine",
+        telemetryFile,
+      });
+
+      expect(result.canonFilesInspected).toBeGreaterThan(0);
+      expect(result.outcome).toBe("stale-implementation");
+      expect(result.conflicts.length).toBeGreaterThan(0);
+      expect(result.conflicts[0].type).toBe("stale-implementation");
+      expect(result.conflicts[0].canonFile).toBe(join(doctrineDir, "deprecated.md"));
+      expect(result.conflicts[0].statement).toContain("legacy.ts");
     });
   });
 

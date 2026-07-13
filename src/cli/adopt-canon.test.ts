@@ -65,14 +65,20 @@ describe("enrichCanonFiles", () => {
     rmSync(root, { recursive: true, force: true });
   });
 
-  function setupRepo(opts: { withDraft?: boolean; doctrineDocs?: boolean } = {}) {
-    const { withDraft = true, doctrineDocs = true } = opts;
+  function setupRepo(opts: { withDraft?: boolean; doctrineDocs?: boolean; polarisDraft?: boolean } = {}) {
+    const { withDraft = true, doctrineDocs = true, polarisDraft = false } = opts;
     mkdirSync(join(root, "src"), { recursive: true });
     if (doctrineDocs) {
       mkdirSync(join(root, "smartdocs", "doctrine", "active"), { recursive: true });
       writeFileSync(join(root, "smartdocs", "doctrine", "active", "AUTH.md"), "# Auth\n\nAuth doctrine.", "utf-8");
     }
-    writeFileSync(join(root, "src", "POLARIS.md"), "# POLARIS\n", "utf-8");
+    writeFileSync(
+      join(root, "src", "POLARIS.md"),
+      polarisDraft
+        ? `# POLARIS\n\n<!-- polaris:draft -->\n`
+        : "# POLARIS\n",
+      "utf-8",
+    );
     writeFileSync(
       join(root, "src", "SUMMARY.md"),
       withDraft
@@ -122,12 +128,21 @@ describe("enrichCanonFiles", () => {
     expect(result).not.toMatch(/title: "The "Auth"/);
   });
 
-  it("writes POLARIS.md with operational instructions", async () => {
-    setupRepo();
+  it("overwrites a draft POLARIS.md with operational instructions", async () => {
+    setupRepo({ polarisDraft: true });
     await enrichCanonFiles(root);
     const polaris = readFileSync(join(root, "src", "POLARIS.md"), "utf-8");
     expect(polaris).toContain("# POLARIS — src");
     expect(polaris).toContain("This area owns the core auth pipeline.");
+  });
+
+  it("preserves an existing non-draft POLARIS.md", async () => {
+    setupRepo();
+    await enrichCanonFiles(root);
+    const polaris = readFileSync(join(root, "src", "POLARIS.md"), "utf-8");
+    expect(polaris).toBe("# POLARIS\n");
+    expect(polaris).not.toContain("# POLARIS — src");
+    expect(polaris).not.toContain("This area owns the core auth pipeline.");
   });
 
   it("throws when no agent is configured", async () => {
@@ -135,6 +150,17 @@ describe("enrichCanonFiles", () => {
     vi.mocked(resolveLibrarianProvider).mockReturnValueOnce(null).mockReturnValueOnce(null);
     setupRepo();
     await expect(enrichCanonFiles(root)).rejects.toThrow("polaris agent setup required");
+  });
+
+  it("wraps enriched POLARIS.md and SUMMARY.md in generated markers", async () => {
+    setupRepo({ polarisDraft: true });
+    await enrichCanonFiles(root);
+    const summary = readFileSync(join(root, "src", "SUMMARY.md"), "utf-8");
+    const polaris = readFileSync(join(root, "src", "POLARIS.md"), "utf-8");
+    expect(summary).toContain("<!-- BEGIN POLARIS GENERATED -->");
+    expect(summary).toContain("<!-- END POLARIS GENERATED -->");
+    expect(polaris).toContain("<!-- BEGIN POLARIS GENERATED -->");
+    expect(polaris).toContain("<!-- END POLARIS GENERATED -->");
   });
 
   it("prompts the librarian with separate include/avoid lists for each artifact", async () => {
@@ -157,7 +183,7 @@ describe("enrichCanonFiles", () => {
   });
 
   it("places summary_lines in SUMMARY.md and polaris_lines in POLARIS.md", async () => {
-    setupRepo();
+    setupRepo({ polarisDraft: true });
     const { spawnSync } = await import("node:child_process");
     vi.mocked(spawnSync).mockReturnValueOnce({
       stdout: JSON.stringify({

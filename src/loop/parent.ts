@@ -25,7 +25,7 @@ import { ensureDeliveryBranch } from "./git-custody.js";
 import {
   readState,
   validateState,
-  writeStateAtomic,
+  writeStateAtomic as writeStateAtomicImpl,
   readBodyFromClusterSnapshot,
   buildWorkerResultContract,
   computePacketHashFromPath,
@@ -909,6 +909,25 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
     appendRunStartedLedgerEvent(repoRoot, state);
   }
 
+  // Keep the canonical cluster snapshot in sync with the taskchain state so
+  // `polaris status`, `polaris continue`, and `polaris finalize` always see
+  // the freshest state, even if the parent loop is interrupted before it
+  // reaches the final cluster-complete write.
+  const canonicalStatePath = join(repoRoot, ".polaris", "clusters", state.cluster_id, "state.json");
+  const writeStateAtomic = (filePath: string, stateToWrite: LoopState) => {
+    writeStateAtomicImpl(filePath, stateToWrite);
+    if (resolve(filePath) !== resolve(canonicalStatePath)) {
+      try {
+        writeStateAtomicImpl(canonicalStatePath, stateToWrite);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        process.stderr.write(
+          `[polaris] canonical cluster state snapshot at ${canonicalStatePath} failed to update and remains stale: ${msg}\n`,
+        );
+      }
+    }
+  };
+
   // Load config for adapter and provider resolution
   const config = loadConfig(repoRoot);
   const legacyOrchestrationMode = (state as unknown as Record<string, unknown>)["orchestration_mode"];
@@ -1473,7 +1492,6 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
         logStatus(notificationFormat, "COMPLETE");
         const clusterCompleteState = { ...state, status: "cluster-complete" as const };
         writeStateAtomic(stateFile, clusterCompleteState);
-        writeStateAtomic(join(repoRoot, '.polaris', 'clusters', state.cluster_id, 'state.json'), clusterCompleteState);
         appendTelemetry(telemetryFile, {
           event: "cluster-complete",
           run_id: state.run_id,

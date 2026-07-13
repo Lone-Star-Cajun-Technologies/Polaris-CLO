@@ -196,13 +196,14 @@ function markResolved(
   outcome: string,
   repoRoot: string,
 ): void {
+  const success = outcome === "treatment-success" || outcome === "no-treatment-needed";
   markMedicDecision(
     report.run_id,
     {
-      status: "resolved",
+      status: success ? "resolved" : "in-progress",
       chartRefs: [chartRef],
       treatmentPacketRefs: treatmentRefs,
-      resolvedAt: new Date().toISOString(),
+      resolvedAt: success ? new Date().toISOString() : undefined,
       resolutionNotes: `Terminal outcome: ${outcome}`,
     },
     repoRoot,
@@ -484,7 +485,7 @@ export async function runMedicRunHealthConsult(
         run_id: packet.run_id,
         cluster_id: packet.cluster_id,
         dispatch_id: packet.dispatch_id,
-        status: "resolved",
+        status: "blocked",
         chart_id: chart.chart_id,
         decision: "terminal",
         treatment_packet_refs: allTreatmentRefs,
@@ -501,7 +502,7 @@ export async function runMedicRunHealthConsult(
     run_id: packet.run_id,
     cluster_id: packet.cluster_id,
     dispatch_id: packet.dispatch_id,
-    status: "resolved",
+    status: remainingSymptoms.length === 0 ? "resolved" : "blocked",
     chart_id: chart.chart_id,
     decision: "terminal",
     treatment_packet_refs: allTreatmentRefs,

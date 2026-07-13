@@ -1,4 +1,6 @@
 <!-- polaris:draft -->
+<!-- BEGIN POLARIS GENERATED -->
+<!-- polaris:template-version: 1 -->
 # runs
 
 > Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
@@ -13,6 +15,8 @@
 
 ## What belongs here
 
+- `POLARIS.md` — src/runs (runs)
+- `SUMMARY.md` — src/runs (runs)
 - `index.test.ts` — src/runs (runs)
 - `index.ts` — src/runs (runs)
 - `ledger-tail.ts` — src/runs (runs)
@@ -34,8 +38,11 @@
 
 ## Read before editing
 
-<!-- Links to canonical sources (doctrine, specs). -->
+- [POLARIS.md](src/runs/POLARIS.md)
+- [SUMMARY.md](src/runs/SUMMARY.md)
 
 ## Related routes
 
 <!-- Atlas route pointer to sibling or parent folders. -->
+
+<!-- END POLARIS GENERATED -->

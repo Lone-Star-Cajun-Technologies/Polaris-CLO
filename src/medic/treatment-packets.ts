@@ -213,6 +213,8 @@ export async function dispatchTreatmentWorker(
   const summary = parseTreatmentWorkerSummary(result.summary);
 
   if (result.exit_code === 0 && summary?.status === "done") {
+    const completedTreatment = { ...treatment, status: "completed" as const };
+    writeTreatmentPacket({ treatment: completedTreatment, repoRoot });
     return {
       packet_id: treatment.packet_id,
       status: "success",
@@ -220,6 +222,8 @@ export async function dispatchTreatmentWorker(
     };
   }
 
+  const failedTreatment = { ...treatment, status: "failed" as const };
+  writeTreatmentPacket({ treatment: failedTreatment, repoRoot });
   return {
     packet_id: treatment.packet_id,
     status: "failure",

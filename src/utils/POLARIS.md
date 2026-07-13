@@ -1,4 +1,6 @@
 <!-- polaris:draft -->
+<!-- BEGIN POLARIS GENERATED -->
+<!-- polaris:template-version: 1 -->
 # utils
 
 > Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
@@ -13,6 +15,8 @@
 
 ## What belongs here
 
+- `POLARIS.md` — src/utils (utils)
+- `SUMMARY.md` — src/utils (utils)
 - `monotonic-timestamp.test.ts` — src/utils (utils)
 - `monotonic-timestamp.ts` — src/utils (utils)
 
@@ -30,8 +34,11 @@
 
 ## Read before editing
 
-<!-- Links to canonical sources (doctrine, specs). -->
+- [POLARIS.md](src/utils/POLARIS.md)
+- [SUMMARY.md](src/utils/SUMMARY.md)
 
 ## Related routes
 
 <!-- Atlas route pointer to sibling or parent folders. -->
+
+<!-- END POLARIS GENERATED -->

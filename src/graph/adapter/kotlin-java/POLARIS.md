@@ -1,4 +1,6 @@
 <!-- polaris:draft -->
+<!-- BEGIN POLARIS GENERATED -->
+<!-- polaris:template-version: 1 -->
 # kotlin-java
 
 > Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
@@ -8,19 +10,18 @@
 <!-- One paragraph describing what this folder does. -->
 
 **Domain:** graph
-**Route:** src/graph
+**Route:** src/graph/adapter/kotlin-java
 **Taskchain:** polaris-graph
 
 ## What belongs here
 
-- `extract-common.ts` — Shared extraction utilities for Kotlin and Java
-- `index.ts` — Kotlin and Java adapter registration and exports
-- `java-adapter.ts` — Java graph adapter implementation
-- `java-extract.ts` — Java symbol extraction logic
-- `kotlin-adapter.ts` — Kotlin graph adapter implementation
-- `kotlin-extract.ts` — Kotlin symbol extraction logic
-- `runtime.ts` — Kotlin and Java runtime configuration and tree-sitter setup
-- `fixtures/adapter.test.ts` — Unit tests for Kotlin and Java adapters
+- `extract-common.ts` — src/graph/adapter/kotlin-java (graph)
+- `index.ts` — src/graph/adapter/kotlin-java (graph)
+- `java-adapter.ts` — src/graph/adapter/kotlin-java (graph)
+- `java-extract.ts` — src/graph/adapter/kotlin-java (graph)
+- `kotlin-adapter.ts` — src/graph/adapter/kotlin-java (graph)
+- `kotlin-extract.ts` — src/graph/adapter/kotlin-java (graph)
+- `runtime.ts` — src/graph/adapter/kotlin-java (graph)
 
 ## What does not belong here
 
@@ -36,8 +37,10 @@
 
 ## Read before editing
 
-- [POLARIS.md](../../POLARIS.md)
+- [POLARIS.md](src/graph/POLARIS.md)
 
 ## Related routes
 
 <!-- Atlas route pointer to sibling or parent folders. -->
+
+<!-- END POLARIS GENERATED -->

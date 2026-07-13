@@ -8,6 +8,7 @@ import {
   getLastGitModDate,
   getFilesChangedAfter,
 } from "./validate-instructions.js";
+import { TEMPLATE_VERSION_STAMP } from "./seed-instructions.js";
 import type { FileRouteEntry } from "../map/atlas.js";
 
 const TMP = join(process.cwd(), ".test-validate-instructions-tmp");
@@ -111,8 +112,9 @@ describe("validateDir - MISSING", () => {
 // validateDir — OK
 // ---------------------------------------------------------------------------
 
-function validPolarisContent(extra?: string): string {
+function validPolarisContent(extra?: string, stamp: string = TEMPLATE_VERSION_STAMP): string {
   return [
+    stamp,
     "# map",
     "",
     "## Purpose",
@@ -138,6 +140,19 @@ function validPolarisContent(extra?: string): string {
   ].join("\n");
 }
 
+function generatedPolarisContent(
+  extra?: string,
+  trailing?: string,
+  stamp: string = TEMPLATE_VERSION_STAMP,
+): string {
+  return [
+    "<!-- BEGIN POLARIS GENERATED -->",
+    validPolarisContent(extra, stamp),
+    "<!-- END POLARIS GENERATED -->",
+    ...(trailing ? [trailing] : []),
+  ].join("\n");
+}
+
 describe("validateDir - OK", () => {
   beforeEach(setup);
   afterEach(teardown);
@@ -147,6 +162,94 @@ describe("validateDir - OK", () => {
     const result = validateDir("src/map", TMP, {});
     expect(result.status).toBe("OK");
     expect(result.findings).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// validateDir — generated region
+// ---------------------------------------------------------------------------
+
+describe("validateDir - generated region", () => {
+  beforeEach(setup);
+  afterEach(teardown);
+
+  it("returns OK for a POLARIS.md with generated markers and a trailing Route model section", () => {
+    writeFileSync(
+      join(TMP, "src/map/POLARIS.md"),
+      generatedPolarisContent("none", "## Route model\n\n- conventions\n"),
+    );
+    const result = validateDir("src/map", TMP, {});
+    expect(result.status).toBe("OK");
+    expect(result.findings).toHaveLength(0);
+  });
+
+  it("ignores forbidden sections outside the generated region", () => {
+    writeFileSync(
+      join(TMP, "src/map/POLARIS.md"),
+      generatedPolarisContent("none", "## History\n\nSession notes.\n"),
+    );
+    const result = validateDir("src/map", TMP, {});
+    expect(result.status).toBe("OK");
+    expect(result.findings).toHaveLength(0);
+  });
+
+  it("flags missing required sections inside the generated region", () => {
+    writeFileSync(
+      join(TMP, "src/map/POLARIS.md"),
+      [
+        "<!-- BEGIN POLARIS GENERATED -->",
+        "# map",
+        "",
+        "## Purpose",
+        "Some text.",
+        "<!-- END POLARIS GENERATED -->",
+      ].join("\n"),
+    );
+    const result = validateDir("src/map", TMP, {});
+    expect(result.status).toBe("WARN");
+    expect(result.findings.some((f) => f.message.includes('Missing required section: "What belongs here"'))).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// validateDir — template version
+// ---------------------------------------------------------------------------
+
+describe("validateDir - template version", () => {
+  beforeEach(setup);
+  afterEach(teardown);
+
+  it("reports OK when POLARIS.md has the current template-version stamp", () => {
+    writeFileSync(join(TMP, "src/map/POLARIS.md"), generatedPolarisContent());
+    const result = validateDir("src/map", TMP, {});
+    expect(result.status).toBe("OK");
+    expect(result.findings).toHaveLength(0);
+  });
+
+  it("reports WARN when POLARIS.md is unstamped", () => {
+    const unstamped = validPolarisContent().replace(TEMPLATE_VERSION_STAMP + "\n", "");
+    const generatedUnstamped = [
+      "<!-- BEGIN POLARIS GENERATED -->",
+      unstamped,
+      "<!-- END POLARIS GENERATED -->",
+    ].join("\n");
+    writeFileSync(join(TMP, "src/map/POLARIS.md"), generatedUnstamped);
+    const result = validateDir("src/map", TMP, {});
+    expect(result.status).toBe("WARN");
+    const finding = result.findings.find((f) => f.message.includes("unstamped"));
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe("WARN");
+  });
+
+  it("reports WARN when POLARIS.md has an outdated template-version stamp", () => {
+    const oldStamp = "<!-- polaris:template-version: 0 -->";
+    writeFileSync(join(TMP, "src/map/POLARIS.md"), generatedPolarisContent(undefined, undefined, oldStamp));
+    const result = validateDir("src/map", TMP, {});
+    expect(result.status).toBe("WARN");
+    const finding = result.findings.find((f) => f.message.includes("template version drift"));
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe("WARN");
+    expect(finding!.message).toContain("found 0");
   });
 });
 
@@ -221,6 +324,7 @@ describe("validateDir - pairwise drift", () => {
       "Additional shared context about the map module and dispatch behavior.",
     );
     const summary = [
+      TEMPLATE_VERSION_STAMP,
       "# Summary",
       "",
       "The map module manages dispatch behavior and routing context for this route.",

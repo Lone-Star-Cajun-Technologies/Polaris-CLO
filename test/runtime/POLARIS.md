@@ -1,4 +1,6 @@
 <!-- polaris:draft -->
+<!-- BEGIN POLARIS GENERATED -->
+<!-- polaris:template-version: 1 -->
 # runtime
 
 > Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
@@ -7,9 +9,14 @@
 
 <!-- One paragraph describing what this folder does. -->
 
+**Domain:** unknown
+**Route:** test/runtime/POLARIS.md, test/runtime/SUMMARY.md
+**Taskchain:** polaris-core
+
 ## What belongs here
 
-<!-- Bulleted file list of contents. -->
+- `POLARIS.md` — test/runtime/POLARIS.md (unknown)
+- `SUMMARY.md` — test/runtime/SUMMARY.md (unknown)
 
 ## What does not belong here
 
@@ -25,8 +32,14 @@
 
 ## Read before editing
 
-<!-- Links to canonical sources (doctrine, specs). -->
+- [AGENTS.md](AGENTS.md)
+- [CLAUDE.md](CLAUDE.md)
+- [POLARIS_RULES.md](POLARIS_RULES.md)
+- [README.md](README.md)
+- [POLARIS.md](scripts/POLARIS.md)
 
 ## Related routes
 
 <!-- Atlas route pointer to sibling or parent folders. -->
+
+<!-- END POLARIS GENERATED -->

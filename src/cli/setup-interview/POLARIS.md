@@ -1,4 +1,6 @@
 <!-- polaris:draft -->
+<!-- BEGIN POLARIS GENERATED -->
+<!-- polaris:template-version: 1 -->
 # setup-interview
 
 > Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
@@ -8,19 +10,19 @@
 <!-- One paragraph describing what this folder does. -->
 
 **Domain:** cli
-**Route:** src/cli
+**Route:** src/cli/setup-interview
 **Taskchain:** polaris-cli
 
 ## What belongs here
 
-- `generate.test.ts` — src/cli (cli)
-- `generate.ts` — src/cli (cli)
-- `report.ts` — src/cli (cli)
-- `runner.test.ts` — src/cli (cli)
-- `runner.ts` — src/cli (cli)
-- `schema.ts` — src/cli (cli)
-- `store.test.ts` — src/cli (cli)
-- `store.ts` — src/cli (cli)
+- `generate.test.ts` — src/cli/setup-interview (cli)
+- `generate.ts` — src/cli/setup-interview (cli)
+- `report.ts` — src/cli/setup-interview (cli)
+- `runner.test.ts` — src/cli/setup-interview (cli)
+- `runner.ts` — src/cli/setup-interview (cli)
+- `schema.ts` — src/cli/setup-interview (cli)
+- `store.test.ts` — src/cli/setup-interview (cli)
+- `store.ts` — src/cli/setup-interview (cli)
 
 ## What does not belong here
 
@@ -42,3 +44,5 @@
 ## Related routes
 
 <!-- Atlas route pointer to sibling or parent folders. -->
+
+<!-- END POLARIS GENERATED -->

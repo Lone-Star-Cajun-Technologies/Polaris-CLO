@@ -4,7 +4,7 @@ import { Command } from "commander";
 import { ensureDocsScaffold, ingestDocs, printIngestResults } from "./ingest.js";
 import { runReviewSession } from "./review.js";
 import { migrateDocs, printMigrateResults } from "./migrate.js";
-import { seedInstructions, seedInstructionsAll, seedSummary, seedSummaryAll, seedIndex, seedIndexAll, type IneligibleEntry } from "./seed-instructions.js";
+import { seedInstructions, seedInstructionsAll, seedSummary, seedSummaryAll, seedIndex, seedIndexAll, reconcileAll, type IneligibleEntry, type ReconcileReport } from "./seed-instructions.js";
 import { validateInstructions, printReport } from "./validate-instructions.js";
 import { doctrineDraft, doctrinePromote, doctrineDeprecate, specPromote, migrateProvenance, backfillOkfType } from "./doctrine.js";
 import { auditIngestRiskSurface, formatAuditMarkdown, formatAuditSummaryTable } from "./audit.js";
@@ -50,6 +50,35 @@ function printSeedAllResult(
   }
   console.log(
     `${leadingBlankLine ? "\n" : ""}Done. ${written.length} written, ${skippedExists.length} skipped (exists), ${skippedDraft.length} skipped (draft)${extraSummary}.`,
+  );
+}
+
+function printReconcileReport(report: ReconcileReport, dryRun: boolean | undefined): void {
+  for (const path of report.created) {
+    console.log(`${dryRun ? "[dry-run] would create" : "created"}: ${path}`);
+  }
+  for (const path of report.regenerated) {
+    console.log(`${dryRun ? "[dry-run] would regenerate" : "regenerated"}: ${path}`);
+  }
+  for (const path of report.regeneratedRegion) {
+    console.log(`${dryRun ? "[dry-run] would regenerate (region)" : "regenerated (region)"}: ${path}`);
+  }
+  for (const path of report.skipped) {
+    console.log(`skipped (up-to-date): ${path}`);
+  }
+  for (const path of report.blocked) {
+    console.log(`blocked (manual migration): ${path}`);
+  }
+  if (report.skippedRoot) {
+    console.log(`skipped (root): ${report.skippedRoot.path}/ (${report.skippedRoot.reason})`);
+  }
+  if (report.skippedIneligible.length > 0) {
+    for (const entry of report.skippedIneligible) {
+      console.log(`skipped (ineligible): ${entry.path}/ (${entry.reason})`);
+    }
+  }
+  console.log(
+    `\nDone. ${report.created.length} created, ${report.regenerated.length} regenerated, ${report.regeneratedRegion.length} regenerated (region), ${report.skipped.length} skipped, ${report.blocked.length} blocked.`,
   );
 }
 
@@ -519,6 +548,42 @@ export function createDocsCommand(options: DocsCommandOptions = {}): Command {
         console.warn(`warning: ${targetPath}/index.md already exists (no draft marker) — skipped`);
       } else {
         console.log(`skipped (draft exists): ${targetPath}/index.md`);
+      }
+    });
+
+  docs
+    .command("reconcile")
+    .description("Reconcile POLARIS.md and SUMMARY.md files across all eligible route folders")
+    .option("--all", "Reconcile all eligible directories")
+    .option("--dry-run", "Print what would be changed without writing files")
+    .option("--include-agent-folders", "Include .codex, .claude, .agents folders (default: skip)")
+    .option("--include-hidden", "Include all hidden directories starting with . (default: skip)")
+    .option("--include-root", "Include root directory (default: skip)")
+    .option("-r, --repo-root <path>", "Repository root", defaultRepoRoot)
+    .action((options: {
+      repoRoot: string;
+      all?: boolean;
+      dryRun?: boolean;
+      includeAgentFolders?: boolean;
+      includeHidden?: boolean;
+      includeRoot?: boolean;
+    }) => {
+      if (!options.all) {
+        console.error("Error: provide --all to reconcile all eligible directories");
+        process.exit(1);
+      }
+
+      try {
+        const report = reconcileAll(options.repoRoot, {
+          dryRun: options.dryRun,
+          includeAgentFolders: options.includeAgentFolders,
+          includeHidden: options.includeHidden,
+          includeRoot: options.includeRoot,
+        });
+        printReconcileReport(report, options.dryRun);
+      } catch (err) {
+        console.error(`polaris docs reconcile: ${err instanceof Error ? err.message : String(err)}`);
+        process.exit(1);
       }
     });
 

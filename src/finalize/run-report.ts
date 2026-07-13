@@ -234,9 +234,9 @@ function renderRoutingSection(state: LoopState, telemetryEvents: unknown[]): str
 
   return `### Provider distribution
 
-| Child | Provider | Selection reason | Mode | Policy order | Candidates | Fallbacks | Status |
-|---|---|---|---|---|---|---|---|
-${rows || "| _No children recorded_ | — | — | — | — | — | — | — |"}
+| Child | Title | Provider | Selection reason | Mode | Policy order | Candidates | Fallbacks | Status |
+|---|---|---|---|---|---|---|---|---|
+${rows || "| _No children recorded_ | — | — | — | — | — | — | — | — |"}
 
 **Provider summary:** ${distribution}
 

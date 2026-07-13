@@ -1,4 +1,6 @@
 <!-- polaris:draft -->
+<!-- BEGIN POLARIS GENERATED -->
+<!-- polaris:template-version: 1 -->
 # verification
 
 > Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
@@ -8,13 +10,15 @@
 <!-- One paragraph describing what this folder does. -->
 
 **Domain:** runtime
-**Route:** src/runtime
+**Route:** src/runtime/verification
 **Taskchain:** polaris-runtime
 
 ## What belongs here
 
-- `envelope.ts` — src/runtime (runtime)
-- `fingerprint.ts` — src/runtime (runtime)
+- `POLARIS.md` — src/runtime/verification (runtime)
+- `SUMMARY.md` — src/runtime/verification (runtime)
+- `envelope.ts` — src/runtime/verification (runtime)
+- `fingerprint.ts` — src/runtime/verification (runtime)
 
 ## What does not belong here
 
@@ -30,8 +34,14 @@
 
 ## Read before editing
 
-<!-- Links to canonical sources (doctrine, specs). -->
+- [POLARIS.md](src/runtime/POLARIS.md)
+- [SUMMARY.md](src/runtime/SUMMARY.md)
+- [POLARIS.md](src/runtime/audit/POLARIS.md)
+- [SUMMARY.md](src/runtime/audit/SUMMARY.md)
+- [POLARIS.md](src/runtime/continuation/POLARIS.md)
 
 ## Related routes
 
 <!-- Atlas route pointer to sibling or parent folders. -->
+
+<!-- END POLARIS GENERATED -->

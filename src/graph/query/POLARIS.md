@@ -1,4 +1,6 @@
 <!-- polaris:draft -->
+<!-- BEGIN POLARIS GENERATED -->
+<!-- polaris:template-version: 1 -->
 # query
 
 > Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
@@ -8,14 +10,14 @@
 <!-- One paragraph describing what this folder does. -->
 
 **Domain:** graph
-**Route:** src/graph
+**Route:** src/graph/query
 **Taskchain:** polaris-graph
 
 ## What belongs here
 
-- `index.test.ts` — src/graph (graph)
-- `index.ts` — src/graph (graph)
-- `types.ts` — src/graph (graph)
+- `index.test.ts` — src/graph/query (graph)
+- `index.ts` — src/graph/query (graph)
+- `types.ts` — src/graph/query (graph)
 
 ## What does not belong here
 
@@ -36,3 +38,5 @@
 ## Related routes
 
 <!-- Atlas route pointer to sibling or parent folders. -->
+
+<!-- END POLARIS GENERATED -->

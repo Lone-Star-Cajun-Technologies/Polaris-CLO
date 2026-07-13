@@ -3,6 +3,10 @@ import { mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from "node
 import { join } from "node:path";
 import {
   DRAFT_MARKER,
+  GENERATED_END_MARKER,
+  GENERATED_START_MARKER,
+  TEMPLATE_VERSION,
+  TEMPLATE_VERSION_STAMP,
   hasDraftMarker,
   generateDraft,
   seedInstructions,
@@ -14,6 +18,7 @@ import {
   generateDirectoryIndex,
   seedIndex,
   seedIndexAll,
+  reconcileAll,
 } from "./seed-instructions.js";
 import type { FileRouteEntry } from "../map/atlas.js";
 
@@ -73,6 +78,13 @@ describe("generateDraft", () => {
     expect(content.startsWith(DRAFT_MARKER)).toBe(true);
   });
 
+  it("wraps generated body in BEGIN/END markers", () => {
+    const content = generateDraft("src/map", TMP, {});
+    expect(content.includes(GENERATED_START_MARKER)).toBe(true);
+    expect(content.includes(GENERATED_END_MARKER)).toBe(true);
+    expect(content.indexOf(GENERATED_START_MARKER)).toBeLessThan(content.indexOf(GENERATED_END_MARKER));
+  });
+
   it("uses directory basename as heading", () => {
     const content = generateDraft("src/map", TMP, {});
     expect(content).toContain("# map");
@@ -104,6 +116,14 @@ describe("generateDraft", () => {
     };
     const content = generateDraft("src/map", TMP, routes);
     expect(content).not.toContain("`index.ts`");
+  });
+
+  it("embeds the current template-version stamp inside the generated region", () => {
+    const content = generateDraft("src/map", TMP, {});
+    expect(content).toContain(TEMPLATE_VERSION_STAMP);
+    expect(content.indexOf(TEMPLATE_VERSION_STAMP)).toBeGreaterThan(content.indexOf(GENERATED_START_MARKER));
+    expect(content.indexOf(TEMPLATE_VERSION_STAMP)).toBeLessThan(content.indexOf(GENERATED_END_MARKER));
+    expect(TEMPLATE_VERSION).toBeGreaterThan(0);
   });
 });
 
@@ -235,6 +255,13 @@ describe("generateSummaryDraft", () => {
     expect(content.startsWith(DRAFT_MARKER)).toBe(true);
   });
 
+  it("wraps generated body in BEGIN/END markers", () => {
+    const content = generateSummaryDraft("src/map", TMP, {});
+    expect(content.includes(GENERATED_START_MARKER)).toBe(true);
+    expect(content.includes(GENERATED_END_MARKER)).toBe(true);
+    expect(content.indexOf(GENERATED_START_MARKER)).toBeLessThan(content.indexOf(GENERATED_END_MARKER));
+  });
+
   it("uses directory basename in heading", () => {
     const content = generateSummaryDraft("src/map", TMP, {});
     expect(content).toContain("# Summary: map");
@@ -266,6 +293,13 @@ describe("generateSummaryDraft", () => {
     const content = generateSummaryDraft("src/map", TMP, {});
     expect(content).toContain("canonical_docs:");
     expect(content).toContain("- POLARIS.md");
+  });
+
+  it("embeds the current template-version stamp inside the generated region", () => {
+    const content = generateSummaryDraft("src/map", TMP, {});
+    expect(content).toContain(TEMPLATE_VERSION_STAMP);
+    expect(content.indexOf(TEMPLATE_VERSION_STAMP)).toBeGreaterThan(content.indexOf(GENERATED_START_MARKER));
+    expect(content.indexOf(TEMPLATE_VERSION_STAMP)).toBeLessThan(content.indexOf(GENERATED_END_MARKER));
   });
 });
 
@@ -597,5 +631,91 @@ describe("seedIndexAll", () => {
     for (const dir of written) {
       expect(existsSync(join(TMP, dir, "index.md"))).toBe(false);
     }
+  });
+});
+
+describe("reconcileAll", () => {
+  beforeEach(setup);
+  afterEach(teardown);
+
+  it("creates missing POLARIS.md and SUMMARY.md for eligible directories", () => {
+    const report = reconcileAll(TMP);
+
+    expect(report.created).toContain("src/map/POLARIS.md");
+    expect(report.created).toContain("src/map/SUMMARY.md");
+    expect(report.created).toContain("src/cli/POLARIS.md");
+    expect(report.created).toContain("src/cli/SUMMARY.md");
+    expect(existsSync(join(TMP, "src/map/POLARIS.md"))).toBe(true);
+    expect(existsSync(join(TMP, "src/map/SUMMARY.md"))).toBe(true);
+  });
+
+  it("regenerates POLARIS.md and SUMMARY.md in full when they contain the draft marker", () => {
+    writeFileSync(join(TMP, "src/map/POLARIS.md"), `${DRAFT_MARKER}\n# Old draft`);
+    writeFileSync(join(TMP, "src/map/SUMMARY.md"), `${DRAFT_MARKER}\n# Old summary`);
+
+    const report = reconcileAll(TMP);
+
+    expect(report.regenerated).toContain("src/map/POLARIS.md");
+    expect(report.regenerated).toContain("src/map/SUMMARY.md");
+    const polaris = readFileSync(join(TMP, "src/map/POLARIS.md"), "utf-8");
+    expect(polaris).toContain("## Purpose");
+    expect(polaris).toContain(GENERATED_START_MARKER);
+    expect(polaris).toContain(TEMPLATE_VERSION_STAMP);
+  });
+
+  it("regenerates only the generated region when the template version is stale and preserves outside content", () => {
+    const prefix = "# Custom prefix\n\n";
+    const suffix = "\n\n# Custom suffix";
+    const oldRegion = [
+      GENERATED_START_MARKER,
+      "<!-- polaris:template-version: 0 -->",
+      "# Old generated heading",
+      "",
+      GENERATED_END_MARKER,
+    ].join("\n");
+    const original = `${prefix}${oldRegion}${suffix}`;
+    writeFileSync(join(TMP, "src/map/POLARIS.md"), original);
+
+    const report = reconcileAll(TMP);
+
+    expect(report.regeneratedRegion).toContain("src/map/POLARIS.md");
+    const updated = readFileSync(join(TMP, "src/map/POLARIS.md"), "utf-8");
+    expect(updated.startsWith(prefix)).toBe(true);
+    expect(updated.includes("# Custom suffix")).toBe(true);
+    expect(updated.includes(TEMPLATE_VERSION_STAMP)).toBe(true);
+    expect(updated.includes("# Old generated heading")).toBe(false);
+  });
+
+  it("skips files whose generated region is already up-to-date", () => {
+    const upToDate = [
+      GENERATED_START_MARKER,
+      TEMPLATE_VERSION_STAMP,
+      "# Generated heading",
+      "",
+      GENERATED_END_MARKER,
+    ].join("\n");
+    writeFileSync(join(TMP, "src/map/POLARIS.md"), upToDate);
+
+    const report = reconcileAll(TMP);
+
+    expect(report.skipped).toContain("src/map/POLARIS.md");
+    expect(report.created).toContain("src/map/SUMMARY.md");
+  });
+
+  it("blocks hand-authored files without markers and leaves them untouched", () => {
+    writeFileSync(join(TMP, "src/cli/POLARIS.md"), "# Human-written POLARIS");
+
+    const report = reconcileAll(TMP);
+
+    expect(report.blocked).toContain("src/cli/POLARIS.md");
+    expect(readFileSync(join(TMP, "src/cli/POLARIS.md"), "utf-8")).toBe("# Human-written POLARIS");
+  });
+
+  it("does not write files in dry-run mode", () => {
+    const report = reconcileAll(TMP, { dryRun: true });
+
+    expect(report.created.length).toBeGreaterThan(0);
+    expect(existsSync(join(TMP, "src/map/POLARIS.md"))).toBe(false);
+    expect(existsSync(join(TMP, "src/map/SUMMARY.md"))).toBe(false);
   });
 });

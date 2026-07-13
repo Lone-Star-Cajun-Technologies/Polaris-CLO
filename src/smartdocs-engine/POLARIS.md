@@ -1,64 +1,54 @@
-# src/smartdocs-engine
+<!-- BEGIN POLARIS GENERATED -->
+<!-- polaris:template-version: 1 -->
+# smartdocs-engine
 
 ## Purpose
 
-The smartdocs-engine implements the Smart Docs lifecycle for Polaris: doc ingestion and classification, POLARIS.md / SUMMARY.md / index.md seed generation, instruction validation, canon checking, doctrine and spec lifecycle, migration, and audit. It is the pipeline that keeps the `smartdocs/` authority structure consistent with the repo.
+Smart Docs lifecycle pipeline — ingests, classifies, seeds, validates, promotes, and audits documentation in the Polaris canonical authority structure (`smartdocs/`), plus the POLARIS.md/SUMMARY.md seeding, canon-check, and instruction-validation tooling used by adoption and CI.
+
+**Domain:** smartdocs-engine
+**Route:** src/smartdocs-engine
+**Taskchain:** polaris-smartdocs-engine
 
 ## What belongs here
 
-- `ingest.ts` — doc classification and placement into the `smartdocs/` canonical structure; doctrine-classified ingest targets `smartdocs/doctrine/active/`
-- `seed-instructions.ts` — POLARIS.md / SUMMARY.md draft generation plus OKF-style `index.md` generation for `smartdocs/`; `DRAFT_MARKER` ownership
-- `validate-instructions.ts` — POLARIS.md staleness and coverage checks
-- `canon-check.ts` — behavioral assertion comparison against active doctrine/spec docs plus two-tier link staleness checks: permissive for `raw/`, strict for candidate and active docs
-- `doctrine.ts` — explicit doctrine lifecycle commands (`draft`, `promote`, `deprecate`) and spec promotion flows; writes per-directory `log.md` lifecycle entries and reports suggested supersession conflicts
-- `migrate.ts`, `audit.ts` — doc migration and ingest risk surface audit
-- `smartdoc-ignore.ts` — ingest and seed eligibility authority
-- `index.ts`, `*.test.ts` — command registration and tests; `index.ts` also defines `polaris docs reformat-okf [--dry-run]`, a composed command sequencing migrate → seed-index --all → seed-instructions --all in one invocation
-- `.smartdocignore`-driven exclusions for generated runtime artifacts, including `.polaris/graph/**`
+- `index.ts` — `docs` and `doctrine` Commander command groups (ingest, promote, deprecate, spec-promote, seed-instructions, seed-index, migrate, reformat-okf, validate-instructions)
+- `ingest.ts` / `migrate.ts` / `review.ts` / `triage.ts` / `audit.ts` — Smart Docs lifecycle stages (classify, migrate legacy layouts, promotion review, raw-doc triage, periodic audit)
+- `doctrine.ts` — doctrine candidate→active→deprecated lifecycle, frontmatter parsing, link-staleness checking (`checkSmartDocsLinks`)
+- `agentic-review.ts` — LLM-assisted review pass for promotion candidates
+- `librarian-dispatch.ts` — resolves the provider used for Closeout Librarian dispatch
+- `smartdoc-ignore.ts` — directory eligibility rules (`isDirectoryEligible`) for what gets Smart Docs coverage
+- `seed-instructions.ts` — generates draft POLARIS.md/SUMMARY.md/index.md scaffolds (`generateDraft`, `generateSummaryDraft`) guarded by `DRAFT_MARKER`/`GENERATED_START_MARKER`/`GENERATED_END_MARKER`/`TEMPLATE_VERSION`; `hasDraftMarker()` prevents re-seeding over human edits
+- `canon-check.ts` — compares changed files against the nearest POLARIS.md's modal-verb (`must`/`never`/`always`/...) assertions and classifies drift as `aligned`, `stale-implementation`, `stale-docs`, or `candidate-divergence`; telemetry-only, never blocks execution
+- `validate-instructions.ts` — validates seeded/promoted POLARIS.md/SUMMARY.md against source: staleness vs. last git-modified date (`getLastGitModDate`, `getFilesChangedAfter`), `Read before editing` link resolution (`parseReadBeforeEditingLinks`), pairwise drift similarity (`DEFAULT_PAIRWISE_DRIFT_THRESHOLD`); `validateInstructions()`/`printReport()` back the `docs validate-instructions [--fix]` CLI command; findings are `OK`/`WARN`/`ERROR`/`MISSING`
 
 ## What does not belong here
 
-- Atlas read/write helpers — belongs in `src/map/atlas.ts`.
-- Route-local cognition delta signals — belongs in `src/cognition/`.
-- Session lifecycle (dispatch, continue, resume) — belongs in `src/loop/`.
-- Config loading — belongs in `src/config/`.
+- Route/file ownership resolution — delegated to `.polaris/map/file-routes.json` (`src/map`)
+- Adoption scanning/CLI wiring — lives in `src/cli` (`adopt-canon.ts` calls into `seed-instructions.ts` for scaffolding)
 
 ## Editing rules
 
-- `DRAFT_MARKER` (`<!-- polaris:draft -->`) is the canonical marker for seeded-but-unfilled cognition files. Do not change the marker string without updating all consumers.
-- `seedInstructions` / `seedSummary` skip files that already exist without the draft marker. This protects human-edited cognition surfaces.
-- `seedIndex` / `seedIndexAll` generate `index.md` files only under `smartdocs/` directories and skip human-edited existing indexes.
-- `seedInstructionsAll` / `seedSummaryAll` skip root by default. Do not add root seeding to these functions.
-- `isDirectoryEligible` is the gating function for seed eligibility. Runtime, hidden, and agent folders are excluded unless explicitly opted in.
-- `runCanonCheck` is called by the loop worker after a child completes. It must not mutate state beyond JSONL telemetry.
-- Ingest classification (`classifyDoc`) must remain deterministic — no randomness or external calls.
-- Doctrine lifecycle commands are one-way: draft → promote (active) → deprecate. `ingestDocs` has a separate auto-promotion path for doctrine-classified documents.
-- Doctrine and spec lifecycle transitions append dated `log.md` entries in the destination directory; the optional `--reason` flag controls the prose entry.
-- `specPromote` may report `suggested-supersession` conflicts based on active-doc overlap. These are advisory until an operator chooses frontmatter relationships.
-- Doctrine auto-promotion telemetry uses `doc-auto-promoted`; reserve `doctrine-promoted` for explicit lifecycle promotion.
-- SmartDocs frontmatter reserves governance, provenance, relationship, and future federation keys while preserving unknown keys.
-- Graph governance outputs, SQLite files, and similar runtime byproducts are ignored by default so Smart Docs only processes authoritative content.
-- `reformat-okf` must never touch agent instruction files (`CLAUDE.md`, `AGENTS.md`, `.codex/`, `.claude/`, `.agents/`) in any of its three sequenced steps.
+- `smartdocs/` is the canonical authority structure; everything outside it is raw or unclassified.
+- Doctrine lifecycle transitions are one-way: candidate → active → deprecated. No reversal.
+- Never write generated seed content over a file that lacks `DRAFT_MARKER` — that means a human has already edited it.
+- `canon-check.ts` must remain telemetry-only; do not make it a hard gate without a spec change.
+- `validate-instructions.ts` must not mutate files except behind explicit `--fix`.
 
-## Route model
+## Architecture assumptions
 
-- The `smartdocs/` directory is the canonical authority structure. Docs outside it are considered raw or unclassified.
-- `.smartdocignore` file at repo root controls which files/directories are excluded from ingest and seed operations.
-- Canon-check compares touched file content against behavioral assertions (modal verbs) in doctrine/spec files under `smartdocs/doctrine/active/` and `smartdocs/specs/active/`.
-- Seed operations read the atlas (`file-routes.json`, `needs-review.json`) to provide domain/route/taskchain context in draft templates.
-- Index generation reads SmartDocs concept files and frontmatter labels, excluding reserved files (`index.md`, `POLARIS.md`, `SUMMARY.md`, `log.md`).
-- Generated graph runtime state under `.polaris/graph/` is excluded from ingest and seed flows.
+- Assumes git is available for `getLastGitModDate`/`getFilesChangedAfter` staleness checks; degrades to skipping those checks when git history is unavailable.
+- Assumes `.polaris/map/file-routes.json` and `readNeedsReview()` reflect current route state for seed/validate targeting.
 
 ## Read before editing
 
-- `src/smartdocs-engine/seed-instructions.ts` — `DRAFT_MARKER`, template generation logic
-- `src/smartdocs-engine/smartdoc-ignore.ts` — eligibility rules used by seed and ingest
-- `src/cognition/validate.ts` — cognition constraints applied post-seed
-- `.smartdocignore` — repo-level ignore patterns
-- `src/graph/governance.ts` — graph runtime outputs excluded from Smart Docs processing
+- [POLARIS.md](POLARIS.md)
+- [SUMMARY.md](SUMMARY.md)
+- `smartdocs/specs/active/docs-authority-model.md`
 
 ## Related routes
 
-- `polaris.smartdocs-engine` — all files in this directory
-- `src/cognition` — validates cognition surfaces after seed
-- `src/map` — provides atlas signals to seed-instructions and validate-instructions
+- `src/cli/adopt-canon.ts` — canon adoption phase, drives `seed-instructions.ts`
+- `src/map/` — file-routes source of truth consumed by seed/validate
+
+<!-- END POLARIS GENERATED -->

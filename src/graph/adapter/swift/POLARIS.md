@@ -1,4 +1,6 @@
 <!-- polaris:draft -->
+<!-- BEGIN POLARIS GENERATED -->
+<!-- polaris:template-version: 1 -->
 # swift
 
 > Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
@@ -8,15 +10,15 @@
 <!-- One paragraph describing what this folder does. -->
 
 **Domain:** graph
-**Route:** src/graph
+**Route:** src/graph/adapter/swift
 **Taskchain:** polaris-graph
 
 ## What belongs here
 
-- `adapter.ts` — src/graph (graph)
-- `extract.ts` — src/graph (graph)
-- `index.ts` — src/graph (graph)
-- `runtime.ts` — src/graph (graph)
+- `adapter.ts` — src/graph/adapter/swift (graph)
+- `extract.ts` — src/graph/adapter/swift (graph)
+- `index.ts` — src/graph/adapter/swift (graph)
+- `runtime.ts` — src/graph/adapter/swift (graph)
 
 ## What does not belong here
 
@@ -37,3 +39,5 @@
 ## Related routes
 
 <!-- Atlas route pointer to sibling or parent folders. -->
+
+<!-- END POLARIS GENERATED -->
