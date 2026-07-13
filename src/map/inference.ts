@@ -34,7 +34,10 @@ export function inferRoute(
       const subdir = rest.split("/")[0];
       if (subdir && rest.includes("/")) {
         domain = subdir;
-        route = `${sourceRoot}/${subdir}`;
+        // Route identity follows the file's own containing directory, not just the
+        // top-level domain subdir — otherwise nested folders (e.g. src/runtime/continuation)
+        // incorrectly report the parent domain's route (e.g. src/runtime).
+        route = dirname(filePath).replace(/\\/g, "/");
         taskchain = `polaris-${subdir}`;
         confidence += 0.85;
         tags.push(subdir);

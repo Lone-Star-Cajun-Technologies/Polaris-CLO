@@ -10,13 +10,13 @@
 <!-- One paragraph describing what this folder does. -->
 
 **Domain:** tracker
-**Route:** src/tracker
+**Route:** src/tracker/adapters
 **Taskchain:** polaris-tracker
 
 ## What belongs here
 
-- `mcp-bridge.test.ts` — src/tracker (tracker)
-- `mcp-bridge.ts` — src/tracker (tracker)
+- `mcp-bridge.test.ts` — src/tracker/adapters (tracker)
+- `mcp-bridge.ts` — src/tracker/adapters (tracker)
 
 ## What does not belong here
 

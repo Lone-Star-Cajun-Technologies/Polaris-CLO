@@ -15,7 +15,7 @@
 
 ## What belongs here
 
-- `index.ts` — Local file tracker adapter implementation for file-based issue tracking
+- `index.ts` — src/tracker/adapters/local-file (tracker)
 
 ## What does not belong here
 

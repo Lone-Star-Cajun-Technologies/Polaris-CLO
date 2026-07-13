@@ -10,15 +10,15 @@
 <!-- One paragraph describing what this folder does. -->
 
 **Domain:** runtime
-**Route:** src/runtime
+**Route:** src/runtime/verification
 **Taskchain:** polaris-runtime
 
 ## What belongs here
 
-- `POLARIS.md` — src/runtime (runtime)
-- `SUMMARY.md` — src/runtime (runtime)
-- `envelope.ts` — src/runtime (runtime)
-- `fingerprint.ts` — src/runtime (runtime)
+- `POLARIS.md` — src/runtime/verification (runtime)
+- `SUMMARY.md` — src/runtime/verification (runtime)
+- `envelope.ts` — src/runtime/verification (runtime)
+- `fingerprint.ts` — src/runtime/verification (runtime)
 
 ## What does not belong here
 

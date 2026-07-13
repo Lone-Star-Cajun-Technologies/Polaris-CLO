@@ -46,8 +46,9 @@
 ```yaml
 canonical_docs:
   - POLARIS.md
-<!-- Add navigation paths to canonical docs, specs, or doctrine. These are retrieval paths, not reading assignments. -->
 ```
+
+<!-- Add navigation paths to canonical docs, specs, or doctrine. These are retrieval paths, not reading assignments. -->
 
 ## Known Drift
 <!-- Places where the summary may be stale (honesty field). -->

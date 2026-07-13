@@ -10,16 +10,16 @@
 <!-- One paragraph describing what this folder does. -->
 
 **Domain:** runtime
-**Route:** src/runtime
+**Route:** src/runtime/continuation
 **Taskchain:** polaris-runtime
 
 ## What belongs here
 
-- `POLARIS.md` — src/runtime (runtime)
-- `SUMMARY.md` — src/runtime (runtime)
-- `confirmed.test.ts` — src/runtime (runtime)
-- `confirmed.ts` — src/runtime (runtime)
-- `dry-run.ts` — src/runtime (runtime)
+- `POLARIS.md` — src/runtime/continuation (runtime)
+- `SUMMARY.md` — src/runtime/continuation (runtime)
+- `confirmed.test.ts` — src/runtime/continuation (runtime)
+- `confirmed.ts` — src/runtime/continuation (runtime)
+- `dry-run.ts` — src/runtime/continuation (runtime)
 
 ## What does not belong here
 

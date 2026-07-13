@@ -10,14 +10,14 @@
 <!-- One paragraph describing what this folder does. -->
 
 **Domain:** graph
-**Route:** src/graph
+**Route:** src/graph/adapter/shell
 **Taskchain:** polaris-graph
 
 ## What belongs here
 
-- `adapter.ts` — src/graph (graph)
-- `extract.ts` — src/graph (graph)
-- `index.ts` — src/graph (graph)
+- `adapter.ts` — src/graph/adapter/shell (graph)
+- `extract.ts` — src/graph/adapter/shell (graph)
+- `index.ts` — src/graph/adapter/shell (graph)
 
 ## What does not belong here
 

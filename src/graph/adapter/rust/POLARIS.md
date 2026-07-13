@@ -10,16 +10,15 @@
 <!-- One paragraph describing what this folder does. -->
 
 **Domain:** graph
-**Route:** src/graph
+**Route:** src/graph/adapter/rust
 **Taskchain:** polaris-graph
 
 ## What belongs here
 
-- `adapter.ts` — Rust graph adapter implementation
-- `extract.ts` — Rust symbol extraction logic
-- `index.ts` — Rust adapter registration and exports
-- `runtime.ts` — Rust runtime configuration and tree-sitter setup
-- `fixtures/adapter.test.ts` — Unit tests for the Rust adapter
+- `adapter.ts` — src/graph/adapter/rust (graph)
+- `extract.ts` — src/graph/adapter/rust (graph)
+- `index.ts` — src/graph/adapter/rust (graph)
+- `runtime.ts` — src/graph/adapter/rust (graph)
 
 ## What does not belong here
 

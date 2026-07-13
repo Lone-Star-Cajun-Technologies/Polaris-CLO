@@ -10,15 +10,15 @@
 <!-- One paragraph describing what this folder does. -->
 
 **Domain:** graph
-**Route:** src/graph
+**Route:** src/graph/adapter/go
 **Taskchain:** polaris-graph
 
 ## What belongs here
 
-- `adapter.ts` — src/graph (graph)
-- `extract.ts` — src/graph (graph)
-- `index.ts` — src/graph (graph)
-- `runtime.ts` — src/graph (graph)
+- `adapter.ts` — src/graph/adapter/go (graph)
+- `extract.ts` — src/graph/adapter/go (graph)
+- `index.ts` — src/graph/adapter/go (graph)
+- `runtime.ts` — src/graph/adapter/go (graph)
 
 ## What does not belong here
 

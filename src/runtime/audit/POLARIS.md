@@ -10,15 +10,15 @@
 <!-- One paragraph describing what this folder does. -->
 
 **Domain:** runtime
-**Route:** src/runtime
+**Route:** src/runtime/audit
 **Taskchain:** polaris-runtime
 
 ## What belongs here
 
-- `POLARIS.md` — src/runtime (runtime)
-- `SUMMARY.md` — src/runtime (runtime)
-- `logger.ts` — src/runtime (runtime)
-- `reader.ts` — src/runtime (runtime)
+- `POLARIS.md` — src/runtime/audit (runtime)
+- `SUMMARY.md` — src/runtime/audit (runtime)
+- `logger.ts` — src/runtime/audit (runtime)
+- `reader.ts` — src/runtime/audit (runtime)
 
 ## What does not belong here
 

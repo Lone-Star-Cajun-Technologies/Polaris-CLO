@@ -10,13 +10,13 @@
 <!-- One paragraph describing what this folder does. -->
 
 **Domain:** qc
-**Route:** src/qc
+**Route:** src/qc/providers
 **Taskchain:** polaris-qc
 
 ## What belongs here
 
-- `coderabbit.test.ts` — src/qc (qc)
-- `coderabbit.ts` — src/qc (qc)
+- `coderabbit.test.ts` — src/qc/providers (qc)
+- `coderabbit.ts` — src/qc/providers (qc)
 
 ## What does not belong here
 

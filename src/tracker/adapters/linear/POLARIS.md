@@ -15,9 +15,9 @@
 
 ## What belongs here
 
-- `index.ts` — Linear tracker adapter implementation
-- `index.test.ts` — Unit tests for Linear adapter
-- `http-errors.test.ts` — HTTP error handling tests for Linear API interactions
+- `http-errors.test.ts` — src/tracker/adapters/linear (tracker)
+- `index.test.ts` — src/tracker/adapters/linear (tracker)
+- `index.ts` — src/tracker/adapters/linear (tracker)
 
 ## What does not belong here
 

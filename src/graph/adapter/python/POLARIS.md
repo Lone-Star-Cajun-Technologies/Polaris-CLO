@@ -10,16 +10,15 @@
 <!-- One paragraph describing what this folder does. -->
 
 **Domain:** graph
-**Route:** src/graph
+**Route:** src/graph/adapter/python
 **Taskchain:** polaris-graph
 
 ## What belongs here
 
-- `adapter.ts` — Python graph adapter implementation
-- `extract.ts` — Python symbol extraction logic
-- `index.ts` — Python adapter registration and exports
-- `runtime.ts` — Python runtime configuration and tree-sitter setup
-- `fixtures/adapter.test.ts` — Unit tests for the Python adapter
+- `adapter.ts` — src/graph/adapter/python (graph)
+- `extract.ts` — src/graph/adapter/python (graph)
+- `index.ts` — src/graph/adapter/python (graph)
+- `runtime.ts` — src/graph/adapter/python (graph)
 
 ## What does not belong here
 

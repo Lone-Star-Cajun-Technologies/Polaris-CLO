@@ -10,14 +10,14 @@
 <!-- One paragraph describing what this folder does. -->
 
 **Domain:** graph
-**Route:** src/graph
+**Route:** src/graph/query
 **Taskchain:** polaris-graph
 
 ## What belongs here
 
-- `index.test.ts` — src/graph (graph)
-- `index.ts` — src/graph (graph)
-- `types.ts` — src/graph (graph)
+- `index.test.ts` — src/graph/query (graph)
+- `index.ts` — src/graph/query (graph)
+- `types.ts` — src/graph/query (graph)
 
 ## What does not belong here
 

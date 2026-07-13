@@ -10,15 +10,15 @@
 <!-- One paragraph describing what this folder does. -->
 
 **Domain:** graph
-**Route:** src/graph
+**Route:** src/graph/resolver
 **Taskchain:** polaris-graph
 
 ## What belongs here
 
-- `build-edges.ts` — src/graph (graph)
-- `index.test.ts` — src/graph (graph)
-- `index.ts` — src/graph (graph)
-- `resolve-imports.ts` — src/graph (graph)
+- `build-edges.ts` — src/graph/resolver (graph)
+- `index.test.ts` — src/graph/resolver (graph)
+- `index.ts` — src/graph/resolver (graph)
+- `resolve-imports.ts` — src/graph/resolver (graph)
 
 ## What does not belong here
 

@@ -10,16 +10,16 @@
 <!-- One paragraph describing what this folder does. -->
 
 **Domain:** graph
-**Route:** src/graph
+**Route:** src/graph/store
 **Taskchain:** polaris-graph
 
 ## What belongs here
 
-- `adapter.ts` — SQLite adapter for graph storage and persistence
-- `adapter.test.ts` — Unit tests for the graph store adapter
-- `queries.ts` — SQL query helpers for graph operations
-- `schema.sql` — SQLite schema definition for graph storage
-- `types.ts` — Type definitions for graph store operations
+- `adapter.test.ts` — src/graph/store (graph)
+- `adapter.ts` — src/graph/store (graph)
+- `queries.ts` — src/graph/store (graph)
+- `schema.sql` — src/graph/store (graph)
+- `types.ts` — src/graph/store (graph)
 
 ## What does not belong here
 
