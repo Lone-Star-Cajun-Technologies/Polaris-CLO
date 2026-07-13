@@ -77,7 +77,7 @@
   "blockers": [],
   "qc_runs": {
     "coderabbit-1783957910809": {
-      "artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-547/qc/coderabbit-1783957910809.json",
+      "artifact_path": ".polaris/clusters/POL-547/qc/coderabbit-1783957910809.json",
       "status": "findings",
       "provider": "coderabbit",
       "started_at": "2026-07-13T15:47:25.761Z",
@@ -85,7 +85,7 @@
       "availability": "available"
     },
     "coderabbit-1783960802731": {
-      "artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-547/qc/coderabbit-1783960802731.json",
+      "artifact_path": ".polaris/clusters/POL-547/qc/coderabbit-1783960802731.json",
       "status": "findings",
       "provider": "coderabbit",
       "started_at": "2026-07-13T16:35:44.173Z",
@@ -93,7 +93,7 @@
       "availability": "available"
     },
     "coderabbit-1783961651178": {
-      "artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-547/qc/coderabbit-1783961651178.json",
+      "artifact_path": ".polaris/clusters/POL-547/qc/coderabbit-1783961651178.json",
       "status": "findings",
       "provider": "coderabbit",
       "started_at": "2026-07-13T16:43:09.966Z",
@@ -101,7 +101,7 @@
       "availability": "available"
     },
     "coderabbit-1783962500021": {
-      "artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-547/qc/coderabbit-1783962500021.json",
+      "artifact_path": ".polaris/clusters/POL-547/qc/coderabbit-1783962500021.json",
       "status": "findings",
       "provider": "coderabbit",
       "started_at": "2026-07-13T17:04:59.172Z",
@@ -109,7 +109,7 @@
       "availability": "available"
     },
     "coderabbit-1783963677268": {
-      "artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-547/qc/coderabbit-1783963677268.json",
+      "artifact_path": ".polaris/clusters/POL-547/qc/coderabbit-1783963677268.json",
       "status": "blocked",
       "provider": "coderabbit",
       "started_at": "2026-07-13T17:23:02.937Z",
@@ -117,7 +117,7 @@
       "availability": "available"
     },
     "coderabbit-1783963928237": {
-      "artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-547/qc/coderabbit-1783963928237.json",
+      "artifact_path": ".polaris/clusters/POL-547/qc/coderabbit-1783963928237.json",
       "status": "findings",
       "provider": "coderabbit",
       "started_at": "2026-07-13T17:27:29.767Z",
@@ -125,7 +125,7 @@
       "availability": "available"
     },
     "coderabbit-1783966679456": {
-      "artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-547/qc/coderabbit-1783966679456.json",
+      "artifact_path": ".polaris/clusters/POL-547/qc/coderabbit-1783966679456.json",
       "status": "findings",
       "provider": "coderabbit",
       "started_at": "2026-07-13T18:10:13.811Z",
@@ -133,7 +133,7 @@
       "availability": "available"
     },
     "coderabbit-1783967455222": {
-      "artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-547/qc/coderabbit-1783967455222.json",
+      "artifact_path": ".polaris/clusters/POL-547/qc/coderabbit-1783967455222.json",
       "status": "findings",
       "provider": "coderabbit",
       "started_at": "2026-07-13T18:23:02.425Z",
@@ -141,7 +141,7 @@
       "availability": "available"
     },
     "coderabbit-1783967849655": {
-      "artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-547/qc/coderabbit-1783967849655.json",
+      "artifact_path": ".polaris/clusters/POL-547/qc/coderabbit-1783967849655.json",
       "status": "findings",
       "provider": "coderabbit",
       "started_at": "2026-07-13T18:31:55.586Z",
@@ -152,8 +152,8 @@
   "delivery_branch": "philmeaux/pol-547-implement-make-pr-creation-the-terminal-finalize-action",
   "base_branch": "main",
   "qc_repair_manifests": {
-    "1": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-547/qc/repair-rounds/1/repair-packets.json",
-    "2": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-547/qc/repair-rounds/1/repair-packets.json"
+    "1": ".polaris/clusters/POL-547/qc/repair-rounds/1/repair-packets.json",
+    "2": ".polaris/clusters/POL-547/qc/repair-rounds/2/repair-packets.json"
   },
   "qc_repair_outcome": "operator-review"
 }
