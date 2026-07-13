@@ -165,7 +165,8 @@ describe("installCliSubtaskBridge", () => {
         status: "done",
         child_id: "POL-101",
         commit_hash: "abc123",
-        validation: "npm test",
+        validation: "passed",
+        next_recommended_action: "continue",
       }),
     });
 
@@ -188,7 +189,50 @@ describe("installCliSubtaskBridge", () => {
       child_id: "POL-101",
       status: "success",
       commit: "abc123",
-      validation: "npm test",
+      validation: "passed",
+      next_recommended_action: "continue",
+    });
+    rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it("normalizes validation object and run-health symptoms", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "polaris-bridge-test-"));
+    const resultFile = join(tempDir, "result", "sealed.json");
+    dispatchMock.mockResolvedValue({
+      exit_code: 0,
+      provider_used: "copilot",
+      command_run: "copilot -p prompt",
+      summary: JSON.stringify({
+        status: "done",
+        child_id: "POL-101",
+        commit_hash: "abc123",
+        validation: { passed: ["npm run build"] },
+        run_health_symptoms: [{ category: "validation-failed" }],
+      }),
+    });
+
+    installCliSubtaskBridge("/repo");
+    const dispatcher = (globalThis as Record<string, unknown>).__POLARIS_AGENT_SUBTASK_DISPATCH__ as
+      | ((
+          request: { packet: BootstrapPacket; instructions: string; returnContract: string[] },
+        ) => Promise<string | Record<string, unknown>>)
+      | undefined;
+
+    await dispatcher!({
+      packet: makePacketWithResultContract(resultFile),
+      instructions: "worker instructions",
+      returnContract: ["child_id", "status"],
+    });
+
+    const sealed = JSON.parse(readFileSync(resultFile, "utf-8")) as Record<string, unknown>;
+    expect(sealed).toEqual({
+      run_id: "run-001",
+      child_id: "POL-101",
+      status: "success",
+      commit: "abc123",
+      validation: "failed",
+      next_recommended_action: "stop",
+      run_health_symptoms: [{ category: "validation-failed" }],
     });
     rmSync(tempDir, { recursive: true, force: true });
   });

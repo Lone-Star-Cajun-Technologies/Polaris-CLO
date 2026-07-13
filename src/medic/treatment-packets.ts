@@ -1,5 +1,5 @@
 import { mkdirSync, writeFileSync } from "node:fs";
-import { dirname, join, relative } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 import type {
   MedicTreatmentPacket,
@@ -106,6 +106,7 @@ export interface CompileTreatmentWorkerPacketInput {
   stateFile: string;
   telemetryFile: string;
   branch: string;
+  repoRoot?: string;
   maxConcurrentWorkers?: number;
 }
 
@@ -118,7 +119,11 @@ export interface CompileTreatmentWorkerPacketInput {
 export function compileTreatmentWorkerPacket(
   input: CompileTreatmentWorkerPacketInput,
 ): WorkerPacket {
-  const { treatment, stateFile, telemetryFile, branch, maxConcurrentWorkers } = input;
+  const { treatment, stateFile, telemetryFile, branch, repoRoot, maxConcurrentWorkers } = input;
+
+  const resultFile = repoRoot
+    ? resolve(repoRoot, treatment.dispatch_metadata.result_file)
+    : treatment.dispatch_metadata.result_file;
 
   return compileRepairWorkerPacket({
     runId: treatment.run_id,
@@ -132,7 +137,7 @@ export function compileTreatmentWorkerPacket(
     prohibitedScope: treatment.prohibited_scope,
     validationCommands: treatment.validation_commands,
     rootCauseHint: treatment.root_cause_hint,
-    resultFile: treatment.dispatch_metadata.result_file,
+    resultFile,
     maxConcurrentWorkers,
   });
 }
@@ -206,6 +211,7 @@ export async function dispatchTreatmentWorker(
     stateFile,
     telemetryFile,
     branch,
+    repoRoot,
     maxConcurrentWorkers,
   });
 

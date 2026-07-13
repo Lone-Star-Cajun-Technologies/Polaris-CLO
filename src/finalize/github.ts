@@ -155,15 +155,16 @@ function findRoutingSummary(
   const childIds = Array.from(
     new Set([...state.completed_children, ...state.open_children]),
   );
-  for (const childId of childIds) {
-    const dispatchRecord = state.open_children_meta?.[childId]?.dispatch_record;
-    if (dispatchRecord?.routing_summary) {
-      return dispatchRecord.routing_summary;
-    }
+  const latestDispatch = childIds
+    .map((childId) => state.open_children_meta?.[childId]?.dispatch_record)
+    .filter((record) => record?.routing_summary && typeof record.dispatched_at === "string")
+    .sort((a, b) => (b?.dispatched_at ?? "").localeCompare(a?.dispatched_at ?? ""))[0];
+  if (latestDispatch?.routing_summary) {
+    return latestDispatch.routing_summary;
   }
 
-  for (const event of telemetryEvents) {
-    const rec = asRecord(event);
+  for (let i = telemetryEvents.length - 1; i >= 0; i--) {
+    const rec = asRecord(telemetryEvents[i]);
     if (!rec) continue;
     const routingSummary = rec["routing_summary"];
     if (routingSummary && typeof routingSummary === "object" && !Array.isArray(routingSummary)) {
