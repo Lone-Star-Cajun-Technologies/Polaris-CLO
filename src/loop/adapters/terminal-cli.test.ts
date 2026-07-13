@@ -50,6 +50,7 @@ describe("TerminalCliAdapter", () => {
       const written = JSON.parse(fs.readFileSync(resultFile, "utf-8")) as Record<string, unknown>;
       expect(written).toEqual({
         run_id: "run-test-0001",
+        cluster_id: "POL-5",
         child_id: "POL-14",
         status: "done",
         commit: "abc1234",
