@@ -2151,3 +2151,61 @@ describe("runFinalize run-health Medic gate", () => {
     stderrSpy.mockRestore();
   });
 });
+
+// ---- runFinalize delivery path post-PR git status ----------------------------
+
+describe("runFinalize delivery path leaves no tracked-file diff after PR creation", () => {
+  let testDir: string;
+  beforeEach(() => { testDir = makeTestDir(); });
+  afterEach(() => { rmSync(testDir, { recursive: true, force: true }); });
+
+  it("leaves git status --porcelain clean after stepCreatePr", async () => {
+    vi.resetModules();
+
+    // Post-PR writes are intentionally ignored in this fixture; the assertion
+    // surfaces only unwanted tracked-file modifications.
+    writeFileSync(
+      join(testDir, ".gitignore"),
+      [
+        ".taskchain_artifacts/**",
+        ".polaris/runs/*/",
+        ".polaris/runs/run-report.md",
+        ".polaris/runs/current-state.json",
+        ".polaris/runs/mutation-queue.json",
+      ].join("\n") + "\n",
+    );
+    execFileSync("git", ["add", ".gitignore"], { cwd: testDir, stdio: "pipe" });
+    execFileSync("git", ["commit", "-m", "ignore runtime artifacts"], { cwd: testDir, stdio: "pipe" });
+
+    const stateFile = writeCanonicalState(testDir, "POL-6");
+    writeEmptyAtlas(testDir);
+    writeDurableClusterArtifacts(testDir, "POL-6");
+    execFileSync("git", ["checkout", "-b", "pol-6-delivery"], { cwd: testDir, stdio: "pipe" });
+    stageFile(testDir, "src/impl.ts", "export const impl = true;\n");
+
+    const createDraftPrMock = vi.fn(() => "https://github.com/test/repo/pull/42");
+    const stepPushMock = vi.fn();
+    vi.doMock("./github.js", () => ({
+      createDraftPr: createDraftPrMock,
+      buildPrBody: vi.fn(() => "PR body"),
+    }));
+    vi.doMock("./steps/07-push.js", () => ({ stepPush: stepPushMock }));
+
+    try {
+      const { runFinalize } = await import("./index.js");
+      await runFinalize({ repoRoot: testDir, stateFile, skipLibrarian: true });
+
+      const status = execFileSync("git", ["status", "--porcelain"], {
+        cwd: testDir,
+        encoding: "utf-8",
+      }).trim();
+
+      expect(status).toBe("");
+      expect(createDraftPrMock).toHaveBeenCalledOnce();
+      expect(stepPushMock).toHaveBeenCalledOnce();
+    } finally {
+      vi.doUnmock("./github.js");
+      vi.doUnmock("./steps/07-push.js");
+    }
+  });
+});
