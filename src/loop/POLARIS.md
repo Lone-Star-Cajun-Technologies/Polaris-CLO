@@ -51,16 +51,6 @@ The loop subsystem manages the session lifecycle for Polaris cluster runs. It ha
 - Bootstrap packets are written to `.taskchain_artifacts/polaris-run/runs/<run-id>/`.
 - Run IDs follow the format: `polaris-run-<slug>-<date>-<seq>` (e.g., `polaris-run-loop-boundary-2026-05-23-001`).
 
-## Provider selection
-
-Dispatch has two provider-selection modes.
-
-**Compatibility mode** is the default. When `execution.routerPolicy.providerRegistry` is empty or missing, Polaris does not run the router engine. Instead, it selects the first eligible provider in `execution.providerPolicy.<role>.providers` for the role, unless `execution.rotation` is configured — in which case the rotation list is filtered by the role policy and the first match wins. This is why the same provider (e.g. Devin) is selected for every run when policy and rotation are unchanged: selection is deterministic, not round-robin, and there is no persisted rotation state. `providers_tried` contains only the selected provider because no full candidate list is built.
-
-**Router mode** is active when `execution.routerPolicy.providerRegistry` contains provider metadata. `decideWorkerRoute()` builds a ranked candidate list, filters it by the role policy, and returns full scoring evidence. Full candidate scoring and pre-dispatch fallback only happen in this mode.
-
-For the full invariants, see `smartdocs/specs/active/worker-router-architecture.md` §8.
-
 ## Read before editing
 
 - `smartdocs/specs/active/polaris-implementation-plan.md` — full loop/map/finalize architecture

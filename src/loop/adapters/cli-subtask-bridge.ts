@@ -68,56 +68,6 @@ function normalizeSealedStatus(raw: unknown): "success" | "failure" | "blocked" 
   return "failure";
 }
 
-function hasValidationFailedSymptom(raw: unknown): boolean {
-  return (
-    Array.isArray(raw) &&
-    raw.some(
-      (s) =>
-        typeof s === "object" &&
-        s !== null &&
-        (s as Record<string, unknown>)["category"] === "validation-failed",
-    )
-  );
-}
-
-function normalizeSealedValidation(
-  raw: unknown,
-  runHealthSymptoms: unknown,
-): "passed" | "failed" | "skipped" | undefined {
-  if (hasValidationFailedSymptom(runHealthSymptoms)) {
-    return "failed";
-  }
-  if (typeof raw === "object" && raw !== null && !Array.isArray(raw)) {
-    const v = raw as Record<string, unknown>;
-    const failed = Array.isArray(v["failed"]) ? (v["failed"] as unknown[]).length : 0;
-    const passed = Array.isArray(v["passed"]) ? (v["passed"] as unknown[]).length : 0;
-    if (failed > 0) return "failed";
-    if (passed > 0) return "passed";
-    return "skipped";
-  }
-  if (raw === "passed" || raw === "failed" || raw === "skipped") {
-    return raw;
-  }
-  return undefined;
-}
-
-function normalizeSealedNextAction(
-  raw: unknown,
-  status: "success" | "failure" | "blocked",
-  validation: "passed" | "failed" | "skipped" | undefined,
-): "continue" | "stop" | "investigate" | undefined {
-  if (validation === "failed" || status === "failure" || status === "blocked") {
-    return "stop";
-  }
-  if (typeof raw === "string") {
-    const action = raw.trim().toLowerCase();
-    if (action === "continue") return "continue";
-    if (action === "stop") return "stop";
-    if (action === "escalate" || action === "investigate") return "investigate";
-  }
-  return undefined;
-}
-
 function writeSealedResultFromSummary(
   packet: PacketWithResultContract,
   parsedSummary: Record<string, unknown>,
@@ -127,42 +77,24 @@ function writeSealedResultFromSummary(
     return;
   }
 
-  const status = normalizeSealedStatus(parsedSummary["status"]);
   const commit =
     (typeof parsedSummary["commit"] === "string" && parsedSummary["commit"]) ||
     (typeof parsedSummary["commit_hash"] === "string" && parsedSummary["commit_hash"]) ||
     (typeof parsedSummary["commit_sha"] === "string" && parsedSummary["commit_sha"]) ||
     undefined;
-  const rawValidation = parsedSummary["validation"] ?? parsedSummary["validation_summary"];
-  const runHealthSymptoms = parsedSummary["run_health_symptoms"];
-  let validation = normalizeSealedValidation(rawValidation, runHealthSymptoms);
-  if (validation === undefined) {
-    validation = status === "success" ? "passed" : status === "blocked" ? "skipped" : "failed";
-  }
-  if (status === "success" && validation === "skipped") {
-    validation = "passed";
-  }
-  let nextAction = normalizeSealedNextAction(
-    parsedSummary["next_recommended_action"] ?? parsedSummary["next_action"],
-    status,
-    validation,
-  );
-  if (nextAction === undefined) {
-    nextAction = status === "success" && validation === "passed" ? "continue" : "stop";
-  }
+  const validation = parsedSummary["validation"] ?? parsedSummary["validation_summary"];
 
   const sealedResult: Record<string, unknown> = {
     run_id: packet.run_id,
+    cluster_id: packet.cluster_id,
     child_id: packet.active_child,
-    status,
-    validation,
-    next_recommended_action: nextAction,
+    status: normalizeSealedStatus(parsedSummary["status"]),
   };
   if (commit) {
     sealedResult["commit"] = commit;
   }
-  if (Array.isArray(runHealthSymptoms)) {
-    sealedResult["run_health_symptoms"] = runHealthSymptoms;
+  if (validation !== undefined) {
+    sealedResult["validation"] = validation;
   }
 
   mkdirSync(dirname(resultFile), { recursive: true });
