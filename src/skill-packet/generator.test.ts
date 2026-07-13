@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { generateSkillPacket, generateSetupBootstrapPacket, SKILL_ROLE_MAP, SUPPORTED_SKILLS } from "./generator.js";
-import type { SkillName, SetupBootstrapCheckpoint } from "./types.js";
+import type { SkillName, SetupBootstrapCheckpoint, ReconcilePacket } from "./types.js";
 
 function createReconcileFixture(): string {
   const repoRoot = mkdtempSync(path.join(tmpdir(), "reconcile-"));
@@ -300,7 +300,7 @@ describe("generateSkillPacket", () => {
 
     describe("with real git diff and map", () => {
       let repoRoot: string;
-      let packet: ReturnType<typeof generateSkillPacket>;
+      let packet: ReconcilePacket;
 
       beforeAll(() => {
         repoRoot = createReconcileFixture();
@@ -322,13 +322,7 @@ describe("generateSkillPacket", () => {
       });
 
       it("populates work_inventory with changed files and current cognition content", () => {
-        const reconcilePacket = packet as Record<string, unknown>;
-        const workInventory = reconcilePacket.work_inventory as {
-          all_changed_files: string[];
-          affected_folders: string[];
-          polaris_md_files: Record<string, string | null>;
-          summary_md_files: Record<string, string | null>;
-        };
+        const workInventory = packet.work_inventory;
 
         expect(workInventory.all_changed_files).toContain("src/route/changed.ts");
         expect(workInventory.affected_folders).toEqual(["src/route/"]);
@@ -337,8 +331,7 @@ describe("generateSkillPacket", () => {
       });
 
       it("restricts allowed_write_paths to POLARIS.md and SUMMARY.md under affected folders", () => {
-        const reconcilePacket = packet as Record<string, unknown>;
-        const allowed = reconcilePacket.allowed_write_paths as string[];
+        const allowed = packet.allowed_write_paths;
         const polarisMd = path.join(repoRoot, "src", "route", "POLARIS.md");
         const summaryMd = path.join(repoRoot, "src", "route", "SUMMARY.md");
 
@@ -348,15 +341,13 @@ describe("generateSkillPacket", () => {
       });
 
       it("covers the repo root in prohibited_write_paths", () => {
-        const reconcilePacket = packet as Record<string, unknown>;
-        const prohibited = reconcilePacket.prohibited_write_paths as string[];
-        expect(prohibited).toContain(repoRoot);
+        expect(packet.prohibited_write_paths).toContain(repoRoot);
       });
     });
 
     describe("with no git diff to inspect", () => {
       let repoRoot: string;
-      let packet: ReturnType<typeof generateSkillPacket>;
+      let packet: ReconcilePacket;
 
       beforeAll(() => {
         repoRoot = createEmptyReconcileFixture();
@@ -368,16 +359,10 @@ describe("generateSkillPacket", () => {
       });
 
       it("falls back to an empty/blocked state", () => {
-        const reconcilePacket = packet as Record<string, unknown>;
-        const workInventory = reconcilePacket.work_inventory as {
-          affected_folders: string[];
-          all_changed_files: string[];
-          polaris_md_files: Record<string, unknown>;
-          summary_md_files: Record<string, unknown>;
-        };
+        const workInventory = packet.work_inventory;
 
         expect(packet.affected_folders).toEqual([]);
-        expect(reconcilePacket.allowed_write_paths).toEqual([]);
+        expect(packet.allowed_write_paths).toEqual([]);
         expect(workInventory.affected_folders).toEqual([]);
         expect(workInventory.all_changed_files).toEqual([]);
         expect(Object.keys(workInventory.polaris_md_files)).toEqual([]);

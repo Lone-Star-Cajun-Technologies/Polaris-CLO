@@ -671,10 +671,25 @@ function execGit(repoRoot: string, args: string[]): string[] {
 }
 
 export function generateSkillPacket(
+  skillName: "reconcile",
+  config: Required<SkillPacketConfig>,
+  options?: GenerateSkillPacketOptions,
+): ReconcilePacket;
+export function generateSkillPacket(
+  skillName: Exclude<SkillName, "reconcile">,
+  config: Required<SkillPacketConfig>,
+  options?: GenerateSkillPacketOptions,
+): SkillPacket;
+export function generateSkillPacket(
   skillName: SkillName,
   config: Required<SkillPacketConfig>,
   options?: GenerateSkillPacketOptions,
-): SkillPacket {
+): SkillPacket | ReconcilePacket;
+export function generateSkillPacket(
+  skillName: SkillName,
+  config: Required<SkillPacketConfig>,
+  options?: GenerateSkillPacketOptions,
+): SkillPacket | ReconcilePacket {
   const active_role = SKILL_ROLE_MAP[skillName];
   const role_summary = ROLE_SUMMARIES[active_role];
   const generated_at = new Date().toISOString();
