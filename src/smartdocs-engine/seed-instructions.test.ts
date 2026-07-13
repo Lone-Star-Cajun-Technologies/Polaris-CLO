@@ -5,6 +5,8 @@ import {
   DRAFT_MARKER,
   GENERATED_END_MARKER,
   GENERATED_START_MARKER,
+  TEMPLATE_VERSION,
+  TEMPLATE_VERSION_STAMP,
   hasDraftMarker,
   generateDraft,
   seedInstructions,
@@ -113,6 +115,14 @@ describe("generateDraft", () => {
     };
     const content = generateDraft("src/map", TMP, routes);
     expect(content).not.toContain("`index.ts`");
+  });
+
+  it("embeds the current template-version stamp inside the generated region", () => {
+    const content = generateDraft("src/map", TMP, {});
+    expect(content).toContain(TEMPLATE_VERSION_STAMP);
+    expect(content.indexOf(TEMPLATE_VERSION_STAMP)).toBeGreaterThan(content.indexOf(GENERATED_START_MARKER));
+    expect(content.indexOf(TEMPLATE_VERSION_STAMP)).toBeLessThan(content.indexOf(GENERATED_END_MARKER));
+    expect(TEMPLATE_VERSION).toBeGreaterThan(0);
   });
 });
 
@@ -282,6 +292,13 @@ describe("generateSummaryDraft", () => {
     const content = generateSummaryDraft("src/map", TMP, {});
     expect(content).toContain("canonical_docs:");
     expect(content).toContain("- POLARIS.md");
+  });
+
+  it("embeds the current template-version stamp inside the generated region", () => {
+    const content = generateSummaryDraft("src/map", TMP, {});
+    expect(content).toContain(TEMPLATE_VERSION_STAMP);
+    expect(content.indexOf(TEMPLATE_VERSION_STAMP)).toBeGreaterThan(content.indexOf(GENERATED_START_MARKER));
+    expect(content.indexOf(TEMPLATE_VERSION_STAMP)).toBeLessThan(content.indexOf(GENERATED_END_MARKER));
   });
 });
 

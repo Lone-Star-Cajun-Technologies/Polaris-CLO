@@ -8,6 +8,7 @@ import {
   getLastGitModDate,
   getFilesChangedAfter,
 } from "./validate-instructions.js";
+import { TEMPLATE_VERSION_STAMP } from "./seed-instructions.js";
 import type { FileRouteEntry } from "../map/atlas.js";
 
 const TMP = join(process.cwd(), ".test-validate-instructions-tmp");
@@ -111,8 +112,9 @@ describe("validateDir - MISSING", () => {
 // validateDir — OK
 // ---------------------------------------------------------------------------
 
-function validPolarisContent(extra?: string): string {
+function validPolarisContent(extra?: string, stamp: string = TEMPLATE_VERSION_STAMP): string {
   return [
+    stamp,
     "# map",
     "",
     "## Purpose",
@@ -206,6 +208,43 @@ describe("validateDir - generated region", () => {
 });
 
 // ---------------------------------------------------------------------------
+// validateDir — template version
+// ---------------------------------------------------------------------------
+
+describe("validateDir - template version", () => {
+  beforeEach(setup);
+  afterEach(teardown);
+
+  it("reports OK when POLARIS.md has the current template-version stamp", () => {
+    writeFileSync(join(TMP, "src/map/POLARIS.md"), validPolarisContent());
+    const result = validateDir("src/map", TMP, {});
+    expect(result.status).toBe("OK");
+    expect(result.findings).toHaveLength(0);
+  });
+
+  it("reports WARN when POLARIS.md is unstamped", () => {
+    const unstamped = validPolarisContent().replace(TEMPLATE_VERSION_STAMP + "\n", "");
+    writeFileSync(join(TMP, "src/map/POLARIS.md"), unstamped);
+    const result = validateDir("src/map", TMP, {});
+    expect(result.status).toBe("WARN");
+    const finding = result.findings.find((f) => f.message.includes("unstamped"));
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe("WARN");
+  });
+
+  it("reports WARN when POLARIS.md has an outdated template-version stamp", () => {
+    const oldStamp = "<!-- polaris:template-version: 0 -->";
+    writeFileSync(join(TMP, "src/map/POLARIS.md"), validPolarisContent(undefined, oldStamp));
+    const result = validateDir("src/map", TMP, {});
+    expect(result.status).toBe("WARN");
+    const finding = result.findings.find((f) => f.message.includes("template version drift"));
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe("WARN");
+    expect(finding!.message).toContain("found 0");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // validateDir — SUMMARY.md (WARN/ERROR)
 // ---------------------------------------------------------------------------
 
@@ -276,6 +315,7 @@ describe("validateDir - pairwise drift", () => {
       "Additional shared context about the map module and dispatch behavior.",
     );
     const summary = [
+      TEMPLATE_VERSION_STAMP,
       "# Summary",
       "",
       "The map module manages dispatch behavior and routing context for this route.",
