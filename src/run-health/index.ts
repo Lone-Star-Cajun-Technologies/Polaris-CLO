@@ -186,6 +186,21 @@ export function appendSymptom(
     updated_at: new Date().toISOString(),
   };
 
+  // A later high/critical symptom means a previously resolved Medic consult is
+  // no longer satisfied; reopen it so closeout/medic gates do not pass on a
+  // stale resolved decision.
+  if (
+    existing.medic_consult?.status === "resolved" &&
+    (symptom.severity === "critical" || symptom.severity === "high")
+  ) {
+    updated.medic_consult = {
+      ...existing.medic_consult,
+      status: "in-progress",
+      resolved_at: undefined,
+      resolution_notes: undefined,
+    };
+  }
+
   const validation = validateRunHealthReport(updated);
   if (!validation.valid) {
     throw new Error(
