@@ -18,6 +18,8 @@ Smart Docs lifecycle pipeline — ingests, classifies, seeds, validates, promote
 - SmartDocs frontmatter now reserves identity, lifecycle, governance, provenance, relationship, and future federation keys while preserving unknown extension keys.
 - Generated runtime artifacts such as `.polaris/graph/**`, SQLite files, and DB snapshots are ignored by default.
 - `polaris docs reformat-okf [--dry-run]` composes migrate → seed-index --all → seed-instructions --all into one invocation for OKF-structure migration; agent instruction files are never touched by any step.
+- `polaris docs validate-instructions [--fix]` checks seeded/promoted POLARIS.md/SUMMARY.md for staleness against the last git-modified date of their route's files, broken `Read before editing` links, and pairwise drift; findings are `OK`/`WARN`/`ERROR`/`MISSING`.
+- `canon-check.ts` classifies drift between changed files and their nearest POLARIS.md's modal-verb assertions into `aligned`, `stale-implementation`, `stale-docs`, or `candidate-divergence`.
 
 ## Relationships
 - **Upstream**: `src/map` (atlas signals for seed templates), `src/cognition` (validation after seed)

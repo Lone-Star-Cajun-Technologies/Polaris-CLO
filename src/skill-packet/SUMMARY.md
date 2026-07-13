@@ -1,55 +1,41 @@
-<!-- polaris:draft -->
 <!-- BEGIN POLARIS GENERATED -->
 <!-- polaris:template-version: 1 -->
 # Summary: skill-packet
 
-> Polaris draft — review and remove the `<!-- polaris:draft -->` marker to promote.
-
 ## Purpose
-<!-- One-line statement of what this folder does. -->
+Generates the bootstrap packet that hand-loads a Polaris skill session with its role, authority boundaries, and (for `reconcile`) a concrete work inventory.
 
 ## Core Concepts
-<!-- 3–7 key concepts a reader needs before diving into source. -->
+- `SKILL_ROLE_MAP` maps each `SkillName` (`analyze`, `run`, `ingest`, `promote`, `triage`, `review`, `catalog`, `reconcile`) to an `AgentRole` (`Analyst`, `Foreman`, `Librarian`, `Worker`).
+- Every packet carries `authority_boundaries` and `prohibited_actions` — the enforceable scope contract for that role.
+- `ReconcilePacket` is the only packet kind that derives real repository state: `affected_folders` and `work_inventory` come from git diff cross-referenced against `.polaris/map/file-routes.json`.
+- `CheckpointGate` (`self_approval_prohibited: true`) is embedded in setup-bootstrap packets so the Foreman cannot self-approve gated checkpoints.
 
 ## Architectural Role
-<!-- How this folder fits into the larger system. -->
+Sits between the CLI (`src/cli`) and skill chain execution (`.polaris/skills/`): produces the JSON packet a skill session loads on entry, but does not itself execute skill logic.
 
 ## Key Constraints
-<!-- The most important non-obvious behavioral limits. -->
+- `ReconcilePacket.allowed_write_paths` is restricted to `POLARIS.md`/`SUMMARY.md` under affected folders only.
+- No fabricated `affected_folders`/`work_inventory` — falls back to an empty/blocked state when git diff is unavailable.
 
 ## Important Relationships
-<!-- Upstream/downstream dependencies on other folders. -->
+- **Upstream**: `src/map` (file-routes.json for affected-folder resolution), `src/config` (skill_packet config defaults)
+- **Downstream**: `src/cli` (registers `polaris skill packet <skill-name>`), `.polaris/skills/` (chain execution consumes the generated packet)
 
 ## Current State
-<!-- What is implemented, what is not yet, known gaps. -->
+`ReconcilePacket` now returns real `run_id`, `issue_id`, `affected_folders`, `work_inventory`, `allowed_write_paths`, `prohibited_write_paths`, and `constraints` derived from git diff — previously this was a stub.
 
 ## Route Health
-<!-- Current operational condition. Workers should understand route health in under 10 seconds. -->
 
 ### Healthy
-<!-- If the route is healthy, state why. Otherwise omit this subsection. -->
-
-### Monitoring
-<!-- Any ongoing monitoring or observations. Omit if none. -->
-
-### Known Issues
-<!-- Any known problems or risks. Omit if none. -->
-
-### Recent Treatments
-<!-- Recent fixes or improvements, with chart references if applicable. Omit if none. -->
-
-### Improvement Opportunities
-<!-- Potential future improvements. Omit if none. -->
+Generator and CLI have test coverage (`generator.test.ts`, `cli.test.ts`) for both static packet builders and the git-diff-derived reconcile packet.
 
 ## Canonical References
 
 ```yaml
 canonical_docs:
   - POLARIS.md
-<!-- Add navigation paths to canonical docs, specs, or doctrine. These are retrieval paths, not reading assignments. -->
+  - smartdocs/specs/active/closeout-librarian-spec.md
 ```
-
-## Known Drift
-<!-- Places where the summary may be stale (honesty field). -->
 
 <!-- END POLARIS GENERATED -->

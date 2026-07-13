@@ -15,10 +15,11 @@
 
 ## What belongs here
 
-- `adapter.ts` — src/graph (graph)
-- `extract.ts` — src/graph (graph)
-- `index.ts` — src/graph (graph)
-- `runtime.ts` — src/graph (graph)
+- `adapter.ts` — Python graph adapter implementation
+- `extract.ts` — Python symbol extraction logic
+- `index.ts` — Python adapter registration and exports
+- `runtime.ts` — Python runtime configuration and tree-sitter setup
+- `fixtures/adapter.test.ts` — Unit tests for the Python adapter
 
 ## What does not belong here
 
