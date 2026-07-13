@@ -15,7 +15,6 @@ Atomic 13-step delivery sequence — the only subsystem that pushes branches, op
 - `runCompletedClusterQcWithRepair()` escalates untrusted completed-cluster and repair-loop QC outcomes to the run-health report as symptoms before the terminal gate.
 - `validateQcRepairLoopGate()` blocks finalize unless the QC repair loop's `terminal_outcome` is `"pass"`, `"qc-disabled"`, or `"no-repairable"` (when QC + repair routing are active), or a valid operator resolution artifact exists for the current repair round (written by `polaris qc resolve`).
 - `validateAuthoritativeChildState()` cross-checks completed-child counts against cluster-state before PR creation; its authoritative count is used in the PR body and Linear comment instead of the raw loop-state count.
-- `createDraftPr`/`buildPrBody` embed a "Provider routing" section in the PR body (selected provider, adapter, selection reason, mode, policy order) plus a routing review of anomalies from `summarizeRouterOutcomes()`, sourced from the dispatch record or run telemetry when not passed explicitly.
 
 ## Relationships
 - **Upstream**: `src/loop/checkpoint.ts` (`current-state.json`), `src/map` (step 01 atlas update)

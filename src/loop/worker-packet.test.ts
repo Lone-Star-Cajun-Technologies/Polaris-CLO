@@ -190,6 +190,8 @@ describe("compileImplPacket", () => {
       "src/loop/worker-packet.ts",
       "src/finalize/index.ts",
       "src/loop/worker-packet.test.ts",
+      "src/finalize/index.test.ts",
+      "src/finalize/finalize.test.ts",
     ]);
   });
 
@@ -228,9 +230,9 @@ describe("compileImplPacket", () => {
       },
     });
     expect(p.instructions.allowed_scope).toContain("src/cli/qc.test.ts");
+    expect(p.instructions.allowed_scope).toContain("src/cli/index.test.ts");
     expect(p.instructions.allowed_scope).toContain("src/qc/repair-loop.test.ts");
-    expect(p.instructions.allowed_scope).not.toContain("src/cli/index.test.ts");
-    expect(p.instructions.allowed_scope).not.toContain("src/finalize/finalize.test.ts");
+    expect(p.instructions.allowed_scope).toContain("src/finalize/finalize.test.ts");
     expect(p.instructions.allowed_scope).not.toContain("src/qc/POLARIS.md.test.ts");
     expect(p.instructions.allowed_scope).not.toContain(".polaris/skills/polaris-run/chain.md.test.ts");
   });

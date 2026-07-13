@@ -30,7 +30,6 @@ The finalize subsystem implements the atomic 13-step final delivery sequence for
 - JSONL telemetry events (`pr-opened`, `run-complete`) are emitted by `polaris finalize` via step 10. Do not emit them elsewhere.
 - `polaris finalize` is the only command that pushes to remote. No other subsystem may call `git push`.
 - `stepCreatePr` (step 10) is the terminal tracked-file mutation. No step after `stepCreatePr` may write to a git-tracked path; `stepUpdateLinear` is the sole deliberate exception because it performs an external Linear call, not a tracked-file write. Local post-PR bookkeeping (state, archive, cluster-state `pr_url`) lives only in git-ignored paths.
-- `createDraftPr`/`buildPrBody` in `github.ts` embed a "Provider routing" section in the PR body (selected provider/adapter/selection reason/mode/policy order, plus a routing review of recurring failures, provider-monopoly, evidence-gap, and state-repair signals from `summarizeRouterOutcomes()` in `src/autoresearch/score.ts`). When not passed explicitly, the routing summary is read from the dispatch record (`state.open_children_meta[*].dispatch_record.routing_summary`) or from run telemetry.
 
 ## Route model
 
