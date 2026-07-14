@@ -72,8 +72,27 @@ interface QcProviderExecutionConfig {
   primary?: boolean;
   fallback?: string[];
   severityMapping?: Record<string, QcSeverity>;
+  /** Path to a CodeRabbit config file (e.g. `.coderabbit.yaml`). */
+  configPath?: string;
 }
 ```
+
+## CodeRabbit review scope for `.polaris/` artifacts
+
+Tracked `.polaris/` artifacts are not uniformly reviewable. CodeRabbit review scope is defined by the root `.coderabbit.yaml` `reviews.path_filters` and mirrored by `src/finalize/artifact-policy.ts` (`getCodeRabbitReviewScope`, `isCodeRabbitReviewablePath`).
+
+- **In scope** (durable state evidence promoted into finalize commits):
+  - Active cluster `clusters.json`, `cluster-state.json`, `state.json`
+  - `.polaris/runs/ledger.jsonl` (durable audit log)
+  - `.polaris/cognition/archive/**` (durable provenance)
+  - `.polaris/map/**` (durable derived artifacts)
+- **Out of scope** (runtime/sealed/noise artifacts):
+  - Active cluster `packets/**`, `results/**`, `qc/**` (sealed worker packets and raw QC output)
+  - `.polaris/runs/` runtime files and subdirectories (legacy, mutation queue, current-state, etc.)
+  - `.polaris/bootstrap/**`, `.polaris/tmp/**`, `.polaris/cognition/pending/**`
+  - `.taskchain_artifacts/**` and `*.bak` (workspace scratch)
+
+The local CodeRabbit CLI uses the same `.coderabbit.yaml` as the GitHub App via `--config .coderabbit.yaml` (default `CodeRabbitQcProvider.DEFAULT_CODERABBIT_CONFIG_PATH`). Set `qc.providers.coderabbit.execution.configPath` to override.
 
 ## Repair loop state machine
 

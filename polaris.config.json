@@ -157,12 +157,12 @@
         "capabilities": ["diff-review", "result-parsing"],
         "execution": {
           "command": "coderabbit",
-          "args": ["review", "--agent", "--light", "--base", "main"],
+          "args": ["review", "--agent", "--light"],
           "output": {
             "format": "jsonl",
             "parser": "coderabbit"
           },
-          "configPath": ".polaris/coderabbit.config.yaml"
+          "configPath": ".coderabbit.yaml"
         },
         "timeoutMs": 900000,
         "primary": true,
