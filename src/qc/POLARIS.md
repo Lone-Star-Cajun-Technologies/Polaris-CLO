@@ -13,7 +13,7 @@ The QC subsystem is the provider-agnostic Quality Control layer for Polaris. It 
 - `provider.ts` — `IQcProvider`, `QcReviewScope`, `QcProviderOutput`, `QcProviderRegistry` interfaces and base contracts.
 - `registry.ts` — `QcProviderRegistry` singleton; registers concrete provider adapters.
 - `providers/` — one file per provider adapter (e.g., `coderabbit.ts`); each adapter parses provider-specific output into `QcFinding[]`.
-- `types.ts` — normalized `QcFinding`, `QcResult`, `QcProviderFailure`, `QcRepairPacket`, `QcRepairRound`, `QcRepairLoopState`, attribution, status, severity, and routing decision types.
+- `types.ts` — normalized `QcFinding`, `QcResult`, `QcProviderFailure`, `QcRepairPacket`, `QcRepairRound`, `QcRepairLoopState`, attribution, status, severity, and routing decision types. `QcResult.headSha` records the git HEAD SHA reviewed by that QC run (set by `orchestration.ts`) and is the basis for the sealed-reviewed-SHA evidence surfaced by `src/finalize/`.
 - `schemas.ts` — Zod/JSON schema definitions for all QC artifacts.
 - `policy.ts` — severity policy, auto-fix eligibility, and delivery blocking decisions.
 - `attribution.ts` — evidence-based finding attribution to children (commit-line-match, changed-file-owner, child-scope-match, etc.).
