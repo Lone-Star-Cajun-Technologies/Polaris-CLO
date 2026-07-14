@@ -262,6 +262,16 @@ describe("compileImplPacket", () => {
     expect(p.instructions.allowed_scope).toContain(".polaris/graph/NOTICES");
   });
 
+  it("does not expand an empty allowedScope with graph output", () => {
+    const p = compileImplPacket({
+      ...BASE,
+      childId: "POL-121",
+      allowedScope: [],
+      validationCommands: ["polaris graph build"],
+    });
+    expect(p.instructions.allowed_scope).toEqual([]);
+  });
+
   it("separates validation command expectations from executable commands", () => {
     const body = `## Scope
 - src/loop/worker-packet.ts

@@ -416,6 +416,8 @@ function stripCommandAnnotation(cmd: string): string {
  * touch generated `.polaris/graph/NOTICES` while keeping the command executable.
  */
 function expandScopeWithGraphOutput(scope: string[], validationCommands: string[]): string[] {
+  if (scope.length === 0) return scope;
+
   const hasGraphBuild = validationCommands.some((cmd) =>
     stripCommandAnnotation(cmd).startsWith('polaris graph build'),
   );

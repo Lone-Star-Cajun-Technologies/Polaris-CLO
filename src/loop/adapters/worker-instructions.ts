@@ -74,6 +74,7 @@ function buildCompiledInstructions(packet: BootstrapPacket): string {
     `Write the sealed result file as a JSON object with EXACTLY this shape:`,
     `  { "run_id": "<run_id>", "child_id": "<child_id>", "status": "success" | "failure",`,
     `    "commit": "<full 40-char SHA>", "validation": { "passed": ["<cmd>", ...], "failed": ["<cmd>", ...] },`,
+    `    "next_recommended_action": "continue" | "stop" | "investigate",`,
     `    "error_message": "<string or omit if success>" }`,
     `If a validation command fails, move it from validation.passed to validation.failed, set status to "failure", and set next_recommended_action to "stop". Do not list a failed command under passed.`,
     `commit MUST be the full 40-character git SHA (git rev-parse HEAD). Do NOT use a short hash.`,
