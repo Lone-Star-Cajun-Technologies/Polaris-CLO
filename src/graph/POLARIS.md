@@ -49,7 +49,7 @@ Re-run `polaris graph build` after a major source change or before using `polari
 polaris graph impact <symbol-name> --file <path-to-file>
 ```
 
-Future tooling will consume the graph artifacts under `.polaris/graph` for impact scans. The graph output is a generated artifact and should not be committed.
+Future tooling will consume the graph artifacts under `.polaris/graph` for impact scans. The graph output is a generated artifact and should not be committed, with the exception of `.polaris/graph/NOTICES`, which is tracked for license attribution.
 
 ## Related routes
 
