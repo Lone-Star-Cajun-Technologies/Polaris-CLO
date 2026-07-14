@@ -27,6 +27,8 @@ vi.mock("../qc/index.js", async (importOriginal) => {
 
 import { runFinalize } from "./index.js";
 import { stepStageArtifacts, stepCommit } from "./steps/06-commit.js";
+import { stepPush } from "./steps/07-push.js";
+import { stepCreatePr } from "./steps/08-create-pr.js";
 import { runQcAtTrigger } from "../qc/index.js";
 
 function makeTestDir(): string {
@@ -169,5 +171,50 @@ describe("runFinalize artifact staging order", () => {
     expect(typeof qcOrder).toBe("number");
     expect(stageOrder).toBeLessThan(qcOrder);
     expect(commitOrder).toBeGreaterThan(qcOrder);
+  });
+
+  it("seals the final commit SHA for PR creation", async () => {
+    const clusterId = "POL-6";
+    const stateFile = writeCanonicalState(testDir, clusterId);
+    execFileSync("git", ["checkout", "-b", "pol-6-delivery"], { cwd: testDir, stdio: "pipe" });
+    writeAtlas(testDir);
+    writeClusterArtifacts(testDir, clusterId);
+    stageFile(testDir, "src/impl.ts", "export function impl() {}\n");
+
+    writeFileSync(
+      join(testDir, "polaris.config.json"),
+      JSON.stringify(
+        {
+          version: "1.0",
+          qc: {
+            enabled: true,
+            defaultTrigger: "completed-cluster",
+            providers: {
+              test: { name: "test", mode: "local" },
+            },
+            repairRouting: "route",
+          },
+        },
+        null,
+        2,
+      ),
+    );
+
+    vi.mocked(runQcAtTrigger).mockResolvedValue({
+      trigger: "completed-cluster",
+      results: [],
+      action: "pass",
+      summary: "ok",
+    });
+    vi.mocked(stepCreatePr).mockReturnValue("https://github.com/test/repo/pull/42");
+    vi.mocked(stepPush).mockReturnValue(undefined);
+
+    await expect(
+      runFinalize({ repoRoot: testDir, stateFile, skipLibrarian: true }),
+    ).resolves.toBeUndefined();
+
+    expect(stepCreatePr).toHaveBeenCalledOnce();
+    const calledState = (stepCreatePr as unknown as ReturnType<typeof vi.fn>).mock.calls[0]![2];
+    expect(calledState).toHaveProperty("qc_repair_loop.sealed_head_sha", "sha");
   });
 });

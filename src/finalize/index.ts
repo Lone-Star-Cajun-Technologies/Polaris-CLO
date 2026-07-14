@@ -1096,7 +1096,15 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
   // Step 8: Single final commit: source changes + durable Polaris artifacts
   console.log("[8/14] Committing durable Polaris state + map..."); // Step count updated
   const resolvedStateFile = resolve(stateFile);
-  stepCommit(repoRoot, state, resolvedStateFile, reportPath);
+  const finalCommitSha = stepCommit(repoRoot, state, resolvedStateFile, reportPath);
+
+  // Seal the final delivery commit SHA in the QC repair-loop state. This is the
+  // head the PR will be created from; stepCreatePr verifies the current HEAD
+  // still matches this sealed SHA before invoking gh.
+  if (state.qc_repair_loop) {
+    const loop = state.qc_repair_loop as QcRepairLoopState & { sealed_head_sha?: string };
+    loop.sealed_head_sha = finalCommitSha;
+  }
 
   // The run's local state file is the authoritative place for post-PR state
   // (pr_url, status: complete). When the state file passed to finalize is the
