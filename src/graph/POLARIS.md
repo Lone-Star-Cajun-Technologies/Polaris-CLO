@@ -31,6 +31,26 @@ The graph route owns extraction, resolution, query, and storage for the reposito
 - `writeGraphNotices` must be deterministic and safe to run repeatedly.
 - Invalidation checks are trigger-driven by `config.graph.invalidationTriggers`; only emit supported reasons.
 
+## Graph build workflow
+
+Run `polaris graph build` to populate `.polaris/graph` with the code graph for the configured `repo.sourceRoots` (default: `src`).
+
+This is a manual, repeatable prerequisite for impact-scan and cross-route-referral work. It is not run automatically.
+
+```bash
+npm run build
+polaris graph build
+```
+
+Re-run `polaris graph build` after a major source change or before using `polaris graph impact` against an updated tree.
+
+```bash
+# Find files transitively impacted by a changed symbol
+polaris graph impact <symbol-name> --file <path-to-file>
+```
+
+Future tooling will consume the graph artifacts under `.polaris/graph` for impact scans. The graph output is a generated artifact and should not be committed.
+
 ## Related routes
 
 - `polaris.config` — source of `config.graph` defaults and schema
