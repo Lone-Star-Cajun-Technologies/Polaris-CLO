@@ -1,4 +1,6 @@
 import { describe, it, expect } from "vitest";
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   validateChartFrontMatter,
   validateChartSections,
@@ -288,6 +290,114 @@ Content here.
       const result = validateChart(content);
       expect(result.valid).toBe(false);
       expect(result.errors.length).toBeGreaterThan(1);
+    });
+
+    it("parses related_charts block list with valid relationships", () => {
+      const content = `---
+chart_id: CHART-2026-06-05-001
+cluster_id: POL-327
+route: src/medic
+status: active
+related_charts:
+  - chart_id: CHART-2026-06-05-002
+    relationship: same_failure
+  - chart_id: CHART-2026-06-05-003
+    relationship: edge_case_of
+  - chart_id: CHART-2026-06-05-004
+    relationship: regression_of
+  - chart_id: CHART-2026-06-05-005
+    relationship: caused_by
+  - chart_id: CHART-2026-06-05-006
+    relationship: fixed_by
+  - chart_id: CHART-2026-06-05-007
+    relationship: supersedes
+  - chart_id: CHART-2026-06-05-008
+    relationship: duplicate_of
+created: 2026-06-05T12:00:00Z
+updated: 2026-06-05T12:00:00Z
+---
+
+${REQUIRED_SECTIONS.map((s) => `## ${s}`).join("\n")}
+`;
+
+      const result = validateChart(content);
+      expect(result.valid).toBe(true);
+      expect(result.errors).toEqual([]);
+    });
+
+    it("parses related_charts inline array of objects", () => {
+      const content = `---
+chart_id: CHART-2026-06-05-001
+cluster_id: POL-327
+route: src/medic
+status: active
+related_charts: [{chart_id: CHART-2026-06-05-002, relationship: same_failure}]
+created: 2026-06-05T12:00:00Z
+updated: 2026-06-05T12:00:00Z
+---
+
+${REQUIRED_SECTIONS.map((s) => `## ${s}`).join("\n")}
+`;
+
+      const result = validateChart(content);
+      expect(result.valid).toBe(true);
+      expect(result.errors).toEqual([]);
+    });
+
+    it("rejects related_charts with invalid relationship", () => {
+      const content = `---
+chart_id: CHART-2026-06-05-001
+cluster_id: POL-327
+route: src/medic
+status: active
+related_charts:
+  - chart_id: CHART-2026-06-05-002
+    relationship: not_a_valid_relationship
+created: 2026-06-05T12:00:00Z
+updated: 2026-06-05T12:00:00Z
+---
+
+${REQUIRED_SECTIONS.map((s) => `## ${s}`).join("\n")}
+`;
+
+      const result = validateChart(content);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some((e) => e.includes("relationship"))).toBe(true);
+    });
+
+    it("rejects related_charts missing chart_id", () => {
+      const content = `---
+chart_id: CHART-2026-06-05-001
+cluster_id: POL-327
+route: src/medic
+status: active
+related_charts:
+  - relationship: same_failure
+created: 2026-06-05T12:00:00Z
+updated: 2026-06-05T12:00:00Z
+---
+
+${REQUIRED_SECTIONS.map((s) => `## ${s}`).join("\n")}
+`;
+
+      const result = validateChart(content);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some((e) => e.includes("chart_id"))).toBe(true);
+    });
+
+    it("validates all existing chart files", () => {
+      const chartsDir = join(process.cwd(), "smartdocs", "medic", "charts");
+      const files = readdirSync(chartsDir).filter(
+        (f) => f.startsWith("CHART-") && f.endsWith(".md"),
+      );
+      expect(files.length).toBeGreaterThan(0);
+
+      for (const file of files) {
+        const content = readFileSync(join(chartsDir, file), "utf-8");
+        const result = validateChart(content);
+        expect(result.errors).toEqual([]);
+        expect(result.valid).toBe(true);
+      }
     });
   });
 });
