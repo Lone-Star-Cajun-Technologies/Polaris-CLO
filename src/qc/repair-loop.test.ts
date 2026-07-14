@@ -739,8 +739,8 @@ describe("QC repair loop convergence fixture", () => {
     expect(result.rounds_completed).toBe(2);
     expect(dispatch).toHaveBeenCalledTimes(2);
 
-    const firstCall = dispatch.mock.calls[0]![0] as { packetId: string; findingIds: string[] };
-    const secondCall = dispatch.mock.calls[1]![0] as { packetId: string; findingIds: string[] };
+    const firstCall = vi.mocked(dispatch).mock.calls[0]![0] as { packetId: string; findingIds: string[] };
+    const secondCall = vi.mocked(dispatch).mock.calls[1]![0] as { packetId: string; findingIds: string[] };
     expect(firstCall.findingIds).toContain(PLANTED_FINDING_ID);
     expect(secondCall.findingIds).toContain(SECOND_DEFECT_FINDING_ID);
   });
