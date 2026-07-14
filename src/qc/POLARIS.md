@@ -81,7 +81,16 @@ States (managed by `src/qc/repair-loop.ts`):
 
 `qc_review_requested` → `qc_provider_attempted` → `qc_results_normalized` → `repair_packets_compiled` → `repair_packets_dispatched` → `repair_results_collected` → `qc_rerun_requested` → (loop) or terminal state
 
-Terminal states (`QcRepairLoopOutcome` in `src/loop/checkpoint.ts`): `pass`, `no-repairable`, `max-rounds`, `all-providers-failed`, `operator-review`, `medic-referral`, `qc-disabled`. These are the exact string literals stored in `state.qc_repair_loop.terminal_outcome` and `ClusterState.qc_repair_outcome`; finalize's repair-loop gate (`src/finalize/index.ts`) matches against them directly.
+Terminal states (`QcRepairLoopOutcome` in `src/loop/checkpoint.ts`): `pass`, `qc-disabled`, `no-repairable`, `medic-referral`, `operator-review`, `all-providers-failed`, `max-rounds`. These are the exact string literals stored in `state.qc_repair_loop.terminal_outcome` and `ClusterState.qc_repair_outcome`; finalize's repair-loop gate (`src/finalize/index.ts`) matches against them directly. The repair-loop constants `QC_REPAIR_TERMINAL_OUTCOMES`, `QC_REPAIR_CONVERGED_OUTCOMES`, and `QC_REPAIR_ESCALATION_OUTCOMES` (in `src/qc/repair-loop.ts`) encode this catalog.
+
+The loop stops at the first round that satisfies one of the terminal outcomes. It is bounded by `qc.maxRepairRounds` (default `DEFAULT_MAX_REPAIR_ROUNDS = 2` in `src/qc/repair-loop.ts`).
+
+Classification:
+
+- **Converged / trusted** (finalize may proceed without an operator resolution): `pass`, `qc-disabled`, `no-repairable`.
+- **Escalation** (finalize blocks unless a valid `resolution.json` is present for the current round): `medic-referral`, `operator-review`, `all-providers-failed`, `max-rounds`.
+
+`max-rounds` is an escalation outcome, never a converged or trusted outcome. It is returned when the configured round limit is exhausted and findings are still open; finalize must not silently proceed as if the loop converged.
 
 Operator-review findings do not bypass packet compilation: the loop still compiles a repair manifest for the round, but it dispatches only eligible `repair-worker` packets. `operator-review` packets settle the terminal `operator-review` outcome directly without worker dispatch.
 

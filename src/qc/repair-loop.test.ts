@@ -20,6 +20,9 @@ import {
   initRepairLoopState,
   partitionRepairPackets,
   DEFAULT_MAX_REPAIR_ROUNDS,
+  QC_REPAIR_TERMINAL_OUTCOMES,
+  QC_REPAIR_CONVERGED_OUTCOMES,
+  QC_REPAIR_ESCALATION_OUTCOMES,
   type DispatchRepairWorkerFn,
   type RepairWorkerResult,
 } from "./repair-loop.js";
@@ -29,6 +32,8 @@ import type { QcProviderRegistry } from "./provider.js";
 import { makeFinding, makeResult } from "./fixtures/repair-packets.js";
 import type { QcOrchestratorResult } from "./orchestration.js";
 import { readClusterStateSync } from "../cluster-state/store.js";
+import { validateQcRepairLoopGate } from "../finalize/index.js";
+import type { LoopState, QcRepairLoopOutcome } from "../loop/checkpoint.js";
 
 // Mock runQcAtTrigger to control rerun results without needing real providers.
 vi.mock("./orchestration.js", async (importOriginal) => {
@@ -83,6 +88,32 @@ function makeQcConfig(overrides: Partial<QcConfig> = {}): QcConfig {
     },
     ...overrides,
   };
+}
+
+function makeLoopState(outcome: QcRepairLoopOutcome, round: number): LoopState {
+  return {
+    schema_version: "1.0",
+    run_id: "run-1",
+    cluster_id: "POL-TEST",
+    active_child: "POL-TEST",
+    completed_children: [],
+    open_children: [],
+    step_cursor: "finalize",
+    context_budget: { children_completed: 0, max_children_per_session: 1 },
+    qc_repair_loop: {
+      current_round: round,
+      max_rounds: 2,
+      source_qc_run_ids: ["qc-run-1"],
+      manifest_path: null,
+      pending_packet_ids: [],
+      completed_packet_ids: [],
+      rerun_requested: false,
+      rerun_qc_run_ids: {},
+      terminal_outcome: outcome,
+      initiated_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+  } as unknown as LoopState;
 }
 
 function makePassedQcResult(): QcOrchestratorResult {
@@ -637,6 +668,52 @@ describe("runQcRepairLoop", () => {
     expect(stateUpdates.length).toBeGreaterThan(0);
     // Final update should record terminal outcome.
     expect(stateUpdates[stateUpdates.length - 1]).toBe("max-rounds");
+  });
+});
+
+describe("QC repair loop convergence contract", () => {
+  it("exposes the full terminal outcome catalog and converged/escalation split", () => {
+    expect(QC_REPAIR_TERMINAL_OUTCOMES).toContain("pass");
+    expect(QC_REPAIR_TERMINAL_OUTCOMES).toContain("qc-disabled");
+    expect(QC_REPAIR_TERMINAL_OUTCOMES).toContain("no-repairable");
+    expect(QC_REPAIR_TERMINAL_OUTCOMES).toContain("medic-referral");
+    expect(QC_REPAIR_TERMINAL_OUTCOMES).toContain("operator-review");
+    expect(QC_REPAIR_TERMINAL_OUTCOMES).toContain("all-providers-failed");
+    expect(QC_REPAIR_TERMINAL_OUTCOMES).toContain("max-rounds");
+
+    expect(QC_REPAIR_CONVERGED_OUTCOMES).toEqual(["pass", "qc-disabled", "no-repairable"]);
+    expect(QC_REPAIR_ESCALATION_OUTCOMES).toEqual([
+      "medic-referral",
+      "operator-review",
+      "all-providers-failed",
+      "max-rounds",
+    ]);
+  });
+
+  it("does not treat max-rounds as a converged/trusted outcome", () => {
+    expect(QC_REPAIR_CONVERGED_OUTCOMES).not.toContain("max-rounds");
+    expect(QC_REPAIR_ESCALATION_OUTCOMES).toContain("max-rounds");
+  });
+
+  it("blocks finalize when the repair loop terminates with max-rounds", () => {
+    const config = makeQcConfig();
+    const state = makeLoopState("max-rounds", 2);
+    const blocker = validateQcRepairLoopGate(state, config);
+
+    expect(blocker).not.toBeNull();
+    expect(blocker).toContain("max-rounds");
+    expect(blocker).toContain("untrusted");
+  });
+
+  it("allows finalize when the repair loop terminates with a converged outcome", () => {
+    const config = makeQcConfig();
+    const passState = makeLoopState("pass", 1);
+    const disabledState = makeLoopState("qc-disabled", 0);
+    const noRepairableState = makeLoopState("no-repairable", 1);
+
+    expect(validateQcRepairLoopGate(passState, config)).toBeNull();
+    expect(validateQcRepairLoopGate(disabledState, config)).toBeNull();
+    expect(validateQcRepairLoopGate(noRepairableState, config)).toBeNull();
   });
 });
 
