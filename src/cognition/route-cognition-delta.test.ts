@@ -3,10 +3,10 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { assessRouteHealth } from "./route-cognition-delta.js";
+import { applyRouteCognitionDelta, assessRouteHealth } from "./route-cognition-delta.js";
 import type { FileRouteEntry } from "../map/atlas.js";
 
 function makeTestDir(): string {
@@ -198,5 +198,68 @@ describe("assessRouteHealth", () => {
 
     const health = assessRouteHealth(entry, testDir, 90);
     expect(health).toBe("known-issues"); // Identity takes priority over cognition check
+  });
+});
+
+describe("applyRouteCognitionDelta", () => {
+  let testDir: string;
+
+  beforeEach(() => {
+    testDir = makeTestDir();
+  });
+
+  afterEach(() => {
+    rmSync(testDir, { recursive: true, force: true });
+  });
+
+  it("calls assessRouteHealth and persists route health to route-health.json", () => {
+    const outputPath = join(testDir, ".polaris", "map");
+    mkdirSync(outputPath, { recursive: true });
+    mkdirSync(join(testDir, "src", "cognition"), { recursive: true });
+    writeFileSync(join(testDir, "src", "cognition", "POLARIS.md"), "# Cognition", "utf-8");
+
+    const entry = makeRouteEntry({
+      route: "src/cognition",
+      instructionFile: "src/cognition/POLARIS.md",
+      role_owner: "worker",
+    });
+
+    writeFileSync(
+      join(outputPath, "file-routes.json"),
+      JSON.stringify({
+        "src/cognition/route-cognition-delta.ts": entry,
+      }),
+      "utf-8",
+    );
+
+    const result = applyRouteCognitionDelta({
+      repoRoot: testDir,
+      touchedFiles: ["src/cognition/route-cognition-delta.ts"],
+      skipRoot: true,
+      outputPath,
+    });
+
+    expect(result.healthState).toBe("healthy");
+
+    const healthPath = join(outputPath, "route-health.json");
+    expect(existsSync(healthPath)).toBe(true);
+    const health = JSON.parse(readFileSync(healthPath, "utf-8"));
+    expect(health["src/cognition/route-cognition-delta.ts"]).toBe("healthy");
+  });
+
+  it("does not write route-health.json when file-routes is empty", () => {
+    const outputPath = join(testDir, ".polaris", "map");
+    mkdirSync(outputPath, { recursive: true });
+    writeFileSync(join(outputPath, "file-routes.json"), JSON.stringify({}), "utf-8");
+
+    const result = applyRouteCognitionDelta({
+      repoRoot: testDir,
+      touchedFiles: ["src/cognition/route-cognition-delta.ts"],
+      skipRoot: true,
+      outputPath,
+    });
+
+    expect(result.healthState).toBeUndefined();
+    expect(existsSync(join(outputPath, "route-health.json"))).toBe(false);
   });
 });

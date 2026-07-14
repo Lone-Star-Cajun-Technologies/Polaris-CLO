@@ -10,7 +10,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { executeOneChild, readBootstrapPacket } from "./worker.js";
@@ -209,6 +209,56 @@ describe("executeOneChild", () => {
 
     // executeChild must be called exactly once — never for POL-70 or any other child
     expect(callCount).toBe(1);
+  });
+
+  it("calls applyRouteCognitionDelta and writes route-health.json when touchedFiles match file-routes", async () => {
+    const stateFile = makeStateFile(tmpDir, "POL-69");
+    const telemetryFile = makeTelemetryFile(tmpDir, "test-run-001");
+    const packet = makePacket(stateFile, telemetryFile);
+
+    mkdirSync(join(tmpDir, ".polaris", "map"), { recursive: true });
+    mkdirSync(join(tmpDir, "src", "cognition"), { recursive: true });
+    writeFileSync(join(tmpDir, "src", "cognition", "POLARIS.md"), "# Cognition", "utf-8");
+    writeFileSync(
+      join(tmpDir, ".polaris", "map", "file-routes.json"),
+      JSON.stringify({
+        "src/cognition/route-cognition-delta.ts": {
+          domain: "cognition",
+          route: "src/cognition",
+          taskchain: "polaris-cognition",
+          confidence: 0.9,
+          classification: "indexed",
+          last_updated: new Date().toISOString(),
+          updated_by: "test",
+          tags: ["cognition"],
+          instructionFile: "src/cognition/POLARIS.md",
+          role_owner: "worker",
+        },
+      }),
+      "utf-8",
+    );
+
+    const result = await executeOneChild(packet, {
+      repoRoot: tmpDir,
+      touchedFiles: ["src/cognition/route-cognition-delta.ts"],
+      executeChild: () => { /* noop */ },
+    });
+
+    expect(result.status).toBe("done");
+
+    const routeHealthPath = join(tmpDir, ".polaris", "map", "route-health.json");
+    expect(existsSync(routeHealthPath)).toBe(true);
+    const routeHealth = JSON.parse(readFileSync(routeHealthPath, "utf-8"));
+    expect(routeHealth["src/cognition/route-cognition-delta.ts"]).toBe("healthy");
+
+    const telemetryRaw = readFileSync(telemetryFile, "utf-8").trim();
+    const telemetryEvents = telemetryRaw
+      .split("\n")
+      .filter(Boolean)
+      .map((l) => JSON.parse(l) as Record<string, unknown>);
+    const cognitionDeltaEvent = telemetryEvents.find((e) => e["event"] === "cognition-delta");
+    expect(cognitionDeltaEvent).toBeDefined();
+    expect(cognitionDeltaEvent?.["health_state"]).toBe("healthy");
   });
 });
 

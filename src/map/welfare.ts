@@ -1,8 +1,13 @@
 import { resolve } from "node:path";
 import { loadConfig } from "../config/loader.js";
+import {
+  RouteHealthState,
+  assessRouteHealth,
+  readRouteHealthState,
+} from "../cognition/route-cognition-delta.js";
 import { readFileRoutes, type FileRouteEntry } from "./atlas.js";
 
-export type RouteHealthState = "healthy" | "known-issues" | "stale";
+export type { RouteHealthState } from "../cognition/route-cognition-delta.js";
 
 export type ActionRequired = "none" | "review-identity" | "review-health" | "review-both";
 
@@ -20,28 +25,13 @@ export interface WelfareCheckReport {
   needsReview: number;
 }
 
-function daysSince(iso: string): number {
-  const then = new Date(iso).getTime();
-  return (Date.now() - then) / (1000 * 60 * 60 * 24);
-}
-
 function isIdentityComplete(entry: FileRouteEntry): boolean {
-  return entry.instructionFile !== undefined && entry.role_owner !== undefined;
-}
-
-function assessRouteHealth(entry: FileRouteEntry, staleThresholdDays: number): RouteHealthState {
-  const daysSinceUpdate = daysSince(entry.last_updated);
-  const identityComplete = isIdentityComplete(entry);
-
-  if (daysSinceUpdate > staleThresholdDays) {
-    return "stale";
-  }
-
-  if (!identityComplete) {
-    return "known-issues";
-  }
-
-  return "healthy";
+  return (
+    entry.instructionFile !== undefined &&
+    entry.instructionFile.trim() !== "" &&
+    entry.role_owner !== undefined &&
+    entry.role_owner.trim() !== ""
+  );
 }
 
 function determineActionRequired(identityComplete: boolean, healthState: RouteHealthState): ActionRequired {
@@ -62,9 +52,9 @@ export function runWelfareCheck(
 ): WelfareCheckReport {
   const config = loadConfig(repoRoot);
   const outputPath = resolve(repoRoot, config.repo.sidecarOutputPath ?? ".polaris/map");
-  const staleThresholdDays = 30;
 
   const routes = readFileRoutes(outputPath);
+  const routeHealth = readRouteHealthState(outputPath);
 
   const results: WelfareCheckResult[] = [];
 
@@ -74,7 +64,7 @@ export function runWelfareCheck(
     }
 
     const identityComplete = isIdentityComplete(entry);
-    const healthState = assessRouteHealth(entry, staleThresholdDays);
+    const healthState = routeHealth[filePath] ?? assessRouteHealth(entry, repoRoot);
     const actionRequired = determineActionRequired(identityComplete, healthState);
 
     results.push({

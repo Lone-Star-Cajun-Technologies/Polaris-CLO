@@ -9,9 +9,10 @@
  * explicitly opted in. Bounded by locality — no repo-wide scanning.
  */
 
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { isDirectoryEligible, parseSmartDocIgnore } from "../smartdocs-engine/smartdoc-ignore.js";
+import { readFileRoutes } from "../map/atlas.js";
 import type { FileRouteEntry } from "../map/atlas.js";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -27,6 +28,10 @@ export interface CognitionDeltaOptions {
    * Root cognition belongs in AGENTS.md / CLAUDE.md per doctrine.
    */
   skipRoot?: boolean;
+  /**
+   * Map sidecar output path. Defaults to `.polaris/map` relative to repoRoot.
+   */
+  outputPath?: string;
 }
 
 // ── Route Health Assessment ───────────────────────────────────────────────────
@@ -75,6 +80,41 @@ export function assessRouteHealth(
   }
 
   return "healthy";
+}
+
+// ── Route health persistence ──────────────────────────────────────────────────
+
+const ROUTE_HEALTH_FILE = "route-health.json";
+
+/**
+ * Read the persisted route health state map from the map sidecar output path.
+ * Returns an empty record when the file is missing or malformed.
+ */
+export function readRouteHealthState(
+  outputPath: string,
+): Record<string, RouteHealthState> {
+  const healthPath = resolve(outputPath, ROUTE_HEALTH_FILE);
+  if (!existsSync(healthPath)) return {};
+
+  try {
+    const raw = readFileSync(healthPath, "utf-8");
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return {};
+    }
+    return parsed as Record<string, RouteHealthState>;
+  } catch {
+    return {};
+  }
+}
+
+function writeRouteHealthState(
+  outputPath: string,
+  state: Record<string, RouteHealthState>,
+): void {
+  const healthPath = resolve(outputPath, ROUTE_HEALTH_FILE);
+  mkdirSync(dirname(healthPath), { recursive: true });
+  writeFileSync(healthPath, JSON.stringify(state, null, 2) + "\n", "utf-8");
 }
 
 export type CognitionUpdateReason =
@@ -362,7 +402,7 @@ function detectMissingCognitionSurfaces(
 export function applyRouteCognitionDelta(
   options: CognitionDeltaOptions,
 ): CognitionDeltaResult {
-  const { repoRoot, touchedFiles, skipRoot = true } = options;
+  const { repoRoot, touchedFiles, skipRoot = true, outputPath } = options;
 
   const inspectedFolders = new Set<string>();
   const routeLocalTargets = new Set<string>();
@@ -384,13 +424,33 @@ export function applyRouteCognitionDelta(
   const missing = detectMissingCognitionSurfaces(touchedFiles, repoRoot, skipRoot);
   missingCognitionSurfaces.push(...missing);
 
+  const resolvedOutputPath = resolve(repoRoot, outputPath ?? ".polaris/map");
+  const routes = readFileRoutes(resolvedOutputPath);
+  const routeHealth = readRouteHealthState(resolvedOutputPath);
+
+  for (const [filePath, entry] of Object.entries(routes)) {
+    routeHealth[filePath] = assessRouteHealth(entry, repoRoot, 90);
+  }
+
+  if (Object.keys(routeHealth).length > 0) {
+    writeRouteHealthState(resolvedOutputPath, routeHealth);
+  }
+
+  let healthState: RouteHealthState | undefined;
+  for (const file of touchedFiles) {
+    if (routeHealth[file] !== undefined) {
+      healthState = routeHealth[file];
+      break;
+    }
+  }
+
   return {
     inspectedFolders: Array.from(inspectedFolders),
     routeLocalTargets: Array.from(routeLocalTargets),
     updateWarranted,
     reasons,
     missingCognitionSurfaces,
-    healthState: undefined,
+    healthState,
   };
 }
 
