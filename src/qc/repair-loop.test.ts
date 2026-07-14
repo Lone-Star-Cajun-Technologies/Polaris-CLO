@@ -30,6 +30,14 @@ import type { QcRepairPacket, QcRepairPacketManifest, QcResult } from "./types.j
 import type { QcConfig } from "../config/schema.js";
 import type { QcProviderRegistry } from "./provider.js";
 import { makeFinding, makeResult } from "./fixtures/repair-packets.js";
+import {
+  CONVERGENCE_TARGET_FILE,
+  PLANTED_FINDING_ID,
+  SECOND_DEFECT_FINDING_ID,
+  makePlantedResult,
+  makeSecondDefectResult,
+  makeConvergencePassResult,
+} from "./fixtures/convergence-sequence.js";
 import type { QcOrchestratorResult } from "./orchestration.js";
 import { readClusterStateSync } from "../cluster-state/store.js";
 import { validateQcRepairLoopGate } from "../finalize/index.js";
@@ -668,6 +676,73 @@ describe("runQcRepairLoop", () => {
     expect(stateUpdates.length).toBeGreaterThan(0);
     // Final update should record terminal outcome.
     expect(stateUpdates[stateUpdates.length - 1]).toBe("max-rounds");
+  });
+});
+
+describe("QC repair loop convergence fixture", () => {
+  let tmpDir: string;
+
+  beforeEach(() => {
+    tmpDir = path.join(os.tmpdir(), `polaris-repair-loop-convergence-${Date.now()}`);
+    mkdirSync(tmpDir, { recursive: true });
+    vi.mocked(runQcAtTrigger).mockReset();
+  });
+
+  afterEach(() => {
+    try {
+      rmSync(tmpDir, { recursive: true, force: true });
+    } catch {
+      // Ignore cleanup failures.
+    }
+  });
+
+  it("simulates planted finding -> repair introduces second defect -> second review catches it -> convergence", async () => {
+    const config = makeQcConfig({ maxRepairRounds: 2 });
+
+    const dispatch: DispatchRepairWorkerFn = vi.fn().mockImplementation((packet) =>
+      Promise.resolve({ packetId: packet.packetId, status: "success" } as RepairWorkerResult),
+    );
+
+    const packet = makeRepairable({
+      packetId: "pkt-convergence-r1-001",
+      findingIds: [PLANTED_FINDING_ID],
+      allowedScope: [CONVERGENCE_TARGET_FILE],
+    });
+
+    const manifestDir = path.join(tmpDir, ".polaris", "clusters", "POL-TEST", "qc", "repair-rounds", "1");
+    mkdirSync(manifestDir, { recursive: true });
+    const { writeFileSync } = await import("node:fs");
+    writeFileSync(
+      path.join(manifestDir, "repair-packets.json"),
+      JSON.stringify(makeManifest([packet]), null, 2),
+      "utf-8",
+    );
+
+    vi.mocked(runQcAtTrigger)
+      .mockResolvedValueOnce(makeSecondDefectResult())
+      .mockResolvedValueOnce(makeConvergencePassResult());
+
+    const result = await runQcRepairLoop({
+      clusterId: "POL-TEST",
+      runId: "run-convergence",
+      branch: "main",
+      repoRoot: tmpDir,
+      telemetryFile: path.join(tmpDir, "telemetry.jsonl"),
+      config,
+      registry: emptyRegistry,
+      initialQcResults: [makePlantedResult()],
+      dispatchRepairWorker: dispatch,
+      maxRounds: 2,
+    });
+
+    expect(result.outcome).toBe("pass");
+    expect(result.rounds_completed).toBe(2);
+    expect(dispatch).toHaveBeenCalledTimes(2);
+
+    const firstCall = dispatch.mock.calls[0]![0] as { packetId: string; findingIds: string[] };
+    const secondCall = dispatch.mock.calls[1]![0] as { packetId: string; findingIds: string[] };
+    expect(firstCall.findingIds).toContain(PLANTED_FINDING_ID);
+    expect(secondCall.findingIds).toContain(SECOND_DEFECT_FINDING_ID);
   });
 });
 

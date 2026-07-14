@@ -11,6 +11,7 @@ vi.mock("./steps/06-commit.js", () => ({
 
 vi.mock("./steps/07-push.js", () => ({ stepPush: vi.fn() }));
 vi.mock("./steps/08-create-pr.js", () => ({ stepCreatePr: vi.fn() }));
+vi.mock("./github.js", () => ({ createDraftPr: vi.fn() }));
 vi.mock("./steps/11-update-linear.js", () => ({
   stepUpdateLinear: vi.fn().mockResolvedValue(undefined),
 }));
@@ -29,6 +30,7 @@ import { runFinalize } from "./index.js";
 import { stepStageArtifacts, stepCommit } from "./steps/06-commit.js";
 import { stepPush } from "./steps/07-push.js";
 import { stepCreatePr } from "./steps/08-create-pr.js";
+import { createDraftPr } from "./github.js";
 import { runQcAtTrigger } from "../qc/index.js";
 
 function makeTestDir(): string {
@@ -216,5 +218,109 @@ describe("runFinalize artifact staging order", () => {
     expect(stepCreatePr).toHaveBeenCalledOnce();
     const calledState = (stepCreatePr as unknown as ReturnType<typeof vi.fn>).mock.calls[0]![2];
     expect(calledState).toHaveProperty("qc_repair_loop.sealed_head_sha", "sha");
+  });
+});
+
+describe("sealed QC head SHA gate", () => {
+  let testDir: string;
+
+  beforeEach(async () => {
+    testDir = makeTestDir();
+    vi.doUnmock("./steps/08-create-pr.js");
+    const { stepCreatePr: realStepCreatePr } = await import("./steps/08-create-pr.js");
+    vi.mocked(stepCreatePr).mockImplementation(realStepCreatePr as any);
+    vi.mocked(createDraftPr).mockReturnValue("https://github.com/test/repo/pull/42");
+  });
+
+  afterEach(() => {
+    try {
+      rmSync(testDir, { recursive: true, force: true });
+    } catch {
+      // Ignore cleanup failures.
+    }
+    vi.mocked(stepCreatePr).mockReset();
+    vi.mocked(createDraftPr).mockReset();
+    vi.mocked(stepPush).mockReset();
+    vi.mocked(stepCommit).mockImplementation(() => "sha");
+  });
+
+  function writeConfig(dir: string): void {
+    writeFileSync(
+      join(dir, "polaris.config.json"),
+      JSON.stringify(
+        {
+          version: "1.0",
+          qc: {
+            enabled: true,
+            defaultTrigger: "completed-cluster",
+            providers: {
+              test: { name: "test", mode: "local" },
+            },
+            repairRouting: "route",
+          },
+        },
+        null,
+        2,
+      ),
+    );
+  }
+
+  it("blocks PR creation when a reviewable file changes after the sealed QC pass", async () => {
+    const clusterId = "POL-6";
+    const stateFile = writeCanonicalState(testDir, clusterId);
+    execFileSync("git", ["checkout", "-b", "pol-6-delivery"], { cwd: testDir, stdio: "pipe" });
+    writeAtlas(testDir);
+    writeClusterArtifacts(testDir, clusterId);
+    stageFile(testDir, "src/impl.ts", "export function impl() {}\n");
+
+    const initHeadSha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: testDir, encoding: "utf-8" }).trim();
+
+    writeConfig(testDir);
+
+    vi.mocked(runQcAtTrigger).mockResolvedValue({
+      trigger: "completed-cluster",
+      results: [],
+      action: "pass",
+      summary: "ok",
+    });
+
+    vi.mocked(stepCommit).mockReturnValue(initHeadSha);
+    vi.mocked(stepPush).mockImplementation(() => {
+      execFileSync("git", ["commit", "-m", "post-seal mutation"], { cwd: testDir, stdio: "pipe" });
+    });
+
+    await expect(
+      runFinalize({ repoRoot: testDir, stateFile, skipLibrarian: true, skipDelivery: false }),
+    ).rejects.toThrow(/sealed QC head SHA/);
+
+    expect(createDraftPr).not.toHaveBeenCalled();
+  });
+
+  it("allows PR creation only when the PR head matches the sealed reviewed SHA", async () => {
+    const clusterId = "POL-6";
+    const stateFile = writeCanonicalState(testDir, clusterId);
+    execFileSync("git", ["checkout", "-b", "pol-6-delivery"], { cwd: testDir, stdio: "pipe" });
+    writeAtlas(testDir);
+    writeClusterArtifacts(testDir, clusterId);
+    stageFile(testDir, "src/impl.ts", "export function impl() {}\n");
+
+    const initHeadSha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: testDir, encoding: "utf-8" }).trim();
+
+    writeConfig(testDir);
+
+    vi.mocked(runQcAtTrigger).mockResolvedValue({
+      trigger: "completed-cluster",
+      results: [],
+      action: "pass",
+      summary: "ok",
+    });
+
+    vi.mocked(stepCommit).mockReturnValue(initHeadSha);
+
+    await runFinalize({ repoRoot: testDir, stateFile, skipLibrarian: true, skipDelivery: false });
+
+    expect(createDraftPr).toHaveBeenCalledOnce();
+    const callArgs = vi.mocked(createDraftPr).mock.calls[0]![0];
+    expect(callArgs).toMatchObject({ repoRoot: testDir, branch: "pol-6-delivery", draft: true });
   });
 });
