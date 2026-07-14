@@ -19,14 +19,39 @@ const getClusterStatePath = (clusterId: string, repoRoot?: string): string => {
   return path.join(repoRoot || process.cwd(), '.polaris', 'clusters', clusterId, 'cluster-state.json');
 };
 
-const normalizeClusterState = (state: ClusterState): ClusterState => ({
-  ...state,
-  tracker_mutations: state.tracker_mutations ?? {},
-  qc_runs: state.qc_runs ?? {},
-});
-
 const toRepoRelative = (repoRoot: string, p: string): string => {
   return path.relative(repoRoot, path.resolve(repoRoot, p));
+};
+
+const normalizeClusterState = (state: ClusterState, repoRoot?: string): ClusterState => {
+  const root = repoRoot || process.cwd();
+  const toRel = (p: string) => toRepoRelative(root, p);
+
+  const normalizedQcRuns: ClusterState['qc_runs'] = {};
+  for (const [runId, pointer] of Object.entries(state.qc_runs ?? {})) {
+    normalizedQcRuns[runId] = {
+      ...pointer,
+      artifact_path: toRel(pointer.artifact_path),
+      raw_artifact_paths: pointer.raw_artifact_paths?.map(toRel),
+      provider_attempt_artifact_path: pointer.provider_attempt_artifact_path
+        ? toRel(pointer.provider_attempt_artifact_path)
+        : undefined,
+    };
+  }
+
+  const normalizedRepairManifests: ClusterState['qc_repair_manifests'] = {};
+  for (const [round, manifestPath] of Object.entries(state.qc_repair_manifests ?? {})) {
+    normalizedRepairManifests[round as unknown as number] = toRel(manifestPath);
+  }
+
+  return {
+    ...state,
+    tracker_mutations: state.tracker_mutations ?? {},
+    qc_runs: normalizedQcRuns,
+    qc_repair_manifests: Object.keys(normalizedRepairManifests).length > 0
+      ? normalizedRepairManifests
+      : state.qc_repair_manifests,
+  };
 };
 
 export function pruneExpiredClaims(
@@ -78,7 +103,7 @@ export const readClusterState = async (clusterId: string, repoRoot?: string): Pr
     if (!data) {
       return null;
     }
-    return normalizeClusterState(JSON.parse(data) as ClusterState);
+    return normalizeClusterState(JSON.parse(data) as ClusterState, repoRoot);
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       return null;
@@ -94,7 +119,7 @@ export const readClusterStateSync = (clusterId: string, repoRoot?: string): Clus
     if (!data) {
       return null;
     }
-    return normalizeClusterState(JSON.parse(data) as ClusterState);
+    return normalizeClusterState(JSON.parse(data) as ClusterState, repoRoot);
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       return null;
@@ -197,7 +222,7 @@ export const writeClusterState = async (clusterId: string, state: ClusterState, 
     }
 
     // Write to unique temp file and atomically rename
-    await fs.writeFile(tempFilePath, JSON.stringify(state, null, 2));
+    await fs.writeFile(tempFilePath, JSON.stringify(normalizeClusterState(state, repoRoot), null, 2));
     await fs.rename(tempFilePath, filePath);
   } finally {
     // Release lock
@@ -285,7 +310,7 @@ export const writeClusterStateSync = (clusterId: string, state: ClusterState, re
     }
 
     mkdirSync(path.dirname(filePath), { recursive: true });
-    writeFileSync(tempFilePath, JSON.stringify(state, null, 2));
+    writeFileSync(tempFilePath, JSON.stringify(normalizeClusterState(state, repoRoot), null, 2));
     renameSync(tempFilePath, filePath);
   } finally {
     try {
