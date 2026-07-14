@@ -48,7 +48,7 @@ The Medic writes a sealed `MedicRunHealthResult` with:
 - Run-health report missing or unreadable: status "error", record blocker, no chart.
 - Uncertain diagnosis: record the assumption/blocker, proceed with a deferred or best-effort treatment plan.
 - Treatment packet compilation fails: status "error", record the failure.
-- Chart creation fails: status "partial", record the error, still write the sealed result.
+- Chart creation fails: status "error", record the error, still write the sealed result.
 - Any condition that would require Medic to implement code directly: stop and hand back to the Foreman as "blocked".
 
 ## Canonical Route Reference
