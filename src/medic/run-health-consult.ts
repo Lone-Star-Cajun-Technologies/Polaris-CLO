@@ -18,6 +18,7 @@ import {
   type RunHealthSymptom,
 } from "../run-health/index.js";
 import { generateNextChartId } from "./chart-id.js";
+import type { RouteHealthState } from "../cognition/route-cognition-delta.js";
 import {
   buildTreatmentPacketId,
   buildTreatmentPackets,
@@ -98,13 +99,29 @@ function deriveDecision(report: RunHealthReport): {
   };
 }
 
-function writeChart(chart: MedicChart, runId: string, repoRoot: string): string {
+export interface WriteChartInput extends MedicChart {
+  /** Route path for this chart. */
+  route?: string;
+  /** Canonical route health state (from POL-564). */
+  health_state?: RouteHealthState;
+  /** Optional problem statement override. */
+  problem?: string;
+  /** Chart status. */
+  status?: string;
+}
+
+export function writeChart(chart: WriteChartInput, runId: string, repoRoot: string): string {
   const chartsDir = join(repoRoot, "smartdocs", "medic", "charts");
   mkdirSync(chartsDir, { recursive: true });
 
   const nextId = generateNextChartId(chartsDir);
   const chartId = nextId.full;
   const now = new Date().toISOString();
+
+  const routeText = chart.route ?? "src/run-health";
+  const statusText = chart.status ?? "active";
+  const problemText = chart.problem ?? `Run-health symptoms were recorded during ${runId}.`;
+  const healthStateLine = chart.health_state ? `health_state: ${chart.health_state}\n` : "";
 
   const treatmentPlanText =
     chart.treatment_plan && chart.treatment_plan.length > 0
@@ -123,16 +140,16 @@ function writeChart(chart: MedicChart, runId: string, repoRoot: string): string 
   const content = `---
 chart_id: ${chartId}
 cluster_id: ${chart.cluster_id}
-route: src/run-health
-status: active
-related_charts: []
+route: ${routeText}
+status: ${statusText}
+${healthStateLine}related_charts: []
 created: ${now}
 updated: ${now}
 ---
 
 ## Problem
 
-Run-health symptoms were recorded during ${runId}.
+${problemText}
 
 ## Symptoms
 

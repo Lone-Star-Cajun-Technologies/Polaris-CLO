@@ -5,6 +5,7 @@ import { generateNextChartId } from "../medic/chart-id.js";
 import { loadConfig } from "../config/loader.js";
 import { TerminalCliAdapter } from "../loop/adapters/terminal-cli.js";
 import { runMedicRunHealthConsult } from "../medic/run-health-consult.js";
+import { runRouteExam } from "../medic/route-exam.js";
 import { dispatchTreatmentWorker } from "../medic/treatment-packets.js";
 import type { MedicRunHealthPacket } from "../types/result-packet.js";
 
@@ -126,6 +127,37 @@ export function createMedicCommand(options: { repoRoot?: string } = {}): Command
       } catch (err) {
         process.stderr.write(
           `medic run-health-consult error: ${err instanceof Error ? err.message : String(err)}\n`,
+        );
+        process.exit(1);
+      }
+    });
+
+  medic
+    .command("route-exam <route>")
+    .description("Run a proactive route exam for the named route and create a diagnostic chart")
+    .option("-r, --repo-root <path>", "Repository root", repoRootDefault)
+    .option("--cluster-id <id>", "Cluster ID for this chart", "UNKNOWN")
+    .option("--status <status>", "Chart status", "active")
+    .action((route: string, cmdOptions: {
+      repoRoot: string;
+      clusterId: string;
+      status: string;
+    }) => {
+      try {
+        const result = runRouteExam({
+          route,
+          repoRoot: cmdOptions.repoRoot,
+          clusterId: cmdOptions.clusterId,
+          status: cmdOptions.status,
+        });
+        process.stdout.write(`Created route exam chart: ${result.chart_ref}\n`);
+        process.stdout.write(`Chart ID: ${result.chart_id}\n`);
+        process.stdout.write(`Health state: ${result.packet.health_state}\n`);
+        process.stdout.write(`Owned paths: ${result.packet.owned_paths.length}\n`);
+        process.stdout.write(`Relevant tests: ${result.packet.relevant_tests.length}\n`);
+      } catch (err) {
+        process.stderr.write(
+          `medic route-exam error: ${err instanceof Error ? err.message : String(err)}\n`,
         );
         process.exit(1);
       }
