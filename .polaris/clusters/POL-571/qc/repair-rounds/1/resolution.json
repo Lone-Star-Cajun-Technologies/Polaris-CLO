@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "1.0",
+  "clusterId": "POL-571",
+  "round": 1,
+  "resolvedAt": "2026-07-14T22:30:18.284Z",
+  "resolver": "Phillip meaux",
+  "resolvedOutcome": "pass",
+  "reason": "Fixed: blocker.resolved was stale (false) in .polaris/clusters/POL-571/state.json after POL-575's successful redispatch/completion; corrected to true, consistent with cluster-complete status. Operator-authorized.",
+  "findings": [
+    "coderabbit-1-1784068057190"
+  ]
+}
