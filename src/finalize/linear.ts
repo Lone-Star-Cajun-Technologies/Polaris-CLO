@@ -2,6 +2,8 @@ import { request } from "node:https";
 import type { LoopState } from "../loop/checkpoint.js";
 import type { TrackerLifecyclePolicy } from "../config/schema.js";
 import { resolveLifecycleTransition } from "../tracker/lifecycle-policy.js";
+import { computeRunReportQcEvidence } from "./run-report.js";
+import type { QcEvidence } from "./run-report.js";
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Review-gate policy
@@ -48,6 +50,10 @@ export interface PostCommentOptions {
   lifecyclePolicy?: TrackerLifecyclePolicy;
   /** When provided, overrides state.completed_children.length in comment body. */
   authoritativeChildCount?: number;
+  /** Repository root used to compute QC evidence for the comment. */
+  repoRoot?: string;
+  /** Pre-computed QC evidence to include in the comment; takes precedence over repoRoot. */
+  qcEvidence?: QcEvidence;
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -153,6 +159,7 @@ function buildCommentBody(opts: {
   validationPassed: boolean;
   reviewStateMissing: boolean;
   authoritativeChildCount?: number;
+  qcEvidence?: QcEvidence;
 }): string {
   const childCount = opts.authoritativeChildCount ?? opts.state.completed_children.length;
   const lines = [
@@ -165,6 +172,22 @@ function buildCommentBody(opts: {
     `| Children completed | ${childCount} |`,
     `| Map validation | ${opts.validationPassed ? "✓ passed" : "✗ failed"} |`,
   ];
+
+  if (opts.qcEvidence) {
+    lines.push(
+      ``,
+      `### QC convergence evidence`,
+      ``,
+      `| Field | Value |`,
+      `|---|---|`,
+      `| Sealed reviewed SHA | ${opts.qcEvidence.sealedReviewedSha ?? "not recorded"} |`,
+      `| PR head SHA | ${opts.qcEvidence.prHeadSha ?? "not recorded"} |`,
+      `| QC review passes run | ${opts.qcEvidence.qcReviewPassCount} |`,
+      `| Unresolved advisory-severity findings | ${opts.qcEvidence.unresolvedAdvisoryCount} |`,
+      `| Repair loop outcome | ${opts.qcEvidence.repairLoopOutcome ?? "not recorded"} |`,
+    );
+  }
+
   if (opts.reviewStateMissing) {
     lines.push(
       ``,
@@ -180,8 +203,8 @@ function buildCommentBody(opts: {
 
 /** Posts a finalize-complete comment without attempting a state transition. */
 export async function postLinearComment(options: PostCommentOptions): Promise<void> {
-  const { issueId, state, branch, prUrl, validationPassed, apiKey, authoritativeChildCount } = options;
-  const body = buildCommentBody({ state, branch, prUrl, validationPassed, reviewStateMissing: false, authoritativeChildCount });
+  const { issueId, state, branch, prUrl, validationPassed, apiKey, authoritativeChildCount, qcEvidence } = options;
+  const body = buildCommentBody({ state, branch, prUrl, validationPassed, reviewStateMissing: false, authoritativeChildCount, qcEvidence });
 
   const data = await linearGraphQL<{ commentCreate?: { success?: boolean } }>(
     `mutation CreateComment($issueId: String!, $body: String!) {
@@ -209,7 +232,9 @@ export async function postLinearComment(options: PostCommentOptions): Promise<vo
  * state ID. The assertNotDoneState guard enforces this at runtime.
  */
 export async function updateLinearIssueAfterFinalize(options: PostCommentOptions): Promise<void> {
-  const { issueId, state, branch, prUrl, validationPassed, apiKey, lifecyclePolicy, authoritativeChildCount } = options;
+  const { issueId, state, branch, prUrl, validationPassed, apiKey, lifecyclePolicy, authoritativeChildCount, repoRoot, qcEvidence: providedQcEvidence } = options;
+
+  const qcEvidence = providedQcEvidence ?? (repoRoot ? computeRunReportQcEvidence(repoRoot, state).qcEvidence : undefined);
 
   // Resolve lifecycle transition from policy
   const lifecycleTransition = resolveLifecycleTransition("parent-all-children-complete", lifecyclePolicy);
@@ -225,6 +250,7 @@ export async function updateLinearIssueAfterFinalize(options: PostCommentOptions
       validationPassed,
       reviewStateMissing: false,
       authoritativeChildCount,
+      qcEvidence,
     });
 
     const commentData = await linearGraphQL<{ commentCreate?: { success?: boolean } }>(
@@ -254,6 +280,7 @@ export async function updateLinearIssueAfterFinalize(options: PostCommentOptions
       validationPassed,
       reviewStateMissing: false,
       authoritativeChildCount,
+      qcEvidence,
     });
 
     const commentData = await linearGraphQL<{ commentCreate?: { success?: boolean } }>(
@@ -300,6 +327,7 @@ export async function updateLinearIssueAfterFinalize(options: PostCommentOptions
     validationPassed,
     reviewStateMissing: reviewState === null,
     authoritativeChildCount,
+    qcEvidence,
   });
 
   const commentData = await linearGraphQL<{ commentCreate?: { success?: boolean } }>(
