@@ -9,8 +9,9 @@ The Medic route creates diagnostic charts, run-health consult results, and treat
 - `chart-id.ts` — deterministic CHART-YYYY-MM-DD-NNN generation
 - `chart-schema.ts` — Medic chart validation and schema helpers
 - `run-health-consult.ts` — run-health consult workflow, chart creation, consult result writing, and telemetry emission
+- `route-exam.ts` — proactive route exam: reads a route's persisted health state, POLARIS.md/SUMMARY.md, owned paths, and chart history, then writes a `no-treatment-needed` diagnostic chart for the route
 - `treatment-packets.ts` — treatment-packet compilation and dispatch helpers for consult follow-up work
-- `chart-id.test.ts`, `chart-schema.test.ts`, `run-health-consult.test.ts` — Medic route tests
+- `chart-id.test.ts`, `chart-schema.test.ts`, `route-exam.test.ts`, `run-health-consult.test.ts` — Medic route tests
 
 ## What does not belong here
 
@@ -29,6 +30,7 @@ The Medic route creates diagnostic charts, run-health consult results, and treat
 
 - Medic is the only route that diagnoses run-health symptoms and records the consult outcome.
 - A consult may resolve immediately (no treatment needed) or produce treatment packets for follow-up work.
+- Route exams are a proactive counterpart to run-health consults: they assess a named route's persisted health state on demand (`polaris medic route-exam <route>`) and always record a `no-treatment-needed` chart, independent of the symptom-driven consult flow.
 - Charts and treatment packets are durable documentation artifacts; they are not runtime state.
 
 ## Read before editing

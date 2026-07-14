@@ -12,6 +12,7 @@ Delta-only signal library for route-local cognition surfaces — determines when
   - `monitoring`: route has no POLARIS.md cognition
   - `recovering`: route was stale but recently updated (7-30 days old)
   - `healthy`: fresh, identity complete, has cognition
+- Route health state is persisted per route to `route-health.json` in the map sidecar output path (`applyRouteCognitionDelta` writes it for every atlas route); `src/map/welfare.ts` and `src/medic/route-exam.ts` read this persisted state rather than recomputing it.
 - SUMMARY.md size cap is a hard error; doctrine bleed detection is warn-only.
 - `isCognitionSkippedFolder` is the single authority on excluded folders, including the top-level `.polaris` runtime surfaces that now carry cognition while nested run, cluster, map, and graph artifacts stay excluded.
 

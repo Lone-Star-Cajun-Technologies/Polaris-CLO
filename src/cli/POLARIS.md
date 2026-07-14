@@ -17,7 +17,7 @@ The CLI entry point for Polaris. It wires the `polaris` binary, registers all to
 - `autoresearch.ts` — `polaris autoresearch score <run-id>` (retroactive binary gate scoring) and `polaris autoresearch propose <diagnosis-file>` (fix-zone-mapped Linear issue filing); dev-gated via `assertPolarisDevContext()`
 - `librarian.ts` — closeout librarian packet/result command surface
 - `qc.ts` — `polaris qc resolve`; records a formal operator resolution artifact for a QC repair-loop terminal state
-- `medic.ts` — `polaris medic chart create` and `polaris medic run-health-consult`; scaffolds Medic diagnostic charts and run-health consult artifacts
+- `medic.ts` — `polaris medic chart create`, `polaris medic run-health-consult`, and `polaris medic route-exam <route>`; scaffolds Medic diagnostic charts, run-health consult artifacts, and proactive route-exam charts
 - `worker.ts` — worker-owned commit enforcement command factory
 - `version.ts`, `version.test.ts` — version helper and test
 
