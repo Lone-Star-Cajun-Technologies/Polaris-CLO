@@ -1,0 +1,451 @@
+{
+  "schema_version": "1.0",
+  "run_id": "polaris-run-medic-route-health-2026-07-14-001",
+  "cluster_id": "POL-562",
+  "skill": "polaris-run",
+  "branch": "philmeaux/pol-562-implement-foundation-repair-for-medic-route-health-unify",
+  "session_type": "implement",
+  "active_child": "",
+  "completed_children": [
+    "POL-563",
+    "POL-564",
+    "POL-565",
+    "POL-566",
+    "POL-567",
+    "POL-568"
+  ],
+  "open_children": [],
+  "step_cursor": "checkpoint",
+  "context_budget": {
+    "children_completed": 6,
+    "max_children_per_session": 1
+  },
+  "status": "cluster-complete",
+  "next_open_child": null,
+  "artifact_dir": ".taskchain_artifacts/polaris-run",
+  "dispatch_boundary": {
+    "dispatch_epoch": 6,
+    "continue_epoch": 6,
+    "last_dispatched_child": "POL-568"
+  },
+  "run_bootstrap_seal": {
+    "sealer": "polaris-loop-bootstrap",
+    "run_id": "polaris-run-medic-route-health-2026-07-14-001",
+    "cluster_id": "POL-562",
+    "open_children_sha": "093443baf17220164c4dd664b2f3aa540c49e860ebe4474d09cc1e008f0e1718",
+    "sealed_at": "2026-07-14T00:28:24.137Z"
+  },
+  "open_children_meta": {
+    "POL-563": {
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/results/POL-563-a65ea4d6-8830-4b31-afcf-1feef2837065.json",
+      "dispatch_record": {
+        "dispatch_id": "a65ea4d6-8830-4b31-afcf-1feef2837065",
+        "child_id": "POL-563",
+        "run_id": "polaris-run-medic-route-health-2026-07-14-001",
+        "cluster_id": "POL-562",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/packets/POL-563-a65ea4d6-8830-4b31-afcf-1feef2837065.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/results/POL-563-a65ea4d6-8830-4b31-afcf-1feef2837065.json",
+        "provider": "devin",
+        "provider_selection_reason": "role-policy",
+        "providers_tried": [
+          "devin"
+        ],
+        "routing_summary": {
+          "selected_provider": "devin",
+          "selected_adapter": "terminal-cli",
+          "selection_reason": "role-policy",
+          "effective_policy_order": [
+            "devin",
+            "copilot",
+            "codex",
+            "kiro"
+          ],
+          "compatibility_mode": true,
+          "registry_present": false,
+          "fallback_eligible": true
+        },
+        "dispatched_at": "2026-07-14T00:28:26.688Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-medic-route-health-2026-07-14-001:POL-563:1783988906688",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    },
+    "POL-564": {
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/results/POL-564-016c3311-c585-491a-bb69-2c8e01d7158a.json",
+      "dispatch_record": {
+        "dispatch_id": "016c3311-c585-491a-bb69-2c8e01d7158a",
+        "child_id": "POL-564",
+        "run_id": "polaris-run-medic-route-health-2026-07-14-001",
+        "cluster_id": "POL-562",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/packets/POL-564-016c3311-c585-491a-bb69-2c8e01d7158a.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/results/POL-564-016c3311-c585-491a-bb69-2c8e01d7158a.json",
+        "provider": "devin",
+        "provider_selection_reason": "role-policy",
+        "providers_tried": [
+          "devin"
+        ],
+        "routing_summary": {
+          "selected_provider": "devin",
+          "selected_adapter": "terminal-cli",
+          "selection_reason": "role-policy",
+          "effective_policy_order": [
+            "devin",
+            "copilot",
+            "codex",
+            "kiro"
+          ],
+          "compatibility_mode": true,
+          "registry_present": false,
+          "fallback_eligible": true
+        },
+        "dispatched_at": "2026-07-14T00:37:00.654Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-medic-route-health-2026-07-14-001:POL-564:1783989420654",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    },
+    "POL-565": {
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/results/POL-565-1616a84f-e4fb-49c8-8f74-f1a7da4ec5c5.json",
+      "dispatch_record": {
+        "dispatch_id": "1616a84f-e4fb-49c8-8f74-f1a7da4ec5c5",
+        "child_id": "POL-565",
+        "run_id": "polaris-run-medic-route-health-2026-07-14-001",
+        "cluster_id": "POL-562",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/packets/POL-565-1616a84f-e4fb-49c8-8f74-f1a7da4ec5c5.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/results/POL-565-1616a84f-e4fb-49c8-8f74-f1a7da4ec5c5.json",
+        "provider": "devin",
+        "provider_selection_reason": "role-policy",
+        "providers_tried": [
+          "devin"
+        ],
+        "routing_summary": {
+          "selected_provider": "devin",
+          "selected_adapter": "terminal-cli",
+          "selection_reason": "role-policy",
+          "effective_policy_order": [
+            "devin",
+            "copilot",
+            "codex",
+            "kiro"
+          ],
+          "compatibility_mode": true,
+          "registry_present": false,
+          "fallback_eligible": true
+        },
+        "dispatched_at": "2026-07-14T00:52:37.397Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-medic-route-health-2026-07-14-001:POL-565:1783990357397",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    },
+    "POL-566": {
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/results/POL-566-fc5f787e-1f17-40d7-bf91-6986203d7683.json",
+      "dispatch_record": {
+        "dispatch_id": "fc5f787e-1f17-40d7-bf91-6986203d7683",
+        "child_id": "POL-566",
+        "run_id": "polaris-run-medic-route-health-2026-07-14-001",
+        "cluster_id": "POL-562",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/packets/POL-566-fc5f787e-1f17-40d7-bf91-6986203d7683.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/results/POL-566-fc5f787e-1f17-40d7-bf91-6986203d7683.json",
+        "provider": "devin",
+        "provider_selection_reason": "role-policy",
+        "providers_tried": [
+          "devin"
+        ],
+        "routing_summary": {
+          "selected_provider": "devin",
+          "selected_adapter": "terminal-cli",
+          "selection_reason": "role-policy",
+          "effective_policy_order": [
+            "devin",
+            "copilot",
+            "codex",
+            "kiro"
+          ],
+          "compatibility_mode": true,
+          "registry_present": false,
+          "fallback_eligible": true
+        },
+        "dispatched_at": "2026-07-14T01:02:25.299Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-medic-route-health-2026-07-14-001:POL-566:1783990945299",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    },
+    "POL-567": {
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/results/POL-567-31ca1095-78b8-4e7c-9031-0cfd71d572dc.json",
+      "dispatch_record": {
+        "dispatch_id": "31ca1095-78b8-4e7c-9031-0cfd71d572dc",
+        "child_id": "POL-567",
+        "run_id": "polaris-run-medic-route-health-2026-07-14-001",
+        "cluster_id": "POL-562",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/packets/POL-567-31ca1095-78b8-4e7c-9031-0cfd71d572dc.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/results/POL-567-31ca1095-78b8-4e7c-9031-0cfd71d572dc.json",
+        "provider": "devin",
+        "provider_selection_reason": "role-policy",
+        "providers_tried": [
+          "devin"
+        ],
+        "routing_summary": {
+          "selected_provider": "devin",
+          "selected_adapter": "terminal-cli",
+          "selection_reason": "role-policy",
+          "effective_policy_order": [
+            "devin",
+            "copilot",
+            "codex",
+            "kiro"
+          ],
+          "compatibility_mode": true,
+          "registry_present": false,
+          "fallback_eligible": true
+        },
+        "dispatched_at": "2026-07-14T01:10:46.666Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-medic-route-health-2026-07-14-001:POL-567:1783991446666",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    },
+    "POL-568": {
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/results/POL-568-2cca8c6f-2aa4-4a38-b8f5-b68fc7699f16.json",
+      "dispatch_record": {
+        "dispatch_id": "2cca8c6f-2aa4-4a38-b8f5-b68fc7699f16",
+        "child_id": "POL-568",
+        "run_id": "polaris-run-medic-route-health-2026-07-14-001",
+        "cluster_id": "POL-562",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/packets/POL-568-2cca8c6f-2aa4-4a38-b8f5-b68fc7699f16.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/results/POL-568-2cca8c6f-2aa4-4a38-b8f5-b68fc7699f16.json",
+        "provider": "devin",
+        "provider_selection_reason": "role-policy",
+        "providers_tried": [
+          "devin"
+        ],
+        "routing_summary": {
+          "selected_provider": "devin",
+          "selected_adapter": "terminal-cli",
+          "selection_reason": "role-policy",
+          "effective_policy_order": [
+            "devin",
+            "copilot",
+            "codex",
+            "kiro"
+          ],
+          "compatibility_mode": true,
+          "registry_present": false,
+          "fallback_eligible": true
+        },
+        "dispatched_at": "2026-07-14T01:20:43.986Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-medic-route-health-2026-07-14-001:POL-568:1783992043986",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    }
+  },
+  "worker_pool_state": {
+    "max_concurrent": 1,
+    "slot_claims": []
+  },
+  "last_commit": "0d891b6d64c8589da0f34e853209ba2f5ec90eb3",
+  "completed_children_results": {
+    "POL-563": {
+      "child_id": "POL-563",
+      "status": "done",
+      "validation": "passed",
+      "commit": "d5ec97ee8a0049708cfe1278a83bc1cb45483f32",
+      "next_recommended_action": "continue",
+      "run_id": "polaris-run-medic-route-health-2026-07-14-001",
+      "cluster_id": "POL-562",
+      "skill_name": "polaris-run",
+      "role": "worker",
+      "provider": "devin",
+      "packet_hash": "6fba41ff71a7f21b3c46666c0a2d9f5e75da7409e67e2fc595b8910c263ccc14",
+      "worker_id": "polaris-run-medic-route-health-2026-07-14-001:POL-563:1783988906688",
+      "escalation_count": 0,
+      "heartbeat_count": 10,
+      "result_artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/results/POL-563-a65ea4d6-8830-4b31-afcf-1feef2837065.json",
+      "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/packets/POL-563-a65ea4d6-8830-4b31-afcf-1feef2837065.json",
+      "telemetry_path": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-medic-route-health-2026-07-14-001/telemetry.jsonl",
+      "user_intervened": null,
+      "foreman_intervened": null,
+      "dispatch_epoch": 1,
+      "session_pointer": null
+    },
+    "POL-564": {
+      "child_id": "POL-564",
+      "status": "done",
+      "validation": "passed",
+      "commit": "01836c445eca982b1c1bff04fd15ff4be799587e",
+      "next_recommended_action": "continue",
+      "run_id": "polaris-run-medic-route-health-2026-07-14-001",
+      "cluster_id": "POL-562",
+      "skill_name": "polaris-run",
+      "role": "worker",
+      "provider": "devin",
+      "packet_hash": "d38bceafea4d0360b58353c809dfbecaa59867dbe99529d1e6396d5a85231c24",
+      "worker_id": "polaris-run-medic-route-health-2026-07-14-001:POL-564:1783989420654",
+      "escalation_count": 0,
+      "heartbeat_count": 11,
+      "result_artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/results/POL-564-016c3311-c585-491a-bb69-2c8e01d7158a.json",
+      "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/packets/POL-564-016c3311-c585-491a-bb69-2c8e01d7158a.json",
+      "telemetry_path": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-medic-route-health-2026-07-14-001/telemetry.jsonl",
+      "user_intervened": null,
+      "foreman_intervened": null,
+      "dispatch_epoch": 2,
+      "session_pointer": null
+    },
+    "POL-565": {
+      "child_id": "POL-565",
+      "status": "done",
+      "validation": "passed",
+      "commit": "f7056ccf6e2d65c85829d167e4a3726ed0016cf3",
+      "next_recommended_action": "continue",
+      "run_id": "polaris-run-medic-route-health-2026-07-14-001",
+      "cluster_id": "POL-562",
+      "skill_name": "polaris-run",
+      "role": "worker",
+      "provider": "devin",
+      "packet_hash": "8d670eee8a02f03c2633d361e915420ce821935268ee8f39eaad85e4cb0bf945",
+      "worker_id": "polaris-run-medic-route-health-2026-07-14-001:POL-565:1783990357397",
+      "escalation_count": 0,
+      "heartbeat_count": 6,
+      "result_artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/results/POL-565-1616a84f-e4fb-49c8-8f74-f1a7da4ec5c5.json",
+      "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/packets/POL-565-1616a84f-e4fb-49c8-8f74-f1a7da4ec5c5.json",
+      "telemetry_path": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-medic-route-health-2026-07-14-001/telemetry.jsonl",
+      "user_intervened": null,
+      "foreman_intervened": null,
+      "dispatch_epoch": 3,
+      "session_pointer": null
+    },
+    "POL-566": {
+      "child_id": "POL-566",
+      "status": "done",
+      "validation": "passed",
+      "commit": "a5e690d549e2456f96a7c1539e2a2f873838a03a",
+      "next_recommended_action": "continue",
+      "run_id": "polaris-run-medic-route-health-2026-07-14-001",
+      "cluster_id": "POL-562",
+      "skill_name": "polaris-run",
+      "role": "worker",
+      "provider": "devin",
+      "packet_hash": "8c65a21ecf763d3ce8c2b06293b292402ca5bc2ec8a9c2a84bd3edd03b780037",
+      "worker_id": "polaris-run-medic-route-health-2026-07-14-001:POL-566:1783990945299",
+      "escalation_count": 0,
+      "heartbeat_count": 9,
+      "result_artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/results/POL-566-fc5f787e-1f17-40d7-bf91-6986203d7683.json",
+      "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/packets/POL-566-fc5f787e-1f17-40d7-bf91-6986203d7683.json",
+      "telemetry_path": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-medic-route-health-2026-07-14-001/telemetry.jsonl",
+      "user_intervened": null,
+      "foreman_intervened": null,
+      "dispatch_epoch": 4,
+      "session_pointer": null
+    },
+    "POL-567": {
+      "child_id": "POL-567",
+      "status": "done",
+      "validation": "passed",
+      "commit": "f98086ca1a00dcace4fe6ff6b0f01db92fab2354",
+      "next_recommended_action": "continue",
+      "run_id": "polaris-run-medic-route-health-2026-07-14-001",
+      "cluster_id": "POL-562",
+      "skill_name": "polaris-run",
+      "role": "worker",
+      "provider": "devin",
+      "packet_hash": "87179319f261d1b3b948f3ad19f9cfb8acee35a3c0d7b3c0ae16570ef38b21b8",
+      "worker_id": "polaris-run-medic-route-health-2026-07-14-001:POL-567:1783991446666",
+      "escalation_count": 0,
+      "heartbeat_count": 9,
+      "result_artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/results/POL-567-31ca1095-78b8-4e7c-9031-0cfd71d572dc.json",
+      "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/packets/POL-567-31ca1095-78b8-4e7c-9031-0cfd71d572dc.json",
+      "telemetry_path": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-medic-route-health-2026-07-14-001/telemetry.jsonl",
+      "user_intervened": null,
+      "foreman_intervened": null,
+      "dispatch_epoch": 5,
+      "session_pointer": null
+    },
+    "POL-568": {
+      "child_id": "POL-568",
+      "status": "done",
+      "validation": "passed",
+      "commit": "0d891b6d64c8589da0f34e853209ba2f5ec90eb3",
+      "next_recommended_action": "continue",
+      "run_id": "polaris-run-medic-route-health-2026-07-14-001",
+      "cluster_id": "POL-562",
+      "skill_name": "polaris-run",
+      "role": "worker",
+      "provider": "devin",
+      "packet_hash": "f212290b63d60c8e92cbde28769afb90924451a42e423d4929a2a0e2df495a6c",
+      "worker_id": "polaris-run-medic-route-health-2026-07-14-001:POL-568:1783992043986",
+      "escalation_count": 0,
+      "heartbeat_count": 7,
+      "result_artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/results/POL-568-2cca8c6f-2aa4-4a38-b8f5-b68fc7699f16.json",
+      "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/packets/POL-568-2cca8c6f-2aa4-4a38-b8f5-b68fc7699f16.json",
+      "telemetry_path": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-medic-route-health-2026-07-14-001/telemetry.jsonl",
+      "user_intervened": null,
+      "foreman_intervened": null,
+      "dispatch_epoch": 6,
+      "session_pointer": null
+    }
+  },
+  "qc_repair_loop": {
+    "current_round": 2,
+    "max_rounds": 2,
+    "source_qc_run_ids": [
+      "coderabbit-1783992737979"
+    ],
+    "manifest_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/qc/repair-rounds/2/repair-packets.json",
+    "pending_packet_ids": [
+      "pkt-POL-562-r2-000",
+      "pkt-POL-562-r2-001",
+      "pkt-POL-562-r2-002",
+      "pkt-POL-562-r2-003"
+    ],
+    "completed_packet_ids": [],
+    "rerun_requested": false,
+    "rerun_qc_run_ids": {},
+    "terminal_outcome": "operator-review",
+    "initiated_at": "2026-07-14T01:32:18.048Z",
+    "updated_at": "2026-07-14T03:59:56.023Z"
+  }
+}

@@ -1,0 +1,117 @@
+{
+  "schema_version": "1.0",
+  "role": "closeout-librarian",
+  "run_id": "polaris-run-medic-route-health-2026-07-14-001",
+  "dispatch_id": "9d8caeb0-e5da-46dc-bf1f-be044483c3ba",
+  "cluster_id": "POL-562",
+  "status": "success",
+  "commit_sha": "5b0224fa0a5f995cea8de26817629a938b5f0756",
+  "commit_message": "docs(closeout): reconcile cognition for cluster POL-562\n\nRun: polaris-run-medic-route-health-2026-07-14-001\nCluster: POL-562\nChildren: POL-563, POL-564, POL-565, POL-566, POL-567, POL-568\nFiles updated:\n- POLARIS.md: 4 files\n- SUMMARY.md: 3 files\n- docs ingested: 0\n- links repaired: 0",
+  "files_committed": [
+    "src/cli/POLARIS.md",
+    "src/cli/SUMMARY.md",
+    "src/cognition/POLARIS.md",
+    "src/cognition/SUMMARY.md",
+    "src/medic/POLARIS.md",
+    "src/medic/SUMMARY.md",
+    "src/workspace/POLARIS.md"
+  ],
+  "drift_reconciliation": {
+    "medic_ran": false,
+    "charts_created": [],
+    "drift_observations": [
+      {
+        "type": "canon_mismatch",
+        "target": "src/cognition/POLARIS.md",
+        "severity": "medium"
+      },
+      {
+        "type": "missing_documentation",
+        "target": "src/medic/POLARIS.md",
+        "severity": "medium"
+      },
+      {
+        "type": "missing_documentation",
+        "target": "src/medic/SUMMARY.md",
+        "severity": "high"
+      },
+      {
+        "type": "route_guidance_outdated",
+        "target": "src/cli/POLARIS.md",
+        "severity": "low"
+      },
+      {
+        "type": "missing_documentation",
+        "target": "src/workspace/POLARIS.md",
+        "severity": "low"
+      }
+    ],
+    "chart_links_required": false,
+    "charts_linked": []
+  },
+  "polaris_md_updates": [
+    {
+      "file": "src/cognition/POLARIS.md",
+      "action": "update",
+      "change_summary": "Fixed stale claim that assessRouteHealth() writes no files; documented route-health.json persistence via writeRouteHealthState/readRouteHealthState consumed by welfare.ts and route-exam.ts."
+    },
+    {
+      "file": "src/medic/POLARIS.md",
+      "action": "update",
+      "change_summary": "Added route-exam.ts and route-exam.test.ts to folder inventory; documented proactive route-exam as a non-symptom-driven counterpart to run-health consults."
+    },
+    {
+      "file": "src/cli/POLARIS.md",
+      "action": "update",
+      "change_summary": "Added the new `polaris medic route-exam <route>` subcommand to the medic.ts bullet."
+    },
+    {
+      "file": "src/workspace/POLARIS.md",
+      "action": "update",
+      "change_summary": "Added medic.md to the Read-before-editing role-file list (bundled workspace asset was missing)."
+    }
+  ],
+  "summary_md_updates": [
+    {
+      "file": "src/medic/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Replaced never-completed draft template with real current-state content covering chart-id, chart-schema, run-health-consult, and the new route-exam capability."
+    },
+    {
+      "file": "src/cognition/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Added a bullet documenting route-health.json persistence and its consumers."
+    },
+    {
+      "file": "src/cli/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Updated medic command-group sentence to include `medic route-exam <route>`."
+    },
+    { "file": "src/POLARIS.md", "action": "no_change" },
+    { "file": "src/SUMMARY.md", "action": "no_change" },
+    { "file": "src/finalize/POLARIS.md", "action": "no_change" },
+    { "file": "src/finalize/SUMMARY.md", "action": "no_change" },
+    { "file": "src/graph/POLARIS.md", "action": "no_change" },
+    { "file": "src/loop/POLARIS.md", "action": "no_change" },
+    { "file": "src/loop/SUMMARY.md", "action": "no_change" },
+    { "file": "src/map/POLARIS.md", "action": "no_change" },
+    { "file": "src/map/SUMMARY.md", "action": "no_change" },
+    { "file": "src/types/POLARIS.md", "action": "no_change" },
+    { "file": "src/types/SUMMARY.md", "action": "no_change" },
+    { "file": "src/workspace/SUMMARY.md", "action": "no_change" }
+  ],
+  "docs_ingested": [],
+  "docs_archived": [],
+  "yaml_updates": [],
+  "cognition_archived": [],
+  "link_validation": {
+    "total_checked": 4,
+    "valid": 4,
+    "broken": 0,
+    "repaired": 0,
+    "unrepairable": []
+  },
+  "blockers": [],
+  "reconciled_at": "2026-07-14T02:05:11Z",
+  "evidence_summary": "Reconciled POLARIS.md/SUMMARY.md for the six-child POL-562 medic route-health cluster (chart-id, chart-schema, route-cognition-delta, chart linking, route-exam, graph.ts fix). Corrected a canon mismatch in src/cognition/POLARIS.md: assessRouteHealth() now persists state to route-health.json rather than being write-free, and welfare.ts/route-exam.ts consume that persisted state. Filled in src/medic/SUMMARY.md, which had never been promoted past its generated draft template, with real current-state content covering the new route-exam.ts capability. Updated src/cli/POLARIS.md and SUMMARY.md to mention the new `medic route-exam <route>` subcommand, and added the missing medic.md role-file reference in src/workspace/POLARIS.md. src/types/*, src/graph/POLARIS.md were already reconciled inline by their owning children (POL-563, POL-568) and needed no further change; src/loop, src/map, src/finalize, and root src/ docs remain accurate at their current level of description. No docs required ingestion/promotion; no cognition notes were pending. All 7 files committed in a single librarian commit (5b0224f); no runtime state was touched."
+}

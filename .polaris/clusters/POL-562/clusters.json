@@ -1,0 +1,79 @@
+{
+  "schemaVersion": "v2",
+  "source": {
+    "id": "POL-562",
+    "type": "Linear",
+    "analysis": {
+      "id": "POL-553",
+      "doc": "smartdocs/raw/analysis/pol-553-deepsec-medic-federation-analysis.md"
+    }
+  },
+  "nodes": {
+    "POL-562": {
+      "id": "POL-562",
+      "title": "IMPLEMENT: Foundation repair for Medic route health — unify RouteHealthState, retire dead Medic authority model, fix chart/escalation gaps, add route-exam mode",
+      "status": "Backlog",
+      "body": "## Objective\n\nRepair the inconsistencies and gaps in the current Medic / route-health / chart / run-health-symptom pipeline that were found during ANALYZE issue POL-553's audit, and add a canonical single-route \"route exam\" mode — establishing the foundation a future federated multi-Medic repository welfare check (deferred, see POL-553) would need to build on safely.\n\n## Context\n\nPOL-553 asked to absorb DeepSec-style staged diagnostics into Medic and federate route health scans. Repo-analysis inspection (see `smartdocs/raw/analysis/pol-553-deepsec-medic-federation-analysis.md`) confirmed a real, working pipeline already exists end-to-end (run-health symptom → Medic chart → treatment packet → normal Foreman/Worker dispatch → QC), but it is 100% reactive to run-health failures (no proactive route exam), and several supporting pieces are broken or contradictory: two incompatible RouteHealthState enums; two contradictory Medic authority doctrines (an orphaned skill packet says Medic may self-implement, the live pipeline doctrine says it never does); a known open finalize-path escalation gap (POL-537); chart schema gaps (related_charts never parsed, chart-ID race condition); and an unbuilt graph subsystem with no build automation.\n\n## Goal\n\nOne canonical RouteHealthState model, computed and persisted; one canonical, non-contradictory Medic authority doctrine; the finalize-path symptom-escalation gap closed; chart schema correctness gaps fixed; a working proactive single-route exam CLI entrypoint; and `polaris graph build` wired as a documented, repeatable prerequisite step.\n\n## Scope\n\n* src/cognition/route-cognition-delta.ts\n* src/loop/worker.ts\n* src/map/welfare.ts\n* src/finalize/index.ts\n* src/run-health/qc-escalation.ts\n* src/medic/chart-schema.ts\n* src/medic/chart-id.ts\n* src/medic/treatment-packets.ts\n* src/medic/run-health-consult.ts\n* src/medic/POLARIS.md\n* src/cli/medic.ts\n* .polaris/roles/medic.md\n* .polaris/skills/polaris-medic/**\n* .polaris/skills/ROUTING.md\n* src/types/result-packet.ts\n* src/graph/**\n* src/cli/graph.ts\n\n## Acceptance Criteria\n\n- [ ] All 6 child issues are Done.\n- [ ] RouteHealthState has one canonical definition, computed and persisted, and both welfare-check and the cognition path read the same source of truth.\n- [ ] .polaris/roles/medic.md exists and matches the live, actually-wired doctrine; the orphaned polaris-medic skill packet and dead MedicPacket type are retired.\n- [ ] The finalize-path run-health escalation gap (POL-537) is closed.\n- [ ] Chart related_charts parsing and chart-ID concurrency are fixed.\n- [ ] A working `polaris medic route-exam <route>` command produces a real chart with no triggering run-health symptom.\n- [ ] .polaris/graph can be built via a documented, repeatable step, and getImpactedFiles() returns sane results against this repo.\n- [ ] npm run build and npm test pass.\n\n## Validation\n\n* npm run build\n* npm test\n\n## Ordering\n\nCluster is internally ordered — children 1-4 are largely independent of each other; child 5 depends on children 1-2; child 6 is independent.\n\n## Non-goals\n\n* Do not implement federated/parallel multi-Medic scanning, cross-route referrals, deterministic aggregation, or a known-incident detector lifecycle — deferred to a follow-on ANALYZE pass.\n* Do not produce a numeric token-savings benchmark in this cluster — no real route-exam packets exist yet to measure against.\n* Do not fork or embed DeepSec code."
+    },
+    "POL-563": {
+      "id": "POL-563",
+      "title": "Retire the orphaned Medic authority model and establish canonical Medic doctrine",
+      "status": "Backlog",
+      "body": "## Objective\n\nRemove the contradictory, orphaned Medic authority model and establish a single canonical Medic doctrine matching the live, actually-wired pipeline.\n\n## Context\n\nPart of IMPLEMENT parent POL-562 (from ANALYZE POL-553). `.polaris/skills/polaris-medic/` describes an older Medic model where Medic directly repairs implementation code, contradicting `src/medic/POLARIS.md`'s live doctrine (diagnose + hand off, never self-implement). `MedicPacket` (`src/types/result-packet.ts:110-125`) is referenced only in its own definition — no production code ever constructs or dispatches it. `.polaris/roles/medic.md`, referenced by the orphaned skill's own frontmatter, does not exist.\n\n## Goal\n\nOne settled, non-contradictory Medic doctrine exists as .polaris/roles/medic.md, matching src/medic/POLARIS.md. The orphaned skill packet and dead type are removed.\n\n## Scope\n\n* .polaris/roles/medic.md\n* .polaris/skills/polaris-medic/**\n* .polaris/skills/ROUTING.md\n* src/types/result-packet.ts\n\n## Acceptance Criteria\n\n- [ ] .polaris/roles/medic.md created, documenting the live doctrine, consistent with src/medic/POLARIS.md.\n- [ ] .polaris/skills/polaris-medic/ directory removed (and any other doc referencing it as a live entrypoint corrected).\n- [ ] MedicPacket interface and exclusively-related dead code in src/types/result-packet.ts removed.\n- [ ] .polaris/skills/ROUTING.md's note about polaris-medic dispatch updated/removed.\n- [ ] npm run build and npm test pass.\n\n## Validation\n\n* npm run build\n* npm test\n* grep -rn \"MedicPacket\" src (expect zero hits after removal)\n\n## Ordering\n\nNone — independent; should land early since child POL-567 (route-exam CLI) should be built against the settled doctrine.\n\n## Non-goals\n\n* Do not change src/medic/POLARIS.md itself.\n* Do not change the treatment-packet/dispatch pipeline."
+    },
+    "POL-564": {
+      "id": "POL-564",
+      "title": "Unify RouteHealthState into one canonical schema and wire it end-to-end",
+      "status": "Backlog",
+      "body": "## Objective\n\nReplace the two incompatible RouteHealthState models with one canonical, computed, and persisted route health state.\n\n## Context\n\nPart of IMPLEMENT parent POL-562 (from ANALYZE POL-553). Two independent definitions exist: src/map/welfare.ts (3-state, used only by welfare-check) and src/cognition/route-cognition-delta.ts (5-state, fully built and unit-tested, but dead in production — applyRouteCognitionDelta() hardcodes healthState: undefined).\n\n## Goal\n\nThe 5-state cognition model becomes canonical; applyRouteCognitionDelta() actually computes and persists it; welfare-check reads the same canonical state.\n\n## Scope\n\n* src/cognition/route-cognition-delta.ts\n* src/cognition/route-cognition-delta.test.ts\n* src/loop/worker.ts\n* src/map/welfare.ts\n* src/map/welfare.test.ts\n\n## Acceptance Criteria\n\n- [ ] src/map/welfare.ts's separate 3-state type removed; welfare-check uses the canonical 5-state type.\n- [ ] applyRouteCognitionDelta() calls assessRouteHealth() and persists a real computed value.\n- [ ] Computed route health state is persisted, readable by welfare-check and future callers.\n- [ ] Tests cover the now-wired assessRouteHealth() call path.\n- [ ] npm run build and npm test pass.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/cognition/route-cognition-delta.test.ts src/map/welfare.test.ts\n\n## Ordering\n\nNone — independent; should land before any future federation/aggregation work (deferred).\n\n## Non-goals\n\n* Do not add new route health states.\n* Do not implement cross-route aggregation or federation."
+    },
+    "POL-565": {
+      "id": "POL-565",
+      "title": "Fix finalize-path run-health escalation gap (POL-537)",
+      "status": "Backlog",
+      "body": "## Objective\n\nClose the finalize-path gap where untrusted QC repair-loop outcomes hard-block with zero run-health symptom recorded and zero Medic escalation route.\n\n## Context\n\nPart of IMPLEMENT parent POL-562 (from ANALYZE POL-553), closing an already-diagnosed gap: smartdocs/raw/analysis/pol-537-finalize-medic-escalation-gap-analysis.md. runCompletedClusterQcWithRepair() never calls appendRepairLoopOutcomeSymptom() the way src/loop/parent.ts does for the loop run path.\n\n## Goal\n\nrunCompletedClusterQcWithRepair() calls appendRepairLoopOutcomeSymptom() after runQcRepairLoop() returns, before validateQcRepairLoopGate() runs; also wire appendQcEscalationSymptoms() for the pre-repair result.\n\n## Scope\n\n* src/finalize/index.ts\n* src/finalize/index.test.ts\n* src/run-health/qc-escalation.ts\n\n## Acceptance Criteria\n\n- [ ] runCompletedClusterQcWithRepair() calls appendRepairLoopOutcomeSymptom() after runQcRepairLoop() returns, before the gate check.\n- [ ] appendQcEscalationSymptoms() also called for the pre-repair runQcAtTrigger() result.\n- [ ] Resulting symptom lands in run-health-report.json so a subsequent finalize retry's Medic gate can pick it up.\n- [ ] New/updated test asserts the symptom is recorded on an untrusted outcome.\n- [ ] npm run build and npm test pass.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/finalize/index.test.ts\n\n## Ordering\n\nNone — independent.\n\n## Non-goals\n\n* Do not change qc-escalation.ts itself.\n* Do not auto-dispatch Medic synchronously inside finalize."
+    },
+    "POL-566": {
+      "id": "POL-566",
+      "title": "Fix chart schema correctness gaps: related_charts parsing and chart-ID concurrency",
+      "status": "Backlog",
+      "body": "## Objective\n\nFix two chart-system correctness gaps that block any future concurrent/federated chart writer: related_charts front-matter is never actually parsed, and chart-ID generation has a race condition under concurrent callers.\n\n## Context\n\nPart of IMPLEMENT parent POL-562 (from ANALYZE POL-553). validateChart()'s hand-rolled parser always returns related_charts: [] regardless of content. generateNextChartId() rescans the charts directory per call with no lock.\n\n## Goal\n\nvalidateChart() correctly parses and validates related_charts against the 7 relationship types; chart-ID sequence claiming is race-safe under concurrent callers.\n\n## Scope\n\n* src/medic/chart-schema.ts\n* src/medic/chart-schema.test.ts\n* src/medic/chart-id.ts\n* src/medic/chart-id.test.ts\n\n## Acceptance Criteria\n\n- [ ] validateChart() correctly parses related_charts front matter and validates entries against the 7 relationship types.\n- [ ] generateNextChartId() (or replacement) is safe under concurrent callers, with a test simulating concurrent calls asserting no duplicate IDs.\n- [ ] Existing charts still validate successfully after the parser fix.\n- [ ] npm run build and npm test pass.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/medic/chart-schema.test.ts src/medic/chart-id.test.ts\n\n## Ordering\n\nNone — independent.\n\n## Non-goals\n\n* Do not change the chart schema's required sections or front-matter fields.\n* Do not implement actual concurrent/federated chart writing."
+    },
+    "POL-567": {
+      "id": "POL-567",
+      "title": "Implement canonical single-route exam packet + polaris medic route-exam CLI command",
+      "status": "Backlog",
+      "body": "## Objective\n\nAdd a proactive, single-route \"route exam\" mode so Medic can write a diagnostic chart for a route even with no triggering run-health symptom, reusing the existing chart/treatment-packet machinery unchanged.\n\n## Context\n\nPart of IMPLEMENT parent POL-562 (from ANALYZE POL-553). Chart creation today is 100% reactive to run-health symptoms. This child depends on POL-563 (settled Medic doctrine) and POL-564 (canonical RouteHealthState) landing first.\n\n## Goal\n\nA new `polaris medic route-exam <route>` command builds the minimal route-exam packet (POLARIS.md/SUMMARY.md, owned paths, chart history, relevant tests) and lets Medic write a chart proactively, reusing existing machinery unchanged. No graph dependency for this child.\n\n## Scope\n\n* src/cli/medic.ts\n* src/medic/route-exam.ts\n* src/medic/route-exam.test.ts\n* src/medic/run-health-consult.ts\n\n## Acceptance Criteria\n\n- [ ] `polaris medic route-exam <route>` command exists and builds a route-exam packet for the named route.\n- [ ] Running it against a real route with no active run-health symptom produces a real chart via the existing chart machinery.\n- [ ] The produced chart's health-state front matter uses the canonical RouteHealthState from POL-564.\n- [ ] No changes to the treatment-packet/dispatch pipeline itself.\n- [ ] npm run build and npm test pass.\n\n## Validation\n\n* npm run build\n* npm test\n* npx vitest run src/medic/route-exam.test.ts\n* polaris medic route-exam src/medic (manual smoke check)\n\n## Ordering\n\nDepends on POL-563 and POL-564 landing first.\n\n## Non-goals\n\n* Do not implement impact-scan mode or repository-wide/federated scanning — deferred.\n* Do not change how reactive chart creation works."
+    },
+    "POL-568": {
+      "id": "POL-568",
+      "title": "Wire polaris graph build as a documented, repeatable prerequisite",
+      "status": "Backlog",
+      "body": "## Objective\n\nMake .polaris/graph a reliably buildable, documented prerequisite so future impact-scan / cross-route-referral work (deferred) has a real primitive to build on.\n\n## Context\n\nPart of IMPLEMENT parent POL-562 (from ANALYZE POL-553). src/graph/** is mature and polaris graph build is a real, non-stub command, but .polaris/graph has never been built in this repo, and no automation triggers it.\n\n## Goal\n\n`polaris graph build` is documented as an explicit, repeatable step and validated to actually work end-to-end against this repo.\n\n## Scope\n\n* src/cli/graph.ts\n* src/graph/POLARIS.md\n* docs (operator-facing doc for the graph build step)\n\n## Acceptance Criteria\n\n- [ ] Running `polaris graph build` against this repo succeeds and populates .polaris/graph.\n- [ ] getImpactedFiles() (or equivalent) returns sane, non-empty results for at least one real changed-file scenario.\n- [ ] A documented step explains when/how to run polaris graph build as a prerequisite for future impact-scan tooling.\n- [ ] npm run build and npm test pass.\n\n## Validation\n\n* npm run build\n* npm test\n* polaris graph build (manual smoke check)\n\n## Ordering\n\nNone — independent; can run in parallel.\n\n## Non-goals\n\n* Do not implement impact-scan mode or wire the graph into welfare-check/Medic.\n* Do not add automatic/continuous graph rebuild."
+    },
+    "POL-553": {
+      "id": "POL-553",
+      "title": "ANALYZE: Absorb DeepSec-style staged diagnostics into Medic and federate route health scans",
+      "status": "Todo"
+    }
+  },
+  "dependencies": {
+    "POL-567": ["POL-563", "POL-564"]
+  },
+  "clusters": {
+    "POL-562": {
+      "id": "POL-562",
+      "title": "Linear Issue: POL-562",
+      "children": [
+        "POL-563",
+        "POL-564",
+        "POL-565",
+        "POL-566",
+        "POL-567",
+        "POL-568"
+      ],
+      "cluster_root": "POL-562"
+    }
+  },
+  "activeCluster": "POL-562"
+}

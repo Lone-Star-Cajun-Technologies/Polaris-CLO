@@ -1,0 +1,147 @@
+{
+  "schema_version": "1.0",
+  "cluster_id": "POL-562",
+  "state_generation": 28,
+  "child_states": [
+    {
+      "id": "POL-563",
+      "status": "done",
+      "commit": "d5ec97ee8a0049708cfe1278a83bc1cb45483f32"
+    },
+    {
+      "id": "POL-564",
+      "status": "done",
+      "commit": "01836c445eca982b1c1bff04fd15ff4be799587e"
+    },
+    {
+      "id": "POL-565",
+      "status": "done",
+      "commit": "f7056ccf6e2d65c85829d167e4a3726ed0016cf3"
+    },
+    {
+      "id": "POL-566",
+      "status": "done",
+      "commit": "a5e690d549e2456f96a7c1539e2a2f873838a03a"
+    },
+    {
+      "id": "POL-567",
+      "status": "done",
+      "commit": "f98086ca1a00dcace4fe6ff6b0f01db92fab2354"
+    },
+    {
+      "id": "POL-568",
+      "status": "done",
+      "commit": "0d891b6d64c8589da0f34e853209ba2f5ec90eb3"
+    }
+  ],
+  "claim_metadata": {},
+  "packet_pointers": {
+    "POL-563": ".polaris/clusters/POL-562/packets/POL-563-a65ea4d6-8830-4b31-afcf-1feef2837065.json",
+    "POL-564": ".polaris/clusters/POL-562/packets/POL-564-016c3311-c585-491a-bb69-2c8e01d7158a.json",
+    "POL-565": ".polaris/clusters/POL-562/packets/POL-565-1616a84f-e4fb-49c8-8f74-f1a7da4ec5c5.json",
+    "POL-566": ".polaris/clusters/POL-562/packets/POL-566-fc5f787e-1f17-40d7-bf91-6986203d7683.json",
+    "POL-567": ".polaris/clusters/POL-562/packets/POL-567-31ca1095-78b8-4e7c-9031-0cfd71d572dc.json",
+    "POL-568": ".polaris/clusters/POL-562/packets/POL-568-2cca8c6f-2aa4-4a38-b8f5-b68fc7699f16.json"
+  },
+  "result_pointers": {
+    "POL-563": ".polaris/clusters/POL-562/results/POL-563-a65ea4d6-8830-4b31-afcf-1feef2837065.json",
+    "POL-564": ".polaris/clusters/POL-562/results/POL-564-016c3311-c585-491a-bb69-2c8e01d7158a.json",
+    "POL-565": ".polaris/clusters/POL-562/results/POL-565-1616a84f-e4fb-49c8-8f74-f1a7da4ec5c5.json",
+    "POL-566": ".polaris/clusters/POL-562/results/POL-566-fc5f787e-1f17-40d7-bf91-6986203d7683.json",
+    "POL-567": ".polaris/clusters/POL-562/results/POL-567-31ca1095-78b8-4e7c-9031-0cfd71d572dc.json",
+    "POL-568": ".polaris/clusters/POL-562/results/POL-568-2cca8c6f-2aa4-4a38-b8f5-b68fc7699f16.json"
+  },
+  "validation_results": {
+    "POL-563": {
+      "passed": true,
+      "output": "passed"
+    },
+    "POL-564": {
+      "passed": true,
+      "output": "passed"
+    },
+    "POL-565": {
+      "passed": true,
+      "output": "passed"
+    },
+    "POL-566": {
+      "passed": true,
+      "output": "passed"
+    },
+    "POL-567": {
+      "passed": true,
+      "output": "passed"
+    },
+    "POL-568": {
+      "passed": true,
+      "output": "passed"
+    }
+  },
+  "commits": {
+    "POL-563": "d5ec97ee8a0049708cfe1278a83bc1cb45483f32",
+    "POL-564": "01836c445eca982b1c1bff04fd15ff4be799587e",
+    "POL-565": "f7056ccf6e2d65c85829d167e4a3726ed0016cf3",
+    "POL-566": "a5e690d549e2456f96a7c1539e2a2f873838a03a",
+    "POL-567": "f98086ca1a00dcace4fe6ff6b0f01db92fab2354",
+    "POL-568": "0d891b6d64c8589da0f34e853209ba2f5ec90eb3"
+  },
+  "tracker_mutations": {},
+  "blockers": [],
+  "qc_runs": {
+    "coderabbit-1783992737979": {
+      "artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/qc/coderabbit-1783992737979.json",
+      "status": "findings",
+      "provider": "coderabbit",
+      "started_at": "2026-07-14T01:29:16.049Z",
+      "completed_at": "2026-07-14T01:32:17.979Z",
+      "availability": "available"
+    },
+    "coderabbit-1783995764419": {
+      "artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/qc/coderabbit-1783995764419.json",
+      "status": "findings",
+      "provider": "coderabbit",
+      "started_at": "2026-07-14T02:08:49.517Z",
+      "completed_at": "2026-07-14T02:22:44.419Z",
+      "availability": "available"
+    },
+    "coderabbit-1783996354873": {
+      "artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/qc/coderabbit-1783996354873.json",
+      "status": "findings",
+      "provider": "coderabbit",
+      "started_at": "2026-07-14T02:26:29.996Z",
+      "completed_at": "2026-07-14T02:32:34.873Z",
+      "availability": "available"
+    },
+    "coderabbit-1784000905190": {
+      "artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/qc/coderabbit-1784000905190.json",
+      "status": "findings",
+      "provider": "coderabbit",
+      "started_at": "2026-07-14T03:42:08.006Z",
+      "completed_at": "2026-07-14T03:48:25.190Z",
+      "availability": "available"
+    },
+    "coderabbit-1784001370611": {
+      "artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/qc/coderabbit-1784001370611.json",
+      "status": "findings",
+      "provider": "coderabbit",
+      "started_at": "2026-07-14T03:51:34.000Z",
+      "completed_at": "2026-07-14T03:56:10.611Z",
+      "availability": "available"
+    },
+    "coderabbit-1784001595974": {
+      "artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/qc/coderabbit-1784001595974.json",
+      "status": "findings",
+      "provider": "coderabbit",
+      "started_at": "2026-07-14T03:56:56.260Z",
+      "completed_at": "2026-07-14T03:59:55.974Z",
+      "availability": "available"
+    }
+  },
+  "delivery_branch": "philmeaux/pol-562-implement-foundation-repair-for-medic-route-health-unify",
+  "base_branch": "main",
+  "qc_repair_manifests": {
+    "1": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/qc/repair-rounds/1/repair-packets.json",
+    "2": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-562/qc/repair-rounds/2/repair-packets.json"
+  },
+  "qc_repair_outcome": "operator-review"
+}

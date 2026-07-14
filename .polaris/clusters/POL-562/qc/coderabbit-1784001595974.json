@@ -1,0 +1,95 @@
+{
+  "schemaVersion": "1.0",
+  "qcRunId": "coderabbit-1784001595974",
+  "runId": "polaris-run-medic-route-health-2026-07-14-001",
+  "clusterId": "POL-562",
+  "trigger": "completed-cluster",
+  "provider": "coderabbit",
+  "providerMode": "local",
+  "startedAt": "2026-07-14T03:56:56.260Z",
+  "completedAt": "2026-07-14T03:59:55.974Z",
+  "status": "findings",
+  "findings": [
+    {
+      "findingId": "coderabbit-1-1784001595973",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/medic/chart-id.ts at line 84, Correct the typo in the documentation comment describing the retry behavior, changing “resans” to “rescans” without altering the surrounding text or implementation.",
+      "filePath": "src/medic/chart-id.ts",
+      "range": {
+        "startLine": 1
+      },
+      "suggestedAction": "* If another caller already claimed the sequence, the function rescans and retries.",
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "low",
+        "reason": "shared-file",
+        "childId": "POL-566",
+        "filePath": "src/medic/chart-id.ts"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-2-1784001595973",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-562/cluster-state.json around lines 90 - 131, Replace the absolute /Users/lsctech/Developer/Polaris prefix in every qc_runs artifact_path and qc_repair_manifests path with repo-relative paths, matching the format already used by packet_pointers and result_pointers. Update all five artifact_path entries and both qc_repair_manifests entries without changing their remaining path components.",
+      "filePath": ".polaris/clusters/POL-562/cluster-state.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-562/cluster-state.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-3-1784001595973",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-494/medic/polaris-run-pol-494-2026-07-12-001-r1-qc_qc-all-providers-failed_b651cd96-cb00-43e9-b87c-4d0422536466.json around lines 22 - 26, Update dispatch_metadata.result_file in this POL-494 medic packet to use the repository-relative result path format used by the sibling POL-562 packets, removing the contributor-specific /Users/lsctech/Developer/Polaris prefix while preserving the remaining path.",
+      "filePath": ".polaris/clusters/POL-494/medic/polaris-run-pol-494-2026-07-12-001-r1-qc_qc-all-providers-failed_b651cd96-cb00-43e9-b87c-4d0422536466.json",
+      "range": {
+        "startLine": 1
+      },
+      "suggestedAction": "\"dispatch_metadata\": {\n    \"dispatch_id\": \"a02fa900-9dee-4455-a9f2-19d7a83b027f\",\n    \"worker_id\": \"polaris-run-pol-494-2026-07-12-001:treatment:polaris-run-pol-494-2026-07-12-001-r1-qc_qc-all-providers-failed_b651cd96-cb00-43e9-b87c-4d0422536466:1783830316328\",\n    \"result_file\": \".polaris/clusters/POL-494/medic/polaris-run-pol-494-2026-07-12-001-r1-qc_qc-all-providers-failed_b651cd96-cb00-43e9-b87c-4d0422536466-result.json\"\n  },",
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-494/medic/polaris-run-pol-494-2026-07-12-001-r1-qc_qc-all-providers-failed_b651cd96-cb00-43e9-b87c-4d0422536466.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    }
+  ],
+  "rawArtifactPaths": [],
+  "parserVersion": "coderabbit-1.0",
+  "policyDecision": {
+    "blocksDelivery": true,
+    "requiresOperatorReview": true,
+    "routedToRepair": false,
+    "summary": "3 findings; operator review required"
+  },
+  "providerAttempt": {
+    "provider": "coderabbit",
+    "status": "success",
+    "rawOutputAvailable": true,
+    "rawOutputRetained": false,
+    "stdoutLength": 3427,
+    "stderrLength": 0,
+    "exitCode": 0,
+    "parserResult": "success"
+  }
+}
