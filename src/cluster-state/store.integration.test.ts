@@ -159,7 +159,7 @@ describe("recordQcRun", () => {
     expect(artifactPath).toContain(path.join(".polaris", "clusters", clusterId, "qc", "qc-run-1.json"));
     const qcRuns = state.qc_runs ?? {};
     expect(qcRuns["qc-run-1"]).toEqual({
-      artifact_path: artifactPath,
+      artifact_path: path.relative(repoRoot, artifactPath),
       status: "findings",
       provider: "coderabbit",
       started_at: result.startedAt,
@@ -203,7 +203,7 @@ describe("recordQcRun", () => {
     const pointer = (state.qc_runs ?? {})["qc-run-failed"];
     expect(pointer).toBeDefined();
     expect(pointer.availability).toBe("unavailable");
-    expect(pointer.raw_artifact_paths).toContain(path.join(repoRoot, "missing-raw.log"));
+    expect(pointer.raw_artifact_paths).toContain(path.relative(repoRoot, path.join(repoRoot, "missing-raw.log")));
   });
 });
 

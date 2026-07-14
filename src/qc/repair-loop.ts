@@ -17,7 +17,7 @@
 
 import { appendFileSync, mkdirSync, readFileSync, writeFileSync, renameSync, unlinkSync } from "node:fs";
 import { execFileSync } from "node:child_process";
-import { dirname, join } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import type { QcConfig } from "../config/schema.js";
 import type {
   QcRepairPacket,
@@ -214,13 +214,24 @@ async function persistQcRepairManifest(
   try {
     const clusterState = readClusterStateSync(clusterId, repoRoot);
     if (!clusterState) return;
-    const manifests = { ...(clusterState.qc_repair_manifests ?? {}), [round]: manifestPath };
+
+    const toRepoRelative = (p: string): string =>
+      relative(repoRoot, resolve(repoRoot, p));
+
+    const manifests: Record<string, string> = {};
+    for (const [r, mp] of Object.entries(clusterState.qc_repair_manifests ?? {})) {
+      manifests[r] = toRepoRelative(mp);
+    }
+    const roundManifestPath = toRepoRelative(manifestPath);
+    manifests[round] = roundManifestPath;
+
     if (
       clusterState.qc_repair_manifests &&
-      clusterState.qc_repair_manifests[round] === manifestPath
+      clusterState.qc_repair_manifests[round] === roundManifestPath
     ) {
       return;
     }
+
     await writeClusterState(
       clusterId,
       {

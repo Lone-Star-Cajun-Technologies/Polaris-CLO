@@ -25,6 +25,10 @@ const normalizeClusterState = (state: ClusterState): ClusterState => ({
   qc_runs: state.qc_runs ?? {},
 });
 
+const toRepoRelative = (repoRoot: string, p: string): string => {
+  return path.relative(repoRoot, path.resolve(repoRoot, p));
+};
+
 export function pruneExpiredClaims(
   state: ClusterState,
   now: Date = new Date(),
@@ -343,18 +347,27 @@ export const recordQcRun = async (
   result: QcResult,
   repoRoot?: string,
 ): Promise<{ artifactPath: string; state: ClusterState }> => {
+  const root = repoRoot || process.cwd();
   const artifactPath = writeQcArtifact(clusterId, result, repoRoot);
+  const toRel = (p: string) => toRepoRelative(root, p);
 
   const currentState = await readClusterState(clusterId, repoRoot);
   if (!currentState) {
     throw new Error(`Cluster ${clusterId} state not found; cannot record QC run ${result.qcRunId}.`);
   }
 
-  const rawArtifactPaths = result.rawArtifactPaths ?? [];
-  const providerAttemptPath = result.providerAttempt?.rawOutputArtifactPath;
-  const auditArtifactPaths = providerAttemptPath
-    ? [...rawArtifactPaths, providerAttemptPath]
-    : rawArtifactPaths;
+  const rawArtifactPaths = (result.rawArtifactPaths ?? []).map(toRel);
+  const providerAttemptRawPath = result.providerAttempt?.rawOutputArtifactPath
+    ? toRel(result.providerAttempt.rawOutputArtifactPath)
+    : undefined;
+
+  const rawArtifactAbsPaths = (result.rawArtifactPaths ?? []).map((p) => path.resolve(root, p));
+  const providerAttemptAbsPath = result.providerAttempt?.rawOutputArtifactPath
+    ? path.resolve(root, result.providerAttempt.rawOutputArtifactPath)
+    : undefined;
+  const auditArtifactPaths = providerAttemptAbsPath
+    ? [...rawArtifactAbsPaths, providerAttemptAbsPath]
+    : rawArtifactAbsPaths;
 
   const failedRun =
     result.status === "failed" || result.status === "blocked" || result.allProvidersFailed === true;
@@ -364,23 +377,35 @@ export const recordQcRun = async (
   }
 
   const pointer: QcRunPointer = {
-    artifact_path: artifactPath,
+    artifact_path: toRel(artifactPath),
     status: result.status,
     provider: result.provider,
     started_at: result.startedAt,
     completed_at: result.completedAt,
     availability,
     raw_artifact_paths: rawArtifactPaths.length > 0 ? rawArtifactPaths : undefined,
-    provider_attempt_artifact_path: providerAttemptPath,
+    provider_attempt_artifact_path: providerAttemptRawPath,
   };
+
+  const normalizedQcRuns: Record<string, QcRunPointer> = {};
+  for (const [runId, existing] of Object.entries(currentState.qc_runs ?? {})) {
+    normalizedQcRuns[runId] = {
+      ...existing,
+      artifact_path: toRel(existing.artifact_path),
+      raw_artifact_paths: existing.raw_artifact_paths
+        ? existing.raw_artifact_paths.map(toRel)
+        : undefined,
+      provider_attempt_artifact_path: existing.provider_attempt_artifact_path
+        ? toRel(existing.provider_attempt_artifact_path)
+        : undefined,
+    };
+  }
+  normalizedQcRuns[result.qcRunId] = pointer;
 
   const nextState: ClusterState = {
     ...currentState,
     state_generation: currentState.state_generation + 1,
-    qc_runs: {
-      ...currentState.qc_runs,
-      [result.qcRunId]: pointer,
-    },
+    qc_runs: normalizedQcRuns,
   };
 
   await writeClusterState(clusterId, nextState, repoRoot);
@@ -401,21 +426,23 @@ export interface PruneQcRunPointersResult {
  */
 export function pruneMissingQcRunPointers(
   state: ClusterState,
+  repoRoot?: string,
 ): PruneQcRunPointersResult {
+  const root = repoRoot || process.cwd();
   const warnings: string[] = [];
   const pruned: string[] = [];
   if (!state.qc_runs) {
     return { state, pruned, warnings };
   }
 
-  const validation = validateQcArtifactPointers(state.qc_runs);
+  const validation = validateQcArtifactPointers(state.qc_runs, root);
   if (validation.ok && validation.unavailable.length === 0) {
     return { state, pruned, warnings };
   }
 
   const nextQcRuns: Record<string, QcRunPointer> = {};
   for (const [runId, pointer] of Object.entries(state.qc_runs)) {
-    if (validation.missing.includes(pointer.artifact_path)) {
+    if (validation.missing.includes(path.resolve(root, pointer.artifact_path))) {
       pruned.push(runId);
       warnings.push(
         `QC run ${runId} pointer pruned: artifact missing ${pointer.artifact_path}`,
@@ -425,9 +452,11 @@ export function pruneMissingQcRunPointers(
 
     const updated: QcRunPointer = { ...pointer };
     const hasMissingRaw =
-      (pointer.raw_artifact_paths ?? []).some((p) => validation.unavailable.includes(p)) ||
+      (pointer.raw_artifact_paths ?? []).some((p) =>
+        validation.unavailable.includes(path.resolve(root, p))
+      ) ||
       (pointer.provider_attempt_artifact_path &&
-        validation.unavailable.includes(pointer.provider_attempt_artifact_path));
+        validation.unavailable.includes(path.resolve(root, pointer.provider_attempt_artifact_path)));
     if (hasMissingRaw && updated.availability === "available") {
       updated.availability = "unavailable";
       warnings.push(

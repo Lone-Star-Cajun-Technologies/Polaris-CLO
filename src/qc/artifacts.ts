@@ -106,23 +106,30 @@ export interface QcArtifactPointerValidationResult {
  */
 export function validateQcArtifactPointers(
   qcRuns: Record<string, QcRunPointer> | undefined,
+  repoRoot?: string,
 ): QcArtifactPointerValidationResult {
+  const root = repoRoot || process.cwd();
   const missing: string[] = [];
   const unavailable: string[] = [];
   if (!qcRuns) {
     return { ok: true, missing, unavailable };
   }
   for (const pointer of Object.values(qcRuns)) {
-    if (!existsSync(pointer.artifact_path)) {
-      missing.push(pointer.artifact_path);
+    const primaryPath = path.resolve(root, pointer.artifact_path);
+    if (!existsSync(primaryPath)) {
+      missing.push(primaryPath);
     }
     for (const rawPath of pointer.raw_artifact_paths ?? []) {
-      if (!existsSync(rawPath)) {
-        unavailable.push(rawPath);
+      const resolvedRawPath = path.resolve(root, rawPath);
+      if (!existsSync(resolvedRawPath)) {
+        unavailable.push(resolvedRawPath);
       }
     }
-    if (pointer.provider_attempt_artifact_path && !existsSync(pointer.provider_attempt_artifact_path)) {
-      unavailable.push(pointer.provider_attempt_artifact_path);
+    if (pointer.provider_attempt_artifact_path) {
+      const resolvedProviderPath = path.resolve(root, pointer.provider_attempt_artifact_path);
+      if (!existsSync(resolvedProviderPath)) {
+        unavailable.push(resolvedProviderPath);
+      }
     }
   }
   return { ok: missing.length === 0 && unavailable.length === 0, missing, unavailable };
