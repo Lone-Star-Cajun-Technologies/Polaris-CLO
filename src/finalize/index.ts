@@ -22,7 +22,7 @@ import { stepMapValidate } from "./steps/02-map-validate.js";
 import { stepSchemaValidate } from "./steps/03-schema-validate.js";
 import { stepRunChecks } from "./steps/04-run-checks.js";
 import { stepGenerateReport } from "./steps/05-generate-report.js";
-import { stepCommit } from "./steps/06-commit.js";
+import { stepCommit, stepStageArtifacts } from "./steps/06-commit.js";
 import { stepPush } from "./steps/07-push.js";
 import { stepCreatePr } from "./steps/08-create-pr.js";
 import { stepUpdateState } from "./steps/09-update-state.js";
@@ -968,8 +968,14 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
     }
   }
 
+  // Step 5.75: Stage durable Polaris artifacts for the completed-cluster QC review.
+  // This ensures the QC pass reviews the same promoted .polaris/ artifacts that
+  // will become the final delivery commit.
+  console.log("[5.75/14] Staging durable Polaris artifacts for QC...");
+  stepStageArtifacts(repoRoot, state, resolve(stateFile), reportPath);
+
   // Step 5.8: Completed-cluster QC trigger (when configured)
-  // Runs after all authoritative gates and before final commit/delivery.
+  // Runs after durable artifact staging and before final commit/delivery.
   const clusterStateForQc = readClusterStateSync(state.cluster_id, repoRoot);
   const qcBaseRef =
     clusterStateForQc?.base_branch ??
