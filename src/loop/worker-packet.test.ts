@@ -237,6 +237,54 @@ describe("compileImplPacket", () => {
     expect(p.instructions.allowed_scope).not.toContain(".polaris/skills/polaris-run/chain.md.test.ts");
   });
 
+  it("expands allowedScope with graph output when validation includes polaris graph build", () => {
+    const body = `## Scope
+- src/cli/graph.ts
+- src/graph/POLARIS.md
+- docs (operator-facing doc for the graph build step)
+
+## Validation
+- npm run build
+- npm test
+- polaris graph build (manual smoke check)
+`;
+    const p = compileImplPacket({
+      ...BASE,
+      childId: "POL-568",
+      issueContext: {
+        id: "POL-568",
+        title: "POL-568",
+        key_requirements: [],
+        body,
+      },
+    });
+    expect(p.instructions.allowed_scope).toContain("docs/**");
+    expect(p.instructions.allowed_scope).toContain(".polaris/graph/NOTICES");
+  });
+
+  it("separates validation command expectations from executable commands", () => {
+    const body = `## Scope
+- src/loop/worker-packet.ts
+
+## Validation
+- grep -rn "MedicPacket" src (expect zero hits after removal)
+`;
+    const p = compileImplPacket({
+      ...BASE,
+      childId: "POL-563",
+      issueContext: {
+        id: "POL-563",
+        title: "POL-563",
+        key_requirements: [],
+        body,
+      },
+    });
+    expect(p.instructions.validation_commands).toEqual(['grep -rn "MedicPacket" src']);
+    expect(p.instructions.validation_expectations).toEqual([
+      "expect zero hits after removal",
+    ]);
+  });
+
   it("includes prohibited_write_paths on compiled impl packets", () => {
     const p = compileImplPacket({ ...BASE, childId: "POL-121" });
     expect(p.prohibited_write_paths).toEqual(WORKER_PROHIBITED_WRITE_PATHS);

@@ -136,6 +136,8 @@ export interface CompiledSteps {
   allowed_scope: string[];
   /** Commands to verify success before returning compact JSON. */
   validation_commands: string[];
+  /** Optional expectations attached to validation commands (e.g. zero-hit checks). */
+  validation_expectations?: string[];
   /** Pre-fetched issue context — workers do not re-fetch from Linear. */
   issue_context?: IssueContext;
 }
@@ -403,6 +405,31 @@ function expandScopeWithTestPaths(scope: string[], validationCommands: string[])
   return expanded;
 }
 
+/** Strips a trailing parenthetical annotation, mirroring body-parser behavior. */
+function stripCommandAnnotation(cmd: string): string {
+  return cmd.replace(/\s*\([^)]*\)\s*$/, '').trim();
+}
+
+/**
+ * Expands an allowed scope list with generated graph output paths when the
+ * validation commands include `polaris graph build`. This ensures workers can
+ * touch generated `.polaris/graph/NOTICES` while keeping the command executable.
+ */
+function expandScopeWithGraphOutput(scope: string[], validationCommands: string[]): string[] {
+  const hasGraphBuild = validationCommands.some((cmd) =>
+    stripCommandAnnotation(cmd).startsWith('polaris graph build'),
+  );
+  if (!hasGraphBuild) return scope;
+
+  const graphNotices = '.polaris/graph/NOTICES';
+  const alreadyCovered = scope.some(
+    (s) => s === graphNotices || s.startsWith('.polaris/graph/'),
+  );
+  if (alreadyCovered) return scope;
+
+  return [...scope, graphNotices];
+}
+
 // ── Impl worker packet compiler ───────────────────────────────────────────────
 
 export interface CompileStartupPacketInput {
@@ -526,12 +553,17 @@ export function compileImplPacket(input: CompileImplPacketInput): WorkerPacket {
   const resolvedValidation: string[] = input.validationCommands?.length
     ? input.validationCommands
     : bodyParsed?.validationCommands ?? [];
+  const resolvedValidationExpectations: string[] = bodyParsed?.validationExpectations ?? [];
   const resolvedRequirements: string[] = input.issueContext?.key_requirements.length
     ? input.issueContext.key_requirements
     : bodyParsed?.requirements ?? [];
 
-  // Include adjacent test files when the validation commands indicate a vitest run.
-  const expandedScope = expandScopeWithTestPaths(resolvedScope, resolvedValidation);
+  // Include adjacent test files when the validation commands indicate a vitest run,
+  // and generated graph output when validation includes `polaris graph build`.
+  const expandedScope = expandScopeWithGraphOutput(
+    expandScopeWithTestPaths(resolvedScope, resolvedValidation),
+    resolvedValidation,
+  );
 
   const requirementLines = resolvedRequirements.map((r, i) => `   ${i + 1}. ${r}`);
 
@@ -583,6 +615,7 @@ export function compileImplPacket(input: CompileImplPacketInput): WorkerPacket {
       steps,
       allowed_scope: expandedScope,
       validation_commands: resolvedValidation,
+      validation_expectations: resolvedValidationExpectations,
       issue_context: input.issueContext,
     },
     lifecycle: defaultLifecycle(input.maxConcurrentWorkers ?? 1, 'commit-and-exit'),

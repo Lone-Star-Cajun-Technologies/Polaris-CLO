@@ -57,6 +57,14 @@ function buildCompiledInstructions(packet: BootstrapPacket): string {
     );
   }
 
+  if (instructions.validation_expectations && instructions.validation_expectations.length > 0) {
+    lines.push(
+      ``,
+      `VALIDATION EXPECTATIONS:`,
+      ...instructions.validation_expectations.map((e) => `  ${e}`),
+    );
+  }
+
   lines.push(
     ``,
     `REQUIRED RETURN FIELDS: ${return_contract.join(", ")}`,
@@ -65,8 +73,9 @@ function buildCompiledInstructions(packet: BootstrapPacket): string {
     `SEALED RESULT FILE: ${packet.result_file_contract.result_file}`,
     `Write the sealed result file as a JSON object with EXACTLY this shape:`,
     `  { "run_id": "<run_id>", "child_id": "<child_id>", "status": "success" | "failure",`,
-    `    "commit": "<full 40-char SHA>", "validation": { "passed": ["<cmd>", ...] },`,
+    `    "commit": "<full 40-char SHA>", "validation": { "passed": ["<cmd>", ...], "failed": ["<cmd>", ...] },`,
     `    "error_message": "<string or omit if success>" }`,
+    `If a validation command fails, move it from validation.passed to validation.failed, set status to "failure", and set next_recommended_action to "stop". Do not list a failed command under passed.`,
     `commit MUST be the full 40-character git SHA (git rev-parse HEAD). Do NOT use a short hash.`,
     `Your final response MUST be ONLY the compact return JSON — a single JSON object, no other text.`,
     ``,

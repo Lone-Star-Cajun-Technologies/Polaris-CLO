@@ -2201,6 +2201,7 @@ describe("run-health symptom ingestion", () => {
    * Build a mock adapter that writes a sealed result containing symptoms.
    */
   function makeSymptomAdapter(symptoms: WorkerRunHealthSymptom[]): ExecutionAdapter {
+    const hasValidationFailed = symptoms.some((s) => s.category === "validation-failed");
     return {
       name: "mock",
       async dispatch(packet, _options) {
@@ -2208,8 +2209,10 @@ describe("run-health symptom ingestion", () => {
           child_id: packet.active_child,
           status: "done",
           commit: "a".repeat(40),
-          validation: { passed: ["npm run build"] },
-          next_recommended_action: "continue",
+          validation: hasValidationFailed
+            ? { passed: [], failed: ["npm run build"] }
+            : { passed: ["npm run build"] },
+          next_recommended_action: hasValidationFailed ? "stop" : "continue",
           run_health_symptoms: symptoms,
         };
         if (isWorkerPacket(packet)) {
@@ -2372,12 +2375,15 @@ describe("run-health symptom ingestion", () => {
         callCount += 1;
         const category: WorkerRunHealthSymptom['category'] =
           callCount === 1 ? "validation-failed" : "unusual-assumption";
+        const hasValidationFailed = category === "validation-failed";
         const resultSummary = {
           child_id: packet.active_child,
           status: "done",
           commit: "a".repeat(40),
-          validation: { passed: ["npm run build"] },
-          next_recommended_action: "continue",
+          validation: hasValidationFailed
+            ? { passed: [], failed: ["npm run build"] }
+            : { passed: ["npm run build"] },
+          next_recommended_action: hasValidationFailed ? "stop" : "continue",
           run_health_symptoms: [
             { category, message: `symptom from child ${callCount}`, occurred_at: new Date().toISOString() },
           ],
