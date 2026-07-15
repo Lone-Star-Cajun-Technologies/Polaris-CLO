@@ -261,15 +261,16 @@ export function isCodeRabbitReviewablePath(filePath: string, activeClusterId: st
 }
 
 function matchesSimpleGlob(filePath: string, pattern: string): boolean {
-  const normalizedPattern = pattern
-    .replace(/\*\*/g, "{{GLOBSTAR}}")
-    .replace(/\*/g, "[^/]*")
-    .replace(/\{\{GLOBSTAR\}\}/g, ".*");
-
   // Treat literal `<other-cluster>` in the documented pattern as non-matching.
   if (pattern.includes("<other-cluster>")) {
     return false;
   }
+
+  const normalizedPattern = pattern
+    .replace(/[.+^${}()|[\]\\]/g, "\\$&")
+    .replace(/\*\*/g, "{{GLOBSTAR}}")
+    .replace(/\*/g, "[^/]*")
+    .replace(/\{\{GLOBSTAR\}\}/g, ".*");
 
   const regex = new RegExp(`^${normalizedPattern}$`);
   return regex.test(filePath);
