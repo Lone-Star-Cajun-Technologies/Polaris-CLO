@@ -390,7 +390,9 @@ ${REQUIRED_SECTIONS.map((s) => `## ${s}`).join("\n")}
       const files = readdirSync(chartsDir).filter(
         (f) => f.startsWith("CHART-") && f.endsWith(".md"),
       );
-      expect(files.length).toBeGreaterThan(0);
+      // smartdocs/ is gitignored, so a clean checkout (e.g. CI) has no chart
+      // files at all — only validate whatever chart files this local
+      // environment happens to have.
 
       for (const file of files) {
         const content = readFileSync(join(chartsDir, file), "utf-8");
