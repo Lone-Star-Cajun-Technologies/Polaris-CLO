@@ -1,0 +1,73 @@
+{
+  "schemaVersion": "1.0",
+  "qcRunId": "coderabbit-1783996354873",
+  "runId": "polaris-run-medic-route-health-2026-07-14-001",
+  "clusterId": "POL-562",
+  "trigger": "completed-cluster",
+  "provider": "coderabbit",
+  "providerMode": "local",
+  "startedAt": "2026-07-14T02:26:29.996Z",
+  "completedAt": "2026-07-14T02:32:34.873Z",
+  "status": "findings",
+  "findings": [
+    {
+      "findingId": "coderabbit-1-1783996354872",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/loop/worker-packet.ts around lines 418 - 430, Update expandScopeWithGraphOutput to return the existing scope immediately when scope is empty, before checking graph-build commands or adding .polaris/graph/NOTICES. Preserve the current expansion behavior only for non-empty scopes that do not already explicitly cover the graph path.",
+      "filePath": "src/loop/worker-packet.ts",
+      "range": {
+        "startLine": 1
+      },
+      "suggestedAction": "function expandScopeWithGraphOutput(scope: string[], validationCommands: string[]): string[] {\n  if (scope.length === 0) return scope;\n\n  const hasGraphBuild = validationCommands.some((cmd) =>\n    stripCommandAnnotation(cmd).startsWith('polaris graph build'),\n  );\n  if (!hasGraphBuild) return scope;\n\n  const graphNotices = '.polaris/graph/NOTICES';\n  const alreadyCovered = scope.some(\n    (s) => s === graphNotices || s.startsWith('.polaris/graph/'),\n  );\n  if (alreadyCovered) return scope;\n\n  return [...scope, graphNotices];\n}",
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "low",
+        "reason": "pre-existing",
+        "filePath": "src/loop/worker-packet.ts"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-2-1783996354873",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-562/cluster-state.json around lines 90 - 112, Replace the contributor-specific absolute paths in qc_runs.artifact_path and qc_repair_manifests with repository-relative .polaris/... paths, matching the existing relative packet and result pointers. Preserve the referenced artifact and repair-manifest locations so they can be resolved from the repository root at runtime.",
+      "filePath": ".polaris/clusters/POL-562/cluster-state.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-562/cluster-state.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    }
+  ],
+  "rawArtifactPaths": [],
+  "parserVersion": "coderabbit-1.0",
+  "policyDecision": {
+    "blocksDelivery": true,
+    "requiresOperatorReview": true,
+    "routedToRepair": false,
+    "summary": "2 findings; operator review required"
+  },
+  "providerAttempt": {
+    "provider": "coderabbit",
+    "status": "success",
+    "rawOutputAvailable": true,
+    "rawOutputRetained": false,
+    "stdoutLength": 2960,
+    "stderrLength": 0,
+    "exitCode": 0,
+    "parserResult": "success"
+  }
+}

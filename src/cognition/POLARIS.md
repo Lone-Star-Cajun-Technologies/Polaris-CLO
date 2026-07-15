@@ -27,7 +27,7 @@ The cognition subsystem provides route-local cognition helpers for both canon de
 - `SUMMARY_MAX_BYTES` is the hard byte cap for SUMMARY.md files. Do not raise it without updating `validate.ts` and tests.
 - `hasDoctrineBled` is a heuristic and produces `warn`-severity only — never a hard blocker.
 - Delta functions return signals only; only `archive.ts` may write cognition archive/provenance files.
-- Route health assessment is an exported signal helper: `assessRouteHealth()` maps atlas route entries into `healthy`, `monitoring`, `known-issues`, `recovering`, or `stale` without writing files.
+- Route health assessment is an exported signal helper: `assessRouteHealth()` maps atlas route entries into `healthy`, `monitoring`, `known-issues`, `recovering`, or `stale`. `applyRouteCognitionDelta()` persists the assessed state for every atlas route to `route-health.json` in the map sidecar output path via `writeRouteHealthState()`; callers such as `src/map/welfare.ts` and `src/medic/route-exam.ts` read this persisted state through `readRouteHealthState()` instead of recomputing it.
 - `looksLikePolarisChurn` normalizes whitespace before comparing — do not change the normalization logic without updating tests.
 - Folder cognition coverage uses a 3-tier policy:
   1. Tier 1 (Polaris-owned): always cover `.polaris/`, `src/`, each immediate `src/<subdirectory>/`, `smartdocs/specs/active/`, and `smartdocs/doctrine/active/` when it exists.

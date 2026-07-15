@@ -31,7 +31,10 @@ import { stepStageArtifacts, stepCommit } from "./steps/06-commit.js";
 import { stepPush } from "./steps/07-push.js";
 import { stepCreatePr } from "./steps/08-create-pr.js";
 import { createDraftPr } from "./github.js";
-import { runQcAtTrigger } from "../qc/index.js";
+import { runQcAtTrigger, runQcRepairLoop } from "../qc/index.js";
+import { readRunHealthReport } from "../run-health/index.js";
+import type { QcResult, QcFinding } from "../qc/types.js";
+import type { QcRepairLoopResult } from "../qc/repair-loop.js";
 
 function makeTestDir(): string {
   const dir = join(tmpdir(), `polaris-finalize-index-${Date.now()}`);
@@ -46,7 +49,7 @@ function makeTestDir(): string {
   return dir;
 }
 
-function writeCanonicalState(dir: string, clusterId: string): string {
+function writeCanonicalState(dir: string, clusterId: string, runId = "test-finalize-index-001"): string {
   const stateFile = join(dir, ".polaris", "clusters", clusterId, "state.json");
   mkdirSync(join(dir, ".polaris", "clusters", clusterId), { recursive: true });
   writeFileSync(
@@ -54,7 +57,7 @@ function writeCanonicalState(dir: string, clusterId: string): string {
     JSON.stringify(
       {
         schema_version: "1.0",
-        run_id: "test-finalize-index-001",
+        run_id: runId,
         cluster_id: clusterId,
         active_child: "",
         completed_children: ["POL-9"],
@@ -114,6 +117,139 @@ function stageFile(dir: string, relativePath: string, content = "test\n"): void 
   writeFileSync(fullPath, content);
   execFileSync("git", ["add", relativePath], { cwd: dir, stdio: "pipe" });
 }
+
+function makeFinding(overrides: Partial<QcFinding> & { findingId: string; severity: QcFinding["severity"]; title: string }): QcFinding {
+  const { findingId, severity, title, ...rest } = overrides;
+  return {
+    findingId,
+    severity,
+    title,
+    category: "style",
+    filePath: "src/impl.ts",
+    fixAvailable: false,
+    autofixEligible: false,
+    attribution: { confidence: "low", reason: "provider-uncertain", childId: "POL-9" },
+    status: "open",
+    routingDecision: "follow-up",
+    ...rest,
+  };
+}
+
+function makeMedicReferralResult(clusterId: string): {
+  result: { trigger: "completed-cluster"; results: QcResult[]; action: "block"; summary: string };
+  repairLoopResult: QcRepairLoopResult;
+} {
+  const now = new Date().toISOString();
+  const baseResult: QcResult = {
+    schemaVersion: "1.0",
+    qcRunId: `qc-${clusterId}-1`,
+    runId: "test-finalize-medic-001",
+    clusterId,
+    trigger: "completed-cluster",
+    provider: "test",
+    providerMode: "local",
+    startedAt: now,
+    completedAt: now,
+    status: "findings",
+    findings: [makeFinding({ findingId: "f1", severity: "medium", title: "autonomous repair", routingDecision: "repair-worker" })],
+    rawArtifactPaths: [],
+    parserVersion: "test",
+    policyDecision: {
+      blocksDelivery: false,
+      requiresOperatorReview: false,
+      routedToRepair: true,
+      summary: "test",
+    },
+  };
+  const result = {
+    trigger: "completed-cluster" as const,
+    results: [baseResult],
+    action: "block" as const,
+    summary: "blocked",
+  };
+  const repairLoopResult: QcRepairLoopResult = {
+    outcome: "medic-referral",
+    rounds_completed: 1,
+    final_qc_results: result.results,
+    loop_state: {
+      current_round: 1,
+      max_rounds: 1,
+      source_qc_run_ids: [`qc-${clusterId}-1`],
+      manifest_path: null,
+      pending_packet_ids: [],
+      completed_packet_ids: [],
+      rerun_requested: false,
+      rerun_qc_run_ids: {},
+      terminal_outcome: "medic-referral",
+      initiated_at: now,
+      updated_at: now,
+    },
+    summary: "repair dispatch failed — Medic referral",
+  };
+  return { result, repairLoopResult };
+}
+
+describe("runFinalize records repair-loop outcome symptoms", () => {
+  let testDir: string;
+
+  beforeEach(() => {
+    testDir = makeTestDir();
+    vi.mocked(runQcAtTrigger).mockReset();
+    vi.mocked(runQcRepairLoop).mockReset();
+  });
+
+  afterEach(() => {
+    rmSync(testDir, { recursive: true, force: true });
+  });
+
+  it("records a qc-repair-dispatch-failure symptom on a medic-referral outcome", async () => {
+    const clusterId = "POL-6";
+    const stateFile = writeCanonicalState(testDir, clusterId, "test-finalize-medic-001");
+    execFileSync("git", ["checkout", "-b", "pol-6-delivery"], { cwd: testDir, stdio: "pipe" });
+    writeAtlas(testDir);
+    writeClusterArtifacts(testDir, clusterId);
+    stageFile(testDir, "src/impl.ts", "export function impl() {}\n");
+
+    writeFileSync(
+      join(testDir, "polaris.config.json"),
+      JSON.stringify(
+        {
+          version: "1.0",
+          canon: { checkOnFinalize: false },
+          qc: {
+            enabled: true,
+            defaultTrigger: "completed-cluster",
+            providers: {
+              test: { name: "test", mode: "local" },
+            },
+            repairRouting: "route",
+            maxRepairRounds: 1,
+          },
+        },
+        null,
+        2,
+      ),
+    );
+
+    const { result, repairLoopResult } = makeMedicReferralResult(clusterId);
+    vi.mocked(runQcAtTrigger).mockResolvedValueOnce(result);
+    vi.mocked(runQcRepairLoop).mockResolvedValueOnce(repairLoopResult);
+
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation((() => {
+      throw new Error("process.exit called");
+    }) as never);
+
+    await expect(
+      runFinalize({ repoRoot: testDir, stateFile, skipLibrarian: true }),
+    ).rejects.toThrow("process.exit called");
+
+    const report = readRunHealthReport("test-finalize-medic-001", testDir);
+    expect(report).not.toBeNull();
+    expect(report?.symptoms.some((s) => s.code === "qc-repair-dispatch-failure")).toBe(true);
+
+    exitSpy.mockRestore();
+  });
+});
 
 describe("runFinalize artifact staging order", () => {
   let testDir: string;

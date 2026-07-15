@@ -1,0 +1,121 @@
+{
+  "schemaVersion": "1.0",
+  "clusterId": "POL-562",
+  "round": 2,
+  "compiledAt": "2026-07-14T02:22:44.478Z",
+  "sourceQcRunIds": [
+    "coderabbit-1783995764419"
+  ],
+  "packets": [
+    {
+      "packetId": "pkt-POL-562-r2-000",
+      "round": 2,
+      "clusterId": "POL-562",
+      "sourceQcRunIds": [
+        "coderabbit-1783995764419"
+      ],
+      "findingIds": [
+        "coderabbit-1-1783995764419"
+      ],
+      "severityFloor": "low",
+      "rootCauseHint": "categories=[finding]; files=[src/graph/POLARIS.md]; confidence=clear; severity=low",
+      "allowedScope": [
+        "src/graph/POLARIS.md"
+      ],
+      "prohibitedScope": [],
+      "validationCommands": [],
+      "routingTarget": "follow-up",
+      "parallelGroup": "g-000",
+      "conflicts": [
+        "pkt-POL-562-r2-001",
+        "pkt-POL-562-r2-003"
+      ],
+      "medic": false,
+      "status": "pending",
+      "createdAt": "2026-07-14T02:22:44.478Z"
+    },
+    {
+      "packetId": "pkt-POL-562-r2-001",
+      "round": 2,
+      "clusterId": "POL-562",
+      "sourceQcRunIds": [
+        "coderabbit-1783995764419"
+      ],
+      "findingIds": [
+        "coderabbit-2-1783995764419"
+      ],
+      "severityFloor": "high",
+      "rootCauseHint": "categories=[finding]; files=[.polaris/roles/medic.md]; confidence=unclear; severity=high",
+      "allowedScope": [
+        ".polaris/roles/medic.md"
+      ],
+      "prohibitedScope": [],
+      "validationCommands": [],
+      "routingTarget": "operator-review",
+      "parallelGroup": "g-001",
+      "conflicts": [
+        "pkt-POL-562-r2-000",
+        "pkt-POL-562-r2-002",
+        "pkt-POL-562-r2-003"
+      ],
+      "medic": true,
+      "status": "pending",
+      "createdAt": "2026-07-14T02:22:44.478Z"
+    },
+    {
+      "packetId": "pkt-POL-562-r2-002",
+      "round": 2,
+      "clusterId": "POL-562",
+      "sourceQcRunIds": [
+        "coderabbit-1783995764419"
+      ],
+      "findingIds": [
+        "coderabbit-3-1783995764419"
+      ],
+      "severityFloor": "low",
+      "rootCauseHint": "categories=[finding]; files=[.polaris/clusters/POL-542/medic/polaris-run-pol-542-2026-07-12-001-r2-qc_qc-blocking-findings_d4201ec0-e94e-48e9-b963-c80f7338e074.json]; confidence=unclear; severity=low",
+      "allowedScope": [
+        ".polaris/clusters/POL-542/medic/polaris-run-pol-542-2026-07-12-001-r2-qc_qc-blocking-findings_d4201ec0-e94e-48e9-b963-c80f7338e074.json"
+      ],
+      "prohibitedScope": [],
+      "validationCommands": [],
+      "routingTarget": "follow-up",
+      "parallelGroup": "g-000",
+      "conflicts": [
+        "pkt-POL-562-r2-001",
+        "pkt-POL-562-r2-003"
+      ],
+      "medic": false,
+      "status": "pending",
+      "createdAt": "2026-07-14T02:22:44.478Z"
+    },
+    {
+      "packetId": "pkt-POL-562-r2-003",
+      "round": 2,
+      "clusterId": "POL-562",
+      "sourceQcRunIds": [
+        "coderabbit-1783995764419"
+      ],
+      "findingIds": [
+        "coderabbit-4-1783995764419"
+      ],
+      "severityFloor": "high",
+      "rootCauseHint": "categories=[finding]; files=[src/loop/adapters/worker-instructions.ts]; confidence=unclear; severity=high",
+      "allowedScope": [
+        "src/loop/adapters/worker-instructions.ts"
+      ],
+      "prohibitedScope": [],
+      "validationCommands": [],
+      "routingTarget": "operator-review",
+      "parallelGroup": "g-002",
+      "conflicts": [
+        "pkt-POL-562-r2-000",
+        "pkt-POL-562-r2-001",
+        "pkt-POL-562-r2-002"
+      ],
+      "medic": true,
+      "status": "pending",
+      "createdAt": "2026-07-14T02:22:44.478Z"
+    }
+  ]
+}

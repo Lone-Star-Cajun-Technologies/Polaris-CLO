@@ -1,4 +1,10 @@
-import { readdirSync, existsSync } from "node:fs";
+import {
+  readdirSync,
+  existsSync,
+  openSync,
+  closeSync,
+  mkdirSync,
+} from "node:fs";
 import { join } from "node:path";
 
 /**
@@ -72,22 +78,44 @@ export function getMaxSequenceForDate(
 }
 
 /**
- * Generate the next Chart ID for today
+ * Generate the next Chart ID for today.
+ *
+ * Claims the sequence by atomically creating a marker file for the ID.
+ * If another caller already claimed the sequence, the function resans and retries.
  */
 export function generateNextChartId(chartsDir: string): ChartId {
+  mkdirSync(chartsDir, { recursive: true });
+
   const today = getTodayDate();
-  const maxSeq = getMaxSequenceForDate(chartsDir, today);
-  const nextSeq = maxSeq + 1;
+  let maxSeq = getMaxSequenceForDate(chartsDir, today);
 
-  if (nextSeq > 999) {
-    throw new RangeError(
-      `Chart sequence overflow for ${today}: maximum sequence is 999, cannot generate sequence ${nextSeq}`,
-    );
+  while (true) {
+    const nextSeq = maxSeq + 1;
+
+    if (nextSeq > 999) {
+      throw new RangeError(
+        `Chart sequence overflow for ${today}: maximum sequence is 999, cannot generate sequence ${nextSeq}`,
+      );
+    }
+
+    const fileName = `CHART-${today}-${nextSeq.toString().padStart(3, "0")}.md`;
+    const filePath = join(chartsDir, fileName);
+
+    try {
+      const fd = openSync(filePath, "wx");
+      closeSync(fd);
+      return {
+        full: formatChartId(today, nextSeq),
+        date: today,
+        sequence: nextSeq,
+      };
+    } catch (err) {
+      const nodeErr = err as NodeJS.ErrnoException;
+      if (nodeErr.code === "EEXIST") {
+        maxSeq = getMaxSequenceForDate(chartsDir, today);
+        continue;
+      }
+      throw err;
+    }
   }
-
-  return {
-    full: formatChartId(today, nextSeq),
-    date: today,
-    sequence: nextSeq,
-  };
 }

@@ -1,0 +1,92 @@
+{
+  "schemaVersion": "1.0",
+  "qcRunId": "coderabbit-1783992737979",
+  "runId": "polaris-run-medic-route-health-2026-07-14-001",
+  "clusterId": "POL-562",
+  "trigger": "completed-cluster",
+  "provider": "coderabbit",
+  "providerMode": "local",
+  "startedAt": "2026-07-14T01:29:16.049Z",
+  "completedAt": "2026-07-14T01:32:17.979Z",
+  "status": "findings",
+  "findings": [
+    {
+      "findingId": "coderabbit-1-1783992737978",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-99/medic/test-run-001-r1-POL-100_validation-failed_0-result.json at line 1, Update the validation result artifact so the failed npm run build is removed from validation.passed and recorded under the appropriate failure field. Ensure the status and next_recommended_action consistently propagate the failed validation outcome instead of allowing downstream gates to continue.",
+      "filePath": ".polaris/clusters/POL-99/medic/test-run-001-r1-POL-100_validation-failed_0-result.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-99/medic/test-run-001-r1-POL-100_validation-failed_0-result.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-2-1783992737978",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-562/packets/POL-568-2cca8c6f-2aa4-4a38-b8f5-b68fc7699f16.json at line 10, Update the source-of-truth logic that generates allowed_scope so it includes the required operator-facing docs path and the .polaris/graph output path, or explicitly marks generated graph output as non-committed. Do not edit this sealed packet under .polaris/clusters/**/packets/; update the associated scope-generation tests to enforce the task contract and cover .polaris/graph/NOTICES.",
+      "filePath": ".polaris/clusters/POL-562/packets/POL-568-2cca8c6f-2aa4-4a38-b8f5-b68fc7699f16.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-562/packets/POL-568-2cca8c6f-2aa4-4a38-b8f5-b68fc7699f16.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-3-1783992737978",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-562/packets/POL-563-a65ea4d6-8830-4b31-afcf-1feef2837065.json around lines 35 - 38, Update the packet-generation source that produces POL-563 validation commands, not this sealed historical JSON artifact. Keep the executable command as grep -rn \"MedicPacket\" src, and move the zero-hit expectation into the appropriate separate expectation or metadata field.",
+      "filePath": ".polaris/clusters/POL-562/packets/POL-563-a65ea4d6-8830-4b31-afcf-1feef2837065.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-562/packets/POL-563-a65ea4d6-8830-4b31-afcf-1feef2837065.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    }
+  ],
+  "rawArtifactPaths": [],
+  "parserVersion": "coderabbit-1.0",
+  "policyDecision": {
+    "blocksDelivery": true,
+    "requiresOperatorReview": true,
+    "routedToRepair": false,
+    "summary": "3 findings; operator review required"
+  },
+  "providerAttempt": {
+    "provider": "coderabbit",
+    "status": "success",
+    "rawOutputAvailable": true,
+    "rawOutputRetained": false,
+    "stdoutLength": 3316,
+    "stderrLength": 0,
+    "exitCode": 0,
+    "parserResult": "success"
+  }
+}

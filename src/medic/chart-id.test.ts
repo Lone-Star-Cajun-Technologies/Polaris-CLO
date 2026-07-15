@@ -127,5 +127,14 @@ describe("chart-id", () => {
       const result = generateNextChartId(testDir);
       expect(result.sequence).toBe(1);
     });
+
+    it("does not return duplicate IDs under concurrent callers", async () => {
+      const results = await Promise.all(
+        Array.from({ length: 10 }, () => generateNextChartId(testDir)),
+      );
+      const sequences = results.map((result) => result.sequence);
+      expect(new Set(sequences).size).toBe(sequences.length);
+      expect(Math.max(...sequences)).toBe(10);
+    });
   });
 });

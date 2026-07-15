@@ -52,6 +52,8 @@ export interface ParsedIssueBody {
   /** True when scope section contains only TBD-BLOCKED markers (treated as empty). */
   scopeBlocked: boolean;
   validationCommands: string[];
+  /** Human-readable expectations attached to validation commands (e.g. zero-hit checks). */
+  validationExpectations: string[];
   requirements: string[];
   objective: string;
   context: string;
@@ -157,6 +159,35 @@ function parseListItems(text: string): string[] {
 }
 
 /**
+ * Parses a validation section into executable commands and optional expectations.
+ *
+ * Trailing parenthetical annotations like "(expect zero hits after removal)" or
+ * "(manual smoke check)" are stripped from the command string and captured as
+ * expectations, keeping validation_commands runnable and expectations separate.
+ */
+function parseValidationItems(text: string): { commands: string[]; expectations: string[] } {
+  const rawItems = parseListItems(text);
+  const commands: string[] = [];
+  const expectations: string[] = [];
+
+  for (const raw of rawItems) {
+    const command = stripTrailingParenthetical(raw);
+    const parenMatch = raw.match(/\s*\(([^)]*)\)\s*$/);
+    if (parenMatch) {
+      const note = parenMatch[1].trim();
+      if (note.length > 0) {
+        expectations.push(note);
+      }
+    }
+    if (command.length > 0) {
+      commands.push(command);
+    }
+  }
+
+  return { commands, expectations };
+}
+
+/**
  * Removes trailing parenthetical annotations from a string.
  *
  * Used exclusively for Scope section items to strip annotations like "(new)" or
@@ -229,6 +260,13 @@ function parseScopeItem(raw: string): string[] {
 
   const results: string[] = [];
   for (const part of parts) {
+    // A bare directory/file token (no spaces) is a valid scope entry even if it
+    // has no slash, dot, or glob character — e.g. `docs` or `src`.
+    if (!/\s/.test(part)) {
+      results.push(normalizeDirectoryPattern(part));
+      continue;
+    }
+
     const tokens = part.split(/\s+/);
     const pathTokens: string[] = [];
     for (const token of tokens) {
@@ -257,12 +295,17 @@ function parseScopeItem(raw: string): string[] {
  * @returns An array of parsed list-item strings from the first matching section, or an empty array if no match is found
  */
 function findSection(sections: Map<string, string>, headers: Set<string>): string[] {
+  const content = findSectionContent(sections, headers);
+  return content ? parseListItems(content) : [];
+}
+
+function findSectionContent(sections: Map<string, string>, headers: Set<string>): string | undefined {
   for (const [header, content] of sections) {
     if (headers.has(header)) {
-      return parseListItems(content);
+      return content;
     }
   }
-  return [];
+  return undefined;
 }
 
 /**
@@ -318,6 +361,7 @@ export function parseIssueBody(body: string): ParsedIssueBody {
       scope: [],
       scopeBlocked: false,
       validationCommands: [],
+      validationExpectations: [],
       requirements: [],
       objective: '',
       context: '',
@@ -334,10 +378,15 @@ export function parseIssueBody(body: string): ParsedIssueBody {
     ? []
     : rawScope.filter((item) => !TBD_BLOCKED_RE.test(item)).flatMap(parseScopeItem);
 
+  const { commands: validationCommands, expectations: validationExpectations } = parseValidationItems(
+    findSectionContent(sections, VALIDATION_HEADERS) ?? '',
+  );
+
   return {
     scope: filteredScope,
     scopeBlocked,
-    validationCommands: findSection(sections, VALIDATION_HEADERS),
+    validationCommands,
+    validationExpectations,
     requirements: findSection(sections, REQUIREMENTS_HEADERS),
     objective: findSectionText(sections, OBJECTIVE_HEADERS),
     context: findSectionText(sections, CONTEXT_HEADERS),

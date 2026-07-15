@@ -1,0 +1,72 @@
+{
+  "schemaVersion": "1.0",
+  "qcRunId": "coderabbit-1784000905190",
+  "runId": "polaris-run-medic-route-health-2026-07-14-001",
+  "clusterId": "POL-562",
+  "trigger": "completed-cluster",
+  "provider": "coderabbit",
+  "providerMode": "local",
+  "startedAt": "2026-07-14T03:42:08.006Z",
+  "completedAt": "2026-07-14T03:48:25.190Z",
+  "status": "findings",
+  "findings": [
+    {
+      "findingId": "coderabbit-1-1784000905190",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-562/medic/run-health-consult-packet-2d9ae9d7-c6f9-496e-898d-973d20aa97da.json around lines 6 - 20, Replace the contributor-specific absolute paths in run_health_report_path, qc_artifact_refs, telemetry_path, cluster_state_path, result_path, and allowed_write_paths with repository-relative paths or the project’s established path templates. Preserve the referenced artifacts and write locations while ensuring the committed consult packet works across machines and CI.",
+      "filePath": ".polaris/clusters/POL-562/medic/run-health-consult-packet-2d9ae9d7-c6f9-496e-898d-973d20aa97da.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-562/medic/run-health-consult-packet-2d9ae9d7-c6f9-496e-898d-973d20aa97da.json"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-2-1784000905190",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-562/cluster-state.json around lines 90 - 121, The cluster-state entries qc_runs[*].artifact_path and qc_repair_manifests contain machine-specific absolute paths. Replace the /Users/lsctech/Developer/Polaris prefix with repository-relative paths rooted at .polaris, preserving each artifact and repair-manifest location so path normalization works across checkouts.",
+      "filePath": ".polaris/clusters/POL-562/cluster-state.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-562/cluster-state.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    }
+  ],
+  "rawArtifactPaths": [],
+  "parserVersion": "coderabbit-1.0",
+  "policyDecision": {
+    "blocksDelivery": true,
+    "requiresOperatorReview": true,
+    "routedToRepair": false,
+    "summary": "2 findings; operator review required"
+  },
+  "providerAttempt": {
+    "provider": "coderabbit",
+    "status": "success",
+    "rawOutputAvailable": true,
+    "rawOutputRetained": false,
+    "stdoutLength": 2424,
+    "stderrLength": 0,
+    "exitCode": 0,
+    "parserResult": "success"
+  }
+}

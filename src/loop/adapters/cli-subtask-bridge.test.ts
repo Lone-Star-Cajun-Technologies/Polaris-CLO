@@ -193,4 +193,53 @@ describe("installCliSubtaskBridge", () => {
     });
     rmSync(tempDir, { recursive: true, force: true });
   });
+
+  it("reconciles validation-failed symptoms into the sealed result", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "polaris-bridge-reconcile-"));
+    const resultFile = join(tempDir, "result", "sealed.json");
+    dispatchMock.mockResolvedValue({
+      exit_code: 0,
+      provider_used: "copilot",
+      command_run: "copilot -p prompt",
+      summary: JSON.stringify({
+        child_id: "POL-101",
+        status: "done",
+        commit_sha: "abc123",
+        validation: { passed: ["npm run build"] },
+        next_recommended_action: "continue",
+        run_health_symptoms: [
+          { category: "validation-failed", message: "build failed", occurred_at: "2026-07-14T01:34:45.220Z" },
+        ],
+      }),
+    });
+
+    installCliSubtaskBridge("/repo");
+    const dispatcher = (globalThis as Record<string, unknown>).__POLARIS_AGENT_SUBTASK_DISPATCH__ as
+      | ((
+          request: { packet: BootstrapPacket; instructions: string; returnContract: string[] },
+        ) => Promise<string | Record<string, unknown>>)
+      | undefined;
+
+    await dispatcher!({
+      packet: makePacketWithResultContract(resultFile),
+      instructions: "worker instructions",
+      returnContract: ["child_id", "status"],
+    });
+
+    const sealed = JSON.parse(readFileSync(resultFile, "utf-8")) as Record<string, unknown>;
+    expect(sealed).toEqual({
+      run_id: "run-001",
+      cluster_id: "POL-100",
+      child_id: "POL-101",
+      status: "failure",
+      commit: "abc123",
+      validation: { passed: [], failed: ["npm run build"] },
+      next_recommended_action: "stop",
+      error_message: "build failed",
+      run_health_symptoms: [
+        { category: "validation-failed", message: "build failed", occurred_at: "2026-07-14T01:34:45.220Z" },
+      ],
+    });
+    rmSync(tempDir, { recursive: true, force: true });
+  });
 });

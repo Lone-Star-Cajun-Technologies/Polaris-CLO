@@ -1,0 +1,28 @@
+{
+  "packet_id": "polaris-run-pol-542-2026-07-12-001-r2-qc_qc-blocking-findings_d4201ec0-e94e-48e9-b963-c80f7338e074",
+  "run_id": "polaris-run-pol-542-2026-07-12-001",
+  "cluster_id": "POL-542",
+  "round": 2,
+  "source_symptom_ids": [
+    "qc:qc-blocking-findings:d4201ec0-e94e-48e9-b963-c80f7338e074"
+  ],
+  "allowed_scope": [
+    "."
+  ],
+  "prohibited_scope": [
+    ".polaris/**",
+    ".taskchain_artifacts/**",
+    "**/telemetry.jsonl"
+  ],
+  "validation_commands": [
+    "npm run build",
+    "npm test"
+  ],
+  "root_cause_hint": "Run-health symptom qc-blocking-findings: QC provider \"coderabbit\" has 6 blocking finding(s) that prevent delivery (qcRunId: coderabbit-1783821515113).",
+  "dispatch_metadata": {
+    "dispatch_id": "8c676904-cb0a-4477-9902-d9658ae890a8",
+    "worker_id": "polaris-run-pol-542-2026-07-12-001:treatment:polaris-run-pol-542-2026-07-12-001-r2-qc_qc-blocking-findings_d4201ec0-e94e-48e9-b963-c80f7338e074:1783823091119",
+    "result_file": ".polaris/clusters/POL-542/medic/polaris-run-pol-542-2026-07-12-001-r2-qc_qc-blocking-findings_d4201ec0-e94e-48e9-b963-c80f7338e074-result.json"
+  },
+  "status": "pending"
+}

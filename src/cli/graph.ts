@@ -199,7 +199,12 @@ export function createGraphCommand(options: GraphCommandOptions): Command {
           process.exit(1);
         }
 
-        const files = getImpactedFiles(target.id);
+        // ponytail: getImpactedFiles currently returns unresolved-import stub files as GraphFile entries.
+        // Filter them at the CLI surface so `graph impact` output is sane until the resolver/query layer
+        // excludes them at the source.
+        const files = getImpactedFiles(target.id).filter(
+          (file) => !file.path.startsWith("unresolved://"),
+        );
         const output = {
           symbol: target,
           impactedFiles: files,

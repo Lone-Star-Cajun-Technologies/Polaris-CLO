@@ -1,0 +1,9 @@
+{
+  "run_id": "polaris-run-medic-route-health-2026-07-14-001",
+  "cluster_id": "POL-562",
+  "child_id": "POL-568",
+  "status": "done",
+  "commit": "0d891b6d64c8589da0f34e853209ba2f5ec90eb3",
+  "validation": "passed",
+  "next_recommended_action": "continue"
+}

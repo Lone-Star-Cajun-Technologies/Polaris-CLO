@@ -403,7 +403,7 @@ export function validateQcRepairLoopGate(
 
 export function warnOnMissingQcArtifacts(clusterState: ClusterState | null, repoRoot: string): void {
   if (!clusterState) return;
-  const validation = validateQcArtifactPointers(clusterState.qc_runs);
+  const validation = validateQcArtifactPointers(clusterState.qc_runs, repoRoot);
   if (validation.ok) return;
   for (const missing of validation.missing) {
     console.warn(

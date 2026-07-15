@@ -23,6 +23,7 @@ import { readState, writeStateAtomic } from "./checkpoint.js";
 import type { CompactReturn } from "./compact-return.js";
 import type { BootstrapPacket } from "./adapters/types.js";
 import { getMonotonicTimestamp } from "../utils/monotonic-timestamp.js";
+import { loadConfig } from "../config/loader.js";
 import { applyRouteCognitionDelta, applySummaryDelta } from "../cognition/index.js";
 import type { CognitionDeltaResult, SummaryDeltaResult } from "../cognition/index.js";
 
@@ -375,10 +376,18 @@ export async function executeOneChild(
   const touchedFiles = options.touchedFiles ?? [];
   if (touchedFiles.length > 0) {
     try {
+      let outputPath: string | undefined;
+      try {
+        const config = loadConfig(repoRoot);
+        outputPath = resolve(repoRoot, config.repo.sidecarOutputPath ?? ".polaris/map");
+      } catch {
+        // Use the default sidecar path if config cannot be loaded.
+      }
       cognitionDelta = applyRouteCognitionDelta({
         repoRoot,
         touchedFiles,
         skipRoot: true,
+        outputPath,
       });
       summaryDelta = applySummaryDelta({
         repoRoot,
@@ -393,6 +402,7 @@ export async function executeOneChild(
         polaris_reasons: cognitionDelta.reasons,
         polaris_targets: cognitionDelta.routeLocalTargets,
         polaris_missing: cognitionDelta.missingCognitionSurfaces,
+        health_state: cognitionDelta.healthState,
         summary_update_warranted: summaryDelta.updateWarranted,
         summary_reasons: summaryDelta.reasons,
         summary_targets: summaryDelta.summaryTargets,

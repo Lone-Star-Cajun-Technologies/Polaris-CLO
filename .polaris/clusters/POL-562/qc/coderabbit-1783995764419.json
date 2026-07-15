@@ -1,0 +1,116 @@
+{
+  "schemaVersion": "1.0",
+  "qcRunId": "coderabbit-1783995764419",
+  "runId": "polaris-run-medic-route-health-2026-07-14-001",
+  "clusterId": "POL-562",
+  "trigger": "completed-cluster",
+  "provider": "coderabbit",
+  "providerMode": "local",
+  "startedAt": "2026-07-14T02:08:49.517Z",
+  "completedAt": "2026-07-14T02:22:44.419Z",
+  "status": "findings",
+  "findings": [
+    {
+      "findingId": "coderabbit-1-1783995764419",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/graph/POLARIS.md at line 52, Update the graph artifact guidance in POLARIS.md to explicitly exempt the tracked .polaris/graph/NOTICES file from the general “should not be committed” rule, preserving the documented clean-tree workflow for polaris graph build output.",
+      "filePath": "src/graph/POLARIS.md",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "high",
+        "reason": "changed-file-owner",
+        "childId": "POL-568",
+        "filePath": "src/graph/POLARIS.md"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-2-1783995764419",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/roles/medic.md at line 51, Update the Chart creation failure instruction in the Medic role guidance to use the output-contract status \"error\" instead of \"partial\", while preserving the requirement to record the error and still write the sealed result.",
+      "filePath": ".polaris/roles/medic.md",
+      "range": {
+        "startLine": 1
+      },
+      "suggestedAction": "- Chart creation fails: status \"error\", record the error, still write the sealed result.",
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "low",
+        "reason": "shared-file",
+        "childId": "POL-563",
+        "filePath": ".polaris/roles/medic.md"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-3-1783995764419",
+      "severity": "low",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-542/medic/polaris-run-pol-542-2026-07-12-001-r2-qc_qc-blocking-findings_d4201ec0-e94e-48e9-b963-c80f7338e074.json at line 25, Update the dispatch_metadata.result_file value to use a relative path or repository-supported template instead of the contributor-specific absolute /Users path, while preserving the reference to the result artifact.",
+      "filePath": ".polaris/clusters/POL-542/medic/polaris-run-pol-542-2026-07-12-001-r2-qc_qc-blocking-findings_d4201ec0-e94e-48e9-b963-c80f7338e074.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-542/medic/polaris-run-pol-542-2026-07-12-001-r2-qc_qc-blocking-findings_d4201ec0-e94e-48e9-b963-c80f7338e074.json"
+      },
+      "status": "open",
+      "routingDecision": "follow-up"
+    },
+    {
+      "findingId": "coderabbit-4-1783995764419",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @src/loop/adapters/worker-instructions.ts around lines 74 - 80, Update the sealed result JSON shape in the worker instructions so it explicitly includes the next_recommended_action field required by the validation-failure rule. Keep the documented shape consistent with IMPL_RETURN_CONTRACT, including the stop value for failed validation and the appropriate success behavior, while preserving the existing fields and exact-JSON requirement.",
+      "filePath": "src/loop/adapters/worker-instructions.ts",
+      "range": {
+        "startLine": 1
+      },
+      "suggestedAction": "`Write the sealed result file as a JSON object with EXACTLY this shape:`,\n    `  { \"run_id\": \"<run_id>\", \"child_id\": \"<child_id>\", \"status\": \"success\" | \"failure\",`,\n    `    \"commit\": \"<full 40-char SHA>\", \"validation\": { \"passed\": [\"<cmd>\", ...], \"failed\": [\"<cmd>\", ...] },`,\n    `    \"next_recommended_action\": \"continue\" | \"stop\" | \"investigate\",`,\n    `    \"error_message\": \"<string or omit if success>\" }`,\n    `If a validation command fails, move it from validation.passed to validation.failed, set status to \"failure\", and set next_recommended_action to \"stop\". Do not list a failed command under passed.`,\n    `commit MUST be the full 40-character git SHA (git rev-parse HEAD). Do NOT use a short hash.`,\n    `Your final response MUST be ONLY the compact return JSON — a single JSON object, no other text.`,",
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "low",
+        "reason": "pre-existing",
+        "filePath": "src/loop/adapters/worker-instructions.ts"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    }
+  ],
+  "rawArtifactPaths": [],
+  "parserVersion": "coderabbit-1.0",
+  "policyDecision": {
+    "blocksDelivery": true,
+    "requiresOperatorReview": true,
+    "routedToRepair": false,
+    "summary": "4 findings; operator review required"
+  },
+  "providerAttempt": {
+    "provider": "coderabbit",
+    "status": "success",
+    "rawOutputAvailable": true,
+    "rawOutputRetained": false,
+    "stdoutLength": 4411,
+    "stderrLength": 0,
+    "exitCode": 0,
+    "parserResult": "success"
+  }
+}

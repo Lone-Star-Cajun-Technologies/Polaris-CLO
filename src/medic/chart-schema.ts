@@ -107,6 +107,235 @@ export function validateChartSections(content: string): ChartValidationResult {
   };
 }
 
+function getIndent(line: string): number {
+  let indent = 0;
+  for (const char of line) {
+    if (char === " " || char === "\t") {
+      indent++;
+    } else {
+      break;
+    }
+  }
+  return indent;
+}
+
+function splitTopLevel(value: string, separator: string): string[] {
+  const openChars = ["[", "{"];
+  const closeChars = ["]", "}"];
+  const parts: string[] = [];
+  let depth = 0;
+  let current = "";
+  let inString = false;
+  let stringChar = "";
+
+  for (let i = 0; i < value.length; i++) {
+    const c = value[i];
+    if (inString) {
+      if (c === "\\") {
+        current += c;
+        if (i + 1 < value.length) {
+          i++;
+          current += value[i];
+        }
+        continue;
+      }
+      if (c === stringChar) {
+        inString = false;
+      }
+      current += c;
+      continue;
+    }
+    if (c === '"' || c === "'") {
+      inString = true;
+      stringChar = c;
+      current += c;
+      continue;
+    }
+    if (openChars.includes(c)) {
+      depth++;
+    }
+    if (closeChars.includes(c)) {
+      depth = Math.max(0, depth - 1);
+    }
+    if (c === separator && depth === 0) {
+      parts.push(current);
+      current = "";
+    } else {
+      current += c;
+    }
+  }
+
+  if (current.trim() !== "") {
+    parts.push(current);
+  }
+  return parts;
+}
+
+function parseInlineValue(value: string): unknown {
+  const trimmed = value.trim();
+  if (trimmed === "[]") {
+    return [];
+  }
+  if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+    const content = trimmed.slice(1, -1).trim();
+    if (content === "") {
+      return [];
+    }
+    return splitTopLevel(content, ",").map((part) => parseInlineValue(part));
+  }
+  if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+    const content = trimmed.slice(1, -1).trim();
+    const obj: Record<string, unknown> = {};
+    if (content === "") {
+      return obj;
+    }
+    for (const part of splitTopLevel(content, ",")) {
+      const p = part.trim();
+      if (p === "") {
+        continue;
+      }
+      const colonIdx = p.indexOf(":");
+      if (colonIdx === -1) {
+        continue;
+      }
+      const key = p.slice(0, colonIdx).trim();
+      const val = p.slice(colonIdx + 1).trim();
+      obj[key] = parseInlineValue(val);
+    }
+    return obj;
+  }
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    return trimmed.slice(1, -1);
+  }
+  if (trimmed === "true") {
+    return true;
+  }
+  if (trimmed === "false") {
+    return false;
+  }
+  if (/^-?\d+$/.test(trimmed)) {
+    return Number(trimmed);
+  }
+  return trimmed;
+}
+
+function parseBlockList(
+  lines: string[],
+  start: number,
+  listIndent: number,
+): { list: unknown[]; nextIndex: number } {
+  const list: unknown[] = [];
+  let currentObject: Record<string, unknown> | null = null;
+  let i = start;
+
+  const pushCurrent = () => {
+    if (currentObject) {
+      list.push(currentObject);
+      currentObject = null;
+    }
+  };
+
+  while (i < lines.length) {
+    const line = lines[i];
+    const trimmed = line.trim();
+    if (trimmed === "") {
+      i++;
+      continue;
+    }
+
+    const indent = getIndent(line);
+    if (indent !== listIndent) {
+      if (currentObject && indent > listIndent) {
+        const colonIdx = trimmed.indexOf(":");
+        if (colonIdx !== -1) {
+          const key = trimmed.slice(0, colonIdx).trim();
+          const value = trimmed.slice(colonIdx + 1).trim();
+          currentObject[key] = parseInlineValue(value);
+        }
+        i++;
+        continue;
+      }
+      break;
+    }
+
+    if (trimmed.startsWith("- ")) {
+      pushCurrent();
+      const item = trimmed.slice(2).trim();
+      const colonIdx = item.indexOf(":");
+      if (colonIdx === -1) {
+        list.push(parseInlineValue(item));
+      } else {
+        currentObject = {};
+        const key = item.slice(0, colonIdx).trim();
+        const value = item.slice(colonIdx + 1).trim();
+        currentObject[key] = parseInlineValue(value);
+      }
+      i++;
+    } else if (trimmed === "-") {
+      pushCurrent();
+      list.push(null);
+      i++;
+    } else {
+      break;
+    }
+  }
+
+  pushCurrent();
+  return { list, nextIndex: i };
+}
+
+function parseFrontMatter(raw: string): Record<string, unknown> {
+  const lines = raw.split("\n");
+  const frontMatter: Record<string, unknown> = {};
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+    if (line.trim() === "") {
+      i++;
+      continue;
+    }
+    if (line.startsWith(" ") || line.startsWith("\t")) {
+      i++;
+      continue;
+    }
+
+    const colonIdx = line.indexOf(":");
+    if (colonIdx === -1) {
+      i++;
+      continue;
+    }
+
+    const key = line.slice(0, colonIdx).trim();
+    const value = line.slice(colonIdx + 1).trim();
+
+    if (value !== "") {
+      frontMatter[key] = parseInlineValue(value);
+      i++;
+      continue;
+    }
+
+    i++;
+    if (i < lines.length) {
+      const nextLine = lines[i];
+      if (nextLine.trim().startsWith("- ") || nextLine.trim() === "-") {
+        const { list, nextIndex } = parseBlockList(lines, i, getIndent(nextLine));
+        frontMatter[key] = list;
+        i = nextIndex;
+      } else {
+        frontMatter[key] = "";
+      }
+    } else {
+      frontMatter[key] = "";
+    }
+  }
+
+  return frontMatter;
+}
+
 /**
  * Validate a complete chart (front-matter and sections)
  */
@@ -123,33 +352,7 @@ export function validateChart(content: string): ChartValidationResult {
     };
   }
 
-  // Parse YAML front-matter (simple key:value parsing)
-  const frontMatter: Record<string, unknown> = {};
-  const frontMatterLines = frontMatterMatch[1].split("\n");
-  for (const line of frontMatterLines) {
-    const colonIdx = line.indexOf(":");
-    if (colonIdx === -1) continue;
-    const key = line.slice(0, colonIdx).trim();
-    const value = line.slice(colonIdx + 1).trim();
-    // Remove quotes if present
-    const cleanedValue = value.replace(/^["']|["']$/g, "");
-
-    // Handle arrays (simple comma-separated for now)
-    if (cleanedValue.startsWith("[") && cleanedValue.endsWith("]")) {
-      const arrayContent = cleanedValue.slice(1, -1);
-      if (arrayContent.trim() === "") {
-        frontMatter[key] = [];
-      } else {
-        frontMatter[key] = arrayContent.split(",").map((s) => s.trim());
-      }
-    } else if (key === "related_charts") {
-      // Special handling for related_charts array of objects
-      // This is a simplified parser - in production you'd use a proper YAML parser
-      frontMatter[key] = [];
-    } else {
-      frontMatter[key] = cleanedValue;
-    }
-  }
+  const frontMatter = parseFrontMatter(frontMatterMatch[1]);
 
   const frontMatterResult = validateChartFrontMatter(frontMatter);
   frontMatterErrors.push(...frontMatterResult.errors);

@@ -81,6 +81,18 @@ describe("parseIssueBody — scope", () => {
       "src/bar.ts",
     ]);
   });
+
+  it("includes bare directory scope items with trailing annotations", () => {
+    const body = `## Scope
+- src/cli/graph.ts
+- src/graph/POLARIS.md
+- docs (operator-facing doc for the graph build step)
+`;
+    const { scope } = parseIssueBody(body);
+    expect(scope).toContain("src/cli/graph.ts");
+    expect(scope).toContain("src/graph/POLARIS.md");
+    expect(scope).toContain("docs/**");
+  });
 });
 
 // ── parseIssueBody: validationCommands ───────────────────────────────────────
@@ -96,6 +108,24 @@ describe("parseIssueBody — validationCommands", () => {
   it("returns empty validationCommands when no validation section exists", () => {
     const { validationCommands } = parseIssueBody(BODY_NO_SCOPE);
     expect(validationCommands).toEqual([]);
+  });
+
+  it("splits trailing validation expectations into a separate field", () => {
+    const body = `## Validation
+- npm run build
+- grep -rn "MedicPacket" src (expect zero hits after removal)
+- polaris graph build (manual smoke check)
+`;
+    const { validationCommands, validationExpectations } = parseIssueBody(body);
+    expect(validationCommands).toEqual([
+      "npm run build",
+      'grep -rn "MedicPacket" src',
+      "polaris graph build",
+    ]);
+    expect(validationExpectations).toEqual([
+      "expect zero hits after removal",
+      "manual smoke check",
+    ]);
   });
 });
 

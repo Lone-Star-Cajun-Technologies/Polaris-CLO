@@ -1,0 +1,52 @@
+{
+  "schemaVersion": "1.0",
+  "qcRunId": "coderabbit-1784001370611",
+  "runId": "polaris-run-medic-route-health-2026-07-14-001",
+  "clusterId": "POL-562",
+  "trigger": "completed-cluster",
+  "provider": "coderabbit",
+  "providerMode": "local",
+  "startedAt": "2026-07-14T03:51:34.000Z",
+  "completedAt": "2026-07-14T03:56:10.611Z",
+  "status": "findings",
+  "findings": [
+    {
+      "findingId": "coderabbit-1-1784001370611",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-562/cluster-state.json around lines 90 - 123, Replace contributor-specific absolute paths in the committed cluster state, including qc_runs[*].artifact_path and qc_repair_manifests, with repository-relative paths rooted at the project directory. Preserve each referenced artifact’s relative location and ensure no /Users/... paths remain in the state file.",
+      "filePath": ".polaris/clusters/POL-562/cluster-state.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-562/cluster-state.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    }
+  ],
+  "rawArtifactPaths": [],
+  "parserVersion": "coderabbit-1.0",
+  "policyDecision": {
+    "blocksDelivery": true,
+    "requiresOperatorReview": true,
+    "routedToRepair": false,
+    "summary": "1 findings; operator review required"
+  },
+  "providerAttempt": {
+    "provider": "coderabbit",
+    "status": "success",
+    "rawOutputAvailable": true,
+    "rawOutputRetained": false,
+    "stdoutLength": 1626,
+    "stderrLength": 0,
+    "exitCode": 0,
+    "parserResult": "success"
+  }
+}

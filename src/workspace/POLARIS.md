@@ -36,6 +36,7 @@
 - [cognition-librarian.md](src/workspace/.polaris/roles/cognition-librarian.md)
 - [finalizer.md](src/workspace/.polaris/roles/finalizer.md)
 - [foreman.md](src/workspace/.polaris/roles/foreman.md)
+- [medic.md](src/workspace/.polaris/roles/medic.md)
 
 ## Related routes
 

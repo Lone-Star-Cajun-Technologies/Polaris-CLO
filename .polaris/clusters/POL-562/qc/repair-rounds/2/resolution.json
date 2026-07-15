@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "1.0",
+  "clusterId": "POL-562",
+  "round": 2,
+  "resolvedAt": "2026-07-14T02:26:22.494Z",
+  "resolver": "Phillip meaux",
+  "resolvedOutcome": "no-repairable",
+  "reason": "Findings 1 (src/graph/POLARIS.md) and 2 (.polaris/roles/medic.md), both attributable to this cluster's children (POL-568, POL-563), fixed directly in commit 376150c. Findings 3 (.polaris/clusters/POL-542/medic/... path) and 4 (src/loop/adapters/worker-instructions.ts) are unattributed/pre-existing, not touched by any POL-562 child, and out of this cluster's scope — filed as follow-up for a future pass rather than repaired here.",
+  "findings": [
+    "coderabbit-1-1783995764419",
+    "coderabbit-2-1783995764419",
+    "coderabbit-3-1783995764419",
+    "coderabbit-4-1783995764419"
+  ]
+}

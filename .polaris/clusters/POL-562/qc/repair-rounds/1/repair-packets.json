@@ -1,0 +1,68 @@
+{
+  "schemaVersion": "1.0",
+  "clusterId": "POL-562",
+  "round": 1,
+  "compiledAt": "2026-07-14T01:32:18.049Z",
+  "sourceQcRunIds": [
+    "coderabbit-1783992737978",
+    "coderabbit-1783992737979"
+  ],
+  "packets": [
+    {
+      "packetId": "pkt-POL-562-r1-000",
+      "round": 1,
+      "clusterId": "POL-562",
+      "sourceQcRunIds": [
+        "coderabbit-1783992737978",
+        "coderabbit-1783992737979"
+      ],
+      "findingIds": [
+        "coderabbit-1-1783992737978"
+      ],
+      "severityFloor": "high",
+      "rootCauseHint": "categories=[finding]; files=[.polaris/clusters/POL-99/medic/test-run-001-r1-POL-100_validation-failed_0-result.json]; confidence=unclear; severity=high",
+      "allowedScope": [
+        ".polaris/clusters/POL-99/medic/test-run-001-r1-POL-100_validation-failed_0-result.json"
+      ],
+      "prohibitedScope": [],
+      "validationCommands": [],
+      "routingTarget": "operator-review",
+      "parallelGroup": "g-000",
+      "conflicts": [
+        "pkt-POL-562-r1-001"
+      ],
+      "medic": true,
+      "status": "pending",
+      "createdAt": "2026-07-14T01:32:18.049Z"
+    },
+    {
+      "packetId": "pkt-POL-562-r1-001",
+      "round": 1,
+      "clusterId": "POL-562",
+      "sourceQcRunIds": [
+        "coderabbit-1783992737978",
+        "coderabbit-1783992737979"
+      ],
+      "findingIds": [
+        "coderabbit-2-1783992737978",
+        "coderabbit-3-1783992737978"
+      ],
+      "severityFloor": "high",
+      "rootCauseHint": "categories=[finding]; files=[.polaris/clusters/POL-562/packets/POL-563-a65ea4d6-8830-4b31-afcf-1feef2837065.json, .polaris/clusters/POL-562/packets/POL-568-2cca8c6f-2aa4-4a38-b8f5-b68fc7699f16.json]; confidence=unclear; severity=high",
+      "allowedScope": [
+        ".polaris/clusters/POL-562/packets/POL-563-a65ea4d6-8830-4b31-afcf-1feef2837065.json",
+        ".polaris/clusters/POL-562/packets/POL-568-2cca8c6f-2aa4-4a38-b8f5-b68fc7699f16.json"
+      ],
+      "prohibitedScope": [],
+      "validationCommands": [],
+      "routingTarget": "operator-review",
+      "parallelGroup": "g-001",
+      "conflicts": [
+        "pkt-POL-562-r1-000"
+      ],
+      "medic": true,
+      "status": "pending",
+      "createdAt": "2026-07-14T01:32:18.049Z"
+    }
+  ]
+}
