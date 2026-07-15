@@ -57,6 +57,17 @@ function makeQcSummary(overrides: Partial<QcScoreSummary> = {}): QcScoreSummary 
   };
 }
 
+function makeQcEvidence(overrides: Partial<RunReportData["qcEvidence"]> = {}): NonNullable<RunReportData["qcEvidence"]> {
+  return {
+    sealedReviewedSha: "abc1234",
+    prHeadSha: "def5678",
+    qcReviewPassCount: 1,
+    unresolvedAdvisoryCount: 0,
+    repairLoopOutcome: "pass",
+    ...overrides,
+  };
+}
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe("generateRunReport", () => {
@@ -73,8 +84,38 @@ describe("generateRunReport", () => {
   it("includes QC section when qcSummary is provided", () => {
     const report = generateRunReport(baseReportData({ qcSummary: makeQcSummary() }));
     expect(report).toContain("## QC summary");
-    expect(report).toContain("| **QC runs** | 1 |");
+    expect(report).toContain("| **QC review passes run** | 1 |");
     expect(report).toContain("Not blocking delivery");
+  });
+
+  it("renders QC convergence evidence when qcEvidence is provided", () => {
+    const report = generateRunReport(
+      baseReportData({ qcSummary: makeQcSummary(), qcEvidence: makeQcEvidence() }),
+    );
+    expect(report).toContain("### QC convergence evidence");
+    expect(report).toContain("| Sealed reviewed SHA | abc1234 |");
+    expect(report).toContain("| PR head SHA | def5678 |");
+    expect(report).toContain("| QC review passes run | 1 |");
+    expect(report).toContain("| Unresolved advisory-severity findings | 0 |");
+    expect(report).toContain("| Repair loop outcome | pass |");
+  });
+
+  it("computes advisory count from open_by_severity when qcEvidence is not provided", () => {
+    const report = generateRunReport(
+      baseReportData({
+        qcSummary: makeQcSummary({
+          open_by_severity: { critical: 0, high: 0, medium: 2, low: 1, info: 1 },
+        }),
+      }),
+    );
+    expect(report).toContain("| Unresolved advisory-severity findings | 4 |");
+  });
+
+  it("shows QC convergence evidence when qcSummary is null but qcEvidence is provided", () => {
+    const report = generateRunReport(baseReportData({ qcSummary: null, qcEvidence: makeQcEvidence() }));
+    expect(report).toContain("## QC summary");
+    expect(report).toContain("### QC convergence evidence");
+    expect(report).toContain("| Repair loop outcome | pass |");
   });
 
   it("shows BLOCKED status when blocks_delivery is true", () => {

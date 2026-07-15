@@ -1,0 +1,21 @@
+{
+  "role": "medic-run-health",
+  "run_id": "polaris-run-coderabbit-qc-seal-2026-07-14-001",
+  "dispatch_id": "2431f544-8c68-47db-9d20-4aa382a86941",
+  "cluster_id": "POL-571",
+  "run_health_report_path": "/Users/lsctech/Developer/Polaris/.polaris/runs/polaris-run-coderabbit-qc-seal-2026-07-14-001/run-health-report.json",
+  "qc_artifact_refs": [],
+  "telemetry_path": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-coderabbit-qc-seal-2026-07-14-001/telemetry.jsonl",
+  "cluster_state_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-571/state.json",
+  "policy_limits": {
+    "max_treatment_rounds": 2
+  },
+  "result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-571/results/medic-run-health-2431f544-8c68-47db-9d20-4aa382a86941.json",
+  "allowed_write_paths": [
+    "smartdocs/medic/charts",
+    ".polaris/runs",
+    ".polaris/clusters",
+    ".taskchain_artifacts"
+  ],
+  "prohibited_write_paths": []
+}

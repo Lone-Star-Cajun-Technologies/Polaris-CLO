@@ -1,0 +1,454 @@
+{
+  "schema_version": "1.0",
+  "run_id": "polaris-run-coderabbit-qc-seal-2026-07-14-001",
+  "cluster_id": "POL-571",
+  "skill": "polaris-run",
+  "branch": "philmeaux/pol-571-implement-seal-local-coderabbit-qc-to-the-exact-pr-head",
+  "session_type": "implement",
+  "active_child": "",
+  "completed_children": [
+    "POL-572",
+    "POL-573",
+    "POL-574",
+    "POL-575",
+    "POL-576",
+    "POL-577"
+  ],
+  "open_children": [],
+  "step_cursor": "checkpoint",
+  "context_budget": {
+    "children_completed": 6,
+    "max_children_per_session": 1
+  },
+  "status": "cluster-complete",
+  "next_open_child": null,
+  "artifact_dir": ".taskchain_artifacts/polaris-run",
+  "dispatch_boundary": {
+    "dispatch_epoch": 7,
+    "continue_epoch": 7,
+    "last_dispatched_child": "POL-577"
+  },
+  "run_bootstrap_seal": {
+    "sealer": "polaris-loop-bootstrap",
+    "run_id": "polaris-run-coderabbit-qc-seal-2026-07-14-001",
+    "cluster_id": "POL-571",
+    "open_children_sha": "8fafecbf9d519d95f87ba4ad604bee06be8b67c2f5e0eee1974c2364346ae098",
+    "sealed_at": "2026-07-14T19:42:49.515Z"
+  },
+  "open_children_meta": {
+    "POL-572": {
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-571/results/POL-572-f6c47072-3d7b-437f-97a3-9e12c374965b.json",
+      "dispatch_record": {
+        "dispatch_id": "f6c47072-3d7b-437f-97a3-9e12c374965b",
+        "child_id": "POL-572",
+        "run_id": "polaris-run-coderabbit-qc-seal-2026-07-14-001",
+        "cluster_id": "POL-571",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-571/packets/POL-572-f6c47072-3d7b-437f-97a3-9e12c374965b.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-571/results/POL-572-f6c47072-3d7b-437f-97a3-9e12c374965b.json",
+        "provider": "devin",
+        "provider_selection_reason": "role-policy",
+        "providers_tried": [
+          "devin"
+        ],
+        "routing_summary": {
+          "selected_provider": "devin",
+          "selected_adapter": "terminal-cli",
+          "selection_reason": "role-policy",
+          "effective_policy_order": [
+            "devin",
+            "copilot",
+            "codex",
+            "kiro"
+          ],
+          "compatibility_mode": true,
+          "registry_present": false,
+          "fallback_eligible": true
+        },
+        "dispatched_at": "2026-07-14T19:43:02.010Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-coderabbit-qc-seal-2026-07-14-001:POL-572:1784058182010",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    },
+    "POL-573": {
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-571/results/POL-573-a05cc8c4-dcfa-4251-ae70-e1bc745e7550.json",
+      "dispatch_record": {
+        "dispatch_id": "a05cc8c4-dcfa-4251-ae70-e1bc745e7550",
+        "child_id": "POL-573",
+        "run_id": "polaris-run-coderabbit-qc-seal-2026-07-14-001",
+        "cluster_id": "POL-571",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-571/packets/POL-573-a05cc8c4-dcfa-4251-ae70-e1bc745e7550.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-571/results/POL-573-a05cc8c4-dcfa-4251-ae70-e1bc745e7550.json",
+        "provider": "devin",
+        "provider_selection_reason": "role-policy",
+        "providers_tried": [
+          "devin"
+        ],
+        "routing_summary": {
+          "selected_provider": "devin",
+          "selected_adapter": "terminal-cli",
+          "selection_reason": "role-policy",
+          "effective_policy_order": [
+            "devin",
+            "copilot",
+            "codex",
+            "kiro"
+          ],
+          "compatibility_mode": true,
+          "registry_present": false,
+          "fallback_eligible": true
+        },
+        "dispatched_at": "2026-07-14T19:57:24.245Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-coderabbit-qc-seal-2026-07-14-001:POL-573:1784059044245",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    },
+    "POL-574": {
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-571/results/POL-574-b841aaa9-0088-4e61-8588-7fdca38c6640.json",
+      "dispatch_record": {
+        "dispatch_id": "b841aaa9-0088-4e61-8588-7fdca38c6640",
+        "child_id": "POL-574",
+        "run_id": "polaris-run-coderabbit-qc-seal-2026-07-14-001",
+        "cluster_id": "POL-571",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-571/packets/POL-574-b841aaa9-0088-4e61-8588-7fdca38c6640.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-571/results/POL-574-b841aaa9-0088-4e61-8588-7fdca38c6640.json",
+        "provider": "devin",
+        "provider_selection_reason": "role-policy",
+        "providers_tried": [
+          "devin"
+        ],
+        "routing_summary": {
+          "selected_provider": "devin",
+          "selected_adapter": "terminal-cli",
+          "selection_reason": "role-policy",
+          "effective_policy_order": [
+            "devin",
+            "copilot",
+            "codex",
+            "kiro"
+          ],
+          "compatibility_mode": true,
+          "registry_present": false,
+          "fallback_eligible": true
+        },
+        "dispatched_at": "2026-07-14T20:32:31.667Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-coderabbit-qc-seal-2026-07-14-001:POL-574:1784061151667",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    },
+    "POL-575": {
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-571/results/POL-575-018ab0f4-2568-4db2-8f5c-c2068e11c378.json",
+      "dispatch_record": {
+        "dispatch_id": "81184d9e-542e-4e11-bfe3-14274513772b",
+        "child_id": "POL-575",
+        "run_id": "polaris-run-coderabbit-qc-seal-2026-07-14-001",
+        "cluster_id": "POL-571",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-571/packets/POL-575-81184d9e-542e-4e11-bfe3-14274513772b.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-571/results/POL-575-018ab0f4-2568-4db2-8f5c-c2068e11c378.json",
+        "provider": "devin",
+        "provider_selection_reason": "role-policy",
+        "providers_tried": [
+          "devin"
+        ],
+        "routing_summary": {
+          "selected_provider": "devin",
+          "selected_adapter": "terminal-cli",
+          "selection_reason": "role-policy",
+          "effective_policy_order": [
+            "devin",
+            "copilot",
+            "codex",
+            "kiro"
+          ],
+          "compatibility_mode": true,
+          "registry_present": false,
+          "fallback_eligible": true
+        },
+        "dispatched_at": "2026-07-14T21:17:43.033Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-coderabbit-qc-seal-2026-07-14-001:POL-575:1784063863033",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    },
+    "POL-576": {
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-571/results/POL-576-fc166abb-b988-44c0-ac10-0f60c9a3fa59.json",
+      "dispatch_record": {
+        "dispatch_id": "fc166abb-b988-44c0-ac10-0f60c9a3fa59",
+        "child_id": "POL-576",
+        "run_id": "polaris-run-coderabbit-qc-seal-2026-07-14-001",
+        "cluster_id": "POL-571",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-571/packets/POL-576-fc166abb-b988-44c0-ac10-0f60c9a3fa59.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-571/results/POL-576-fc166abb-b988-44c0-ac10-0f60c9a3fa59.json",
+        "provider": "devin",
+        "provider_selection_reason": "role-policy",
+        "providers_tried": [
+          "devin"
+        ],
+        "routing_summary": {
+          "selected_provider": "devin",
+          "selected_adapter": "terminal-cli",
+          "selection_reason": "role-policy",
+          "effective_policy_order": [
+            "devin",
+            "copilot",
+            "codex",
+            "kiro"
+          ],
+          "compatibility_mode": true,
+          "registry_present": false,
+          "fallback_eligible": true
+        },
+        "dispatched_at": "2026-07-14T21:26:22.757Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-coderabbit-qc-seal-2026-07-14-001:POL-576:1784064382757",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    },
+    "POL-577": {
+      "result_file": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-571/results/POL-577-725037d2-6e81-4383-accd-41a060a89f75.json",
+      "dispatch_record": {
+        "dispatch_id": "725037d2-6e81-4383-accd-41a060a89f75",
+        "child_id": "POL-577",
+        "run_id": "polaris-run-coderabbit-qc-seal-2026-07-14-001",
+        "cluster_id": "POL-571",
+        "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-571/packets/POL-577-725037d2-6e81-4383-accd-41a060a89f75.json",
+        "expected_result_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-571/results/POL-577-725037d2-6e81-4383-accd-41a060a89f75.json",
+        "provider": "devin",
+        "provider_selection_reason": "role-policy",
+        "providers_tried": [
+          "devin"
+        ],
+        "routing_summary": {
+          "selected_provider": "devin",
+          "selected_adapter": "terminal-cli",
+          "selection_reason": "role-policy",
+          "effective_policy_order": [
+            "devin",
+            "copilot",
+            "codex",
+            "kiro"
+          ],
+          "compatibility_mode": true,
+          "registry_present": false,
+          "fallback_eligible": true
+        },
+        "dispatched_at": "2026-07-14T21:39:21.947Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-coderabbit-qc-seal-2026-07-14-001:POL-577:1784065161947",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    }
+  },
+  "worker_pool_state": {
+    "max_concurrent": 1,
+    "slot_claims": []
+  },
+  "last_commit": "067b8a73c7a20197d3f817c2230077685568a27c",
+  "completed_children_results": {
+    "POL-572": {
+      "child_id": "POL-572",
+      "status": "done",
+      "validation": "passed",
+      "commit": "77b9606f004ff67b0763a7f4fd3b86ca7febdd60",
+      "next_recommended_action": "continue",
+      "run_id": "polaris-run-coderabbit-qc-seal-2026-07-14-001",
+      "cluster_id": "POL-571",
+      "skill_name": "polaris-run",
+      "role": "worker",
+      "provider": "devin",
+      "packet_hash": "964a744ae58c9a56e9df898d73ee0faf2a5191ac0d119b6fff785bbccff0aa63",
+      "worker_id": "polaris-run-coderabbit-qc-seal-2026-07-14-001:POL-572:1784058182010",
+      "escalation_count": 0,
+      "heartbeat_count": 8,
+      "result_artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-571/results/POL-572-f6c47072-3d7b-437f-97a3-9e12c374965b.json",
+      "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-571/packets/POL-572-f6c47072-3d7b-437f-97a3-9e12c374965b.json",
+      "telemetry_path": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-coderabbit-qc-seal-2026-07-14-001/telemetry.jsonl",
+      "user_intervened": null,
+      "foreman_intervened": null,
+      "dispatch_epoch": 1,
+      "session_pointer": null
+    },
+    "POL-573": {
+      "child_id": "POL-573",
+      "status": "done",
+      "validation": "passed",
+      "commit": "5da558dd81dd9d6c4f5a22551cd6edb71b975e68",
+      "next_recommended_action": "continue",
+      "run_id": "polaris-run-coderabbit-qc-seal-2026-07-14-001",
+      "cluster_id": "POL-571",
+      "skill_name": "polaris-run",
+      "role": "worker",
+      "provider": "devin",
+      "packet_hash": "b3a9fedae80b0fb1d8ace23b8d6eabb4a26e9b701bb761bbf22c6315ff445c5c",
+      "worker_id": "polaris-run-coderabbit-qc-seal-2026-07-14-001:POL-573:1784059044245",
+      "escalation_count": 0,
+      "heartbeat_count": 1,
+      "result_artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-571/results/POL-573-a05cc8c4-dcfa-4251-ae70-e1bc745e7550.json",
+      "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-571/packets/POL-573-a05cc8c4-dcfa-4251-ae70-e1bc745e7550.json",
+      "telemetry_path": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-coderabbit-qc-seal-2026-07-14-001/telemetry.jsonl",
+      "user_intervened": null,
+      "foreman_intervened": null,
+      "dispatch_epoch": 2,
+      "session_pointer": null
+    },
+    "POL-574": {
+      "child_id": "POL-574",
+      "status": "done",
+      "validation": "passed",
+      "commit": "142c5a383d22945f444f23274a09bb0450259b19",
+      "next_recommended_action": "continue",
+      "run_id": "polaris-run-coderabbit-qc-seal-2026-07-14-001",
+      "cluster_id": "POL-571",
+      "skill_name": "polaris-run",
+      "role": "worker",
+      "provider": "devin",
+      "packet_hash": "f0ff087f846f578640f139fa884e3e49d2dfcb20b4901f5ecc26c55f5c380dba",
+      "worker_id": "polaris-run-coderabbit-qc-seal-2026-07-14-001:POL-574:1784061151667",
+      "escalation_count": 0,
+      "heartbeat_count": 8,
+      "result_artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-571/results/POL-574-b841aaa9-0088-4e61-8588-7fdca38c6640.json",
+      "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-571/packets/POL-574-b841aaa9-0088-4e61-8588-7fdca38c6640.json",
+      "telemetry_path": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-coderabbit-qc-seal-2026-07-14-001/telemetry.jsonl",
+      "user_intervened": null,
+      "foreman_intervened": null,
+      "dispatch_epoch": 3,
+      "session_pointer": null
+    },
+    "POL-575": {
+      "child_id": "POL-575",
+      "status": "done",
+      "validation": "passed",
+      "commit": "357bddc54b02127d1e5fd43a0b8b0fe45838543f",
+      "next_recommended_action": "continue",
+      "run_id": "polaris-run-coderabbit-qc-seal-2026-07-14-001",
+      "cluster_id": "POL-571",
+      "skill_name": "polaris-run",
+      "role": "worker",
+      "provider": "devin",
+      "packet_hash": "0418002a32c95afb3dda0863615c44efa263104955b66b65ad34e3f2bd5cd90b",
+      "worker_id": "polaris-run-coderabbit-qc-seal-2026-07-14-001:POL-575:1784063863033",
+      "escalation_count": 0,
+      "heartbeat_count": 5,
+      "result_artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-571/results/POL-575-018ab0f4-2568-4db2-8f5c-c2068e11c378.json",
+      "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-571/packets/POL-575-81184d9e-542e-4e11-bfe3-14274513772b.json",
+      "telemetry_path": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-coderabbit-qc-seal-2026-07-14-001/telemetry.jsonl",
+      "user_intervened": null,
+      "foreman_intervened": null,
+      "dispatch_epoch": 5,
+      "session_pointer": null
+    },
+    "POL-576": {
+      "child_id": "POL-576",
+      "status": "done",
+      "validation": "passed",
+      "commit": "d098b6f770d7f664525d3739087a09934d171bf3",
+      "next_recommended_action": "continue",
+      "run_id": "polaris-run-coderabbit-qc-seal-2026-07-14-001",
+      "cluster_id": "POL-571",
+      "skill_name": "polaris-run",
+      "role": "worker",
+      "provider": "devin",
+      "packet_hash": "69c4eceb240a58961528f7aabc3e5069d0c01af979b91577273b66509893224c",
+      "worker_id": "polaris-run-coderabbit-qc-seal-2026-07-14-001:POL-576:1784064382757",
+      "escalation_count": 0,
+      "heartbeat_count": 6,
+      "result_artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-571/results/POL-576-fc166abb-b988-44c0-ac10-0f60c9a3fa59.json",
+      "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-571/packets/POL-576-fc166abb-b988-44c0-ac10-0f60c9a3fa59.json",
+      "telemetry_path": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-coderabbit-qc-seal-2026-07-14-001/telemetry.jsonl",
+      "user_intervened": null,
+      "foreman_intervened": null,
+      "dispatch_epoch": 6,
+      "session_pointer": null
+    },
+    "POL-577": {
+      "child_id": "POL-577",
+      "status": "done",
+      "validation": "passed",
+      "commit": "067b8a73c7a20197d3f817c2230077685568a27c",
+      "next_recommended_action": "continue",
+      "run_id": "polaris-run-coderabbit-qc-seal-2026-07-14-001",
+      "cluster_id": "POL-571",
+      "skill_name": "polaris-run",
+      "role": "worker",
+      "provider": "devin",
+      "packet_hash": "28b8b33827f30b7cc99a45182804a79faad0fbb71e03a8c8582e1dd184eecfb3",
+      "worker_id": "polaris-run-coderabbit-qc-seal-2026-07-14-001:POL-577:1784065161947",
+      "escalation_count": 0,
+      "heartbeat_count": 8,
+      "result_artifact_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-571/results/POL-577-725037d2-6e81-4383-accd-41a060a89f75.json",
+      "packet_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-571/packets/POL-577-725037d2-6e81-4383-accd-41a060a89f75.json",
+      "telemetry_path": "/Users/lsctech/Developer/Polaris/.taskchain_artifacts/polaris-run/runs/polaris-run-coderabbit-qc-seal-2026-07-14-001/telemetry.jsonl",
+      "user_intervened": null,
+      "foreman_intervened": null,
+      "dispatch_epoch": 7,
+      "session_pointer": null
+    }
+  },
+  "blocker": {
+    "reason": "worker-error: sealed result file never written (ENOENT); commit 357bddc exists but unrecorded; redispatching per operator decision",
+    "child_id": "POL-575",
+    "timestamp": "2026-07-14T21:17:37.497Z",
+    "resolved": true
+  },
+  "qc_repair_loop": {
+    "current_round": 1,
+    "max_rounds": 2,
+    "source_qc_run_ids": [
+      "coderabbit-1784068057190"
+    ],
+    "manifest_path": "/Users/lsctech/Developer/Polaris/.polaris/clusters/POL-571/qc/repair-rounds/1/repair-packets.json",
+    "pending_packet_ids": [
+      "pkt-POL-571-r1-000"
+    ],
+    "completed_packet_ids": [],
+    "rerun_requested": false,
+    "rerun_qc_run_ids": {},
+    "terminal_outcome": "operator-review",
+    "initiated_at": "2026-07-14T22:27:37.229Z",
+    "updated_at": "2026-07-14T22:27:37.232Z"
+  }
+}

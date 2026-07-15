@@ -87,7 +87,14 @@ describe("CodeRabbitQcProvider", () => {
     });
 
     expect(command.command).toBe("coderabbit");
-    expect(command.args).toEqual(["review", "--agent", "--pr-url", "https://github.com/org/repo/pull/1"]);
+    expect(command.args).toEqual([
+      "review",
+      "--agent",
+      "--pr-url",
+      "https://github.com/org/repo/pull/1",
+      "--config",
+      ".coderabbit.yaml",
+    ]);
   });
 
   it("builds a local review command when branch is provided", () => {
@@ -99,7 +106,14 @@ describe("CodeRabbitQcProvider", () => {
     });
 
     expect(command.command).toBe("coderabbit");
-    expect(command.args).toEqual(["review", "--agent", "--base", "feature-branch"]);
+    expect(command.args).toEqual([
+      "review",
+      "--agent",
+      "--base",
+      "feature-branch",
+      "--config",
+      ".coderabbit.yaml",
+    ]);
   });
 
   it("prefers baseRef for local review commands", () => {
@@ -112,7 +126,14 @@ describe("CodeRabbitQcProvider", () => {
     });
 
     expect(command.command).toBe("coderabbit");
-    expect(command.args).toEqual(["review", "--agent", "--base", "main"]);
+    expect(command.args).toEqual([
+      "review",
+      "--agent",
+      "--base",
+      "main",
+      "--config",
+      ".coderabbit.yaml",
+    ]);
   });
 
   it("parses raw output into a passed result without findings", () => {
@@ -399,7 +420,14 @@ describe("CodeRabbitQcProvider", () => {
     });
 
     expect(command.command).toBe("coderabbit");
-    expect(command.args).toEqual(["review", "--agent", "--base", "feature-branch"]);
+    expect(command.args).toEqual([
+      "review",
+      "--agent",
+      "--base",
+      "feature-branch",
+      "--config",
+      ".coderabbit.yaml",
+    ]);
   });
 });
 

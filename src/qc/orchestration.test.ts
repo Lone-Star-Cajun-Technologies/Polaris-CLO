@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { execFileSync } from "node:child_process";
 import { join } from "node:path";
 import type { IQcProvider } from "./provider.js";
 import type { QcReviewScope, QcProviderOutput, QcMetricsPayload } from "./provider.js";
@@ -325,5 +326,31 @@ describe("runQcAtTrigger", () => {
     expect(result.action).toBe("pass");
     expect(capturedUrl).toBe("https://github.com/org/repo/pull/42");
     expect(result.results[0]!.trigger).toBe("pr");
+  });
+
+  it("captures the current HEAD as headSha", async () => {
+    execFileSync("git", ["-c", "init.defaultBranch=main", "init"], { cwd: testDir, stdio: "pipe" });
+    execFileSync("git", ["config", "user.email", "test@test.com"], { cwd: testDir, stdio: "pipe" });
+    execFileSync("git", ["config", "user.name", "Test"], { cwd: testDir, stdio: "pipe" });
+    writeFileSync(join(testDir, "README.md"), "test\n");
+    execFileSync("git", ["add", "."], { cwd: testDir, stdio: "pipe" });
+    execFileSync("git", ["commit", "-m", "init"], { cwd: testDir, stdio: "pipe" });
+    const headSha = execFileSync("git", ["rev-parse", "HEAD"], {
+      cwd: testDir,
+      encoding: "utf-8",
+    }).trim();
+
+    const result = await runQcAtTrigger({
+      config: makeConfig(),
+      registry,
+      trigger: "completed-cluster",
+      repoRoot: testDir,
+      runId: "run-1",
+      clusterId: "POL-1",
+      branch: "main",
+    });
+
+    expect(result.action).toBe("pass");
+    expect(result.results[0]?.headSha).toBe(headSha);
   });
 });

@@ -1,0 +1,52 @@
+{
+  "schemaVersion": "1.0",
+  "qcRunId": "coderabbit-1784068057190",
+  "runId": "polaris-run-coderabbit-qc-seal-2026-07-14-001",
+  "clusterId": "POL-571",
+  "trigger": "completed-cluster",
+  "provider": "coderabbit",
+  "providerMode": "local",
+  "startedAt": "2026-07-14T22:25:54.040Z",
+  "completedAt": "2026-07-14T22:27:37.190Z",
+  "status": "findings",
+  "findings": [
+    {
+      "findingId": "coderabbit-1-1784068057190",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-571/state.json around lines 23 - 24, Update the POL-575 blocker state in the cluster state JSON to mark resolved as true, consistent with its successful completion and the cluster-complete status. Ensure the corresponding blocker entry, including the duplicate location noted in the comment, no longer reports an unresolved blocker.",
+      "filePath": ".polaris/clusters/POL-571/state.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-571/state.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    }
+  ],
+  "rawArtifactPaths": [],
+  "parserVersion": "coderabbit-1.0",
+  "policyDecision": {
+    "blocksDelivery": true,
+    "requiresOperatorReview": true,
+    "routedToRepair": false,
+    "summary": "1 findings; operator review required"
+  },
+  "providerAttempt": {
+    "provider": "coderabbit",
+    "status": "success",
+    "rawOutputAvailable": true,
+    "rawOutputRetained": false,
+    "stdoutLength": 1551,
+    "stderrLength": 0,
+    "exitCode": 0,
+    "parserResult": "success"
+  }
+}

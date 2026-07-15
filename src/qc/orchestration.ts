@@ -10,6 +10,7 @@
  * are invoked, and only blocking policy stops the loop/finalize flow.
  */
 
+import { execFileSync } from "node:child_process";
 import type { QcConfig } from "../config/schema.js";
 import { readClusterStateSync, recordQcRun } from "../cluster-state/store.js";
 import type { LoopState } from "../loop/checkpoint.js";
@@ -22,6 +23,14 @@ import { activeProvidersForTrigger } from "./triggers.js";
 import { buildChangedFileOwnership, resolveAttributionWithOwnership, type QcAttributionContext } from "./attribution.js";
 import { isAutofixEligible } from "./autofix.js";
 import { decideRepairRouting } from "./routing.js";
+
+function getHeadSha(repoRoot: string): string | undefined {
+  try {
+    return execFileSync("git", ["rev-parse", "HEAD"], { cwd: repoRoot, encoding: "utf-8", stdio: "pipe" }).trim();
+  } catch {
+    return undefined;
+  }
+}
 
 export interface QcOrchestratorResult {
   /** Trigger that was evaluated. */
@@ -147,6 +156,8 @@ export async function runQcAtTrigger(
     };
   }
 
+  const headSha = getHeadSha(repoRoot);
+
   const attributionContext = buildAttributionContext(options);
   const ownership = buildChangedFileOwnership(attributionContext);
 
@@ -178,6 +189,10 @@ export async function runQcAtTrigger(
         config,
         registry,
       });
+
+      if (headSha) {
+        rawResult.headSha = headSha;
+      }
 
       const result = applyAttributionAndRouting(rawResult, config, attributionContext, ownership, routeName);
 

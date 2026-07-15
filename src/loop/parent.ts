@@ -654,6 +654,16 @@ function parseWorkerSummary(summary: string | undefined): WorkerSummary | null {
   }
 }
 
+function resolveBlockerForCompletedChild(
+  blocker: LoopState["blocker"],
+  completedChild: string,
+): LoopState["blocker"] {
+  if (blocker && blocker.child_id === completedChild) {
+    return undefined;
+  }
+  return blocker;
+}
+
 /**
  * Update state after a child completes successfully.
  * Moves the child from open_children to completed_children.
@@ -674,6 +684,7 @@ function advanceState(state: LoopState, completedChild: string, lastCommit?: str
       ...state.context_budget,
       children_completed: completed.length,
     },
+    blocker: resolveBlockerForCompletedChild(state.blocker, completedChild),
   };
 }
 
@@ -2534,6 +2545,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
           ...state.completed_children_results,
           [nextChild]: workerResult,
         },
+        blocker: resolveBlockerForCompletedChild(state.blocker, nextChild),
       }, nextChild);
       childrenDispatched += 1;
       if (!dryRun) {

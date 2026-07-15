@@ -1,0 +1,9 @@
+{
+  "run_id": "polaris-run-coderabbit-qc-seal-2026-07-14-001",
+  "cluster_id": "POL-571",
+  "child_id": "POL-572",
+  "status": "done",
+  "commit": "77b9606f004ff67b0763a7f4fd3b86ca7febdd60",
+  "validation": "passed",
+  "next_recommended_action": "continue"
+}

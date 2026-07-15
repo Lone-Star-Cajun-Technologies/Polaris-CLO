@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "1.0",
+  "clusterId": "POL-571",
+  "round": 1,
+  "compiledAt": "2026-07-14T22:27:37.229Z",
+  "sourceQcRunIds": [
+    "coderabbit-1784068057190"
+  ],
+  "packets": [
+    {
+      "packetId": "pkt-POL-571-r1-000",
+      "round": 1,
+      "clusterId": "POL-571",
+      "sourceQcRunIds": [
+        "coderabbit-1784068057190"
+      ],
+      "findingIds": [
+        "coderabbit-1-1784068057190"
+      ],
+      "severityFloor": "high",
+      "rootCauseHint": "categories=[finding]; files=[.polaris/clusters/POL-571/state.json]; confidence=unclear; severity=high",
+      "allowedScope": [
+        ".polaris/clusters/POL-571/state.json"
+      ],
+      "prohibitedScope": [],
+      "validationCommands": [],
+      "routingTarget": "operator-review",
+      "parallelGroup": "g-000",
+      "conflicts": [],
+      "medic": true,
+      "status": "pending",
+      "createdAt": "2026-07-14T22:27:37.229Z"
+    }
+  ]
+}

@@ -13,7 +13,7 @@ The QC subsystem is the provider-agnostic Quality Control layer for Polaris. It 
 - `provider.ts` — `IQcProvider`, `QcReviewScope`, `QcProviderOutput`, `QcProviderRegistry` interfaces and base contracts.
 - `registry.ts` — `QcProviderRegistry` singleton; registers concrete provider adapters.
 - `providers/` — one file per provider adapter (e.g., `coderabbit.ts`); each adapter parses provider-specific output into `QcFinding[]`.
-- `types.ts` — normalized `QcFinding`, `QcResult`, `QcProviderFailure`, `QcRepairPacket`, `QcRepairRound`, `QcRepairLoopState`, attribution, status, severity, and routing decision types.
+- `types.ts` — normalized `QcFinding`, `QcResult`, `QcProviderFailure`, `QcRepairPacket`, `QcRepairRound`, `QcRepairLoopState`, attribution, status, severity, and routing decision types. `QcResult.headSha` records the git HEAD SHA reviewed by that QC run (set by `orchestration.ts`) and is the basis for the sealed-reviewed-SHA evidence surfaced by `src/finalize/`.
 - `schemas.ts` — Zod/JSON schema definitions for all QC artifacts.
 - `policy.ts` — severity policy, auto-fix eligibility, and delivery blocking decisions.
 - `attribution.ts` — evidence-based finding attribution to children (commit-line-match, changed-file-owner, child-scope-match, etc.).
@@ -72,8 +72,27 @@ interface QcProviderExecutionConfig {
   primary?: boolean;
   fallback?: string[];
   severityMapping?: Record<string, QcSeverity>;
+  /** Path to a CodeRabbit config file (e.g. `.coderabbit.yaml`). */
+  configPath?: string;
 }
 ```
+
+## CodeRabbit review scope for `.polaris/` artifacts
+
+Tracked `.polaris/` artifacts are not uniformly reviewable. CodeRabbit review scope is defined by the root `.coderabbit.yaml` `reviews.path_filters` and mirrored by `src/finalize/artifact-policy.ts` (`getCodeRabbitReviewScope`, `isCodeRabbitReviewablePath`).
+
+- **In scope** (durable state evidence promoted into finalize commits):
+  - Active cluster `clusters.json`, `cluster-state.json`, `state.json`
+  - `.polaris/runs/ledger.jsonl` (durable audit log)
+  - `.polaris/cognition/archive/**` (durable provenance)
+  - `.polaris/map/**` (durable derived artifacts)
+- **Out of scope** (runtime/sealed/noise artifacts):
+  - Active cluster `packets/**`, `results/**`, `qc/**` (sealed worker packets and raw QC output)
+  - `.polaris/runs/` runtime files and subdirectories (legacy, mutation queue, current-state, etc.)
+  - `.polaris/bootstrap/**`, `.polaris/tmp/**`, `.polaris/cognition/pending/**`
+  - `.taskchain_artifacts/**` and `*.bak` (workspace scratch)
+
+The local CodeRabbit CLI uses the same `.coderabbit.yaml` as the GitHub App via `--config .coderabbit.yaml` (default `CodeRabbitQcProvider.DEFAULT_CODERABBIT_CONFIG_PATH`). Set `qc.providers.coderabbit.execution.configPath` to override.
 
 ## Repair loop state machine
 
@@ -81,7 +100,16 @@ States (managed by `src/qc/repair-loop.ts`):
 
 `qc_review_requested` → `qc_provider_attempted` → `qc_results_normalized` → `repair_packets_compiled` → `repair_packets_dispatched` → `repair_results_collected` → `qc_rerun_requested` → (loop) or terminal state
 
-Terminal states (`QcRepairLoopOutcome` in `src/loop/checkpoint.ts`): `pass`, `no-repairable`, `max-rounds`, `all-providers-failed`, `operator-review`, `medic-referral`, `qc-disabled`. These are the exact string literals stored in `state.qc_repair_loop.terminal_outcome` and `ClusterState.qc_repair_outcome`; finalize's repair-loop gate (`src/finalize/index.ts`) matches against them directly.
+Terminal states (`QcRepairLoopOutcome` in `src/loop/checkpoint.ts`): `pass`, `qc-disabled`, `no-repairable`, `medic-referral`, `operator-review`, `all-providers-failed`, `max-rounds`. These are the exact string literals stored in `state.qc_repair_loop.terminal_outcome` and `ClusterState.qc_repair_outcome`; finalize's repair-loop gate (`src/finalize/index.ts`) matches against them directly. The repair-loop constants `QC_REPAIR_TERMINAL_OUTCOMES`, `QC_REPAIR_CONVERGED_OUTCOMES`, and `QC_REPAIR_ESCALATION_OUTCOMES` (in `src/qc/repair-loop.ts`) encode this catalog.
+
+The loop stops at the first round that satisfies one of the terminal outcomes. It is bounded by `qc.maxRepairRounds` (default `DEFAULT_MAX_REPAIR_ROUNDS = 2` in `src/qc/repair-loop.ts`).
+
+Classification:
+
+- **Converged / trusted** (finalize may proceed without an operator resolution): `pass`, `qc-disabled`, `no-repairable`.
+- **Escalation** (finalize blocks unless a valid `resolution.json` is present for the current round): `medic-referral`, `operator-review`, `all-providers-failed`, `max-rounds`.
+
+`max-rounds` is an escalation outcome, never a converged or trusted outcome. It is returned when the configured round limit is exhausted and findings are still open; finalize must not silently proceed as if the loop converged.
 
 Operator-review findings do not bypass packet compilation: the loop still compiles a repair manifest for the round, but it dispatches only eligible `repair-worker` packets. `operator-review` packets settle the terminal `operator-review` outcome directly without worker dispatch.
 

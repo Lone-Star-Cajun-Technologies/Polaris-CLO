@@ -1,0 +1,77 @@
+{
+  "schema_version": "1.0",
+  "role": "closeout-librarian",
+  "run_id": "polaris-run-coderabbit-qc-seal-2026-07-14-001",
+  "dispatch_id": "511778f4-66b9-4cae-bca2-36893d88c7e3",
+  "cluster_id": "POL-571",
+  "status": "success",
+  "commit_sha": "d2a7a26bf2e580aadcec86c0946f23bd070aa58b",
+  "commit_message": "docs(closeout): reconcile cognition for cluster POL-571",
+  "files_committed": [
+    "src/SUMMARY.md",
+    "src/finalize/POLARIS.md",
+    "src/finalize/SUMMARY.md",
+    "src/qc/POLARIS.md"
+  ],
+  "drift_reconciliation": {
+    "medic_ran": false,
+    "charts_created": [],
+    "drift_observations": [
+      {
+        "type": "canon_mismatch",
+        "target": "src/finalize/POLARIS.md, src/finalize/SUMMARY.md",
+        "severity": "medium"
+      },
+      {
+        "type": "route_guidance_outdated",
+        "target": "src/finalize/POLARIS.md (stepUpdateLinear/stepGenerateReport step references)",
+        "severity": "medium"
+      },
+      {
+        "type": "missing_documentation",
+        "target": "src/qc/POLARIS.md (QcResult.headSha field)",
+        "severity": "low"
+      }
+    ],
+    "chart_links_required": false,
+    "charts_linked": []
+  },
+  "polaris_md_updates": [
+    {
+      "file": "src/finalize/POLARIS.md",
+      "action": "update",
+      "change_summary": "Corrected step count 13->14; replaced stale stepUpdateLinear/stepGenerateReport step references with current inline writeRunReport/updateLinearIssueAfterFinalize calls; documented stepStageArtifacts (5.75), sealed_head_sha PR-creation guard (POL-573), and QC convergence evidence surfacing (POL-575)."
+    },
+    {
+      "file": "src/qc/POLARIS.md",
+      "action": "update",
+      "change_summary": "Added QcResult.headSha field description to types.ts bullet, linking it to finalize's sealed-reviewed-SHA evidence."
+    }
+  ],
+  "summary_md_updates": [
+    {
+      "file": "src/finalize/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Updated step count to 14; corrected Linear-update mechanism description; added bullets for artifact pre-staging (5.75), sealed HEAD SHA PR guard, and QC convergence evidence in run report/Linear comment."
+    },
+    {
+      "file": "src/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Extended existing finalize/QC sentence in Current State to cover sealed HEAD SHA guard, QC convergence evidence surfacing, and .coderabbit.yaml review-scope policy."
+    }
+  ],
+  "docs_ingested": [],
+  "docs_archived": [],
+  "yaml_updates": [],
+  "cognition_archived": [],
+  "link_validation": {
+    "total_checked": 0,
+    "valid": 0,
+    "broken": 0,
+    "repaired": 0,
+    "unrepairable": []
+  },
+  "blockers": [],
+  "reconciled_at": "2026-07-14T22:15:00Z",
+  "evidence_summary": "Reconciled POLARIS.md/SUMMARY.md for src/finalize and src/qc, plus the root src/SUMMARY.md, against the six completed children of POL-571 (seal local CodeRabbit QC to the exact PR head). Children POL-574 and POL-576 had already reconciled src/qc/POLARIS.md for the repair-loop terminal-outcome classification and .coderabbit.yaml review scope, so no further changes were needed there beyond adding the QcResult.headSha field note. The larger drift was in src/finalize docs, which still described a 13-step sequence and referenced stepUpdateLinear/stepGenerateReport as active steps.ts files; POL-573 and POL-575 changed index.ts to inline report regeneration and the Linear call directly and to add a sealed-HEAD-SHA guard before PR creation, and POL-572 split artifact staging out of stepCommit to run earlier (step 5.75) before completed-cluster QC. Docs now describe the 14-step sequence, the sealed-SHA PR guard, artifact pre-staging, and the new QC convergence evidence surfaced in the run report and Linear comment. Draft-stub POLARIS.md/SUMMARY.md files (src/qc/providers, src/finalize/steps) were left untouched since their file inventories remain accurate and they carry no factual claims contradicted by this cluster. No documentation ingestion, archival, or cognition-note archival was needed (no smartdocs candidates or pending cognition notes tied to this cluster). No blockers."
+}

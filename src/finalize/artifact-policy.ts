@@ -202,6 +202,81 @@ export function getArtifactPromotionStageTargets(activeClusterId: string): strin
 }
 
 /**
+ * Returns CodeRabbit path-filter patterns (include/exclude) for `.polaris/`
+ * artifacts. Durable state evidence is reviewable; runtime/sealed/noise
+ * artifacts are excluded. These patterns must be kept in sync with the
+ * root `.coderabbit.yaml` `reviews.path_filters`.
+ */
+export function getCodeRabbitReviewScope(activeClusterId: string): {
+  include: string[];
+  exclude: string[];
+  rationale: string;
+} {
+  const activeClusterPrefix = getActiveClusterPrefix(activeClusterId);
+
+  return {
+    include: [
+      `${activeClusterPrefix}clusters.json`,
+      `${activeClusterPrefix}cluster-state.json`,
+      `${activeClusterPrefix}state.json`,
+      PROMOTED_RUN_LEDGER,
+      `${PROMOTED_COGNITION_ARCHIVE_PREFIX}**`,
+      `${PROMOTED_MAP_PREFIX}**`,
+    ],
+    exclude: [
+      `${activeClusterPrefix}packets/**`,
+      `${activeClusterPrefix}results/**`,
+      `${activeClusterPrefix}qc/**`,
+      `${WORKSPACE_SCRATCH_PREFIX}**`,
+      "*.bak",
+      "**/*.bak",
+      ...LEGACY_RUN_ARTIFACTS,
+      ".polaris/runs/evo-run-archive/**",
+      ".polaris/runs/*/**",
+      ".polaris/bootstrap/**",
+      ".polaris/session-type",
+      ".polaris/tmp/**",
+      ".polaris/cognition/pending/**",
+      ".polaris/clusters/<other-cluster>/**",
+    ],
+    rationale:
+      "Durable state evidence (active cluster state, run ledger, cognition archive, map) is reviewable. " +
+      "Sealed worker packets, results, raw QC output, workspace scratch, and temp/noise artifacts are excluded.",
+  };
+}
+
+/**
+ * Returns true if a path is within CodeRabbit review scope according to the
+ * `.polaris/` artifact policy. This is the code-side mirror of the root
+ * `.coderabbit.yaml` `reviews.path_filters`.
+ */
+export function isCodeRabbitReviewablePath(filePath: string, activeClusterId: string): boolean {
+  const relativePath = normalizeArtifactPath(filePath);
+  const { include, exclude } = getCodeRabbitReviewScope(activeClusterId);
+
+  if (exclude.some((pattern) => matchesSimpleGlob(relativePath, pattern))) {
+    return false;
+  }
+  return include.some((pattern) => matchesSimpleGlob(relativePath, pattern));
+}
+
+function matchesSimpleGlob(filePath: string, pattern: string): boolean {
+  // Treat literal `<other-cluster>` in the documented pattern as non-matching.
+  if (pattern.includes("<other-cluster>")) {
+    return false;
+  }
+
+  const normalizedPattern = pattern
+    .replace(/[.+^${}()|[\]\\]/g, "\\$&")
+    .replace(/\*\*/g, "{{GLOBSTAR}}")
+    .replace(/\*/g, "[^/]*")
+    .replace(/\{\{GLOBSTAR\}\}/g, ".*");
+
+  const regex = new RegExp(`^${normalizedPattern}$`);
+  return regex.test(filePath);
+}
+
+/**
  * Returns gitignore patterns for runtime and crash-recovery artifact classes.
  * These patterns should be added to .gitignore to prevent accidental staging.
  */

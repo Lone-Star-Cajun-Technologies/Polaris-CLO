@@ -129,6 +129,7 @@ export const qcResultSchema: z.ZodType<QcResult> = z.object({
   provider: z.string(),
   providerMode: z.enum(["local", "pr", "metrics-import"]),
   prUrl: z.string().optional(),
+  headSha: z.string().optional(),
   startedAt: z.string().datetime(),
   completedAt: z.string().datetime(),
   status: z.enum(["passed", "findings", "blocked", "failed", "skipped"]),

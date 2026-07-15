@@ -1,0 +1,13 @@
+{
+  "run_id": "polaris-run-coderabbit-qc-seal-2026-07-14-001",
+  "cluster_id": "POL-571",
+  "dispatch_id": "2431f544-8c68-47db-9d20-4aa382a86941",
+  "status": "resolved",
+  "chart_id": "CHART-2026-07-14-004",
+  "decision": "terminal",
+  "treatment_packet_refs": [
+    ".polaris/clusters/POL-571/medic/polaris-run-coderabbit-qc-seal-2026-07-14-001-r1-qc_qc-blocking-findings_4603f5ec-0014-495d-b8e8-769f708e3174.json"
+  ],
+  "terminal_outcome": "treatment-success",
+  "timestamp": "2026-07-14T22:42:04.433Z"
+}

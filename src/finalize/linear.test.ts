@@ -434,6 +434,53 @@ describe("updateLinearIssueAfterFinalize", () => {
     expect(commentBody).toContain("Children completed | 5");
   });
 
+  it("includes QC convergence evidence in comment body when provided", async () => {
+    let commentBody = "";
+    const calls: string[] = [];
+
+    mockRequest.mockImplementation((_options: unknown, callback?: unknown) => {
+      const req = new EventEmitter() as ReturnType<typeof https.request>;
+      (req as unknown as { write: (data: string) => void }).write = vi.fn((data: string) => {
+        const parsed = JSON.parse(data) as { query?: string; variables?: Record<string, unknown> };
+        const query = parsed.query ?? "";
+        if (query.includes("CreateComment")) {
+          calls.push("commentCreate");
+          commentBody = (parsed.variables?.["body"] as string) ?? "";
+        }
+      });
+
+      (req as unknown as { end: () => void }).end = vi.fn(() => {
+        const res = new EventEmitter() as IncomingMessage;
+        (res as unknown as { statusCode: number }).statusCode = 200;
+        if (typeof callback === "function") callback(res);
+        res.emit("data", Buffer.from(JSON.stringify({ data: { commentCreate: { success: true } } })));
+        res.emit("end");
+      });
+
+      return req as ReturnType<typeof https.request>;
+    });
+
+    await updateLinearIssueAfterFinalize({
+      ...baseOptions,
+      lifecyclePolicy: { parentOnAllChildrenComplete: "no_status_change" },
+      qcEvidence: {
+        sealedReviewedSha: "abc1234",
+        prHeadSha: "def5678",
+        qcReviewPassCount: 3,
+        unresolvedAdvisoryCount: 2,
+        repairLoopOutcome: "pass",
+      },
+    });
+
+    expect(calls).toEqual(["commentCreate"]);
+    expect(commentBody).toContain("### QC convergence evidence");
+    expect(commentBody).toContain("| Sealed reviewed SHA | abc1234 |");
+    expect(commentBody).toContain("| PR head SHA | def5678 |");
+    expect(commentBody).toContain("| QC review passes run | 3 |");
+    expect(commentBody).toContain("| Unresolved advisory-severity findings | 2 |");
+    expect(commentBody).toContain("| Repair loop outcome | pass |");
+  });
+
   it("falls back to comment-only when state query fails (network error)", async () => {
     let callCount = 0;
     const calls: string[] = [];
