@@ -21,14 +21,14 @@ import { stepMapUpdate } from "./steps/01-map-update.js";
 import { stepMapValidate } from "./steps/02-map-validate.js";
 import { stepSchemaValidate } from "./steps/03-schema-validate.js";
 import { stepRunChecks } from "./steps/04-run-checks.js";
-import { stepGenerateReport } from "./steps/05-generate-report.js";
-import { stepCommit } from "./steps/06-commit.js";
+import { stepCommit, stepStageArtifacts } from "./steps/06-commit.js";
 import { stepPush } from "./steps/07-push.js";
 import { stepCreatePr } from "./steps/08-create-pr.js";
 import { stepUpdateState } from "./steps/09-update-state.js";
 import { stepAppendJsonl } from "./steps/10-append-jsonl.js";
-import { stepUpdateLinear } from "./steps/11-update-linear.js";
 import { stepArchive } from "./steps/12-archive.js";
+import { writeRunReport } from "./run-report.js";
+import { updateLinearIssueAfterFinalize } from "./linear.js";
 import { LocalGraph } from "../tracker/local-graph.js";
 import { TrackerSyncService } from "../tracker/sync/index.js";
 import { formatFinalizeEvidenceFailures, verifyCompletedChildFinalizeEvidence } from "../loop/finalize-evidence.js";
@@ -829,9 +829,9 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
     }
   }
 
-  // Step 5: Generate run-report.md (written once, never updated)
+  // Step 5: Generate run-report.md (initial; rewritten after commit with QC evidence)
   console.log("[5/14] Generating run-report.md..."); // Step count updated
-  const reportPath = stepGenerateReport(repoRoot, state, branch, true);
+  let reportPath = writeRunReport(repoRoot, state, branch, true);
 
   if (dryRun) {
     console.log("[6–14/14] Dry run — skipping reconciliation, commit and delivery.");
@@ -968,8 +968,14 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
     }
   }
 
+  // Step 5.75: Stage durable Polaris artifacts for the completed-cluster QC review.
+  // This ensures the QC pass reviews the same promoted .polaris/ artifacts that
+  // will become the final delivery commit.
+  console.log("[5.75/14] Staging durable Polaris artifacts for QC...");
+  stepStageArtifacts(repoRoot, state, resolve(stateFile), reportPath);
+
   // Step 5.8: Completed-cluster QC trigger (when configured)
-  // Runs after all authoritative gates and before final commit/delivery.
+  // Runs after durable artifact staging and before final commit/delivery.
   const clusterStateForQc = readClusterStateSync(state.cluster_id, repoRoot);
   const qcBaseRef =
     clusterStateForQc?.base_branch ??
@@ -1090,7 +1096,20 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
   // Step 8: Single final commit: source changes + durable Polaris artifacts
   console.log("[8/14] Committing durable Polaris state + map..."); // Step count updated
   const resolvedStateFile = resolve(stateFile);
-  stepCommit(repoRoot, state, resolvedStateFile, reportPath);
+  const finalCommitSha = stepCommit(repoRoot, state, resolvedStateFile, reportPath);
+
+  // Seal the final delivery commit SHA in the QC repair-loop state. This is the
+  // head the PR will be created from; stepCreatePr verifies the current HEAD
+  // still matches this sealed SHA before invoking gh.
+  if (state.qc_repair_loop) {
+    const loop = state.qc_repair_loop as QcRepairLoopState & { sealed_head_sha?: string };
+    loop.sealed_head_sha = finalCommitSha;
+  }
+
+  // Re-generate the run report now that the PR head SHA is sealed and the
+  // repair loop has produced durable QC evidence.
+  console.log("[8.5/14] Regenerating run-report.md with QC convergence evidence...");
+  reportPath = writeRunReport(repoRoot, state, branch, true);
 
   // The run's local state file is the authoritative place for post-PR state
   // (pr_url, status: complete). When the state file passed to finalize is the
@@ -1141,7 +1160,27 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
   console.log("[13/14] Updating Linear...");
   const linearEnabled = config.tracker?.linear?.enabled ?? false;
   const lifecyclePolicy = config.tracker?.lifecyclePolicy;
-  await stepUpdateLinear(state, branch, prUrl, true, linearEnabled, state.cluster_id, lifecyclePolicy, authChildResult.authoritativeCount);
+  if (linearEnabled) {
+    const apiKey = process.env["LINEAR_API_KEY"];
+    if (!apiKey) {
+      process.stderr.write("Warning: LINEAR_API_KEY not set — skipping Linear update.\n");
+    } else {
+      await updateLinearIssueAfterFinalize({
+        issueId: state.cluster_id,
+        state,
+        branch,
+        prUrl,
+        validationPassed: true,
+        apiKey,
+        lifecyclePolicy,
+        authoritativeChildCount: authChildResult.authoritativeCount,
+        repoRoot,
+      });
+      console.log(`Linear parent ${state.cluster_id} updated.`);
+    }
+  } else {
+    console.log("[13/14] Linear integration disabled — skipping.");
+  }
 
   // Step 14: Archive run snapshot
   console.log("[14/14] Archiving run snapshot...");

@@ -1,6 +1,23 @@
-import type { LoopState } from "../loop/checkpoint.js";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import type { LoopState, QcRepairLoopState } from "../loop/checkpoint.js";
+import type { QcResult } from "../qc/types.js";
+import { computeQcSummary, loadRunArtifacts, summarizeRouterOutcomes } from "../autoresearch/score.js";
 import type { QcScoreSummary, RunArtifacts } from "../autoresearch/score.js";
-import { summarizeRouterOutcomes } from "../autoresearch/score.js";
+
+export interface QcEvidence {
+  /** SHA the final trusted QC pass reviewed (from QcResult.headSha). */
+  sealedReviewedSha?: string;
+  /** SHA of the commit that became the PR head (from qc_repair_loop.sealed_head_sha). */
+  prHeadSha?: string;
+  /** Number of QC review passes that were run in this finalize sequence. */
+  qcReviewPassCount: number;
+  /** Count of unresolved advisory-severity (non-blocking) findings. */
+  unresolvedAdvisoryCount: number;
+  /** Terminal/convergence outcome of the QC repair loop. */
+  repairLoopOutcome?: string;
+}
 
 export interface RunReportData {
   state: LoopState;
@@ -13,6 +30,7 @@ export interface RunReportData {
   qcSummary?: QcScoreSummary | null;
   /** Optional telemetry events for routing evidence summary. */
   telemetryEvents?: unknown[];
+  qcEvidence?: QcEvidence;
 }
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
@@ -28,6 +46,109 @@ function asString(value: unknown): string | undefined {
 function asStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.filter((v): v is string => typeof v === "string");
+}
+
+function getHeadSha(repoRoot: string): string | undefined {
+  try {
+    return execFileSync("git", ["rev-parse", "HEAD"], { cwd: repoRoot, encoding: "utf-8", stdio: "pipe" }).trim();
+  } catch {
+    return undefined;
+  }
+}
+
+function deriveSealedReviewedSha(
+  qcResults: QcResult[],
+  loop?: QcRepairLoopState & { sealed_head_sha?: string },
+): string | undefined {
+  const finalRunIds = new Set<string>();
+  if (loop) {
+    if (loop.rerun_qc_run_ids && Object.keys(loop.rerun_qc_run_ids).length > 0) {
+      const rounds = Object.keys(loop.rerun_qc_run_ids).map(Number);
+      const maxRound = Math.max(...rounds);
+      for (const id of loop.rerun_qc_run_ids[maxRound] ?? []) {
+        finalRunIds.add(id);
+      }
+    } else {
+      for (const id of loop.source_qc_run_ids ?? []) {
+        finalRunIds.add(id);
+      }
+    }
+  }
+
+  const withHeadSha = qcResults.filter((r) => r.headSha);
+  const candidates = finalRunIds.size > 0
+    ? withHeadSha.filter((r) => finalRunIds.has(r.qcRunId))
+    : withHeadSha;
+
+  if (candidates.length === 0) return undefined;
+  const sorted = [...candidates].sort((a, b) => a.completedAt.localeCompare(b.completedAt));
+  return sorted.at(-1)?.headSha;
+}
+
+function deriveQcEvidence(
+  state: LoopState,
+  qcSummary: QcScoreSummary | null,
+  qcResults: QcResult[],
+  repoRoot?: string,
+): QcEvidence {
+  const loop = state.qc_repair_loop as (QcRepairLoopState & { sealed_head_sha?: string }) | undefined;
+  const openBySeverity = qcSummary?.open_by_severity;
+  const unresolvedAdvisoryCount = openBySeverity
+    ? openBySeverity.medium + openBySeverity.low + openBySeverity.info
+    : 0;
+  const repairLoopOutcome = loop?.terminal_outcome ?? qcSummary?.repair_loop?.status ?? undefined;
+  const sealedReviewedSha = deriveSealedReviewedSha(qcResults, loop);
+  const prHeadSha = loop?.sealed_head_sha ?? (repoRoot ? getHeadSha(repoRoot) : undefined);
+  return {
+    sealedReviewedSha,
+    prHeadSha,
+    qcReviewPassCount: qcSummary?.qc_run_count ?? 0,
+    unresolvedAdvisoryCount,
+    repairLoopOutcome,
+  };
+}
+
+export function computeRunReportQcEvidence(
+  repoRoot: string,
+  state: LoopState,
+): { qcSummary: QcScoreSummary | null; qcEvidence: QcEvidence; telemetryEvents: unknown[] } {
+  const artifacts = loadRunArtifacts(repoRoot, state.run_id);
+  const qcSummary = computeQcSummary(artifacts.qcResults, artifacts.clusterState, artifacts.telemetryEvents, state);
+  const qcEvidence = deriveQcEvidence(state, qcSummary, artifacts.qcResults, repoRoot);
+  return { qcSummary, qcEvidence, telemetryEvents: artifacts.telemetryEvents };
+}
+
+export function writeRunReport(
+  repoRoot: string,
+  state: LoopState,
+  branch: string,
+  validationPassed: boolean,
+  qcSummary?: QcScoreSummary | null,
+  qcEvidence?: QcEvidence,
+  telemetryEvents?: unknown[],
+): string {
+  const reportPath = resolve(repoRoot, ".polaris", "runs", "run-report.md");
+  mkdirSync(dirname(reportPath), { recursive: true });
+
+  if (qcSummary === undefined || qcEvidence === undefined || telemetryEvents === undefined) {
+    const computed = computeRunReportQcEvidence(repoRoot, state);
+    qcSummary = qcSummary ?? computed.qcSummary;
+    qcEvidence = qcEvidence ?? computed.qcEvidence;
+    telemetryEvents = telemetryEvents ?? computed.telemetryEvents;
+  }
+
+  const content = generateRunReport({
+    state,
+    branch,
+    validationPassed,
+    qcSummary,
+    qcEvidence,
+    telemetryEvents,
+  });
+
+  writeFileSync(reportPath, content, "utf-8");
+  console.log(`Run report written: ${reportPath}`);
+  return reportPath;
 }
 
 function inferCompatibilityMode(selectionReason: string): string | null {
@@ -245,8 +366,40 @@ ${rows || "| _No children recorded_ | — | — | — | — | — | — | — | 
 ${anomaliesText}`;
 }
 
-function renderQcSection(qcSummary: QcScoreSummary | null | undefined): string {
-  if (!qcSummary) return "";
+function renderQcSection(
+  qcSummary: QcScoreSummary | null | undefined,
+  qcEvidence: QcEvidence | undefined,
+): string {
+  if (!qcSummary && !qcEvidence) return "";
+
+  const unresolvedFromSummary = qcSummary
+    ? qcSummary.open_by_severity.medium + qcSummary.open_by_severity.low + qcSummary.open_by_severity.info
+    : undefined;
+
+  const {
+    sealedReviewedSha,
+    prHeadSha,
+    qcReviewPassCount,
+    unresolvedAdvisoryCount,
+    repairLoopOutcome,
+  } = qcEvidence ?? {};
+
+  const convergenceTable = `### QC convergence evidence
+
+| Field | Value |
+|---|---|
+| Sealed reviewed SHA | ${sealedReviewedSha ?? "not recorded"} |
+| PR head SHA | ${prHeadSha ?? "not recorded"} |
+| QC review passes run | ${qcReviewPassCount ?? qcSummary?.qc_run_count ?? "not available"} |
+| Unresolved advisory-severity findings | ${unresolvedAdvisoryCount ?? unresolvedFromSummary ?? "not available"} |
+| Repair loop outcome | ${repairLoopOutcome ?? qcSummary?.repair_loop?.status ?? "not recorded"} |`;
+
+  if (!qcSummary) {
+    return `
+## QC summary
+
+${convergenceTable}`;
+  }
 
   const {
     total_findings,
@@ -296,9 +449,13 @@ function renderQcSection(qcSummary: QcScoreSummary | null | undefined): string {
   return `
 ## QC summary
 
+${convergenceTable}
+
+### QC metrics
+
 | Metric | Value |
 |---|---|
-| **QC runs** | ${qc_run_count} |
+| **QC review passes run** | ${qcReviewPassCount ?? qc_run_count} |
 | **Delivery status** | ${deliveryStatus} |
 | **Total findings** | ${total_findings} (${unvalidated_findings} unvalidated/provider-noise excluded from scoring) |
 | **SOL score impact** | ${solImpactValue} |
@@ -327,7 +484,7 @@ ${routing}`;
 }
 
 export function generateRunReport(data: RunReportData): string {
-  const { state, branch, validationPassed, prUrl, artifacts, notes, qcSummary, telemetryEvents } = data;
+  const { state, branch, validationPassed, prUrl, artifacts, notes, qcSummary, telemetryEvents, qcEvidence } = data;
   const total = state.completed_children.length + state.open_children.length;
   const completedCount = state.completed_children.length;
 
@@ -350,7 +507,7 @@ export function generateRunReport(data: RunReportData): string {
     ? `\n**Blocker:** ${state.blocker.reason} (child: ${state.blocker.child_id})\n`
     : "";
 
-  const qcSection = renderQcSection(qcSummary);
+  const qcSection = renderQcSection(qcSummary, qcEvidence);
   const routingSection = renderRoutingSection(state, telemetryEvents ?? []);
 
   return `# Run Report: ${state.run_id}

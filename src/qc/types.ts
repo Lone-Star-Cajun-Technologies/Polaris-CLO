@@ -130,6 +130,8 @@ export interface QcResult {
   provider: string;
   providerMode: "local" | "pr" | "metrics-import";
   prUrl?: string;
+  /** Commit SHA of the local HEAD the provider reviewed (local/completed-cluster mode). */
+  headSha?: string;
   startedAt: string;
   completedAt: string;
   status: "passed" | "findings" | "blocked" | "failed" | "skipped";

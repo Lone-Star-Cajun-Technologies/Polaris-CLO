@@ -1,0 +1,40 @@
+# CodeRabbit review scope policy for Polaris.
+#
+# Not all tracked .polaris/ artifacts are code-reviewable. Durable state evidence
+# that is promoted into finalize commits is kept in scope. Runtime/sealed/noise
+# artifacts (worker packets, results, raw QC output, scratch, temp files) are
+# excluded because they are not source code and produce review noise.
+#
+# This file is used by both the GitHub App and the local CodeRabbit CLI
+# (via --config .coderabbit.yaml).
+reviews:
+  path_filters:
+    # In scope: durable Polaris evidence.
+    # These are explicit inclusions; everything else is excluded only when
+    # prefixed with ! below.
+    - ".polaris/clusters/*/clusters.json"
+    - ".polaris/clusters/*/cluster-state.json"
+    - ".polaris/clusters/*/state.json"
+    - ".polaris/runs/ledger.jsonl"
+    - ".polaris/cognition/archive/**"
+    - ".polaris/map/**"
+
+    # Out of scope: sealed worker packets and results.
+    - "!.polaris/clusters/*/packets/**"
+    - "!.polaris/clusters/*/results/**"
+    - "!.polaris/clusters/*/qc/**"
+
+    # Out of scope: runtime/scratch/noise artifacts.
+    - "!.polaris/runs/mutation-queue.json"
+    - "!.polaris/runs/current-state.json"
+    - "!.polaris/runs/run-report.md"
+    - "!.polaris/runs/current-state.pre-pol-198.json"
+    - "!.polaris/runs/*/**"
+    - "!.polaris/runs/evo-run-archive/**"
+    - "!.polaris/bootstrap/**"
+    - "!.polaris/session-type"
+    - "!.polaris/tmp/**"
+    - "!.polaris/cognition/pending/**"
+    - "!.taskchain_artifacts/**"
+    - "!*.bak"
+    - "!**/*.bak"

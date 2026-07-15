@@ -584,6 +584,8 @@ function computeResultStatus(findings: QcFinding[], providerFailed: boolean): Qc
   return "findings";
 }
 
+const DEFAULT_CODERABBIT_CONFIG_PATH = ".coderabbit.yaml";
+
 function buildResultFromReport(
   report: CodeRabbitReportLike | null,
   output: QcProviderOutput | QcMetricsPayload,
@@ -649,9 +651,8 @@ export class CodeRabbitQcProvider implements IQcProvider {
     const execution = this.config?.execution;
     if (execution) {
       const args: string[] = execution.args ? [...execution.args] : [];
-      if (execution.configPath) {
-        args.push("--config", execution.configPath);
-      }
+      const configPath = execution.configPath ?? DEFAULT_CODERABBIT_CONFIG_PATH;
+      args.push("--config", configPath);
       const baseRef = scope.baseRef ?? scope.branch ?? "main";
       if (scope.prUrl) {
         args.push("--pr-url", scope.prUrl);
@@ -661,14 +662,12 @@ export class CodeRabbitQcProvider implements IQcProvider {
       return { command: execution.command, args };
     }
 
-    if (scope.prUrl) {
-      return { command: "coderabbit", args: ["review", "--agent", "--pr-url", scope.prUrl] };
-    }
     const baseRef = scope.baseRef ?? scope.branch ?? "main";
-    return {
-      command: "coderabbit",
-      args: ["review", "--agent", "--base", baseRef],
-    };
+    const args = scope.prUrl
+      ? ["review", "--agent", "--pr-url", scope.prUrl]
+      : ["review", "--agent", "--base", baseRef];
+    args.push("--config", DEFAULT_CODERABBIT_CONFIG_PATH);
+    return { command: "coderabbit", args };
   }
 
   parse(output: QcProviderOutput): QcResult {

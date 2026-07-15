@@ -8,8 +8,11 @@
  *   2. Converts eligible repair packets into Foreman-dispatched repair workers.
  *   3. Awaits repair worker completion (via sealed result files / adapter).
  *   4. Reruns QC after all repair workers in a round have completed.
- *   5. Loops until: pass, no repairable packets, max rounds reached,
- *      all providers failed, operator review required, or Medic referral.
+ *   5. Loops until one of the terminal outcomes is reached:
+ *      - Converged (finalize may proceed): pass, qc-disabled, no-repairable.
+ *      - Escalation (finalize blocks without operator resolution): max-rounds,
+ *        all-providers-failed, operator-review, medic-referral.
+ *      `max-rounds` is never treated as converged; it is an explicit escalation.
  *
  * Dispatch boundary: the parent/orchestrator NEVER implements repair code.
  * Each repair packet becomes a sealed WorkerPacket with worker_role: "repair".
@@ -45,6 +48,32 @@ export const DEFAULT_MAX_REPAIR_ROUNDS = 2;
 
 /** Default timeout for a single repair worker dispatch (30 minutes). */
 export const DEFAULT_REPAIR_DISPATCH_TIMEOUT_MS = 1_800_000;
+
+/** Full set of terminal outcomes the QC repair loop can return. */
+export const QC_REPAIR_TERMINAL_OUTCOMES = [
+  "pass",
+  "qc-disabled",
+  "no-repairable",
+  "medic-referral",
+  "operator-review",
+  "all-providers-failed",
+  "max-rounds",
+] as const satisfies readonly Exclude<QcRepairLoopOutcome, null>[];
+
+/** Terminal outcomes considered converged / trusted enough for finalize to proceed. */
+export const QC_REPAIR_CONVERGED_OUTCOMES = [
+  "pass",
+  "qc-disabled",
+  "no-repairable",
+] as const satisfies readonly Exclude<QcRepairLoopOutcome, null>[];
+
+/** Terminal outcomes that require escalation and block finalize unless an operator resolution is present. */
+export const QC_REPAIR_ESCALATION_OUTCOMES = [
+  "medic-referral",
+  "operator-review",
+  "all-providers-failed",
+  "max-rounds",
+] as const satisfies readonly Exclude<QcRepairLoopOutcome, null>[];
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -488,8 +517,19 @@ export function writeQcResolutionArtifact(options: {
  * Run the bounded QC repair loop.
  *
  * The loop is Foreman-owned: it coordinates dispatch, never implements repairs.
- * Returns deterministically on pass, no-repairable, max-rounds, all-providers-failed,
- * operator-review, or medic-referral.
+ * Stop conditions:
+ *   - pass: QC rerun returned no blocking findings.
+ *   - qc-disabled: QC is disabled by configuration.
+ *   - no-repairable: no findings can be routed to repair workers.
+ *   - medic-referral: one or more repair workers failed.
+ *   - operator-review: unresolved findings require human review.
+ *   - all-providers-failed: every QC provider failed on rerun.
+ *   - max-rounds: qc.maxRepairRounds (default DEFAULT_MAX_REPAIR_ROUNDS) reached
+ *     without passing; this is an escalation outcome, never a converged outcome.
+ *
+ * Converged outcomes (finalize may proceed): pass, qc-disabled, no-repairable.
+ * Escalation outcomes (finalize blocks unless an operator resolution is present):
+ * medic-referral, operator-review, all-providers-failed, max-rounds.
  */
 export async function runQcRepairLoop(
   options: RunQcRepairLoopOptions,
@@ -915,6 +955,9 @@ export async function runQcRepairLoop(
     };
   }
 
+  // Maximum rounds reached without converging. This is an escalation outcome,
+  // not a trusted/converged outcome; finalize must not proceed without an
+  // operator resolution or further intervention.
   loopState = { ...loopState, terminal_outcome: "max-rounds", updated_at: new Date().toISOString() };
   onStateUpdate?.(loopState);
   appendTelemetry(telemetryFile, {

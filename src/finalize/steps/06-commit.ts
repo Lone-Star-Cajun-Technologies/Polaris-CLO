@@ -7,8 +7,7 @@ import {
   getArtifactPromotionStageTargets,
 } from "../artifact-policy.js";
 
-export function stepCommit(repoRoot: string, state: LoopState, _stateFile: string, _reportPath: string): string {
-  const msg = `polaris finalize: ${state.run_id}\n\nChildren: ${state.completed_children.length} completed\nBranch: ${getBranch(repoRoot)}`;
+export function stepStageArtifacts(repoRoot: string, state: LoopState, _stateFile: string, _reportPath: string): void {
   const promotedTargets = getArtifactPromotionStageTargets(state.cluster_id)
     .filter((target) => existsSync(join(repoRoot, target)));
   if (promotedTargets.length > 0) {
@@ -23,6 +22,11 @@ export function stepCommit(repoRoot: string, state: LoopState, _stateFile: strin
   if (blockedArtifacts.length > 0) {
     execFileSync("git", ["restore", "--staged", "--", ...blockedArtifacts], { cwd: repoRoot, stdio: "inherit" });
   }
+}
+
+export function stepCommit(repoRoot: string, state: LoopState, stateFile: string, reportPath: string): string {
+  stepStageArtifacts(repoRoot, state, stateFile, reportPath);
+  const msg = `polaris finalize: ${state.run_id}\n\nChildren: ${state.completed_children.length} completed\nBranch: ${getBranch(repoRoot)}`;
   execFileSync("git", ["commit", "--allow-empty", "-m", msg], { cwd: repoRoot, stdio: "inherit" });
 
   const sha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: repoRoot, encoding: "utf-8" }).trim();

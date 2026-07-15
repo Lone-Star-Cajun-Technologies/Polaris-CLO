@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The finalize subsystem implements the atomic 13-step final delivery sequence for a Polaris cluster run. It is the only subsystem that pushes branches, opens PRs, and closes out Linear issues. It runs at session end when all children are Done and the user requests delivery.
+The finalize subsystem implements the atomic 14-step final delivery sequence for a Polaris cluster run. It is the only subsystem that pushes branches, opens PRs, and closes out Linear issues. It runs at session end when all children are Done and the user requests delivery.
 
 ## What belongs here
 
@@ -29,7 +29,8 @@ The finalize subsystem implements the atomic 13-step final delivery sequence for
 - `polaris finalize run` is manual/operator-triggered and performs delivery unless `--dry-run` or `--skip-delivery` is supplied.
 - JSONL telemetry events (`pr-opened`, `run-complete`) are emitted by `polaris finalize` via step 10. Do not emit them elsewhere.
 - `polaris finalize` is the only command that pushes to remote. No other subsystem may call `git push`.
-- `stepCreatePr` (step 10) is the terminal tracked-file mutation. No step after `stepCreatePr` may write to a git-tracked path; `stepUpdateLinear` is the sole deliberate exception because it performs an external Linear call, not a tracked-file write. Local post-PR bookkeeping (state, archive, cluster-state `pr_url`) lives only in git-ignored paths.
+- `stepCreatePr` (step 10) is the terminal tracked-file mutation. No step after `stepCreatePr` may write to a git-tracked path; the Linear update (step 13, `updateLinearIssueAfterFinalize` in `linear.ts`, called directly from `runFinalize` rather than through a `steps/` file) is the sole deliberate exception because it performs an external Linear call, not a tracked-file write. Local post-PR bookkeeping (state, archive, cluster-state `pr_url`) lives only in git-ignored paths.
+- `stepCreatePr` refuses to open a PR when `state.qc_repair_loop.sealed_head_sha` is set and no longer matches the branch's current HEAD — this guards against the branch changing after the QC seal was recorded. Rerun completed-cluster QC or escalate the mismatch instead of forcing PR creation.
 
 ## Route model
 
@@ -68,6 +69,7 @@ The finalize subsystem implements the atomic 13-step final delivery sequence for
 
 ## QC repair loop relationship
 
+- `stepStageArtifacts()` (Step 5.75, extracted from `stepCommit` in `06-commit.ts`) stages durable Polaris artifacts before the completed-cluster QC trigger runs, so the QC pass reviews the same promoted `.polaris/` artifacts that become the final delivery commit. `stepCommit` calls `stepStageArtifacts()` again immediately before committing, so re-staging is idempotent.
 - `runCompletedClusterQcWithRepair()` (Step 5.8) runs the completed-cluster QC trigger and, for any non-`pass` result under active repair routing (`route` or `follow-up`), delegates directly to `runQcRepairLoop()`. It does not short-circuit `follow-up` results or implement bespoke `operator-review` handling inside finalize.
 - Before `validateQcRepairLoopGate()` (Step 5.9) blocks finalize, `runCompletedClusterQcWithRepair()` calls `appendRepairLoopOutcomeSymptom()` and `appendQcEscalationSymptoms()` on the repair-loop result (mirroring the parent loop). This ensures untrusted outcomes (`all-providers-failed`, `max-rounds`, `medic-referral`) and any surviving post-repair findings are escalated to the run-health report.
 - `runQcRepairLoop()` owns repair packet compilation, `operator-review` filtering, worker-dispatch timeout bounding, telemetry checkpointing, and terminal outcome selection. Only `repair-worker`-routed packets are passed to the finalize `dispatchRepairWorker` callback; `operator-review` packets resolve directly to the `operator-review` terminal outcome without worker dispatch.
@@ -81,6 +83,12 @@ The finalize subsystem implements the atomic 13-step final delivery sequence for
 - `warnOnMissingQcArtifacts()` (Step 5.6, alongside branch custody verification) is a non-blocking warning: it logs when a cluster-state QC pointer's primary artifact or raw audit artifact is missing, via `validateQcArtifactPointers()` from `src/qc/artifacts.ts`.
 - Repair packet manifests (`.polaris/clusters/<cluster-id>/qc/repair-rounds/<round>/repair-packets.json`) are durable Polaris artifacts and must be promoted by `artifact-policy.ts` rules when they exist.
 - See `smartdocs/specs/active/quality-control-architecture.md §8.9` for the telemetry-aligned terminal outcome catalog that matches these string values.
+
+## QC convergence evidence
+
+- `run-report.ts` (`computeRunReportQcEvidence`) derives auditable QC convergence evidence from `state.qc_results` and `state.qc_repair_loop`: the sealed reviewed SHA (`QcResult.headSha`), the PR head SHA (`qc_repair_loop.sealed_head_sha`), the QC review pass count, the unresolved advisory-severity finding count, and the repair loop's terminal/convergence outcome.
+- `writeRunReport()` is called twice: once before the final commit (Step 5) and again after the final commit and PR head-SHA seal (Step 8.5), so the regenerated `run-report.md` and the Linear finalize-complete comment (`linear.ts`, via `updateLinearIssueAfterFinalize`) both carry the sealed evidence.
+- `stepUpdateLinear` (the `steps/11-update-linear.ts` file) is no longer invoked by `runFinalize`; Linear updates are made by calling `updateLinearIssueAfterFinalize()` directly so `repoRoot` is available for QC evidence computation.
 
 ## Related routes
 
