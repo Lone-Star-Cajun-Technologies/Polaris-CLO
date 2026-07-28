@@ -151,9 +151,20 @@ export function writeRunReport(
   return reportPath;
 }
 
+const DIRECT_ROUTER_SELECTION_REASONS = new Set([
+  "trust-tier",
+  "cost-tier",
+  "tied-no-differentiator",
+  "only-eligible-provider",
+]);
+
 function inferCompatibilityMode(selectionReason: string): string | null {
   if (!selectionReason) return null;
-  if (selectionReason === "policy-router" || selectionReason.startsWith("router-")) {
+  if (
+    selectionReason === "policy-router" ||
+    selectionReason.startsWith("router-") ||
+    DIRECT_ROUTER_SELECTION_REASONS.has(selectionReason)
+  ) {
     return "router";
   }
   return "compatibility";
