@@ -284,9 +284,6 @@
     },
     "qc": {
       "$ref": "#/definitions/qcConfig"
-    },
-    "paperclip": {
-      "$ref": "#/definitions/paperclipExecutionConfig"
     }
   },
   "definitions": {

@@ -296,7 +296,7 @@ If you need to verify config before dispatch, run:
 polaris doctor
 ```
 
-If you need to stop using Paperclipmid-run, switch adapters in `polaris.config.json` and rerun with `--resume` from a valid run snapshot.
+If you need to stop using Paperclip mid-run, switch adapters in `polaris.config.json` and rerun with `--resume` from a valid run snapshot.
 
 ## Troubleshooting
 

@@ -23,7 +23,6 @@ export interface AdapterSelectionInput {
   nativeSubtaskAvailable?: boolean;
   crossAgentConfigured?: boolean;
   tokenBudgetLow?: boolean;
-  paperclipConfigured?: boolean;
 }
 
 export interface AdapterSelection {
