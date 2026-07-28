@@ -102,6 +102,26 @@ function compatibilityExhaustedReason(input: WorkerRouterInput): string {
   return "no-configured-provider";
 }
 
+/**
+ * Determine why `winner` beat the rest of the eligible pool, without letting rotation
+ * position count as a real differentiator. Position only decides among candidates that
+ * are genuinely tied on trust/cost (see `tiedProviders` on the decision).
+ */
+function directSelectionReason(
+  winner: WorkerRouterCandidateDecision,
+  eligibleCandidates: WorkerRouterCandidateDecision[],
+  tied: boolean,
+): string {
+  if (tied) return "tied-no-differentiator";
+  if (eligibleCandidates.length === 1) return "only-eligible-provider";
+  const maxTrust = Math.max(...eligibleCandidates.map((candidate) => candidate.score.trustScore));
+  const trustTopSet = eligibleCandidates.filter((candidate) => candidate.score.trustScore === maxTrust);
+  if (winner.score.trustScore === maxTrust && trustTopSet.length === 1) {
+    return "trust-tier";
+  }
+  return "cost-tier";
+}
+
 function topRejectionReason(candidates: WorkerRouterCandidateDecision[]): RouterRejectionReason | undefined {
   const orderedReasons: RouterRejectionReason[] = [
     "role-disabled",
@@ -141,6 +161,8 @@ export function decideWorkerRoute(input: WorkerRouterInput): WorkerRouterDecisio
       compatibilityMode,
       providersTried: [],
       candidates: [],
+      tied: false,
+      tiedProviders: [],
     };
   }
 
@@ -194,12 +216,14 @@ export function decideWorkerRoute(input: WorkerRouterInput): WorkerRouterDecisio
     }
 
     const score = {
+      // Rotation position is evidence, not a scoring input: it must never outrank a
+      // real policy/trust/cost differentiator, so it is excluded from `total` below.
       orderScore: Math.max(0, 100 - orderIndex),
       trustScore: providerTrust ? TRUST_RANK[providerTrust] * 1_000 : 0,
       costScore: providerCost ? (3 - COST_RANK[providerCost]) * 10 : 0,
       total: 0,
     };
-    score.total = score.orderScore + score.trustScore + score.costScore;
+    score.total = score.trustScore + score.costScore;
 
     candidates.push({
       provider,
@@ -220,16 +244,8 @@ export function decideWorkerRoute(input: WorkerRouterInput): WorkerRouterDecisio
   }
 
   const eligibleCandidates = candidates.filter((candidate) => candidate.eligible);
-  const selected = eligibleCandidates
-    .slice()
-    .sort((a, b) => {
-      if (a.score.total !== b.score.total) return b.score.total - a.score.total;
-      if (a.evidence.orderIndex !== b.evidence.orderIndex) return a.evidence.orderIndex - b.evidence.orderIndex;
-      return a.provider.localeCompare(b.provider);
-    })[0];
-  const selectedProvider = selected?.provider;
 
-  if (!selectedProvider) {
+  if (eligibleCandidates.length === 0) {
     const rejection = topRejectionReason(candidates);
     const exhaustedReason = rejection ?? (compatibilityMode ? compatibilityExhaustedReason(input) : "no-eligible-provider");
     const selectionReason = compatibilityMode ? "delegated-no-provider" : "router-no-eligible-provider";
@@ -242,16 +258,39 @@ export function decideWorkerRoute(input: WorkerRouterInput): WorkerRouterDecisio
       compatibilityMode,
       providersTried: ordered,
       candidates,
+      tied: false,
+      tiedProviders: [],
     };
   }
+
+  // Rank purely on policy/trust/cost score. Only candidates tied on `total` (i.e. with
+  // no real differentiator between them) fall through to rotation position, and that
+  // fallback is reported via `tied`/`tiedProviders` rather than picked silently.
+  const maxTotal = Math.max(...eligibleCandidates.map((candidate) => candidate.score.total));
+  const topScoring = eligibleCandidates.filter((candidate) => candidate.score.total === maxTotal);
+  const tied = topScoring.length > 1;
+  const tiedProviders = tied
+    ? topScoring.map((candidate) => candidate.provider).sort((a, b) => a.localeCompare(b))
+    : [];
+  const selected = topScoring
+    .slice()
+    .sort((a, b) => {
+      if (a.evidence.orderIndex !== b.evidence.orderIndex) return a.evidence.orderIndex - b.evidence.orderIndex;
+      return a.provider.localeCompare(b.provider);
+    })[0];
+  const selectedProvider = selected.provider;
 
   return {
     selectedProvider,
     selectedWorker: { role: input.role, taskType: input.taskType },
     mode: "direct-worker",
-    selectionReason: compatibilityMode ? compatibilitySelectionReason(input, selectedProvider) : "policy-router",
+    selectionReason: compatibilityMode
+      ? compatibilitySelectionReason(input, selectedProvider)
+      : directSelectionReason(selected, eligibleCandidates, tied),
     compatibilityMode,
     providersTried: ordered,
     candidates,
+    tied,
+    tiedProviders,
   };
 }

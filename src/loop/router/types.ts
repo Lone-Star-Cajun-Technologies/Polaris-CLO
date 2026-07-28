@@ -89,5 +89,9 @@ export interface WorkerRouterDecision {
   compatibilityMode: boolean;
   providersTried: string[];
   candidates: WorkerRouterCandidateDecision[];
+  /** True when the top-scoring eligible candidates were tied on policy/trust/cost/slot (position was not a real differentiator). */
+  tied: boolean;
+  /** Every eligible provider tied for the top score, when `tied` is true. Empty otherwise. */
+  tiedProviders: string[];
 }
 
