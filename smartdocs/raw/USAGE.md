@@ -85,7 +85,7 @@ polaris tracker transitions POL-123
 
 ## Smart Docs
 
-Smart Docs are instruction files (`.polaris/docs/<route>/instructions.md`) that tell workers how to handle a specific code area. They are generated during `polaris init --adopt` and can be edited by hand.
+Smart Docs are instruction files in `smartdocs/` that tell workers how to handle a specific code area. They are generated during `polaris init --adopt` and can be edited by hand.
 
 ```bash
 # Ingest new documentation into Smart Docs
@@ -258,60 +258,15 @@ These directories are excluded from git by default (added to `.gitignore` during
 | Finalized run report | `.polaris/runs/<run-id>/run-report.md` | Durable after `polaris finalize` | Commit-eligible (promoted run archive) |
 | Archived routing telemetry | `.polaris/runs/<run-id>/telemetry.jsonl` | Durable after `polaris finalize` | Commit-eligible (promoted run archive) |
 | Run ledger | `.polaris/runs/ledger.jsonl` | Durable, append-only resume index | Commit-eligible |
-| Cluster packets/results | `.polaris/clusters/<cluster-id>/packets/**`, `.polaris/clusters/<cluster-id>/results/**` | Durable evidence for each child | Commit-eligible |
-| Transient run report | `.polaris/runs/run-report.md` | Workspace scratch; overwritten by finalize | Never commit |
-| Transient active-state snapshot | `.polaris/runs/current-state.json` | Workspace scratch / deprecated | Never commit |
-| Legacy run artifacts | `.polaris/runs/mutation-queue.json`, `.polaris/runs/current-state.pre-pol-198.json`, `.polaris/runs/evo-run-archive/**` | Workspace scratch / legacy | Never commit |
-
-`polaris finalize` copies the raw telemetry and run report from `.taskchain_artifacts/polaris-run/runs/<run-id>/` into `.polaris/runs/<run-id>/` so the routing evidence survives for review. Workspace scratch under `.taskchain_artifacts/**` and transient root files under `.polaris/runs/` (the files directly in `runs/`, not the per-run directories) must stay out of delivery commits.
 
 ---
 
-## Execution Adapter: Paperclip
+## Paperclip Execution Notes
 
-When `execution.adapter` is set to `paperclip`, Polaris dispatches worker work through a Paperclip-managed agent rather than a local CLI.
+When `execution.adapter` is set to `paperclip`, these semantics apply in addition to the base execution behavior above.
 
-- This is distinct from `tracker.adapter`; tracking and execution are orthogonal in Polaris config.
-- The Paperclip adapter relies on a shared workspace between the two runtimes. If the shared filesystem is unavailable, dispatch can fail even if the Paperclip API responds.
-- Per-cluster ledger state is still local (`.polaris/runs/<run-id>/`), so `polaris status`, `polaris finalize`, and `--resume` work the same after Paperclip-backed dispatch.
-
-### Common Paperclip commands and entrypoints
-
-You can observe or drive a Paperclip-backed run using the normal Polaris commands:
-
-```bash
-polaris status
-polaris status --verbose
-polaris run POL-123 --resume
-polaris finalize
-```
-
-The diagnostic shape changes slightly: `providers_tried` reflects the Paperclip adapter path, while run telemetry remains in `.polaris/runs/`.
-
-If you need to verify config before dispatch, run:
-
-```bash
-polaris doctor
-```
-
-If you need to stop using Paperclip mid-run, switch adapters in `polaris.config.json` and rerun with `--resume` from a valid run snapshot.
-
-## Troubleshooting
-
-**Config errors**
-```bash
-polaris doctor
-```
-Reports missing required fields, invalid adapter config, or unreachable tracker credentials.
-
-**Stuck run**
-If a run is stuck mid-dispatch, check `.polaris/runs/<run-id>/telemetry.jsonl` for the last recorded event, then re-run:
-```bash
-polaris run POL-123 --resume
-```
-
-**Tracker sync failures**
-Verify your token is set and has the right scopes:
-```bash
-polaris tracker test
-```
+- **Scope reminder**: `paperclip` affects execution dispatch only. It does not change tracker selection or tracker adapter behavior.
+- **Resume and recovery**: inspect `.polaris/runs/<run-id>/current-state.json` after a dispatch failure, then use `polaris run <issue> --resume` rather than blind retries.
+- **Timeout behavior**: run behavior is bounded by Polaris timeouts plus the operator's Paperclip timeout/retry configuration.
+- **Rollback**: immediate fallback is a config change back to `terminal-cli` or `agent-subtask`; keep the working tree valid for that switch.
+- **Shared filesystem**: Paperclip-backed execution should treat the repo workspace as shared state. If the shared path is lost, verify filesystem access before resuming or roll back to a local adapter.

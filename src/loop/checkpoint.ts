@@ -82,6 +82,25 @@ export interface ProviderRoutingSummary {
 }
 
 /**
+ * Paperclip execution reference recorded on a child dispatch for
+ * durable reconciliation between Polaris and the Paperclip issue/run.
+ */
+export interface PaperclipDispatchRecord {
+  /** Paperclip issue UUID */
+  issue_id: string;
+  /** Paperclip issue identifier (e.g. LSC-###) */
+  issue_identifier?: string;
+  /** Paperclip execution/run id when observed, or null if not yet assigned */
+  execution_run_id?: string | null;
+  /** Observed Paperclip issue status */
+  issue_status: string;
+  /** ISO 8601 timestamp when the issue reference was first recorded */
+  created_at: string;
+  /** ISO 8601 timestamp of the last reconciliation pass */
+  last_reconciled_at: string;
+}
+
+/**
  * Dispatch record stored in child meta for durable dispatch evidence.
  */
 export interface ChildDispatchRecord {
@@ -142,6 +161,8 @@ export interface ChildDispatchRecord {
   may_implement?: boolean;
   /** Session character for Connect UI (e.g. "implementation", "coordination") */
   session_type?: string;
+  /** Paperclip execution reference for external Paperclip dispatch reconciliation */
+  paperclip?: PaperclipDispatchRecord;
 }
 
 /**
@@ -494,6 +515,32 @@ export function validateState(state: unknown): string[] {
                 errors.push(`open_children_meta["${childId}"].dispatch_record.session_type must be a string if present`);
               }
             }
+            // Validate paperclip dispatch reference if present
+            if ("paperclip" in dr && dr["paperclip"] !== undefined) {
+              if (typeof dr["paperclip"] !== "object" || dr["paperclip"] === null || Array.isArray(dr["paperclip"])) {
+                errors.push(`open_children_meta["${childId}"].dispatch_record.paperclip must be an object if present`);
+              } else {
+                const pc = dr["paperclip"] as Record<string, unknown>;
+                if (typeof pc["issue_id"] !== "string" || (pc["issue_id"] as string).trim().length === 0) {
+                  errors.push(`open_children_meta["${childId}"].dispatch_record.paperclip.issue_id must be a non-empty string`);
+                }
+                if ("issue_identifier" in pc && pc["issue_identifier"] !== undefined && typeof pc["issue_identifier"] !== "string") {
+                  errors.push(`open_children_meta["${childId}"].dispatch_record.paperclip.issue_identifier must be a string if present`);
+                }
+                if ("execution_run_id" in pc && pc["execution_run_id"] !== undefined && pc["execution_run_id"] !== null && typeof pc["execution_run_id"] !== "string") {
+                  errors.push(`open_children_meta["${childId}"].dispatch_record.paperclip.execution_run_id must be a string or null if present`);
+                }
+                if (typeof pc["issue_status"] !== "string") {
+                  errors.push(`open_children_meta["${childId}"].dispatch_record.paperclip.issue_status must be a string`);
+                }
+                if (typeof pc["created_at"] !== "string") {
+                  errors.push(`open_children_meta["${childId}"].dispatch_record.paperclip.created_at must be a string`);
+                }
+                if (typeof pc["last_reconciled_at"] !== "string") {
+                  errors.push(`open_children_meta["${childId}"].dispatch_record.paperclip.last_reconciled_at must be a string`);
+                }
+              }
+            }
           }
         }
       }
@@ -611,6 +658,75 @@ export function writeStateAtomic(stateFile: string, state: LoopState): string {
   writeFileSync(tmp, content, "utf-8");
   renameSync(tmp, stateFile);
   return createHash("sha256").update(content).digest("hex");
+}
+
+/** Snapshot of a Paperclip issue used to reconcile local dispatch state. */
+export interface PaperclipIssueSnapshot {
+  id: string;
+  identifier?: string | null;
+  status?: string | null;
+  executionRunId?: string | null;
+}
+
+/**
+ * Merge a Paperclip issue reference into the active child's dispatch record.
+ *
+ * Returns a new `LoopState`; the original is not mutated. The `paperclip`
+ * record on the dispatch record is created or updated while preserving any
+ * existing fields, and `last_reconciled_at` is refreshed. `created_at` is
+ * preserved from the existing record or set on first merge.
+ */
+export function mergePaperclipRefIntoState(
+  state: LoopState,
+  childId: string,
+  issue: PaperclipIssueSnapshot,
+): LoopState {
+  const meta = state.open_children_meta?.[childId];
+  if (!meta) {
+    throw new Error(`Cannot merge Paperclip reference: no open_children_meta for ${childId}`);
+  }
+  if (!meta.dispatch_record) {
+    throw new Error(`Cannot merge Paperclip reference: no dispatch_record for child ${childId}`);
+  }
+
+  const now = getMonotonicTimestamp();
+  const existing = meta.dispatch_record.paperclip;
+  const nextPaperclip: PaperclipDispatchRecord = {
+    issue_id: issue.id,
+    issue_status: issue.status ?? existing?.issue_status ?? "todo",
+    created_at: existing?.created_at ?? now,
+    last_reconciled_at: now,
+    ...(issue.identifier ? { issue_identifier: issue.identifier } : {}),
+    ...(issue.executionRunId !== undefined ? { execution_run_id: issue.executionRunId } : {}),
+  };
+
+  return {
+    ...state,
+    open_children_meta: {
+      ...state.open_children_meta,
+      [childId]: {
+        ...meta,
+        dispatch_record: {
+          ...meta.dispatch_record,
+          paperclip: nextPaperclip,
+        },
+      },
+    },
+  };
+}
+
+/**
+ * Read the durable state, merge the Paperclip issue snapshot for a child, and
+ * atomically write it back. Returns the SHA-256 of the written content.
+ */
+export function persistPaperclipRef(
+  stateFile: string,
+  childId: string,
+  issue: PaperclipIssueSnapshot,
+): string {
+  const state = readState(stateFile);
+  const next = mergePaperclipRefIntoState(state, childId, issue);
+  return writeStateAtomic(stateFile, next);
 }
 
 export interface BoundaryEvent {

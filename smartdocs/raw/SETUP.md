@@ -1,6 +1,6 @@
 # Polaris Setup Guide
 
-Polaris is a taskchain orchestration framework for governed AI agent workflows. This guide covers installation, configuration, and connecting Polaris to your issue tracker.
+Polaris is a taskchain orchestration framework for governed AI agent workflows. This guide covers installation, configuration, and operator setup for execution adapters, including the Paperclip execution adapter.
 
 ---
 
@@ -126,13 +126,13 @@ The Paperclip adapter dispatches child work to a Paperclip-managed company/agent
 {
   "execution": {
     "adapter": "paperclip",
-    "paperclip": {
-      "baseUrl": "http://127.0.0.1:3100",
-      "companyId": "e4e9384a-d4a5-46f2-a444-92f5aa6ebdc6",
-      "assigneeAgentId": "39f35fc9-5434-4226-83e3-a435809aac81",
-      "tokenEnv": "PAPERCLIP_API_KEY",
-      "runIdEnv": "PAPERCLIP_RUN_ID"
-    }
+    "baseUrl": "http://127.0.0.1:3100",
+    "companyId": "<PAPERCLIP_COMPANY_ID>",
+    "assigneeAgentId": "<PAPERCLIP_AGENT_ID>",
+    "tokenEnv": "PAPERCLIP_API_KEY",
+    "runIdEnv": "PAPERCLIP_RUN_ID",
+    "pollIntervalMs": 1000,
+    "timeoutMs": 120000
   }
 }
 ```
@@ -148,9 +148,17 @@ export PAPERCLIP_RUN_ID=...
 
 Paperclip execution writes and reads run artifacts on disk. Operators must ensure:
 
-- The paperclip-backed process can create and edit files in the Polaris repo.
+- The Paperclip-backed process can create and edit files in the Polaris repo.
 - Concurrent runs/runners can participate in the same filesystem workspace if the operator uses shared dispatch behavior.
-- Rollback remains straightforward if the paperclip runtime becomes unreachable; the working tree should remain valid for switching back to a local or CLI adapter.
+- Rollback remains straightforward if the Paperclip runtime becomes unreachable; the working tree should remain valid for switching back to a local or CLI adapter.
+
+### Required permissions and governance
+
+The operator account used by Paperclip should have at least issue dispatch and comment permissions for the target project. If board-style review is required, the operator should expect review by a governed agent before finalization.
+
+Agent identity bindings are explicit:
+- `companyId` identifies the Paperclip company.
+- `assigneeAgentId` identifies the agent that owns dispatches for this repo.
 
 ### Dry-run / mock test path
 
@@ -161,6 +169,14 @@ Before depending on Paperclip for live dispatch, verify routing shape with a sma
 - The Paperclip-backed run is bounded by Polaris run timeouts plus the operator's Paperclip timeout/retry behavior.
 - If a dispatch or heartbeat fails, check `.polaris/runs/<run-id>/current-state.json` and rerun with `polaris run <issue> --resume`.
 - For immediate rollback to local execution: set `execution.adapter` back to `terminal-cli` or `agent-subtask` in `polaris.config.json`.
+
+### Risks and rollback
+
+- Shared filesystem requirement: if the shared workspace is lost, behavior is undefined until restored or the adapter is reverted.
+- Bounded timeout/resume behavior: operate with the shortest safe timeouts first, verify resume from `.polaris/runs/<run-id>/current-state.json`, and keep rollback to a config change cheap.
+- Config-first rollback: `terminal-cli` and `agent-subtask` remain supported fallbacks because rollback is a configuration change, not a migration.
+
+---
 
 ## Tracker Adapters
 
@@ -219,7 +235,7 @@ GitHub Issues uses your repository's issue tracker with label-based lifecycle st
 3. Set your token:
 
 ```bash
-export GITHUB_TOKEN=ghp_xxxxxxxxxxxx
+export GITHUB_TOKEN=...
 ```
 
 **Lifecycle labels** — Polaris will create and manage labels with the prefix you configure (default `status:`):
@@ -308,6 +324,8 @@ polaris status --verbose
 | `GITHUB_TOKEN` | When using GitHub | GitHub PAT with `repo` scope |
 | `JIRA_API_TOKEN` | When using Jira | Atlassian API token |
 | `POLARIS_NATIVE_SUBTASK_PROVIDER` | Optional | Override CLI subtask provider (`copilot`, `codex`) |
+| `PAPERCLIP_API_KEY` | When using Paperclip execution | Paperclip operator token |
+| `PAPERCLIP_RUN_ID` | When using Paperclip execution | Paperclip operator run identifier |
 
 ---
 

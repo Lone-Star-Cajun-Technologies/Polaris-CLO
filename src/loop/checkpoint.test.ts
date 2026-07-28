@@ -9,8 +9,11 @@ import {
   toValidationStatus,
   countTelemetryEvents,
   computePacketHashFromPath,
+  mergePaperclipRefIntoState,
+  persistPaperclipRef,
+  validateState,
 } from "./checkpoint.js";
-import type { LoopState } from "./checkpoint.js";
+import type { LoopState, ChildDispatchRecord, PaperclipDispatchRecord } from "./checkpoint.js";
 
 function tmpStateFile(): string {
   const dir = join(tmpdir(), `pol-checkpoint-test-${randomUUID()}`);
@@ -171,5 +174,168 @@ describe("countTelemetryEvents", () => {
   it("returns 0 for missing telemetry files", () => {
     const missingPath = join(tmpdir(), `pol-checkpoint-no-events-${randomUUID()}`, "telemetry.jsonl");
     expect(countTelemetryEvents(missingPath, "worker-heartbeat", "POL-1")).toBe(0);
+  });
+});
+
+function makeDispatchRecord(overrides: Partial<ChildDispatchRecord> = {}): ChildDispatchRecord {
+  return {
+    dispatch_id: "dispatch-001",
+    child_id: "POL-001",
+    run_id: "test-run-1",
+    cluster_id: "POL-999",
+    packet_path: "/tmp/packet.json",
+    expected_result_path: "/tmp/result.json",
+    dispatched_at: "2026-01-01T00:00:00.000Z",
+    status: "dispatched",
+    ...overrides,
+  };
+}
+
+describe("mergePaperclipRefIntoState", () => {
+  it("creates a paperclip record on the child's dispatch_record", () => {
+    const state = makeState({
+      open_children_meta: {
+        "POL-001": { title: "Child 1", dispatch_record: makeDispatchRecord() },
+      },
+    });
+
+    const next = mergePaperclipRefIntoState(state, "POL-001", {
+      id: "issue-123",
+      identifier: "LSC-123",
+      status: "todo",
+      executionRunId: null,
+    });
+
+    const paperclip = next.open_children_meta!["POL-001"]!.dispatch_record!.paperclip!;
+    expect(paperclip.issue_id).toBe("issue-123");
+    expect(paperclip.issue_identifier).toBe("LSC-123");
+    expect(paperclip.execution_run_id).toBeNull();
+    expect(paperclip.issue_status).toBe("todo");
+    expect(typeof paperclip.created_at).toBe("string");
+    expect(typeof paperclip.last_reconciled_at).toBe("string");
+  });
+
+  it("preserves unrelated dispatch_record fields and open_children_meta siblings", () => {
+    const state = makeState({
+      open_children_meta: {
+        "POL-001": { title: "Child 1", body: "b1", dispatch_record: makeDispatchRecord({ provider: "paperclip" }) },
+        "POL-002": { title: "Child 2", body: "b2" },
+      },
+    });
+
+    const next = mergePaperclipRefIntoState(state, "POL-001", { id: "issue-456", status: "in_progress" });
+
+    const dr = next.open_children_meta!["POL-001"]!.dispatch_record!;
+    expect(dr.provider).toBe("paperclip");
+    expect(dr.paperclip!.issue_id).toBe("issue-456");
+    expect(dr.paperclip!.issue_status).toBe("in_progress");
+    expect(next.open_children_meta!["POL-002"]!.title).toBe("Child 2");
+    expect(next.open_children_meta!["POL-002"]!.body).toBe("b2");
+  });
+
+  it("updates execution_run_id and status on reconciliation without overwriting created_at", () => {
+    const createdAt = "2026-01-01T00:00:00.000Z";
+    const state = makeState({
+      open_children_meta: {
+        "POL-001": {
+          title: "Child 1",
+          dispatch_record: makeDispatchRecord({
+            paperclip: {
+              issue_id: "issue-789",
+              issue_status: "todo",
+              created_at: createdAt,
+              last_reconciled_at: createdAt,
+            },
+          }),
+        },
+      },
+    });
+
+    const next = mergePaperclipRefIntoState(state, "POL-001", {
+      id: "issue-789",
+      status: "in_progress",
+      executionRunId: "run-abc",
+    });
+
+    const paperclip = next.open_children_meta!["POL-001"]!.dispatch_record!.paperclip!;
+    expect(paperclip.issue_id).toBe("issue-789");
+    expect(paperclip.created_at).toBe(createdAt);
+    expect(paperclip.issue_status).toBe("in_progress");
+    expect(paperclip.execution_run_id).toBe("run-abc");
+    expect(paperclip.last_reconciled_at).not.toBe(createdAt);
+  });
+
+  it("throws when the child has no dispatch_record", () => {
+    const state = makeState({ open_children_meta: { "POL-001": { title: "Child 1" } } });
+    expect(() => mergePaperclipRefIntoState(state, "POL-001", { id: "issue-x" })).toThrow(/no dispatch_record/);
+  });
+});
+
+describe("persistPaperclipRef", () => {
+  it("atomically writes the merged paperclip reference to current-state.json", () => {
+    const stateFile = tmpStateFile();
+    const state = makeState({
+      open_children_meta: {
+        "POL-001": { title: "Child 1", dispatch_record: makeDispatchRecord() },
+      },
+    });
+    writeStateAtomic(stateFile, state);
+
+    persistPaperclipRef(stateFile, "POL-001", {
+      id: "issue-999",
+      identifier: "LSC-999",
+      status: "todo",
+      executionRunId: null,
+    });
+
+    const written = JSON.parse(readFileSync(stateFile, "utf-8")) as LoopState;
+    const paperclip = written.open_children_meta!["POL-001"]!.dispatch_record!.paperclip!;
+    expect(paperclip.issue_id).toBe("issue-999");
+    expect(paperclip.issue_identifier).toBe("LSC-999");
+    expect(written.status).toBe("running");
+  });
+});
+
+describe("validateState — paperclip dispatch record", () => {
+  it("accepts a valid paperclip record on a dispatch_record", () => {
+    const state = makeState({
+      open_children_meta: {
+        "POL-001": {
+          title: "Child 1",
+          dispatch_record: makeDispatchRecord({
+            paperclip: {
+              issue_id: "issue-1",
+              issue_identifier: "LSC-1",
+              execution_run_id: "run-1",
+              issue_status: "todo",
+              created_at: "2026-01-01T00:00:00.000Z",
+              last_reconciled_at: "2026-01-01T00:00:01.000Z",
+            },
+          }),
+        },
+      },
+    });
+    expect(validateState(state)).toEqual([]);
+  });
+
+  it("rejects missing issue_id and malformed execution_run_id", () => {
+    const state = makeState({
+      open_children_meta: {
+        "POL-001": {
+          title: "Child 1",
+          dispatch_record: makeDispatchRecord({
+            paperclip: {
+              issue_status: "todo",
+              created_at: "2026-01-01T00:00:00.000Z",
+              last_reconciled_at: "2026-01-01T00:00:01.000Z",
+              execution_run_id: 123 as unknown as string,
+            } as unknown as PaperclipDispatchRecord,
+          }),
+        },
+      },
+    });
+    const errors = validateState(state);
+    expect(errors.some((e) => e.includes("paperclip.issue_id"))).toBe(true);
+    expect(errors.some((e) => e.includes("paperclip.execution_run_id"))).toBe(true);
   });
 });
