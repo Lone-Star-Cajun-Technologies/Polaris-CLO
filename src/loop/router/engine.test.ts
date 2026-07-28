@@ -46,11 +46,15 @@ describe("decideWorkerRoute", () => {
     const first = decideWorkerRoute(input);
     const second = decideWorkerRoute(input);
     expect(first).toEqual(second);
+    // codex is trusted vs copilot's standard tier — a real differentiator, so trust wins
+    // regardless of rotation position (codex is index 1, copilot is index 0).
     expect(first.selectedProvider).toBe("codex");
-    expect(first.selectionReason).toBe("policy-router");
+    expect(first.selectionReason).toBe("trust-tier");
+    expect(first.tied).toBe(false);
+    expect(first.tiedProviders).toEqual([]);
   });
 
-  it("uses deterministic tie-break ordering by configured order then name", () => {
+  it("does not let rotation position break a genuine trust/cost tie silently", () => {
     const decision = decideWorkerRoute(
       baseInput({
         routerPolicy: {
@@ -74,6 +78,12 @@ describe("decideWorkerRoute", () => {
         },
       }),
     );
+    // Nothing differentiates copilot and codex, so the router surfaces the full tied
+    // eligible set instead of quietly picking rotation[0].
+    expect(decision.tied).toBe(true);
+    expect(decision.tiedProviders).toEqual(["codex", "copilot"]);
+    expect(decision.selectionReason).toBe("tied-no-differentiator");
+    // A single provider is still returned for dispatch; the tie is disclosed, not hidden.
     expect(decision.selectedProvider).toBe("copilot");
   });
 

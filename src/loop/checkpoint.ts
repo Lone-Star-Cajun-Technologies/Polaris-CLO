@@ -79,6 +79,8 @@ export interface ProviderRoutingSummary {
   registry_present?: boolean;
   /** Whether fallback to alternative providers is eligible */
   fallback_eligible?: boolean;
+  /** Providers tied for the top score when no policy/trust/cost/slot differentiator existed */
+  tied_providers?: string[];
 }
 
 /**
