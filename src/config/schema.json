@@ -612,7 +612,15 @@
         "tokenEnv": { "type": "string" },
         "runIdEnv": { "type": "string" },
         "pollIntervalMs": { "type": "integer", "minimum": 1 },
-        "timeoutMs": { "type": "integer", "minimum": 1 }
+        "timeoutMs": { "type": "integer", "minimum": 1 },
+        "roleBindings": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "reportsTo": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
       }
     }
   }
