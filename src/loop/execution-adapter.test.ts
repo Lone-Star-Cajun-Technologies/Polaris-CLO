@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildCompactBootstrapState, selectExecutionAdapter } from "./execution-adapter.js";
+import { buildCompactBootstrapState, buildExecutionAdapterContract, selectExecutionAdapter } from "./execution-adapter.js";
 
 describe("selectExecutionAdapter", () => {
   it("prefers native same-agent subtask dispatch inside interactive agent sessions", () => {
@@ -157,6 +157,7 @@ describe("buildCompactBootstrapState", () => {
       branch: "feature/pol-60",
       compactMode: "strict",
     });
+
     expect(compact.run_id).toBe("run-003");
     expect(compact.cluster_id).toBe("POL-60");
     expect(compact.child_id).toBe("POL-61");
@@ -166,5 +167,107 @@ describe("buildCompactBootstrapState", () => {
     expect(compact.branch).toBe("feature/pol-60");
     expect(compact.compact_mode).toBe("strict");
     expect(Array.isArray(compact.return_summary_contract)).toBe(true);
+  });
+});
+
+describe("selectExecutionAdapter — paperclip", () => {
+  it("selects paperclip when explicitly configured", () => {
+    const selected = selectExecutionAdapter({
+      explicitAdapter: "paperclip",
+      paperclipConfigured: true,
+    });
+
+    expect(selected.mode).toBe("paperclip");
+    expect(selected.autoDispatch).toBe(true);
+    expect(selected.providerCoupling).toBe("control-plane");
+    expect(selected.priority).toBe(2);
+    expect(selected.reason).toBe("control-plane provider coupling configured for Paperclip adapter");
+  });
+
+  it("selects paperclip via configuredAdapter when no explicitAdapter is provided", () => {
+    const selected = selectExecutionAdapter({
+      configuredAdapter: "paperclip",
+    });
+
+    expect(selected.mode).toBe("paperclip");
+    expect(selected.autoDispatch).toBe(true);
+    expect(selected.providerCoupling).toBe("control-plane");
+  });
+
+  it("prefers explicitAdapter over configuredAdapter when both are provided", () => {
+    const selected = selectExecutionAdapter({
+      explicitAdapter: "paperclip",
+      configuredAdapter: "terminal-cli",
+    });
+
+    expect(selected.mode).toBe("paperclip");
+  });
+
+  it("selects paperclip even when paperclipConfigured is false or omitted", () => {
+    const selectedFalse = selectExecutionAdapter({
+      explicitAdapter: "paperclip",
+      paperclipConfigured: false,
+    });
+    const selectedOmitted = selectExecutionAdapter({
+      explicitAdapter: "paperclip",
+    });
+
+    expect(selectedFalse.mode).toBe("paperclip");
+    expect(selectedFalse.autoDispatch).toBe(true);
+    expect(selectedOmitted.mode).toBe("paperclip");
+    expect(selectedOmitted.autoDispatch).toBe(true);
+  });
+
+  it("returns no warnings for a directly configured paperclip adapter", () => {
+    const selected = selectExecutionAdapter({
+      explicitAdapter: "paperclip",
+    });
+
+    expect(selected.warnings).toEqual([]);
+  });
+});
+
+describe("buildExecutionAdapterContract — paperclip", () => {
+  it("includes paperclip as the last entry in the fallback order", () => {
+    const selection = selectExecutionAdapter({ explicitAdapter: "paperclip" });
+    const compact = buildCompactBootstrapState({
+      runId: "run-010",
+      clusterId: "POL-70",
+      childId: "POL-71",
+      stateFile: "state.json",
+      telemetryFile: "telemetry.jsonl",
+      currentStateSha: "sha1",
+      branch: "main",
+    });
+
+    const contract = buildExecutionAdapterContract(selection, compact);
+
+    expect(contract.fallback_order).toContain("paperclip");
+    expect(contract.fallback_order[contract.fallback_order.length - 1]).toBe("paperclip");
+  });
+
+  it("builds a full contract carrying the paperclip selection and dispatch contract invariants", () => {
+    const selection = selectExecutionAdapter({ explicitAdapter: "paperclip" });
+    const compact = buildCompactBootstrapState({
+      runId: "run-011",
+      clusterId: "POL-72",
+      childId: "POL-73",
+      stateFile: "state.json",
+      telemetryFile: "telemetry.jsonl",
+      currentStateSha: "sha2",
+      branch: "main",
+    });
+
+    const contract = buildExecutionAdapterContract(selection, compact);
+
+    expect(contract.mode).toBe("paperclip");
+    expect(contract.providerCoupling).toBe("control-plane");
+    expect(contract.compact_bootstrap_state).toEqual(compact);
+    expect(contract.dispatch_contract).toEqual({
+      one_child_per_worker: true,
+      parent_receives_compact_summary_only: true,
+      child_transcript_retained_by_worker: true,
+      updates_current_state_and_telemetry: true,
+    });
   });
 });

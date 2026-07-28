@@ -966,3 +966,336 @@ describe("validateConfig — qc", () => {
     // This documents that unknown provider fields do not break runtime validation.
   });
 });
+
+describe("validateConfig — execution.paperclip", () => {
+  it("accepts valid paperclip config", () => {
+    const result = validateConfig({
+      version: "1.0",
+      execution: {
+        adapter: "paperclip",
+        paperclip: {
+          baseUrl: "http://127.0.0.1:3100",
+          companyId: "e4e9384a-d4a5-46f2-a444-92f5aa6ebdc6",
+          assigneeAgentId: "39f35fc9-5434-4226-83e3-a435809aac81",
+          tokenEnv: "PAPERCLIP_TOKEN",
+          runIdEnv: "PAPERCLIP_RUN_ID",
+          pollIntervalMs: 1000,
+          timeoutMs: 30000,
+        },
+      },
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it("rejects missing baseUrl in paperclip config", () => {
+    const result = validateConfig({
+      execution: {
+        adapter: "paperclip",
+        paperclip: {
+          companyId: "e4e9384a-d4a5-46f2-a444-92f5aa6ebdc6",
+          assigneeAgentId: "39f35fc9-5434-4226-83e3-a435809aac81",
+          tokenEnv: "PAPERCLIP_TOKEN",
+          runIdEnv: "PAPERCLIP_RUN_ID",
+        },
+      },
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("execution.paperclip.baseUrl must be a valid URL");
+  });
+
+  it("rejects malformed UUID in paperclip companyId", () => {
+    const result = validateConfig({
+      execution: {
+        adapter: "paperclip",
+        paperclip: {
+          baseUrl: "http://127.0.0.1:3100",
+          companyId: "not-a-uuid",
+          assigneeAgentId: "39f35fc9-5434-4226-83e3-a435809aac81",
+          tokenEnv: "PAPERCLIP_TOKEN",
+          runIdEnv: "PAPERCLIP_RUN_ID",
+        },
+      },
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("execution.paperclip.companyId must be a UUID");
+  });
+
+  it("accepts role adapter override to paperclip when explicitly configured", () => {
+    const result = validateConfig({
+      execution: {
+        adapter: "terminal-cli",
+        roles: {
+          foreman: {
+            adapter: "paperclip",
+          },
+        },
+      },
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it("accepts optional timing fields when they are positive integers", () => {
+    const result = validateConfig({
+      execution: {
+        adapter: "paperclip",
+        paperclip: {
+          baseUrl: "http://127.0.0.1:3100",
+          companyId: "e4e9384a-d4a5-46f2-a444-92f5aa6ebdc6",
+          assigneeAgentId: "39f35fc9-5434-4226-83e3-a435809aac81",
+          tokenEnv: "PAPERCLIP_TOKEN",
+          runIdEnv: "PAPERCLIP_RUN_ID",
+        },
+      },
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it("does not require a paperclip block just because adapter is set to paperclip", () => {
+    const result = validateConfig({
+      execution: { adapter: "paperclip" },
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it("rejects execution.paperclip that is not a plain object", () => {
+    const result = validateConfig({
+      execution: { adapter: "paperclip", paperclip: "not-an-object" },
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("execution.paperclip must be a plain object");
+  });
+
+  it("rejects execution.paperclip that is an array", () => {
+    const result = validateConfig({
+      execution: { adapter: "paperclip", paperclip: [] },
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("execution.paperclip must be a plain object");
+  });
+
+  it("rejects a non-http(s) baseUrl scheme", () => {
+    const result = validateConfig({
+      execution: {
+        adapter: "paperclip",
+        paperclip: {
+          baseUrl: "ftp://127.0.0.1:3100",
+          companyId: "e4e9384a-d4a5-46f2-a444-92f5aa6ebdc6",
+          assigneeAgentId: "39f35fc9-5434-4226-83e3-a435809aac81",
+          tokenEnv: "PAPERCLIP_TOKEN",
+          runIdEnv: "PAPERCLIP_RUN_ID",
+        },
+      },
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("execution.paperclip.baseUrl must be a valid URL");
+  });
+
+  it("rejects missing assigneeAgentId in paperclip config", () => {
+    const result = validateConfig({
+      execution: {
+        adapter: "paperclip",
+        paperclip: {
+          baseUrl: "http://127.0.0.1:3100",
+          companyId: "e4e9384a-d4a5-46f2-a444-92f5aa6ebdc6",
+          tokenEnv: "PAPERCLIP_TOKEN",
+          runIdEnv: "PAPERCLIP_RUN_ID",
+        },
+      },
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("execution.paperclip.assigneeAgentId must be a UUID");
+  });
+
+  it("rejects a truncated UUID in paperclip assigneeAgentId", () => {
+    const result = validateConfig({
+      execution: {
+        adapter: "paperclip",
+        paperclip: {
+          baseUrl: "http://127.0.0.1:3100",
+          companyId: "e4e9384a-d4a5-46f2-a444-92f5aa6ebdc6",
+          assigneeAgentId: "39f35fc9-5434-4226-83e3",
+          tokenEnv: "PAPERCLIP_TOKEN",
+          runIdEnv: "PAPERCLIP_RUN_ID",
+        },
+      },
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("execution.paperclip.assigneeAgentId must be a UUID");
+  });
+
+  it("accepts uppercase UUID values for companyId and assigneeAgentId (case-insensitive)", () => {
+    const result = validateConfig({
+      execution: {
+        adapter: "paperclip",
+        paperclip: {
+          baseUrl: "http://127.0.0.1:3100",
+          companyId: "E4E9384A-D4A5-46F2-A444-92F5AA6EBDC6",
+          assigneeAgentId: "39F35FC9-5434-4226-83E3-A435809AAC81",
+          tokenEnv: "PAPERCLIP_TOKEN",
+          runIdEnv: "PAPERCLIP_RUN_ID",
+        },
+      },
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it("rejects a whitespace-only tokenEnv", () => {
+    const result = validateConfig({
+      execution: {
+        adapter: "paperclip",
+        paperclip: {
+          baseUrl: "http://127.0.0.1:3100",
+          companyId: "e4e9384a-d4a5-46f2-a444-92f5aa6ebdc6",
+          assigneeAgentId: "39f35fc9-5434-4226-83e3-a435809aac81",
+          tokenEnv: "   ",
+          runIdEnv: "PAPERCLIP_RUN_ID",
+        },
+      },
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("execution.paperclip.tokenEnv must be a non-empty string");
+  });
+
+  it("rejects a missing runIdEnv", () => {
+    const result = validateConfig({
+      execution: {
+        adapter: "paperclip",
+        paperclip: {
+          baseUrl: "http://127.0.0.1:3100",
+          companyId: "e4e9384a-d4a5-46f2-a444-92f5aa6ebdc6",
+          assigneeAgentId: "39f35fc9-5434-4226-83e3-a435809aac81",
+          tokenEnv: "PAPERCLIP_TOKEN",
+        },
+      },
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("execution.paperclip.runIdEnv must be a non-empty string");
+  });
+
+  it("rejects a non-positive pollIntervalMs", () => {
+    const result = validateConfig({
+      execution: {
+        adapter: "paperclip",
+        paperclip: {
+          baseUrl: "http://127.0.0.1:3100",
+          companyId: "e4e9384a-d4a5-46f2-a444-92f5aa6ebdc6",
+          assigneeAgentId: "39f35fc9-5434-4226-83e3-a435809aac81",
+          tokenEnv: "PAPERCLIP_TOKEN",
+          runIdEnv: "PAPERCLIP_RUN_ID",
+          pollIntervalMs: 0,
+        },
+      },
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("execution.paperclip.pollIntervalMs must be a positive integer");
+  });
+
+  it("rejects a non-integer timeoutMs", () => {
+    const result = validateConfig({
+      execution: {
+        adapter: "paperclip",
+        paperclip: {
+          baseUrl: "http://127.0.0.1:3100",
+          companyId: "e4e9384a-d4a5-46f2-a444-92f5aa6ebdc6",
+          assigneeAgentId: "39f35fc9-5434-4226-83e3-a435809aac81",
+          tokenEnv: "PAPERCLIP_TOKEN",
+          runIdEnv: "PAPERCLIP_RUN_ID",
+          timeoutMs: 1500.5,
+        },
+      },
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("execution.paperclip.timeoutMs must be a positive integer");
+  });
+
+  it("accumulates errors for every invalid paperclip field simultaneously", () => {
+    const result = validateConfig({
+      execution: {
+        adapter: "paperclip",
+        paperclip: {
+          baseUrl: "not-a-url",
+          companyId: "not-a-uuid",
+          assigneeAgentId: "",
+          tokenEnv: "",
+          runIdEnv: "",
+          pollIntervalMs: -5,
+          timeoutMs: 0,
+        },
+      },
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("execution.paperclip.baseUrl must be a valid URL");
+    expect(result.errors).toContain("execution.paperclip.companyId must be a UUID");
+    expect(result.errors).toContain("execution.paperclip.assigneeAgentId must be a UUID");
+    expect(result.errors).toContain("execution.paperclip.tokenEnv must be a non-empty string");
+    expect(result.errors).toContain("execution.paperclip.runIdEnv must be a non-empty string");
+    expect(result.errors).toContain("execution.paperclip.pollIntervalMs must be a positive integer");
+    expect(result.errors).toContain("execution.paperclip.timeoutMs must be a positive integer");
+  });
+});
+
+describe("validateConfig — execution.adapter enum (paperclip)", () => {
+  it("rejects an unsupported execution.adapter value and lists paperclip in the allowed set", () => {
+    const result = validateConfig({
+      execution: { adapter: "smtp" },
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      "execution.adapter must be one of agent-subtask, terminal-cli, ci, ssh, remote-worker, cross-agent, paperclip",
+    );
+  });
+
+  it("rejects a non-string execution.adapter value", () => {
+    const result = validateConfig({ execution: { adapter: 42 } });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      "execution.adapter must be one of agent-subtask, terminal-cli, ci, ssh, remote-worker, cross-agent, paperclip",
+    );
+  });
+
+  it("accepts paperclip as a bare execution.adapter value with no other config", () => {
+    const result = validateConfig({ execution: { adapter: "paperclip" } });
+
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it("rejects an unsupported execution.roles.<role>.adapter value and lists paperclip in the allowed set", () => {
+    const result = validateConfig({
+      execution: {
+        roles: {
+          worker: { adapter: "carrier-pigeon" },
+        },
+      },
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      "execution.roles.worker.adapter must be one of agent-subtask, terminal-cli, ci, ssh, remote-worker, cross-agent, paperclip",
+    );
+  });
+});
