@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import * as http from "node:http";
 import {
   dispatchLifecyclePhase,
   resolveLifecycleProvider,
@@ -10,6 +11,7 @@ import {
 import type { BootstrapPacket, DispatchOptions, DispatchResult } from "./adapters/types.js";
 import type { PolarisConfig } from "../config/schema.js";
 import { createAdapter } from "./adapters/registry.js";
+import { PaperclipAdapter, type PaperclipRuntimeConfig } from "./adapters/paperclip.js";
 
 function makeDir(): string {
   const dir = join(tmpdir(), `polaris-lifecycle-dispatch-${Date.now()}-${Math.random().toString(36).slice(2)}`);
@@ -145,6 +147,89 @@ function makeAdapter(writeResult: (packet: BootstrapPacket) => unknown): Lifecyc
       };
     },
   };
+}
+
+interface MockServer {
+  url: string;
+  stop: () => Promise<void>;
+}
+
+function setupMockServer(
+  store: Map<string, Record<string, unknown>>,
+  opts: { token?: string; terminalStatus?: string; evidence?: Record<string, unknown>; result?: Record<string, unknown> } = { terminalStatus: "done" },
+): Promise<MockServer> {
+  return new Promise((resolve) => {
+    const server = http.createServer((req, res) => {
+      const auth = typeof req.headers["authorization"] === "string" ? req.headers["authorization"] : "";
+      if (opts.token && auth !== `Bearer ${opts.token}`) {
+        res.writeHead(401);
+        res.end(JSON.stringify({ error: "Unauthorized" }));
+        return;
+      }
+
+      if (req.method === "POST" && req.url === "/api/companies/company-1/issues") {
+        let body = "";
+        req.on("data", (chunk) => (body += chunk));
+        req.on("end", () => {
+          const payload = JSON.parse(body) as Record<string, unknown>;
+          const existing = store.get(payload.idempotencyKey as string);
+          if (existing) {
+            res.writeHead(200);
+            res.end(JSON.stringify(existing));
+            return;
+          }
+          const now = new Date().toISOString();
+          const issue: Record<string, unknown> = {
+            id: `issue-${Math.random().toString(36).slice(2, 8)}`,
+            companyId: "company-1",
+            title: payload.title,
+            status: payload.status,
+            workMode: payload.workMode,
+            priority: payload.priority,
+            assigneeAgentId: payload.assigneeAgentId,
+            idempotencyKey: payload.idempotencyKey,
+            createdAt: now,
+            updatedAt: now,
+          };
+          store.set(payload.idempotencyKey as string, issue);
+          res.writeHead(201);
+          res.end(JSON.stringify(issue));
+        });
+        return;
+      }
+
+      const issueMatch = req.url?.match(/^\/api\/companies\/[^/]+\/issues\/([^/]+)$/);
+      if (issueMatch && req.method === "GET") {
+        const issue = [...store.values()].find((v) => v.id === issueMatch[1]);
+        if (!issue) {
+          res.writeHead(404);
+          res.end(JSON.stringify({ error: "Not found" }));
+          return;
+        }
+        res.writeHead(200);
+        res.end(
+          JSON.stringify({
+            ...issue,
+            ...(opts.evidence ?? {}),
+            ...(opts.result ? { result: opts.result } : {}),
+            status: opts.terminalStatus ?? "done",
+            updatedAt: new Date().toISOString(),
+          }),
+        );
+        return;
+      }
+
+      res.writeHead(404);
+      res.end(JSON.stringify({ error: "Not found" }));
+    });
+
+    const closePromise = new Promise<void>((resolveClose) => server.close(() => resolveClose()));
+    server.listen(0, () => {
+      const address = server.address();
+      const url = address && typeof address === "object" && address.port ? `http://127.0.0.1:${address.port}` : "";
+      resolve({ url, stop: () => closePromise });
+    });
+  });
 }
 
 describe("resolveLifecycleProvider", () => {
@@ -383,6 +468,66 @@ describe("dispatchLifecyclePhase", () => {
         expect(result.error).toBe("mismatched_result");
       }
     } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("consumes a PaperclipAdapter DispatchResult through the same sealed-result parse path as terminal-cli", async () => {
+    const dir = makeDir();
+    const token = "secret-token";
+    process.env.PAPERCLIP_TOKEN = token;
+    const store = new Map<string, Record<string, unknown>>();
+    const sealedResult: Record<string, unknown> = {
+      run_id: "run-1",
+      role: "finalize",
+      status: "success",
+      commit: "abc1234",
+      validation: { passed: ["npm run build"] },
+      next_recommended_action: "continue",
+    };
+    const server = await setupMockServer(store, {
+      token,
+      terminalStatus: "done",
+      evidence: { pullRequest: { url: "https://github.com/example/repo/pull/1" } },
+      result: sealedResult,
+    });
+    try {
+      const config = baseConfig();
+      config.execution = {
+        ...config.execution,
+        adapter: "paperclip",
+        paperclip: {
+          baseUrl: server.url,
+          companyId: "company-1",
+          assigneeAgentId: "agent-1",
+          tokenEnv: "PAPERCLIP_TOKEN",
+          runIdEnv: "PAPER_RUN",
+          pollIntervalMs: 10,
+          timeoutMs: 2000,
+        },
+      } as typeof config.execution;
+      const paperclipCfg = config.execution.paperclip!;
+      const runtime: PaperclipRuntimeConfig = { ...paperclipCfg, resolvedToken: token };
+      const adapter = new PaperclipAdapter(runtime);
+      const result = await dispatchLifecyclePhase({
+        phase: "finalize",
+        runId: "run-1",
+        clusterId: "POL-188",
+        branch: "polaris/POL-188",
+        repoRoot: dir,
+        stateFile: join(dir, "current-state.json"),
+        telemetryFile: join(dir, "telemetry.jsonl"),
+        config,
+        adapter,
+      });
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.role).toBe("finalize");
+        expect(result.result.commit).toBe("abc1234");
+      }
+    } finally {
+      await server.stop();
       rmSync(dir, { recursive: true, force: true });
     }
   });

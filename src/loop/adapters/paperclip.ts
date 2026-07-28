@@ -1,6 +1,6 @@
-import { mkdtempSync, unlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { sep } from "node:path";
+import { dirname, sep } from "node:path";
 import type {
   BootstrapPacket,
   DispatchOptions,
@@ -729,6 +729,17 @@ export class PaperclipAdapter implements ExecutionAdapter {
         created.id,
         runIdHeader,
       );
+      const resultFile = (packet as unknown as { result_file_contract?: { result_file?: string } }).result_file_contract?.result_file;
+      const sealedResult = finalIssue["result"];
+      if (
+        resultFile &&
+        typeof sealedResult === "object" &&
+        sealedResult !== null &&
+        !Array.isArray(sealedResult)
+      ) {
+        mkdirSync(dirname(resultFile), { recursive: true });
+        writeFileSync(resultFile, JSON.stringify(sealedResult, null, 2), "utf-8");
+      }
       const finalStatus = typeof finalIssue.status === "string" ? finalIssue.status.trim().toLowerCase() : null;
       if (finalStatus === "done") {
         const evidence = hasWorkProductEvidence(finalIssue);
