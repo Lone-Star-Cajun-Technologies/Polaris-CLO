@@ -108,8 +108,6 @@ To enable router mode, populate `execution.routerPolicy.providerRegistry` with a
 
 ---
 
----
-
 ## Execution Adapters
 
 Polaris supports multiple execution backends. The default is `terminal-cli`, where Polaris shells out to a local CLI. If you need a governed adapter that talks to an external runtime, use `paperclip` for the execution adapter.
@@ -128,11 +126,13 @@ The Paperclip adapter dispatches child work to a Paperclip-managed company/agent
 {
   "execution": {
     "adapter": "paperclip",
-    "baseUrl": "http://127.0.0.1:3100",
-    "companyId": "e4e9384a-d4a5-46f2-a444-92f5aa6ebdc6",
-    "assigneeAgentId": "39f35fc9-5434-4226-83e3-a435809aac81",
-    "tokenEnv": "PAPERCLIP_API_KEY",
-    "runIdEnv": "PAPERCLIP_RUN_ID"
+    "paperclip": {
+      "baseUrl": "http://127.0.0.1:3100",
+      "companyId": "e4e9384a-d4a5-46f2-a444-92f5aa6ebdc6",
+      "assigneeAgentId": "39f35fc9-5434-4226-83e3-a435809aac81",
+      "tokenEnv": "PAPERCLIP_API_KEY",
+      "runIdEnv": "PAPERCLIP_RUN_ID"
+    }
   }
 }
 ```
