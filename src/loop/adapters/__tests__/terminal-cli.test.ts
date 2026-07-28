@@ -3,6 +3,8 @@ import os from "node:os";
 import path from "node:path";
 import { describe, it, expect } from "vitest";
 import { TerminalCliAdapter } from "../terminal-cli.js";
+import { AgentSubtaskAdapter } from "../agent-subtask.js";
+import { PaperclipAdapter } from "../paperclip.js";
 import { createAdapter } from "../registry.js";
 import type { BootstrapPacket } from "../types.js";
 import { compileImplPacket, compileRepairWorkerPacket } from "../../worker-packet.js";
@@ -443,9 +445,54 @@ describe("registry", () => {
     expect(adapter.name).toBe("terminal-cli");
   });
 
+  it("createAdapter returns PaperclipAdapter for paperclip", () => {
+    const adapter = createAdapter("paperclip", { adapter: "paperclip", providers: {} });
+    expect(adapter.name).toBe("paperclip");
+  });
+
+  it("createAdapter returns AgentSubtaskAdapter for agent-subtask", () => {
+    const adapter = createAdapter("agent-subtask", { adapter: "agent-subtask", providers: {} });
+    expect(adapter.name).toBe("agent-subtask");
+  });
+
+  it("createAdapter returns a genuine PaperclipAdapter instance, not a duck-typed lookalike", () => {
+    const adapter = createAdapter("paperclip", { adapter: "paperclip", providers: {} });
+    expect(adapter).toBeInstanceOf(PaperclipAdapter);
+  });
+
+  it("createAdapter returns a genuine AgentSubtaskAdapter instance for agent-subtask", () => {
+    const adapter = createAdapter("agent-subtask", { adapter: "agent-subtask", providers: {} });
+    expect(adapter).toBeInstanceOf(AgentSubtaskAdapter);
+  });
+
+  it("createAdapter returns a genuine TerminalCliAdapter instance for terminal-cli", () => {
+    const adapter = createAdapter("terminal-cli", { adapter: "terminal-cli", providers: {} });
+    expect(adapter).toBeInstanceOf(TerminalCliAdapter);
+  });
+
+  it("createAdapter passes the config through to PaperclipAdapter (fail-closed dispatch still succeeds structurally)", async () => {
+    const adapter = createAdapter("paperclip", {
+      adapter: "paperclip",
+      providers: { codex: { command: "codex" } },
+    });
+    const result = await adapter.dispatch(MOCK_PACKET, { provider: "paperclip" });
+    expect(result.pre_dispatch_failure).toBe(true);
+    expect(result.provider_used).toBe("paperclip");
+  });
+
   it("createAdapter throws for unknown adapter", () => {
     expect(() => createAdapter("not-a-real-adapter", { adapter: "not-a-real-adapter", providers: {} })).toThrow(
       /Unknown adapter/,
     );
+  });
+
+  it("createAdapter's unknown-adapter error lists paperclip among the supported adapters", () => {
+    expect(() =>
+      createAdapter("not-a-real-adapter", { adapter: "not-a-real-adapter", providers: {} }),
+    ).toThrow(/paperclip/);
+  });
+
+  it("createAdapter throws for an empty adapter name", () => {
+    expect(() => createAdapter("", { adapter: "", providers: {} })).toThrow(/Unknown adapter/);
   });
 });

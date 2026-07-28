@@ -9,6 +9,7 @@ import {
 } from "./lifecycle-dispatch.js";
 import type { BootstrapPacket, DispatchOptions, DispatchResult } from "./adapters/types.js";
 import type { PolarisConfig } from "../config/schema.js";
+import { createAdapter } from "./adapters/registry.js";
 
 function makeDir(): string {
   const dir = join(tmpdir(), `polaris-lifecycle-dispatch-${Date.now()}-${Math.random().toString(36).slice(2)}`);
@@ -155,9 +156,192 @@ describe("resolveLifecycleProvider", () => {
       model: "gpt-startup",
     });
   });
+
+  it("resolves execution.adapter = 'paperclip' without special-casing", () => {
+    const config = baseConfig();
+    config.execution = { ...config.execution, adapter: "paperclip" };
+    const resolved = resolveLifecycleProvider(config, "startup");
+    expect(resolved.adapter).toBe("paperclip");
+  });
+
+  it("resolves execution.adapter = 'paperclip' for the finalize phase, still using the finalizer role's provider/model", () => {
+    const config = baseConfig();
+    config.execution = { ...config.execution, adapter: "paperclip" };
+    const resolved = resolveLifecycleProvider(config, "finalize");
+    expect(resolved).toEqual({
+      adapter: "paperclip",
+      provider: "finalizer",
+      model: "gpt-finalizer",
+    });
+  });
+
+  it("prefers a role-specific adapter override over execution.adapter = 'paperclip'", () => {
+    const config = baseConfig();
+    config.execution = {
+      ...config.execution,
+      adapter: "paperclip",
+      roles: {
+        ...config.execution.roles,
+        startup: { ...config.execution.roles?.startup, adapter: "terminal-cli" },
+      },
+    };
+    const resolved = resolveLifecycleProvider(config, "startup");
+    expect(resolved.adapter).toBe("terminal-cli");
+  });
+
+  it("prefers a role-specific adapter override of 'paperclip' over a non-paperclip execution.adapter", () => {
+    const config = baseConfig();
+    config.execution = {
+      ...config.execution,
+      adapter: "terminal-cli",
+      roles: {
+        ...config.execution.roles,
+        finalizer: { ...config.execution.roles?.finalizer, adapter: "paperclip" },
+      },
+    };
+    const resolved = resolveLifecycleProvider(config, "finalize");
+    expect(resolved.adapter).toBe("paperclip");
+    // Non-adapter fields for the role are unaffected.
+    expect(resolved.provider).toBe("finalizer");
+    expect(resolved.model).toBe("gpt-finalizer");
+  });
 });
 
 describe("dispatchLifecyclePhase", () => {
+  it("accepts the registry-constructed PaperclipAdapter as options.adapter (fails closed on the stub)", async () => {
+    const dir = makeDir();
+    try {
+      const config = baseConfig();
+      config.execution = { ...config.execution, adapter: "paperclip" };
+      // Prove the registered adapter (not a special-cased branch) satisfies
+      // LifecycleDispatchAdapter: createAdapter() returns a structurally
+      // compatible ExecutionAdapter for any startup/finalize call site.
+      const adapter: LifecycleDispatchAdapter = createAdapter("paperclip", config.execution);
+
+      const result = await dispatchLifecyclePhase({
+        phase: "startup",
+        runId: "run-1",
+        clusterId: "POL-188",
+        branch: "polaris/POL-188",
+        stateFile: join(dir, "current-state.json"),
+        telemetryFile: join(dir, "telemetry.jsonl"),
+        config,
+        adapter,
+      });
+
+      // The stub PaperclipAdapter (pending LSC-22) fails closed rather than
+      // silently reporting success.
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error).toBe("adapter_error");
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("also fails closed on the PaperclipAdapter stub for the finalize phase", async () => {
+    const dir = makeDir();
+    try {
+      const config = baseConfig();
+      config.execution = { ...config.execution, adapter: "paperclip" };
+      const adapter: LifecycleDispatchAdapter = createAdapter("paperclip", config.execution);
+
+      const result = await dispatchLifecyclePhase({
+        phase: "finalize",
+        runId: "run-1",
+        clusterId: "POL-188",
+        branch: "polaris/POL-188",
+        stateFile: join(dir, "current-state.json"),
+        telemetryFile: join(dir, "telemetry.jsonl"),
+        config,
+        adapter,
+      });
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error).toBe("adapter_error");
+        expect(result.role).toBe("finalize");
+        expect(result.provider).toBe("finalizer");
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("records lifecycle-dispatched and lifecycle-result-rejected telemetry when the Paperclip stub fails closed", async () => {
+    const dir = makeDir();
+    try {
+      const config = baseConfig();
+      config.execution = { ...config.execution, adapter: "paperclip" };
+      const adapter: LifecycleDispatchAdapter = createAdapter("paperclip", config.execution);
+      const telemetryFile = join(dir, "telemetry.jsonl");
+
+      await dispatchLifecyclePhase({
+        phase: "startup",
+        runId: "run-1",
+        clusterId: "POL-188",
+        branch: "polaris/POL-188",
+        stateFile: join(dir, "current-state.json"),
+        telemetryFile,
+        config,
+        adapter,
+      });
+
+      const lines = readFileSync(telemetryFile, "utf-8")
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line) as Record<string, unknown>);
+
+      const dispatched = lines.find((entry) => entry["event"] === "lifecycle-dispatched");
+      expect(dispatched).toMatchObject({
+        role: "startup",
+        adapter: "paperclip",
+        provider: "startup",
+      });
+
+      const rejected = lines.find((entry) => entry["event"] === "lifecycle-result-rejected");
+      expect(rejected).toBeDefined();
+      expect(rejected?.["error"]).toBe("adapter_error");
+      expect(String(rejected?.["message"])).toContain("not yet implemented");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("invokes the adapter with the resolved role provider name, even though PaperclipAdapter always reports itself as the provider used", async () => {
+    const dir = makeDir();
+    try {
+      const config = baseConfig();
+      config.execution = { ...config.execution, adapter: "paperclip" };
+      const realAdapter: LifecycleDispatchAdapter = createAdapter("paperclip", config.execution);
+      const seenOptions: DispatchOptions[] = [];
+      const spyAdapter: LifecycleDispatchAdapter = {
+        name: realAdapter.name,
+        async dispatch(packet, options) {
+          seenOptions.push(options);
+          return realAdapter.dispatch(packet, options);
+        },
+      };
+
+      await dispatchLifecyclePhase({
+        phase: "startup",
+        runId: "run-1",
+        clusterId: "POL-188",
+        branch: "polaris/POL-188",
+        stateFile: join(dir, "current-state.json"),
+        telemetryFile: join(dir, "telemetry.jsonl"),
+        config,
+        adapter: spyAdapter,
+      });
+
+      expect(seenOptions).toHaveLength(1);
+      expect(seenOptions[0]?.provider).toBe("startup");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it("executes startup as a sealed dispatch phase and records role telemetry", async () => {
     const dir = makeDir();
     try {

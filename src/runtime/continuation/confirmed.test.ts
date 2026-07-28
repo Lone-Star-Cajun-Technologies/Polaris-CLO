@@ -16,6 +16,7 @@ import type { ExecutionWindow } from "../execution-window.js";
 import { computeStateFingerprint } from "../verification/fingerprint.js";
 import { dispatchConfirmedContinuation } from "./confirmed.js";
 import { appendAuditEvent } from "../audit/logger.js";
+import { PaperclipAdapter } from "../../loop/adapters/paperclip.js";
 
 async function readAuditLog(artifactDir: string): Promise<Array<Record<string, unknown>>> {
   const filePath = path.join(ARTIFACTS_ROOT, artifactDir, "audit.jsonl");
@@ -170,6 +171,130 @@ describe("confirmed.ts: adapter selection + autoDispatch gating", () => {
     if (result.ok) {
       expect(result.child_id).toBe("POL-92");
     }
+  });
+
+  it("no _adapterFactory → resolves the real adapter via registry/config instead of a hard-coded default", async () => {
+    const state = makeRunningState();
+    await writeStateToDir(testArtifactDir, state);
+    const envelope = buildEnvelope(state);
+
+    // No _adapterFactory: dispatchConfirmedContinuation must construct the
+    // adapter itself via createAdapter(selection.mode, ...) rather than a
+    // hard-coded `new AgentSubtaskAdapter()`.
+    const result = await dispatchConfirmedContinuation({
+      artifact_dir: testArtifactDir,
+      envelope,
+      adapterOverride: "agent-subtask",
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.child_id).toBe("POL-92");
+      // Real AgentSubtaskAdapter has no dispatcher registered in this test
+      // process, so it fails closed (state_updated: false) — proving the
+      // real registry-resolved adapter ran, not a mock.
+      expect(result.compact_return.state_updated).toBe(false);
+    }
+  });
+
+  it("_adapterFactory returning PaperclipAdapter → stub dispatch fails closed (state_updated: false, recovery emitted)", async () => {
+    const state = makeRunningState();
+    await writeStateToDir(testArtifactDir, state);
+    const envelope = buildEnvelope(state);
+
+    // Confirms explicit paperclip continuation dispatches through the same
+    // adapter contract as any other adapter, via the same _adapterFactory
+    // injection point. The stub PaperclipAdapter (pending LSC-22) reports a
+    // non-zero exit code, so the dispatch must fail closed rather than
+    // silently marking the child done.
+    const result = await dispatchConfirmedContinuation({
+      artifact_dir: testArtifactDir,
+      envelope,
+      adapterOverride: "agent-subtask",
+      _adapterFactory: () => new PaperclipAdapter({ adapter: "paperclip", providers: {} }),
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.compact_return.state_updated).toBe(false);
+    }
+
+    const events = await readAuditLog(testArtifactDir);
+    const recovery = events.find((e) => e["event_type"] === "recovery_attempted");
+    expect(recovery).toBeDefined();
+    expect((recovery!["metadata"] as Record<string, unknown>)["reason"]).toBe("state_updated_false");
+  });
+
+  it("calls adapter.dispatch with options.provider === selection.mode, not a hard-coded provider string", async () => {
+    const state = makeRunningState();
+    await writeStateToDir(testArtifactDir, state);
+    const envelope = buildEnvelope(state);
+
+    const seenOptions: DispatchOptions[] = [];
+    const result = await dispatchConfirmedContinuation({
+      artifact_dir: testArtifactDir,
+      envelope,
+      adapterOverride: "agent-subtask",
+      _adapterFactory: () => ({
+        name: "spy-adapter",
+        async dispatch(_packet: BootstrapPacket, options: DispatchOptions): Promise<DispatchResult> {
+          seenOptions.push(options);
+          return {
+            exit_code: 0,
+            provider_used: options.provider,
+            command_run: "spy",
+            summary: JSON.stringify({ status: "done", state_updated: true }),
+          };
+        },
+      }),
+    });
+
+    expect(result.ok).toBe(true);
+    expect(seenOptions).toHaveLength(1);
+    // adapterOverride "agent-subtask" resolves to selection.mode === "agent-subtask";
+    // this must be threaded through as options.provider on the dispatch call.
+    expect(seenOptions[0]?.provider).toBe("agent-subtask");
+  });
+
+  it("adapter.dispatch throwing → active_child cleared, recovery audit events emitted, and ok: false with adapter_dispatch/dispatch_failed", async () => {
+    const state = makeRunningState();
+    await writeStateToDir(testArtifactDir, state);
+    const envelope = buildEnvelope(state);
+
+    const result = await dispatchConfirmedContinuation({
+      artifact_dir: testArtifactDir,
+      envelope,
+      adapterOverride: "agent-subtask",
+      _adapterFactory: () => ({
+        name: "throwing-adapter",
+        // eslint-disable-next-line no-unused-vars
+        async dispatch(_packet: BootstrapPacket, _options: DispatchOptions): Promise<DispatchResult> {
+          throw new Error("simulated transport failure");
+        },
+      }),
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.rejection.check).toBe("adapter_dispatch");
+      expect(result.rejection.reason).toBe("dispatch_failed");
+    }
+
+    const events = await readAuditLog(testArtifactDir);
+    const errorResult = events.find(
+      (e) => e["event_type"] === "worker_result_received" && e["result"] === "error",
+    );
+    expect(errorResult).toBeDefined();
+    expect((errorResult!["metadata"] as Record<string, unknown>)["reason"]).toBe("adapter_throw");
+
+    const recovery = events.find((e) => e["event_type"] === "recovery_attempted");
+    expect(recovery).toBeDefined();
+    expect((recovery!["metadata"] as Record<string, unknown>)["reason"]).toBe("adapter_dispatch_failed");
+
+    const finalState = JSON.parse(
+      await readFile(path.join(ARTIFACTS_ROOT, testArtifactDir, "current-state.json"), "utf-8"),
+    ) as CurrentState;
+    expect(finalState.active_child).toBe("");
   });
 });
 

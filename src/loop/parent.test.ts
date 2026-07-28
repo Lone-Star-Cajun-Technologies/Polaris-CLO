@@ -2044,6 +2044,183 @@ describe("runParentLoop", () => {
   });
 });
 
+// ── Paperclip adapter wiring ──────────────────────────────────────────────────
+
+describe("runParentLoop — paperclip adapter", () => {
+  let tmpDir: string;
+
+  beforeEach(() => {
+    tmpDir = join(tmpdir(), `polaris-parent-paperclip-test-${Date.now()}`);
+    mkdirSync(join(tmpDir, "runs", "test-run-001"), { recursive: true });
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    try {
+      rmSync(tmpDir, { recursive: true, force: true });
+    } catch {
+      // ignore cleanup errors
+    }
+  });
+
+  it("treats paperclip as its own provider — createAdapter('paperclip', ...) and dispatch options.provider === 'paperclip'", async () => {
+    const calls: MockCall[] = [];
+    const mockAdapter = makeMockAdapter([SUCCESS_RESULT], calls);
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    const { loadConfig } = await import("../config/loader.js");
+    vi.mocked(loadConfig).mockReturnValueOnce({
+      orchestration: { mode: "auto", notification_format: "verbose", auto_finalize: false },
+      execution: {
+        adapter: "paperclip",
+        providers: {},
+        rotation: [],
+      },
+    } as unknown as Required<import("../config/schema.js").PolarisConfig>);
+
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(result.haltReason).toBe("cluster-complete");
+    expect(createAdapter).toHaveBeenCalledWith(
+      "paperclip",
+      expect.objectContaining({ adapter: "paperclip" }),
+    );
+    expect(calls[0].options.provider).toBe("paperclip");
+  });
+
+  it("selects paperclip via the explicit options.adapter override, independent of config.execution.adapter", async () => {
+    const calls: MockCall[] = [];
+    const mockAdapter = makeMockAdapter([SUCCESS_RESULT], calls);
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+
+    // Default mocked loadConfig() returns execution.adapter: "mock" — the
+    // explicit options.adapter override must still win for adapter *selection*
+    // (the execution config object passed through to createAdapter is a
+    // separate concern and is not required to have adapter: "paperclip" here).
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir, adapter: "paperclip" });
+
+    expect(result.haltReason).toBe("cluster-complete");
+    expect(createAdapter).toHaveBeenCalledWith("paperclip", expect.anything());
+    expect(calls[0].options.provider).toBe("paperclip");
+  });
+
+  it("bypasses resolveProviderAndMode/CLI provider selection entirely for paperclip (no provider-not-configured halt)", async () => {
+    const mockAdapter = makeMockAdapter([SUCCESS_RESULT]);
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    const { loadConfig } = await import("../config/loader.js");
+    // No providers/rotation configured at all — resolveProviderAndMode would
+    // normally halt with worker-error for a CLI-invoked adapter.
+    vi.mocked(loadConfig).mockReturnValueOnce({
+      orchestration: { mode: "auto", notification_format: "verbose", auto_finalize: false },
+      execution: {
+        adapter: "paperclip",
+        providers: {},
+      },
+    } as unknown as Required<import("../config/schema.js").PolarisConfig>);
+
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100"],
+      max_children_per_session: 10,
+    });
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(result.haltReason).toBe("cluster-complete");
+  });
+
+  it("bypasses the explicit --provider policy gate for paperclip even when the requested provider would otherwise be forbidden", async () => {
+    const calls: MockCall[] = [];
+    const mockAdapter = makeMockAdapter([SUCCESS_RESULT], calls);
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    const { loadConfig } = await import("../config/loader.js");
+    vi.mocked(loadConfig).mockReturnValueOnce({
+      orchestration: { mode: "auto", notification_format: "verbose", auto_finalize: false },
+      execution: {
+        adapter: "paperclip",
+        providers: {},
+        providerPolicy: {
+          worker: { providers: ["codex"] },
+        },
+      },
+    } as unknown as Required<import("../config/schema.js").PolarisConfig>);
+
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100"],
+      max_children_per_session: 10,
+    });
+
+    // "not-allowed-provider" is not in providerPolicy.worker.providers, which
+    // would halt with worker-error for a CLI-invoked adapter (see the
+    // "provider policy enforcement" suite below) — but paperclip skips the
+    // assertProviderAllowedForRole gate entirely.
+    const result = await runParentLoop({
+      stateFile,
+      repoRoot: tmpDir,
+      provider: "not-allowed-provider",
+    });
+
+    expect(result.haltReason).toBe("cluster-complete");
+    // The dispatched provider is still "paperclip", not the requested (and
+    // policy-forbidden) --provider value.
+    expect(calls[0].options.provider).toBe("paperclip");
+  });
+
+  it("records a paperclip-specific routing summary on child-complete telemetry and the run ledger", async () => {
+    const calls: MockCall[] = [];
+    const mockAdapter = makeMockAdapter([SUCCESS_RESULT_WITH_MODEL], calls);
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    const { loadConfig } = await import("../config/loader.js");
+    vi.mocked(loadConfig).mockReturnValueOnce({
+      orchestration: { mode: "auto", notification_format: "verbose", auto_finalize: false },
+      execution: {
+        adapter: "paperclip",
+        providers: {},
+      },
+    } as unknown as Required<import("../config/schema.js").PolarisConfig>);
+
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+    expect(result.haltReason).toBe("cluster-complete");
+
+    const telemetry = readJsonLines(join(tmpDir, "runs", "test-run-001", "telemetry.jsonl"));
+    const childComplete = telemetry.find((event) => event["event"] === "child-complete");
+    expect(childComplete).toMatchObject({
+      provider: "mock",
+      router_selection_reason: "paperclip-adapter",
+      routing_summary: {
+        selected_provider: "paperclip",
+        selected_adapter: "paperclip",
+        selection_reason: "paperclip-adapter",
+        effective_policy_order: ["paperclip"],
+        compatibility_mode: false,
+        registry_present: false,
+        fallback_eligible: false,
+      },
+    });
+    expect(childComplete?.["providers_tried"]).toEqual(["paperclip"]);
+  });
+});
+
 // ── Provider policy enforcement ──────────────────────────────────────────────
 
 describe("runParentLoop — provider policy enforcement", () => {
