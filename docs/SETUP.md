@@ -108,6 +108,60 @@ To enable router mode, populate `execution.routerPolicy.providerRegistry` with a
 
 ---
 
+## Execution Adapters
+
+Polaris supports multiple execution backends. The default is `terminal-cli`, where Polaris shells out to a local CLI. If you need a governed adapter that talks to an external runtime, use `paperclip` for the execution adapter.
+
+> Note: The `paperclip` adapter configures **execution**, not your issue tracker. Tracker selection stays under the `tracker` block and is unrelated to `execution.adapter`.
+
+### Paperclip execution adapter
+
+The Paperclip adapter dispatches child work to a Paperclip-managed company/agent instead of running local CLIs. It requires a shared workspace that both Polaris and Paperclip can access.
+
+1. Make sure the target Paperclip server or company runner and this Polaris checkout share the same working directory or can reach a shared filesystem path.
+2. Confirm your Paperclip company ID, the assignee agent ID for this repo, and any required token/runID environment variables are available in the operator environment.
+3. Add the execution config to `polaris.config.json`:
+
+```json
+{
+  "execution": {
+    "adapter": "paperclip",
+    "paperclip": {
+      "baseUrl": "http://127.0.0.1:3100",
+      "companyId": "e4e9384a-d4a5-46f2-a444-92f5aa6ebdc6",
+      "assigneeAgentId": "39f35fc9-5434-4226-83e3-a435809aac81",
+      "tokenEnv": "PAPERCLIP_API_KEY",
+      "runIdEnv": "PAPERCLIP_RUN_ID"
+    }
+  }
+}
+```
+
+4. Set the environment variables the adapter needs. For a Paperclip-backed runtime these typically include the API token and run ID values used by the operator. Use whatever local secret manager your org prefers; do not hardcode them in `polaris.config.json`.
+
+```bash
+export PAPERCLIP_API_KEY=...
+export PAPERCLIP_RUN_ID=...
+```
+
+### Shared workspace requirement
+
+Paperclip execution writes and reads run artifacts on disk. Operators must ensure:
+
+- The paperclip-backed process can create and edit files in the Polaris repo.
+- Concurrent runs/runners can participate in the same filesystem workspace if the operator uses shared dispatch behavior.
+- Rollback remains straightforward if the paperclip runtime becomes unreachable; the working tree should remain valid for switching back to a local or CLI adapter.
+
+### Dry-run / mock test path
+
+Before depending on Paperclip for live dispatch, verify routing shape with a smaller probe or mock run packet. The validator and exec-adapter layers already warn when adapter config is malformed; use `polaris doctor` plus a single control child first.
+
+### Timeout and recovery
+
+- The Paperclip-backed run is bounded by Polaris run timeouts plus the operator's Paperclip timeout/retry behavior.
+- If a dispatch or heartbeat fails, check `.polaris/runs/<run-id>/current-state.json` and rerun with `polaris run <issue> --resume`.
+- For immediate rollback to local execution: set `execution.adapter` back to `terminal-cli` or `agent-subtask` in `polaris.config.json`.
+
 ## Tracker Adapters
 
 Polaris is tracker-agnostic. Choose one of the following adapters, or omit the `tracker` block to run in local-only mode.

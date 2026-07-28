@@ -60,6 +60,7 @@ const SUPPORTED_EXECUTION_ADAPTERS = [
   "ssh",
   "remote-worker",
   "cross-agent",
+  "paperclip",
 ] as const;
 const SUPPORTED_ROUTER_CAPABILITIES = [
   "orchestration",
@@ -108,6 +109,7 @@ const SUPPORTED_QC_PROVIDER_CAPABILITIES = [
 const SUPPORTED_QC_OUTPUT_FORMATS = ["json", "jsonl", "sarif", "generic"] as const;
 const SUPPORTED_QC_FAILURE_ACTIONS = ["fail", "fallback", "ignore", "block"] as const;
 const SEVERITY_ORDER = ["info", "low", "medium", "high", "critical"] as const;
+const ENV_VAR_NAME_REGEX = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
 function severityIndex(severity: string): number {
   return SEVERITY_ORDER.indexOf(severity as typeof SEVERITY_ORDER[number]);
@@ -298,13 +300,17 @@ export function validateConfig(config: unknown): ValidationResult {
       result.valid = false;
       result.errors.push("execution must be an object");
     } else {
+      let paperclipAdapterRequested = false;
+
       if ("adapter" in config.execution && config.execution.adapter !== undefined) {
         if (
           !isString(config.execution.adapter) ||
           !SUPPORTED_EXECUTION_ADAPTERS.includes(config.execution.adapter as typeof SUPPORTED_EXECUTION_ADAPTERS[number])
         ) {
           result.valid = false;
-          result.errors.push("execution.adapter must be one of agent-subtask, terminal-cli, ci, ssh, remote-worker, cross-agent");
+          result.errors.push("execution.adapter must be one of agent-subtask, terminal-cli, ci, ssh, remote-worker, cross-agent, paperclip");
+        } else if (config.execution.adapter === "paperclip") {
+          paperclipAdapterRequested = true;
         }
       }
       if ("providers" in config.execution && config.execution.providers !== undefined) {
@@ -344,7 +350,9 @@ export function validateConfig(config: unknown): ValidationResult {
             if ("adapter" in roleConfig && roleConfig.adapter !== undefined) {
               if (!isString(roleConfig.adapter) || !SUPPORTED_EXECUTION_ADAPTERS.includes(roleConfig.adapter as typeof SUPPORTED_EXECUTION_ADAPTERS[number])) {
                 result.valid = false;
-                result.errors.push(`execution.roles.${roleName}.adapter must be one of agent-subtask, terminal-cli, ci, ssh, remote-worker, cross-agent`);
+                result.errors.push(`execution.roles.${roleName}.adapter must be one of agent-subtask, terminal-cli, ci, ssh, remote-worker, cross-agent, paperclip`);
+              } else if (roleConfig.adapter === "paperclip") {
+                paperclipAdapterRequested = true;
               }
             }
             if ("provider" in roleConfig && roleConfig.provider !== undefined && !isString(roleConfig.provider)) {
@@ -605,6 +613,51 @@ export function validateConfig(config: unknown): ValidationResult {
                 }
               }
             }
+          }
+        }
+      }
+
+      if (paperclipAdapterRequested && config.execution.paperclip === undefined) {
+        result.valid = false;
+        result.errors.push(
+          'execution.paperclip is required when execution.adapter or execution.roles.*.adapter is "paperclip"',
+        );
+      }
+
+      if ("paperclip" in config.execution && config.execution.paperclip !== undefined) {
+        if (!isPlainObject(config.execution.paperclip)) {
+          result.valid = false;
+          result.errors.push("execution.paperclip must be a plain object");
+        } else {
+          const paperclip = config.execution.paperclip;
+          if (!isString(paperclip.baseUrl) || !/^https?:\/\/.+/.test(paperclip.baseUrl)) {
+            result.valid = false;
+            result.errors.push("execution.paperclip.baseUrl must be a valid URL");
+          }
+          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+          if (!isString(paperclip.companyId) || !uuidRegex.test(paperclip.companyId)) {
+            result.valid = false;
+            result.errors.push("execution.paperclip.companyId must be a UUID");
+          }
+          if (!isString(paperclip.assigneeAgentId) || !uuidRegex.test(paperclip.assigneeAgentId)) {
+            result.valid = false;
+            result.errors.push("execution.paperclip.assigneeAgentId must be a UUID");
+          }
+          if (!isString(paperclip.tokenEnv) || !ENV_VAR_NAME_REGEX.test(paperclip.tokenEnv)) {
+            result.valid = false;
+            result.errors.push("execution.paperclip.tokenEnv must be a valid environment variable name");
+          }
+          if (!isString(paperclip.runIdEnv) || !ENV_VAR_NAME_REGEX.test(paperclip.runIdEnv)) {
+            result.valid = false;
+            result.errors.push("execution.paperclip.runIdEnv must be a valid environment variable name");
+          }
+          if ("pollIntervalMs" in paperclip && paperclip.pollIntervalMs !== undefined && !isPositiveInteger(paperclip.pollIntervalMs)) {
+            result.valid = false;
+            result.errors.push("execution.paperclip.pollIntervalMs must be a positive integer");
+          }
+          if ("timeoutMs" in paperclip && paperclip.timeoutMs !== undefined && !isPositiveInteger(paperclip.timeoutMs)) {
+            result.valid = false;
+            result.errors.push("execution.paperclip.timeoutMs must be a positive integer");
           }
         }
       }

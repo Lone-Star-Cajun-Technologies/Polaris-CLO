@@ -6,13 +6,15 @@ export type ExecutionAdapterMode =
   | "ci"
   | "ssh"
   | "remote-worker"
-  | "cross-agent";
+  | "cross-agent"
+  | "paperclip";
 
 export type ProviderCoupling =
   | "native-same-agent"
   | "shell-process"
   | "remote-worker"
-  | "explicit-cross-agent";
+  | "explicit-cross-agent"
+  | "control-plane";
 
 export interface AdapterSelectionInput {
   explicitAdapter?: ExecutionAdapterMode;
@@ -75,6 +77,7 @@ const FALLBACK_ORDER: ExecutionAdapterMode[] = [
   "ssh",
   "remote-worker",
   "cross-agent",
+  "paperclip",
 ];
 
 function fromConfigured(mode: ExecutionAdapterMode): AdapterSelection {
@@ -124,6 +127,15 @@ function fromConfigured(mode: ExecutionAdapterMode): AdapterSelection {
         priority: 4,
         warnings: [],
         reason: "cross-agent fallback explicitly configured",
+      };
+    case "paperclip":
+      return {
+        mode,
+        autoDispatch: true,
+        providerCoupling: "control-plane",
+        priority: 2,
+        warnings: [],
+        reason: "control-plane provider coupling configured for Paperclip adapter",
       };
     default:
       throw new Error(`Unknown ExecutionAdapterMode: ${String(mode)}`);
