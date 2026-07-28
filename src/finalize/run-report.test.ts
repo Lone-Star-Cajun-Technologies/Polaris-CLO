@@ -375,4 +375,61 @@ describe("generateRunReport", () => {
     expect(report).toContain("stale-dispatch-abort");
     expect(report).toContain("missing-sealed-result");
   });
+
+  it("infers router mode from new direct selection reasons when compatibility_mode is absent", () => {
+    const telemetryEvents = [
+      {
+        event: "provider-selected",
+        run_id: "test-run-001",
+        child_id: "POL-001",
+        selected_provider: "devin",
+        selection_reason: "trust-tier",
+        router_mode: "direct-worker",
+        providers_tried: ["devin", "copilot"],
+      },
+      {
+        event: "provider-selected",
+        run_id: "test-run-001",
+        child_id: "POL-002",
+        selected_provider: "copilot",
+        selection_reason: "cost-tier",
+        router_mode: "direct-worker",
+        providers_tried: ["devin", "copilot"],
+      },
+      {
+        event: "provider-selected",
+        run_id: "test-run-001",
+        child_id: "POL-003",
+        selected_provider: "devin",
+        selection_reason: "tied-no-differentiator",
+        router_mode: "direct-worker",
+        providers_tried: ["devin", "copilot"],
+      },
+      {
+        event: "provider-selected",
+        run_id: "test-run-001",
+        child_id: "POL-004",
+        selected_provider: "devin",
+        selection_reason: "only-eligible-provider",
+        router_mode: "direct-worker",
+        providers_tried: ["devin"],
+      },
+    ];
+
+    const state = {
+      ...minimalState(),
+      completed_children: ["POL-001", "POL-002", "POL-003", "POL-004"],
+    };
+
+    const report = generateRunReport(baseReportData({ state, telemetryEvents }));
+    expect(report).toContain("| POL-001 |");
+    expect(report).toContain("| trust-tier | router |");
+    expect(report).toContain("| cost-tier | router |");
+    expect(report).toContain("| tied-no-differentiator | router |");
+    expect(report).toContain("| only-eligible-provider | router |");
+    expect(report).not.toContain("| trust-tier | compatibility |");
+    expect(report).not.toContain("| cost-tier | compatibility |");
+    expect(report).not.toContain("| tied-no-differentiator | compatibility |");
+    expect(report).not.toContain("| only-eligible-provider | compatibility |");
+  });
 });

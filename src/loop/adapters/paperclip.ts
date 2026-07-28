@@ -7,7 +7,7 @@ import type {
   DispatchResult,
   ExecutionAdapter,
 } from "./types.js";
-import type { PaperclipExecutionConfig } from "../../config/schema.js";
+import type { ExecutionConfig, PaperclipExecutionConfig } from "../../config/schema.js";
 
 export interface PaperclipRuntimeConfig extends PaperclipExecutionConfig {
   resolvedToken?: string;
@@ -44,6 +44,51 @@ export interface PaperclipStateRef {
   companyId: string;
   baseUrl: string;
   updatedAt: string;
+}
+
+export interface RepoCoordinates {
+  repoUrl: string;
+  workingDirectory: string;
+  targetPaths: string[];
+}
+
+/**
+ * Build the <!-- POLARIS_COORDS --> block injected into every Paperclip issue
+ * description. This is the authoritative serialization format for LSC-32.
+ */
+export function buildCoordsBlock(coords: RepoCoordinates): string {
+  const payload = {
+    repoUrl: coords.repoUrl,
+    workingDirectory: coords.workingDirectory,
+    targetPaths: coords.targetPaths,
+  };
+  return [
+    "<!-- POLARIS_COORDS",
+    JSON.stringify(payload, null, 2),
+    "POLARIS_COORDS -->",
+  ].join("\n");
+}
+
+/**
+ * Resolve coordinates from packet and config, packet taking precedence.
+ * Returns null when repoUrl or workingDirectory cannot be determined.
+ */
+export function resolveCoords(
+  packet: BootstrapPacket,
+  config: ExecutionConfig,
+): RepoCoordinates | null {
+  const pc = packet.repo_coordinates;
+  const cfg = config.paperclip;
+
+  const repoUrl = pc?.repoUrl ?? cfg?.repoUrl ?? "";
+  const workingDirectory = pc?.workingDirectory ?? cfg?.workingDirectory ?? "";
+  const targetPaths = pc?.targetPaths ?? cfg?.targetPaths ?? [];
+
+  if (!repoUrl || !workingDirectory) {
+    return null;
+  }
+
+  return { repoUrl, workingDirectory, targetPaths };
 }
 
 const DEFAULT_POLL_INTERVAL_MS = 2_000;

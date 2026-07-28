@@ -14,6 +14,8 @@ function makeDecision(
     compatibilityMode: false,
     providersTried: provider ? [provider] : [],
     candidates: [],
+    tied: false,
+    tiedProviders: [],
     ...overrides,
   };
 }

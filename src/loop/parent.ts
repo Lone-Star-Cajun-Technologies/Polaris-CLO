@@ -965,6 +965,23 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
       registry_present: false,
       fallback_eligible: false,
     };
+  } else if (adapterName === "paperclip" && config.execution?.paperclip?.assigneeAgentId) {
+    // The Paperclip issue's assignee is the authoritative dispatch target —
+    // skip resolveProviderAndMode (CLI provider rotation) entirely so the
+    // rotation can never override the assignment River made on the issue.
+    const assigneeAgentId = config.execution.paperclip.assigneeAgentId;
+    providerName = assigneeAgentId;
+    providerSelectionReason = "paperclip-assignee";
+    providersTried = [assigneeAgentId];
+    routingSummary = {
+      selected_provider: assigneeAgentId,
+      selected_adapter: "paperclip",
+      selection_reason: "paperclip-assignee",
+      effective_policy_order: [assigneeAgentId],
+      compatibility_mode: false,
+      registry_present: false,
+      fallback_eligible: false,
+    };
   } else {
     let evidence;
     try {
@@ -1000,7 +1017,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
   // Enforce provider policy for explicit --provider flag before entering the loop.
   // resolveProviderAndMode handles policy-filtered rotation; this gate blocks an
   // explicit provider that the rotation resolution would not have chosen.
-  if (options.provider && adapterName !== "agent-subtask") {
+  if (options.provider && adapterName !== "agent-subtask" && adapterName !== "paperclip") {
     try {
       assertProviderAllowedForRole(
         "worker",

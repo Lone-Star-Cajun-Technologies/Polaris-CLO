@@ -144,12 +144,23 @@ export interface WorkerRouterPolicyConfig {
    * When omitted, legacy allowCrossAgentFallback behavior applies.
    */
   allowCrossProviderFallback?: boolean;
+  /**
+   * When true and execution.adapter is "paperclip", the parent loop fans out
+   * dispatch to multiple open children at once, bounded by
+   * defaultWorkerPool.maxActiveWorkers (default 1 slot when unset). Each
+   * Paperclip issue in the batch keeps its own assignee binding and result/
+   * disposition tracking — this only changes how many dispatches are
+   * in flight concurrently, not how any single dispatch is resolved.
+   * Default: false (serial, one child at a time) for backward compatibility.
+   * Ignored for adapters other than "paperclip".
+   */
+  parallelPaperclip?: boolean;
 }
 
 export interface ExecutionConfig {
   /**
-   * Adapter to use for external dispatch.
-   * Supported: "agent-subtask", "terminal-cli", "ci", "ssh", "remote-worker", "cross-agent", "paperclip"
+   * Adapter to use for external dispatch. Supported values: "agent-subtask", "terminal-cli",
+   * "ci", "ssh", "remote-worker", "cross-agent", "paperclip".
    */
   adapter: string;
 
@@ -215,6 +226,21 @@ export interface PaperclipExecutionConfig {
   pollIntervalMs?: number;
   /** Maximum time to wait for a Paperclip run before declaring timeout. */
   timeoutMs?: number;
+  /**
+   * Repo URL injected into every issued Paperclip task description so workers
+   * know where to clone / which remote to use. Required for bootstrap coords.
+   */
+  repoUrl?: string;
+  /**
+   * Absolute working directory the worker should land in after checkout.
+   * When omitted the worker defaults to the repo root.
+   */
+  workingDirectory?: string;
+  /**
+   * Optional list of repo-relative paths the task is scoped to.
+   * Injected verbatim into the bootstrap coords block.
+   */
+  targetPaths?: string[];
 }
 
 export interface SkillPacketConfig {
