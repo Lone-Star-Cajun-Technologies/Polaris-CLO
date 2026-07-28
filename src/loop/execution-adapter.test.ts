@@ -38,6 +38,16 @@ describe("selectExecutionAdapter", () => {
     expect(selected.mode).toBe("cross-agent");
     expect(selected.autoDispatch).toBe(true);
   });
+
+  it("supports explicit paperclip adapter selection", () => {
+    const selected = selectExecutionAdapter({
+      configuredAdapter: "paperclip",
+    });
+
+    expect(selected.mode).toBe("paperclip");
+    expect(selected.autoDispatch).toBe(true);
+    expect(selected.providerCoupling).toBe("remote-worker");
+  });
 });
 
 describe("buildCompactBootstrapState", () => {

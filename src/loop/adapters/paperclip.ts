@@ -5,7 +5,7 @@ import type { BootstrapPacket, DispatchOptions, DispatchResult, ExecutionAdapter
  * Stub pending LSC-22 (Paperclip adapter transport). Wires the "paperclip"
  * execution mode through the registry/parent/dispatch/confirmed-continuation
  * paths per LSC-19 plan section 3 (LSC-23). `dispatch()` fails closed with
- * `pre_dispatch_failure: true` — an harmless no-op for callers — until the
+ * `pre_dispatch_failure: true` — a harmless no-op for callers — until the
  * real HTTP transport (create/poll/reconcile against the Paperclip API,
  * per LSC-22) replaces this file. Do not add a second `paperclip.ts`;
  * extend this one.

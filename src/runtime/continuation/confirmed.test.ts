@@ -224,6 +224,23 @@ describe("confirmed.ts: adapter selection + autoDispatch gating", () => {
     expect(recovery).toBeDefined();
     expect((recovery!["metadata"] as Record<string, unknown>)["reason"]).toBe("state_updated_false");
   });
+
+  it("adapterOverride paperclip without _adapterFactory → resolves registry paperclip adapter and fails closed", async () => {
+    const state = makeRunningState();
+    await writeStateToDir(testArtifactDir, state);
+    const envelope = buildEnvelope(state);
+
+    const result = await dispatchConfirmedContinuation({
+      artifact_dir: testArtifactDir,
+      envelope,
+      adapterOverride: "paperclip",
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.compact_return.state_updated).toBe(false);
+    }
+  });
 });
 
 function makeWindow(state: CurrentState, overrides: Partial<ExecutionWindow> = {}): ExecutionWindow {
