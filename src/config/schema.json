@@ -331,7 +331,12 @@
           "additionalProperties": { "$ref": "#/definitions/workerProviderRouterPolicy" },
           "description": "Provider metadata registry keyed by execution provider name. When this registry is empty or missing, dispatch uses compatibility mode and falls back to legacy role-policy/rotation selection. The router engine only builds a full ranked candidate list when registry metadata is present."
         },
-        "allowCrossProviderFallback": { "type": "boolean" }
+        "allowCrossProviderFallback": { "type": "boolean" },
+        "parallelPaperclip": {
+          "type": "boolean",
+          "default": false,
+          "description": "When true and execution.adapter is \"paperclip\", the parent loop fans out dispatch to multiple open children at once, bounded by defaultWorkerPool.maxActiveWorkers. Each Paperclip issue keeps its own assignee binding and disposition tracking. Default false (serial) for backward compatibility; ignored for non-paperclip adapters."
+        }
       }
     },
     "workerPoolLimits": {

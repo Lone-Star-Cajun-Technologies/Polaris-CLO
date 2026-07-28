@@ -74,6 +74,7 @@ describe("loadConfig", () => {
       },
       providerRegistry: {},
       allowCrossProviderFallback: false,
+      parallelPaperclip: false,
     });
     expect(config.orchestration).toMatchObject({
       mode: "supervised",
@@ -108,6 +109,7 @@ describe("loadConfig", () => {
       },
       providerRegistry: {},
       allowCrossProviderFallback: false,
+      parallelPaperclip: false,
     });
   });
 

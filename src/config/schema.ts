@@ -144,6 +144,17 @@ export interface WorkerRouterPolicyConfig {
    * When omitted, legacy allowCrossAgentFallback behavior applies.
    */
   allowCrossProviderFallback?: boolean;
+  /**
+   * When true and execution.adapter is "paperclip", the parent loop fans out
+   * dispatch to multiple open children at once, bounded by
+   * defaultWorkerPool.maxActiveWorkers (default 1 slot when unset). Each
+   * Paperclip issue in the batch keeps its own assignee binding and result/
+   * disposition tracking — this only changes how many dispatches are
+   * in flight concurrently, not how any single dispatch is resolved.
+   * Default: false (serial, one child at a time) for backward compatibility.
+   * Ignored for adapters other than "paperclip".
+   */
+  parallelPaperclip?: boolean;
 }
 
 export interface ExecutionConfig {
