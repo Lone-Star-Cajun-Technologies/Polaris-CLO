@@ -148,18 +148,15 @@ export interface WorkerRouterPolicyConfig {
 
 export interface ExecutionConfig {
   /**
-   * Adapter to use for external dispatch. Currently supported: "terminal-cli"
-   * Future: "agent-subtask" (Claude subagent workflows)
+   * Adapter to use for external dispatch. Supported: "terminal-cli", "paperclip"
    */
   adapter: string;
 
-  /**
-   * Named provider configurations. Keys are provider names (e.g. "codex", "gemini", "custom").
-   */
+  /** Named provider configurations. Keys are provider names. */
   providers: Record<string, ProviderConfig>;
 
   /**
-   * Experimental: ordered list of provider names for cross-run load rotation.
+   * Ordered list of provider names for cross-run load rotation.
    * Off by default (empty array). When non-empty, overrides providerPolicy
    * ordering — the rotation list is filtered by the role policy and the first
    * match is selected. In compatibility mode, only the first filtered match is
@@ -178,6 +175,7 @@ export interface ExecutionConfig {
    * role entry only selects the adapter/provider/model used to invoke an agent.
    */
   roles?: Partial<Record<ExecutionRole, RoleExecutionConfig>>;
+
   /**
    * Per-role provider governance policy.
    *
@@ -187,6 +185,7 @@ export interface ExecutionConfig {
    * eligibility filter for the ranked provider registry.
    */
   providerPolicy?: Partial<Record<ExecutionRole, RoleProviderPolicy>>;
+
   /**
    * Worker router policy surface for provider eligibility and pool limits.
    *
@@ -194,6 +193,27 @@ export interface ExecutionConfig {
    * and ignores the router engine's ranking/fallback evidence.
    */
   routerPolicy?: WorkerRouterPolicyConfig;
+
+  /** Paperclip control-plane configuration when adapter is "paperclip" */
+  paperclip?: PaperclipExecutionConfig;
+}
+
+/** Configuration for the Paperclip control plane. */
+export interface PaperclipExecutionConfig {
+  /** Paperclip service base URL. */
+  baseUrl: string;
+  /** Company ID used for Paperclip company-scoped routing. */
+  companyId: string;
+  /** Agent ID that should receive assigned work for this execution context. */
+  assigneeAgentId: string;
+  /** Name of the environment variable that holds the Paperclip bearer token. */
+  tokenEnv: string;
+  /** Name of the environment variable that should provide the run ID. */
+  runIdEnv: string;
+  /** Milliseconds between polls while waiting for run completion. */
+  pollIntervalMs?: number;
+  /** Maximum time to wait for a Paperclip run before declaring timeout. */
+  timeoutMs?: number;
 }
 
 export interface SkillPacketConfig {

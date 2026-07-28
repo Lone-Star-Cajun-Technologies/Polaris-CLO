@@ -157,6 +157,7 @@ describe("buildCompactBootstrapState", () => {
       branch: "feature/pol-60",
       compactMode: "strict",
     });
+
     expect(compact.run_id).toBe("run-003");
     expect(compact.cluster_id).toBe("POL-60");
     expect(compact.child_id).toBe("POL-61");
@@ -166,5 +167,20 @@ describe("buildCompactBootstrapState", () => {
     expect(compact.branch).toBe("feature/pol-60");
     expect(compact.compact_mode).toBe("strict");
     expect(Array.isArray(compact.return_summary_contract)).toBe(true);
+  });
+});
+
+describe("selectExecutionAdapter — paperclip", () => {
+  it("selects paperclip when explicitly configured", () => {
+    const selected = selectExecutionAdapter({
+      explicitAdapter: "paperclip",
+      paperclipConfigured: true,
+    });
+
+    expect(selected.mode).toBe("paperclip");
+    expect(selected.autoDispatch).toBe(true);
+    expect(selected.providerCoupling).toBe("control-plane");
+    expect(selected.priority).toBe(2);
+    expect(selected.reason).toBe("control-plane provider coupling configured for Paperclip adapter");
   });
 });

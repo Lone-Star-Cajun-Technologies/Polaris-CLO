@@ -107,7 +107,7 @@
       "properties": {
         "adapter": {
           "type": "string",
-          "enum": ["agent-subtask", "terminal-cli", "ci", "ssh", "remote-worker", "cross-agent"]
+          "enum": ["agent-subtask", "terminal-cli", "ci", "ssh", "remote-worker", "cross-agent", "paperclip"]
         },
         "providers": {
           "type": "object",
@@ -168,6 +168,9 @@
         "routerPolicy": {
           "$ref": "#/definitions/workerRouterPolicyConfig",
           "description": "Worker router policy surface for provider eligibility and pool limits. When providerRegistry is absent or empty, dispatch runs in compatibility mode and ignores the router engine's ranking/fallback evidence."
+        },
+        "paperclip": {
+          "$ref": "#/definitions/paperclipExecutionConfig"
         }
       }
     },
@@ -281,6 +284,9 @@
     },
     "qc": {
       "$ref": "#/definitions/qcConfig"
+    },
+    "paperclip": {
+      "$ref": "#/definitions/paperclipExecutionConfig"
     }
   },
   "definitions": {
@@ -290,7 +296,7 @@
       "properties": {
         "adapter": {
           "type": "string",
-          "enum": ["agent-subtask", "terminal-cli", "ci", "ssh", "remote-worker", "cross-agent"]
+          "enum": ["agent-subtask", "terminal-cli", "ci", "ssh", "remote-worker", "cross-agent", "paperclip"]
         },
         "provider": { "type": "string" },
         "model": { "type": "string" },
@@ -591,6 +597,20 @@
       "properties": {
         "retainRawOutput": { "type": "boolean", "default": false },
         "maxRuns": { "type": "integer", "minimum": 1, "default": 10 }
+      }
+    },
+    "paperclipExecutionConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["baseUrl", "companyId", "assigneeAgentId", "tokenEnv", "runIdEnv"],
+      "properties": {
+        "baseUrl": { "type": "string" },
+        "companyId": { "type": "string" },
+        "assigneeAgentId": { "type": "string" },
+        "tokenEnv": { "type": "string" },
+        "runIdEnv": { "type": "string" },
+        "pollIntervalMs": { "type": "integer", "minimum": 1 },
+        "timeoutMs": { "type": "integer", "minimum": 1 }
       }
     }
   }
