@@ -13,7 +13,8 @@ export type ProviderCoupling =
   | "native-same-agent"
   | "shell-process"
   | "remote-worker"
-  | "explicit-cross-agent";
+  | "explicit-cross-agent"
+  | "control-plane";
 
 export interface AdapterSelectionInput {
   explicitAdapter?: ExecutionAdapterMode;
@@ -102,10 +103,10 @@ function fromConfigured(mode: ExecutionAdapterMode): AdapterSelection {
       return {
         mode,
         autoDispatch: true,
-        providerCoupling: "remote-worker",
-        priority: 3,
+        providerCoupling: "control-plane",
+        priority: 2,
         warnings: [],
-        reason: "paperclip worker adapter configured",
+        reason: "control-plane provider coupling configured for Paperclip adapter",
       };
     case "ci":
       return {

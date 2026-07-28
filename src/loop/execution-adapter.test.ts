@@ -46,7 +46,7 @@ describe("selectExecutionAdapter", () => {
 
     expect(selected.mode).toBe("paperclip");
     expect(selected.autoDispatch).toBe(true);
-    expect(selected.providerCoupling).toBe("remote-worker");
+    expect(selected.providerCoupling).toBe("control-plane");
   });
 });
 
