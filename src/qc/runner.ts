@@ -512,12 +512,25 @@ export async function executeQcProvider(
     visited.add(currentProvider.name);
     attempted.push(currentProvider.name);
 
-    const { result, success } = await runSingleProvider(currentProvider, scope, options, fallbackSource);
+    const providerConfig = getProviderConfig(currentProvider.name, options.config);
+    let { result, success } = await runSingleProvider(currentProvider, scope, options, fallbackSource);
+
+    const retry = providerConfig?.retry;
+    const maxRetries = retry?.maxRetries ?? 0;
+    if (!success && result.providerAttempt?.failureReason === "rate-limited" && maxRetries > 0) {
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        await new Promise<void>((resolve) => setTimeout(resolve, retry?.backoffMs ?? 1000));
+        ({ result, success } = await runSingleProvider(currentProvider, scope, options, fallbackSource));
+        if (success || result.providerAttempt?.failureReason !== "rate-limited") {
+          break;
+        }
+      }
+    }
+
     if (success) {
       return { result, success, sourceProvider: currentProvider.name };
     }
 
-    const providerConfig = getProviderConfig(currentProvider.name, options.config);
     const failureAction = decideProviderFailureAction(
       result.providerAttempt?.failureReason ?? "nonzero-exit",
       providerConfig?.failurePolicy,
