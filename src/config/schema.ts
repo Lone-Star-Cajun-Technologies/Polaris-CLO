@@ -214,6 +214,21 @@ export interface PaperclipExecutionConfig {
   pollIntervalMs?: number;
   /** Maximum time to wait for a Paperclip run before declaring timeout. */
   timeoutMs?: number;
+  /**
+   * Repo URL injected into every issued Paperclip task description so workers
+   * know where to clone / which remote to use. Required for bootstrap coords.
+   */
+  repoUrl?: string;
+  /**
+   * Absolute working directory the worker should land in after checkout.
+   * When omitted the worker defaults to the repo root.
+   */
+  workingDirectory?: string;
+  /**
+   * Optional list of repo-relative paths the task is scoped to.
+   * Injected verbatim into the bootstrap coords block.
+   */
+  targetPaths?: string[];
 }
 
 export interface SkillPacketConfig {
