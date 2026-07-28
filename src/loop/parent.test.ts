@@ -844,7 +844,7 @@ describe("runParentLoop", () => {
     expect(evidence["foreman_intervened"]).toBeNull();
     expect(evidence["dispatch_epoch"]).toBe(1);
 
-    const packetRaw = readFileSync(String(evidence["packet_path"]), "utf-8");
+    const packetRaw = readFileSync(join(tmpDir, String(evidence["packet_path"])), "utf-8");
     const expectedHash = createHash("sha256").update(packetRaw, "utf-8").digest("hex");
     expect(evidence["packet_hash"]).toBe(expectedHash);
   });

@@ -614,12 +614,14 @@ function buildParentDispatchRecord(args: {
 function withChildDispatchMetadata(
   state: LoopState,
   childId: string,
+  repoRoot: string,
   resultFile: string,
   dispatchRecord: ChildDispatchRecord,
 ): LoopState {
   const current = state.open_children_meta?.[childId];
+  const relativeResultFile = relative(repoRoot, resultFile);
   if (
-    current?.result_file === resultFile &&
+    current?.result_file === relativeResultFile &&
     current.dispatch_record?.dispatch_id === dispatchRecord.dispatch_id
   ) {
     return state;
@@ -630,7 +632,7 @@ function withChildDispatchMetadata(
       ...(state.open_children_meta ?? {}),
       [childId]: {
         ...(current ?? {}),
-        result_file: resultFile,
+        result_file: relativeResultFile,
         dispatch_record: dispatchRecord,
       },
     },
@@ -1210,6 +1212,14 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
       }
       const autoFinalizeRequested = orchestrationMode === "auto" && config.orchestration?.auto_finalize === true;
 
+      // All children completed — append the terminal cluster-complete ledger
+      // event before post-completion QC/repair so downstream consumers see
+      // a clear terminal record instead of relying on the child-completed
+      // event's nested status field.
+      if (!dryRun) {
+        appendClusterCompletedLedgerEvent(repoRoot, { ...state, status: "cluster-complete" as const });
+      }
+
       // ── QC repair loop (post-completion gate) ─────────────────────────────
       // When QC is enabled, run the completed-cluster QC trigger and, if
       // findings are produced, run the bounded repair loop before halting.
@@ -1526,7 +1536,6 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
           children_completed: state.completed_children.length,
           timestamp: new Date().toISOString(),
         });
-        appendClusterCompletedLedgerEvent(repoRoot, { ...state, status: "cluster-complete" });
         if (autoFinalizeRequested) {
           appendTelemetry(telemetryFile, {
             event: "auto-finalize-requested",
@@ -1869,8 +1878,8 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
         runId: state.run_id,
         clusterId: state.cluster_id,
         childId: nextChild,
-        packetPath,
-        resultPath: resultFile,
+        packetPath: relative(repoRoot, packetPath),
+        resultPath: relative(repoRoot, resultFile),
         provider: providerName,
         providerSelectionReason,
         providersTried,
@@ -1880,7 +1889,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
       });
       const stateWithDispatch: LoopState = {
         ...withWorkerPoolState(
-          withChildDispatchMetadata(stateWithQcMeta, nextChild, resultFile, dispatchRecord),
+          withChildDispatchMetadata(stateWithQcMeta, nextChild, repoRoot, resultFile, dispatchRecord),
           maxConcurrentWorkers,
           nextSlotClaims,
         ),
