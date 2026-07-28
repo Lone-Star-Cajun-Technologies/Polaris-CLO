@@ -458,16 +458,8 @@ async function runSingleProvider(
             typeof (parseError as { qcFailureReason: unknown }).qcFailureReason === "string"
               ? ((parseError as { qcFailureReason: QcFailureReason }).qcFailureReason as QcFailureReason)
               : "parse-failed";
-          const retryAfterMs =
-            typeof parseError === "object" &&
-            parseError !== null &&
-            "retryAfterMs" in parseError &&
-            typeof (parseError as { retryAfterMs?: unknown }).retryAfterMs === "number"
-              ? (parseError as { retryAfterMs: number }).retryAfterMs
-              : undefined;
           const result = buildFailedResult(provider, scope, startedAt, reason, output, {
             parserResult: "failed",
-            ...(retryAfterMs !== undefined ? { retryAfterMs } : {}),
           });
           emitProviderFailed(
             options.telemetryFile,
@@ -527,8 +519,7 @@ export async function executeQcProvider(
     const maxRetries = retry?.maxRetries ?? 0;
     if (!success && result.providerAttempt?.failureReason === "rate-limited" && maxRetries > 0) {
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        const delayMs = result.providerAttempt?.retryAfterMs ?? retry?.backoffMs ?? 1000;
-        await new Promise<void>((resolve) => setTimeout(resolve, delayMs));
+        await new Promise<void>((resolve) => setTimeout(resolve, retry?.backoffMs ?? 1000));
         ({ result, success } = await runSingleProvider(currentProvider, scope, options, fallbackSource));
         if (success || result.providerAttempt?.failureReason !== "rate-limited") {
           break;

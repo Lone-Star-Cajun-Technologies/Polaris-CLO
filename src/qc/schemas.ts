@@ -77,7 +77,6 @@ export const qcProviderAttemptSchema: z.ZodType<QcProviderAttempt> = z.object({
   exitCode: z.number().optional(),
   stdoutLength: z.number().int().min(0),
   stderrLength: z.number().int().min(0),
-  retryAfterMs: z.number().int().min(0).optional(),
 });
 
 export const qcCodeRangeSchema = z.object({
