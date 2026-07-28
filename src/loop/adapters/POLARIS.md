@@ -12,6 +12,7 @@ The adapters subfolder provides execution adapter implementations for dispatchin
 - `types.ts` — `ExecutionAdapter` interface, `BootstrapPacket`, `DispatchResult`, `DispatchOptions`, `WorkerSummary` types
 - `terminal-cli.ts` — `TerminalCliAdapter`: dispatches sessions via terminal CLI commands (e.g. `claude`, `codex`, `copilot`)
 - `agent-subtask.ts` — `AgentSubtaskAdapter`: dispatches sessions as in-process subagents
+- `paperclip.ts` — `PaperclipAdapter`: dispatches sessions as issues against the Paperclip API (create issue, poll for terminal status, verify work-product evidence before accepting `done`)
 - `foreman-dispatch.ts` — `dispatchForeman()`: wraps a `SetupBootstrapPacket` and launches the Foreman via `TerminalCliAdapter`; enforces checkpoint gate presence before dispatch
 - `registry.ts` — `createAdapter()`: factory that selects adapter implementation from execution config
 - `index.ts` — re-exports all public adapter types and implementations
@@ -31,6 +32,8 @@ The adapters subfolder provides execution adapter implementations for dispatchin
 - `TerminalCliAdapter.dispatch()` blocks `impl` and `repair` packets with an empty `allowed_scope` at the adapter boundary. It returns `pre_dispatch_failure: true`, `fallback_eligible: false`, and a summary with `status: "blocked"` and `warnings: ["empty-allowed-scope"]`.
 - Do not add new adapter implementations without a corresponding registry entry in `registry.ts`.
 - Adapters must implement the `ExecutionAdapter` interface from `types.ts`.
+- `PaperclipAdapter.dispatch()` resolves the issue assignee via `resolveAssigneeForRole()`: a direct `config.paperclip.roleBindings[role]` wins; otherwise it walks `config.paperclip.reportsTo` (role → manager role) until it finds a bound manager, falling back to `config.paperclip.assigneeAgentId`. Cyclic `reportsTo` chains terminate via a visited-set guard.
+- `PaperclipAdapter` treats a Paperclip issue status of `done` as untrusted until corroborated: after polling reaches a terminal status, it re-fetches the issue and requires at least one non-empty work-product evidence field (`hasWorkProductEvidence()` — PR, commit, branch, or attachment) before returning `exit_code: 0`. A `done` issue with no evidence is converted to a `worker-failure` dispatch result.
 
 ## Architecture assumptions
 
@@ -52,6 +55,7 @@ The adapters subfolder provides execution adapter implementations for dispatchin
 - Adapters remain provider-neutral and execution-only. Provider selection and fallback ordering are owned by the Worker Router (`src/loop/router/`); adapters receive a `routerDecision` option in `DispatchOptions` and report whether a dispatch failed before any worker started (`pre_dispatch_failure: true`) so the router can consider the next candidate in the fallback chain.
 - `TerminalCliAdapter` builds an explicit fallback order from `routerEvidence.providersTried` when `canFallback` is set. It iterates the fallback chain, attempts each provider, and returns `fallback_eligible: true` when a pre-dispatch failure occurs. Once a worker emits `worker-acknowledged`, fallback is no longer permitted.
 - `AgentSubtaskAdapter` emits `pre_dispatch_failure: true` on task invocation errors with `fallback_eligible: true` so the parent can retry through the router chain.
+- `PaperclipAdapter` embeds a `ROLE_SKILL_ROUTING` hint (role → Polaris skill name, e.g. `analyst` → `polaris-analyze`) into the issue description so a Paperclip agent can self-route to the correct skill chain; this is advisory text only, not an execution-time dispatch decision.
 
 ## Related routes
 
