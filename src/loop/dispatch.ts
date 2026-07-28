@@ -244,6 +244,7 @@ export function resolveProviderAndMode(
     compatibility_mode: false,
     registry_present: true,
     fallback_eligible: fallbackEligible,
+    ...(decision.tied ? { tied_providers: decision.tiedProviders } : {}),
   };
 
   return {

@@ -171,9 +171,11 @@ export async function dispatchConfirmedContinuation(
   let compactReturn: CompactReturn;
   let dispatchResultCode = 0;
   try {
+    const executionConfig = loadConfig(process.cwd()).execution ?? { adapter: selection.mode, providers: {} };
+    const normalizedExecutionConfig = { ...executionConfig, adapter: selection.mode };
     const adapter = request._adapterFactory
       ? request._adapterFactory()
-      : createAdapter(selection.mode, loadConfig(process.cwd()).execution ?? { adapter: selection.mode, providers: {} });
+      : createAdapter(selection.mode, normalizedExecutionConfig);
     const dispatchResult = await adapter.dispatch(packet, { provider: selection.mode });
     dispatchResultCode = dispatchResult.exit_code;
     // Parse summary if available; fall back to inferring done state from exit_code

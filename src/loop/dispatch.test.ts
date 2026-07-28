@@ -975,7 +975,8 @@ describe("runLoopDispatch", () => {
     const updated = readState(stateFile);
     const dr = updated.open_children_meta?.["POL-145"]?.dispatch_record;
     expect(dr?.provider).toBe("codex");
-    expect(dr?.provider_selection_reason).toBe("policy-router");
+    // codex is "trusted" vs copilot's "standard" tier — a real differentiator.
+    expect(dr?.provider_selection_reason).toBe("trust-tier");
 
     const telemetryFile = join(testDir, ".taskchain_artifacts", "polaris-run", "runs", "pol-142-session-1", "telemetry.jsonl");
     const providerSelected = readFileSync(telemetryFile, "utf-8")
@@ -1000,7 +1001,7 @@ describe("runLoopDispatch", () => {
     expect(providerSelected.routing_summary).toMatchObject({
       selected_provider: "codex",
       selected_adapter: "terminal-cli",
-      selection_reason: "policy-router",
+      selection_reason: "trust-tier",
       effective_policy_order: ["copilot", "codex"],
       compatibility_mode: false,
       registry_present: true,
