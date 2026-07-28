@@ -1028,6 +1028,13 @@ describe("validateConfig — execution.paperclip", () => {
     const result = validateConfig({
       execution: {
         adapter: "terminal-cli",
+        paperclip: {
+          baseUrl: "http://127.0.0.1:3100",
+          companyId: "e4e9384a-d4a5-46f2-a444-92f5aa6ebdc6",
+          assigneeAgentId: "39f35fc9-5434-4226-83e3-a435809aac81",
+          tokenEnv: "PAPERCLIP_TOKEN",
+          runIdEnv: "PAPERCLIP_RUN_ID",
+        },
         roles: {
           foreman: {
             adapter: "paperclip",
@@ -1038,6 +1045,37 @@ describe("validateConfig — execution.paperclip", () => {
 
     expect(result.valid).toBe(true);
     expect(result.errors).toHaveLength(0);
+  });
+
+  it("rejects paperclip adapter when execution.paperclip config is missing", () => {
+    const result = validateConfig({
+      execution: {
+        adapter: "paperclip",
+      },
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      'execution.paperclip is required when execution.adapter or execution.roles.*.adapter is "paperclip"',
+    );
+  });
+
+  it("rejects role-level paperclip adapter when execution.paperclip config is missing", () => {
+    const result = validateConfig({
+      execution: {
+        adapter: "terminal-cli",
+        roles: {
+          worker: {
+            adapter: "paperclip",
+          },
+        },
+      },
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      'execution.paperclip is required when execution.adapter or execution.roles.*.adapter is "paperclip"',
+    );
   });
 
   it("accepts optional timing fields when they are positive integers", () => {
@@ -1056,5 +1094,28 @@ describe("validateConfig — execution.paperclip", () => {
 
     expect(result.valid).toBe(true);
     expect(result.errors).toHaveLength(0);
+  });
+
+  it("rejects invalid environment variable names in paperclip config", () => {
+    const result = validateConfig({
+      execution: {
+        adapter: "paperclip",
+        paperclip: {
+          baseUrl: "http://127.0.0.1:3100",
+          companyId: "e4e9384a-d4a5-46f2-a444-92f5aa6ebdc6",
+          assigneeAgentId: "39f35fc9-5434-4226-83e3-a435809aac81",
+          tokenEnv: "my token",
+          runIdEnv: "123RUN",
+        },
+      },
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      "execution.paperclip.tokenEnv must be a valid environment variable name",
+    );
+    expect(result.errors).toContain(
+      "execution.paperclip.runIdEnv must be a valid environment variable name",
+    );
   });
 });

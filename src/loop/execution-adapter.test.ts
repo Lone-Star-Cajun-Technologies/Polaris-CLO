@@ -174,7 +174,6 @@ describe("selectExecutionAdapter — paperclip", () => {
   it("selects paperclip when explicitly configured", () => {
     const selected = selectExecutionAdapter({
       explicitAdapter: "paperclip",
-      paperclipConfigured: true,
     });
 
     expect(selected.mode).toBe("paperclip");

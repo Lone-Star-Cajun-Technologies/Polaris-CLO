@@ -148,7 +148,8 @@ export interface WorkerRouterPolicyConfig {
 
 export interface ExecutionConfig {
   /**
-   * Adapter to use for external dispatch. Supported: "terminal-cli", "paperclip"
+   * Adapter to use for external dispatch.
+   * Supported: "agent-subtask", "terminal-cli", "ci", "ssh", "remote-worker", "cross-agent", "paperclip"
    */
   adapter: string;
 
