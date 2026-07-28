@@ -1,20 +1,50 @@
-import type { ExecutionConfig } from "../../config/schema.js";
-import type { BootstrapPacket, DispatchOptions, DispatchResult, ExecutionAdapter } from "./types.js";
+import { mkdtempSync, unlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { sep } from "node:path";
+import type {
+  BootstrapPacket,
+  DispatchOptions,
+  DispatchResult,
+  ExecutionAdapter,
+} from "./types.js";
+import type { ExecutionConfig, PaperclipExecutionConfig } from "../../config/schema.js";
 
-/**
- * Paperclip execution adapter. Dispatches a Polaris child task to the
- * Paperclip control plane by injecting a structured coords block into the
- * issue description so the assigned worker always knows where to work.
- *
- * Coords (repoUrl / workingDirectory / targetPaths) come from two sources,
- * merged with packet taking precedence over config:
- *   1. packet.repo_coordinates (set by the foreman at packet-build time)
- *   2. config.paperclip.repoUrl / workingDirectory / targetPaths
- *
- * Enforced at adapter level — dispatch() without resolvable coords fails
- * with pre_dispatch_failure: true. HTTP transport pending LSC-22.
- * Do not add a second paperclip.ts; extend this one.
- */
+export interface PaperclipRuntimeConfig extends PaperclipExecutionConfig {
+  resolvedToken?: string;
+}
+
+export interface CreateIssuePayload {
+  title: string;
+  description: string;
+  assigneeAgentId: string;
+  status: "todo" | "in_progress" | "in_review" | "done" | "blocked" | "cancelled";
+  workMode: "standard" | "impl" | "validation" | "analysis";
+  priority?: string;
+  idempotencyKey?: string;
+  labelIds?: never;
+  parentId?: never;
+}
+
+export interface CreateIssueResult {
+  id: string;
+  companyId: string;
+  title: string;
+  status: string;
+  workMode: string;
+  priority?: string;
+  assigneeAgentId: string;
+  idempotencyKey?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaperclipStateRef {
+  runId: string;
+  issueId: string;
+  companyId: string;
+  baseUrl: string;
+  updatedAt: string;
+}
 
 export interface RepoCoordinates {
   repoUrl: string;
@@ -61,49 +91,619 @@ export function resolveCoords(
   return { repoUrl, workingDirectory, targetPaths };
 }
 
+const DEFAULT_POLL_INTERVAL_MS = 2_000;
+const DEFAULT_TIMEOUT_MS = 20 * 60 * 1000;
+const REDACTED = "<redacted>";
+
+const TERMINAL_HTTP_CODES = new Set([
+  400, 401, 403, 404, 405, 408, 410, 412, 413, 414, 415, 422, 428, 431,
+]);
+
+function classifyRetry(response: Response | null, error: unknown): string | null {
+  if (error instanceof Error) {
+    const message = error.message.toLowerCase();
+    if (
+      message.includes("econnreset") ||
+      message.includes("enotfound") ||
+      message.includes("eai_again") ||
+      message.includes("network") ||
+      message.includes("fetch failed") ||
+      message.includes("socket hang up") ||
+      message.includes("timeout") ||
+      message.includes("ECONNREFUSED") ||
+      message.includes("ECONNRESET") ||
+      message.includes("ETIMEDOUT") ||
+      message.includes("ENOTFOUND")
+    ) {
+      return "network";
+    }
+  }
+  if (!response) return null;
+  if (response.status === 429) return "429";
+  if (response.status >= 500) return "5xx";
+  return null;
+}
+
+function isTerminalStatus(status: number | undefined): boolean {
+  if (typeof status !== "number") return true;
+  return TERMINAL_HTTP_CODES.has(status);
+}
+
+export function resolvePaperclipRuntimeConfig(
+  config: PaperclipExecutionConfig,
+): PaperclipRuntimeConfig {
+  const token = process.env[config.tokenEnv] ?? undefined;
+  if (!token || token.trim() === "") {
+    throw new Error(
+      `Missing Paperclip bearer token in environment variable ${config.tokenEnv}`,
+    );
+  }
+  return {
+    ...config,
+    pollIntervalMs: config.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS,
+    timeoutMs: config.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+    resolvedToken: token.trim(),
+  };
+}
+
+export function normalizePaperclipBaseUrl(raw: string): string {
+  let value = raw.trim();
+  if (!/^https?:\/\//i.test(value)) {
+    value = `http://${value}`;
+  }
+  return value.replace(/\/+$/, "");
+}
+
+function workerRoleFromPacket(packet: BootstrapPacket): string {
+  const fromContext = (packet.context ?? {}) as { worker_role?: unknown; issue_context?: unknown };
+  if (typeof fromContext.worker_role === "string" && fromContext.worker_role.trim() !== "") {
+    return fromContext.worker_role.trim();
+  }
+  const v2 = packet as BootstrapPacket & {
+    worker_role?: unknown;
+    instructions?: { primary_goal?: string };
+  };
+  if (typeof v2.worker_role === "string" && v2.worker_role.trim() !== "") {
+    return v2.worker_role.trim();
+  }
+  return "worker";
+}
+
+function safeStr(raw: unknown, fallback: string): string {
+  if (typeof raw === "string" && raw.trim().length > 0) return raw.trim();
+  return fallback;
+}
+
+export function mapBootstrapPacketToPaperclipIssue(
+  packet: BootstrapPacket,
+  config: PaperclipRuntimeConfig,
+  dispatchId: string,
+): CreateIssuePayload {
+  const executionBlock = (packet.context?.execution as
+    | { paperclip?: { assigneeAgentId?: string; priority?: unknown; runId?: string } }
+    | undefined)?.paperclip;
+  const assigneeAgentId = executionBlock?.assigneeAgentId ?? config.assigneeAgentId;
+  const rawPriority = executionBlock?.priority ?? "medium";
+  const priorityText = typeof rawPriority === "string" ? rawPriority : String(rawPriority);
+  const priority = safeStr(priorityText, "medium");
+
+  const lines: string[] = [];
+  lines.push(`Run ID: \`${packet.run_id}\``);
+  lines.push(`Cluster ID: \`${packet.cluster_id}\``);
+  lines.push(`Child/Active child: \`${packet.active_child}\``);
+  lines.push(`Dispatch ID: \`${dispatchId}\``);
+  lines.push(``);
+  lines.push(`Worker role: \`${workerRoleFromPacket(packet)}\``);
+  lines.push(``);
+
+  const instructionsPrimaryGoal = safeStr(
+    ((packet as BootstrapPacket & { instructions?: { primary_goal?: string } }).instructions as
+      | { primary_goal?: string }
+      | undefined)?.primary_goal,
+    "",
+  );
+  const descriptionFallback = instructionsPrimaryGoal || packet.active_child;
+  lines.push(`Primary goal`);
+  lines.push(descriptionFallback);
+  lines.push(``);
+
+  const steps =
+    Array.isArray(
+      ((packet as BootstrapPacket & { instructions?: { steps?: unknown[] } }).instructions as
+        | { steps?: unknown[] }
+        | undefined)?.steps,
+    )
+      ? ((packet as BootstrapPacket & { instructions?: { steps?: unknown[] } }).instructions as {
+          steps?: unknown[];
+        }).steps!
+      : [];
+  lines.push(`Ordered steps`);
+  if (steps.length === 0) {
+    lines.push("- No explicit steps provided.");
+  } else {
+    for (const step of steps) {
+      lines.push(`- ${typeof step === "string" ? step : JSON.stringify(step)}`);
+    }
+  }
+
+  lines.push(``);
+  lines.push(`Allowed scope`);
+  const allowedScope =
+    Array.isArray(
+      ((packet as BootstrapPacket & { instructions?: { allowed_scope?: string[] } }).instructions as
+        | { allowed_scope?: string[] }
+        | undefined)?.allowed_scope,
+    )
+      ? ((packet as BootstrapPacket & { instructions?: { allowed_scope?: string[] } }).instructions as {
+          allowed_scope?: string[];
+        }).allowed_scope!
+      : [];
+  if (allowedScope.length === 0) {
+    lines.push("- No explicit allowed_scope provided.");
+  } else {
+    for (const item of allowedScope) {
+      lines.push(`- \`${item}\``);
+    }
+  }
+  lines.push(``);
+
+  lines.push(`Validation commands`);
+  const validationCommands =
+    Array.isArray(
+      ((packet as BootstrapPacket & { instructions?: { validation_commands?: string[] } }).instructions as
+        | { validation_commands?: string[] }
+        | undefined)?.validation_commands,
+    )
+      ? ((packet as BootstrapPacket & { instructions?: { validation_commands?: string[] } }).instructions as {
+          validation_commands?: string[];
+        }).validation_commands!
+      : [];
+  if (validationCommands.length === 0) {
+    lines.push("- None provided.");
+  } else {
+    for (const command of validationCommands) {
+      lines.push(`- \`${command}\``);
+    }
+  }
+  lines.push(``);
+
+  lines.push(`Sealed result`);
+  lines.push(`- Path: \`${packet.state_file}\``);
+  lines.push(`- Required fields: \`run_id\`, \`status\`, \`validation\`, \`next_recommended_action\``);
+  lines.push(``);
+
+  const description = lines.join("\n");
+  const packetJsonDump = JSON.stringify(
+    {
+      schema_version: packet.schema_version,
+      run_id: packet.run_id,
+      cluster_id: packet.cluster_id,
+      active_child: packet.active_child,
+      dispatch_id: packet.dispatch_id ?? null,
+      worker_id: packet.worker_id ?? null,
+      state_file: packet.state_file,
+      telemetry_file: packet.telemetry_file,
+      worker_role: workerRoleFromPacket(packet),
+      instructions: ((packet as BootstrapPacket & { instructions?: Record<string, unknown> }).instructions ??
+        undefined),
+      context: packet.context,
+    },
+    null,
+    2,
+  );
+  const body = `${description}
+\`\`\`json
+POLARIS_PACKET_JSON
+${packetJsonDump}
+\`\`\``;
+  return {
+    title: `[${workerRoleFromPacket(packet)}] ${descriptionFallback}`,
+    description: body,
+    assigneeAgentId,
+    status: "todo",
+    workMode: "standard",
+    priority,
+    idempotencyKey: `polaris:${packet.run_id}:${dispatchId}`,
+  };
+}
+
+async function redactResolve(
+  config: PaperclipRuntimeConfig,
+  input: {
+    method: "GET" | "POST" | "PATCH";
+    path: string;
+    body?: unknown;
+    runIdHeader?: string;
+    idempotencyKey?: string;
+  },
+): Promise<{
+    response: Response | null;
+    body: Record<string, unknown> | null;
+    status?: number;
+    error?: string;
+  }> {
+  const baseUrl = normalizePaperclipBaseUrl(config.baseUrl);
+  const url = `${baseUrl}${input.path.startsWith("/") ? input.path : `/${input.path}`}`;
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${config.resolvedToken}`,
+    "Content-Type": "application/json",
+  };
+  if (input.runIdHeader) headers["X-Paperclip-Run-Id"] = input.runIdHeader;
+  if (input.idempotencyKey) headers["Idempotency-Key"] = input.idempotencyKey;
+
+  const fetchOptions: RequestInit = {
+    method: input.method,
+    headers,
+  };
+  if (input.body !== undefined && input.method !== "GET") {
+    fetchOptions.body = JSON.stringify(input.body);
+  }
+
+  let response: Response | null = null;
+  try {
+    response = await fetch(url, fetchOptions);
+  } catch (error) {
+    const message =
+      typeof error === "object" && error !== null && "message" in error
+        ? String((error as { message: string }).message)
+        : String(error);
+    return { response: null, body: null, error: message };
+  }
+
+  let body: Record<string, unknown> | null = null;
+  const rawText = await response.text();
+  if (rawText.trim().length > 0) {
+    try {
+      body = JSON.parse(rawText) as Record<string, unknown>;
+    } catch {
+      body = { _raw: rawText };
+    }
+  }
+
+  return { response, body, status: response.status };
+}
+
+function readErrorDetail(body: Record<string, unknown> | null): string {
+  if (!body) return "no-body";
+  if (typeof body.error === "string" && body.error.trim().length > 0) return body.error.trim();
+  if (typeof body.message === "string" && body.message.trim().length > 0)
+    return body.message.trim();
+  try {
+    return JSON.stringify(body);
+  } catch {
+    return "malformed-body";
+  }
+}
+
+function toCreateResult(
+  body: Record<string, unknown> | null,
+  fallback: CreateIssuePayload,
+  issueId: string,
+): CreateIssueResult {
+  const safeRecord = (body ?? {}) as Record<string, unknown>;
+  const field = (key: string) => safeRecord[key];
+  return {
+    id: issueId,
+    companyId: safeStr(field("companyId"), ""),
+    title: safeStr(field("title"), fallback.title),
+    status: safeStr(field("status"), fallback.status),
+    workMode: safeStr(field("workMode"), fallback.workMode),
+    priority:
+      typeof field("priority") === "string" ? safeStr(field("priority"), fallback.priority ?? "medium") : fallback.priority,
+    assigneeAgentId: safeStr(field("assigneeAgentId"), fallback.assigneeAgentId),
+    idempotencyKey: typeof field("idempotencyKey") === "string" ? safeStr(field("idempotencyKey"), "") : fallback.idempotencyKey,
+    createdAt: safeStr(field("createdAt"), new Date().toISOString()),
+    updatedAt: safeStr(field("updatedAt"), new Date().toISOString()),
+  };
+}
+
+export async function paperclipRequest(
+  config: PaperclipRuntimeConfig,
+  input: {
+    method: "GET" | "POST" | "PATCH";
+    path: string;
+    body?: unknown;
+    runIdHeader?: string;
+    idempotencyKey?: string;
+  },
+): Promise<{
+    response: Response | null;
+    body: Record<string, unknown> | null;
+    status?: number;
+    error?: string;
+    retry: string | null;
+  }> {
+  const result = await redactResolve(config, input);
+  const retry = classifyRetry(result.response, result.error);
+  return { ...result, retry };
+}
+
+export async function createPaperclipIssue(
+  config: PaperclipRuntimeConfig,
+  payload: CreateIssuePayload,
+  runIdHeader: string,
+  companyId: string,
+): Promise<CreateIssueResult> {
+  const key = payload.idempotencyKey ?? crypto.randomUUID();
+  const path = `/api/companies/${companyId}/issues`;
+  let lastRetry: string | null = null;
+  let lastStatus: number | undefined;
+  let lastBody: Record<string, unknown> | null = null;
+
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const { response, body, error, status, retry } = await paperclipRequest(config, {
+      method: "POST",
+      path,
+      body: { ...payload, idempotencyKey: key },
+      runIdHeader,
+      idempotencyKey: key,
+    });
+
+    lastRetry = retry;
+    lastStatus = status;
+    lastBody = body;
+
+    if (error) {
+      if (retry && attempt < 3) {
+        await new Promise((resolve) => setTimeout(resolve, config.pollIntervalMs));
+        continue;
+      }
+      throw new Error(
+        `Paperclip create issue failed: HTTP=${status ?? "unknown"} path=${path} issue_id=unknown retry=${retry ?? "none"} detail=${redact(String(error))}`,
+      );
+    }
+
+    if (typeof status === "number" && isTerminalStatus(status)) {
+      throw new Error(
+        `Paperclip create issue failed: HTTP=${status} path=${path} issue_id=unknown retry=none detail=${redact(readErrorDetail(body))}`,
+      );
+    }
+
+    const plainBody = body ?? {};
+    const idCandidate =
+      (plainBody as any).id ??
+      (plainBody as any).data?.id ??
+      (plainBody as any).issue?.id ??
+      (plainBody as any)[':id'] ??
+      (plainBody as any)._id;
+    const issueId = typeof idCandidate === "string" ? idCandidate.trim() : null;
+    if (!issueId) {
+      const retryCandidate = classifyRetry(response, null);
+      if (retryCandidate && attempt < 3) {
+        await new Promise((resolve) => setTimeout(resolve, config.pollIntervalMs));
+        continue;
+      }
+      throw new Error(`Paperclip create issue returned empty issue id. HTTP=${status}`);
+    }
+
+    return toCreateResult(plainBody as Record<string, unknown>, payload, issueId);
+  }
+
+  throw new Error(
+    `Paperclip create issue failed: HTTP=${lastStatus ?? "unknown"} path=${path} issue_id=unknown retry=${lastRetry ?? "exhausted"} detail=${redact(readErrorDetail(lastBody))}`,
+  );
+}
+
+export async function getPaperclipIssue(
+  config: PaperclipRuntimeConfig,
+  companyId: string,
+  issueId: string,
+  runIdHeader = "",
+): Promise<{ issue: Record<string, unknown>; status: { http: number; retry: string | null } }> {
+  let lastRetry: string | null = null;
+
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const { response, body, error, status, retry } = await paperclipRequest(
+      config,
+      {
+        method: "GET",
+        path: `/api/companies/${companyId}/issues/${issueId}`,
+        runIdHeader: runIdHeader || undefined,
+      },
+    );
+    lastRetry = retry ?? "terminal";
+
+    if (error) {
+      if (lastRetry && attempt < 2) {
+        await new Promise((resolve) => setTimeout(resolve, config.pollIntervalMs));
+        continue;
+      }
+      throw new Error(
+        `Paperclip get issue failed: HTTP=${status ?? "unknown"} path=/api/companies/${companyId}/issues/${issueId} issue_id=${issueId} retry=${lastRetry} detail=${redact(String(error))}`,
+      );
+    }
+
+    if (typeof status === "number" && isTerminalStatus(status)) {
+      throw new Error(
+        `Paperclip get issue failed: HTTP=${status} path=/api/companies/${companyId}/issues/${issueId} issue_id=${issueId} retry=none detail=${redact(readErrorDetail(body ?? null))}`,
+      );
+    }
+
+    return { issue: body ?? {}, status: { http: status ?? 200, retry: null } };
+  }
+
+  throw new Error(
+    `Paperclip get issue failed: HTTP=unknown path=/api/companies/${companyId}/issues/${issueId} issue_id=${issueId} retry=${lastRetry} detail=no-detail`,
+  );
+}
+
+export function mergePaperclipRefIntoState(
+  state: Record<string, unknown>,
+  ref: PaperclipStateRef,
+  result: { status: string; message?: string },
+): Record<string, unknown> {
+  return {
+    ...state,
+    paperclip: { ...(state.paperclip as Record<string, unknown> | undefined), ...ref },
+    result: { ...result },
+  };
+}
+
+export async function waitForPaperclipExecution(
+  config: PaperclipRuntimeConfig,
+  companyId: string,
+  issueId: string,
+  runIdHeader: string,
+  runId: string,
+): Promise<PaperclipStateRef> {
+  const startedAt = Date.now();
+  const pollMs = config.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS;
+  const timeoutMs = config.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  let ref = refFrom(issueId, companyId, runId, config.baseUrl);
+
+  while (Date.now() - startedAt < timeoutMs) {
+    const { issue } = await getPaperclipIssue(config, companyId, issueId, runIdHeader);
+    const statusValue = typeof issue.status === "string" ? issue.status.trim().toLowerCase() : null;
+    if (
+      statusValue === "done" ||
+      statusValue === "cancelled" ||
+      statusValue === "failed" ||
+      statusValue === "blocked"
+    ) {
+      ref = { ...ref, updatedAt: new Date().toISOString() };
+      return ref;
+    }
+    await new Promise((resolve) => setTimeout(resolve, pollMs));
+  }
+
+  return ref;
+}
+
+function refFrom(issueId: string, companyId: string, runId: string, baseUrl: string) {
+  return {
+    runId,
+    issueId,
+    companyId,
+    baseUrl,
+    updatedAt: new Date().toISOString(),
+  } as PaperclipStateRef;
+}
+
 export class PaperclipAdapter implements ExecutionAdapter {
   readonly name = "paperclip";
 
-  constructor(private readonly config: ExecutionConfig) {}
+  constructor(private readonly runtimeConfig: PaperclipRuntimeConfig) {}
 
-  async dispatch(packet: BootstrapPacket, _options: DispatchOptions): Promise<DispatchResult> {
-    const coords = resolveCoords(packet, this.config);
+  async dispatch(
+    packet: BootstrapPacket,
+    options: DispatchOptions,
+  ): Promise<DispatchResult> {
+    const runId = safeStr(
+      (packet as BootstrapPacket & { run_id?: string }).run_id,
+      "",
+    );
+    const primaryProvider = options.provider || "paperclip";
+    const providerAttempts: NonNullable<DispatchResult["provider_attempts"]> = [];
+    const dispatchId = crypto.randomUUID();
+    const runIdHeader =
+      ((packet.context?.execution as
+        | { paperclip?: { runId?: string } }
+        | undefined)?.paperclip?.runId ?? "");
 
-    if (!coords) {
+    if (this.runtimeConfig.resolvedToken === undefined) {
+      const message = `Paperclip precondition failed: bearer token missing in env ${this.runtimeConfig.tokenEnv}`;
+      providerAttempts.push({
+        provider: primaryProvider,
+        failure_origin: "provider-launch",
+        failure_category: "provider-unavailable",
+        pre_dispatch_failure: true,
+        fallback_eligible: false,
+        message,
+      });
       return {
-        exit_code: 1,
-        provider_used: "paperclip",
-        command_run: "",
+        exit_code: 2,
+        provider_used: primaryProvider,
+        command_run: `paperclip:${packet.active_child || "worker"}`,
+        summary: JSON.stringify({ child_id: packet.active_child, status: "error", message }),
+        stderr: message,
         pre_dispatch_failure: true,
         failure_origin: "provider-launch",
         failure_category: "provider-unavailable",
         fallback_eligible: false,
-        summary:
-          "Paperclip adapter requires repo coordinates (repoUrl + workingDirectory). " +
-          "Set packet.repo_coordinates or config.paperclip.repoUrl / workingDirectory.",
+        router_evidence: options.routerDecision,
+        provider_attempts: JSON.parse(JSON.stringify(providerAttempts)) as NonNullable<DispatchResult["provider_attempts"]>,
       };
     }
 
-    const coordsBlock = buildCoordsBlock(coords);
-    // Build the issue description that would be sent to the Paperclip API.
-    const description =
-      `Active child: ${packet.active_child}\n` +
-      `Run ID: ${packet.run_id}\n\n` +
-      coordsBlock;
+    try {
+      const payload = mapBootstrapPacketToPaperclipIssue(
+        packet,
+        this.runtimeConfig,
+        dispatchId,
+      );
+      const created = await createPaperclipIssue(
+        this.runtimeConfig,
+        payload,
+        runIdHeader,
+        this.runtimeConfig.companyId,
+      );
 
-    // HTTP transport (create/poll/reconcile) is pending LSC-22.
-    // Return pre_dispatch_failure so foreman can roll back cleanly.
-    // Expose the built description via stdout so dryRun callers can inspect it.
-    return {
-      exit_code: 1,
-      provider_used: "paperclip",
-      command_run: "",
-      pre_dispatch_failure: true,
-      failure_origin: "provider-launch",
-      failure_category: "provider-unavailable",
-      fallback_eligible: false,
-      summary: "Paperclip adapter HTTP transport not yet implemented (pending LSC-22).",
-      stdout: description,
-    };
+      const ref = await waitForPaperclipExecution(
+        this.runtimeConfig,
+        this.runtimeConfig.companyId,
+        created.id,
+        runIdHeader,
+        runId,
+      );
+
+      return {
+        exit_code: 0,
+        provider_used: primaryProvider,
+        command_run: `paperclip:${packet.active_child || "worker"}`,
+        summary: JSON.stringify({
+          child_id: packet.active_child,
+          status: "done",
+          provider_used: primaryProvider,
+          issue_id: created.id,
+          company_id: this.runtimeConfig.companyId,
+          dispatch_id: dispatchId,
+          run_id: runId,
+          message: "Paperclip execution completed.",
+        }),
+        pre_dispatch_failure: false,
+        router_evidence: options.routerDecision,
+        provider_attempts: providerAttempts,
+      };
+    } catch (error) {
+      const message =
+        typeof error === "object" &&
+        error !== null &&
+        "message" in (error as Record<string, unknown>)
+          ? String((error as Record<string, unknown>).message)
+          : JSON.stringify(error);
+      providerAttempts.push({
+        provider: primaryProvider,
+        failure_origin: "worker-execution",
+        failure_category: "worker-failure",
+        pre_dispatch_failure: true,
+        fallback_eligible: false,
+        message,
+      });
+      return {
+        exit_code: 2,
+        provider_used: primaryProvider,
+        command_run: `paperclip:${packet.active_child || "worker"}`,
+        summary: JSON.stringify({ child_id: packet.active_child, status: "error", message }),
+        stderr: message,
+        pre_dispatch_failure: true,
+        failure_origin: "worker-execution",
+        failure_category: "worker-failure",
+        fallback_eligible: false,
+        router_evidence: options.routerDecision,
+        provider_attempts: JSON.parse(JSON.stringify(providerAttempts)) as NonNullable<DispatchResult["provider_attempts"]>,
+      };
+    }
   }
+}
+
+function redact(text: string): string {
+  const candidates = [
+    /bearer\s+[^\s",;}\]]+/gi,
+    /"(?:authorization|token|api[_-]?key|secret|password)"?\s*:\s*"(?:[^"\\{,;}\]]*)"/gi,
+    /'(?:authorization|token|api[_-]?key|secret|password)'?\s*:\s*'(?:[^'\\,;}\]]*)'/gi,
+    /"(?:authorization|token|api[_-]?key|secret|password)"?\s*:\s*'(?:[^'\\,;}\]]*)'/gi,
+  ];
+  let out = text;
+  for (const pattern of candidates) out = out.replace(pattern, REDACTED);
+  return out;
 }

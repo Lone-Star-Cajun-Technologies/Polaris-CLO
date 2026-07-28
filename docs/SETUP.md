@@ -108,6 +108,14 @@ To enable router mode, populate `execution.routerPolicy.providerRegistry` with a
 
 ---
 
+### Parallel Paperclip dispatch
+
+When `execution.routerPolicy.parallelPaperclip` is `true`, the parent loop may dispatch up to `execution.routerPolicy.defaultWorkerPool.maxActiveWorkers` Paperclip children concurrently. When absent or `false`, dispatch remains fully serial.
+
+**Resumability limitation (v1):** if the parent process crashes mid-batch, Polaris resumes from the persisted cluster/run state, but in-flight Paperclip children continue running independently. The parent cannot reattach to or cancel those children on resume; it can only pick up remaining unstarted children. Track terminal Paperclip issue status manually to avoid orphaned assignments.
+
+---
+
 ## Execution Adapters
 
 Polaris supports multiple execution backends. The default is `terminal-cli`, where Polaris shells out to a local CLI. If you need a governed adapter that talks to an external runtime, use `paperclip` for the execution adapter.

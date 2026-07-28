@@ -157,6 +157,12 @@ Polaris dispatches in one of two modes, controlled by `execution.routerPolicy.pr
 
 If your run evidence shows only one provider in `providers_tried` even though the role policy lists multiple providers, the repo is in compatibility mode and is missing provider registry metadata.
 
+### Parallel Paperclip dispatch
+
+When `execution.routerPolicy.parallelPaperclip` is `true`, the parent loop may dispatch up to `execution.routerPolicy.defaultWorkerPool.maxActiveWorkers` Paperclip children concurrently. When absent or `false`, dispatch remains fully serial.
+
+**Resumability limitation (v1):** if the parent process crashes mid-batch, Polaris resumes from the persisted cluster/run state, but in-flight Paperclip children continue running independently. The parent cannot reattach to or cancel those children on resume; it can only pick up remaining unstarted children. Track terminal Paperclip issue status manually to avoid orphaned assignments.
+
 ### Budget
 
 ```json

@@ -668,6 +668,124 @@ describe("runParentLoop", () => {
     expect(result.haltingChild).toBe("POL-100");
   });
 
+  // ── LSC-41: bounded parallel Paperclip dispatch ─────────────────────────────
+  // v1 limitation: true concurrent `adapter.dispatch` is not implemented here.
+  // The parent awaits each dispatch before advancing to the next child, even when
+  // `parallelPaperclip=true` and `maxActiveWorkers>1`.
+  // These tests pin current serial behavior and flag the gap for v2.
+  it("LSC-41: parallelPaperclip absent/false preserves serial dispatch order", async () => {
+    const calls: MockCall[] = [];
+    const mockAdapter = makeMockAdapter([
+      SUCCESS_RESULT,
+      SUCCESS_RESULT,
+      SUCCESS_RESULT,
+    ], calls);
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["LSC-101", "LSC-102", "LSC-103"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(result.haltReason).toBe("cluster-complete");
+    expect(result.childrenDispatched).toBe(3);
+    expect(calls).toHaveLength(3);
+    expect(calls.map((c) => c.packet.active_child)).toEqual([
+      "LSC-101",
+      "LSC-102",
+      "LSC-103",
+    ]);
+  });
+
+  it("LSC-41: parallelPaperclip=true does not enable concurrent adapter.dispatch in v1 (documented limitation)", async () => {
+    const calls: MockCall[] = [];
+    const mockAdapter = makeMockAdapter([
+      SUCCESS_RESULT,
+      SUCCESS_RESULT,
+      SUCCESS_RESULT,
+    ], calls);
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    const { loadConfig } = await import("../config/loader.js");
+    vi.mocked(loadConfig).mockReturnValue({
+      orchestration: {
+        mode: "auto",
+        notification_format: "terse",
+        auto_finalize: false,
+      },
+      execution: {
+        adapter: "mock",
+        providers: { mock: { command: "mock-worker" } },
+        rotation: ["mock"],
+        routerPolicy: {
+          parallelPaperclip: true,
+          defaultWorkerPool: { maxActiveWorkers: 2 },
+        },
+      },
+    } as unknown as Required<import("../config/schema.js").PolarisConfig>);
+
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["LSC-201", "LSC-202", "LSC-203"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    // v1 behavior: still serial because the parent awaits adapter.dispatch
+    // before selecting/claiming the next slot.
+    expect(result.haltReason).toBe("cluster-complete");
+    expect(result.childrenDispatched).toBe(3);
+    expect(calls).toHaveLength(3);
+    expect(calls.map((c) => c.packet.active_child)).toEqual([
+      "LSC-201",
+      "LSC-202",
+      "LSC-203",
+    ]);
+  });
+
+  it("LSC-41: worker error halts immediately; siblings are not dispatched in v1 (documented limitation)", async () => {
+    const calls: MockCall[] = [];
+    const mockAdapter = makeMockAdapter([ERROR_RESULT, SUCCESS_RESULT, SUCCESS_RESULT], calls);
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    const { loadConfig } = await import("../config/loader.js");
+    vi.mocked(loadConfig).mockReturnValue({
+      orchestration: {
+        mode: "auto",
+        notification_format: "terse",
+        auto_finalize: false,
+      },
+      execution: {
+        adapter: "mock",
+        providers: { mock: { command: "mock-worker" } },
+        rotation: ["mock"],
+        routerPolicy: {
+          parallelPaperclip: true,
+          defaultWorkerPool: { maxActiveWorkers: 2 },
+        },
+      },
+    } as unknown as Required<import("../config/schema.js").PolarisConfig>);
+
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["LSC-301", "LSC-302", "LSC-303"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    // v1 behavior: first worker error halts immediately; siblings are not retried.
+    expect(result.haltReason).toBe("worker-error");
+    expect(result.haltingChild).toBe("LSC-301");
+    expect(result.childrenDispatched).toBe(0);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].packet.active_child).toBe("LSC-301");
+  });
+
   it("halts cleanly with cluster-complete when all children are done", async () => {
     const mockAdapter = makeMockAdapter([SUCCESS_RESULT]);
     vi.mocked(createAdapter).mockReturnValue(mockAdapter);

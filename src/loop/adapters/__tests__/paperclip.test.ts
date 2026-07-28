@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildCoordsBlock, resolveCoords, PaperclipAdapter } from "../paperclip.js";
+import { buildCoordsBlock, resolveCoords } from "../paperclip.js";
 import type { BootstrapPacket } from "../types.js";
 import type { ExecutionConfig } from "../../../config/schema.js";
 
@@ -94,41 +94,5 @@ describe("resolveCoords", () => {
   it("returns null when paperclip config is absent and packet has no coords", () => {
     const config: ExecutionConfig = { adapter: "paperclip", providers: {} };
     expect(resolveCoords(BASE_PACKET, config)).toBeNull();
-  });
-});
-
-describe("PaperclipAdapter.dispatch", () => {
-  it("fails with missing-coords summary when coords cannot be resolved", async () => {
-    const adapter = new PaperclipAdapter({ adapter: "paperclip", providers: {} });
-    const result = await adapter.dispatch(BASE_PACKET, { provider: "paperclip" });
-    expect(result.pre_dispatch_failure).toBe(true);
-    expect(result.summary).toContain("repo coordinates");
-  });
-
-  it("builds description with POLARIS_COORDS block when coords are present", async () => {
-    const adapter = new PaperclipAdapter(BASE_CONFIG);
-    const result = await adapter.dispatch(BASE_PACKET, { provider: "paperclip" });
-    // Still fails closed pending LSC-22 HTTP transport
-    expect(result.pre_dispatch_failure).toBe(true);
-    expect(result.stdout).toContain("<!-- POLARIS_COORDS");
-    expect(result.stdout).toContain('"repoUrl"');
-    expect(result.stdout).toContain('"workingDirectory"');
-    expect(result.stdout).toContain("Active child: LSC-33");
-    expect(result.stdout).toContain("Run ID: run-test-lsc32");
-  });
-
-  it("embeds packet.repo_coordinates in description when supplied", async () => {
-    const adapter = new PaperclipAdapter(BASE_CONFIG);
-    const packet: BootstrapPacket = {
-      ...BASE_PACKET,
-      repo_coordinates: {
-        repoUrl: "https://github.com/example/override",
-        workingDirectory: "/override/dir",
-        targetPaths: ["src/special"],
-      },
-    };
-    const result = await adapter.dispatch(packet, { provider: "paperclip" });
-    expect(result.stdout).toContain('"repoUrl": "https://github.com/example/override"');
-    expect(result.stdout).toContain('"workingDirectory": "/override/dir"');
   });
 });
