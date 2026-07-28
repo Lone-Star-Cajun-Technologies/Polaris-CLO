@@ -54,7 +54,7 @@ function setupMockServer(
 
       const issueMatch = req.url?.match(/^\/api\/companies\/[^/]+\/issues\/([^/]+)$/);
       if (issueMatch && req.method === "GET") {
-        const issue = store.get(issueMatch[1]);
+        const issue = [...store.values()].find((v) => v.id === issueMatch[1]);
         if (!issue) {
           res.writeHead(404);
           res.end(JSON.stringify({ error: "Not found" }));
