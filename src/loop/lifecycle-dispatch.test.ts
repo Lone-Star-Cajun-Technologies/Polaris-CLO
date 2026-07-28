@@ -9,6 +9,7 @@ import {
 } from "./lifecycle-dispatch.js";
 import type { BootstrapPacket, DispatchOptions, DispatchResult } from "./adapters/types.js";
 import type { PolarisConfig } from "../config/schema.js";
+import { createAdapter } from "./adapters/registry.js";
 
 function makeDir(): string {
   const dir = join(tmpdir(), `polaris-lifecycle-dispatch-${Date.now()}-${Math.random().toString(36).slice(2)}`);
@@ -155,9 +156,48 @@ describe("resolveLifecycleProvider", () => {
       model: "gpt-startup",
     });
   });
+
+  it("resolves execution.adapter = 'paperclip' without special-casing", () => {
+    const config = baseConfig();
+    config.execution = { ...config.execution, adapter: "paperclip" };
+    const resolved = resolveLifecycleProvider(config, "startup");
+    expect(resolved.adapter).toBe("paperclip");
+  });
 });
 
 describe("dispatchLifecyclePhase", () => {
+  it("accepts the registry-constructed PaperclipAdapter as options.adapter (fails closed on the stub)", async () => {
+    const dir = makeDir();
+    try {
+      const config = baseConfig();
+      config.execution = { ...config.execution, adapter: "paperclip" };
+      // Prove the registered adapter (not a special-cased branch) satisfies
+      // LifecycleDispatchAdapter: createAdapter() returns a structurally
+      // compatible ExecutionAdapter for any startup/finalize call site.
+      const adapter: LifecycleDispatchAdapter = createAdapter("paperclip", config.execution);
+
+      const result = await dispatchLifecyclePhase({
+        phase: "startup",
+        runId: "run-1",
+        clusterId: "POL-188",
+        branch: "polaris/POL-188",
+        stateFile: join(dir, "current-state.json"),
+        telemetryFile: join(dir, "telemetry.jsonl"),
+        config,
+        adapter,
+      });
+
+      // The stub PaperclipAdapter (pending LSC-22) fails closed rather than
+      // silently reporting success.
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error).toBe("adapter_error");
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it("executes startup as a sealed dispatch phase and records role telemetry", async () => {
     const dir = makeDir();
     try {
