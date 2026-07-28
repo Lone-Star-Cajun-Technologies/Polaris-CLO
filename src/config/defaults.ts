@@ -45,6 +45,7 @@ export const DEFAULT_CONFIG: Omit<Required<PolarisConfig>, "canon" | "providers"
       },
       providerRegistry: {},
       allowCrossProviderFallback: false,
+      parallelPaperclip: false,
     },
   },
   finalize: {

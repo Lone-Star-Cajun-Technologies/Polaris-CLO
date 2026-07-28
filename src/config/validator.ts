@@ -475,6 +475,21 @@ export function validateConfig(config: unknown): ValidationResult {
               }
             }
           }
+          if (
+            "parallelPaperclip" in routerPolicy &&
+            routerPolicy.parallelPaperclip !== undefined &&
+            !isBoolean(routerPolicy.parallelPaperclip)
+          ) {
+            result.valid = false;
+            result.errors.push("execution.routerPolicy.parallelPaperclip must be a boolean");
+          } else if (
+            routerPolicy.parallelPaperclip === true &&
+            config.execution.adapter !== "paperclip"
+          ) {
+            result.warnings.push(
+              "execution.routerPolicy.parallelPaperclip is true but execution.adapter is not \"paperclip\"; the flag is ignored for non-paperclip adapters",
+            );
+          }
           if ("providerRegistry" in routerPolicy && routerPolicy.providerRegistry !== undefined) {
             if (!isPlainObject(routerPolicy.providerRegistry)) {
               result.valid = false;
