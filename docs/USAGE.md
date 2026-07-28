@@ -267,6 +267,37 @@ These directories are excluded from git by default (added to `.gitignore` during
 
 ---
 
+---
+
+## Execution Adapter: Paperclip
+
+When `execution.adapter` is set to `paperclip`, Polaris dispatches worker work through a Paperclip-managed agent rather than a local CLI.
+
+- This is distinct from `tracker.adapter`; tracking and execution are orthogonal in Polaris config.
+- The Paperclip adapter relies on a shared workspace between the two runtimes. If the shared filesystem is unavailable, dispatch can fail even if the Paperclip API responds.
+- Per-cluster ledger state is still local (`.polaris/runs/<run-id>/`), so `polaris status`, `polaris finalize`, and `--resume` work the same after Paperclip-backed dispatch.
+
+### Common Paperclip commands and entrypoints
+
+You can observe or drive a Paperclip-backed run using the normal Polaris commands:
+
+```bash
+polaris status
+polaris status --verbose
+polaris run POL-123 --resume
+polaris finalize
+```
+
+The diagnostic shape changes slightly: `providers_tried` reflects the Paperclip adapter path, while run telemetry remains in `.polaris/runs/`.
+
+If you need to verify config before dispatch, run:
+
+```bash
+polaris doctor
+```
+
+If you need to stop using Paperclipmid-run, switch adapters in `polaris.config.json` and rerun with `--resume` from a valid run snapshot.
+
 ## Troubleshooting
 
 **Config errors**
