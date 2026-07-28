@@ -1,0 +1,384 @@
+{
+  "schema_version": "1.0",
+  "run_id": "polaris-run-paperclip-role-routing-2026-07-28-002",
+  "cluster_id": "POL-580",
+  "skill": "polaris-run",
+  "branch": "philmeaux/pol-580-implement-paperclip-role-based-assignee-routing",
+  "session_type": "implement",
+  "active_child": "",
+  "completed_children": [
+    "POL-581",
+    "POL-582",
+    "POL-583",
+    "POL-584",
+    "POL-585"
+  ],
+  "open_children": [],
+  "step_cursor": "checkpoint",
+  "context_budget": {
+    "children_completed": 5,
+    "max_children_per_session": 1
+  },
+  "status": "cluster-complete",
+  "next_open_child": null,
+  "artifact_dir": ".taskchain_artifacts/polaris-run",
+  "dispatch_boundary": {
+    "dispatch_epoch": 5,
+    "continue_epoch": 5,
+    "last_dispatched_child": "POL-585"
+  },
+  "run_bootstrap_seal": {
+    "sealer": "polaris-loop-bootstrap",
+    "run_id": "polaris-run-paperclip-role-routing-2026-07-28-002",
+    "cluster_id": "POL-580",
+    "open_children_sha": "25465325064b3e528e8f18a974c503f001942e2021353315c89e350e8d90e39f",
+    "sealed_at": "2026-07-28T20:49:28.243Z"
+  },
+  "open_children_meta": {
+    "POL-581": {
+      "result_file": ".polaris/clusters/POL-580/results/POL-581-f1062627-be80-44c9-ace8-39fbde8ad450.json",
+      "dispatch_record": {
+        "dispatch_id": "f1062627-be80-44c9-ace8-39fbde8ad450",
+        "child_id": "POL-581",
+        "run_id": "polaris-run-paperclip-role-routing-2026-07-28-002",
+        "cluster_id": "POL-580",
+        "packet_path": ".polaris/clusters/POL-580/packets/POL-581-f1062627-be80-44c9-ace8-39fbde8ad450.json",
+        "expected_result_path": ".polaris/clusters/POL-580/results/POL-581-f1062627-be80-44c9-ace8-39fbde8ad450.json",
+        "provider": "devin",
+        "provider_selection_reason": "role-policy",
+        "providers_tried": [
+          "devin"
+        ],
+        "routing_summary": {
+          "selected_provider": "devin",
+          "selected_adapter": "terminal-cli",
+          "selection_reason": "role-policy",
+          "effective_policy_order": [
+            "devin",
+            "copilot",
+            "codex",
+            "kiro"
+          ],
+          "compatibility_mode": true,
+          "registry_present": false,
+          "fallback_eligible": true
+        },
+        "dispatched_at": "2026-07-28T20:50:00.929Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-paperclip-role-routing-2026-07-28-002:POL-581:1785271800929",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    },
+    "POL-582": {
+      "result_file": ".polaris/clusters/POL-580/results/POL-582-da175efa-7c8a-48ec-8f57-fd00879b49f8.json",
+      "dispatch_record": {
+        "dispatch_id": "da175efa-7c8a-48ec-8f57-fd00879b49f8",
+        "child_id": "POL-582",
+        "run_id": "polaris-run-paperclip-role-routing-2026-07-28-002",
+        "cluster_id": "POL-580",
+        "packet_path": ".polaris/clusters/POL-580/packets/POL-582-da175efa-7c8a-48ec-8f57-fd00879b49f8.json",
+        "expected_result_path": ".polaris/clusters/POL-580/results/POL-582-da175efa-7c8a-48ec-8f57-fd00879b49f8.json",
+        "provider": "devin",
+        "provider_selection_reason": "role-policy",
+        "providers_tried": [
+          "devin"
+        ],
+        "routing_summary": {
+          "selected_provider": "devin",
+          "selected_adapter": "terminal-cli",
+          "selection_reason": "role-policy",
+          "effective_policy_order": [
+            "devin",
+            "copilot",
+            "codex",
+            "kiro"
+          ],
+          "compatibility_mode": true,
+          "registry_present": false,
+          "fallback_eligible": true
+        },
+        "dispatched_at": "2026-07-28T20:52:43.436Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-paperclip-role-routing-2026-07-28-002:POL-582:1785271963436",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    },
+    "POL-583": {
+      "result_file": ".polaris/clusters/POL-580/results/POL-583-038756d3-f832-4eff-b1f6-a6e51c8c02ef.json",
+      "dispatch_record": {
+        "dispatch_id": "038756d3-f832-4eff-b1f6-a6e51c8c02ef",
+        "child_id": "POL-583",
+        "run_id": "polaris-run-paperclip-role-routing-2026-07-28-002",
+        "cluster_id": "POL-580",
+        "packet_path": ".polaris/clusters/POL-580/packets/POL-583-038756d3-f832-4eff-b1f6-a6e51c8c02ef.json",
+        "expected_result_path": ".polaris/clusters/POL-580/results/POL-583-038756d3-f832-4eff-b1f6-a6e51c8c02ef.json",
+        "provider": "devin",
+        "provider_selection_reason": "role-policy",
+        "providers_tried": [
+          "devin"
+        ],
+        "routing_summary": {
+          "selected_provider": "devin",
+          "selected_adapter": "terminal-cli",
+          "selection_reason": "role-policy",
+          "effective_policy_order": [
+            "devin",
+            "copilot",
+            "codex",
+            "kiro"
+          ],
+          "compatibility_mode": true,
+          "registry_present": false,
+          "fallback_eligible": true
+        },
+        "dispatched_at": "2026-07-28T20:56:30.731Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-paperclip-role-routing-2026-07-28-002:POL-583:1785272190731",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    },
+    "POL-584": {
+      "result_file": ".polaris/clusters/POL-580/results/POL-584-fcc37fc2-1db1-46a3-9a90-448aba86960f.json",
+      "dispatch_record": {
+        "dispatch_id": "fcc37fc2-1db1-46a3-9a90-448aba86960f",
+        "child_id": "POL-584",
+        "run_id": "polaris-run-paperclip-role-routing-2026-07-28-002",
+        "cluster_id": "POL-580",
+        "packet_path": ".polaris/clusters/POL-580/packets/POL-584-fcc37fc2-1db1-46a3-9a90-448aba86960f.json",
+        "expected_result_path": ".polaris/clusters/POL-580/results/POL-584-fcc37fc2-1db1-46a3-9a90-448aba86960f.json",
+        "provider": "devin",
+        "provider_selection_reason": "role-policy",
+        "providers_tried": [
+          "devin"
+        ],
+        "routing_summary": {
+          "selected_provider": "devin",
+          "selected_adapter": "terminal-cli",
+          "selection_reason": "role-policy",
+          "effective_policy_order": [
+            "devin",
+            "copilot",
+            "codex",
+            "kiro"
+          ],
+          "compatibility_mode": true,
+          "registry_present": false,
+          "fallback_eligible": true
+        },
+        "dispatched_at": "2026-07-28T21:02:58.808Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-paperclip-role-routing-2026-07-28-002:POL-584:1785272578808",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    },
+    "POL-585": {
+      "result_file": ".polaris/clusters/POL-580/results/POL-585-28d103fc-4498-42b4-814c-89d90584cb34.json",
+      "dispatch_record": {
+        "dispatch_id": "28d103fc-4498-42b4-814c-89d90584cb34",
+        "child_id": "POL-585",
+        "run_id": "polaris-run-paperclip-role-routing-2026-07-28-002",
+        "cluster_id": "POL-580",
+        "packet_path": ".polaris/clusters/POL-580/packets/POL-585-28d103fc-4498-42b4-814c-89d90584cb34.json",
+        "expected_result_path": ".polaris/clusters/POL-580/results/POL-585-28d103fc-4498-42b4-814c-89d90584cb34.json",
+        "provider": "devin",
+        "provider_selection_reason": "role-policy",
+        "providers_tried": [
+          "devin"
+        ],
+        "routing_summary": {
+          "selected_provider": "devin",
+          "selected_adapter": "terminal-cli",
+          "selection_reason": "role-policy",
+          "effective_policy_order": [
+            "devin",
+            "copilot",
+            "codex",
+            "kiro"
+          ],
+          "compatibility_mode": true,
+          "registry_present": false,
+          "fallback_eligible": true
+        },
+        "dispatched_at": "2026-07-28T21:09:48.101Z",
+        "status": "dispatched",
+        "dispatch_mode": "direct-worker",
+        "runtime_state": "packet-created",
+        "worker_id": "polaris-run-paperclip-role-routing-2026-07-28-002:POL-585:1785272988101",
+        "session_id": null,
+        "attachment_capable": false,
+        "role": "worker",
+        "role_authority": "implementation",
+        "may_implement": true,
+        "session_type": "implementation"
+      }
+    }
+  },
+  "worker_pool_state": {
+    "max_concurrent": 1,
+    "slot_claims": []
+  },
+  "last_commit": "f3d7e4af195a5ea97edf06d5b0e35098c125e174",
+  "completed_children_results": {
+    "POL-581": {
+      "child_id": "POL-581",
+      "status": "done",
+      "validation": "passed",
+      "commit": "5ac16b480ed5bdacfd517407ba8deb4ebd33f2f9",
+      "next_recommended_action": "continue",
+      "run_id": "polaris-run-paperclip-role-routing-2026-07-28-002",
+      "cluster_id": "POL-580",
+      "skill_name": "polaris-run",
+      "role": "worker",
+      "provider": "devin",
+      "packet_hash": "a2b4ab1970be8da7807f8f8c545a9f2dd05363861d2c4777641a0791f2a62b04",
+      "worker_id": "polaris-run-paperclip-role-routing-2026-07-28-002:POL-581:1785271800929",
+      "escalation_count": 0,
+      "heartbeat_count": 8,
+      "result_artifact_path": ".polaris/clusters/POL-580/results/POL-581-f1062627-be80-44c9-ace8-39fbde8ad450.json",
+      "packet_path": ".polaris/clusters/POL-580/packets/POL-581-f1062627-be80-44c9-ace8-39fbde8ad450.json",
+      "telemetry_path": ".taskchain_artifacts/polaris-run/runs/polaris-run-paperclip-role-routing-2026-07-28-002/telemetry.jsonl",
+      "user_intervened": null,
+      "foreman_intervened": null,
+      "dispatch_epoch": 1,
+      "session_pointer": null
+    },
+    "POL-582": {
+      "child_id": "POL-582",
+      "status": "done",
+      "validation": "passed",
+      "commit": "7bb1d420898397c1b0effb799423a3a7a0d578af",
+      "next_recommended_action": "continue",
+      "run_id": "polaris-run-paperclip-role-routing-2026-07-28-002",
+      "cluster_id": "POL-580",
+      "skill_name": "polaris-run",
+      "role": "worker",
+      "provider": "devin",
+      "packet_hash": "8571fb9e6ec1e7ef48f61c13dc3bb22f2f4a6b7f7cf7a8e3bf8770c2765a89d0",
+      "worker_id": "polaris-run-paperclip-role-routing-2026-07-28-002:POL-582:1785271963436",
+      "escalation_count": 0,
+      "heartbeat_count": 7,
+      "result_artifact_path": ".polaris/clusters/POL-580/results/POL-582-da175efa-7c8a-48ec-8f57-fd00879b49f8.json",
+      "packet_path": ".polaris/clusters/POL-580/packets/POL-582-da175efa-7c8a-48ec-8f57-fd00879b49f8.json",
+      "telemetry_path": ".taskchain_artifacts/polaris-run/runs/polaris-run-paperclip-role-routing-2026-07-28-002/telemetry.jsonl",
+      "user_intervened": null,
+      "foreman_intervened": null,
+      "dispatch_epoch": 2,
+      "session_pointer": null
+    },
+    "POL-583": {
+      "child_id": "POL-583",
+      "status": "done",
+      "validation": "passed",
+      "commit": "8d96b39396ca41173289da04cae4ef73c76c3ccd",
+      "next_recommended_action": "continue",
+      "run_id": "polaris-run-paperclip-role-routing-2026-07-28-002",
+      "cluster_id": "POL-580",
+      "skill_name": "polaris-run",
+      "role": "worker",
+      "provider": "devin",
+      "packet_hash": "09a221228e3dfdedb72d783073da11d266f01f2d066fa0ff55daaef3dfaeec3a",
+      "worker_id": "polaris-run-paperclip-role-routing-2026-07-28-002:POL-583:1785272190731",
+      "escalation_count": 0,
+      "heartbeat_count": 6,
+      "result_artifact_path": ".polaris/clusters/POL-580/results/POL-583-038756d3-f832-4eff-b1f6-a6e51c8c02ef.json",
+      "packet_path": ".polaris/clusters/POL-580/packets/POL-583-038756d3-f832-4eff-b1f6-a6e51c8c02ef.json",
+      "telemetry_path": ".taskchain_artifacts/polaris-run/runs/polaris-run-paperclip-role-routing-2026-07-28-002/telemetry.jsonl",
+      "user_intervened": null,
+      "foreman_intervened": null,
+      "dispatch_epoch": 3,
+      "session_pointer": null
+    },
+    "POL-584": {
+      "child_id": "POL-584",
+      "status": "done",
+      "validation": "passed",
+      "commit": "1cc0ff26e1542972ec2add7d62084543ea402784",
+      "next_recommended_action": "continue",
+      "run_id": "polaris-run-paperclip-role-routing-2026-07-28-002",
+      "cluster_id": "POL-580",
+      "skill_name": "polaris-run",
+      "role": "worker",
+      "provider": "devin",
+      "packet_hash": "d90fc15790e24ccaa5b280bc01afedab9f3b082c11061701a21f1ace56d56255",
+      "worker_id": "polaris-run-paperclip-role-routing-2026-07-28-002:POL-584:1785272578808",
+      "escalation_count": 0,
+      "heartbeat_count": 6,
+      "result_artifact_path": ".polaris/clusters/POL-580/results/POL-584-fcc37fc2-1db1-46a3-9a90-448aba86960f.json",
+      "packet_path": ".polaris/clusters/POL-580/packets/POL-584-fcc37fc2-1db1-46a3-9a90-448aba86960f.json",
+      "telemetry_path": ".taskchain_artifacts/polaris-run/runs/polaris-run-paperclip-role-routing-2026-07-28-002/telemetry.jsonl",
+      "user_intervened": null,
+      "foreman_intervened": null,
+      "dispatch_epoch": 4,
+      "session_pointer": null
+    },
+    "POL-585": {
+      "child_id": "POL-585",
+      "status": "done",
+      "validation": "passed",
+      "commit": "f3d7e4af195a5ea97edf06d5b0e35098c125e174",
+      "next_recommended_action": "continue",
+      "run_id": "polaris-run-paperclip-role-routing-2026-07-28-002",
+      "cluster_id": "POL-580",
+      "skill_name": "polaris-run",
+      "role": "worker",
+      "provider": "devin",
+      "packet_hash": "90866d1fa2aed0bdbb6f15c50c1b9dc81c539f82f6248bf73c1ba7d86c294f35",
+      "worker_id": "polaris-run-paperclip-role-routing-2026-07-28-002:POL-585:1785272988101",
+      "escalation_count": 0,
+      "heartbeat_count": 7,
+      "result_artifact_path": ".polaris/clusters/POL-580/results/POL-585-28d103fc-4498-42b4-814c-89d90584cb34.json",
+      "packet_path": ".polaris/clusters/POL-580/packets/POL-585-28d103fc-4498-42b4-814c-89d90584cb34.json",
+      "telemetry_path": ".taskchain_artifacts/polaris-run/runs/polaris-run-paperclip-role-routing-2026-07-28-002/telemetry.jsonl",
+      "user_intervened": null,
+      "foreman_intervened": null,
+      "dispatch_epoch": 5,
+      "session_pointer": null
+    }
+  },
+  "qc_repair_loop": {
+    "current_round": 1,
+    "max_rounds": 2,
+    "source_qc_run_ids": [
+      "coderabbit-1785273271771"
+    ],
+    "manifest_path": ".polaris/clusters/POL-580/qc/repair-rounds/1/repair-packets.json",
+    "pending_packet_ids": [
+      "pkt-POL-580-r1-000",
+      "pkt-POL-580-r1-001"
+    ],
+    "completed_packet_ids": [],
+    "rerun_requested": false,
+    "rerun_qc_run_ids": {},
+    "terminal_outcome": "all-providers-failed",
+    "initiated_at": "2026-07-28T21:14:31.824Z",
+    "updated_at": "2026-07-28T22:11:55.063Z"
+  }
+}

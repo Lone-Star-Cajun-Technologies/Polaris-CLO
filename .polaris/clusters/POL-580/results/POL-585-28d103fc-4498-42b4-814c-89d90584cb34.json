@@ -1,0 +1,9 @@
+{
+  "run_id": "polaris-run-paperclip-role-routing-2026-07-28-002",
+  "cluster_id": "POL-580",
+  "child_id": "POL-585",
+  "status": "done",
+  "commit": "f3d7e4af195a5ea97edf06d5b0e35098c125e174",
+  "validation": "passed",
+  "next_recommended_action": "continue"
+}

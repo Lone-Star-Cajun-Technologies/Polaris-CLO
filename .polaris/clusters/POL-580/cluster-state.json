@@ -1,0 +1,143 @@
+{
+  "schema_version": "1.0",
+  "cluster_id": "POL-580",
+  "state_generation": 25,
+  "child_states": [
+    {
+      "id": "POL-581",
+      "status": "done",
+      "commit": "5ac16b480ed5bdacfd517407ba8deb4ebd33f2f9"
+    },
+    {
+      "id": "POL-582",
+      "status": "done",
+      "commit": "7bb1d420898397c1b0effb799423a3a7a0d578af"
+    },
+    {
+      "id": "POL-583",
+      "status": "done",
+      "commit": "8d96b39396ca41173289da04cae4ef73c76c3ccd"
+    },
+    {
+      "id": "POL-584",
+      "status": "done",
+      "commit": "1cc0ff26e1542972ec2add7d62084543ea402784"
+    },
+    {
+      "id": "POL-585",
+      "status": "done",
+      "commit": "f3d7e4af195a5ea97edf06d5b0e35098c125e174"
+    }
+  ],
+  "claim_metadata": {},
+  "packet_pointers": {
+    "POL-581": ".polaris/clusters/POL-580/packets/POL-581-f1062627-be80-44c9-ace8-39fbde8ad450.json",
+    "POL-582": ".polaris/clusters/POL-580/packets/POL-582-da175efa-7c8a-48ec-8f57-fd00879b49f8.json",
+    "POL-583": ".polaris/clusters/POL-580/packets/POL-583-038756d3-f832-4eff-b1f6-a6e51c8c02ef.json",
+    "POL-584": ".polaris/clusters/POL-580/packets/POL-584-fcc37fc2-1db1-46a3-9a90-448aba86960f.json",
+    "POL-585": ".polaris/clusters/POL-580/packets/POL-585-28d103fc-4498-42b4-814c-89d90584cb34.json"
+  },
+  "result_pointers": {
+    "POL-581": ".polaris/clusters/POL-580/results/POL-581-f1062627-be80-44c9-ace8-39fbde8ad450.json",
+    "POL-582": ".polaris/clusters/POL-580/results/POL-582-da175efa-7c8a-48ec-8f57-fd00879b49f8.json",
+    "POL-583": ".polaris/clusters/POL-580/results/POL-583-038756d3-f832-4eff-b1f6-a6e51c8c02ef.json",
+    "POL-584": ".polaris/clusters/POL-580/results/POL-584-fcc37fc2-1db1-46a3-9a90-448aba86960f.json",
+    "POL-585": ".polaris/clusters/POL-580/results/POL-585-28d103fc-4498-42b4-814c-89d90584cb34.json"
+  },
+  "validation_results": {
+    "POL-581": {
+      "passed": true,
+      "output": "passed"
+    },
+    "POL-582": {
+      "passed": true,
+      "output": "passed"
+    },
+    "POL-583": {
+      "passed": true,
+      "output": "passed"
+    },
+    "POL-584": {
+      "passed": true,
+      "output": "passed"
+    },
+    "POL-585": {
+      "passed": true,
+      "output": "passed"
+    }
+  },
+  "commits": {
+    "POL-581": "5ac16b480ed5bdacfd517407ba8deb4ebd33f2f9",
+    "POL-582": "7bb1d420898397c1b0effb799423a3a7a0d578af",
+    "POL-583": "8d96b39396ca41173289da04cae4ef73c76c3ccd",
+    "POL-584": "1cc0ff26e1542972ec2add7d62084543ea402784",
+    "POL-585": "f3d7e4af195a5ea97edf06d5b0e35098c125e174"
+  },
+  "tracker_mutations": {},
+  "blockers": [],
+  "qc_runs": {
+    "coderabbit-1785273271771": {
+      "artifact_path": ".polaris/clusters/POL-580/qc/coderabbit-1785273271771.json",
+      "status": "findings",
+      "provider": "coderabbit",
+      "started_at": "2026-07-28T21:12:50.100Z",
+      "completed_at": "2026-07-28T21:14:31.771Z",
+      "availability": "available"
+    },
+    "coderabbit-1785273632722": {
+      "artifact_path": ".polaris/clusters/POL-580/qc/coderabbit-1785273632722.json",
+      "status": "findings",
+      "provider": "coderabbit",
+      "started_at": "2026-07-28T21:18:53.113Z",
+      "completed_at": "2026-07-28T21:20:32.722Z",
+      "availability": "available"
+    },
+    "coderabbit-1785274172644": {
+      "artifact_path": ".polaris/clusters/POL-580/qc/coderabbit-1785274172644.json",
+      "status": "passed",
+      "provider": "coderabbit",
+      "started_at": "2026-07-28T21:27:44.700Z",
+      "completed_at": "2026-07-28T21:29:32.644Z",
+      "availability": "available"
+    },
+    "coderabbit-1785274262352": {
+      "artifact_path": ".polaris/clusters/POL-580/qc/coderabbit-1785274262352.json",
+      "status": "passed",
+      "provider": "coderabbit",
+      "started_at": "2026-07-28T21:30:30.616Z",
+      "completed_at": "2026-07-28T21:31:02.352Z",
+      "availability": "available"
+    },
+    "coderabbit-1785274446019": {
+      "artifact_path": ".polaris/clusters/POL-580/qc/coderabbit-1785274446019.json",
+      "status": "failed",
+      "provider": "coderabbit",
+      "started_at": "2026-07-28T21:34:02.361Z",
+      "completed_at": "2026-07-28T21:34:06.019Z",
+      "availability": "available"
+    },
+    "coderabbit-1785276714891": {
+      "artifact_path": ".polaris/clusters/POL-580/qc/coderabbit-1785276714891.json",
+      "status": "failed",
+      "provider": "coderabbit",
+      "started_at": "2026-07-28T22:11:42.214Z",
+      "completed_at": "2026-07-28T22:11:54.882Z",
+      "availability": "available"
+    },
+    "coderabbit-1785277244724": {
+      "artifact_path": ".polaris/clusters/POL-580/qc/coderabbit-1785277244724.json",
+      "status": "passed",
+      "provider": "coderabbit",
+      "started_at": "2026-07-28T22:19:20.396Z",
+      "completed_at": "2026-07-28T22:20:44.724Z",
+      "availability": "available"
+    }
+  },
+  "delivery_branch": "philmeaux/pol-580-implement-paperclip-role-based-assignee-routing",
+  "base_branch": "main",
+  "qc_repair_manifests": {
+    "1": ".polaris/clusters/POL-580/qc/repair-rounds/1/repair-packets.json",
+    "2": ".polaris/clusters/POL-580/qc/repair-rounds/2/repair-packets.json"
+  },
+  "qc_repair_outcome": "all-providers-failed"
+}

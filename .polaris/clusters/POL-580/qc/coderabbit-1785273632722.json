@@ -1,0 +1,73 @@
+{
+  "schemaVersion": "1.0",
+  "qcRunId": "coderabbit-1785273632722",
+  "runId": "polaris-run-paperclip-role-routing-2026-07-28-002",
+  "clusterId": "POL-580",
+  "trigger": "completed-cluster",
+  "provider": "coderabbit",
+  "providerMode": "local",
+  "startedAt": "2026-07-28T21:18:53.113Z",
+  "completedAt": "2026-07-28T21:20:32.722Z",
+  "status": "findings",
+  "findings": [
+    {
+      "findingId": "coderabbit-1-1785273632721",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-580/state.json around lines 39 - 46, Update the artifact pointer fields in the POL-580 state data, including result_file, packet_path, and expected_result_path, to use repository-root-relative .polaris/... paths instead of absolute /Users/lsctech/... paths. Keep the referenced cluster, child, and dispatch identifiers unchanged.",
+      "filePath": ".polaris/clusters/POL-580/state.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-580/state.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-2-1785273632721",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/map/index.json around lines 2 - 4, Update the map discovery/index generation to include the changed Paperclip adapter implementation and its test, ensuring both files are represented in the index and reflected in file_count and coverage_pct. Regenerate the index rather than adding unrelated entries, and preserve existing routing metadata conventions.",
+      "filePath": ".polaris/map/index.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "low",
+        "reason": "pre-existing",
+        "filePath": ".polaris/map/index.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    }
+  ],
+  "rawArtifactPaths": [],
+  "parserVersion": "coderabbit-1.0",
+  "policyDecision": {
+    "blocksDelivery": true,
+    "requiresOperatorReview": true,
+    "routedToRepair": false,
+    "summary": "2 findings; operator review required"
+  },
+  "providerAttempt": {
+    "provider": "coderabbit",
+    "status": "success",
+    "rawOutputAvailable": true,
+    "rawOutputRetained": false,
+    "stdoutLength": 2104,
+    "stderrLength": 0,
+    "exitCode": 0,
+    "parserResult": "success"
+  },
+  "headSha": "9d4739192ba6708ccaaebd4d6bd9f3b15eb558f2"
+}

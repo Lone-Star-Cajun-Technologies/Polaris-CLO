@@ -1,0 +1,73 @@
+{
+  "schemaVersion": "1.0",
+  "qcRunId": "coderabbit-1785273271771",
+  "runId": "polaris-run-paperclip-role-routing-2026-07-28-002",
+  "clusterId": "POL-580",
+  "trigger": "completed-cluster",
+  "provider": "coderabbit",
+  "providerMode": "local",
+  "startedAt": "2026-07-28T21:12:50.100Z",
+  "completedAt": "2026-07-28T21:14:31.771Z",
+  "status": "findings",
+  "findings": [
+    {
+      "findingId": "coderabbit-1-1785273271771",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/runs/ledger.jsonl at line 385, Append a separate terminal ledger record with event \"cluster-complete\" for run POL-580 after the final child-completed entry, preserving the run and cluster completion metadata needed by consumers; do not rely on the nested status field in the existing child-completed record.",
+      "filePath": ".polaris/runs/ledger.jsonl",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "low",
+        "reason": "pre-existing",
+        "filePath": ".polaris/runs/ledger.jsonl"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    },
+    {
+      "findingId": "coderabbit-2-1785273271771",
+      "severity": "high",
+      "category": "finding",
+      "title": "finding",
+      "message": "Verify each finding against current code. Fix only still-valid issues, skip the rest with a brief reason, keep changes minimal, and validate.\n\nIn @.polaris/clusters/POL-580/state.json around lines 39 - 46, Update the state serialization that produces result_file, packet_path, and expected_result_path in the dispatch records to persist repository-relative paths, matching cluster-state.json. Derive these artifact paths from artifact_dir or normalize them before writing state, and apply the same change to all repeated path fields in the affected state entries.",
+      "filePath": ".polaris/clusters/POL-580/state.json",
+      "range": {
+        "startLine": 1
+      },
+      "fixAvailable": true,
+      "autofixEligible": false,
+      "attribution": {
+        "confidence": "unattributed",
+        "reason": "unattributed",
+        "filePath": ".polaris/clusters/POL-580/state.json"
+      },
+      "status": "open",
+      "routingDecision": "operator-review"
+    }
+  ],
+  "rawArtifactPaths": [],
+  "parserVersion": "coderabbit-1.0",
+  "policyDecision": {
+    "blocksDelivery": true,
+    "requiresOperatorReview": true,
+    "routedToRepair": false,
+    "summary": "2 findings; operator review required"
+  },
+  "providerAttempt": {
+    "provider": "coderabbit",
+    "status": "success",
+    "rawOutputAvailable": true,
+    "rawOutputRetained": false,
+    "stdoutLength": 2190,
+    "stderrLength": 0,
+    "exitCode": 0,
+    "parserResult": "success"
+  },
+  "headSha": "f3d7e4af195a5ea97edf06d5b0e35098c125e174"
+}

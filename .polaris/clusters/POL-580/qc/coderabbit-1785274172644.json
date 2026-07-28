@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "1.0",
+  "qcRunId": "coderabbit-1785274172644",
+  "runId": "polaris-run-paperclip-role-routing-2026-07-28-002",
+  "clusterId": "POL-580",
+  "trigger": "completed-cluster",
+  "provider": "coderabbit",
+  "providerMode": "local",
+  "startedAt": "2026-07-28T21:27:44.700Z",
+  "completedAt": "2026-07-28T21:29:32.644Z",
+  "status": "passed",
+  "findings": [],
+  "rawArtifactPaths": [],
+  "parserVersion": "coderabbit-1.0",
+  "policyDecision": {
+    "blocksDelivery": false,
+    "requiresOperatorReview": false,
+    "routedToRepair": false,
+    "summary": "0 findings"
+  },
+  "providerAttempt": {
+    "provider": "coderabbit",
+    "status": "success",
+    "rawOutputAvailable": true,
+    "rawOutputRetained": false,
+    "stdoutLength": 847,
+    "stderrLength": 0,
+    "exitCode": 0,
+    "parserResult": "success"
+  },
+  "headSha": "02a511815666ad30cb7bb16149e409e6b31e94ec"
+}

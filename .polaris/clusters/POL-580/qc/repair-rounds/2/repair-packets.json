@@ -1,0 +1,66 @@
+{
+  "schemaVersion": "1.0",
+  "clusterId": "POL-580",
+  "round": 2,
+  "compiledAt": "2026-07-28T21:20:32.800Z",
+  "sourceQcRunIds": [
+    "coderabbit-1785273632721",
+    "coderabbit-1785273632722"
+  ],
+  "packets": [
+    {
+      "packetId": "pkt-POL-580-r2-000",
+      "round": 2,
+      "clusterId": "POL-580",
+      "sourceQcRunIds": [
+        "coderabbit-1785273632721",
+        "coderabbit-1785273632722"
+      ],
+      "findingIds": [
+        "coderabbit-1-1785273632721"
+      ],
+      "severityFloor": "high",
+      "rootCauseHint": "categories=[finding]; files=[.polaris/clusters/POL-580/state.json]; confidence=unclear; severity=high",
+      "allowedScope": [
+        ".polaris/clusters/POL-580/state.json"
+      ],
+      "prohibitedScope": [],
+      "validationCommands": [],
+      "routingTarget": "operator-review",
+      "parallelGroup": "g-000",
+      "conflicts": [
+        "pkt-POL-580-r2-001"
+      ],
+      "medic": true,
+      "status": "pending",
+      "createdAt": "2026-07-28T21:20:32.800Z"
+    },
+    {
+      "packetId": "pkt-POL-580-r2-001",
+      "round": 2,
+      "clusterId": "POL-580",
+      "sourceQcRunIds": [
+        "coderabbit-1785273632721",
+        "coderabbit-1785273632722"
+      ],
+      "findingIds": [
+        "coderabbit-2-1785273632721"
+      ],
+      "severityFloor": "high",
+      "rootCauseHint": "categories=[finding]; files=[.polaris/map/index.json]; confidence=unclear; severity=high",
+      "allowedScope": [
+        ".polaris/map/index.json"
+      ],
+      "prohibitedScope": [],
+      "validationCommands": [],
+      "routingTarget": "operator-review",
+      "parallelGroup": "g-001",
+      "conflicts": [
+        "pkt-POL-580-r2-000"
+      ],
+      "medic": true,
+      "status": "pending",
+      "createdAt": "2026-07-28T21:20:32.800Z"
+    }
+  ]
+}
