@@ -1,7 +1,7 @@
 import * as http from "node:http";
 import { describe, it, expect } from "vitest";
 import type { BootstrapPacket } from "./types.js";
-import { mapBootstrapPacketToPaperclipIssue, PaperclipAdapter, paperclipRequest, resolvePaperclipRuntimeConfig } from "./paperclip.js";
+import { mapBootstrapPacketToPaperclipIssue, resolveAssigneeForRole, PaperclipAdapter, paperclipRequest, resolvePaperclipRuntimeConfig } from "./paperclip.js";
 
 interface MockServer {
   url: string;
@@ -174,5 +174,31 @@ describe("paperclip adapter transport + mapper", () => {
     } finally {
       await server?.stop();
     }
+  });
+
+  describe("resolveAssigneeForRole", () => {
+    it("returns a direct roleBindings entry", () => {
+      const config = { ...commonRuntime("http://127.0.0.1:1/"), roleBindings: { impl: "agent-impl" } };
+      expect(resolveAssigneeForRole("impl", config)).toBe("agent-impl");
+    });
+
+    it("follows reportsTo chain and returns the manager's binding", () => {
+      const config = {
+        ...commonRuntime("http://127.0.0.1:1/"),
+        roleBindings: { senior: "agent-senior" },
+        reportsTo: { junior: "senior" },
+      };
+      expect(resolveAssigneeForRole("junior", config)).toBe("agent-senior");
+    });
+
+    it("falls back to assigneeAgentId when no binding or chain resolves", () => {
+      const config = commonRuntime("http://127.0.0.1:1/");
+      expect(resolveAssigneeForRole("impl", config)).toBe("agent-1");
+    });
+
+    it("breaks cycles and falls back to assigneeAgentId", () => {
+      const config = { ...commonRuntime("http://127.0.0.1:1/"), reportsTo: { a: "b", b: "a" } };
+      expect(resolveAssigneeForRole("a", config)).toBe("agent-1");
+    });
   });
 });

@@ -174,6 +174,27 @@ function safeStr(raw: unknown, fallback: string): string {
   return fallback;
 }
 
+export function resolveAssigneeForRole(role: string, config: PaperclipRuntimeConfig): string {
+  const direct = config.roleBindings?.[role];
+  if (typeof direct === "string" && direct.trim() !== "") {
+    return direct.trim();
+  }
+  const seen = new Set<string>();
+  let current = role;
+  while (true) {
+    if (seen.has(current)) break;
+    seen.add(current);
+    const manager = config.reportsTo?.[current];
+    if (typeof manager !== "string" || manager.trim() === "") break;
+    const managerBinding = config.roleBindings?.[manager.trim()];
+    if (typeof managerBinding === "string" && managerBinding.trim() !== "") {
+      return managerBinding.trim();
+    }
+    current = manager.trim();
+  }
+  return config.assigneeAgentId;
+}
+
 export function mapBootstrapPacketToPaperclipIssue(
   packet: BootstrapPacket,
   config: PaperclipRuntimeConfig,
@@ -182,7 +203,8 @@ export function mapBootstrapPacketToPaperclipIssue(
   const executionBlock = (packet.context?.execution as
     | { paperclip?: { assigneeAgentId?: string; priority?: unknown; runId?: string } }
     | undefined)?.paperclip;
-  const assigneeAgentId = executionBlock?.assigneeAgentId ?? config.assigneeAgentId;
+  const role = workerRoleFromPacket(packet);
+  const assigneeAgentId = executionBlock?.assigneeAgentId ?? resolveAssigneeForRole(role, config);
   const rawPriority = executionBlock?.priority ?? "medium";
   const priorityText = typeof rawPriority === "string" ? rawPriority : String(rawPriority);
   const priority = safeStr(priorityText, "medium");
