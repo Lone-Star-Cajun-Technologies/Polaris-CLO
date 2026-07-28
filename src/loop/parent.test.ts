@@ -1174,6 +1174,90 @@ describe("runParentLoop", () => {
     expect(calls[0].options.provider).toBe("mock");
   });
 
+  it("uses the Paperclip issue assignee as the sole dispatch target, bypassing provider rotation", async () => {
+    const calls: MockCall[] = [];
+    const mockAdapter = makeMockAdapter([SUCCESS_RESULT], calls);
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    const { loadConfig } = await import("../config/loader.js");
+    vi.mocked(loadConfig).mockReturnValueOnce({
+      orchestration: {
+        mode: "auto",
+        notification_format: "verbose",
+        auto_finalize: false,
+      },
+      execution: {
+        adapter: "paperclip",
+        providers: { mock: { command: "mock-worker" } },
+        rotation: ["mock"],
+        paperclip: {
+          baseUrl: "http://127.0.0.1:3100",
+          companyId: "e4e9384a-d4a5-46f2-a444-92f5aa6ebdc6",
+          assigneeAgentId: "39f35fc9-5434-4226-83e3-a435809aac81",
+          tokenEnv: "PAPERCLIP_API_KEY",
+          runIdEnv: "PAPERCLIP_RUN_ID",
+        },
+      },
+    } as unknown as Required<import("../config/schema.js").PolarisConfig>);
+
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+
+    await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(createAdapter).toHaveBeenCalledWith(
+      "paperclip",
+      expect.objectContaining({ adapter: "paperclip" }),
+    );
+    // The assignee — not a router-picked provider — is the dispatch target.
+    expect(calls[0].options.provider).toBe("39f35fc9-5434-4226-83e3-a435809aac81");
+
+    const telemetry = readJsonLines(join(tmpDir, "runs", "test-run-001", "telemetry.jsonl"));
+    const dispatched = telemetry.find((event) => event["event"] === "child-dispatched");
+    expect(dispatched).toMatchObject({
+      adapter: "paperclip",
+      provider: "39f35fc9-5434-4226-83e3-a435809aac81",
+    });
+  });
+
+  it("falls back to provider rotation when the Paperclip issue has no assigneeAgentId configured", async () => {
+    const calls: MockCall[] = [];
+    const mockAdapter = makeMockAdapter([SUCCESS_RESULT], calls);
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    const { loadConfig } = await import("../config/loader.js");
+    vi.mocked(loadConfig).mockReturnValueOnce({
+      orchestration: {
+        mode: "auto",
+        notification_format: "verbose",
+        auto_finalize: false,
+      },
+      execution: {
+        adapter: "paperclip",
+        providers: { mock: { command: "mock-worker" } },
+        rotation: ["mock"],
+      },
+    } as unknown as Required<import("../config/schema.js").PolarisConfig>);
+
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+
+    await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(createAdapter).toHaveBeenCalledWith(
+      "paperclip",
+      expect.objectContaining({ adapter: "paperclip" }),
+    );
+    // No assignee configured — falls back to the existing rotation, which resolves "mock".
+    expect(calls[0].options.provider).toBe("mock");
+  });
+
   it("halts when a worker reports done without commit evidence", async () => {
     const calls: MockCall[] = [];
     vi.mocked(createAdapter).mockReturnValue(makeMockAdapter([SUCCESS_RESULT_NO_COMMIT], calls));
