@@ -443,6 +443,11 @@ describe("registry", () => {
     expect(adapter.name).toBe("terminal-cli");
   });
 
+  it("createAdapter returns PaperclipAdapter for paperclip", () => {
+    const adapter = createAdapter("paperclip", { adapter: "paperclip", providers: {} });
+    expect(adapter.name).toBe("paperclip");
+  });
+
   it("createAdapter throws for unknown adapter", () => {
     expect(() => createAdapter("not-a-real-adapter", { adapter: "not-a-real-adapter", providers: {} })).toThrow(
       /Unknown adapter/,

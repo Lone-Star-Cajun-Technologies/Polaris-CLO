@@ -3,6 +3,7 @@ import { relative } from "node:path";
 export type ExecutionAdapterMode =
   | "agent-subtask"
   | "terminal-cli"
+  | "paperclip"
   | "ci"
   | "ssh"
   | "remote-worker"
@@ -99,6 +100,15 @@ function fromConfigured(mode: ExecutionAdapterMode): AdapterSelection {
         priority: 2,
         warnings: [],
         reason: "terminal CLI worker adapter configured",
+      };
+    case "paperclip":
+      return {
+        mode,
+        autoDispatch: true,
+        providerCoupling: "control-plane",
+        priority: 2,
+        warnings: [],
+        reason: "control-plane provider coupling configured for Paperclip adapter",
       };
     case "ci":
       return {

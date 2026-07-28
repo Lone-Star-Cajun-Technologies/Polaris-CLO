@@ -6,7 +6,8 @@ import { writeCheckpoint } from "../checkpoint.js";
 import { appendAuditEvent } from "../audit/logger.js";
 import { readAuditLog, findLastEvent } from "../audit/reader.js";
 import { selectExecutionAdapter } from "../../loop/execution-adapter.js";
-import { AgentSubtaskAdapter } from "../../loop/adapters/agent-subtask.js";
+import { createAdapter } from "../../loop/adapters/registry.js";
+import { loadConfig } from "../../config/loader.js";
 import { validateWindow, decrementWindow } from "../execution-window.js";
 import { computeStateFingerprint } from "../verification/fingerprint.js";
 import type { ExecutionWindow } from "../execution-window.js";
@@ -167,12 +168,15 @@ export async function dispatchConfirmedContinuation(
     telemetry_file: path.resolve(artifact_dir, "telemetry.jsonl"),
   };
 
-  const adapter = request._adapterFactory ? request._adapterFactory() : new AgentSubtaskAdapter();
-
   let compactReturn: CompactReturn;
   let dispatchResultCode = 0;
   try {
-    const dispatchResult = await adapter.dispatch(packet, { provider: "agent-subtask" });
+    const executionConfig = loadConfig(process.cwd()).execution ?? { adapter: selection.mode, providers: {} };
+    const normalizedExecutionConfig = { ...executionConfig, adapter: selection.mode };
+    const adapter = request._adapterFactory
+      ? request._adapterFactory()
+      : createAdapter(selection.mode, normalizedExecutionConfig);
+    const dispatchResult = await adapter.dispatch(packet, { provider: selection.mode });
     dispatchResultCode = dispatchResult.exit_code;
     // Parse summary if available; fall back to inferring done state from exit_code
     if (dispatchResult.summary) {

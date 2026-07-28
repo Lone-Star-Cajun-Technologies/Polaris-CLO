@@ -965,6 +965,21 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
       registry_present: false,
       fallback_eligible: false,
     };
+  } else if (adapterName === "paperclip") {
+    // Paperclip is its own provider, not a CLI-invoked provider — skip
+    // resolveProviderAndMode (CLI provider selection) entirely.
+    providerName = "paperclip";
+    providerSelectionReason = "paperclip-adapter";
+    providersTried = ["paperclip"];
+    routingSummary = {
+      selected_provider: "paperclip",
+      selected_adapter: "paperclip",
+      selection_reason: "paperclip-adapter",
+      effective_policy_order: ["paperclip"],
+      compatibility_mode: false,
+      registry_present: false,
+      fallback_eligible: false,
+    };
   } else {
     let evidence;
     try {
@@ -1000,7 +1015,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
   // Enforce provider policy for explicit --provider flag before entering the loop.
   // resolveProviderAndMode handles policy-filtered rotation; this gate blocks an
   // explicit provider that the rotation resolution would not have chosen.
-  if (options.provider && adapterName !== "agent-subtask") {
+  if (options.provider && adapterName !== "agent-subtask" && adapterName !== "paperclip") {
     try {
       assertProviderAllowedForRole(
         "worker",
