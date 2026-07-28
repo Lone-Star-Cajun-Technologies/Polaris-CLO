@@ -118,6 +118,8 @@ export interface QcProviderAttempt {
   exitCode?: number;
   stdoutLength: number;
   stderrLength: number;
+  /** Provider-suggested wait time before another attempt, in milliseconds. */
+  retryAfterMs?: number;
 }
 
 /** Normalized result of a single QC run. */

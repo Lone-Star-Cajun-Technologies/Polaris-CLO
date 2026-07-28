@@ -196,9 +196,57 @@ function makeUnusableOutputError(message: string): Error {
   return err;
 }
 
-function makeQcFailureError(reason: QcFailureReason, message: string): Error {
+function parseHumanDuration(value: string): number | undefined {
+  const match = value.match(/^(\d+(?:\.\d+)?)\s*(ms|milliseconds?|s|seconds?|m|minutes?|h|hours?|d|days?)$/);
+  if (!match) return undefined;
+  const amount = parseFloat(match[1]);
+  if (!Number.isFinite(amount) || amount < 0) return undefined;
+  const unit = match[2][0];
+  switch (unit) {
+    case "m":
+      return Math.round(amount * 60 * 1000);
+    case "h":
+      return Math.round(amount * 60 * 60 * 1000);
+    case "d":
+      return Math.round(amount * 24 * 60 * 60 * 1000);
+    case "s":
+    default:
+      return Math.round(amount * 1000);
+  }
+}
+
+function parseRetryAfterMs(record: Record<string, unknown>): number | undefined {
+  const waitTime = record.waitTime;
+  if (typeof waitTime === "string") {
+    const parsed = parseHumanDuration(waitTime.trim().toLowerCase());
+    if (parsed !== undefined) return parsed;
+  }
+  if (typeof record.retryAfter === "number") return record.retryAfter * 1000;
+  if (typeof record.retryAfter === "string") {
+    const trimmed = record.retryAfter.trim().toLowerCase();
+    const parsed = parseHumanDuration(trimmed);
+    if (parsed !== undefined) return parsed;
+    const num = Number(trimmed);
+    if (Number.isFinite(num) && num >= 0) return num * 1000;
+  }
+  if (typeof record.retryAfterSeconds === "number") return record.retryAfterSeconds * 1000;
+  if (typeof record.retryAfterMs === "number") return record.retryAfterMs;
+  return undefined;
+}
+
+function makeQcFailureError(
+  reason: QcFailureReason,
+  message: string,
+  record?: Record<string, unknown>,
+): Error {
   const err = new Error(message);
   (err as { qcFailureReason?: QcFailureReason }).qcFailureReason = reason;
+  if (reason === "rate-limited" && record) {
+    const retryAfterMs = parseRetryAfterMs(record);
+    if (typeof retryAfterMs === "number" && retryAfterMs >= 0) {
+      (err as { retryAfterMs?: number }).retryAfterMs = retryAfterMs;
+    }
+  }
   return err;
 }
 
@@ -294,6 +342,7 @@ function parseFindingsFromPayload(payload: unknown): CodeRabbitFindingLike[] {
     throw makeQcFailureError(
       classifyErrorType(record),
       `CodeRabbit provider returned an error: ${record.message ?? record.errorType ?? "unknown"}`,
+      record,
     );
   }
 
@@ -310,6 +359,7 @@ function parseFindingsFromPayload(payload: unknown): CodeRabbitFindingLike[] {
           throw makeQcFailureError(
             classifyErrorType(itemRecord),
             `CodeRabbit provider returned an error in findings array: ${itemRecord.message ?? itemRecord.errorType ?? "unknown"}`,
+            itemRecord,
           );
         }
         if (isActionableFinding(itemRecord)) {
@@ -398,6 +448,7 @@ function parseReport(
             throw makeQcFailureError(
               classifyErrorType(itemRecord),
               `CodeRabbit provider returned an error in JSON array: ${itemRecord.message ?? itemRecord.errorType ?? "unknown"}`,
+              itemRecord,
             );
           }
           if (isActionableFinding(itemRecord)) {
@@ -486,6 +537,7 @@ function parseReport(
         throw makeQcFailureError(
           classifyErrorType(record),
           `CodeRabbit provider returned an error in JSONL: ${record.message ?? record.errorType ?? "unknown"}`,
+          record,
         );
       }
       if (isProgressRecord(record)) {
