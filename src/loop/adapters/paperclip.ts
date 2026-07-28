@@ -511,7 +511,7 @@ export async function getPaperclipIssue(
   companyId: string,
   issueId: string,
   runIdHeader = "",
-): Promise<{ issue: Record<string, unknown>; status: { http: number; retry: string | null } }> {
+): Promise<{ issue: PaperclipIssue; status: { http: number; retry: string | null } }> {
   let lastRetry: string | null = null;
 
   for (let attempt = 1; attempt <= 2; attempt++) {
@@ -541,7 +541,7 @@ export async function getPaperclipIssue(
       );
     }
 
-    return { issue: body ?? {}, status: { http: status ?? 200, retry: null } };
+    return { issue: (body ?? {}) as PaperclipIssue, status: { http: status ?? 200, retry: null } };
   }
 
   throw new Error(
@@ -559,6 +559,61 @@ export function mergePaperclipRefIntoState(
     paperclip: { ...(state.paperclip as Record<string, unknown> | undefined), ...ref },
     result: { ...result },
   };
+}
+
+export interface PaperclipIssue extends Record<string, unknown> {
+  status?: string;
+  attachments?: unknown[];
+  pullRequest?: unknown;
+  pullRequests?: unknown[];
+  commit?: unknown;
+  commits?: unknown[];
+  branch?: unknown;
+  branches?: unknown[];
+  workProduct?: unknown;
+  workProducts?: unknown[];
+  work_product?: unknown;
+  work_products?: unknown[];
+  linkedPullRequests?: unknown[];
+  linkedCommits?: unknown[];
+  linkedBranches?: unknown[];
+}
+
+const WORK_PRODUCT_EVIDENCE_KEYS = [
+  "pullRequest",
+  "pullRequests",
+  "commit",
+  "commits",
+  "branch",
+  "branches",
+  "attachment",
+  "attachments",
+  "workProduct",
+  "workProducts",
+  "work_product",
+  "work_products",
+  "linkedPullRequests",
+  "linkedCommits",
+  "linkedBranches",
+];
+
+function isNonEmptyEvidence(value: unknown): boolean {
+  if (value === undefined || value === null) return false;
+  if (typeof value === "string") return value.trim().length > 0;
+  if (typeof value === "number" || typeof value === "boolean") return true;
+  if (Array.isArray(value)) return value.length > 0 && value.some((v) => isNonEmptyEvidence(v));
+  if (typeof value === "object") return Object.keys(value as Record<string, unknown>).length > 0;
+  return false;
+}
+
+export function hasWorkProductEvidence(issue: PaperclipIssue): { hasEvidence: boolean; evidenceFields: string[] } {
+  const evidenceFields: string[] = [];
+  for (const key of WORK_PRODUCT_EVIDENCE_KEYS) {
+    if (key in issue && isNonEmptyEvidence(issue[key])) {
+      evidenceFields.push(key);
+    }
+  }
+  return { hasEvidence: evidenceFields.length > 0, evidenceFields };
 }
 
 export async function waitForPaperclipExecution(
@@ -667,6 +722,50 @@ export class PaperclipAdapter implements ExecutionAdapter {
         runIdHeader,
         runId,
       );
+
+      const { issue: finalIssue } = await getPaperclipIssue(
+        this.runtimeConfig,
+        this.runtimeConfig.companyId,
+        created.id,
+        runIdHeader,
+      );
+      const finalStatus = typeof finalIssue.status === "string" ? finalIssue.status.trim().toLowerCase() : null;
+      if (finalStatus === "done") {
+        const evidence = hasWorkProductEvidence(finalIssue);
+        if (!evidence.hasEvidence) {
+          const message = `Paperclip issue ${created.id} reported status "done" but no verifiable work-product evidence (PR/commit/branch/attachment) was present in the issue response.`;
+          providerAttempts.push({
+            provider: primaryProvider,
+            failure_origin: "worker-execution",
+            failure_category: "worker-failure",
+            pre_dispatch_failure: false,
+            fallback_eligible: false,
+            message,
+          });
+          return {
+            exit_code: 2,
+            provider_used: primaryProvider,
+            command_run: `paperclip:${packet.active_child || "worker"}`,
+            summary: JSON.stringify({
+              child_id: packet.active_child,
+              status: "failed",
+              provider_used: primaryProvider,
+              issue_id: created.id,
+              company_id: this.runtimeConfig.companyId,
+              dispatch_id: dispatchId,
+              run_id: runId,
+              message,
+            }),
+            stderr: message,
+            pre_dispatch_failure: false,
+            failure_origin: "worker-execution",
+            failure_category: "worker-failure",
+            fallback_eligible: false,
+            router_evidence: options.routerDecision,
+            provider_attempts: JSON.parse(JSON.stringify(providerAttempts)) as NonNullable<DispatchResult["provider_attempts"]>,
+          };
+        }
+      }
 
       return {
         exit_code: 0,

@@ -10,7 +10,7 @@ interface MockServer {
 
 function setupMockServer(
   store: Map<string, Record<string, string>>,
-  opts: { token?: string; terminalStatus?: string } = { terminalStatus: "done" },
+  opts: { token?: string; terminalStatus?: string; evidence?: Record<string, unknown> } = { terminalStatus: "done" },
 ): Promise<MockServer> {
   return new Promise((resolve) => {
     const server = http.createServer((req, res) => {
@@ -61,7 +61,7 @@ function setupMockServer(
           return;
         }
         res.writeHead(200);
-        res.end(JSON.stringify({ ...issue, status: opts.terminalStatus ?? "done", updatedAt: new Date().toISOString() }));
+        res.end(JSON.stringify({ ...issue, ...opts.evidence, status: opts.terminalStatus ?? "done", updatedAt: new Date().toISOString() }));
         return;
       }
 
@@ -166,7 +166,41 @@ describe("paperclip adapter transport + mapper", () => {
     const store = new Map<string, Record<string, string>>();
     let server: MockServer | null = null;
     try {
+      server = await setupMockServer(store, {
+        token: "secret-token",
+        terminalStatus: "done",
+        evidence: { pullRequest: { url: "https://github.com/example/repo/pull/1" } },
+      });
+      const adapter = new PaperclipAdapter(commonRuntime(server.url));
+      const result = await adapter.dispatch(basePacket as BootstrapPacket, { provider: "paperclip" });
+      expect(store.size).toBe(1);
+      expect(result.exit_code).toBe(0);
+    } finally {
+      await server?.stop();
+    }
+  });
+
+  it("returns exit_code 2 when status is done but no work-product evidence is present", async () => {
+    const store = new Map<string, Record<string, string>>();
+    let server: MockServer | null = null;
+    try {
       server = await setupMockServer(store, { token: "secret-token", terminalStatus: "done" });
+      const adapter = new PaperclipAdapter(commonRuntime(server.url));
+      const result = await adapter.dispatch(basePacket as BootstrapPacket, { provider: "paperclip" });
+      expect(store.size).toBe(1);
+      expect(result.exit_code).toBe(2);
+      expect(result.failure_category).toBe("worker-failure");
+      expect(result.stderr).toContain("no verifiable work-product evidence");
+    } finally {
+      await server?.stop();
+    }
+  });
+
+  it("does not require work-product evidence for non-done terminal statuses", async () => {
+    const store = new Map<string, Record<string, string>>();
+    let server: MockServer | null = null;
+    try {
+      server = await setupMockServer(store, { token: "secret-token", terminalStatus: "blocked" });
       const adapter = new PaperclipAdapter(commonRuntime(server.url));
       const result = await adapter.dispatch(basePacket as BootstrapPacket, { provider: "paperclip" });
       expect(store.size).toBe(1);
