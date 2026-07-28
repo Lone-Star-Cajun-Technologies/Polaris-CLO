@@ -169,6 +169,13 @@ function workerRoleFromPacket(packet: BootstrapPacket): string {
   return "worker";
 }
 
+const ROLE_SKILL_ROUTING: Record<string, string> = {
+  analyst: "polaris-analyze",
+  worker: "polaris-run",
+  impl: "polaris-run",
+  finalize: "polaris-finalize",
+};
+
 function safeStr(raw: unknown, fallback: string): string {
   if (typeof raw === "string" && raw.trim().length > 0) return raw.trim();
   return fallback;
@@ -215,8 +222,15 @@ export function mapBootstrapPacketToPaperclipIssue(
   lines.push(`Child/Active child: \`${packet.active_child}\``);
   lines.push(`Dispatch ID: \`${dispatchId}\``);
   lines.push(``);
-  lines.push(`Worker role: \`${workerRoleFromPacket(packet)}\``);
+  lines.push(`Worker role: \`${role}\``);
   lines.push(``);
+
+  const polarisSkill = ROLE_SKILL_ROUTING[role];
+  if (polarisSkill) {
+    lines.push(`Polaris skill routing`);
+    lines.push(`- \`${role}\` → \`${polarisSkill}\``);
+    lines.push(``);
+  }
 
   const instructionsPrimaryGoal = safeStr(
     ((packet as BootstrapPacket & { instructions?: { primary_goal?: string } }).instructions as

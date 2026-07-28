@@ -129,6 +129,7 @@ describe("paperclip adapter transport + mapper", () => {
   it("maps exact packet JSON and excludes token/labels", () => {
     const payload = mapBootstrapPacketToPaperclipIssue(basePacket as BootstrapPacket, commonRuntime("http://127.0.0.1:1/"), "dispatch-a");
     expect(payload.title).toContain("[impl]");
+    expect(payload.description).toContain("- `impl` → `polaris-run`");
     expect(payload.assigneeAgentId).toBe("agent-1");
     expect(payload.priority).toBe("high");
     expect(payload.idempotencyKey).toMatch(/^polaris:run-1:dispatch-[a-z0-9-]+$/);
