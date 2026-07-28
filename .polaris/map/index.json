@@ -1,10 +1,10 @@
 {
-  "scan_date": "2026-07-15T03:29:28.181Z",
-  "file_count": 828,
-  "coverage_pct": 89,
+  "scan_date": "2026-07-28T22:19:17.113Z",
+  "file_count": 806,
+  "coverage_pct": 92,
   "instructionCoverage": {
-    "routesCovered": 786,
-    "routesTotal": 804,
+    "routesCovered": 788,
+    "routesTotal": 806,
     "coveragePercent": 98
   },
   "entries": {
@@ -1862,8 +1862,8 @@
       "taskchain": "polaris-config",
       "confidence": 0.85,
       "classification": "indexed",
-      "last_updated": "2026-07-15T03:29:28.181Z",
-      "updated_by": "polaris-map-index",
+      "last_updated": "2026-07-28T21:26:35.559Z",
+      "updated_by": "polaris-map-update",
       "tags": [
         "config"
       ],
@@ -1875,8 +1875,8 @@
       "taskchain": "polaris-config",
       "confidence": 0.85,
       "classification": "indexed",
-      "last_updated": "2026-07-15T03:29:28.181Z",
-      "updated_by": "polaris-map-index",
+      "last_updated": "2026-07-28T21:26:35.559Z",
+      "updated_by": "polaris-map-update",
       "tags": [
         "config"
       ],
@@ -1996,8 +1996,8 @@
       "taskchain": "polaris-config",
       "confidence": 0.85,
       "classification": "indexed",
-      "last_updated": "2026-07-15T03:29:28.181Z",
-      "updated_by": "polaris-map-index",
+      "last_updated": "2026-07-28T21:26:35.559Z",
+      "updated_by": "polaris-map-update",
       "tags": [
         "config"
       ],
@@ -2009,8 +2009,8 @@
       "taskchain": "polaris-config",
       "confidence": 0.85,
       "classification": "indexed",
-      "last_updated": "2026-07-15T03:29:28.181Z",
-      "updated_by": "polaris-map-index",
+      "last_updated": "2026-07-28T21:26:35.559Z",
+      "updated_by": "polaris-map-update",
       "tags": [
         "config"
       ],
@@ -4581,8 +4581,8 @@
       "taskchain": "polaris-loop",
       "confidence": 0.85,
       "classification": "indexed",
-      "last_updated": "2026-07-15T03:29:28.181Z",
-      "updated_by": "polaris-map-index",
+      "last_updated": "2026-07-28T21:26:35.559Z",
+      "updated_by": "polaris-map-update",
       "tags": [
         "loop"
       ],
@@ -4594,8 +4594,8 @@
       "taskchain": "polaris-loop",
       "confidence": 0.85,
       "classification": "indexed",
-      "last_updated": "2026-07-15T03:29:28.181Z",
-      "updated_by": "polaris-map-index",
+      "last_updated": "2026-07-28T21:26:35.559Z",
+      "updated_by": "polaris-map-update",
       "tags": [
         "loop"
       ],
@@ -5172,8 +5172,8 @@
       "taskchain": "polaris-loop",
       "confidence": 0.85,
       "classification": "indexed",
-      "last_updated": "2026-07-15T03:29:28.181Z",
-      "updated_by": "polaris-map-index",
+      "last_updated": "2026-07-28T21:26:35.559Z",
+      "updated_by": "polaris-map-update",
       "tags": [
         "loop",
         "test"
@@ -6847,8 +6847,8 @@
       "taskchain": "polaris-qc",
       "confidence": 0.85,
       "classification": "indexed",
-      "last_updated": "2026-07-15T03:29:28.181Z",
-      "updated_by": "polaris-map-index",
+      "last_updated": "2026-07-28T22:19:17.113Z",
+      "updated_by": "polaris-map-update",
       "tags": [
         "qc"
       ],
@@ -9860,6 +9860,33 @@
       ],
       "instructionFile": "src/workspace/POLARIS.md"
     },
+    "src/loop/adapters/paperclip.test.ts": {
+      "domain": "loop",
+      "route": "src/loop/adapters",
+      "taskchain": "polaris-loop",
+      "confidence": 0.9,
+      "classification": "indexed",
+      "last_updated": "2026-07-28T21:26:35.559Z",
+      "updated_by": "polaris-map-update",
+      "tags": [
+        "loop",
+        "test"
+      ],
+      "instructionFile": "src/loop/adapters/POLARIS.md"
+    },
+    "src/loop/adapters/paperclip.ts": {
+      "domain": "loop",
+      "route": "src/loop/adapters",
+      "taskchain": "polaris-loop",
+      "confidence": 0.9,
+      "classification": "indexed",
+      "last_updated": "2026-07-28T21:26:35.559Z",
+      "updated_by": "polaris-map-update",
+      "tags": [
+        "loop"
+      ],
+      "instructionFile": "src/loop/adapters/POLARIS.md"
+    },
     ".coderabbit.yaml": {
       "domain": "unknown",
       "route": ".coderabbit.yaml",
@@ -10094,8 +10121,8 @@
       "taskchain": "polaris-core",
       "confidence": 0,
       "classification": "needs-review",
-      "last_updated": "2026-07-15T03:29:28.181Z",
-      "updated_by": "polaris-map-index",
+      "last_updated": "2026-07-28T21:26:35.559Z",
+      "updated_by": "polaris-map-update",
       "tags": [
         "test"
       ],

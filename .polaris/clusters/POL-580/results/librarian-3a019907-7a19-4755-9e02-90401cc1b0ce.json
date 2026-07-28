@@ -1,0 +1,105 @@
+{
+  "schema_version": "1.0",
+  "role": "closeout-librarian",
+  "run_id": "polaris-run-paperclip-role-routing-2026-07-28-002",
+  "dispatch_id": "3a019907-7a19-4755-9e02-90401cc1b0ce",
+  "cluster_id": "POL-580",
+  "status": "success",
+  "commit_sha": "9d4739192ba6708ccaaebd4d6bd9f3b15eb558f2",
+  "commit_message": "docs(closeout): reconcile cognition for cluster POL-580\n\nRun: polaris-run-paperclip-role-routing-2026-07-28-002\nCluster: POL-580\nChildren: POL-581, POL-582, POL-583, POL-584, POL-585\nFiles updated:\n- POLARIS.md: 2 files\n- SUMMARY.md: 2 files\n- docs ingested: 0\n- links repaired: 0",
+  "files_committed": [
+    "src/config/POLARIS.md",
+    "src/config/SUMMARY.md",
+    "src/loop/adapters/POLARIS.md",
+    "src/loop/adapters/SUMMARY.md"
+  ],
+  "drift_reconciliation": {
+    "medic_ran": false,
+    "charts_created": [],
+    "drift_observations": [
+      {
+        "type": "missing_documentation",
+        "target": "src/loop/adapters/POLARIS.md",
+        "severity": "medium"
+      },
+      {
+        "type": "canon_mismatch",
+        "target": "src/config/POLARIS.md",
+        "severity": "low"
+      },
+      {
+        "type": "missing_documentation",
+        "target": "smartdocs/specs/active/execution-adapters.md",
+        "severity": "low"
+      }
+    ],
+    "chart_links_required": false,
+    "charts_linked": []
+  },
+  "polaris_md_updates": [
+    {
+      "file": "src/loop/adapters/POLARIS.md",
+      "action": "update",
+      "change_summary": "Added paperclip.ts to file inventory; documented role-based assignee resolution (roleBindings/reportsTo fallback chain), work-product evidence gating on done status, and the advisory ROLE_SKILL_ROUTING hint."
+    },
+    {
+      "file": "src/config/POLARIS.md",
+      "action": "update",
+      "change_summary": "Added execution.paperclip roleBindings/reportsTo fields to the config field inventory."
+    }
+  ],
+  "summary_md_updates": [
+    {
+      "file": "src/loop/adapters/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Current State now covers PaperclipAdapter role-based assignee routing and work-product evidence gating on done status."
+    },
+    {
+      "file": "src/config/SUMMARY.md",
+      "action": "update",
+      "change_summary": "Current State now notes optional execution.paperclip roleBindings/reportsTo fields and their backward-compatible default."
+    },
+    {
+      "file": "src/loop/POLARIS.md",
+      "action": "no_change"
+    },
+    {
+      "file": "src/loop/SUMMARY.md",
+      "action": "no_change"
+    },
+    {
+      "file": "src/SUMMARY.md",
+      "action": "no_change"
+    },
+    {
+      "file": "test/SUMMARY.md",
+      "action": "no_change"
+    },
+    {
+      "file": "test/config/SUMMARY.md",
+      "action": "no_change"
+    }
+  ],
+  "docs_ingested": [],
+  "docs_archived": [],
+  "yaml_updates": [],
+  "cognition_archived": [],
+  "link_validation": {
+    "total_checked": 0,
+    "valid": 0,
+    "broken": 0,
+    "repaired": 0,
+    "unrepairable": []
+  },
+  "blockers": [
+    {
+      "type": "missing_documentation",
+      "target": "smartdocs/specs/active/execution-adapters.md",
+      "description": "PaperclipAdapter (src/loop/adapters/paperclip.ts) is not referenced by execution-adapters.md or provider-role-dispatch-governance.md. No raw candidate document exists in smartdocs/raw/ for this cluster's work, so there is nothing to promote; authoring a new spec is outside the Librarian's route-local POLARIS.md/SUMMARY.md reconciliation scope. Recommend an operator or future analysis child add Paperclip adapter coverage to execution-adapters.md.",
+      "resolution_required": false
+    }
+  ],
+  "reconciled_at": "2026-07-28T00:00:00Z",
+  "evidence_summary": "Cluster POL-580 (POL-581..POL-585) added Paperclip role-based assignee routing: PaperclipExecutionConfig gained optional roleBindings/reportsTo fields (schema.json, schema.ts), PaperclipAdapter gained resolveAssigneeForRole() (direct binding, then reportsTo org-chain fallback, then assigneeAgentId), an advisory ROLE_SKILL_ROUTING hint embedded in issue bodies, and a work-product-evidence gate that downgrades a Paperclip 'done' status lacking PR/commit/branch/attachment evidence to a worker-failure. Reconciled src/loop/adapters/POLARIS.md and SUMMARY.md (paperclip.ts was previously undocumented in the adapters route despite pre-existing in the tree) and src/config/POLARIS.md and SUMMARY.md (new config fields). test/config/POLARIS.md and SUMMARY.md remain an unreconciled draft template but only a test file was added there with no folder-level behavior change, so left as-is per reconciliation rules. No smartdocs/raw candidates correspond to this cluster's work, so no ingestion occurred. One blocker recorded: execution-adapters.md spec does not yet cover the Paperclip adapter generally; this predates this cluster and exceeds route-local reconciliation scope, flagged for operator/analysis follow-up. Committed all four doc updates as a single librarian commit.",
+  "prohibited_write_paths_respected": true
+}

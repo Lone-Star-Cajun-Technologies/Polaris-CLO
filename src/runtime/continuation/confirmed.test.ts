@@ -211,7 +211,14 @@ describe("confirmed.ts: adapter selection + autoDispatch gating", () => {
       artifact_dir: testArtifactDir,
       envelope,
       adapterOverride: "agent-subtask",
-      _adapterFactory: () => new PaperclipAdapter({ adapter: "paperclip", providers: {} }),
+      _adapterFactory: () =>
+        new PaperclipAdapter({
+          baseUrl: "https://paperclip.example.com",
+          companyId: "test-company",
+          assigneeAgentId: "test-agent",
+          tokenEnv: "PAPERCLIP_TOKEN",
+          runIdEnv: "PAPERCLIP_RUN_ID",
+        }),
     });
 
     expect(result.ok).toBe(true);

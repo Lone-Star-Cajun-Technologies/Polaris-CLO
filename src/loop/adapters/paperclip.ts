@@ -1,6 +1,6 @@
-import { mkdtempSync, unlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { sep } from "node:path";
+import { dirname, sep } from "node:path";
 import type {
   BootstrapPacket,
   DispatchOptions,
@@ -169,9 +169,37 @@ function workerRoleFromPacket(packet: BootstrapPacket): string {
   return "worker";
 }
 
+const ROLE_SKILL_ROUTING: Record<string, string> = {
+  analyst: "polaris-analyze",
+  worker: "polaris-run",
+  impl: "polaris-run",
+  finalize: "polaris-finalize",
+};
+
 function safeStr(raw: unknown, fallback: string): string {
   if (typeof raw === "string" && raw.trim().length > 0) return raw.trim();
   return fallback;
+}
+
+export function resolveAssigneeForRole(role: string, config: PaperclipRuntimeConfig): string {
+  const direct = config.roleBindings?.[role];
+  if (typeof direct === "string" && direct.trim() !== "") {
+    return direct.trim();
+  }
+  const seen = new Set<string>();
+  let current = role;
+  while (true) {
+    if (seen.has(current)) break;
+    seen.add(current);
+    const manager = config.reportsTo?.[current];
+    if (typeof manager !== "string" || manager.trim() === "") break;
+    const managerBinding = config.roleBindings?.[manager.trim()];
+    if (typeof managerBinding === "string" && managerBinding.trim() !== "") {
+      return managerBinding.trim();
+    }
+    current = manager.trim();
+  }
+  return config.assigneeAgentId;
 }
 
 export function mapBootstrapPacketToPaperclipIssue(
@@ -182,7 +210,8 @@ export function mapBootstrapPacketToPaperclipIssue(
   const executionBlock = (packet.context?.execution as
     | { paperclip?: { assigneeAgentId?: string; priority?: unknown; runId?: string } }
     | undefined)?.paperclip;
-  const assigneeAgentId = executionBlock?.assigneeAgentId ?? config.assigneeAgentId;
+  const role = workerRoleFromPacket(packet);
+  const assigneeAgentId = executionBlock?.assigneeAgentId ?? resolveAssigneeForRole(role, config);
   const rawPriority = executionBlock?.priority ?? "medium";
   const priorityText = typeof rawPriority === "string" ? rawPriority : String(rawPriority);
   const priority = safeStr(priorityText, "medium");
@@ -193,8 +222,15 @@ export function mapBootstrapPacketToPaperclipIssue(
   lines.push(`Child/Active child: \`${packet.active_child}\``);
   lines.push(`Dispatch ID: \`${dispatchId}\``);
   lines.push(``);
-  lines.push(`Worker role: \`${workerRoleFromPacket(packet)}\``);
+  lines.push(`Worker role: \`${role}\``);
   lines.push(``);
+
+  const polarisSkill = ROLE_SKILL_ROUTING[role];
+  if (polarisSkill) {
+    lines.push(`Polaris skill routing`);
+    lines.push(`- \`${role}\` → \`${polarisSkill}\``);
+    lines.push(``);
+  }
 
   const instructionsPrimaryGoal = safeStr(
     ((packet as BootstrapPacket & { instructions?: { primary_goal?: string } }).instructions as
@@ -489,7 +525,7 @@ export async function getPaperclipIssue(
   companyId: string,
   issueId: string,
   runIdHeader = "",
-): Promise<{ issue: Record<string, unknown>; status: { http: number; retry: string | null } }> {
+): Promise<{ issue: PaperclipIssue; status: { http: number; retry: string | null } }> {
   let lastRetry: string | null = null;
 
   for (let attempt = 1; attempt <= 2; attempt++) {
@@ -519,7 +555,7 @@ export async function getPaperclipIssue(
       );
     }
 
-    return { issue: body ?? {}, status: { http: status ?? 200, retry: null } };
+    return { issue: (body ?? {}) as PaperclipIssue, status: { http: status ?? 200, retry: null } };
   }
 
   throw new Error(
@@ -537,6 +573,61 @@ export function mergePaperclipRefIntoState(
     paperclip: { ...(state.paperclip as Record<string, unknown> | undefined), ...ref },
     result: { ...result },
   };
+}
+
+export interface PaperclipIssue extends Record<string, unknown> {
+  status?: string;
+  attachments?: unknown[];
+  pullRequest?: unknown;
+  pullRequests?: unknown[];
+  commit?: unknown;
+  commits?: unknown[];
+  branch?: unknown;
+  branches?: unknown[];
+  workProduct?: unknown;
+  workProducts?: unknown[];
+  work_product?: unknown;
+  work_products?: unknown[];
+  linkedPullRequests?: unknown[];
+  linkedCommits?: unknown[];
+  linkedBranches?: unknown[];
+}
+
+const WORK_PRODUCT_EVIDENCE_KEYS = [
+  "pullRequest",
+  "pullRequests",
+  "commit",
+  "commits",
+  "branch",
+  "branches",
+  "attachment",
+  "attachments",
+  "workProduct",
+  "workProducts",
+  "work_product",
+  "work_products",
+  "linkedPullRequests",
+  "linkedCommits",
+  "linkedBranches",
+];
+
+function isNonEmptyEvidence(value: unknown): boolean {
+  if (value === undefined || value === null) return false;
+  if (typeof value === "string") return value.trim().length > 0;
+  if (typeof value === "number" || typeof value === "boolean") return true;
+  if (Array.isArray(value)) return value.length > 0 && value.some((v) => isNonEmptyEvidence(v));
+  if (typeof value === "object") return Object.keys(value as Record<string, unknown>).length > 0;
+  return false;
+}
+
+export function hasWorkProductEvidence(issue: PaperclipIssue): { hasEvidence: boolean; evidenceFields: string[] } {
+  const evidenceFields: string[] = [];
+  for (const key of WORK_PRODUCT_EVIDENCE_KEYS) {
+    if (key in issue && isNonEmptyEvidence(issue[key])) {
+      evidenceFields.push(key);
+    }
+  }
+  return { hasEvidence: evidenceFields.length > 0, evidenceFields };
 }
 
 export async function waitForPaperclipExecution(
@@ -645,6 +736,61 @@ export class PaperclipAdapter implements ExecutionAdapter {
         runIdHeader,
         runId,
       );
+
+      const { issue: finalIssue } = await getPaperclipIssue(
+        this.runtimeConfig,
+        this.runtimeConfig.companyId,
+        created.id,
+        runIdHeader,
+      );
+      const resultFile = (packet as unknown as { result_file_contract?: { result_file?: string } }).result_file_contract?.result_file;
+      const sealedResult = finalIssue["result"];
+      if (
+        resultFile &&
+        typeof sealedResult === "object" &&
+        sealedResult !== null &&
+        !Array.isArray(sealedResult)
+      ) {
+        mkdirSync(dirname(resultFile), { recursive: true });
+        writeFileSync(resultFile, JSON.stringify(sealedResult, null, 2), "utf-8");
+      }
+      const finalStatus = typeof finalIssue.status === "string" ? finalIssue.status.trim().toLowerCase() : null;
+      if (finalStatus === "done") {
+        const evidence = hasWorkProductEvidence(finalIssue);
+        if (!evidence.hasEvidence) {
+          const message = `Paperclip issue ${created.id} reported status "done" but no verifiable work-product evidence (PR/commit/branch/attachment) was present in the issue response.`;
+          providerAttempts.push({
+            provider: primaryProvider,
+            failure_origin: "worker-execution",
+            failure_category: "worker-failure",
+            pre_dispatch_failure: false,
+            fallback_eligible: false,
+            message,
+          });
+          return {
+            exit_code: 2,
+            provider_used: primaryProvider,
+            command_run: `paperclip:${packet.active_child || "worker"}`,
+            summary: JSON.stringify({
+              child_id: packet.active_child,
+              status: "failed",
+              provider_used: primaryProvider,
+              issue_id: created.id,
+              company_id: this.runtimeConfig.companyId,
+              dispatch_id: dispatchId,
+              run_id: runId,
+              message,
+            }),
+            stderr: message,
+            pre_dispatch_failure: false,
+            failure_origin: "worker-execution",
+            failure_category: "worker-failure",
+            fallback_eligible: false,
+            router_evidence: options.routerDecision,
+            provider_attempts: JSON.parse(JSON.stringify(providerAttempts)) as NonNullable<DispatchResult["provider_attempts"]>,
+          };
+        }
+      }
 
       return {
         exit_code: 0,

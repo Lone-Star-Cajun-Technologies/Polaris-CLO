@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "1.0",
+  "clusterId": "POL-580",
+  "round": 2,
+  "resolvedAt": "2026-07-28T21:29:41.140Z",
+  "resolver": "Phillip meaux",
+  "resolvedOutcome": "pass",
+  "reason": "Both findings fixed at source: parent.ts now stores repo-relative dispatch_record paths (matching dispatch.ts convention), and .polaris/map/index.json regenerated to include paperclip.ts/paperclip.test.ts. Fresh coderabbit re-run confirms 0 findings.",
+  "findings": [
+    "coderabbit-1-1785273632721",
+    "coderabbit-2-1785273632721"
+  ]
+}

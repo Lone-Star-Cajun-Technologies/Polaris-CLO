@@ -16,6 +16,7 @@ The config subsystem loads, validates, and provides the resolved `PolarisConfig`
 - `sol` config fields — `SolConfig` with `history.enabled` (default `false`), `history.path` (default `.polaris/sol-history`), and threshold policy controls for SOL → run-health symptom triggers.
 - `run_health` config fields — `RunHealthConfig` and `ForemanSymptomsConfig` for foreman-side symptom emission.
 - `finalize.medic` config fields — `bypassPolicy` for the run-health Medic gate.
+- `execution.paperclip` config fields — `PaperclipExecutionConfig`, including optional `roleBindings` (worker role → Paperclip agent ID) and `reportsTo` (worker role → manager role, for org-chain assignee fallback) consumed by `PaperclipAdapter`.
 
 ## What does not belong here
 

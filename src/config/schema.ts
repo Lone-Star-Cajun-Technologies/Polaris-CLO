@@ -241,6 +241,16 @@ export interface PaperclipExecutionConfig {
    * Injected verbatim into the bootstrap coords block.
    */
   targetPaths?: string[];
+  /**
+   * Optional per-role assignee mapping. Keys are worker role names;
+   * values are Paperclip agent IDs (UUIDs).
+   */
+  roleBindings?: Record<string, string>;
+  /**
+   * Optional org-chain fallback: maps a role to another role whose
+   * binding should be used when the role itself has no direct binding.
+   */
+  reportsTo?: Record<string, string>;
 }
 
 export interface SkillPacketConfig {
