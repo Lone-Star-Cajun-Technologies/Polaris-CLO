@@ -965,17 +965,19 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
       registry_present: false,
       fallback_eligible: false,
     };
-  } else if (adapterName === "paperclip") {
-    // Paperclip is its own provider, not a CLI-invoked provider — skip
-    // resolveProviderAndMode (CLI provider selection) entirely.
-    providerName = "paperclip";
-    providerSelectionReason = "paperclip-adapter";
-    providersTried = ["paperclip"];
+  } else if (adapterName === "paperclip" && config.execution?.paperclip?.assigneeAgentId) {
+    // The Paperclip issue's assignee is the authoritative dispatch target —
+    // skip resolveProviderAndMode (CLI provider rotation) entirely so the
+    // rotation can never override the assignment River made on the issue.
+    const assigneeAgentId = config.execution.paperclip.assigneeAgentId;
+    providerName = assigneeAgentId;
+    providerSelectionReason = "paperclip-assignee";
+    providersTried = [assigneeAgentId];
     routingSummary = {
-      selected_provider: "paperclip",
+      selected_provider: assigneeAgentId,
       selected_adapter: "paperclip",
-      selection_reason: "paperclip-adapter",
-      effective_policy_order: ["paperclip"],
+      selection_reason: "paperclip-assignee",
+      effective_policy_order: [assigneeAgentId],
       compatibility_mode: false,
       registry_present: false,
       fallback_eligible: false,

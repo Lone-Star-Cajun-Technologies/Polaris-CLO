@@ -28,6 +28,16 @@ export interface BootstrapPacket {
   worker_id?: string;
   /** Arbitrary additional context the parent wants to pass to the worker. */
   context?: Record<string, unknown>;
+  /**
+   * Repo and workspace coordinates. When present, the Paperclip adapter
+   * serializes these into the issue description as a structured block so the
+   * worker never has to infer where to work. Enforced at adapter level.
+   */
+  repo_coordinates?: {
+    repoUrl: string;
+    workingDirectory: string;
+    targetPaths: string[];
+  };
 }
 
 /**
