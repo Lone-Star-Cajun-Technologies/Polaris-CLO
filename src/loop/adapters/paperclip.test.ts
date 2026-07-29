@@ -150,8 +150,6 @@ describe("mapBootstrapPacketToPaperclipIssue — foreman self-assignment validat
 
 // ── Handoff Disposition Validation Tests ──
 
-import { testEnvironment } from "./test.js";
-
 describe("validateSuccessfulRunHandoff disposition validation", () => {
   // Note: validateSuccessfulRunHandoff is internal to the adapter dispatch flow.
   // These tests verify the logic indirectly through dispatch result validation.
