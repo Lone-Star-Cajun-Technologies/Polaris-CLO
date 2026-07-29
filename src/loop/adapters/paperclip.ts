@@ -202,6 +202,34 @@ export function resolveAssigneeForRole(role: string, config: PaperclipRuntimeCon
   return config.assigneeAgentId;
 }
 
+/**
+ * Validate that the assigned agent is not a foreman self-assigning to a child work slot.
+ * Foremen must delegate to workers, not execute child work themselves.
+ */
+function validateChildAssignment(
+  role: string,
+  assigneeAgentId: string,
+  config: PaperclipRuntimeConfig,
+): { valid: boolean; error?: string } {
+  // Only validate child/worker roles — foremen can be assigned to their own coordination tasks
+  const childRoles = ["worker", "analyst", "repair"];
+  if (!childRoles.includes(role)) {
+    return { valid: true };
+  }
+
+  // Check if the assigned agent is a foreman
+  const foremanAgents = config.roleRegistry?.foreman ?? [];
+  if (foremanAgents.includes(assigneeAgentId)) {
+    return {
+      valid: false,
+      error: `Foreman (agent ${assigneeAgentId.slice(0, 8)}…) cannot self-assign to a child work slot. ` +
+             `Must delegate to a worker from the pool.`,
+    };
+  }
+
+  return { valid: true };
+}
+
 export function mapBootstrapPacketToPaperclipIssue(
   packet: BootstrapPacket,
   config: PaperclipRuntimeConfig,
@@ -212,6 +240,13 @@ export function mapBootstrapPacketToPaperclipIssue(
     | undefined)?.paperclip;
   const role = workerRoleFromPacket(packet);
   const assigneeAgentId = executionBlock?.assigneeAgentId ?? resolveAssigneeForRole(role, config);
+
+  // Validate foreman self-assignment
+  const validation = validateChildAssignment(role, assigneeAgentId, config);
+  if (!validation.valid) {
+    throw new Error(`Child assignment validation failed: ${validation.error}`);
+  }
+
   const rawPriority = executionBlock?.priority ?? "medium";
   const priorityText = typeof rawPriority === "string" ? rawPriority : String(rawPriority);
   const priority = safeStr(priorityText, "medium");
@@ -648,6 +683,60 @@ export function hasWorkProductEvidence(issue: PaperclipIssue): { hasEvidence: bo
   return { hasEvidence: evidenceFields.length > 0, evidenceFields };
 }
 
+/**
+ * Validate that the issue has a valid successfulRunHandoff disposition.
+ * Returns { valid: true } if handoff is properly settled, or { valid: false, message } if not.
+ */
+function validateSuccessfulRunHandoff(issue: PaperclipIssue): { valid: boolean; message?: string } {
+  const handoff = (issue as Record<string, unknown>).successfulRunHandoff as
+    | { state?: string; correctiveRunId?: string | null; hasLiveContinuation?: boolean }
+    | null
+    | undefined;
+
+  // No handoff record: the issue didn't establish a disposition
+  if (!handoff) {
+    return {
+      valid: false,
+      message: "No successfulRunHandoff disposition record found. Issue must establish a valid disposition (resolved/escalated with continuation) before completing.",
+    };
+  }
+
+  const state = typeof handoff.state === "string" ? handoff.state : null;
+
+  // Resolved state: valid completion
+  if (state === "resolved") {
+    return { valid: true };
+  }
+
+  // Escalated state: must have either a corrective run or live continuation
+  if (state === "escalated") {
+    const hasCorrectiveRun = typeof handoff.correctiveRunId === "string" && handoff.correctiveRunId.trim().length > 0;
+    const hasLiveContinuation = handoff.hasLiveContinuation === true;
+
+    if (hasCorrectiveRun || hasLiveContinuation) {
+      return { valid: true };
+    }
+
+    return {
+      valid: false,
+      message: "Issue escalated but no corrective run or live continuation path is set. Escalation requires a clear path forward.",
+    };
+  }
+
+  // Required state: not yet settled
+  if (state === "required") {
+    return {
+      valid: false,
+      message: "Issue did not resolve the successfulRunHandoff requirement. Must complete a valid disposition (resolved or escalated with continuation).",
+    };
+  }
+
+  return {
+    valid: false,
+    message: `Unknown successfulRunHandoff state: "${state}". Expected one of: resolved, escalated, required.`,
+  };
+}
+
 export async function waitForPaperclipExecution(
   config: PaperclipRuntimeConfig,
   companyId: string,
@@ -774,9 +863,46 @@ export class PaperclipAdapter implements ExecutionAdapter {
       }
       const finalStatus = typeof finalIssue.status === "string" ? finalIssue.status.trim().toLowerCase() : null;
       if (finalStatus === "done") {
+        // Validate work-product evidence
         const evidence = hasWorkProductEvidence(finalIssue);
         if (!evidence.hasEvidence) {
           const message = `Paperclip issue ${created.id} reported status "done" but no verifiable work-product evidence (PR/commit/branch/attachment) was present in the issue response.`;
+          providerAttempts.push({
+            provider: primaryProvider,
+            failure_origin: "worker-execution",
+            failure_category: "worker-failure",
+            pre_dispatch_failure: false,
+            fallback_eligible: false,
+            message,
+          });
+          return {
+            exit_code: 2,
+            provider_used: primaryProvider,
+            command_run: `paperclip:${packet.active_child || "worker"}`,
+            summary: JSON.stringify({
+              child_id: packet.active_child,
+              status: "failed",
+              provider_used: primaryProvider,
+              issue_id: created.id,
+              company_id: this.runtimeConfig.companyId,
+              dispatch_id: dispatchId,
+              run_id: runId,
+              message,
+            }),
+            stderr: message,
+            pre_dispatch_failure: false,
+            failure_origin: "worker-execution",
+            failure_category: "worker-failure",
+            fallback_eligible: false,
+            router_evidence: options.routerDecision,
+            provider_attempts: JSON.parse(JSON.stringify(providerAttempts)) as NonNullable<DispatchResult["provider_attempts"]>,
+          };
+        }
+
+        // Validate successfulRunHandoff disposition
+        const handoffValidation = validateSuccessfulRunHandoff(finalIssue);
+        if (!handoffValidation.valid) {
+          const message = `Paperclip issue ${created.id} completed but handoff disposition is invalid: ${handoffValidation.message}`;
           providerAttempts.push({
             provider: primaryProvider,
             failure_origin: "worker-execution",
