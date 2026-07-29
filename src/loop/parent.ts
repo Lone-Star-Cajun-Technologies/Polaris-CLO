@@ -181,7 +181,9 @@ export type ParentLoopHaltReason =
   | 'analyze-parent' // Cluster root is an ANALYZE issue
   | 'analyze-drift' // Next child is an analyze issue and allow_analyze_children is false
   | 'supervised-mode-child-complete' // Child completed in supervised mode
-  | 'preflight-failed'; // A child failed preflight validation (e.g. missing body)
+  | 'preflight-failed' // A child failed preflight validation (e.g. missing body)
+  | 'config-missing' // Required Paperclip role/assignee configuration is absent
+  | 'config-invalid'; // Paperclip role/assignee configuration is present but invalid
 
 export interface ParentLoopResult {
   /** Final halt reason. */
@@ -967,21 +969,68 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
       registry_present: false,
       fallback_eligible: false,
     };
-  } else if (adapterName === "paperclip" && config.execution?.paperclip?.assigneeAgentId) {
-    // The Paperclip issue's assignee is the authoritative dispatch target —
-    // skip resolveProviderAndMode (CLI provider rotation) entirely so the
-    // rotation can never override the assignment River made on the issue.
-    const assigneeAgentId = config.execution.paperclip.assigneeAgentId;
-    providerName = assigneeAgentId;
-    providerSelectionReason = "paperclip-assignee";
-    providersTried = [assigneeAgentId];
+  } else if (adapterName === "paperclip") {
+    // Resolve role from state.worker_role or state.role; default to "worker"
+    const dispatchRole =
+      typeof state === "object" && state !== null
+        ? (state as any).worker_role ?? (state as any).role ?? "worker"
+        : "worker";
+    const pc = config.execution?.paperclip;
+    const roleRegistry = (pc?.roleRegistry as Record<string, string[]> | undefined) ?? {};
+    const candidates = roleRegistry[dispatchRole] ?? [];
+
+    let resolvedAssignee: string | undefined;
+    let selectionReason: string;
+
+    if (candidates.length === 1) {
+      // Singleton role: auto-assign to the one capable agent
+      resolvedAssignee = candidates[0];
+      selectionReason = "paperclip-role-auto";
+    } else if (candidates.length > 1) {
+      // Multi-agent role: require the foreman to have made an explicit
+      // assignee pick on the Paperclip issue. Polaris must honor that pick.
+      const issueAssignee = pc?.assigneeAgentId;
+      if (!issueAssignee) {
+        return {
+          haltReason: "config-missing",
+          childrenDispatched: 0,
+          message: `Paperclip role "${dispatchRole}" has multiple capable agents (${candidates.join(", ")}), but no assigneeAgentId is set on the issue. The foreman must explicitly assign the issue before Polaris dispatches.`,
+        };
+      }
+      if (!candidates.includes(issueAssignee)) {
+        return {
+          haltReason: "config-invalid",
+          childrenDispatched: 0,
+          message: `Paperclip issue assignee ${issueAssignee} is not in roleRegistry["${dispatchRole}"] (${candidates.join(", ")}). The foreman's pick must be one of the role's capable agents.`,
+        };
+      }
+      resolvedAssignee = issueAssignee;
+      selectionReason = "paperclip-foreman-pick";
+    } else {
+      // Role not in registry and no fallback assignee configured
+      const assigneeAgentId = pc?.assigneeAgentId;
+      if (assigneeAgentId) {
+        resolvedAssignee = assigneeAgentId;
+        selectionReason = "paperclip-fallback";
+      } else {
+        return {
+          haltReason: "config-missing",
+          childrenDispatched: 0,
+          message: `No Paperclip agent configured for role "${dispatchRole}". Add execution.paperclip.roleRegistry["${dispatchRole}"] or set execution.paperclip.assigneeAgentId.`,
+        };
+      }
+    }
+
+    providerName = resolvedAssignee;
+    providerSelectionReason = selectionReason;
+    providersTried = [resolvedAssignee];
     routingSummary = {
-      selected_provider: assigneeAgentId,
+      selected_provider: resolvedAssignee,
       selected_adapter: "paperclip",
-      selection_reason: "paperclip-assignee",
-      effective_policy_order: [assigneeAgentId],
+      selection_reason: selectionReason,
+      effective_policy_order: [resolvedAssignee],
       compatibility_mode: false,
-      registry_present: false,
+      registry_present: true,
       fallback_eligible: false,
     };
   } else {

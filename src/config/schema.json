@@ -620,6 +620,14 @@
         "reportsTo": {
           "type": "object",
           "additionalProperties": { "type": "string" }
+        },
+        "roleRegistry": {
+          "type": "object",
+          "description": "Map of Polaris worker role to allowed Paperclip agent UUIDs.",
+          "additionalProperties": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
         }
       }
     }

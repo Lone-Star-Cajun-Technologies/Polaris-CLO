@@ -251,6 +251,16 @@ export interface PaperclipExecutionConfig {
    * binding should be used when the role itself has no direct binding.
    */
   reportsTo?: Record<string, string>;
+  /**
+   * Map of Polaris worker role to the list of Paperclip agent UUIDs capable
+   * of fulfilling that role.
+   *
+   * - 1 entry: Polaris auto-assigns that agent.
+   * - >1 entries: Polaris requires the Paperclip issue's `assigneeAgentId`
+   *   to be one of the listed agents (foreman's explicit pick).
+   * - 0 entries: falls back to `assigneeAgentId` or halts with a config error.
+   */
+  roleRegistry?: Record<string, string[]>;
 }
 
 export interface SkillPacketConfig {

@@ -1341,7 +1341,7 @@ describe("runParentLoop", () => {
     });
   });
 
-  it("falls back to provider rotation when the Paperclip issue has no assigneeAgentId configured", async () => {
+  it("halts with a config error when the Paperclip adapter has neither a roleRegistry nor an assigneeAgentId", async () => {
     const calls: MockCall[] = [];
     const mockAdapter = makeMockAdapter([SUCCESS_RESULT], calls);
     vi.mocked(createAdapter).mockReturnValue(mockAdapter);
@@ -1366,14 +1366,230 @@ describe("runParentLoop", () => {
       max_children_per_session: 10,
     });
 
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(result.haltReason).toBe("config-missing");
+    expect(result.message).toContain('No Paperclip agent configured for role "worker"');
+    expect(calls.length).toBe(0);
+  });
+
+  it("auto-assigns the sole capable agent when roleRegistry has exactly one candidate for the role", async () => {
+    const calls: MockCall[] = [];
+    const mockAdapter = makeMockAdapter([SUCCESS_RESULT], calls);
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    const { loadConfig } = await import("../config/loader.js");
+    vi.mocked(loadConfig).mockReturnValueOnce({
+      orchestration: {
+        mode: "auto",
+        notification_format: "verbose",
+        auto_finalize: false,
+      },
+      execution: {
+        adapter: "paperclip",
+        paperclip: {
+          baseUrl: "http://127.0.0.1:3100",
+          companyId: "e4e9384a-d4a5-46f2-a444-92f5aa6ebdc6",
+          tokenEnv: "PAPERCLIP_API_KEY",
+          runIdEnv: "PAPERCLIP_RUN_ID",
+          roleRegistry: {
+            worker: ["39f35fc9-5434-4226-83e3-a435809aac81"],
+          },
+        },
+      },
+    } as unknown as Required<import("../config/schema.js").PolarisConfig>);
+
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+
     await runParentLoop({ stateFile, repoRoot: tmpDir });
 
-    expect(createAdapter).toHaveBeenCalledWith(
-      "paperclip",
-      expect.objectContaining({ adapter: "paperclip" }),
+    expect(calls[0].options.provider).toBe("39f35fc9-5434-4226-83e3-a435809aac81");
+
+    const telemetry = readJsonLines(join(tmpDir, "runs", "test-run-001", "telemetry.jsonl"));
+    const dispatched = telemetry.find((event) => event["event"] === "child-dispatched");
+    expect((dispatched?.["routing_summary"] as Record<string, unknown>)?.["selection_reason"]).toBe(
+      "paperclip-role-auto",
     );
-    // No assignee configured — falls back to the existing rotation, which resolves "mock".
-    expect(calls[0].options.provider).toBe("mock");
+  });
+
+  it("honors the foreman's explicit assigneeAgentId pick for a multi-agent role", async () => {
+    const calls: MockCall[] = [];
+    const mockAdapter = makeMockAdapter([SUCCESS_RESULT], calls);
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    const { loadConfig } = await import("../config/loader.js");
+    vi.mocked(loadConfig).mockReturnValueOnce({
+      orchestration: {
+        mode: "auto",
+        notification_format: "verbose",
+        auto_finalize: false,
+      },
+      execution: {
+        adapter: "paperclip",
+        paperclip: {
+          baseUrl: "http://127.0.0.1:3100",
+          companyId: "e4e9384a-d4a5-46f2-a444-92f5aa6ebdc6",
+          tokenEnv: "PAPERCLIP_API_KEY",
+          runIdEnv: "PAPERCLIP_RUN_ID",
+          assigneeAgentId: "9143ed5c-8356-43b8-9b4d-035cbfcf5793",
+          roleRegistry: {
+            worker: [
+              "b3caa4b2-0578-40ee-8042-42bffd6fcb5c",
+              "9143ed5c-8356-43b8-9b4d-035cbfcf5793",
+            ],
+          },
+        },
+      },
+    } as unknown as Required<import("../config/schema.js").PolarisConfig>);
+
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+
+    await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(calls[0].options.provider).toBe("9143ed5c-8356-43b8-9b4d-035cbfcf5793");
+
+    const telemetry = readJsonLines(join(tmpDir, "runs", "test-run-001", "telemetry.jsonl"));
+    const dispatched = telemetry.find((event) => event["event"] === "child-dispatched");
+    expect((dispatched?.["routing_summary"] as Record<string, unknown>)?.["selection_reason"]).toBe(
+      "paperclip-foreman-pick",
+    );
+  });
+
+  it("halts when a multi-agent role has no issue assigneeAgentId set", async () => {
+    const calls: MockCall[] = [];
+    const mockAdapter = makeMockAdapter([SUCCESS_RESULT], calls);
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    const { loadConfig } = await import("../config/loader.js");
+    vi.mocked(loadConfig).mockReturnValueOnce({
+      orchestration: {
+        mode: "auto",
+        notification_format: "verbose",
+        auto_finalize: false,
+      },
+      execution: {
+        adapter: "paperclip",
+        paperclip: {
+          baseUrl: "http://127.0.0.1:3100",
+          companyId: "e4e9384a-d4a5-46f2-a444-92f5aa6ebdc6",
+          tokenEnv: "PAPERCLIP_API_KEY",
+          runIdEnv: "PAPERCLIP_RUN_ID",
+          roleRegistry: {
+            worker: [
+              "b3caa4b2-0578-40ee-8042-42bffd6fcb5c",
+              "9143ed5c-8356-43b8-9b4d-035cbfcf5793",
+            ],
+          },
+        },
+      },
+    } as unknown as Required<import("../config/schema.js").PolarisConfig>);
+
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(result.haltReason).toBe("config-missing");
+    expect(result.message).toContain("The foreman must explicitly assign the issue");
+    expect(calls.length).toBe(0);
+  });
+
+  it("halts when the issue assigneeAgentId is not among the role's registry candidates", async () => {
+    const calls: MockCall[] = [];
+    const mockAdapter = makeMockAdapter([SUCCESS_RESULT], calls);
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    const { loadConfig } = await import("../config/loader.js");
+    vi.mocked(loadConfig).mockReturnValueOnce({
+      orchestration: {
+        mode: "auto",
+        notification_format: "verbose",
+        auto_finalize: false,
+      },
+      execution: {
+        adapter: "paperclip",
+        paperclip: {
+          baseUrl: "http://127.0.0.1:3100",
+          companyId: "e4e9384a-d4a5-46f2-a444-92f5aa6ebdc6",
+          tokenEnv: "PAPERCLIP_API_KEY",
+          runIdEnv: "PAPERCLIP_RUN_ID",
+          assigneeAgentId: "98f310f0-1062-48a3-b02f-6dae833859fb",
+          roleRegistry: {
+            worker: [
+              "b3caa4b2-0578-40ee-8042-42bffd6fcb5c",
+              "9143ed5c-8356-43b8-9b4d-035cbfcf5793",
+            ],
+          },
+        },
+      },
+    } as unknown as Required<import("../config/schema.js").PolarisConfig>);
+
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(result.haltReason).toBe("config-invalid");
+    expect(result.message).toContain("is not in roleRegistry");
+    expect(calls.length).toBe(0);
+  });
+
+  it("falls back to the flat assigneeAgentId when the role isn't present in roleRegistry", async () => {
+    const calls: MockCall[] = [];
+    const mockAdapter = makeMockAdapter([SUCCESS_RESULT], calls);
+    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
+
+    const { loadConfig } = await import("../config/loader.js");
+    vi.mocked(loadConfig).mockReturnValueOnce({
+      orchestration: {
+        mode: "auto",
+        notification_format: "verbose",
+        auto_finalize: false,
+      },
+      execution: {
+        adapter: "paperclip",
+        paperclip: {
+          baseUrl: "http://127.0.0.1:3100",
+          companyId: "e4e9384a-d4a5-46f2-a444-92f5aa6ebdc6",
+          tokenEnv: "PAPERCLIP_API_KEY",
+          runIdEnv: "PAPERCLIP_RUN_ID",
+          assigneeAgentId: "7e7e6e43-505e-4edb-bf6b-7cb54aab261c",
+          roleRegistry: {
+            librarian: ["af226c67-3541-45ba-839a-b2fafb4ea75c"],
+          },
+        },
+      },
+    } as unknown as Required<import("../config/schema.js").PolarisConfig>);
+
+    const stateFile = makeStateFile(tmpDir, {
+      open_children: ["POL-100"],
+      children_completed: 0,
+      max_children_per_session: 10,
+    });
+
+    await runParentLoop({ stateFile, repoRoot: tmpDir });
+
+    expect(calls[0].options.provider).toBe("7e7e6e43-505e-4edb-bf6b-7cb54aab261c");
+
+    const telemetry = readJsonLines(join(tmpDir, "runs", "test-run-001", "telemetry.jsonl"));
+    const dispatched = telemetry.find((event) => event["event"] === "child-dispatched");
+    expect((dispatched?.["routing_summary"] as Record<string, unknown>)?.["selection_reason"]).toBe(
+      "paperclip-fallback",
+    );
   });
 
   it("halts when a worker reports done without commit evidence", async () => {

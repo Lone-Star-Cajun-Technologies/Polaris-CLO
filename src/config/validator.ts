@@ -674,6 +674,50 @@ export function validateConfig(config: unknown): ValidationResult {
             result.valid = false;
             result.errors.push("execution.paperclip.timeoutMs must be a positive integer");
           }
+
+          if ("roleRegistry" in paperclip && paperclip.roleRegistry !== undefined) {
+            if (!isPlainObject(paperclip.roleRegistry)) {
+              result.valid = false;
+              result.errors.push("execution.paperclip.roleRegistry must be a plain object");
+            } else {
+              const validRoles = new Set<string>([
+                "foreman",
+                "worker",
+                "librarian",
+                "medic",
+                "qc",
+                "repair",
+                "startup",
+                "preflight",
+                "finalize",
+                "analyze",
+              ]);
+              const registry = paperclip.roleRegistry as Record<string, unknown>;
+              for (const [key, value] of Object.entries(registry)) {
+                if (!validRoles.has(key)) {
+                  result.valid = false;
+                  result.errors.push(`execution.paperclip.roleRegistry has invalid role key: ${key}. Valid keys: ${Array.from(validRoles).join(", ")}.`);
+                }
+                if (!Array.isArray(value)) {
+                  result.valid = false;
+                  result.errors.push(`execution.paperclip.roleRegistry["${key}"] must be an array of agent UUID strings.`);
+                  continue;
+                }
+                const seen = new Set<string>();
+                for (const agentId of value) {
+                  if (!isString(agentId) || !uuidRegex.test(agentId)) {
+                    result.valid = false;
+                    result.errors.push(`execution.paperclip.roleRegistry["${key}"] contains non-UUID value: ${String(agentId)}`);
+                  }
+                  if (seen.has(agentId)) {
+                    result.valid = false;
+                    result.errors.push(`execution.paperclip.roleRegistry["${key}"] contains duplicate agent: ${agentId}`);
+                  }
+                  seen.add(agentId);
+                }
+              }
+            }
+          }
         }
       }
     }
