@@ -198,7 +198,7 @@ function setupMockServer(
         return;
       }
 
-      const issueMatch = req.url?.match(/^\/api\/companies\/[^/]+\/issues\/([^/]+)$/);
+      const issueMatch = req.url?.match(/^\/api\/companies\/[^\/]+\/issues\/([^/]+)$/);
       if (issueMatch && req.method === "GET") {
         const issue = [...store.values()].find((v) => v.id === issueMatch[1]);
         if (!issue) {
@@ -213,6 +213,16 @@ function setupMockServer(
             ...(opts.evidence ?? {}),
             ...(opts.result ? { result: opts.result } : {}),
             status: opts.terminalStatus ?? "done",
+            successfulRunHandoff: {
+              state: "resolved",
+              required: true,
+              hasLiveContinuation: false,
+              sourceRunId: null,
+              correctiveRunId: null,
+              assigneeAgentId: issue.assigneeAgentId ?? null,
+              detectedProgressSummary: "Lifecycle execution completed",
+              createdAt: new Date().toISOString(),
+            },
             updatedAt: new Date().toISOString(),
           }),
         );
