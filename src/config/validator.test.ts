@@ -1171,4 +1171,123 @@ describe("validateConfig — execution.paperclip", () => {
       "execution.paperclip.runIdEnv must be a valid environment variable name",
     );
   });
+
+  it("accepts a valid roleRegistry with UUID arrays", () => {
+    const result = validateConfig({
+      execution: {
+        adapter: "paperclip",
+        paperclip: {
+          baseUrl: "http://127.0.0.1:3100",
+          companyId: "e4e9384a-d4a5-46f2-a444-92f5aa6ebdc6",
+          assigneeAgentId: "39f35fc9-5434-4226-83e3-a435809aac81",
+          tokenEnv: "PAPERCLIP_TOKEN",
+          runIdEnv: "PAPERCLIP_RUN_ID",
+          roleRegistry: {
+            worker: [
+              "b3caa4b2-0578-40ee-8042-42bffd6fcb5c",
+              "9143ed5c-8356-43b8-9b4d-035cbfcf5793",
+            ],
+            librarian: ["af226c67-3541-45ba-839a-b2fafb4ea75c"],
+            qc: [],
+          },
+        },
+      },
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it("rejects an invalid role key in roleRegistry", () => {
+    const result = validateConfig({
+      execution: {
+        adapter: "paperclip",
+        paperclip: {
+          baseUrl: "http://127.0.0.1:3100",
+          companyId: "e4e9384a-d4a5-46f2-a444-92f5aa6ebdc6",
+          assigneeAgentId: "39f35fc9-5434-4226-83e3-a435809aac81",
+          tokenEnv: "PAPERCLIP_TOKEN",
+          runIdEnv: "PAPERCLIP_RUN_ID",
+          roleRegistry: {
+            bogusRole: ["39f35fc9-5434-4226-83e3-a435809aac81"],
+          },
+        },
+      },
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      "execution.paperclip.roleRegistry has invalid role key: bogusRole. Valid keys: foreman, worker, librarian, medic, qc, repair, startup, preflight, finalize, analyze.",
+    );
+  });
+
+  it("rejects non-UUID values in roleRegistry", () => {
+    const result = validateConfig({
+      execution: {
+        adapter: "paperclip",
+        paperclip: {
+          baseUrl: "http://127.0.0.1:3100",
+          companyId: "e4e9384a-d4a5-46f2-a444-92f5aa6ebdc6",
+          assigneeAgentId: "39f35fc9-5434-4226-83e3-a435809aac81",
+          tokenEnv: "PAPERCLIP_TOKEN",
+          runIdEnv: "PAPERCLIP_RUN_ID",
+          roleRegistry: {
+            worker: ["not-a-uuid"],
+          },
+        },
+      },
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      'execution.paperclip.roleRegistry["worker"] contains non-UUID value: not-a-uuid',
+    );
+  });
+
+  it("rejects duplicate entries within a roleRegistry array", () => {
+    const result = validateConfig({
+      execution: {
+        adapter: "paperclip",
+        paperclip: {
+          baseUrl: "http://127.0.0.1:3100",
+          companyId: "e4e9384a-d4a5-46f2-a444-92f5aa6ebdc6",
+          assigneeAgentId: "39f35fc9-5434-4226-83e3-a435809aac81",
+          tokenEnv: "PAPERCLIP_TOKEN",
+          runIdEnv: "PAPERCLIP_RUN_ID",
+          roleRegistry: {
+            worker: [
+              "b3caa4b2-0578-40ee-8042-42bffd6fcb5c",
+              "b3caa4b2-0578-40ee-8042-42bffd6fcb5c",
+            ],
+          },
+        },
+      },
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      'execution.paperclip.roleRegistry["worker"] contains duplicate agent: b3caa4b2-0578-40ee-8042-42bffd6fcb5c',
+    );
+  });
+
+  it("accepts an empty array in roleRegistry to mean no agent for that role", () => {
+    const result = validateConfig({
+      execution: {
+        adapter: "paperclip",
+        paperclip: {
+          baseUrl: "http://127.0.0.1:3100",
+          companyId: "e4e9384a-d4a5-46f2-a444-92f5aa6ebdc6",
+          assigneeAgentId: "39f35fc9-5434-4226-83e3-a435809aac81",
+          tokenEnv: "PAPERCLIP_TOKEN",
+          runIdEnv: "PAPERCLIP_RUN_ID",
+          roleRegistry: {
+            qc: [],
+          },
+        },
+      },
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
 });

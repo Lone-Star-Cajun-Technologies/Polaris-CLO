@@ -181,7 +181,8 @@ export type ParentLoopHaltReason =
   | 'analyze-parent' // Cluster root is an ANALYZE issue
   | 'analyze-drift' // Next child is an analyze issue and allow_analyze_children is false
   | 'supervised-mode-child-complete' // Child completed in supervised mode
-  | 'preflight-failed'; // A child failed preflight validation (e.g. missing body)
+  | 'preflight-failed' // A child failed preflight validation (e.g. missing body)
+  | 'config-missing'; // Required Paperclip role/assignee configuration is absent
 
 export interface ParentLoopResult {
   /** Final halt reason. */
@@ -967,23 +968,73 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
       registry_present: false,
       fallback_eligible: false,
     };
-  } else if (adapterName === "paperclip" && config.execution?.paperclip?.assigneeAgentId) {
-    // The Paperclip issue's assignee is the authoritative dispatch target —
-    // skip resolveProviderAndMode (CLI provider rotation) entirely so the
-    // rotation can never override the assignment River made on the issue.
-    const assigneeAgentId = config.execution.paperclip.assigneeAgentId;
-    providerName = assigneeAgentId;
-    providerSelectionReason = "paperclip-assignee";
-    providersTried = [assigneeAgentId];
-    routingSummary = {
-      selected_provider: assigneeAgentId,
-      selected_adapter: "paperclip",
-      selection_reason: "paperclip-assignee",
-      effective_policy_order: [assigneeAgentId],
-      compatibility_mode: false,
-      registry_present: false,
-      fallback_eligible: false,
-    };
+  } else if (adapterName === "paperclip") {
+    // Resolve role from state.worker_role or state.role; default to "worker".
+    // This is a routing/telemetry label only: the Paperclip issue doesn't
+    // exist yet at this point, so the real assignee is resolved by the
+    // adapter itself (resolveAssigneeForRole: roleBindings -> reportsTo
+    // chain -> assigneeAgentId) when it creates the issue.
+    const dispatchRole =
+      typeof state === "object" && state !== null
+        ? (state as any).worker_role ?? (state as any).role ?? "worker"
+        : "worker";
+    const pc = config.execution?.paperclip;
+    const roleRegistry = (pc?.roleRegistry as Record<string, string[]> | undefined) ?? {};
+    const candidates = roleRegistry[dispatchRole] ?? [];
+
+    if (candidates.length === 1) {
+      // Singleton role: exactly one agent is capable of it.
+      providerName = candidates[0];
+      providerSelectionReason = "paperclip-role-auto";
+      providersTried = [candidates[0]];
+      routingSummary = {
+        selected_provider: candidates[0],
+        selected_adapter: "paperclip",
+        selection_reason: "paperclip-role-auto",
+        effective_policy_order: [candidates[0]],
+        compatibility_mode: false,
+        registry_present: true,
+        fallback_eligible: false,
+      };
+    } else if (candidates.length > 1) {
+      // Multi-agent role: don't halt and don't force a pick — the adapter
+      // resolves the actual assignee at issue-creation time. Record the
+      // candidate pool for telemetry only.
+      providerName = "paperclip-multi-role";
+      providerSelectionReason = "paperclip-multi-role";
+      providersTried = candidates;
+      routingSummary = {
+        selected_provider: null,
+        selected_adapter: "paperclip",
+        selection_reason: "paperclip-multi-role",
+        effective_policy_order: candidates,
+        compatibility_mode: false,
+        registry_present: true,
+        fallback_eligible: false,
+      };
+    } else {
+      // Role not in registry: fall back to the flat assigneeAgentId, or halt.
+      const assigneeAgentId = pc?.assigneeAgentId;
+      if (!assigneeAgentId) {
+        return {
+          haltReason: "config-missing",
+          childrenDispatched: 0,
+          message: `No Paperclip agent configured for role "${dispatchRole}". Add execution.paperclip.roleRegistry["${dispatchRole}"] or set execution.paperclip.assigneeAgentId.`,
+        };
+      }
+      providerName = assigneeAgentId;
+      providerSelectionReason = "paperclip-fallback";
+      providersTried = [assigneeAgentId];
+      routingSummary = {
+        selected_provider: assigneeAgentId,
+        selected_adapter: "paperclip",
+        selection_reason: "paperclip-fallback",
+        effective_policy_order: [assigneeAgentId],
+        compatibility_mode: false,
+        registry_present: true,
+        fallback_eligible: false,
+      };
+    }
   } else {
     let evidence;
     try {
