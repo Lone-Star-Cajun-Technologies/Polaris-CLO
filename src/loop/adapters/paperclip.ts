@@ -309,6 +309,17 @@ export function mapBootstrapPacketToPaperclipIssue(
   lines.push(``);
 
   const description = lines.join("\n");
+  // instructions.primary_goal and .steps are already rendered in full above
+  // ("Primary goal" / "Ordered steps" sections) — omit them from the JSON
+  // dump so the packet isn't duplicated twice in the same issue body.
+  const rawInstructions = (packet as BootstrapPacket & { instructions?: Record<string, unknown> })
+    .instructions;
+  const compactInstructions = rawInstructions
+    ? (() => {
+        const { primary_goal, steps, ...rest } = rawInstructions;
+        return rest;
+      })()
+    : undefined;
   const packetJsonDump = JSON.stringify(
     {
       schema_version: packet.schema_version,
@@ -320,8 +331,7 @@ export function mapBootstrapPacketToPaperclipIssue(
       state_file: packet.state_file,
       telemetry_file: packet.telemetry_file,
       worker_role: workerRoleFromPacket(packet),
-      instructions: ((packet as BootstrapPacket & { instructions?: Record<string, unknown> }).instructions ??
-        undefined),
+      instructions: compactInstructions,
       context: packet.context,
     },
     null,
@@ -332,8 +342,16 @@ export function mapBootstrapPacketToPaperclipIssue(
 POLARIS_PACKET_JSON
 ${packetJsonDump}
 \`\`\``;
+  // Postgres' issues_open_normalized_title_created_idx btree entry (company_id
+  // + parent_id + normalized title + created_at) caps out at ~2704 bytes.
+  // descriptionFallback can be the full multi-KB primary_goal text, so the
+  // title needs its own short, capped value rather than reusing it verbatim.
+  const MAX_TITLE_GOAL_LENGTH = 200;
+  const titleGoal = descriptionFallback.split("\n")[0]!.trim() || packet.active_child;
+  const truncatedTitleGoal =
+    titleGoal.length > MAX_TITLE_GOAL_LENGTH ? `${titleGoal.slice(0, MAX_TITLE_GOAL_LENGTH - 1)}…` : titleGoal;
   return {
-    title: `[${workerRoleFromPacket(packet)}] ${descriptionFallback}`,
+    title: `[${workerRoleFromPacket(packet)}] ${truncatedTitleGoal}`,
     description: body,
     assigneeAgentId,
     status: "todo",
