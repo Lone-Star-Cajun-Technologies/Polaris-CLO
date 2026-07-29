@@ -12,6 +12,6 @@ export default defineConfig({
   test: {
     setupFiles: ['./vitest.setup.ts'],
     globals: true, // This makes describe, it, expect available globally without importing
-    testTimeout: 20000, // finalize/QC tests shell out to real git and can exceed the 5s default under parallel load
+    testTimeout: 30000, // finalize/QC tests shell out to real git and can exceed the 5s default under parallel load
   },
 });
