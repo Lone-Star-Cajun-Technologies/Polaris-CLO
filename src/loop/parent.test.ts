@@ -747,7 +747,7 @@ describe("runParentLoop", () => {
     ]);
   });
 
-  it("LSC-41: worker error halts immediately; siblings are not dispatched in v1 (documented limitation)", async () => {
+  it("LSC-41: worker error halts immediately; siblings are not touched in v1 (serial limitation)", async () => {
     const calls: MockCall[] = [];
     const mockAdapter = makeMockAdapter([ERROR_RESULT, SUCCESS_RESULT, SUCCESS_RESULT], calls);
     vi.mocked(createAdapter).mockReturnValue(mockAdapter);
@@ -778,7 +778,8 @@ describe("runParentLoop", () => {
 
     const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
 
-    // v1 behavior: first worker error halts immediately; siblings are not retried.
+    // v1 behavior: each parent awaits adapter.dispatch serially, so a failed
+    // first child halts the full run; siblings are never dispatched.
     expect(result.haltReason).toBe("worker-error");
     expect(result.haltingChild).toBe("LSC-301");
     expect(result.childrenDispatched).toBe(0);
