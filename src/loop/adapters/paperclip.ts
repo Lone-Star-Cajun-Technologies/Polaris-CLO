@@ -687,7 +687,7 @@ export function hasWorkProductEvidence(issue: PaperclipIssue): { hasEvidence: bo
  * Validate that the issue has a valid successfulRunHandoff disposition.
  * Returns { valid: true } if handoff is properly settled, or { valid: false, message } if not.
  */
-function validateSuccessfulRunHandoff(issue: PaperclipIssue): { valid: boolean; message?: string } {
+export function validateSuccessfulRunHandoff(issue: PaperclipIssue): { valid: boolean; message?: string } {
   const handoff = (issue as Record<string, unknown>).successfulRunHandoff as
     | { state?: string; correctiveRunId?: string | null; hasLiveContinuation?: boolean }
     | null

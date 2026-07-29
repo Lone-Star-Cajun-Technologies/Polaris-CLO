@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mapBootstrapPacketToPaperclipIssue } from "./paperclip.js";
+import { mapBootstrapPacketToPaperclipIssue, validateSuccessfulRunHandoff } from "./paperclip.js";
 import type { BootstrapPacket } from "./types.js";
 import type { PaperclipRuntimeConfig } from "./paperclip.js";
 
@@ -148,6 +148,113 @@ describe("mapBootstrapPacketToPaperclipIssue — foreman self-assignment validat
   });
 });
 
-// Note: validateSuccessfulRunHandoff is an internal function, but we can test it
-// indirectly by checking the logic it implements via the PaperclipAdapter dispatch.
-// These integration tests verify the handoff validation gate works correctly.
+describe("validateSuccessfulRunHandoff — disposition validation", () => {
+  it("accepts resolved state", () => {
+    const issue = {
+      successfulRunHandoff: {
+        state: "resolved",
+        required: true,
+        hasLiveContinuation: false,
+        sourceRunId: null,
+        correctiveRunId: null,
+        assigneeAgentId: "agent-1",
+        detectedProgressSummary: "Done",
+        createdAt: new Date().toISOString(),
+      },
+    };
+    expect(validateSuccessfulRunHandoff(issue as any)).toEqual({ valid: true });
+  });
+
+  it("accepts escalated state with correctiveRunId", () => {
+    const issue = {
+      successfulRunHandoff: {
+        state: "escalated",
+        required: true,
+        hasLiveContinuation: false,
+        sourceRunId: null,
+        correctiveRunId: "corrective-run-1",
+        assigneeAgentId: "agent-1",
+        detectedProgressSummary: "Escalated",
+        createdAt: new Date().toISOString(),
+      },
+    };
+    expect(validateSuccessfulRunHandoff(issue as any)).toEqual({ valid: true });
+  });
+
+  it("accepts escalated state with hasLiveContinuation", () => {
+    const issue = {
+      successfulRunHandoff: {
+        state: "escalated",
+        required: true,
+        hasLiveContinuation: true,
+        sourceRunId: null,
+        correctiveRunId: null,
+        assigneeAgentId: "agent-1",
+        detectedProgressSummary: "Escalated",
+        createdAt: new Date().toISOString(),
+      },
+    };
+    expect(validateSuccessfulRunHandoff(issue as any)).toEqual({ valid: true });
+  });
+
+  it("rejects escalated state without correctiveRunId or hasLiveContinuation", () => {
+    const issue = {
+      successfulRunHandoff: {
+        state: "escalated",
+        required: true,
+        hasLiveContinuation: false,
+        sourceRunId: null,
+        correctiveRunId: null,
+        assigneeAgentId: "agent-1",
+        detectedProgressSummary: "Escalated",
+        createdAt: new Date().toISOString(),
+      },
+    };
+    const result = validateSuccessfulRunHandoff(issue as any);
+    expect(result.valid).toBe(false);
+    expect(result.message).toContain("no corrective run or live continuation path");
+  });
+
+  it("rejects when successfulRunHandoff is missing", () => {
+    const issue = {};
+    const result = validateSuccessfulRunHandoff(issue as any);
+    expect(result.valid).toBe(false);
+    expect(result.message).toContain("No successfulRunHandoff");
+  });
+
+  it("rejects required state that was not resolved", () => {
+    const issue = {
+      successfulRunHandoff: {
+        state: "required",
+        required: true,
+        hasLiveContinuation: false,
+        sourceRunId: null,
+        correctiveRunId: null,
+        assigneeAgentId: "agent-1",
+        detectedProgressSummary: null,
+        createdAt: new Date().toISOString(),
+      },
+    };
+    const result = validateSuccessfulRunHandoff(issue as any);
+    expect(result.valid).toBe(false);
+    expect(result.message).toContain("did not resolve");
+  });
+
+  it("rejects unknown state", () => {
+    const issue = {
+      successfulRunHandoff: {
+        state: "unknown",
+        required: true,
+        hasLiveContinuation: false,
+        sourceRunId: null,
+        correctiveRunId: null,
+        assigneeAgentId: "agent-1",
+        detectedProgressSummary: null,
+        createdAt: new Date().toISOString(),
+      },
+    };
+    const result = validateSuccessfulRunHandoff(issue as any);
+    expect(result.valid).toBe(false);
+    expect(result.message).toContain("Unknown successfulRunHandoff state");
+  });
+});
