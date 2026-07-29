@@ -899,7 +899,9 @@ export class PaperclipAdapter implements ExecutionAdapter {
           };
         }
 
-        // Validate successfulRunHandoff disposition
+        // Validate successfulRunHandoff disposition: ensures issue has a valid handoff
+        // state (resolved or escalated with continuation path) before accepting success.
+        // Only applies to terminal success (status: "done"); other terminal states bypass this.
         const handoffValidation = validateSuccessfulRunHandoff(finalIssue);
         if (!handoffValidation.valid) {
           const message = `Paperclip issue ${created.id} completed but handoff disposition is invalid: ${handoffValidation.message}`;
