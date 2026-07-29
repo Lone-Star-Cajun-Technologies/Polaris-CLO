@@ -1416,7 +1416,7 @@ describe("runParentLoop", () => {
     );
   });
 
-  it("honors the foreman's explicit assigneeAgentId pick for a multi-agent role", async () => {
+  it("does not halt for a multi-agent role and defers assignee resolution to the adapter", async () => {
     const calls: MockCall[] = [];
     const mockAdapter = makeMockAdapter([SUCCESS_RESULT], calls);
     vi.mocked(createAdapter).mockReturnValue(mockAdapter);
@@ -1435,7 +1435,6 @@ describe("runParentLoop", () => {
           companyId: "e4e9384a-d4a5-46f2-a444-92f5aa6ebdc6",
           tokenEnv: "PAPERCLIP_API_KEY",
           runIdEnv: "PAPERCLIP_RUN_ID",
-          assigneeAgentId: "9143ed5c-8356-43b8-9b4d-035cbfcf5793",
           roleRegistry: {
             worker: [
               "b3caa4b2-0578-40ee-8042-42bffd6fcb5c",
@@ -1452,100 +1451,21 @@ describe("runParentLoop", () => {
       max_children_per_session: 10,
     });
 
-    await runParentLoop({ stateFile, repoRoot: tmpDir });
+    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
 
-    expect(calls[0].options.provider).toBe("9143ed5c-8356-43b8-9b4d-035cbfcf5793");
+    expect(result.haltReason).not.toBe("config-missing");
+    expect(result.haltReason).not.toBe("config-invalid");
+    expect(calls.length).toBe(1);
 
     const telemetry = readJsonLines(join(tmpDir, "runs", "test-run-001", "telemetry.jsonl"));
     const dispatched = telemetry.find((event) => event["event"] === "child-dispatched");
-    expect((dispatched?.["routing_summary"] as Record<string, unknown>)?.["selection_reason"]).toBe(
-      "paperclip-foreman-pick",
-    );
-  });
-
-  it("halts when a multi-agent role has no issue assigneeAgentId set", async () => {
-    const calls: MockCall[] = [];
-    const mockAdapter = makeMockAdapter([SUCCESS_RESULT], calls);
-    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
-
-    const { loadConfig } = await import("../config/loader.js");
-    vi.mocked(loadConfig).mockReturnValueOnce({
-      orchestration: {
-        mode: "auto",
-        notification_format: "verbose",
-        auto_finalize: false,
-      },
-      execution: {
-        adapter: "paperclip",
-        paperclip: {
-          baseUrl: "http://127.0.0.1:3100",
-          companyId: "e4e9384a-d4a5-46f2-a444-92f5aa6ebdc6",
-          tokenEnv: "PAPERCLIP_API_KEY",
-          runIdEnv: "PAPERCLIP_RUN_ID",
-          roleRegistry: {
-            worker: [
-              "b3caa4b2-0578-40ee-8042-42bffd6fcb5c",
-              "9143ed5c-8356-43b8-9b4d-035cbfcf5793",
-            ],
-          },
-        },
-      },
-    } as unknown as Required<import("../config/schema.js").PolarisConfig>);
-
-    const stateFile = makeStateFile(tmpDir, {
-      open_children: ["POL-100"],
-      children_completed: 0,
-      max_children_per_session: 10,
-    });
-
-    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
-
-    expect(result.haltReason).toBe("config-missing");
-    expect(result.message).toContain("The foreman must explicitly assign the issue");
-    expect(calls.length).toBe(0);
-  });
-
-  it("halts when the issue assigneeAgentId is not among the role's registry candidates", async () => {
-    const calls: MockCall[] = [];
-    const mockAdapter = makeMockAdapter([SUCCESS_RESULT], calls);
-    vi.mocked(createAdapter).mockReturnValue(mockAdapter);
-
-    const { loadConfig } = await import("../config/loader.js");
-    vi.mocked(loadConfig).mockReturnValueOnce({
-      orchestration: {
-        mode: "auto",
-        notification_format: "verbose",
-        auto_finalize: false,
-      },
-      execution: {
-        adapter: "paperclip",
-        paperclip: {
-          baseUrl: "http://127.0.0.1:3100",
-          companyId: "e4e9384a-d4a5-46f2-a444-92f5aa6ebdc6",
-          tokenEnv: "PAPERCLIP_API_KEY",
-          runIdEnv: "PAPERCLIP_RUN_ID",
-          assigneeAgentId: "98f310f0-1062-48a3-b02f-6dae833859fb",
-          roleRegistry: {
-            worker: [
-              "b3caa4b2-0578-40ee-8042-42bffd6fcb5c",
-              "9143ed5c-8356-43b8-9b4d-035cbfcf5793",
-            ],
-          },
-        },
-      },
-    } as unknown as Required<import("../config/schema.js").PolarisConfig>);
-
-    const stateFile = makeStateFile(tmpDir, {
-      open_children: ["POL-100"],
-      children_completed: 0,
-      max_children_per_session: 10,
-    });
-
-    const result = await runParentLoop({ stateFile, repoRoot: tmpDir });
-
-    expect(result.haltReason).toBe("config-invalid");
-    expect(result.message).toContain("is not in roleRegistry");
-    expect(calls.length).toBe(0);
+    const routingSummary = dispatched?.["routing_summary"] as Record<string, unknown>;
+    expect(routingSummary?.["selection_reason"]).toBe("paperclip-multi-role");
+    expect(routingSummary?.["selected_provider"]).toBeNull();
+    expect(routingSummary?.["effective_policy_order"]).toEqual([
+      "b3caa4b2-0578-40ee-8042-42bffd6fcb5c",
+      "9143ed5c-8356-43b8-9b4d-035cbfcf5793",
+    ]);
   });
 
   it("falls back to the flat assigneeAgentId when the role isn't present in roleRegistry", async () => {
