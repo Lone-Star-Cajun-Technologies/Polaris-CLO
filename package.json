@@ -52,6 +52,7 @@
     "url": "https://github.com/lsctech/polaris/issues"
   },
   "dependencies": {
+    "@lsctech/polaris": "^0.7.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "commander": "^12.0.0",
     "ignore": "^6.0.2",
