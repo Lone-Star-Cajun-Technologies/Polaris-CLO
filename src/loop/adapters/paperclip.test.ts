@@ -143,6 +143,41 @@ describe("paperclip adapter transport + mapper", () => {
     expect(jsonBlock.active_child).toBe("child-1");
   });
 
+  it("caps the issue title even when primary_goal is large, without dropping context from the description", () => {
+    const bigGoal = "Issue: child-1 — do the large thing\n" + "x".repeat(4000);
+    const baseInstructions = (basePacket as BootstrapPacket & { instructions?: Record<string, unknown> })
+      .instructions;
+    const packetWithBigGoal: Partial<BootstrapPacket> = {
+      ...(basePacket as Partial<BootstrapPacket>),
+      instructions: {
+        ...baseInstructions,
+        primary_goal: bigGoal,
+      },
+    } as Partial<BootstrapPacket>;
+
+    const payload = mapBootstrapPacketToPaperclipIssue(
+      packetWithBigGoal as BootstrapPacket,
+      commonRuntime("http://127.0.0.1:1/"),
+      "dispatch-b",
+    );
+
+    // Title stays well under the issues_open_normalized_title_created_idx
+    // btree limit (2704 bytes for the whole indexed row).
+    expect(payload.title.length).toBeLessThan(250);
+    expect(payload.title).toContain("Issue: child-1 — do the large thing");
+
+    // The full primary_goal text is still in the description's "Primary goal"
+    // prose section — the agent doesn't lose context.
+    expect(payload.description).toContain(bigGoal);
+
+    // But it isn't duplicated a second time inside the JSON dump.
+    const packetMatch = payload.description.match(/POLARIS_PACKET_JSON\s*([\s\S]+)\s*```/);
+    const jsonBlock = JSON.parse(packetMatch![1]!.trim());
+    expect(jsonBlock.instructions.primary_goal).toBeUndefined();
+    expect(jsonBlock.instructions.steps).toBeUndefined();
+    expect(jsonBlock.instructions.allowed_scope).toBeDefined();
+  });
+
   it("POST uses bearer auth, optional run header, and stable idempotency key", async () => {
     const store = new Map<string, Record<string, string>>();
     let server: MockServer | null = null;

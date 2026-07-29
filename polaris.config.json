@@ -5,7 +5,7 @@
     "notification_format": "terse"
   },
   "execution": {
-    "adapter": "terminal-cli",
+    "adapter": "paperclip",
     "providers": {
       "devin": {
         "command": "devin",
@@ -125,6 +125,37 @@
           "codex"
         ]
       }
+    },
+    "paperclip": {
+      "baseUrl": "http://127.0.0.1:3100",
+      "companyId": "e4e9384a-d4a5-46f2-a444-92f5aa6ebdc6",
+      "projectId": "4c48e4c7-605f-4334-a322-5b07d5a7ff9a",
+      "assigneeAgentId": "7e7e6e43-505e-4edb-bf6b-7cb54aab261c",
+      "tokenEnv": "PAPERCLIP_API_KEY",
+      "runIdEnv": "POLARIS_RUN_ID",
+      "pollIntervalMs": 2000,
+      "timeoutMs": 1200000,
+      "roleRegistry": {
+        "foreman": [
+          "7e7e6e43-505e-4edb-bf6b-7cb54aab261c"
+        ],
+        "worker": [
+          "b3caa4b2-0578-40ee-8042-42bffd6fcb5c",
+          "9143ed5c-8356-43b8-9b4d-035cbfcf5793",
+          "39f35fc9-5434-4226-83e3-a435809aac81",
+          "42c3576f-94ac-427e-b4a8-ced4d1167687"
+        ],
+        "librarian": [
+          "af226c67-3541-45ba-839a-b2fafb4ea75c"
+        ],
+        "medic": [
+          "98f310f0-1062-48a3-b02f-6dae833859fb"
+        ],
+        "qc": []
+      },
+      "repoUrl": "https://github.com/Lone-Star-Cajun-Technologies/Polaris-CLO.git",
+      "workingDirectory": "/home/hermes/Developer/projects/Polaris-CLO",
+      "targetPaths": []
     }
   },
   "budget": {
@@ -141,9 +172,9 @@
   "tracker": {
     "adapter": "linear",
     "linear": {
-      "enabled": true,
       "teamId": "Polaris",
-      "projectId": "Polaris Core Runtime"
+      "projectId": "Polaris Core Runtime",
+      "enabled": true
     }
   },
   "qc": {
@@ -154,10 +185,17 @@
         "name": "coderabbit",
         "mode": "local",
         "trigger": "completed-cluster",
-        "capabilities": ["diff-review", "result-parsing"],
+        "capabilities": [
+          "diff-review",
+          "result-parsing"
+        ],
         "execution": {
           "command": "coderabbit",
-          "args": ["review", "--agent", "--light"],
+          "args": [
+            "review",
+            "--agent",
+            "--light"
+          ],
           "output": {
             "format": "jsonl",
             "parser": "coderabbit"
@@ -201,5 +239,10 @@
     "repoAnalysis": {
       "preferred": "polaris-graph"
     }
+  },
+  "repo": {
+    "sourceRoots": [
+      "."
+    ]
   }
 }
