@@ -182,8 +182,7 @@ export type ParentLoopHaltReason =
   | 'analyze-drift' // Next child is an analyze issue and allow_analyze_children is false
   | 'supervised-mode-child-complete' // Child completed in supervised mode
   | 'preflight-failed' // A child failed preflight validation (e.g. missing body)
-  | 'config-missing' // Required Paperclip role/assignee configuration is absent
-  | 'config-invalid'; // Paperclip role/assignee configuration is present but invalid
+  | 'config-missing'; // Required Paperclip role/assignee configuration is absent
 
 export interface ParentLoopResult {
   /** Final halt reason. */
@@ -1001,7 +1000,7 @@ export async function runParentLoop(options: ParentLoopOptions): Promise<ParentL
       // Multi-agent role: don't halt and don't force a pick — the adapter
       // resolves the actual assignee at issue-creation time. Record the
       // candidate pool for telemetry only.
-      providerName = dispatchRole;
+      providerName = "paperclip-multi-role";
       providerSelectionReason = "paperclip-multi-role";
       providersTried = candidates;
       routingSummary = {

@@ -708,6 +708,7 @@ export function validateConfig(config: unknown): ValidationResult {
                   if (!isString(agentId) || !uuidRegex.test(agentId)) {
                     result.valid = false;
                     result.errors.push(`execution.paperclip.roleRegistry["${key}"] contains non-UUID value: ${String(agentId)}`);
+                    continue;
                   }
                   if (seen.has(agentId)) {
                     result.valid = false;
