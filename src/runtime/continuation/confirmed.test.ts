@@ -237,15 +237,28 @@ describe("confirmed.ts: adapter selection + autoDispatch gating", () => {
     await writeStateToDir(testArtifactDir, state);
     const envelope = buildEnvelope(state);
 
-    const result = await dispatchConfirmedContinuation({
-      artifact_dir: testArtifactDir,
-      envelope,
-      adapterOverride: "paperclip",
-    });
+    // The registry reads the configured token directly from process.env. Keep
+    // this test hermetic even when the developer shell has Paperclip enabled.
+    const tokenEnv = "PAPERCLIP_API_KEY";
+    const originalToken = process.env[tokenEnv];
+    delete process.env[tokenEnv];
+    try {
+      const result = await dispatchConfirmedContinuation({
+        artifact_dir: testArtifactDir,
+        envelope,
+        adapterOverride: "paperclip",
+      });
 
-    expect(result.ok).toBe(true);
-    if (result.ok) {
-      expect(result.compact_return.state_updated).toBe(false);
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.compact_return.state_updated).toBe(false);
+      }
+    } finally {
+      if (originalToken === undefined) {
+        delete process.env[tokenEnv];
+      } else {
+        process.env[tokenEnv] = originalToken;
+      }
     }
   });
 });
