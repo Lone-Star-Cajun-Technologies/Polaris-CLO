@@ -726,6 +726,21 @@ export function validateConfig(config: unknown): ValidationResult {
               }
             }
           }
+
+          if ("monitorRoles" in paperclip && paperclip.monitorRoles !== undefined) {
+            if (!isPlainObject(paperclip.monitorRoles)) {
+              result.valid = false;
+              result.errors.push("execution.paperclip.monitorRoles must be a plain object");
+            } else {
+              const monitorRoles = paperclip.monitorRoles as Record<string, unknown>;
+              for (const [key, value] of Object.entries(monitorRoles)) {
+                if (!isString(value) || !uuidRegex.test(value)) {
+                  result.valid = false;
+                  result.errors.push(`execution.paperclip.monitorRoles["${key}"] must be an agent UUID string`);
+                }
+              }
+            }
+          }
         }
       }
     }

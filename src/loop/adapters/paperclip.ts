@@ -13,6 +13,12 @@ export interface PaperclipRuntimeConfig extends PaperclipExecutionConfig {
   resolvedToken?: string;
 }
 
+export interface CreateIssueExecutionState {
+  participants: string[];
+  currentParticipant?: string;
+  wakeRole?: string;
+}
+
 export interface CreateIssuePayload {
   title: string;
   description: string;
@@ -22,6 +28,7 @@ export interface CreateIssuePayload {
   priority?: string;
   idempotencyKey?: string;
   projectId?: string;
+  executionState?: CreateIssueExecutionState;
   labelIds?: never;
   parentId?: never;
 }
@@ -395,6 +402,34 @@ ${packetJsonDump}
     priority,
     idempotencyKey: `polaris:${packet.run_id}:${dispatchId}`,
     ...(config.projectId ? { projectId: config.projectId } : {}),
+    ...buildExecutionState(config),
+  };
+}
+
+/**
+ * Build the executionState block that attaches Paperclip monitor roles
+ * (approver, reviewer, etc.) to a created issue, from config.monitorRoles.
+ * Returns {} when no monitor roles are configured, leaving executionState
+ * unset — matches Paperclip's default (no oversight participants).
+ */
+function buildExecutionState(
+  config: PaperclipRuntimeConfig,
+): { executionState: CreateIssueExecutionState } | Record<string, never> {
+  const monitorRoles = config.monitorRoles;
+  if (!monitorRoles || Object.keys(monitorRoles).length === 0) {
+    return {};
+  }
+
+  const participants = [...new Set(Object.values(monitorRoles))];
+  const currentParticipant = monitorRoles.reviewer;
+
+  return {
+    executionState: {
+      participants,
+      ...(currentParticipant
+        ? { currentParticipant, wakeRole: "reviewer" }
+        : {}),
+    },
   };
 }
 
