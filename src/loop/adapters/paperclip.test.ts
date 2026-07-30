@@ -83,6 +83,24 @@ describe("mapBootstrapPacketToPaperclipIssue — foreman self-assignment validat
     );
   });
 
+  it("rejects when foreman is assigned to an impl role", () => {
+    const packet: BootstrapPacket = {
+      ...basePacket,
+      context: {
+        execution: {
+          paperclip: {
+            assigneeAgentId: FOREMAN_ID,
+          },
+        },
+        worker_role: "impl",
+      },
+    };
+
+    expect(() => mapBootstrapPacketToPaperclipIssue(packet, mockConfig, "dispatch-1")).toThrow(
+      /Foreman.*cannot self-assign to a child work slot/,
+    );
+  });
+
   it("allows worker assignment to a non-foreman agent", () => {
     const packet: BootstrapPacket = {
       ...basePacket,

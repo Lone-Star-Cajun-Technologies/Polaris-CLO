@@ -219,8 +219,9 @@ function validateChildAssignment(
   assigneeAgentId: string,
   config: PaperclipRuntimeConfig,
 ): { valid: boolean; error?: string } {
-  // Only validate child/worker roles — foremen can be assigned to their own coordination tasks
-  const childRoles = ["worker", "analyst", "repair"];
+  // Only validate child/worker roles — foremen can be assigned to their own coordination tasks.
+  // Must stay in sync with ROLE_SKILL_ROUTING's worker-equivalent roles (worker, impl).
+  const childRoles = ["worker", "impl", "analyst", "repair"];
   if (!childRoles.includes(role)) {
     return { valid: true };
   }
