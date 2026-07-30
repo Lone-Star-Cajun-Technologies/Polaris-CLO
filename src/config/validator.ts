@@ -654,6 +654,13 @@ export function validateConfig(config: unknown): ValidationResult {
             result.valid = false;
             result.errors.push("execution.paperclip.companyId must be a UUID");
           }
+
+          if ("projectId" in paperclip && paperclip.projectId !== undefined) {
+            if (!isString(paperclip.projectId) || !uuidRegex.test(paperclip.projectId)) {
+              result.valid = false;
+              result.errors.push("execution.paperclip.projectId must be a UUID");
+            }
+          }
           if (!isString(paperclip.assigneeAgentId) || !uuidRegex.test(paperclip.assigneeAgentId)) {
             result.valid = false;
             result.errors.push("execution.paperclip.assigneeAgentId must be a UUID");

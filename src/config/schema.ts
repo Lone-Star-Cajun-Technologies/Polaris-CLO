@@ -216,6 +216,12 @@ export interface PaperclipExecutionConfig {
   baseUrl: string;
   /** Company ID used for Paperclip company-scoped routing. */
   companyId: string;
+  /**
+   * Paperclip project ID that created issues should be filed under. When
+   * omitted, issues are created with no project association and must be
+   * assigned manually in the Paperclip UI.
+   */
+  projectId?: string;
   /** Agent ID that should receive assigned work for this execution context. */
   assigneeAgentId: string;
   /** Name of the environment variable that holds the Paperclip bearer token. */

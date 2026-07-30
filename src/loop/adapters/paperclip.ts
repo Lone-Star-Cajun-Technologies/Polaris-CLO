@@ -21,6 +21,7 @@ export interface CreateIssuePayload {
   workMode: "standard" | "impl" | "validation" | "analysis";
   priority?: string;
   idempotencyKey?: string;
+  projectId?: string;
   labelIds?: never;
   parentId?: never;
 }
@@ -393,6 +394,7 @@ ${packetJsonDump}
     workMode: "standard",
     priority,
     idempotencyKey: `polaris:${packet.run_id}:${dispatchId}`,
+    ...(config.projectId ? { projectId: config.projectId } : {}),
   };
 }
 

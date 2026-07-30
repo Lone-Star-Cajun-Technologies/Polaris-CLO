@@ -127,7 +127,7 @@ Polaris supports multiple execution backends. The default is `terminal-cli`, whe
 The Paperclip adapter dispatches child work to a Paperclip-managed company/agent instead of running local CLIs. It requires a shared workspace that both Polaris and Paperclip can access.
 
 1. Make sure the target Paperclip server or company runner and this Polaris checkout share the same working directory or can reach a shared filesystem path.
-2. Confirm your Paperclip company ID, the assignee agent ID for this repo, and any required token/runID environment variables are available in the operator environment.
+2. Confirm your Paperclip company ID, the assignee agent ID for this repo, and any required token/runID environment variables are available in the operator environment. Also look up the Paperclip project ID for this repo (`GET /api/companies/{companyId}/projects`) and set `projectId` — without it, issues Polaris creates have no project association and must be assigned manually in the Paperclip UI.
 3. Add the execution config to `polaris.config.json`:
 
 ```json
@@ -137,6 +137,7 @@ The Paperclip adapter dispatches child work to a Paperclip-managed company/agent
     "paperclip": {
       "baseUrl": "http://127.0.0.1:3100",
       "companyId": "e4e9384a-d4a5-46f2-a444-92f5aa6ebdc6",
+      "projectId": "a6671feb-84f8-4b93-8ff7-3c8a6954a172",
       "assigneeAgentId": "39f35fc9-5434-4226-83e3-a435809aac81",
       "tokenEnv": "PAPERCLIP_API_KEY",
       "runIdEnv": "PAPERCLIP_RUN_ID"

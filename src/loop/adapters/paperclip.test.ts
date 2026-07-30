@@ -100,6 +100,44 @@ describe("mapBootstrapPacketToPaperclipIssue — foreman self-assignment validat
     expect(result.assigneeAgentId).toBe(WORKER_ID);
   });
 
+  it("includes projectId in the payload when configured", () => {
+    const packet: BootstrapPacket = {
+      ...basePacket,
+      context: {
+        execution: {
+          paperclip: {
+            assigneeAgentId: WORKER_ID,
+          },
+        },
+        worker_role: "worker",
+      },
+    };
+
+    const result = mapBootstrapPacketToPaperclipIssue(
+      packet,
+      { ...mockConfig, projectId: "a6671feb-84f8-4b93-8ff7-3c8a6954a172" },
+      "dispatch-1",
+    );
+    expect(result.projectId).toBe("a6671feb-84f8-4b93-8ff7-3c8a6954a172");
+  });
+
+  it("omits projectId from the payload when not configured", () => {
+    const packet: BootstrapPacket = {
+      ...basePacket,
+      context: {
+        execution: {
+          paperclip: {
+            assigneeAgentId: WORKER_ID,
+          },
+        },
+        worker_role: "worker",
+      },
+    };
+
+    const result = mapBootstrapPacketToPaperclipIssue(packet, mockConfig, "dispatch-1");
+    expect(result.projectId).toBeUndefined();
+  });
+
   it("allows foreman to take foreman roles", () => {
     const packet: BootstrapPacket = {
       ...basePacket,
