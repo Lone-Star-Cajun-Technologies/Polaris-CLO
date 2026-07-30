@@ -1,6 +1,6 @@
 {
   "name": "@lsctech/polaris",
-  "version": "0.8.2",
+  "version": "0.9.0",
   "description": "Polaris — standalone taskchain orchestration framework for governed AI agent workflows",
   "bin": {
     "polaris": "dist/cli/index.js",
