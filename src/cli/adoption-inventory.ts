@@ -7,6 +7,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { basename, join } from "node:path";
+import { isIgnored } from "../ignore/parser.js";
 import type {
   AgentInstructionFile,
   RepoScanInventory,
@@ -126,13 +127,20 @@ function walkRepository(repoRoot: string, relativeDir = ""): RepoEntry[] {
     }
 
     const normalizedPath = toPosix(relPath);
+    const isDirectory = stat.isDirectory();
+    if (!isDirectory && isIgnored(normalizedPath, repoRoot)) {
+      continue;
+    }
     const repoEntry: RepoEntry = {
       path: normalizedPath,
-      isDirectory: stat.isDirectory(),
+      isDirectory,
       sizeBytes: stat.size,
     };
     entries.push(repoEntry);
 
+    if (isDirectory && isIgnored(`${normalizedPath}/`, repoRoot)) {
+      continue;
+    }
     if (repoEntry.isDirectory && !SKIP_TRAVERSAL.has(name)) {
       entries.push(...walkRepository(repoRoot, normalizedPath));
     }
@@ -334,6 +342,9 @@ function shouldSkipDoc(path: string): boolean {
     filename === "claude.md" ||
     filename === "gemini.md" ||
     filename === "aider.md" ||
+    filename === "polaris.md" ||
+    filename === "polaris_rules.md" ||
+    filename === "summary.md" ||
     lowered === ".github/copilot-instructions.md"
   ) {
     return true;

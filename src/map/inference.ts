@@ -32,15 +32,17 @@ export function inferRoute(
     if (filePath.startsWith(prefix)) {
       const rest = filePath.slice(prefix.length);
       const subdir = rest.split("/")[0];
-      if (subdir && rest.includes("/")) {
-        domain = subdir;
+      const sourceRootName = basename(sourceRoot.replace(/\/+$/, ""));
+      const domainName = subdir && rest.includes("/") ? subdir : sourceRootName;
+      if (domainName) {
+        domain = domainName;
         // Route identity follows the file's own containing directory, not just the
         // top-level domain subdir — otherwise nested folders (e.g. src/runtime/continuation)
         // incorrectly report the parent domain's route (e.g. src/runtime).
         route = dirname(filePath).replace(/\\/g, "/");
-        taskchain = `polaris-${subdir}`;
+        taskchain = `polaris-${domainName}`;
         confidence += 0.85;
-        tags.push(subdir);
+        tags.push(domainName);
       }
       break;
     }

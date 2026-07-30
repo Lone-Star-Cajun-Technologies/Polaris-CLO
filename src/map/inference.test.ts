@@ -22,6 +22,20 @@ describe("inferRoute", () => {
     expect(result.confidence).toBeGreaterThanOrEqual(0.85);
   });
 
+  it("classifies a file directly inside a configured source root", () => {
+    const directRootConfig = {
+      ...config,
+      repo: { ...config.repo, sourceRoots: ["scripts"] },
+    };
+
+    const result = inferRoute("scripts/sync-paperclip-state.sh", "/repo", directRootConfig, {}, "");
+
+    expect(result.domain).toBe("scripts");
+    expect(result.route).toBe("scripts");
+    expect(result.taskchain).toBe("polaris-scripts");
+    expect(result.confidence).toBeGreaterThanOrEqual(0.85);
+  });
+
   it("returns low confidence for files outside sourceRoots", () => {
     const result = inferRoute("package.json", "/repo", config, {}, "");
     expect(result.confidence).toBeLessThan(0.85);

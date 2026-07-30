@@ -140,6 +140,20 @@ describe("scanAdoptionInventory", () => {
     expect(inventory.repo_state).toBe("polaris-enabled");
   });
 
+  it("excludes ignored runtime surfaces and canonical Polaris files from SmartDocs candidates", () => {
+    const fixtureRoot = makeFixtureRoot("adoption-inventory-ignored-runtime");
+    writeFixture(fixtureRoot, ".polarisignore", ".polaris/\n.claude/\n");
+    writeFixture(fixtureRoot, ".polaris/roles/worker.md", "# Worker\n\nRuntime role instructions.\n");
+    writeFixture(fixtureRoot, ".claude/commands/polaris-run.md", "# Run\n\nRuntime command shim.\n");
+    writeFixture(fixtureRoot, "POLARIS.md", "# Polaris\n\nRoute cognition.\n");
+    writeFixture(fixtureRoot, "POLARIS_RULES.md", "# Rules\n\nRepository governance.\n");
+    writeFixture(fixtureRoot, "SUMMARY.md", "# Summary\n\nRepository route summary.\n");
+
+    const inventory = scanAdoptionInventory(fixtureRoot, { writeArtifact: false });
+
+    expect(inventory.smartdocs_candidates).toEqual([]);
+  });
+
   it("POLARIS_RULES.md (without POLARIS.md) triggers migrate recommendation for large instruction files", () => {
     const fixtureRoot = makeFixtureRoot("adoption-inventory-rules");
 

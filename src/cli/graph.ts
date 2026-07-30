@@ -1,7 +1,8 @@
 import { existsSync, readdirSync, realpathSync } from "node:fs";
-import { resolve, join, extname } from "node:path";
+import { resolve, join, extname, relative, sep } from "node:path";
 import { Command } from "commander";
 import { loadConfig } from "../config/loader.js";
+import { isIgnored } from "../ignore/parser.js";
 import { getDefaultAdapterRegistry } from "../graph/adapter/registry.js";
 import type { GraphCapabilityReport } from "../graph/capability/index.js";
 import { runExtractionPipeline } from "../graph/parser/pipeline.js";
@@ -248,7 +249,7 @@ function createBuildPlan(repoRoot: string): GraphBuildPlan {
   const sourceRoots = (config.repo.sourceRoots ?? ["src"])
     .filter((root): root is string => typeof root === "string" && root.length > 0)
     .map((root) => resolve(repoRoot, root));
-  const sourceFiles = collectSourceFiles(sourceRoots);
+  const sourceFiles = collectSourceFiles(sourceRoots, repoRoot);
 
   return {
     outputPathRelative,
@@ -260,14 +261,14 @@ function createBuildPlan(repoRoot: string): GraphBuildPlan {
   };
 }
 
-function collectSourceFiles(sourceRoots: readonly string[]): string[] {
+function collectSourceFiles(sourceRoots: readonly string[], repoRoot: string): string[] {
   const files: string[] = [];
 
   for (const root of sourceRoots) {
     if (!existsSync(root)) {
       continue;
     }
-    for (const filePath of walkDirectory(root)) {
+    for (const filePath of walkDirectory(root, repoRoot)) {
       files.push(filePath);
     }
   }
@@ -275,15 +276,23 @@ function collectSourceFiles(sourceRoots: readonly string[]): string[] {
   return Array.from(new Set(files)).sort((left, right) => left.localeCompare(right));
 }
 
-function* walkDirectory(root: string, visited: Set<string> = new Set()): Generator<string> {
+function* walkDirectory(
+  root: string,
+  repoRoot: string,
+  visited: Set<string> = new Set(),
+): Generator<string> {
   const realRoot = realpathSync(root);
   if (visited.has(realRoot)) return;
   visited.add(realRoot);
   const entries = readdirSync(root, { withFileTypes: true });
   for (const entry of entries) {
     const fullPath = join(root, entry.name);
+    const relativePath = relative(repoRoot, fullPath).replaceAll(sep, "/");
+    if (!relativePath || isIgnored(entry.isDirectory() ? `${relativePath}/` : relativePath, repoRoot)) {
+      continue;
+    }
     if (entry.isDirectory()) {
-      yield* walkDirectory(fullPath, visited);
+      yield* walkDirectory(fullPath, repoRoot, visited);
       continue;
     }
     yield fullPath;

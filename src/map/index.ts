@@ -160,6 +160,7 @@ export function runMapIndex(
       updated_by: "polaris-map-index",
       tags: inferred.tags,
       instructionFile: resolveInstructionFile(filePath, repoRoot),
+      role_owner: "worker",
     };
 
     if (inferred.confidence >= (config.map.autoWriteAbove ?? 0.85)) {
