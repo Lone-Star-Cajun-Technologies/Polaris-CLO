@@ -788,10 +788,14 @@ export async function runFinalize(options: FinalizeOptions): Promise<void> {
     console.log("[4.5/14] Running canon reconciliation check..."); // Step count updated
     let changedFiles: string[] = [];
     try {
-      const baseBranch = config.finalize?.targetBranch ?? "main";
+      const baseBranch =
+        (config && (config as any).finalize && (config as any).finalize.targetBranch) ??
+        execFileSync("git", ["rev-parse", "--abbrev-ref", "origin/HEAD"], { cwd: repoRoot, encoding: "utf-8" }).trim().split("/")[1] ??
+        "main";
+      const branch = execFileSync("git", ["rev-parse", "--abbrev-ref", "HEAD"], { cwd: repoRoot, encoding: "utf-8" }).trim();
       const diffOutput = execFileSync(
         "git",
-        ["diff", "--name-only", `${baseBranch}...HEAD`],
+        ["diff", "--name-only", `${baseBranch}...${branch}`],
         { cwd: repoRoot, encoding: "utf-8" },
       );
       changedFiles = diffOutput.trim().split("\n").filter(Boolean);
