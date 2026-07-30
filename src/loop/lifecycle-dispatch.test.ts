@@ -198,34 +198,36 @@ function setupMockServer(
         return;
       }
 
-      const issueMatch = req.url?.match(/^\/api\/companies\/[^\/]+\/issues\/([^/]+)$/);
-      if (issueMatch && req.method === "GET") {
-        const issue = [...store.values()].find((v) => v.id === issueMatch[1]);
-        if (!issue) {
-          res.writeHead(404);
-          res.end(JSON.stringify({ error: "Not found" }));
-          return;
-        }
+      // Single-issue GET is intentionally unsupported here — matches the real
+      // Paperclip API, which rejects GET /issues/{id} for service credentials
+      // (LSCH-4). The adapter must use the list endpoint below instead.
+      const singleIssueMatch = req.url?.match(/^\/api\/companies\/[^\/]+\/issues\/([^/]+)$/);
+      if (singleIssueMatch && req.method === "GET") {
+        res.writeHead(403);
+        res.end(JSON.stringify({ error: "Route not allowed" }));
+        return;
+      }
+
+      if (req.method === "GET" && req.url === "/api/companies/company-1/issues") {
+        const issues = [...store.values()].map((issue) => ({
+          ...issue,
+          ...(opts.evidence ?? {}),
+          ...(opts.result ? { result: opts.result } : {}),
+          status: opts.terminalStatus ?? "done",
+          successfulRunHandoff: {
+            state: "resolved",
+            required: true,
+            hasLiveContinuation: false,
+            sourceRunId: null,
+            correctiveRunId: null,
+            assigneeAgentId: issue.assigneeAgentId ?? null,
+            detectedProgressSummary: "Lifecycle execution completed",
+            createdAt: new Date().toISOString(),
+          },
+          updatedAt: new Date().toISOString(),
+        }));
         res.writeHead(200);
-        res.end(
-          JSON.stringify({
-            ...issue,
-            ...(opts.evidence ?? {}),
-            ...(opts.result ? { result: opts.result } : {}),
-            status: opts.terminalStatus ?? "done",
-            successfulRunHandoff: {
-              state: "resolved",
-              required: true,
-              hasLiveContinuation: false,
-              sourceRunId: null,
-              correctiveRunId: null,
-              assigneeAgentId: issue.assigneeAgentId ?? null,
-              detectedProgressSummary: "Lifecycle execution completed",
-              createdAt: new Date().toISOString(),
-            },
-            updatedAt: new Date().toISOString(),
-          }),
-        );
+        res.end(JSON.stringify({ issues }));
         return;
       }
 

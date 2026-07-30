@@ -573,12 +573,30 @@ export async function createPaperclipIssue(
   );
 }
 
+/**
+ * Extract the array of issue records from a /issues list response body,
+ * regardless of whether the API wraps it as { issues: [...] }, { data: [...] },
+ * or returns a bare array.
+ */
+function extractIssuesArray(body: Record<string, unknown> | null): Record<string, unknown>[] {
+  if (!body) return [];
+  if (Array.isArray(body)) return body as Record<string, unknown>[];
+  const candidate = (body as { issues?: unknown; data?: unknown }).issues ?? (body as { data?: unknown }).data;
+  return Array.isArray(candidate) ? (candidate as Record<string, unknown>[]) : [];
+}
+
+/**
+ * Fetch a single issue by id via the list endpoint (GET /issues) and filter
+ * client-side, rather than GET /issues/{id} — the Paperclip API does not
+ * expose a single-issue route for service credentials (see LSCH-4).
+ */
 export async function getPaperclipIssue(
   config: PaperclipRuntimeConfig,
   companyId: string,
   issueId: string,
   runIdHeader = "",
 ): Promise<{ issue: PaperclipIssue; status: { http: number; retry: string | null } }> {
+  const path = `/api/companies/${companyId}/issues`;
   let lastRetry: string | null = null;
 
   for (let attempt = 1; attempt <= 2; attempt++) {
@@ -586,7 +604,7 @@ export async function getPaperclipIssue(
       config,
       {
         method: "GET",
-        path: `/api/companies/${companyId}/issues/${issueId}`,
+        path,
         runIdHeader: runIdHeader || undefined,
       },
     );
@@ -598,21 +616,34 @@ export async function getPaperclipIssue(
         continue;
       }
       throw new Error(
-        `Paperclip get issue failed: HTTP=${status ?? "unknown"} path=/api/companies/${companyId}/issues/${issueId} issue_id=${issueId} retry=${lastRetry} detail=${redact(String(error))}`,
+        `Paperclip get issue failed: HTTP=${status ?? "unknown"} path=${path} issue_id=${issueId} retry=${lastRetry} detail=${redact(String(error))}`,
       );
     }
 
     if (typeof status === "number" && isTerminalStatus(status)) {
       throw new Error(
-        `Paperclip get issue failed: HTTP=${status} path=/api/companies/${companyId}/issues/${issueId} issue_id=${issueId} retry=none detail=${redact(readErrorDetail(body ?? null))}`,
+        `Paperclip get issue failed: HTTP=${status} path=${path} issue_id=${issueId} retry=none detail=${redact(readErrorDetail(body ?? null))}`,
       );
     }
 
-    return { issue: (body ?? {}) as PaperclipIssue, status: { http: status ?? 200, retry: null } };
+    const issues = extractIssuesArray(body);
+    const match = issues.find((record) => record.id === issueId);
+    if (!match) {
+      const retryCandidate = classifyRetry(response, null);
+      if (retryCandidate && attempt < 2) {
+        await new Promise((resolve) => setTimeout(resolve, config.pollIntervalMs));
+        continue;
+      }
+      throw new Error(
+        `Paperclip get issue failed: HTTP=${status ?? "unknown"} path=${path} issue_id=${issueId} retry=none detail=issue-not-found-in-list`,
+      );
+    }
+
+    return { issue: match as PaperclipIssue, status: { http: status ?? 200, retry: null } };
   }
 
   throw new Error(
-    `Paperclip get issue failed: HTTP=unknown path=/api/companies/${companyId}/issues/${issueId} issue_id=${issueId} retry=${lastRetry} detail=no-detail`,
+    `Paperclip get issue failed: HTTP=unknown path=${path} issue_id=${issueId} retry=${lastRetry} detail=no-detail`,
   );
 }
 
