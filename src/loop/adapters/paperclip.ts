@@ -408,10 +408,13 @@ ${packetJsonDump}
 }
 
 /**
- * Build the executionState block that attaches Paperclip monitor roles
- * (approver, reviewer, etc.) to a created issue, from config.monitorRoles.
- * Returns {} when no monitor roles are configured, leaving executionState
- * unset — matches Paperclip's default (no oversight participants).
+ * Build the executionState block that attaches Paperclip oversight roles
+ * (reviewer, approver, monitor — distinct roles, not aliases) to a created
+ * issue, from config.monitorRoles. All configured roles become participants;
+ * only "monitor" currently wakes on creation (sets currentParticipant /
+ * wakeRole) — reviewer/approver just ride along as participants for now.
+ * Returns {} when no roles are configured, leaving executionState unset —
+ * matches Paperclip's default (no oversight participants).
  */
 function buildExecutionState(
   config: PaperclipRuntimeConfig,
@@ -422,13 +425,13 @@ function buildExecutionState(
   }
 
   const participants = [...new Set(Object.values(monitorRoles))];
-  const currentParticipant = monitorRoles.reviewer;
+  const currentParticipant = monitorRoles.monitor;
 
   return {
     executionState: {
       participants,
       ...(currentParticipant
-        ? { currentParticipant, wakeRole: "reviewer" }
+        ? { currentParticipant, wakeRole: "monitor" }
         : {}),
     },
   };

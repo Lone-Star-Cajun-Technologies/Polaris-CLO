@@ -157,8 +157,7 @@
       "workingDirectory": "/home/hermes/Developer/projects/Polaris-CLO",
       "targetPaths": [],
       "monitorRoles": {
-        "reviewer": "e2bde541-f664-4ae5-bea0-5a394804cac1",
-        "approver": "98f310f0-1062-48a3-b02f-6dae833859fb"
+        "monitor": "e2bde541-f664-4ae5-bea0-5a394804cac1"
       }
     }
   },

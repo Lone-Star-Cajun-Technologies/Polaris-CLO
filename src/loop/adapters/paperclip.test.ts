@@ -156,7 +156,7 @@ describe("mapBootstrapPacketToPaperclipIssue — foreman self-assignment validat
     expect(result.projectId).toBeUndefined();
   });
 
-  it("attaches executionState with monitor participants and wakes the reviewer when monitorRoles is configured", () => {
+  it("attaches executionState with monitor participants and wakes the monitor role when monitorRoles is configured", () => {
     const packet: BootstrapPacket = {
       ...basePacket,
       context: {
@@ -170,17 +170,17 @@ describe("mapBootstrapPacketToPaperclipIssue — foreman self-assignment validat
     };
 
     const approverId = "af226c67-3541-45ba-839a-b2fafb4ea75c";
-    const reviewerId = "98f310f0-1062-48a3-b02f-6dae833859fb";
+    const monitorId = "98f310f0-1062-48a3-b02f-6dae833859fb";
     const result = mapBootstrapPacketToPaperclipIssue(
       packet,
-      { ...mockConfig, monitorRoles: { approver: approverId, reviewer: reviewerId } },
+      { ...mockConfig, monitorRoles: { approver: approverId, monitor: monitorId } },
       "dispatch-1",
     );
 
     expect(result.executionState).toEqual({
-      participants: [approverId, reviewerId],
-      currentParticipant: reviewerId,
-      wakeRole: "reviewer",
+      participants: [approverId, monitorId],
+      currentParticipant: monitorId,
+      wakeRole: "monitor",
     });
   });
 
