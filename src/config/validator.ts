@@ -654,6 +654,13 @@ export function validateConfig(config: unknown): ValidationResult {
             result.valid = false;
             result.errors.push("execution.paperclip.companyId must be a UUID");
           }
+
+          if ("projectId" in paperclip && paperclip.projectId !== undefined) {
+            if (!isString(paperclip.projectId) || !uuidRegex.test(paperclip.projectId)) {
+              result.valid = false;
+              result.errors.push("execution.paperclip.projectId must be a UUID");
+            }
+          }
           if (!isString(paperclip.assigneeAgentId) || !uuidRegex.test(paperclip.assigneeAgentId)) {
             result.valid = false;
             result.errors.push("execution.paperclip.assigneeAgentId must be a UUID");
@@ -715,6 +722,21 @@ export function validateConfig(config: unknown): ValidationResult {
                     result.errors.push(`execution.paperclip.roleRegistry["${key}"] contains duplicate agent: ${agentId}`);
                   }
                   seen.add(agentId);
+                }
+              }
+            }
+          }
+
+          if ("monitorRoles" in paperclip && paperclip.monitorRoles !== undefined) {
+            if (!isPlainObject(paperclip.monitorRoles)) {
+              result.valid = false;
+              result.errors.push("execution.paperclip.monitorRoles must be a plain object");
+            } else {
+              const monitorRoles = paperclip.monitorRoles as Record<string, unknown>;
+              for (const [key, value] of Object.entries(monitorRoles)) {
+                if (!isString(value) || !uuidRegex.test(value)) {
+                  result.valid = false;
+                  result.errors.push(`execution.paperclip.monitorRoles["${key}"] must be an agent UUID string`);
                 }
               }
             }

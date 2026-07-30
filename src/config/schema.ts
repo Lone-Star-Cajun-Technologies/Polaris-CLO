@@ -216,6 +216,12 @@ export interface PaperclipExecutionConfig {
   baseUrl: string;
   /** Company ID used for Paperclip company-scoped routing. */
   companyId: string;
+  /**
+   * Paperclip project ID that created issues should be filed under. When
+   * omitted, issues are created with no project association and must be
+   * assigned manually in the Paperclip UI.
+   */
+  projectId?: string;
   /** Agent ID that should receive assigned work for this execution context. */
   assigneeAgentId: string;
   /** Name of the environment variable that holds the Paperclip bearer token. */
@@ -261,6 +267,13 @@ export interface PaperclipExecutionConfig {
    * - 0 entries: falls back to `assigneeAgentId` or halts with a config error.
    */
   roleRegistry?: Record<string, string[]>;
+  /**
+   * Map of Paperclip monitor role name (e.g. "approver", "reviewer") to the
+   * Paperclip agent UUID that fulfills it. Attached to every created issue's
+   * executionState so oversight roles are set automatically instead of being
+   * assigned by hand in the Paperclip UI.
+   */
+  monitorRoles?: Record<string, string>;
 }
 
 export interface SkillPacketConfig {
