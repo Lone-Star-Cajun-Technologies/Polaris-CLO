@@ -606,6 +606,11 @@
       "additionalProperties": false,
       "required": ["baseUrl", "companyId", "assigneeAgentId", "tokenEnv", "runIdEnv"],
       "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Explicit opt-in for Paperclip control-plane dispatch."
+        },
         "baseUrl": { "type": "string" },
         "companyId": { "type": "string" },
         "assigneeAgentId": { "type": "string" },

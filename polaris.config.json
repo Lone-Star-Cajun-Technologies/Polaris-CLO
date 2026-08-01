@@ -5,7 +5,7 @@
     "notification_format": "terse"
   },
   "execution": {
-    "adapter": "paperclip",
+    "adapter": "terminal-cli",
     "providers": {
       "devin": {
         "command": "devin",
@@ -127,6 +127,7 @@
       }
     },
     "paperclip": {
+      "enabled": false,
       "baseUrl": "http://127.0.0.1:3100",
       "companyId": "e4e9384a-d4a5-46f2-a444-92f5aa6ebdc6",
       "projectId": "4c48e4c7-605f-4334-a322-5b07d5a7ff9a",
