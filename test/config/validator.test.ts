@@ -218,6 +218,7 @@ describe("validateConfig - paperclip execution config", () => {
       execution: {
         adapter: "paperclip",
         paperclip: {
+          enabled: true,
           baseUrl: "https://api.paperclip.example",
           companyId: "11111111-1111-1111-1111-111111111111",
           assigneeAgentId: "22222222-2222-2222-2222-222222222222",
@@ -235,6 +236,7 @@ describe("validateConfig - paperclip execution config", () => {
       execution: {
         adapter: "paperclip",
         paperclip: {
+          enabled: true,
           baseUrl: "https://api.paperclip.example",
           companyId: "11111111-1111-1111-1111-111111111111",
           assigneeAgentId: "22222222-2222-2222-2222-222222222222",

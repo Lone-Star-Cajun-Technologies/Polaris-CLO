@@ -14,17 +14,16 @@ export function createAdapter(adapterName: string, config: ExecutionConfig): Exe
       return new AgentSubtaskAdapter();
     case 'paperclip': {
       const pcConfig = config.paperclip;
-      // When config.paperclip is absent the adapter is still constructed but
-      // resolvedToken will be undefined, causing dispatch() to fail closed
-      // (exit_code: 2, pre_dispatch_failure: true) rather than throwing here.
-      const resolvedToken = pcConfig ? (process.env[pcConfig.tokenEnv]?.trim() ?? undefined) : undefined;
+      if (pcConfig?.enabled !== true) {
+        throw new Error(
+          'Paperclip adapter is disabled. Set execution.paperclip.enabled to true before selecting it.',
+        );
+      }
+      // The enabled gate is checked before construction; a missing token then
+      // remains a dispatch-time fail-closed precondition.
+      const resolvedToken = process.env[pcConfig.tokenEnv]?.trim() ?? undefined;
       return new PaperclipAdapter({
-        baseUrl: pcConfig?.baseUrl ?? "",
-        companyId: pcConfig?.companyId ?? "",
-        assigneeAgentId: pcConfig?.assigneeAgentId ?? "",
-        tokenEnv: pcConfig?.tokenEnv ?? "",
-        runIdEnv: pcConfig?.runIdEnv ?? "",
-        ...(pcConfig ?? {}),
+        ...pcConfig,
         resolvedToken,
       });
     }

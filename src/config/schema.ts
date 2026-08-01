@@ -212,6 +212,8 @@ export interface ExecutionConfig {
 
 /** Configuration for the Paperclip control plane. */
 export interface PaperclipExecutionConfig {
+  /** Explicit opt-in for the Paperclip control-plane adapter. Defaults to false. */
+  enabled?: boolean;
   /** Paperclip service base URL. */
   baseUrl: string;
   /** Company ID used for Paperclip company-scoped routing. */

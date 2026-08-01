@@ -639,12 +639,27 @@ export function validateConfig(config: unknown): ValidationResult {
         );
       }
 
+      const paperclipConfig = config.execution.paperclip;
+      if (
+        paperclipAdapterRequested &&
+        (!isPlainObject(paperclipConfig) || paperclipConfig.enabled !== true)
+      ) {
+        result.valid = false;
+        result.errors.push(
+          'execution.paperclip.enabled must be true when execution.adapter or execution.roles.*.adapter is "paperclip"',
+        );
+      }
+
       if ("paperclip" in config.execution && config.execution.paperclip !== undefined) {
         if (!isPlainObject(config.execution.paperclip)) {
           result.valid = false;
           result.errors.push("execution.paperclip must be a plain object");
         } else {
           const paperclip = config.execution.paperclip;
+          if ("enabled" in paperclip && paperclip.enabled !== undefined && !isBoolean(paperclip.enabled)) {
+            result.valid = false;
+            result.errors.push("execution.paperclip.enabled must be a boolean");
+          }
           if (!isString(paperclip.baseUrl) || !/^https?:\/\/.+/.test(paperclip.baseUrl)) {
             result.valid = false;
             result.errors.push("execution.paperclip.baseUrl must be a valid URL");
